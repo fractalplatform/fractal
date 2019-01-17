@@ -1,0 +1,49 @@
+log-printorigins: false
+log-level:  4
+log-vmodule:  ""
+log-backtraceat: ""
+
+#node-datadir: ""
+#node-ipcpath: ""
+#node-keystore: ""
+#node-lightkdf: false
+node-httphost:  "localhost"
+node-httpport:  8545
+node-httpmodules: ["ft"]
+#node-httpcors:  ["", ""]
+node-httpvirtualhosts: ["localhost"]
+node-wshost: "localhost"
+node-wsport: 8546
+node-wsmodules: ["ft"]
+
+#node-wsorigins: ["", ""]
+#node-wsexposall:  false
+
+ftservice-databasecache: 768
+
+ethash-cachedir: "zethash"
+ethash-cachesinmem: 2
+ethash-cachesondisk: 3
+#ethash-datasetdir:  ""
+ethash-datasetsinmem: 1
+ethash-datasetsondisk: 2
+#ethash-powmode: 0
+
+#txpool-nolocals:  false
+txpool-journal:   "transactions.rlp"
+#txpool-rejournal: 0
+txpool-pricebump: 10
+txpool-pricelimit: 1
+txpool-accountslots: 16
+txpool-accountqueue: 64
+txpool-globalslots: 4096
+txpool-globalqueue: 1024
+#txpool-lifetime: 0
+
+#test-metricsflag: false
+#test-influxdbflag: false
+#test-influxdburl: ""
+#test-influxdbname: ""
+#test-influxdbuser: ""
+#test-influxdbpasswd: ""
+#test-influxdbnamespace: ""

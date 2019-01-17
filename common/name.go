@@ -1,0 +1,96 @@
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package common
+
+import (
+	"fmt"
+	"math/big"
+	"regexp"
+	"strings"
+)
+
+// Name represents the account name
+type Name string
+
+// IsValidName verifies whether a string can represent a valid name or not.
+func IsValidName(s string) bool {
+	return regexp.MustCompile("^[a-z0-9]{8,16}$").MatchString(s)
+}
+
+func IsSameName(srcName Name, destName Name) bool {
+	if srcName == destName {
+		return true
+	}
+	return false
+}
+
+func StrToName(s string) Name {
+	n, err := parseName(s)
+	if err != nil {
+		panic(err)
+	}
+	return n
+}
+
+func parseName(s string) (Name, error) {
+	var n Name
+	if !n.SetString(s) {
+		return n, fmt.Errorf("invalid name %v", s)
+	}
+	return n, nil
+}
+
+func BytesToName(b []byte) (Name, error) {
+	return parseName(string(b))
+}
+
+func BigToName(b *big.Int) (Name, error) { return BytesToName(b.Bytes()) }
+
+// SetString  sets the name to the value of b..
+func (n *Name) SetString(s string) bool {
+	if !IsValidName(s) {
+		return false
+	}
+	*n = Name(s)
+	return true
+}
+
+// UnmarshalText parses a hash in hex syntax.
+func (n *Name) UnmarshalText(input []byte) error {
+	return n.UnmarshalJSON(input)
+}
+
+// UnmarshalJSON parses a hash in hex syntax.
+func (n *Name) UnmarshalJSON(data []byte) error {
+	input := strings.TrimSpace(string(data))
+	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
+		input = input[1 : len(input)-1]
+	}
+	dec, err := parseName(string(input))
+	if err != nil {
+		return err
+	}
+	*n = dec
+	return nil
+}
+
+// String implements fmt.Stringer.
+func (n Name) String() string {
+	return string(n)
+}
+
+func (n Name) Big() *big.Int { return new(big.Int).SetBytes([]byte(n.String())) }

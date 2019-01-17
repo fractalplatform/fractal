@@ -1,0 +1,308 @@
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+package rawdb
+
+import (
+	"bytes"
+	"math/big"
+	"testing"
+
+	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/fractalplatform/fractal/utils/rlp"
+	"golang.org/x/crypto/sha3"
+)
+
+// Tests block header storage and retrieval operations.
+func TestHeaderStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+
+	// Create a test header to move around the database and make sure it's really new
+	header := &types.Header{
+		Number: big.NewInt(42),
+		Extra:  []byte("test header"),
+	}
+	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry != nil {
+		t.Fatalf("Non existent header returned: %v", entry)
+	}
+	// Write and verify the header in the database
+	WriteHeader(db, header)
+	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry == nil {
+		t.Fatalf("Stored header not found")
+	} else if entry.Hash() != header.Hash() {
+		t.Fatalf("Retrieved header mismatch: have %v, want %v", entry, header)
+	}
+
+	if entry := ReadHeaderRLP(db, header.Hash(), header.Number.Uint64()); entry == nil {
+		t.Fatalf("Stored header RLP not found")
+	} else {
+		hasher := sha3.NewLegacyKeccak256()
+		hasher.Write(entry)
+
+		if hash := common.BytesToHash(hasher.Sum(nil)); hash != header.Hash() {
+			t.Fatalf("Retrieved RLP header mismatch: have %v, want %v", entry, header)
+		}
+	}
+	// Delete the header and verify the execution
+	DeleteHeader(db, header.Hash(), header.Number.Uint64())
+	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry != nil {
+		t.Fatalf("Deleted header returned: %v", entry)
+	}
+}
+
+// Tests block body storage and retrieval operations.
+func TestBodyStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+	action1 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action2 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+
+	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
+	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
+	txs := []*types.Transaction{tx1, tx2}
+	body := &types.Body{
+		Transactions: txs,
+	}
+
+	hasher := sha3.NewLegacyKeccak256()
+	rlp.Encode(hasher, body)
+	hash := common.BytesToHash(hasher.Sum(nil))
+
+	if entry := ReadBody(db, hash, 0); entry != nil {
+		t.Fatalf("Non existent body returned: %v", entry)
+	}
+	// Write and verify the body in the database
+	WriteBody(db, hash, 0, body)
+
+	var actTxHashs, expTxHashs []common.Hash
+
+	entry := ReadBody(db, hash, 0)
+	if entry == nil {
+		t.Fatalf("Stored body not found")
+	}
+
+	for i := 0; i < len(entry.Transactions); i++ {
+		actTxHashs, expTxHashs = append(actTxHashs, entry.Transactions[i].Hash()), append(expTxHashs, body.Transactions[i].Hash())
+	}
+
+	if common.MerkleRoot(actTxHashs) != common.MerkleRoot(expTxHashs) {
+		t.Fatalf("Retrieved body mismatch: have %v, want %v", entry, body)
+	}
+
+	if entry := ReadBodyRLP(db, hash, 0); entry == nil {
+		t.Fatalf("Stored body RLP not found")
+	} else {
+		hasher := sha3.NewLegacyKeccak256()
+		hasher.Write(entry)
+
+		if calc := common.BytesToHash(hasher.Sum(nil)); calc != hash {
+			t.Fatalf("Retrieved RLP body mismatch: have %v, want %v", entry, body)
+		}
+	}
+	// Delete the body and verify the execution
+	DeleteBody(db, hash, 0)
+	if entry := ReadBody(db, hash, 0); entry != nil {
+		t.Fatalf("Deleted body returned: %v", entry)
+	}
+}
+
+// Tests block storage and retrieval operations.
+func TestBlockStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+
+	// Create a test block to move around the database and make sure it's really new
+	header := &types.Header{
+		Extra:        []byte("test block"),
+		TxsRoot:      common.BytesToHash([]byte("test txhash")),
+		ReceiptsRoot: common.BytesToHash([]byte("test rcpthash")),
+		Number:       big.NewInt(1),
+	}
+
+	action1 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action2 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+
+	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
+	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
+
+	txs := []*types.Transaction{tx1, tx2}
+	block := &types.Block{
+		Head: header,
+		Txs:  txs,
+	}
+	if entry := ReadBlock(db, block.Hash(), block.NumberU64()); entry != nil {
+		t.Fatalf("Non existent block returned: %v", entry)
+	}
+	if entry := ReadHeader(db, block.Hash(), block.NumberU64()); entry != nil {
+		t.Fatalf("Non existent header returned: %v", entry)
+	}
+	if entry := ReadBody(db, block.Hash(), block.NumberU64()); entry != nil {
+		t.Fatalf("Non existent body returned: %v", entry)
+	}
+	// Write and verify the block in the database
+	WriteBlock(db, block)
+	if entry := ReadBlock(db, block.Hash(), block.NumberU64()); entry == nil {
+		t.Fatalf("Stored block not found")
+	} else if entry.Hash() != block.Hash() {
+		t.Fatalf("Retrieved block mismatch: have %v, want %v", entry, block)
+	}
+	// Delete the block and verify the execution
+	DeleteBlock(db, block.Hash(), block.NumberU64())
+	if entry := ReadBlock(db, block.Hash(), block.NumberU64()); entry != nil {
+		t.Fatalf("Deleted block returned: %v", entry)
+	}
+	if entry := ReadHeader(db, block.Hash(), block.NumberU64()); entry != nil {
+		t.Fatalf("Deleted header returned: %v", entry)
+	}
+}
+
+// Tests block total difficulty storage and retrieval operations.
+func TestTdStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+
+	// Create a test TD to move around the database and make sure it's really new
+	hash, td := common.Hash{}, big.NewInt(314)
+	if entry := ReadTd(db, hash, 0); entry != nil {
+		t.Fatalf("Non existent TD returned: %v", entry)
+	}
+	// Write and verify the TD in the database
+	WriteTd(db, hash, 0, td)
+	if entry := ReadTd(db, hash, 0); entry == nil {
+		t.Fatalf("Stored TD not found")
+	} else if entry.Cmp(td) != 0 {
+		t.Fatalf("Retrieved TD mismatch: have %v, want %v", entry, td)
+	}
+	// Delete the TD and verify the execution
+	DeleteTd(db, hash, 0)
+	if entry := ReadTd(db, hash, 0); entry != nil {
+		t.Fatalf("Deleted TD returned: %v", entry)
+	}
+}
+
+// Tests that canonical numbers can be mapped to hashes and retrieved.
+func TestCanonicalMappingStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+
+	// Create a test canonical number and assinged hash to move around
+	hash, number := common.Hash{0: 0xff}, uint64(314)
+	if entry := ReadCanonicalHash(db, number); entry != (common.Hash{}) {
+		t.Fatalf("Non existent canonical mapping returned: %v", entry)
+	}
+	// Write and verify the TD in the database
+	WriteCanonicalHash(db, hash, number)
+	if entry := ReadCanonicalHash(db, number); entry == (common.Hash{}) {
+		t.Fatalf("Stored canonical mapping not found")
+	} else if entry != hash {
+		t.Fatalf("Retrieved canonical mapping mismatch: have %v, want %v", entry, hash)
+	}
+	// Delete the TD and verify the execution
+	DeleteCanonicalHash(db, number)
+	if entry := ReadCanonicalHash(db, number); entry != (common.Hash{}) {
+		t.Fatalf("Deleted canonical mapping returned: %v", entry)
+	}
+}
+
+// Tests that head headers and head blocks can be assigned, individually.
+func TestHeadStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+
+	blockHead := &types.Block{
+		Head: &types.Header{Extra: []byte("test block header")},
+	}
+	blockFull := &types.Block{Head: &types.Header{Extra: []byte("test block full")}}
+	blockFast := types.Block{Head: &types.Header{Extra: []byte("test block fast")}}
+
+	// Check that no head entries are in a pristine database
+	if entry := ReadHeadHeaderHash(db); entry != (common.Hash{}) {
+		t.Fatalf("Non head header entry returned: %v", entry)
+	}
+	if entry := ReadHeadBlockHash(db); entry != (common.Hash{}) {
+		t.Fatalf("Non head block entry returned: %v", entry)
+	}
+	if entry := ReadHeadFastBlockHash(db); entry != (common.Hash{}) {
+		t.Fatalf("Non fast head block entry returned: %v", entry)
+	}
+	// Assign separate entries for the head header and block
+	WriteHeadHeaderHash(db, blockHead.Hash())
+	WriteHeadBlockHash(db, blockFull.Hash())
+	WriteHeadFastBlockHash(db, blockFast.Hash())
+
+	// Check that both heads are present, and different (i.e. two heads maintained)
+	if entry := ReadHeadHeaderHash(db); entry != blockHead.Hash() {
+		t.Fatalf("Head header hash mismatch: have %v, want %v", entry, blockHead.Hash())
+	}
+	if entry := ReadHeadBlockHash(db); entry != blockFull.Hash() {
+		t.Fatalf("Head block hash mismatch: have %v, want %v", entry, blockFull.Hash())
+	}
+	if entry := ReadHeadFastBlockHash(db); entry != blockFast.Hash() {
+		t.Fatalf("Fast head block hash mismatch: have %v, want %v", entry, blockFast.Hash())
+	}
+}
+
+// Tests that receipts associated with a single block can be stored and retrieved.
+func TestBlockReceiptStorage(t *testing.T) {
+	db := fdb.NewMemDatabase()
+
+	receipt1 := &types.Receipt{
+		ActionResults:     []*types.ActionResult{&types.ActionResult{Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)}},
+		CumulativeGasUsed: 1,
+		Logs: []*types.Log{
+			{Name: common.StrToName("11111111")},
+			{Name: common.StrToName("11111111")},
+		},
+		TxHash:       common.BytesToHash([]byte{0x11, 0x11}),
+		TotalGasUsed: 111111,
+	}
+
+	receipt2 := &types.Receipt{
+		ActionResults:     []*types.ActionResult{&types.ActionResult{Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)}},
+		PostState:         common.Hash{2}.Bytes(),
+		CumulativeGasUsed: 2,
+		Logs: []*types.Log{
+			{Name: common.StrToName("22222222")},
+			{Name: common.StrToName("22222222")},
+		},
+		TxHash:       common.BytesToHash([]byte{0x22, 0x22}),
+		TotalGasUsed: 222222,
+	}
+	receipts := []*types.Receipt{receipt1, receipt2}
+
+	// Check that no receipt entries are in a pristine database
+	hash := common.BytesToHash([]byte{0x03, 0x14})
+	if rs := ReadReceipts(db, hash, 0); len(rs) != 0 {
+		t.Fatalf("non existent receipts returned: %v", rs)
+	}
+	// Insert the receipt slice into the database and check presence
+	WriteReceipts(db, hash, 0, receipts)
+	if rs := ReadReceipts(db, hash, 0); len(rs) == 0 {
+		t.Fatalf("no receipts returned")
+	} else {
+		for i := 0; i < len(receipts); i++ {
+			rlpHave, _ := rlp.EncodeToBytes(rs[i])
+			rlpWant, _ := rlp.EncodeToBytes(receipts[i])
+
+			if !bytes.Equal(rlpHave, rlpWant) {
+				t.Fatalf("receipt #%d: receipt mismatch: have %v, want %v", i, rs[i], receipts[i])
+			}
+		}
+	}
+
+	// Delete the receipt slice and check purge
+	DeleteReceipts(db, hash, 0)
+	if rs := ReadReceipts(db, hash, 0); len(rs) != 0 {
+		t.Fatalf("deleted receipts returned: %v", rs)
+	}
+}

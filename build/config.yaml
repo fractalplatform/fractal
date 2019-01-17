@@ -1,0 +1,2 @@
+node-httpmodules: ["ft", "miner", "txpool", "account","p2p", "dpos","keystore"]
+miner-start: true

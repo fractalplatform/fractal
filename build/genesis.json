@@ -1,0 +1,44 @@
+{
+	"config": {
+		"chainId": 1,
+		"sysName": "ftsystemio",
+		"sysToken": "ftoken"
+	},
+	"dpos": {
+		"MaxURLLen": 512,
+		"UnitStake": 1000,
+		"ProducerMinQuantity": 10,
+		"VoterMinQuantity": 1,
+		"ActivatedMinQuantity": 100,
+		"BlockInterval": 3000,
+		"BlockFrequency": 6,
+		"ProducerScheduleSize": 3,
+		"DelayEcho": 18,
+		"AccountName": "ftsystemdpos",
+		"SystemName": "ftsystemio",
+		"SystemURL": "www.fractalproject.com",
+		"ExtraBlockReward": 1,
+		"BlockReward": 5,
+		"Decimals": 18
+	},
+	"timestamp": "0x0",
+	"extraData": "0x5a302047656e6573697320426c6f636b",
+	"gasLimit": "0x5f5e100",
+	"difficulty": "0x20000",
+	"coinbase": "ftsystemio",
+	"allocAccounts": [
+		{
+			"name": "ftsystemio",
+			"pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
+		}
+	],
+	"allocAssets": [
+		{
+			"assetname": "ftoken",
+			"symbol": "ft",
+			"amount": 100000000000000000000000000000,
+			"decimals": 18,
+			"owner": "ftsystemio"
+		}
+	]
+}
