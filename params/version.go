@@ -27,18 +27,26 @@ const (
 	// VersionMajor is Major version component of the current release
 	VersionMajor = 0
 	// VersionMinor is Minor version component of the current release
-	VersionMinor = 1
+	VersionMinor = 0
 	// VersionPatch is Patch version component of the current release
-	VersionPatch = 0
+	VersionPatch = 1
 	// VersionMeta is Version metadata to append to the version string
 	VersionMeta = "unstable"
 )
 
 // Version holds the textual version string.
 var Version = func() string {
-	v := fmt.Sprintf("%d.%d.%d", VersionMajor, VersionMinor, VersionPatch)
-	if VersionMeta != "" {
-		v += "-" + VersionMeta
-	}
-	return v
+	return fmt.Sprintf("%d.%d.%d", VersionMajor, VersionMinor, VersionPatch)
 }()
+
+// ArchiveVersion holds the textual version string used for Geth archives.
+func ArchiveVersion(gitCommit string) string {
+	vsn := Version
+	if VersionMeta != "stable" {
+		vsn += "-" + VersionMeta
+	}
+	if len(gitCommit) >= 8 {
+		vsn += "-" + gitCommit[:8]
+	}
+	return vsn
+}

@@ -38,10 +38,12 @@ var versionCmd = &cobra.Command{
 
 func version() {
 	fmt.Println(strings.Title(params.ClientIdentifier))
-	fmt.Println("Version:", params.Version)
 	gitCommit := params.GitCommit()
 	if gitCommit != "" {
 		fmt.Println("Git Commit:", gitCommit)
+		fmt.Println("Version:", params.ArchiveVersion(gitCommit))
+	} else {
+		fmt.Println("Version:", params.Version)
 	}
 	fmt.Println("Architecture:", runtime.GOARCH)
 	fmt.Println("Go Version:", runtime.Version())
