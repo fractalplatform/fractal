@@ -84,10 +84,6 @@ func TestCocurrent(t *testing.T) {
 			minTime = duration
 		}
 		totalTime += duration.Nanoseconds()
-		if duration > 10*1000*1000 { // 10ms
-			t.Fatalf("time=%d(ns) is too long!", duration)
-			break
-		}
 		if time.Now().Sub(testTime) > 15*time.Second {
 			break
 		}
