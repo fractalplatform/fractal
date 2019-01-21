@@ -63,11 +63,11 @@ func (api *API) SetCoinbase(name string, privKey string) error {
 	return nil
 }
 
-func (api *API) SetExtra(extra []byte) error {
+func (api *API) SetExtra(extra string) error {
 	if uint64(len(extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize)
 	}
-	api.miner.SetExtra(extra)
+	api.miner.SetExtra([]byte(extra))
 	return nil
 }
 
