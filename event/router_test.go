@@ -24,6 +24,80 @@ import (
 	"time"
 )
 
+func TestCocurrent(t *testing.T) {
+	InitRounter()
+	var done sync.WaitGroup
+	quit := make(chan struct{})
+	rwtest := func(station Station) {
+		defer done.Done()
+		channel := make(chan *Event)
+		if station != nil {
+			StationRegister(station)
+			defer StationUnregister(station)
+		}
+		sub := Subscribe(station, channel, RouterTestString, "")
+		done.Add(1)
+		go func() {
+			defer done.Done()
+			defer sub.Unsubscribe()
+			for {
+				select {
+				case <-quit:
+					return
+				case <-channel:
+				}
+			}
+		}()
+		for {
+			select {
+			case <-quit:
+				return
+			default:
+				SendTo(nil, station, RouterTestString, "Cocurrent")
+			}
+		}
+	}
+	done.Add(1)
+	go rwtest(nil)
+	for i := 0; i < 10; i++ {
+		done.Add(1)
+		go rwtest(NewLocalStation(fmt.Sprint("TestStation", i), nil))
+	}
+	nTime := int64(0)
+	totalTime := int64(0)
+	maxTime := time.Nanosecond
+	minTime := time.Hour
+	var testTime = time.Now()
+	for {
+		nTime++
+		station1 := NewLocalStation("TestStation1", nil)
+		var channel1 chan *Event
+		var start = time.Now()
+		sub := Subscribe(station1, channel1, RouterTestString, "")
+		duration := time.Now().Sub(start)
+		StationUnregister(station1)
+		sub.Unsubscribe()
+		if duration > maxTime {
+			maxTime = duration
+		}
+		if duration < minTime {
+			minTime = duration
+		}
+		totalTime += duration.Nanoseconds()
+		if duration > 100*1000*1000 { // 10ms
+			t.Fatalf("time is too long!")
+			break
+		}
+		if time.Now().Sub(testTime) > 15*time.Second {
+			break
+		}
+	}
+	close(quit)
+	done.Wait()
+	// go test -v
+	t.Logf("total %d %d avg %d max %d min %d ns\n", nTime, totalTime, totalTime/nTime, maxTime.Nanoseconds(), minTime.Nanoseconds())
+}
+
 func TestSendEventToStation(t *testing.T) {
 	InitRounter()
 	type testStation struct {
@@ -89,7 +163,7 @@ func TestSendEventToStation(t *testing.T) {
 }
 
 func TestSendEvent(t *testing.T) {
-
+	InitRounter()
 	var (
 		done    sync.WaitGroup
 		nsubs   = 10
@@ -135,7 +209,7 @@ func TestSendEvent(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-
+	InitRounter()
 	var (
 		done  sync.WaitGroup
 		nsubs = 1000
@@ -159,6 +233,4 @@ func TestUnsubscribe(t *testing.T) {
 	}
 	SendEvent(event)
 	done.Wait()
-
-	Clear()
 }

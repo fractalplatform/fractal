@@ -29,10 +29,11 @@ type ProtoAdaptor interface {
 
 // Router Router all events
 type Router struct {
-	unnamedFeeds map[int]*Feed
 	namedFeeds   map[string]map[int]*Feed
+	namedMutex   sync.RWMutex
+	unnamedFeeds map[int]*Feed
 	adaptor      ProtoAdaptor
-	mutex        sync.RWMutex
+	unnamedMutex sync.RWMutex
 	stations     map[string]Station
 	stationMutex sync.RWMutex
 }
@@ -66,18 +67,13 @@ const (
 	NewBlockHashesMsg                       // 14
 	TxMsg                                   // 15
 
-	ChainEv     // 16
-	ChainSideEv // 17
 	ChainHeadEv // 18
-	LogsEv      // 19
 	TxEv        // 20
 
 	NewMinedEv
 
 	EndSize
 )
-
-var clear []Subscription
 
 var typeList = [EndSize]reflect.Type{
 	RouterTestInt:    nil,
@@ -86,20 +82,17 @@ var typeList = [EndSize]reflect.Type{
 	P2pNewPeer:       nil,
 	P2pDelPeer:       nil,
 	P2pDisconectPeer: nil,
-	ChainEv:          nil,
-	ChainSideEv:      nil,
 	ChainHeadEv:      nil,
-	LogsEv:           nil,
 	TxEv:             nil,
 }
 
+// InitRouter init router.
 func InitRounter() {
 	router = &Router{
 		unnamedFeeds: make(map[int]*Feed),
 		namedFeeds:   make(map[string]map[int]*Feed),
 		stations:     make(map[string]Station),
 	}
-	clear = make([]Subscription, 0)
 }
 
 // ReplyEvent is equivalent to `SendTo(e.To, e.From, typecode, data)`
@@ -124,9 +117,17 @@ func bindTypeToCode(typecode int, data interface{}) {
 	if typecode >= EndSize {
 		panic("dataType greater than EndSize!")
 	}
+	if data == nil {
+		return
+	}
 	typ := reflect.TypeOf(data)
-	if typeList[typecode] == nil {
+	router.unnamedMutex.RLock()
+	etyp := typeList[typecode]
+	router.unnamedMutex.RUnlock()
+	if etyp == nil {
+		router.unnamedMutex.Lock()
 		typeList[typecode] = typ
+		router.unnamedMutex.Unlock()
 		return
 	}
 	if typeList[typecode] != typ {
@@ -157,6 +158,7 @@ func StationUnregister(station Station) {
 
 func bindChannelToStation(station Station, typecode int, channel chan *Event) Subscription {
 	name := station.Name()
+	router.namedMutex.Lock()
 	_, ok := router.namedFeeds[name]
 	if !ok {
 		router.namedFeeds[name] = make(map[int]*Feed)
@@ -166,22 +168,23 @@ func bindChannelToStation(station Station, typecode int, channel chan *Event) Su
 		feed = &Feed{}
 		router.namedFeeds[name][typecode] = feed
 	}
+	router.namedMutex.Unlock()
 	return feed.Subscribe(channel)
 }
 
 func bindChannelToTypecode(typecode int, channel chan *Event) Subscription {
+	router.unnamedMutex.Lock()
 	feed, ok := router.unnamedFeeds[typecode]
 	if !ok {
 		feed = &Feed{}
 		router.unnamedFeeds[typecode] = feed
 	}
+	router.unnamedMutex.Unlock()
 	return feed.Subscribe(channel)
 }
 
 // Subscribe .
 func Subscribe(station Station, channel chan *Event, typecode int, data interface{}) Subscription {
-	router.mutex.Lock()
-	defer router.mutex.Unlock()
 
 	bindTypeToCode(typecode, data)
 
@@ -193,14 +196,13 @@ func Subscribe(station Station, channel chan *Event, typecode int, data interfac
 	} else {
 		sub = bindChannelToTypecode(typecode, channel)
 	}
-	clear = append(clear, sub)
 	return sub
 }
 
 // AdaptorRegister register P2P interface to Router
 func AdaptorRegister(adaptor ProtoAdaptor) {
-	router.mutex.Lock()
-	defer router.mutex.Unlock()
+	router.unnamedMutex.Lock()
+	defer router.unnamedMutex.Unlock()
 	if router.adaptor == nil {
 		router.adaptor = adaptor
 	}
@@ -220,14 +222,15 @@ func SendEvent(e *Event) (nsent int) {
 	//return
 	//}
 
-	router.mutex.RLock()
-	defer router.mutex.RUnlock()
+	router.unnamedMutex.RLock()
+	defer router.unnamedMutex.RUnlock()
 	if e.To != nil {
 		if e.To.IsRemote() {
 			sendToAdaptor(e)
 			return 1
 		}
 		//if len(e.To.Name()) != 0 {
+		router.namedMutex.RLock()
 		feeds, ok := router.namedFeeds[e.To.Name()]
 		if ok {
 			feed, ok := feeds[e.Typecode]
@@ -235,6 +238,7 @@ func SendEvent(e *Event) (nsent int) {
 				nsent = feed.Send(e)
 			}
 		}
+		router.namedMutex.RUnlock()
 		return
 		//}
 	}
@@ -258,11 +262,4 @@ func SendEvents(es []*Event) (nsent int) {
 		nsent += SendEvent(e)
 	}
 	return
-}
-
-// Clear .
-func Clear() {
-	for _, sub := range clear {
-		sub.Unsubscribe()
-	}
 }

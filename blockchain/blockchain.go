@@ -558,8 +558,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 // InsertChain attempts to insert the given batch of blocks in to the canonical chain or, otherwise, create a fork.
 func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
-	n, events, logs, err := bc.insertChain(chain)
-	events = append(events, &event.Event{Typecode: event.LogsEv, Data: logs})
+	n, events, _, err := bc.insertChain(chain)
 	event.SendEvents(events)
 	return n, err
 }
@@ -712,7 +711,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 
 		log.Info("Inserted new block", "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 		coalescedLogs = append(coalescedLogs, logs...)
-		events = append(events, &event.Event{Typecode: event.ChainEv, Data: ChainEvent{block, block.Hash(), logs}})
 		lastCanon = block
 	}
 
@@ -791,11 +789,6 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 	batch.Write()
 
 	if len(oldChain) > 0 {
-		go func() {
-			for _, block := range oldChain {
-				event.SendEvent(&event.Event{Typecode: event.ChainSideEv, Data: block})
-			}
-		}()
 		//  rollback state
 		if err := state.TransToSpecBlock(bc.db, bc.stateCache, bc.CurrentBlock().Hash(), oldBlock.Hash()); err != nil {
 			return nil, err
