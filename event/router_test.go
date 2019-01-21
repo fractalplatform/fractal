@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-func TestCocurrent(t *testing.T) {
+func BenchmarkSubscribe(t *testing.B) {
 	InitRounter()
 	var done sync.WaitGroup
 	quit := make(chan struct{})
