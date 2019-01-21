@@ -31,13 +31,7 @@ func IsValidName(s string) bool {
 	return regexp.MustCompile("^[a-z0-9]{8,16}$").MatchString(s)
 }
 
-func IsSameName(srcName Name, destName Name) bool {
-	if srcName == destName {
-		return true
-	}
-	return false
-}
-
+// StrToName  returns Name with string of s.
 func StrToName(s string) Name {
 	n, err := parseName(s)
 	if err != nil {
@@ -54,10 +48,12 @@ func parseName(s string) (Name, error) {
 	return n, nil
 }
 
+// BytesToName returns Name with value b.
 func BytesToName(b []byte) (Name, error) {
 	return parseName(string(b))
 }
 
+// BigToName returns Name with byte values of b.
 func BigToName(b *big.Int) (Name, error) { return BytesToName(b.Bytes()) }
 
 // SetString  sets the name to the value of b..
@@ -80,11 +76,13 @@ func (n *Name) UnmarshalJSON(data []byte) error {
 	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
 		input = input[1 : len(input)-1]
 	}
-	dec, err := parseName(string(input))
-	if err != nil {
-		return err
+	if len(input) > 0 {
+		dec, err := parseName(string(input))
+		if err != nil {
+			return err
+		}
+		*n = dec
 	}
-	*n = dec
 	return nil
 }
 
@@ -93,4 +91,5 @@ func (n Name) String() string {
 	return string(n)
 }
 
+// Big converts a name to a big integer.
 func (n Name) Big() *big.Int { return new(big.Int).SetBytes([]byte(n.String())) }
