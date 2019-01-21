@@ -479,7 +479,7 @@ func (am *AccountManager) GetAccountFromValue(accountName common.Name, key strin
 	if err := rlp.DecodeBytes(value, &acct); err != nil {
 		return nil, ErrAccountNotExist
 	}
-	if !common.IsSameName(acct.AcctName, accountName) {
+	if acct.AcctName != accountName {
 		return nil, ErrAccountNameInvalid
 	}
 	return &acct, nil
@@ -509,7 +509,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	if common.IsSameName(fromAccount, toAccount) {
+	if fromAccount == toAccount {
 		return nil
 	}
 	val, err := fromAcct.GetBalanceByID(assetID)
