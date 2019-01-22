@@ -73,13 +73,13 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 	station := router.NewRemoteStation(string(remote.peer.ID().Bytes()[:8]), &remote)
 	adaptor.peerMangaer.addActivePeer(&remote)
 	router.StationRegister(station)
-	e, _ := pack2event(&pack{Typecode: uint32(router.P2pNewPeer)}, station)
-	router.SendEvent(e)
+	url := remote.peer.Node().String()
+	router.SendTo(station, nil, router.P2pNewPeer, &url)
 	defer func() {
 		adaptor.peerMangaer.delActivePeer(&remote)
 		router.StationUnregister(station)
-		e, _ := pack2event(&pack{Typecode: uint32(router.P2pDelPeer)}, station)
-		router.SendEvent(e)
+		url := remote.peer.Node().String()
+		router.SendTo(station, nil, router.P2pDelPeer, &url)
 	}()
 
 	for {
@@ -95,15 +95,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
-		// if e.Typecode == 15 {
-		// 	data := e.Data.([]*types.Transaction)
-		// 	for _, tx := range data {
-		// 		// log.Info("huyl Recieve", "Hash:", tx.Hash().String(), "from remote", e.From.Name())
-		// 		log.Info(fmt.Sprintf("huyl Recieve Hash:%s from remote station:%x", tx.Hash().String(), []byte(e.From.Name())))
-		// 	}
-		// }
 		go router.SendEvent(e)
-		//peer.Disconnect(DiscSubprotocolError)
 	}
 }
 
@@ -145,25 +137,12 @@ func (adaptor *ProtoAdaptor) msgSend(e *router.Event) error {
 func (adaptor *ProtoAdaptor) msgBroadcast(e *router.Event) {
 	te := *e
 	te.To = nil
-	// if te.Typecode == router.TxMsg {
-	// 	data := te.Data.([]*types.Transaction)
-	// 	for _, tx := range data {
-	// 		log.Info("huyl sendToRemote 1", "Hash:", tx.Hash().String())
-	// 	}
-	// }
 	pack, err := event2pack(&te)
 	if err != nil {
 		return
 	}
 
 	send := func(peer *remotePeer) {
-		// if pack.Typecode == uint32(router.TxMsg) {
-		// 	data := te.Data.([]*types.Transaction)
-		// 	for _, tx := range data {
-		// 		log.Info(fmt.Sprintf("huyl sendToRemote 2 Hash:%s to remote station:%x", tx.Hash().String(), peer.peer.ID().Bytes()[:8]))
-		// 		// log.Info("huyl sendToRemote 2", "Hash:", tx.Hash().String(), "to remote", string([]byte(e.To.Name())))
-		// 	}
-		// }
 		p2p.Send(peer.ws, 0, pack)
 	}
 	if e.To.Data() != nil {

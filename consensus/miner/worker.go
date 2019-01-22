@@ -288,11 +288,6 @@ func (worker *Worker) commitNewWork(timestamp int64) (*types.Block, error) {
 		}
 
 		event.SendEvent(&event.Event{Typecode: event.ChainHeadEv, Data: block})
-		event.SendEvent(&event.Event{Typecode: event.ChainEv, Data: blockchain.ChainEvent{
-			Block: block,
-			Hash:  block.Hash(),
-			Logs:  logs,
-		}})
 		event.SendEvent(&event.Event{Typecode: event.NewMinedEv, Data: blockchain.NewMinedBlockEvent{
 			Block: block,
 		}})

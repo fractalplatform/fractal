@@ -16,12 +16,15 @@
 package blockchain
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
 	"math/big"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
+	"unsafe"
 
 	mapset "github.com/deckarep/golang-set"
 	"github.com/ethereum/go-ethereum/log"
@@ -39,33 +42,25 @@ const (
 )
 
 type stationStatus struct {
-	station          router.Station
-	td               *big.Int
-	currentNumber    uint64
-	currentBlockHash common.Hash
-	ancestor         uint64
-	errCh            chan struct{}
-	mutex            sync.RWMutex
+	station  router.Station
+	latest   unsafe.Pointer // *NewBlockHashesData
+	ancestor uint64
+	errCh    chan struct{}
 }
 
-func (status *stationStatus) updateStatus(hash common.Hash, number uint64, td *big.Int) {
-	status.mutex.Lock()
-	status.currentBlockHash = hash
-	status.currentNumber = number
-	status.td = td
-	status.mutex.Unlock()
+func (status *stationStatus) updateStatus(news *NewBlockHashesData) {
+	atomic.StorePointer(&status.latest, unsafe.Pointer(news))
 }
 
-func (status *stationStatus) getStatus() (common.Hash, uint64, *big.Int) {
-	status.mutex.RLock()
-	defer status.mutex.RUnlock()
-	return status.currentBlockHash, status.currentNumber, status.td
+func (status *stationStatus) getStatus() *NewBlockHashesData {
+	latest := atomic.LoadPointer(&status.latest)
+	return (*NewBlockHashesData)(latest)
 }
 
 type Downloader struct {
 	station         router.Station
 	statusCh        chan *router.Event
-	remotes         map[string]*stationStatus
+	remotes         *stack //map[string]*stationStatus
 	remotesMutex    sync.RWMutex
 	blockchain      *BlockChain
 	downloading     int32
@@ -75,40 +70,16 @@ type Downloader struct {
 	knownBlocks mapset.Set
 }
 
-// type HashBloom [256]byte
-
-// func bloom9(b common.Hash) *big.Int {
-// 	r := new(big.Int)
-
-// 	for i := 0; i < 6; i += 2 {
-// 		t := big.NewInt(1)
-// 		b := (uint(b[i+1]) + (uint(b[i]) << 8)) & 2047
-// 		r.Or(r, t.Lsh(t, b))
-// 	}
-// 	return r
-// }
-
-// // Add .
-// func (b *HashBloom) Add(hash common.Hash) {
-// 	bin := new(big.Int).SetBytes(b[:])
-// 	bin.Or(bin, bloom9(hash))
-// 	copy(b[:], bin.Bytes())
-// }
-
-// // Test .
-// func (b *HashBloom) Test(hash common.Hash) bool {
-// 	bloom := new(big.Int).SetBytes(b[:])
-// 	cmp := bloom9(hash)
-// 	return bloom.And(bloom, cmp).Cmp(cmp) == 0
-// }
-
 // NewDownloader .
 func NewDownloader(chain *BlockChain) *Downloader {
 	dl := &Downloader{
-		station:         router.NewLocalStation("downloader", nil),
-		statusCh:        make(chan *router.Event),
-		blockchain:      chain,
-		remotes:         make(map[string]*stationStatus),
+		station:    router.NewLocalStation("downloader", nil),
+		statusCh:   make(chan *router.Event),
+		blockchain: chain,
+		remotes: &stack{cmp: func(a, b interface{}) int {
+			ra, rb := a.(*stationStatus), b.(*stationStatus)
+			return rb.getStatus().TD.Cmp(ra.getStatus().TD)
+		}},
 		downloadTrigger: make(chan struct{}, 1),
 		knownBlocks:     mapset.NewSet(),
 	}
@@ -118,19 +89,24 @@ func NewDownloader(chain *BlockChain) *Downloader {
 }
 
 func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
-	// if blockhash.Number <= dl.maxNumber && dl.bloom.Test(blockhash.Hash) {
-	// 	return
-	// }
-	// dl.bloom.Add(blockhash.Hash)
+	sign := struct {
+		Hash     common.Hash
+		Complete bool
+	}{blockhash.Hash, blockhash.Completed}
 
-	if blockhash.Number <= dl.maxNumber && dl.knownBlocks.Contains(blockhash.Hash) {
+	if blockhash.Number <= dl.maxNumber && dl.knownBlocks.Contains(sign) {
 		return
+	}
+	if sign.Complete {
+		sign.Complete = false
+		dl.knownBlocks.Remove(sign)
+		sign.Complete = true
 	}
 
 	for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
 		dl.knownBlocks.Pop()
 	}
-	dl.knownBlocks.Add(blockhash.Hash)
+	dl.knownBlocks.Add(sign)
 
 	dl.maxNumber = blockhash.Number
 	go router.SendTo(nil, router.GetStationByName("broadcast"), router.NewBlockHashesMsg, blockhash)
@@ -144,48 +120,77 @@ func (dl *Downloader) syncstatus() {
 		// NewMinedEv
 		if e.Typecode == router.NewMinedEv {
 			block := e.Data.(NewMinedBlockEvent).Block
+			for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
+				dl.knownBlocks.Pop()
+			}
+			dl.knownBlocks.Add(block.Hash())
 			dl.broadcastStatus(&NewBlockHashesData{
-				Hash:   block.Hash(),
-				Number: block.NumberU64(),
-				TD:     dl.blockchain.GetTd(block.Hash(), block.NumberU64()),
+				Hash:      block.Hash(),
+				Number:    block.NumberU64(),
+				TD:        dl.blockchain.GetTd(block.Hash(), block.NumberU64()),
+				Completed: true,
 			})
 			continue
 		}
 		// NewBlockHashesMsg
 		hashdata := e.Data.(*NewBlockHashesData)
-		if status := dl.getStationStatus(e.From.Name()); status != nil {
-			status.updateStatus(hashdata.Hash, hashdata.Number, hashdata.TD)
+		if hashdata.Completed {
+			dl.updateStationStatus(e.From.Name(), hashdata)
 		}
 
 		head := dl.blockchain.CurrentBlock()
 		if hashdata.TD.Cmp(dl.blockchain.GetTd(head.Hash(), head.NumberU64())) > 0 {
 			dl.loopStart()
+			hashdata.Completed = false
 			dl.broadcastStatus(hashdata)
 		}
 	}
 }
 
-func (dl *Downloader) getStationStatus(nameID string) *stationStatus {
+func (dl *Downloader) getStationStatus(nameID string) (int, *stationStatus) {
 	dl.remotesMutex.RLock()
 	defer dl.remotesMutex.RUnlock()
-	return dl.remotes[nameID]
+	for i, v := range dl.remotes.data {
+		status := v.(*stationStatus)
+		if status.station.Name() == nameID {
+			return i, status
+		}
+	}
+	return -1, nil
+}
+
+func (dl *Downloader) updateStationStatus(nameID string, news *NewBlockHashesData) {
+	dl.remotesMutex.Lock()
+	defer dl.remotesMutex.Unlock()
+	for i, v := range dl.remotes.data {
+		status := v.(*stationStatus)
+		if status.station.Name() == nameID {
+			dl.remotes.remove(i)
+			status.updateStatus(news)
+			dl.remotes.push(status)
+			return
+		}
+	}
 }
 
 func (dl *Downloader) setStationStatus(status *stationStatus) {
 	dl.remotesMutex.Lock()
-	dl.remotes[status.station.Name()] = status
+	dl.remotes.push(status)
 	dl.remotesMutex.Unlock()
 }
 
 // AddStation .
 func (dl *Downloader) AddStation(station router.Station, td *big.Int, number uint64, hash common.Hash) {
 	status := &stationStatus{
-		station:          station,
-		td:               td,
-		currentNumber:    number,
-		currentBlockHash: hash,
-		errCh:            make(chan struct{}),
+		station: station,
+		errCh:   make(chan struct{}),
 	}
+	status.updateStatus(&NewBlockHashesData{
+		Hash:      hash,
+		TD:        td,
+		Number:    number,
+		Completed: true,
+	})
 	dl.setStationStatus(status)
 	head := dl.blockchain.CurrentBlock()
 	if td.Cmp(dl.blockchain.GetTd(head.Hash(), head.NumberU64())) > 0 {
@@ -196,26 +201,24 @@ func (dl *Downloader) AddStation(station router.Station, td *big.Int, number uin
 // DelStation .
 func (dl *Downloader) DelStation(station router.Station) {
 	dl.remotesMutex.Lock()
-	if status, exist := dl.remotes[station.Name()]; exist {
-		delete(dl.remotes, station.Name())
-		close(status.errCh)
+	defer dl.remotesMutex.Unlock()
+	for i, v := range dl.remotes.data {
+		status := v.(*stationStatus)
+		if status.station.Name() == station.Name() {
+			dl.remotes.remove(i)
+			close(status.errCh)
+			return
+		}
 	}
-	dl.remotesMutex.Unlock()
 }
 
 func (dl *Downloader) bestStation() *stationStatus {
+	if dl.remotes.Len() == 0 {
+		return nil
+	}
 	dl.remotesMutex.RLock()
 	defer dl.remotesMutex.RUnlock()
-	var (
-		bestStation *stationStatus
-		bestTd      *big.Int
-	)
-	for _, station := range dl.remotes {
-		if td := station.td; bestStation == nil || td.Cmp(bestTd) > 0 {
-			bestStation, bestTd = station, td
-		}
-	}
-	return bestStation
+	return dl.remotes.min().(*stationStatus)
 }
 
 func waitEvent(errch chan struct{}, ch chan *router.Event, timeout time.Duration) (*router.Event, error) {
@@ -345,11 +348,14 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	log.Debug("multiplexDownload start")
 	defer log.Debug("multiplexDownload end")
 	if status == nil {
+		log.Debug("status == nil")
 		return false
 	}
-	statusHash, statusNumber, statusTD := status.getStatus()
+	latestStatus := status.getStatus()
+	statusHash, statusNumber, statusTD := latestStatus.Hash, latestStatus.Number, latestStatus.TD
 	head := dl.blockchain.CurrentBlock()
 	if statusTD.Cmp(dl.blockchain.GetTd(head.Hash(), head.NumberU64())) <= 0 {
+		log.Debug("statusTD < ", "Local", dl.blockchain.GetTd(head.Hash(), head.NumberU64()), "Number", head.NumberU64(), "R", statusTD, "Number", statusNumber)
 		return false
 	}
 
@@ -363,9 +369,9 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	}
 	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor+1, status.errCh)
 	if err != nil {
+		log.Debug("ancestor err")
 		return false
 	}
-
 	downloadStart := ancestor + 1
 	downloadAmount := statusNumber - ancestor
 	if downloadAmount == 0 {
@@ -391,6 +397,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		Skip:    downloadSkip,
 		Reverse: false}, status.errCh)
 	if err != nil || len(hashes) != len(numbers) {
+		log.Debug("getBlockHashes 1 err", "err", err, "len(hashes)", len(hashes), "len(numbers)", len(numbers))
 		return false
 	}
 	if numbers[len(numbers)-1] != downloadEnd {
@@ -401,6 +408,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 			Skip:    0,
 			Reverse: false}, status.errCh)
 		if err != nil || len(hash) != 1 {
+			log.Debug("getBlockHashes 2 err", "len(hash)", len(hash), "err", err)
 			return false
 		}
 		hashes = append(hashes, hash...)
@@ -409,14 +417,14 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		numbers = append(numbers, numbers[0])
 		hashes = append(hashes, hashes[0])
 	}
-	info1 := fmt.Sprintf("1 head:%d headNumber:%d statusNumber:%d ancestor:%d\n", head.NumberU64(), headNumber, statusNumber, ancestor)
-	log.Debug(info1)
-	info2 := fmt.Sprintf("2 head diff:%d status diff:%d\n", dl.blockchain.GetTd(head.Hash(), head.NumberU64()).Uint64(), statusTD.Uint64())
-	log.Debug(info2)
-	info3 := fmt.Sprintf("3 download start:%d end:%d amount:%d bluk:%d\n", downloadStart, downloadEnd, downloadAmount, downloadBulk)
-	log.Debug(info3)
-	info4 := fmt.Sprintf("4 numbers:%d hashes:%d\n", len(numbers), len(hashes))
-	log.Debug(info4)
+	// info1 := fmt.Sprintf("1 head:%d headNumber:%d statusNumber:%d ancestor:%d\n", head.NumberU64(), headNumber, statusNumber, ancestor)
+	// log.Debug(info1)
+	// info2 := fmt.Sprintf("2 head diff:%d status diff:%d\n", dl.blockchain.GetTd(head.Hash(), head.NumberU64()).Uint64(), statusTD.Uint64())
+	// log.Debug(info2)
+	// info3 := fmt.Sprintf("3 download start:%d end:%d amount:%d bluk:%d\n", downloadStart, downloadEnd, downloadAmount, downloadBulk)
+	// log.Debug(info3)
+	// info4 := fmt.Sprintf("4 numbers:%d hashes:%d\n", len(numbers), len(hashes))
+	// log.Debug(info4)
 	n, err := dl.assignDownloadTask(hashes, numbers)
 	status.ancestor = n
 	if err != nil {
@@ -425,6 +433,12 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 
 	head = dl.blockchain.CurrentBlock()
 	if statusTD.Cmp(dl.blockchain.GetTd(head.Hash(), head.NumberU64())) <= 0 {
+		dl.broadcastStatus(&NewBlockHashesData{
+			Hash:      head.Hash(),
+			Number:    head.NumberU64(),
+			TD:        dl.blockchain.GetTd(head.Hash(), head.NumberU64()),
+			Completed: true,
+		})
 		return false
 	}
 	return true
@@ -459,13 +473,17 @@ func (dl *Downloader) loop() {
 
 func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64) (uint64, error) {
 	log.Debug(fmt.Sprint("assingDownloadTask:", len(hashes), len(numbers), numbers))
-	workers := new(stack)
+	workers := &stack{cmp: dl.remotes.cmp}
 	dl.remotesMutex.RLock()
-	for _, v := range dl.remotes {
-		workers.push(v)
-	}
+	workers.data = append(workers.data, dl.remotes.data...)
 	dl.remotesMutex.RUnlock()
-	taskes := new(stack)
+	taskes := &stack{
+		data: make([]interface{}, 0, len(numbers)-1),
+		cmp: func(a, b interface{}) int {
+			wa, wb := a.(*downloadTask), b.(*downloadTask)
+			return int(wa.startNumber) - int(wb.startNumber)
+		},
+	}
 	resultCh := make(chan *downloadTask)
 	for i := len(numbers) - 1; i > 0; i-- {
 		taskes.push(&downloadTask{
@@ -551,7 +569,8 @@ func (task *downloadTask) Do() {
 		task.errorTotal++
 		task.result <- task
 	}()
-	if task.worker.currentNumber < task.endNumber {
+	latestStatus := task.worker.getStatus()
+	if latestStatus.Number < task.endNumber {
 		return
 	}
 	remote := task.worker.station
@@ -571,7 +590,6 @@ func (task *downloadTask) Do() {
 		if len(hashes) > 0 {
 			log.Debug(fmt.Sprintf("0:%x\n0e:%x\ns:%x\nse:%x", hashes[0], hashes[len(hashes)-1], task.startHash, task.endHash))
 		}
-
 		return
 	}
 	downloadAmount := task.endNumber - task.startNumber + 1
@@ -625,24 +643,54 @@ func (task *downloadTask) Do() {
 }
 
 type stack struct {
+	cmp  func(interface{}, interface{}) int
 	data []interface{}
 }
 
-func (s *stack) push(v interface{}) {
+func (s *stack) Swap(i, j int) {
+	s.data[i], s.data[j] = s.data[j], s.data[i]
+}
+
+func (s *stack) Less(i, j int) bool {
+	return s.cmp(s.data[i], s.data[j]) < 0
+}
+
+func (s *stack) Push(v interface{}) {
 	s.data = append(s.data, v)
+}
+
+func (s *stack) Pop() interface{} {
+	v := s.data[len(s.data)-1]
+	s.data = s.data[:len(s.data)-1]
+	return v
+}
+
+func (s *stack) Len() int {
+	return len(s.data)
 }
 
 func (s *stack) pop() interface{} {
 	if len(s.data) == 0 {
 		return nil
 	}
-	v := s.data[len(s.data)-1]
-	s.data = s.data[:len(s.data)-1]
-	return v
+	return heap.Pop(s)
 }
 
-func (s *stack) len() int {
-	return len(s.data)
+func (s *stack) push(v interface{}) {
+	heap.Push(s, v)
+}
+
+func (s *stack) remove(i int) {
+	if len(s.data) > i {
+		heap.Remove(s, i)
+	}
+}
+
+func (s *stack) min() interface{} {
+	if len(s.data) == 0 {
+		return nil
+	}
+	return s.data[0]
 }
 
 func (s *stack) clear() {
