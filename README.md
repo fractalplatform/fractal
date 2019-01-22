@@ -7,6 +7,10 @@ Welcome to the Fractal source code repository!
 ## Homepage
 https://fractalproject.com/
 
+## Official documents
+[白皮书](https://fractalproject.com/fractal-whitepaper.pdf)  [whitepaper](https://fractalproject.com/fractal-whitepaper-en.pdf)
+
+[技术白皮书](https://fractalproject.com/fractal-technical-whitepaper.pdf)  [technical whitepaper](https://fractalproject.com/fractal-technical-whitepaper-en.pdf)
 
 
 ## Getting Started
