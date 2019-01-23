@@ -1,6 +1,7 @@
 # Fractal
 [![Build Status](https://travis-ci.org/fractalplatform/fractal.svg?branch=master)](https://travis-ci.org/fractalplatform/fractal)
 [![GoDoc](https://godoc.org/github.com/fractalplatform/fractal?status.svg)](https://godoc.org/github.com/fractalplatform/fractal)
+[![Coverage Status](https://coveralls.io/repos/github/fractalplatform/fractal/badge.svg?branch=master)](https://coveralls.io/github/fractalplatform/fractal?branch=master)
 
 Welcome to the Fractal source code repository!
 

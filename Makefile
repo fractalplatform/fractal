@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-TEST = $(shell go list ./... | grep -v test | grep -v txpool)
 
 all:
 	@go install ./cmd/ft
@@ -30,7 +29,6 @@ run:
 stop:
 clear:
 test: all
-	@echo $(TEST)
-	go test $(TEST)
+	./test.sh
 
 .PHONY: all run stop clear test
