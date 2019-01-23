@@ -19,5 +19,12 @@ language: go
 go:
   - 1.9.2
 
-install:
+before_install:
+- go get golang.org/x/tools/cmd/cover
+- go get github.com/mattn/goveralls
+
+script:
   - make test
+
+after_success:
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci 
