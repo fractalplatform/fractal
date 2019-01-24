@@ -235,7 +235,9 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		}
 	}
 
-	if header.Time.Uint64()%dpos.config.epochInterval() == 0 {
+	parent_epoch := dpos.config.epoch(parent.Time.Uint64())
+	current_epoch := dpos.config.epoch(header.Time.Uint64())
+	if parent_epoch != current_epoch {
 		// next epoch
 		sys.updateElectedProducers(header.Time.Uint64())
 	}
