@@ -66,12 +66,10 @@ const (
 	BlockHashMsg                            // 13
 	NewBlockHashesMsg                       // 14
 	TxMsg                                   // 15
-
-	ChainHeadEv // 18
-	TxEv        // 20
-
-	NewMinedEv
-
+	P2pEndSize
+	ChainHeadEv = 1024 + iota - P2pEndSize // 1024
+	TxEv                                   // 1025
+	NewMinedEv                             // 1026
 	EndSize
 )
 
@@ -107,7 +105,7 @@ func ReplyEvent(e *Event, typecode int, data interface{}) {
 
 // GetTypeByCode return Type by typecode
 func GetTypeByCode(typecode int) reflect.Type {
-	if typecode < EndSize {
+	if typecode < P2pEndSize {
 		return typeList[typecode]
 	}
 	return nil

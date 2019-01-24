@@ -29,24 +29,10 @@ type PrivateP2pAPI struct {
 	b Backend
 }
 
-type NotifyEvent struct {
-	From     string
-	To       string
-	Typecode uint32
-	Data     []byte
-}
-
-func newNotifyEvent(e *router.Event) *NotifyEvent {
-	notify := &NotifyEvent{
-		Typecode: uint32(e.Typecode),
-	}
-	if e.From != nil {
-		notify.From = e.From.Name()
-	}
-	if e.To != nil {
-		notify.To = e.To.Name()
-	}
-	return notify
+type notifyEvent struct {
+	Count int
+	Add   bool
+	Url   *string
 }
 
 // NewPrivateP2pAPI creates a new p2p service that gives information about p2p networking.
@@ -66,15 +52,20 @@ func (api *PrivateP2pAPI) PeerEvents(ctx context.Context) (*rpc.Subscription, er
 
 	go func() {
 		ch := make(chan *router.Event)
-		subNew := router.Subscribe(nil, ch, router.P2pNewPeer, nil)
-		subDel := router.Subscribe(nil, ch, router.P2pDelPeer, nil)
+		var pstring *string
+		subNew := router.Subscribe(nil, ch, router.P2pNewPeer, pstring)
+		subDel := router.Subscribe(nil, ch, router.P2pDelPeer, pstring)
 		defer subNew.Unsubscribe()
 		defer subDel.Unsubscribe()
 
 		for {
 			select {
 			case e := <-ch:
-				notifier.Notify(rpcSub.ID, newNotifyEvent(e))
+				notifier.Notify(rpcSub.ID, &notifyEvent{
+					Count: api.b.PeerCount(),
+					Add:   e.Typecode == router.P2pNewPeer,
+					Url:   e.Data.(*string),
+				})
 			case <-rpcSub.Err():
 				return
 			case <-notifier.Closed():

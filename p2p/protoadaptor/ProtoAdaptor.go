@@ -1,6 +1,8 @@
 package protoadaptor
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -180,7 +182,7 @@ func pack2event(pack *pack, station router.Station) (*router.Event, error) {
 	isPtr := false
 	typ := router.GetTypeByCode(int(pack.Typecode))
 	if typ == nil {
-		elem = pack.Payload
+		return nil, errors.New(fmt.Sprint("unknow typecode:", pack.Typecode))
 	} else {
 		//for typ.Kind() == reflect.Ptr {
 		if typ.Kind() == reflect.Ptr {
