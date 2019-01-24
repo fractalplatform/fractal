@@ -20,6 +20,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -28,19 +29,19 @@ import (
 // the executable/pending queue; and for storing gapped transactions for the non-
 // executable/future queue, with minor behavioral changes.
 type txList struct {
-	strict  bool         // Whether nonces are strictly continuous or not
-	txs     *txSortedMap // Heap indexed sorted hash map of the transactions
-	costcap *big.Int     // Price of the highest costing transaction (reset only if exceeds balance)
-	gascap  uint64       // Gas limit of the highest spending transaction (reset only if exceeds block limit)
+	strict     bool         // Whether nonces are strictly continuous or not
+	txs        *txSortedMap // Heap indexed sorted hash map of the transactions
+	gascostcap *big.Int     // Price of the highest gas costing transaction (reset only if exceeds balance)
+	gascap     uint64       // Gas limit of the highest spending transaction (reset only if exceeds block limit)
 }
 
 // newTxList create a new transaction list for maintaining nonce-indexable fast,
 // gapped, sortable transaction lists.
 func newTxList(strict bool) *txList {
 	return &txList{
-		strict:  strict,
-		txs:     newTxSortedMap(),
-		costcap: new(big.Int),
+		strict:     strict,
+		txs:        newTxSortedMap(),
+		gascostcap: new(big.Int),
 	}
 }
 
@@ -70,9 +71,8 @@ func (l *txList) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Tran
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
 
-	if cost := tx.Cost(); l.costcap.Cmp(cost) < 0 {
-
-		l.costcap = cost
+	if cost := tx.Cost(); l.gascostcap.Cmp(cost) < 0 {
+		l.gascostcap = cost
 	}
 
 	// todo change action
@@ -93,18 +93,21 @@ func (l *txList) Forward(threshold uint64) []*types.Transaction {
 // than the provided thresholds. Every removed transaction is returned for any
 // post-removal maintenance. Strict-mode invalidated transactions are also
 // returned.
-func (l *txList) Filter(costLimit *big.Int, gasLimit uint64) ([]*types.Transaction, []*types.Transaction) {
+func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, getBalance func(name common.Name, assetID uint64) (*big.Int, error)) ([]*types.Transaction, []*types.Transaction) {
 	// If all transactions are below the threshold, short circuit
-	if l.costcap.Cmp(costLimit) <= 0 && l.gascap <= gasLimit {
-		return nil, nil
+	if l.gascostcap.Cmp(costLimit) > 0 {
+		l.gascostcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
 	}
-	l.costcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
-	l.gascap = gasLimit
+	if l.gascap > gasLimit {
+		l.gascap = gasLimit
+	}
 
 	// Filter out all the transactions above the account's funds
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
+		act := tx.GetActions()[0]
+		balance, _ := getBalance(act.Sender(), act.AssetID())
 		// todo change action
-		return tx.Cost().Cmp(costLimit) > 0 || tx.GetActions()[0].Gas() > gasLimit
+		return act.Value().Cmp(balance) > 0 || tx.Cost().Cmp(costLimit) > 0 || act.Gas() > gasLimit
 	})
 
 	// If the list was strict, filter anything above the lowest nonce

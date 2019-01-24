@@ -859,13 +859,14 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		if err != nil {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
-		drops, _ := list.Filter(balance, tp.currentMaxGas)
+		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.curAccountManager.GetAccountBalanceByID)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable queued transaction", "hash", hash)
 			tp.all.Remove(hash)
 			tp.priced.Removed()
 		}
+
 		// Gather all executable transactions and promote them
 		nonce, err = tp.pendingAccountManager.GetNonce(addr)
 		if err != nil && err != am.ErrAccountNotExist {
@@ -1039,20 +1040,21 @@ func (tp *TxPool) demoteUnexecutables() {
 			tp.all.Remove(hash)
 			tp.priced.Removed()
 		}
+
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID)
+		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID)
 		if err != nil && err != am.ErrAccountNotExist {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
-		drops, invalids := list.Filter(balance, tp.currentMaxGas)
-
+		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.curAccountManager.GetAccountBalanceByID)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending transaction", "hash", hash)
 			tp.all.Remove(hash)
 			tp.priced.Removed()
 		}
+
 		for _, tx := range invalids {
 			hash := tx.Hash()
 			log.Trace("Demoting pending transaction", "hash", hash)

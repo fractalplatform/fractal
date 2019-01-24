@@ -59,7 +59,7 @@ func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.gasPrice
 func (tx *Transaction) Cost() *big.Int {
 	total := new(big.Int)
 	for _, a := range tx.actions {
-		total.Mul(tx.gasPrice, new(big.Int).SetUint64(a.Gas()))
+		total.Add(total, new(big.Int).Mul(tx.gasPrice, new(big.Int).SetUint64(a.Gas())))
 	}
 	return total
 }
