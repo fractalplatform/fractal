@@ -19,6 +19,9 @@ package common
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateName(t *testing.T) {
@@ -85,4 +88,20 @@ func TestNameUnmarshalJSON(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestNameRLP(t *testing.T) {
+	name := Name("testname")
+	nbytes, err := rlp.EncodeToBytes(&name)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newName := new(Name)
+
+	if err := rlp.DecodeBytes(nbytes, &newName); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, name.String(), newName.String())
 }

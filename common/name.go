@@ -18,9 +18,12 @@ package common
 
 import (
 	"fmt"
+	"io"
 	"math/big"
 	"regexp"
 	"strings"
+
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // Name represents the account name
@@ -84,6 +87,34 @@ func (n *Name) UnmarshalJSON(data []byte) error {
 		*n = dec
 	}
 	return nil
+}
+
+// EncodeRLP implements rlp.Encoder
+func (n *Name) EncodeRLP(w io.Writer) error {
+	str := n.String()
+	if len(str) != 0 {
+		if _, err := parseName(str); err != nil {
+			return err
+		}
+	}
+	rlp.Encode(w, str)
+	return nil
+}
+
+// DecodeRLP implements rlp.Decoder
+func (n *Name) DecodeRLP(s *rlp.Stream) error {
+	var str string
+	err := s.Decode(&str)
+	if err == nil {
+		if len(str) != 0 {
+			name, err := parseName(str)
+			if err != nil {
+				return err
+			}
+			*n = name
+		}
+	}
+	return err
 }
 
 // String implements fmt.Stringer.

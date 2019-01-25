@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -40,18 +41,17 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x94bc40bd4c5284295b35e38ad1f4bec48ab4877b85bd8d77eef422d227c74ab0")
+		customghash = common.HexToHash("0x8f821669d30590f23078b78b0d30e9255c80d8ce62a2f7c5f9acc61012cfc5e7")
 		customg     = Genesis{
-			Config: &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio",
-				SysToken: "fractalfoundation"},
+			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:          dpos.DefaultConfig,
+			Coinbase:      "coinbase",
 			AllocAccounts: DefaultGenesisAccounts(),
 			AllocAssets:   DefaultGenesisAssets(),
 		}
 		oldcustomg = customg
 	)
-	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystemio",
-		SysToken: "ftoken"}
+	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
 
 	tests := []struct {
 		name       string
@@ -82,7 +82,9 @@ func TestSetupGenesis(t *testing.T) {
 		{
 			name: "mainnet block in DB, genesis == nil",
 			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
-				DefaultGenesis().Commit(db)
+				if _, err := DefaultGenesis().Commit(db); err != nil {
+					return nil, nil, common.Hash{}, err
+				}
 				return SetupGenesisBlock(db, nil)
 			},
 			wantHash:   defaultgenesisBlockHash,
@@ -92,7 +94,10 @@ func TestSetupGenesis(t *testing.T) {
 		{
 			name: "compatible config in DB",
 			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
-				oldcustomg.Commit(db)
+				if _, err := oldcustomg.Commit(db); err != nil {
+					return nil, nil, common.Hash{}, err
+				}
+				fmt.Println("=====>SetupGenesisBlock")
 				return SetupGenesisBlock(db, &customg)
 			},
 			wantHash:   customghash,
@@ -101,16 +106,20 @@ func TestSetupGenesis(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		db := fdb.NewMemDatabase()
+		fmt.Println("=====>", i, test.name)
+
 		config, dpos, hash, err := test.fn(db)
+		fmt.Println("=====>", i, test.name, err)
+
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
 			spew := spew.ConfigState{DisablePointerAddresses: true, DisableCapacities: true}
 			t.Errorf("%s: returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
 		}
 		if !reflect.DeepEqual(config, test.wantConfig) {
-			t.Errorf("%s:\nreturned %v\nwant     %v", test.name, config, test.wantConfig)
+			t.Errorf("%s:\n returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 
 		if !reflect.DeepEqual(dpos, test.wantDpos) {

@@ -29,8 +29,8 @@ import (
 var (
 	testAction = NewAction(
 		Transfer,
-		common.Name("from"),
-		common.Name("to"),
+		common.Name("fromname"),
+		common.Name("totoname"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
