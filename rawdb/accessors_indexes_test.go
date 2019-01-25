@@ -29,9 +29,9 @@ import (
 func TestLookupStorage(t *testing.T) {
 	db := fdb.NewMemDatabase()
 
-	action1 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action1"))
-	action2 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action2"))
-	action3 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action3"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action1"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action2"))
+	action3 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action3"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
@@ -40,7 +40,7 @@ func TestLookupStorage(t *testing.T) {
 	txs := []*types.Transaction{tx1, tx2, tx3}
 
 	block := &types.Block{
-		Head: &types.Header{Number: big.NewInt(314)},
+		Head: &types.Header{Number: big.NewInt(314), Coinbase: "coinbase"},
 		Txs:  txs,
 	}
 

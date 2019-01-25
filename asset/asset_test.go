@@ -397,10 +397,10 @@ func TestAsset_IssueAsset(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"nilname", fields{astdb}, args{"", "z", big.NewInt(1), 2, common.Name("11")}, true},
-		{"nilsym", fields{astdb}, args{"22", "", big.NewInt(2), 2, common.Name("11")}, true},
-		{"exist", fields{astdb}, args{"ft", "3", big.NewInt(2), 2, common.Name("11")}, true},
-		{"normal", fields{astdb}, args{"ft22", "23", big.NewInt(2), 2, common.Name("11")}, false},
+		{"nilname", fields{astdb}, args{"", "z", big.NewInt(1), 2, common.Name("11111111")}, true},
+		{"nilsym", fields{astdb}, args{"22", "", big.NewInt(2), 2, common.Name("11111111")}, true},
+		{"exist", fields{astdb}, args{"ft", "3", big.NewInt(2), 2, common.Name("11111111")}, true},
+		{"normal", fields{astdb}, args{"ft22", "23", big.NewInt(2), 2, common.Name("11111111")}, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{

@@ -39,8 +39,8 @@ func TestTxJournal(t *testing.T) {
 	txsMap := make(map[common.Name][]*types.Transaction)
 	tx := newTx(big.NewInt(200), types.NewAction(
 		types.Transfer,
-		common.Name("from"),
-		common.Name("to"),
+		common.Name("fromtest"),
+		common.Name("tototest"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),

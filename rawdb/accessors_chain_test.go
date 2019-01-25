@@ -34,8 +34,9 @@ func TestHeaderStorage(t *testing.T) {
 
 	// Create a test header to move around the database and make sure it's really new
 	header := &types.Header{
-		Number: big.NewInt(42),
-		Extra:  []byte("test header"),
+		Number:   big.NewInt(42),
+		Extra:    []byte("test header"),
+		Coinbase: "coinbase",
 	}
 	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry != nil {
 		t.Fatalf("Non existent header returned: %v", entry)
@@ -68,8 +69,8 @@ func TestHeaderStorage(t *testing.T) {
 // Tests block body storage and retrieval operations.
 func TestBodyStorage(t *testing.T) {
 	db := fdb.NewMemDatabase()
-	action1 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
-	action2 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
@@ -130,10 +131,11 @@ func TestBlockStorage(t *testing.T) {
 		TxsRoot:      common.BytesToHash([]byte("test txhash")),
 		ReceiptsRoot: common.BytesToHash([]byte("test rcpthash")),
 		Number:       big.NewInt(1),
+		Coinbase:     "coinbase",
 	}
 
-	action1 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
-	action2 := types.NewAction(types.Transfer, common.Name("from"), common.Name("to"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
@@ -222,8 +224,8 @@ func TestHeadStorage(t *testing.T) {
 	blockHead := &types.Block{
 		Head: &types.Header{Extra: []byte("test block header")},
 	}
-	blockFull := &types.Block{Head: &types.Header{Extra: []byte("test block full")}}
-	blockFast := types.Block{Head: &types.Header{Extra: []byte("test block fast")}}
+	blockFull := &types.Block{Head: &types.Header{Extra: []byte("test block full"), Coinbase: "coinbase"}}
+	blockFast := types.Block{Head: &types.Header{Extra: []byte("test block fast"), Coinbase: "coinbase"}}
 
 	// Check that no head entries are in a pristine database
 	if entry := ReadHeadHeaderHash(db); entry != (common.Hash{}) {
