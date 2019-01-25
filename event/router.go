@@ -119,16 +119,15 @@ func bindTypeToCode(typecode int, data interface{}) {
 		return
 	}
 	typ := reflect.TypeOf(data)
-	router.unnamedMutex.RLock()
+	router.unnamedMutex.Lock()
 	etyp := typeList[typecode]
-	router.unnamedMutex.RUnlock()
 	if etyp == nil {
-		router.unnamedMutex.Lock()
 		typeList[typecode] = typ
 		router.unnamedMutex.Unlock()
 		return
 	}
-	if typeList[typecode] != typ {
+	router.unnamedMutex.Unlock()
+	if etyp != typ {
 		panic(fmt.Sprintf("%s mismatch %s!", typ.String(), typeList[typecode].String()))
 	}
 }
