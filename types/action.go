@@ -38,16 +38,25 @@ const (
 	Transfer ActionType = iota
 	// CreateContract repesents the create contract action.
 	CreateContract
+)
+
+const (
 	// CreateAccount repesents the create account.
-	CreateAccount
+	CreateAccount ActionType = 0x100 + iota
 	UpdateAccount
 	DeleteAccount
-	// Asset operation
-	IncreaseAsset
+)
+
+const (
+	// IncreaseAsset Asset operation
+	IncreaseAsset ActionType = 0x200 + iota
 	IssueAsset
 	SetAssetOwner
-	// dpos
-	Miner
+)
+
+const (
+	// Miner dpos
+	Miner ActionType = 0x300 + iota
 	RegProducer
 	UpdateProducer
 	UnregProducer

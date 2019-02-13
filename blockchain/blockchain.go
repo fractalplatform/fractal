@@ -34,7 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -832,10 +832,6 @@ func (bc *BlockChain) addBadBlock(block *types.Block) {
 func (bc *BlockChain) reportBlock(block *types.Block, receipts []*types.Receipt, err error) {
 	bc.addBadBlock(block)
 
-	var receiptString string
-	for _, receipt := range receipts {
-		receiptString += fmt.Sprintf("\t%x\n", receipt)
-	}
 	log.Error(fmt.Sprintf(`
 ########## BAD BLOCK #########
 Error: %v
@@ -844,10 +840,9 @@ Chain config: %v
 
 Number: %v
 Hash: 0x%x
-%v
 
 ##############################
-`, err, bc.chainConfig, block.Number(), block.Hash(), receiptString))
+`, err, bc.chainConfig, block.Number(), block.Hash()))
 }
 
 // GetBlockNumber retrieves the block number belonging to the given hash from the cache or database
