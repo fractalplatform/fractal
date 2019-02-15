@@ -136,11 +136,12 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	root := statedb.IntermediateRoot()
+	gjson, _ := g.MarshalJSON()
 	head := &types.Header{
 		Number:     number,
 		Time:       new(big.Int).SetUint64(g.Timestamp),
 		ParentHash: common.Hash{},
-		Extra:      g.ExtraData,
+		Extra:      gjson,
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Difficulty: g.Difficulty,
