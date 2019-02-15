@@ -246,7 +246,7 @@ func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByN
 	sub := router.Subscribe(from, ch, router.BlockHashMsg, []common.Hash{})
 	defer sub.Unsubscribe()
 	router.SendTo(from, to, router.DownloaderGetBlockHashMsg, req)
-	e, err := waitEvent(errch, ch, 2*time.Second)
+	e, err := waitEvent(errch, ch, time.Second+time.Duration(req.Amount)*(10*time.Millisecond))
 	if err != nil {
 		return nil, err
 	}
@@ -258,7 +258,7 @@ func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData
 	sub := router.Subscribe(from, ch, router.BlockHeadersMsg, []*types.Header{})
 	defer sub.Unsubscribe()
 	router.SendTo(from, to, router.DownloaderGetBlockHeadersMsg, req)
-	e, err := waitEvent(errch, ch, 2*time.Second)
+	e, err := waitEvent(errch, ch, time.Second+time.Duration(req.Amount)*(50*time.Millisecond))
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +270,7 @@ func getBlocks(from router.Station, to router.Station, hashes []common.Hash, err
 	sub := router.Subscribe(from, ch, router.BlockBodiesMsg, []*types.Body{})
 	defer sub.Unsubscribe()
 	router.SendTo(from, to, router.DownloaderGetBlockBodiesMsg, hashes)
-	e, err := waitEvent(errch, ch, 2*time.Second)
+	e, err := waitEvent(errch, ch, time.Second+time.Duration(len(hashes))*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	}
 	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor+1, status.errCh)
 	if err != nil {
-		log.Debug("ancestor err")
+		log.Debug(fmt.Sprint("ancestor err", err))
 		return false
 	}
 	downloadStart := ancestor + 1
@@ -565,6 +565,7 @@ type downloadTask struct {
 }
 
 func (task *downloadTask) Do() {
+
 	defer func() {
 		task.errorTotal++
 		task.result <- task
