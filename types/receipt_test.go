@@ -19,6 +19,8 @@ package types
 import (
 	"testing"
 
+	"github.com/fractalplatform/fractal/utils/rlp"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,12 +28,11 @@ func TestReceiptEncodeAndDecode(t *testing.T) {
 	testR := NewReceipt([]byte("root"), 1000, 1000)
 	testR.Logs = make([]*Log, 0)
 	testR.ActionResults = append(testR.ActionResults, &ActionResult{Status: ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)})
-	bytes, err := testR.EncodeRLP()
+	bytes, err := rlp.EncodeToBytes(testR)
 	if err != nil {
 		t.Fatal(err)
 	}
 	newR := &Receipt{}
-	newR.DecodeRLP(bytes)
-
+	rlp.DecodeBytes(bytes, newR)
 	assert.Equal(t, testR, newR)
 }

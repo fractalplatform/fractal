@@ -327,8 +327,8 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			}
 			statedb.CommitCache(block.Hash())
 
-			block.Head.ReceiptsRoot = types.DeriveReceiPtMerkleRoot(b.receipts)
-			block.Head.TxsRoot = types.DeriveTxMerkleRoot(b.txs)
+			block.Head.ReceiptsRoot = types.DeriveReceiptsMerkleRoot(b.receipts)
+			block.Head.TxsRoot = types.DeriveTxsMerkleRoot(b.txs)
 			block.Head.Bloom = types.CreateBloom(b.receipts)
 			return block, b.receipts
 		}
