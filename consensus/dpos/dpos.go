@@ -88,7 +88,7 @@ func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 	if err != nil {
 		return false
 	}
-	return accountDB.IsValidSign(common.StrToName(name), types.Miner, common.BytesToPubKey(pubkey)) == nil
+	return accountDB.IsValidSign(common.StrToName(name), types.ActionType(0), common.BytesToPubKey(pubkey)) == nil
 }
 
 func Genesis(cfg *Config, state *state.StateDB, height uint64) error {

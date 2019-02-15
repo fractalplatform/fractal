@@ -161,9 +161,11 @@ type TxByPrice []*Transaction
 func (s TxByPrice) Len() int           { return len(s) }
 func (s TxByPrice) Less(i, j int) bool { return s[i].GasPrice().Cmp(s[j].GasPrice()) > 0 }
 func (s TxByPrice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-func (s *TxByPrice) Push(x interface{}) {
-	*s = append(*s, x.(*Transaction))
-}
+
+// Push implements heap push.
+func (s *TxByPrice) Push(x interface{}) { *s = append(*s, x.(*Transaction)) }
+
+// Pop implements heap pop.
 func (s *TxByPrice) Pop() interface{} {
 	old := *s
 	n := len(old)

@@ -46,11 +46,9 @@ func TestActionEncodeAndDecode(t *testing.T) {
 	}
 
 	actAction := &Action{}
-
 	if err := rlp.Decode(bytes.NewReader(actionBytes), &actAction); err != nil {
 		t.Fatal(err)
 	}
 
 	assert.Equal(t, testAction, actAction)
-	assert.Equal(t, testAction.Hash(), actAction.Hash())
 }

@@ -20,6 +20,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/fractalplatform/fractal/utils/rlp"
+
 	"github.com/fractalplatform/fractal/common"
 	"github.com/stretchr/testify/assert"
 )
@@ -54,31 +56,34 @@ func TestBlockEncodeRLPAndDecodeRLP(t *testing.T) {
 	assert.Equal(t, testBlock.Header(), newBlock.Header())
 	assert.Equal(t, testBlock.Transactions()[0].GasAssetID(), newBlock.Transactions()[0].GasAssetID())
 	assert.Equal(t, testBlock.Transactions()[0].GasPrice(), newBlock.Transactions()[0].GasPrice())
-	assert.Equal(t, testBlock.Transactions()[0].Hash(), newBlock.Transactions()[0].Hash())
 	assert.Equal(t, testBlock.Hash(), newBlock.Hash())
 }
 
-func TestBlockHeaderMarshalAndUnmarshal(t *testing.T) {
-	bytes, err := testHeader.Marshal()
+func TestBlockHeaderEncodeRLPAndDecodeRLP(t *testing.T) {
+	bytes, err := rlp.EncodeToBytes(testHeader)
 	if err != nil {
 		t.Fatal(err)
 	}
 	newHeader := &Header{}
-	if err := newHeader.Unmarshal(bytes); err != nil {
+
+	if err := rlp.DecodeBytes(bytes, newHeader); err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, testHeader, newHeader)
 	assert.Equal(t, testHeader.Hash(), newHeader.Hash())
 }
 
-func TestBlockHeaderEncodeRLPAndDecodeRLP(t *testing.T) {
-	bytes, err := testHeader.EncodeRLP()
-	if err != nil {
-		t.Fatal(err)
+func TestSortByNumber(t *testing.T) {
+
+	block0 := NewBlock(&Header{Number: big.NewInt(0)}, nil, nil)
+	block1 := NewBlock(&Header{Number: big.NewInt(1)}, nil, nil)
+	block2 := NewBlock(&Header{Number: big.NewInt(2)}, nil, nil)
+
+	blocks := []*Block{block1, block2, block0}
+
+	BlockBy(Number).Sort(blocks)
+
+	for i := 0; i < len(blocks); i++ {
+		assert.Equal(t, uint64(i), blocks[i].NumberU64())
 	}
-	newHeader := &Header{}
-	if err := newHeader.DecodeRLP(bytes); err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, testHeader, newHeader)
 }

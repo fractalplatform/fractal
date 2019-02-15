@@ -36,6 +36,7 @@ func TestSigning(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if bytes.Compare(pubkey.Bytes(), exp) != 0 {
 		t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, exp)
 	}
