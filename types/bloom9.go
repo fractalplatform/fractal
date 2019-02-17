@@ -1,4 +1,4 @@
-/// Copyright 2018 The Fractal Team Authors
+// Copyright 2018 The Fractal Team Authors
 // This file is part of the fractal project.
 //
 // This program is free software: you can redistribute it and/or modify
@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package types
 
 import (
@@ -67,17 +68,19 @@ func (b Bloom) Big() *big.Int {
 	return new(big.Int).SetBytes(b[:])
 }
 
+// Bytes converts b to bytes.
 func (b Bloom) Bytes() []byte {
 	return b[:]
 }
 
+// Test use for bloom test .
 func (b Bloom) Test(test *big.Int) bool {
 	return BloomLookup(b, test)
 }
 
+// TestBytes use for bloom test .
 func (b Bloom) TestBytes(test []byte) bool {
 	return b.Test(new(big.Int).SetBytes(test))
-
 }
 
 // MarshalText encodes b as a hex string with 0x prefix.
@@ -90,15 +93,16 @@ func (b *Bloom) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("Bloom", input, b[:])
 }
 
+// CreateBloom create bloom by receiptes.
 func CreateBloom(receipts []*Receipt) Bloom {
 	bin := new(big.Int)
 	for _, receipt := range receipts {
 		bin.Or(bin, LogsBloom(receipt.Logs))
 	}
-
 	return BytesToBloom(bin.Bytes())
 }
 
+// LogsBloom create bloom by logs.
 func LogsBloom(logs []*Log) *big.Int {
 	bin := new(big.Int)
 	for _, log := range logs {
@@ -107,7 +111,6 @@ func LogsBloom(logs []*Log) *big.Int {
 			bin.Or(bin, bloom9(b[:]))
 		}
 	}
-
 	return bin
 }
 
@@ -125,11 +128,12 @@ func bloom9(b []byte) *big.Int {
 	return r
 }
 
+// Bloom9 export func
 var Bloom9 = bloom9
 
+// BloomLookup look up .
 func BloomLookup(bin Bloom, topic bytesBacked) bool {
 	bloom := bin.Big()
 	cmp := bloom9(topic.Bytes()[:])
-
 	return bloom.And(bloom, cmp).Cmp(cmp) == 0
 }

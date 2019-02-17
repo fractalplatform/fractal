@@ -19,12 +19,10 @@ package types
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"sort"
 	"sync/atomic"
-	"time"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -49,46 +47,7 @@ type Header struct {
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
-func (h *Header) Hash() common.Hash {
-	return rlpHash(h)
-}
-
-// HashNoNonce returns the hash which is used as input for the proof-of-work search.
-func (h *Header) HashNoNonce() common.Hash {
-	return rlpHash([]interface{}{
-		h.ParentHash,
-		h.Coinbase,
-		h.Root,
-		h.TxsRoot,
-		h.ReceiptsRoot,
-		h.Bloom,
-		h.Difficulty,
-		h.Number,
-		h.GasLimit,
-		h.GasUsed,
-		h.Time,
-		h.Extra,
-	})
-}
-
-func rlpHash(x interface{}) (h common.Hash) {
-	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
-	hw.Sum(h[:0])
-	return h
-}
-
-// EncodeRLP serializes b into the  RLP block header format.
-func (h *Header) EncodeRLP() ([]byte, error) { return rlp.EncodeToBytes(h) }
-
-// DecodeRLP decodes the header
-func (h *Header) DecodeRLP(input []byte) error { return rlp.Decode(bytes.NewReader(input), &h) }
-
-// Marshal encodes the web3 RPC block header format.
-func (h *Header) Marshal() ([]byte, error) { return json.Marshal(h) }
-
-// Unmarshal decodes the web3 RPC block header format.
-func (h *Header) Unmarshal(input []byte) error { return json.Unmarshal(input, h) }
+func (h *Header) Hash() common.Hash { return rlpHash(h) }
 
 // Block represents an entire block in the blockchain.
 type Block struct {
@@ -98,40 +57,28 @@ type Block struct {
 	// caches
 	hash atomic.Value
 	size atomic.Value
-
-	// Td is used by package core to store the total difficulty
-	// of the chain up to and including the block.
-	td *big.Int
-
-	// These fields are used by package eth to track
-	// inter-peer block relay.
-	receivedAt   time.Time
-	receivedFrom interface{}
 }
 
 // NewBlock creates a new block. The input data is copied,
 // changes to header and to the field values will not affect the
 // block.
 func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
-	b := &Block{Head: header, td: new(big.Int)}
-
 	if len(txs) != len(receipts) {
 		panic(fmt.Sprintf("txs len :%v!= receipts len :%v", len(txs), len(receipts)))
 	}
 
-	var txHashs, receiptHashs []common.Hash
+	b := &Block{Head: header}
 
+	var txHashs, receiptHashs []common.Hash
 	for i := 0; i < len(txs); i++ {
 		txHashs, receiptHashs = append(txHashs, txs[i].Hash()), append(receiptHashs, receipts[i].Hash())
 	}
-
 	b.Head.TxsRoot = common.MerkleRoot(txHashs)
+	b.Head.ReceiptsRoot = common.MerkleRoot(receiptHashs)
+
 	b.Txs = make([]*Transaction, len(txs))
 	copy(b.Txs, txs)
-
-	b.Head.ReceiptsRoot = common.MerkleRoot(receiptHashs)
 	b.Head.Bloom = CreateBloom(receipts)
-
 	return b
 }
 
@@ -141,25 +88,51 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
 func NewBlockWithHeader(header *Header) *Block {
 	return &Block{Head: CopyHeader(header)}
 }
-func (b *Block) Transactions() []*Transaction { return b.Txs }
-func (b *Block) Number() *big.Int             { return new(big.Int).Set(b.Head.Number) }
-func (b *Block) GasLimit() uint64             { return b.Head.GasLimit }
-func (b *Block) GasUsed() uint64              { return b.Head.GasUsed }
-func (b *Block) Difficulty() *big.Int         { return new(big.Int).Set(b.Head.Difficulty) }
-func (b *Block) Time() *big.Int               { return new(big.Int).Set(b.Head.Time) }
-func (b *Block) NumberU64() uint64            { return b.Head.Number.Uint64() }
-func (b *Block) Coinbase() common.Name        { return b.Head.Coinbase }
-func (b *Block) Root() common.Hash            { return b.Head.Root }
-func (b *Block) ParentHash() common.Hash      { return b.Head.ParentHash }
-func (b *Block) TxHash() common.Hash          { return b.Head.TxsRoot }
-func (b *Block) ReceiptHash() common.Hash     { return b.Head.ReceiptsRoot }
-func (b *Block) Extra() []byte                { return common.CopyBytes(b.Head.Extra) }
-func (b *Block) Header() *Header              { return CopyHeader(b.Head) }
-func (b *Block) Body() *Body                  { return &Body{b.Txs} }
 
-func (b *Block) HashNoNonce() common.Hash {
-	return b.Head.HashNoNonce()
-}
+// Transactions returns the block's txs.
+func (b *Block) Transactions() []*Transaction { return b.Txs }
+
+// Number returns the block's Number.
+func (b *Block) Number() *big.Int { return new(big.Int).Set(b.Head.Number) }
+
+// GasLimit returns the block's GasLimit.
+func (b *Block) GasLimit() uint64 { return b.Head.GasLimit }
+
+// GasUsed returns the block's GasUsed.
+func (b *Block) GasUsed() uint64 { return b.Head.GasUsed }
+
+// Difficulty returns the block's Difficulty.
+func (b *Block) Difficulty() *big.Int { return new(big.Int).Set(b.Head.Difficulty) }
+
+// Time returns the block's Time.
+func (b *Block) Time() *big.Int { return new(big.Int).Set(b.Head.Time) }
+
+// NumberU64 returns the block's NumberU64.
+func (b *Block) NumberU64() uint64 { return b.Head.Number.Uint64() }
+
+// Coinbase returns the block's Coinbase.
+func (b *Block) Coinbase() common.Name { return b.Head.Coinbase }
+
+// Root returns the block's Root.
+func (b *Block) Root() common.Hash { return b.Head.Root }
+
+// ParentHash returns the block's ParentHash.
+func (b *Block) ParentHash() common.Hash { return b.Head.ParentHash }
+
+// TxHash returns the block's TxHash.
+func (b *Block) TxHash() common.Hash { return b.Head.TxsRoot }
+
+// ReceiptHash returns the block's ReceiptHash.
+func (b *Block) ReceiptHash() common.Hash { return b.Head.ReceiptsRoot }
+
+// Extra returns the block's Extra.
+func (b *Block) Extra() []byte { return common.CopyBytes(b.Head.Extra) }
+
+// Header returns the block's Header.
+func (b *Block) Header() *Header { return CopyHeader(b.Head) }
+
+// Body returns the block's Body.
+func (b *Block) Body() *Body { return &Body{b.Txs} }
 
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
@@ -187,23 +160,10 @@ func (b *Block) DecodeRLP(input []byte) error {
 	return err
 }
 
-// Marshal encodes the web3 RPC block format.
-func (b *Block) Marshal() ([]byte, error) {
-	type Block struct {
-		Header       *Header
-		Transactions []*Transaction
-	}
-	var block Block
-	block.Header = b.Head
-	block.Transactions = b.Txs
-	return json.Marshal(block)
-}
-
 // WithSeal returns a new block with the data from b but the header replaced with
 // the sealed one.
 func (b *Block) WithSeal(header *Header) *Block {
 	cpy := *header
-
 	return &Block{
 		Head: &cpy,
 		Txs:  b.Txs,
@@ -221,7 +181,7 @@ func (b *Block) Hash() common.Hash {
 	return v
 }
 
-// WithBody returns a new block with the given transaction and uncle contents.
+// WithBody returns a new block with the given transaction .
 func (b *Block) WithBody(transactions []*Transaction) *Block {
 	block := &Block{
 		Head: CopyHeader(b.Head),
@@ -251,18 +211,22 @@ func CopyHeader(h *Header) *Header {
 	return &cpy
 }
 
+// Body represents an entire body of the block transactions.
 type Body struct {
 	Transactions []*Transaction
 }
 
+// Blocks represents the blocks.
 type Blocks []*Block
 
+// BlockBy represents the block sort by rule type.
 type BlockBy func(b1, b2 *Block) bool
 
-func (self BlockBy) Sort(blocks Blocks) {
+// Sort sort blocks by BlockBy.
+func (bb BlockBy) Sort(blocks Blocks) {
 	bs := blockSorter{
 		blocks: blocks,
-		by:     self,
+		by:     bb,
 	}
 	sort.Sort(bs)
 }
@@ -272,15 +236,15 @@ type blockSorter struct {
 	by     func(b1, b2 *Block) bool
 }
 
-func (self blockSorter) Len() int { return len(self.blocks) }
-func (self blockSorter) Swap(i, j int) {
-	self.blocks[i], self.blocks[j] = self.blocks[j], self.blocks[i]
-}
-func (self blockSorter) Less(i, j int) bool { return self.by(self.blocks[i], self.blocks[j]) }
+func (bs blockSorter) Len() int           { return len(bs.blocks) }
+func (bs blockSorter) Swap(i, j int)      { bs.blocks[i], bs.blocks[j] = bs.blocks[j], bs.blocks[i] }
+func (bs blockSorter) Less(i, j int) bool { return bs.by(bs.blocks[i], bs.blocks[j]) }
 
+// Number represents block sort by number.
 func Number(b1, b2 *Block) bool { return b1.Head.Number.Cmp(b2.Head.Number) < 0 }
 
-func DeriveTxMerkleRoot(txs []*Transaction) common.Hash {
+// DeriveTxsMerkleRoot returns txs merkle tree root hash.
+func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {
 	var txHashs []common.Hash
 	for i := 0; i < len(txs); i++ {
 		txHashs = append(txHashs, txs[i].Hash())
@@ -288,10 +252,18 @@ func DeriveTxMerkleRoot(txs []*Transaction) common.Hash {
 	return common.MerkleRoot(txHashs)
 }
 
-func DeriveReceiPtMerkleRoot(receipts []*Receipt) common.Hash {
+// DeriveReceiptsMerkleRoot returns receiptes merkle tree root hash.
+func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 	var txHashs []common.Hash
 	for i := 0; i < len(receipts); i++ {
 		txHashs = append(txHashs, receipts[i].Hash())
 	}
 	return common.MerkleRoot(txHashs)
+}
+
+func rlpHash(x interface{}) (h common.Hash) {
+	hw := sha3.NewLegacyKeccak256()
+	rlp.Encode(hw, x)
+	hw.Sum(h[:0])
+	return h
 }

@@ -20,17 +20,20 @@ import (
 	"github.com/fractalplatform/fractal/common"
 )
 
+// OptInfo status option info.
 type OptInfo struct {
 	Key   string
 	Value []byte
 	Opt   uint // record modification status : add/delete/update
 }
 
+// KvNode represents a status data.
 type KvNode struct {
 	Key   string
 	Value []byte
 }
 
+// StateOut represents a block exec status data.
 type StateOut struct {
 	ReadSet    []*KvNode   // replay
 	Reverts    []*OptInfo  // rollback previous block

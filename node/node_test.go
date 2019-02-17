@@ -37,7 +37,6 @@ var (
 
 func TestNodeLifeCycle(t *testing.T) {
 	event.InitRounter()
-
 	// Create a temporary folder to use as the data directory
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
@@ -87,6 +86,7 @@ func TestNodeLifeCycle(t *testing.T) {
 
 // Tests that if the data dir is already in use, an appropriate error is returned.
 func TestNodeUsedDataDir(t *testing.T) {
+	event.InitRounter()
 	// Create a temporary folder to use as the data directory
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
@@ -142,6 +142,7 @@ func NewNoopServiceC(*ServiceContext) (Service, error) { return new(NoopServiceC
 
 // Tests whether services can be registered and duplicates caught.
 func TestServiceRegistry(t *testing.T) {
+	event.InitRounter()
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("failed to create temporary data directory: %v", err)
@@ -263,6 +264,7 @@ func InstrumentedServiceMakerC(base ServiceConstructor) ServiceConstructor {
 
 // Tests that registered services get started and stopped correctly.
 func TestServiceLifeCycle(t *testing.T) {
+	event.InitRounter()
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("failed to create temporary data directory: %v", err)
@@ -327,6 +329,7 @@ func TestServiceLifeCycle(t *testing.T) {
 
 // Tests that services are restarted cleanly as new instances.
 func TestServiceRestarts(t *testing.T) {
+	event.InitRounter()
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("failed to create temporary data directory: %v", err)
@@ -351,7 +354,6 @@ func TestServiceRestarts(t *testing.T) {
 	)
 	constructor := func(*ServiceContext) (Service, error) {
 		running = false
-
 		return &InstrumentedService{
 			startHook: func() {
 				if running {
@@ -388,7 +390,7 @@ func TestServiceRestarts(t *testing.T) {
 // Tests that if a service fails to initialize itself, none of the other services
 // will be allowed to even start.
 func TestServiceConstructionAbortion(t *testing.T) {
-
+	event.InitRounter()
 	var config = &Config{
 		Logger:    log.New(),
 		Name:      "ft",
@@ -441,7 +443,7 @@ func TestServiceConstructionAbortion(t *testing.T) {
 // Tests that if a service fails to start, all others started before it will be
 // shut down.
 func TestServiceStartupAbortion(t *testing.T) {
-
+	event.InitRounter()
 	var config = &Config{
 		Logger:    log.New(),
 		Name:      "ft",
@@ -501,6 +503,7 @@ func TestServiceStartupAbortion(t *testing.T) {
 // Tests that even if a registered service fails to shut down cleanly, it does
 // not influece the rest of the shutdown invocations.
 func TestServiceTerminationGuarantee(t *testing.T) {
+	event.InitRounter()
 	var config = &Config{
 		Logger:    log.New(),
 		Name:      "ft",
@@ -581,6 +584,7 @@ func TestServiceTerminationGuarantee(t *testing.T) {
 
 // TestServiceRetrieval tests that individual services can be retrieved.
 func TestServiceRetrieval(t *testing.T) {
+	event.InitRounter()
 	// Create a simple stack and register two service types
 	var config = &Config{
 		Logger:    log.New(),

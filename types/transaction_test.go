@@ -17,9 +17,11 @@ package types
 
 import (
 	"bytes"
+	"encoding/json"
 	"math/big"
 	"testing"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,16 +35,24 @@ func TestTransactionEncodeAndDecode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	newtx := &Transaction{}
 
 	if err := rlp.Decode(bytes.NewReader(txbytes), &newtx); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, newtx.GasAssetID(), testTx.GasAssetID())
-	assert.Equal(t, newtx.GasPrice(), testTx.GasPrice())
+
 	newtxbytes, err := rlp.EncodeToBytes(newtx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, newtxbytes, txbytes)
+
+	newrpctx := newtx.NewRPCTransaction(common.Hash{}, 0, 0)
+	testrpctx := testTx.NewRPCTransaction(common.Hash{}, 0, 0)
+
+	testrpctxbytes, _ := json.Marshal(testrpctx)
+	newrpctxbytes, _ := json.Marshal(newrpctx)
+
+	assert.Equal(t, newrpctxbytes, testrpctxbytes)
 }

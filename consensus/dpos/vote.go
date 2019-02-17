@@ -386,7 +386,7 @@ func (sys *System) updateElectedProducers(timestamp uint64) error {
 	}
 
 	size, _ := sys.ProducersSize()
-	if gstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) < 0 && uint64(size) < sys.config.consensusSize() {
+	if gstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) < 0 || uint64(size) < sys.config.consensusSize() {
 		activatedProducerSchedule := []string{}
 		activeTotalQuantity := big.NewInt(0)
 		producer, _ := sys.GetProducer(sys.config.SystemName)
