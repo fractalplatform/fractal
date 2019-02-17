@@ -204,3 +204,11 @@ func toISO8601(t time.Time) string {
 	}
 	return fmt.Sprintf("%04d-%02d-%02dT%02d-%02d-%02d.%09d%s", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), tz)
 }
+func (w *Wallet) BindAccountNameAddr(a cache.Account, passphrase string, accountName string) error {
+	a, _, err := w.getDecryptedKey(a, passphrase)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

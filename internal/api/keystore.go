@@ -150,3 +150,11 @@ func (api *PrivateKeyStoreAPI) SignData(ctx context.Context, addr common.Address
 
 	return hexutil.Bytes(sig), nil
 }
+
+func (api *PrivateKeyStoreAPI) BindAccountName(ctx context.Context, addr common.Address, passphrase string, accountName string) error {
+	a, err := api.b.Wallet().Find(addr)
+	if err != nil {
+		return err
+	}
+	return api.b.Wallet().BindAccountNameAddr(a, passphrase, accountName)
+}
