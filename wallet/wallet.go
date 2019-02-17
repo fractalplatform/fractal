@@ -31,6 +31,12 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/wallet/cache"
 	"github.com/fractalplatform/fractal/wallet/keystore"
+	"bufio"
+	"io"
+	"strings"
+	"errors"
+	"io/ioutil"
+	"encoding/json"
 )
 
 // Wallet represents a software wallet.
@@ -38,6 +44,7 @@ type Wallet struct {
 	accounts cache.Accounts
 	cache    *cache.AccountCache
 	ks       *keystore.KeyStore
+	bindingFilePath string
 }
 
 // NewWallet creates a wallet to sign transaction.
@@ -46,6 +53,11 @@ func NewWallet(keyStoredir string, scryptN, scryptP int) *Wallet {
 	w := &Wallet{
 		cache: cache.NewAccountCache(keyStoredir),
 		ks:    &keystore.KeyStore{DirPath: keyStoredir, ScryptN: scryptN, ScryptP: scryptP},
+	}
+	w.bindingFilePath = w.ks.JoinPath("acountAddrBindingInfo.txt")
+	_, err := os.Stat(w.bindingFilePath)
+	if err == nil {
+		os.Create(w.bindingFilePath)
 	}
 	return w
 }
@@ -204,11 +216,70 @@ func toISO8601(t time.Time) string {
 	}
 	return fmt.Sprintf("%04d-%02d-%02dT%02d-%02d-%02d.%09d%s", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), tz)
 }
+
+// BindAccountNameAddr bind the account name and address,
+// if account name has been bound to another address, it will fail,
+// and you should use UpdateBindingAddr func to bind new address.
 func (w *Wallet) BindAccountNameAddr(a cache.Account, passphrase string, accountName string) error {
 	a, _, err := w.getDecryptedKey(a, passphrase)
 	if err != nil {
 		return err
 	}
+
+	addrAccountsMap := make(map[string][]string)
+	fileContent, err := ioutil.ReadFile(w.bindingFilePath)
+	if len(fileContent) > 0 {
+		json.Unmarshal(fileContent, &addrAccountsMap)
+	}
+	for _, accounts := range addrAccountsMap {
+		for _, account := range accounts {
+			if account == accountName {
+				return errors.New("Account has been bound to another address.")
+			}
+		}
+	}
+	addrStr := a.Addr.String()
+	if _, ok := addrAccountsMap[addrStr]; ok {
+		addrAccountsMap[addrStr] = append(addrAccountsMap[addrStr], accountName)
+	} else {
+		accounts := make([]string, 1)
+		accounts = append(accounts, accountName)
+		addrAccountsMap[addrStr] = accounts
+	}
+
+	if fileObj,err := os.OpenFile(w.bindingFilePath, os.O_RDWR|os.O_CREATE,0644); err == nil {
+		defer fileObj.Close()
+		fileContent, err = json.Marshal(addrAccountsMap)
+		if ioutil.WriteFile(w.bindingFilePath, fileContent,0666) == nil {
+			log.Info("写入文件成功:", string(content))
+		}
+	}
+	return nil
+}
+
+func (w *Wallet) DeleteBound(a cache.Account, passphrase string, accountName string) error {
+	a, _, err := w.getDecryptedKey(a, passphrase)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (w *Wallet) UpdateBindingAddr(a cache.Account, passphrase string, accountName string, newAddress string) error {
+	a, _, err := w.getDecryptedKey(a, passphrase)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *Wallet) GetAccountNameByAddr(address string) string {
+
+	return nil
+}
+
+func (w *Wallet) BatchGetAccountName(address []string) []string {
 
 	return nil
 }
