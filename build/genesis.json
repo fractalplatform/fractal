@@ -1,6 +1,7 @@
 {
 	"config": {
 		"chainId": 1,
+		"bootnodes": [""],
 		"sysName": "ftsystemio",
 		"sysToken": "ftoken"
 	},
