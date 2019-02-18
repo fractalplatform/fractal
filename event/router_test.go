@@ -109,7 +109,12 @@ func TestSendEventToStation(t *testing.T) {
 		sub2     Subscription
 		sub3     Subscription
 	)
-
+	StationRegister(station1.station)
+	defer StationUnregister(station1.station)
+	StationRegister(station2.station)
+	defer StationUnregister(station2.station)
+	StationRegister(station3.station)
+	defer StationUnregister(station3.station)
 	sub1 = Subscribe(station1.station, station1.channel, RouterTestString, "")
 	sub2 = Subscribe(station2.station, station2.channel, RouterTestString, "")
 	sub3 = Subscribe(station3.station, station3.channel, RouterTestString, "")
