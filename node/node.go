@@ -139,8 +139,6 @@ func (n *Node) Start() error {
 	n.config.P2PConfig.StaticNodes = n.config.StaticNodes()
 	n.config.P2PConfig.TrustedNodes = n.config.TrustedNodes()
 
-	n.p2pServer = adaptor.NewProtoAdaptor(n.config.P2PConfig)
-
 	services := make(map[reflect.Type]Service)
 	for _, constructor := range n.serviceFuncs {
 		// Create a new context for the particular service
@@ -165,6 +163,7 @@ func (n *Node) Start() error {
 		services[kind] = service
 	}
 
+	n.p2pServer = adaptor.NewProtoAdaptor(n.config.P2PConfig)
 	if err := n.p2pServer.Start(); err != nil {
 		n.log.Error("Starting peer-to-peer server", "err", err)
 	}

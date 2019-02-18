@@ -27,6 +27,7 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
+	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
@@ -109,6 +110,12 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	accountManager, err := am.NewAccountManager(statedb)
 	if err != nil {
 		panic(fmt.Sprintf("genesis accountManager new err: %v", err))
+	}
+	//p2p
+	for _, node := range g.Config.BootNodes {
+		if _, err := enode.ParseV4(node); err != nil {
+			panic(fmt.Sprintf("genesis bootnodes err: %v in %v", err, node))
+		}
 	}
 
 	// dpos

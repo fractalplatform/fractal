@@ -30,7 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0x13a095789777033eb093bd28b76607d2001b01e42a04b344ec7e0ef33b2862d5")
+var defaultgenesisBlockHash = common.HexToHash("0x8692db3821c6bedbd6fc727525ed0fb365ef0bc72193bfa1747656ec8fbb3751")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesis().ToBlock(nil)
@@ -41,7 +41,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0xb218822f1ea61e3e622bfeea145d875c7f79123ad61264032944fdf3b461c7ce")
+		customghash = common.HexToHash("0xb227e037d48ecd482e407078dc42f7b9cb4d8f68750a81b0957e45287b831e37")
 		customg     = Genesis{
 			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:          dpos.DefaultConfig,
@@ -50,7 +50,7 @@ func TestSetupGenesis(t *testing.T) {
 			AllocAssets:   DefaultGenesisAssets(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0xc927067fedbc34fd5b9667bb973cee16e7730200383bf07f417580c10df77f30")
+		oldcustomghash = common.HexToHash("0xce7c5a99b55e605d0300cf650dad7ee2dfc89b2576c24ad45efb8b2b762fb87b")
 	)
 	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
 
