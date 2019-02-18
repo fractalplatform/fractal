@@ -31,9 +31,6 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/wallet/cache"
 	"github.com/fractalplatform/fractal/wallet/keystore"
-	"bufio"
-	"io"
-	"strings"
 	"errors"
 	"io/ioutil"
 	"encoding/json"
@@ -226,11 +223,9 @@ func (w *Wallet) BindAccountNameAddr(a cache.Account, passphrase string, account
 		return err
 	}
 
-	addrAccountsMap := make(map[string][]string)
-	fileContent, err := ioutil.ReadFile(w.bindingFilePath)
-	if len(fileContent) > 0 {
-		json.Unmarshal(fileContent, &addrAccountsMap)
-	}
+	addrAccountsMap := w.getBindingInfo()
+
+	// check whether this operator is valid
 	for _, accounts := range addrAccountsMap {
 		for _, account := range accounts {
 			if account == accountName {
@@ -238,6 +233,7 @@ func (w *Wallet) BindAccountNameAddr(a cache.Account, passphrase string, account
 			}
 		}
 	}
+	// update binding info
 	addrStr := a.Addr.String()
 	if _, ok := addrAccountsMap[addrStr]; ok {
 		addrAccountsMap[addrStr] = append(addrAccountsMap[addrStr], accountName)
@@ -247,14 +243,7 @@ func (w *Wallet) BindAccountNameAddr(a cache.Account, passphrase string, account
 		addrAccountsMap[addrStr] = accounts
 	}
 
-	if fileObj,err := os.OpenFile(w.bindingFilePath, os.O_RDWR|os.O_CREATE,0644); err == nil {
-		defer fileObj.Close()
-		fileContent, err = json.Marshal(addrAccountsMap)
-		if ioutil.WriteFile(w.bindingFilePath, fileContent,0666) == nil {
-			log.Info("写入文件成功:", string(content))
-		}
-	}
-	return nil
+	return w.writeBindingInfo(addrAccountsMap)
 }
 
 func (w *Wallet) DeleteBound(a cache.Account, passphrase string, accountName string) error {
@@ -262,24 +251,90 @@ func (w *Wallet) DeleteBound(a cache.Account, passphrase string, accountName str
 	if err != nil {
 		return err
 	}
+	addrAccountsMap := w.getBindingInfo()
+
+	addrStr := a.Addr.String()
+	if accounts, ok := addrAccountsMap[addrStr]; ok {
+		target := accounts
+		for _, account := range accounts {
+			if account != accountName {
+				target = append(target, account)
+			}
+		}
+		if len(target) + 1 == len(accounts) {
+			addrAccountsMap[addrStr] = target
+			return w.writeBindingInfo(addrAccountsMap)
+		}
+	}
 
 	return nil
 }
 
-func (w *Wallet) UpdateBindingAddr(a cache.Account, passphrase string, accountName string, newAddress string) error {
+func (w *Wallet) UpdateBindingAddr(a cache.Account, passphrase string, accountName string, newAccount cache.Account, newAccountPassphrase string) error {
 	a, _, err := w.getDecryptedKey(a, passphrase)
 	if err != nil {
 		return err
 	}
-	return nil
+	newAccount, _, err = w.getDecryptedKey(newAccount, newAccountPassphrase)
+	if err != nil {
+		return err
+	}
+
+	addrAccountsMap := w.getBindingInfo()
+
+	oldAddrStr := a.Addr.String()
+	if accounts, ok := addrAccountsMap[oldAddrStr]; ok {
+		target := accounts
+		for _, account := range accounts {
+			if account != accountName {
+				target = append(target, account)
+			}
+		}
+		if len(target) + 1 == len(accounts) {
+			addrAccountsMap[oldAddrStr] = target
+		} else {
+			return errors.New("Account hasn't been bound to the old address, so you can't update it.")
+		}
+	}
+
+	newAddrStr := newAccount.Addr.String()
+	if _, ok := addrAccountsMap[newAddrStr]; ok {
+		addrAccountsMap[newAddrStr] = append(addrAccountsMap[newAddrStr], accountName)
+	} else {
+		accounts := make([]string, 1)
+		accounts = append(accounts, accountName)
+		addrAccountsMap[newAddrStr] = accounts
+	}
+
+	return w.writeBindingInfo(addrAccountsMap)
 }
 
-func (w *Wallet) GetAccountNameByAddr(address string) string {
+func (w *Wallet) GetAccountNameByAddr(a cache.Account) []string {
+	addrAccountsMap := w.getBindingInfo()
 
-	return nil
+	return addrAccountsMap[a.Addr.String()]
 }
 
-func (w *Wallet) BatchGetAccountName(address []string) []string {
+func (w *Wallet) getBindingInfo() map[string][]string {
+	addrAccountsMap := make(map[string][]string)
+	fileContent, _ := ioutil.ReadFile(w.bindingFilePath)
+	if len(fileContent) > 0 {
+		json.Unmarshal(fileContent, &addrAccountsMap)
+	}
+	return addrAccountsMap
+}
 
-	return nil
+func (w *Wallet) writeBindingInfo(addrAccountsMap map[string][]string) error {
+	fileContent, err := json.Marshal(addrAccountsMap)
+	if err != nil {
+		log.Error("fail to marshall map to json string:",addrAccountsMap)
+		return err
+	}
+	if ioutil.WriteFile(w.bindingFilePath, fileContent,0666) == nil {
+		log.Info("success to write binding info:", string(fileContent))
+		return nil
+	} else {
+		log.Error("fail to write binding info:", string(fileContent))
+		return errors.New("fail to write binding info")
+	}
 }

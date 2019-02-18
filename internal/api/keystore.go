@@ -158,3 +158,31 @@ func (api *PrivateKeyStoreAPI) BindAccountName(ctx context.Context, addr common.
 	}
 	return api.b.Wallet().BindAccountNameAddr(a, passphrase, accountName)
 }
+
+func (api *PrivateKeyStoreAPI) DeleteBound(ctx context.Context, addr common.Address, passphrase string, accountName string) error {
+	a, err := api.b.Wallet().Find(addr)
+	if err != nil {
+		return err
+	}
+	return api.b.Wallet().DeleteBound(a, passphrase, accountName)
+}
+
+func (api *PrivateKeyStoreAPI) UpdateBindingAddr(ctx context.Context, addr common.Address, passphrase string, accountName string, newAddr common.Address, newAddrPassphrase string) error {
+	a, err := api.b.Wallet().Find(addr)
+	if err != nil {
+		return err
+	}
+	newA, err := api.b.Wallet().Find(newAddr)
+	if err != nil {
+		return err
+	}
+	return api.b.Wallet().UpdateBindingAddr(a, passphrase, accountName, newA, newAddrPassphrase)
+}
+
+func (api *PrivateKeyStoreAPI) GetAccountNameByAddr(ctx context.Context, addr common.Address) ([]string, error) {
+	a, err := api.b.Wallet().Find(addr)
+	if err != nil {
+		return nil, err
+	}
+	return api.b.Wallet().GetAccountNameByAddr(a), nil
+}
