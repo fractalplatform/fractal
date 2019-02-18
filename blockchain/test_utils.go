@@ -315,6 +315,10 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			block, _ := b.engine.Finalize(b.bc, b.header, b.txs, b.receipts, statedb)
 			block, err := b.engine.Seal(b.bc, block, nil)
 
+			block.Head.ReceiptsRoot = types.DeriveReceiptsMerkleRoot(b.receipts)
+			block.Head.TxsRoot = types.DeriveTxsMerkleRoot(b.txs)
+			block.Head.Bloom = types.CreateBloom(b.receipts)
+
 			batch := db.NewBatch()
 
 			_, err = statedb.Commit(batch, block.Hash(), block.NumberU64())
@@ -326,10 +330,6 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 			}
 			statedb.CommitCache(block.Hash())
-
-			block.Head.ReceiptsRoot = types.DeriveReceiptsMerkleRoot(b.receipts)
-			block.Head.TxsRoot = types.DeriveTxsMerkleRoot(b.txs)
-			block.Head.Bloom = types.CreateBloom(b.receipts)
 			return block, b.receipts
 		}
 		return nil, nil
