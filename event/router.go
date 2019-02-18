@@ -73,6 +73,7 @@ const (
 	EndSize
 )
 
+var typeListMutex sync.RWMutex
 var typeList = [EndSize]reflect.Type{
 	RouterTestInt:    nil,
 	RouterTestInt64:  nil,
@@ -106,6 +107,8 @@ func ReplyEvent(e *Event, typecode int, data interface{}) {
 // GetTypeByCode return Type by typecode
 func GetTypeByCode(typecode int) reflect.Type {
 	if typecode < P2pEndSize {
+		typeListMutex.RLock()
+		defer typeListMutex.RUnlock()
 		return typeList[typecode]
 	}
 	return nil
@@ -119,16 +122,20 @@ func bindTypeToCode(typecode int, data interface{}) {
 		return
 	}
 	typ := reflect.TypeOf(data)
-	router.unnamedMutex.Lock()
+	typeListMutex.RLock()
 	etyp := typeList[typecode]
+	typeListMutex.RUnlock()
 	if etyp == nil {
-		typeList[typecode] = typ
-		router.unnamedMutex.Unlock()
+		typeListMutex.Lock()
+		etyp = typeList[typecode]
+		if etyp == nil {
+			typeList[typecode] = typ
+		}
+		typeListMutex.Unlock()
 		return
 	}
-	router.unnamedMutex.Unlock()
 	if etyp != typ {
-		panic(fmt.Sprintf("%s mismatch %s!", typ.String(), typeList[typecode].String()))
+		panic(fmt.Sprintf("%s mismatch %s!", typ.String(), etyp.String()))
 	}
 }
 
@@ -188,7 +195,6 @@ func Subscribe(station Station, channel chan *Event, typecode int, data interfac
 	var sub Subscription
 
 	if station != nil {
-		StationRegister(station)
 		sub = bindChannelToStation(station, typecode, channel)
 	} else {
 		sub = bindChannelToTypecode(typecode, channel)
@@ -219,8 +225,6 @@ func SendEvent(e *Event) (nsent int) {
 	//return
 	//}
 
-	router.unnamedMutex.RLock()
-	defer router.unnamedMutex.RUnlock()
 	if e.To != nil {
 		if e.To.IsRemote() {
 			sendToAdaptor(e)
@@ -240,10 +244,11 @@ func SendEvent(e *Event) (nsent int) {
 		//}
 	}
 
+	router.unnamedMutex.RLock()
 	if feed, ok := router.unnamedFeeds[e.Typecode]; ok {
 		nsent = feed.Send(e)
-		return
 	}
+	router.unnamedMutex.RUnlock()
 	return
 }
 
