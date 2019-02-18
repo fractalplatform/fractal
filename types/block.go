@@ -256,7 +256,7 @@ func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {
 func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 	var txHashs []common.Hash
 	for i := 0; i < len(receipts); i++ {
-		txHashs = append(txHashs, receipts[i].Hash())
+		txHashs = append(txHashs, receipts[i].ConsensusReceipt().Hash())
 	}
 	return common.MerkleRoot(txHashs)
 }
