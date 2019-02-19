@@ -271,9 +271,11 @@ func (router *Router) SendEvent(e *Event) (nsent int) {
 }
 
 func (router *Router) sendToAdaptor(e *Event) {
+	router.unnamedMutex.RLock()
 	if router.adaptor != nil {
 		router.adaptor.SendOut(e)
 	}
+	router.unnamedMutex.RUnlock()
 }
 
 // SendEvents .
