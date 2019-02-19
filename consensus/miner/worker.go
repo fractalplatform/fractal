@@ -88,7 +88,6 @@ out:
 	for {
 		select {
 		// Handle ChainHeadEvent
-		case <-chainHeadCh:
 		case ev := <-chainHeadCh:
 			if atomic.LoadInt32(&worker.mining) != 0 {
 				if blk := ev.Data.(*types.Block); strings.Compare(blk.Coinbase().String(), worker.coinbase) != 0 {
