@@ -130,11 +130,13 @@ func (r *Receipt) NewRPCReceipt(blockHash common.Hash, blockNumber uint64, index
 // ConsensusReceipt returns consensus encoding of a receipt.
 func (r *Receipt) ConsensusReceipt() *Receipt {
 	result := &Receipt{
-		PostState:         hexutil.Bytes(r.PostState),
 		CumulativeGasUsed: r.CumulativeGasUsed,
 		TotalGasUsed:      r.TotalGasUsed,
 		Bloom:             r.Bloom,
 	}
+
+	result.PostState = make([]byte, len(r.PostState))
+	copy(result.PostState, r.PostState)
 
 	var actionResults []*ActionResult
 	for _, a := range r.ActionResults {
