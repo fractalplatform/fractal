@@ -68,13 +68,8 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
 	}
 
 	b := &Block{Head: header}
-
-	var txHashs, receiptHashs []common.Hash
-	for i := 0; i < len(txs); i++ {
-		txHashs, receiptHashs = append(txHashs, txs[i].Hash()), append(receiptHashs, receipts[i].Hash())
-	}
-	b.Head.TxsRoot = common.MerkleRoot(txHashs)
-	b.Head.ReceiptsRoot = common.MerkleRoot(receiptHashs)
+	b.Head.TxsRoot = DeriveTxsMerkleRoot(txs)
+	b.Head.ReceiptsRoot = DeriveReceiptsMerkleRoot(receipts)
 
 	b.Txs = make([]*Transaction, len(txs))
 	copy(b.Txs, txs)
