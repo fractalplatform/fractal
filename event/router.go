@@ -40,6 +40,25 @@ type Router struct {
 
 var router *Router
 
+// InitRouter init router.
+func init() {
+	router = New()
+}
+
+// New returns an initialized Router instance.
+func New() *Router {
+	return &Router{
+		unnamedFeeds: make(map[int]*Feed),
+		namedFeeds:   make(map[string]map[int]*Feed),
+		stations:     make(map[string]Station),
+	}
+}
+
+// Reset ntended for testing。
+func Reset() {
+	router = New()
+}
+
 // Event is including normal event and p2p event
 type Event struct {
 	From     Station
@@ -73,6 +92,7 @@ const (
 	EndSize
 )
 
+var typeListMutex sync.RWMutex
 var typeList = [EndSize]reflect.Type{
 	RouterTestInt:    nil,
 	RouterTestInt64:  nil,
@@ -82,15 +102,6 @@ var typeList = [EndSize]reflect.Type{
 	P2pDisconectPeer: nil,
 	ChainHeadEv:      nil,
 	TxEv:             nil,
-}
-
-// InitRouter init router.
-func InitRounter() {
-	router = &Router{
-		unnamedFeeds: make(map[int]*Feed),
-		namedFeeds:   make(map[string]map[int]*Feed),
-		stations:     make(map[string]Station),
-	}
 }
 
 // ReplyEvent is equivalent to `SendTo(e.To, e.From, typecode, data)`
@@ -106,6 +117,8 @@ func ReplyEvent(e *Event, typecode int, data interface{}) {
 // GetTypeByCode return Type by typecode
 func GetTypeByCode(typecode int) reflect.Type {
 	if typecode < P2pEndSize {
+		typeListMutex.RLock()
+		defer typeListMutex.RUnlock()
 		return typeList[typecode]
 	}
 	return nil
@@ -119,41 +132,48 @@ func bindTypeToCode(typecode int, data interface{}) {
 		return
 	}
 	typ := reflect.TypeOf(data)
-	router.unnamedMutex.Lock()
+	typeListMutex.RLock()
 	etyp := typeList[typecode]
+	typeListMutex.RUnlock()
 	if etyp == nil {
-		typeList[typecode] = typ
-		router.unnamedMutex.Unlock()
+		typeListMutex.Lock()
+		etyp = typeList[typecode]
+		if etyp == nil {
+			typeList[typecode] = typ
+		}
+		typeListMutex.Unlock()
 		return
 	}
-	router.unnamedMutex.Unlock()
 	if etyp != typ {
-		panic(fmt.Sprintf("%s mismatch %s!", typ.String(), typeList[typecode].String()))
+		panic(fmt.Sprintf("%s mismatch %s!", typ.String(), etyp.String()))
 	}
 }
 
 // GetStationByName retrun Station by Station's name
-func GetStationByName(name string) Station {
+func GetStationByName(name string) Station { return router.GetStationByName(name) }
+func (router *Router) GetStationByName(name string) Station {
 	router.stationMutex.RLock()
 	defer router.stationMutex.RUnlock()
 	return router.stations[name]
 }
 
 // StationRegister register 'Station' to Router
-func StationRegister(station Station) {
+func StationRegister(station Station) { router.StationRegister(station) }
+func (router *Router) StationRegister(station Station) {
 	router.stationMutex.Lock()
 	router.stations[station.Name()] = station
 	router.stationMutex.Unlock()
 }
 
 // StationUnregister unregister 'Station'
-func StationUnregister(station Station) {
+func StationUnregister(station Station) { router.StationUnregister(station) }
+func (router *Router) StationUnregister(station Station) {
 	router.stationMutex.Lock()
 	delete(router.stations, station.Name())
 	router.stationMutex.Unlock()
 }
 
-func bindChannelToStation(station Station, typecode int, channel chan *Event) Subscription {
+func (router *Router) bindChannelToStation(station Station, typecode int, channel chan *Event) Subscription {
 	name := station.Name()
 	router.namedMutex.Lock()
 	_, ok := router.namedFeeds[name]
@@ -169,7 +189,7 @@ func bindChannelToStation(station Station, typecode int, channel chan *Event) Su
 	return feed.Subscribe(channel)
 }
 
-func bindChannelToTypecode(typecode int, channel chan *Event) Subscription {
+func (router *Router) bindChannelToTypecode(typecode int, channel chan *Event) Subscription {
 	router.unnamedMutex.Lock()
 	feed, ok := router.unnamedFeeds[typecode]
 	if !ok {
@@ -182,22 +202,25 @@ func bindChannelToTypecode(typecode int, channel chan *Event) Subscription {
 
 // Subscribe .
 func Subscribe(station Station, channel chan *Event, typecode int, data interface{}) Subscription {
+	return router.Subscribe(station, channel, typecode, data)
+}
+func (router *Router) Subscribe(station Station, channel chan *Event, typecode int, data interface{}) Subscription {
 
 	bindTypeToCode(typecode, data)
 
 	var sub Subscription
 
 	if station != nil {
-		StationRegister(station)
-		sub = bindChannelToStation(station, typecode, channel)
+		sub = router.bindChannelToStation(station, typecode, channel)
 	} else {
-		sub = bindChannelToTypecode(typecode, channel)
+		sub = router.bindChannelToTypecode(typecode, channel)
 	}
 	return sub
 }
 
 // AdaptorRegister register P2P interface to Router
-func AdaptorRegister(adaptor ProtoAdaptor) {
+func AdaptorRegister(adaptor ProtoAdaptor) { router.AdaptorRegister(adaptor) }
+func (router *Router) AdaptorRegister(adaptor ProtoAdaptor) {
 	router.unnamedMutex.Lock()
 	defer router.unnamedMutex.Unlock()
 	if router.adaptor == nil {
@@ -211,7 +234,8 @@ func SendTo(from, to Station, typecode int, data interface{}) int {
 }
 
 // SendEvent send event
-func SendEvent(e *Event) (nsent int) {
+func SendEvent(e *Event) (nsent int) { return router.SendEvent(e) }
+func (router *Router) SendEvent(e *Event) (nsent int) {
 
 	//if e.Typecode >= EndSize || (typeList[e.Typecode] != nil && reflect.TypeOf(e.Data) != typeList[e.Typecode]) {
 	//	fmt.Println("SendEvent Err:", e.Typecode, EndSize, reflect.TypeOf(e.Data), typeList[e.Typecode])
@@ -219,11 +243,9 @@ func SendEvent(e *Event) (nsent int) {
 	//return
 	//}
 
-	router.unnamedMutex.RLock()
-	defer router.unnamedMutex.RUnlock()
 	if e.To != nil {
 		if e.To.IsRemote() {
-			sendToAdaptor(e)
+			router.sendToAdaptor(e)
 			return 1
 		}
 		//if len(e.To.Name()) != 0 {
@@ -240,17 +262,20 @@ func SendEvent(e *Event) (nsent int) {
 		//}
 	}
 
+	router.unnamedMutex.RLock()
 	if feed, ok := router.unnamedFeeds[e.Typecode]; ok {
 		nsent = feed.Send(e)
-		return
 	}
+	router.unnamedMutex.RUnlock()
 	return
 }
 
-func sendToAdaptor(e *Event) {
+func (router *Router) sendToAdaptor(e *Event) {
+	router.unnamedMutex.RLock()
 	if router.adaptor != nil {
 		router.adaptor.SendOut(e)
 	}
+	router.unnamedMutex.RUnlock()
 }
 
 // SendEvents .

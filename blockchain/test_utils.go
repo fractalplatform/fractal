@@ -29,7 +29,6 @@ import (
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
@@ -104,7 +103,6 @@ func makeProduceAndTime(st uint64, rounds int) ([]string, []uint64) {
 }
 
 func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Database, *BlockChain, uint64, error) {
-	event.InitRounter()
 
 	var (
 		db         = fdb.NewMemDatabase()
