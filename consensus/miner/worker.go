@@ -219,7 +219,7 @@ func (worker *Worker) commitNewWork(timestamp int64) (*types.Block, error) {
 		return nil, errors.New("mint the future block")
 	}
 	// if dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && timestamp-time.Now().UnixNano() >= int64(dpos.BlockInterval())/10 {
-	if dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && time.Now().UnixNano()-timestamp <= 2*int64(dpos.BlockInterval())/5 {
+	if parent.Number.Uint64() > 0 && dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && time.Now().UnixNano()-timestamp <= 2*int64(dpos.BlockInterval())/5 {
 		return nil, errors.New("wait for last block arrived")
 	}
 
