@@ -74,6 +74,8 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
+	ctx.AppendBootNodes(chainCfg.BootNodes)
+
 	ftservice := &FtService{
 		config:       config,
 		chainDb:      chainDb,

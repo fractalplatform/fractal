@@ -130,6 +130,7 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 	actionHashs := make([]common.Hash, len(tx.GetActions()))
 	for _, a := range tx.GetActions() {
 		hash := rlpHash([]interface{}{
+			a.data.From,
 			a.data.AType,
 			a.data.Nonce,
 			a.data.To,

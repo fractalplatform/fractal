@@ -25,7 +25,6 @@ import (
 )
 
 func BenchmarkSubscribe(t *testing.B) {
-	InitRounter()
 	var done sync.WaitGroup
 	quit := make(chan struct{})
 	rwtest := func(station Station) {
@@ -95,7 +94,6 @@ func BenchmarkSubscribe(t *testing.B) {
 }
 
 func TestSendEventToStation(t *testing.T) {
-	InitRounter()
 	type testStation struct {
 		station Station
 		channel chan *Event
@@ -109,7 +107,12 @@ func TestSendEventToStation(t *testing.T) {
 		sub2     Subscription
 		sub3     Subscription
 	)
-
+	StationRegister(station1.station)
+	defer StationUnregister(station1.station)
+	StationRegister(station2.station)
+	defer StationUnregister(station2.station)
+	StationRegister(station3.station)
+	defer StationUnregister(station3.station)
 	sub1 = Subscribe(station1.station, station1.channel, RouterTestString, "")
 	sub2 = Subscribe(station2.station, station2.channel, RouterTestString, "")
 	sub3 = Subscribe(station3.station, station3.channel, RouterTestString, "")
@@ -159,7 +162,6 @@ func TestSendEventToStation(t *testing.T) {
 }
 
 func TestSendEvent(t *testing.T) {
-	InitRounter()
 	var (
 		done    sync.WaitGroup
 		nsubs   = 10
@@ -205,7 +207,6 @@ func TestSendEvent(t *testing.T) {
 }
 
 func TestUnsubscribe(t *testing.T) {
-	InitRounter()
 	var (
 		done  sync.WaitGroup
 		nsubs = 1000

@@ -41,7 +41,7 @@ import (
 // state reset and tests whether the pending state is in sync with the
 // block head event that initiated the resetState().
 func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
-	event.InitRounter()
+
 	var (
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 		manager, _ = am.NewAccountManager(statedb)
@@ -522,8 +522,6 @@ func TestTransactionDropping(t *testing.T) {
 // postponed back into the future queue to prevent broadcasting them.
 func TestTransactionPostponing(t *testing.T) {
 
-	event.InitRounter()
-
 	// Create the pool to test the postponing with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -753,8 +751,6 @@ func TestTransactionQueueGlobalLimitingNoLocals(t *testing.T) {
 
 func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 
-	event.InitRounter()
-
 	// Create the pool to test the limit enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -852,7 +848,6 @@ func TestTransactionQueueTimeLimitingNoLocals(t *testing.T) { testTransactionQue
 
 func testTransactionQueueTimeLimiting(t *testing.T, nolocals bool) {
 
-	event.InitRounter()
 	// Reduce the eviction interval to a testable amount
 	defer func(old time.Duration) { evictionInterval = old }(evictionInterval)
 	evictionInterval = time.Second
@@ -973,7 +968,7 @@ func TestTransactionPendingLimiting(t *testing.T) {
 //
 // Note, local transactions are never allowed to be dropped.
 func TestTransactionPoolRepricing(t *testing.T) {
-	event.InitRounter()
+
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 
@@ -1105,7 +1100,6 @@ func TestTransactionPoolRepricing(t *testing.T) {
 // remove local transactions.
 func TestTransactionPoolRepricingKeepsLocals(t *testing.T) {
 
-	event.InitRounter()
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -1177,7 +1171,7 @@ func TestTransactionPoolRepricingKeepsLocals(t *testing.T) {
 //
 // Note, local transactions are never allowed to be dropped.
 func TestTransactionPoolUnderpricing(t *testing.T) {
-	event.InitRounter()
+
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 
@@ -1293,7 +1287,6 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 // back and forth between queued/pending.
 func TestTransactionPoolStableUnderpricing(t *testing.T) {
 
-	event.InitRounter()
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -1370,7 +1363,6 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 // price bump required.
 func TestTransactionReplacement(t *testing.T) {
 
-	event.InitRounter()
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -1481,6 +1473,7 @@ func testTransactionLimitingEquivalency(t *testing.T, origin uint64) {
 		fname1 = common.Name("fromname1")
 		tname1 = common.Name("totestname1")
 	)
+	event.Reset()
 	pool1, manager1 := setupTxPool(fname1)
 	defer pool1.Stop()
 	fkey1 := generateAccount(t, fname1, manager1, pool1.pendingAccountManager)
@@ -1516,8 +1509,6 @@ func testTransactionLimitingEquivalency(t *testing.T, origin uint64) {
 // some hard threshold, the higher transactions are dropped to prevent DOS
 // attacks.
 func TestTransactionPendingGlobalLimiting(t *testing.T) {
-
-	event.InitRounter()
 
 	// Create the pool to test the limit enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
@@ -1574,7 +1565,6 @@ func TestTransactionPendingGlobalLimiting(t *testing.T) {
 // Tests that if transactions start being capped, transactions are also removed from 'all'
 func TestTransactionCapClearsFromAll(t *testing.T) {
 
-	event.InitRounter()
 	// Create the pool to test the limit enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -1614,7 +1604,6 @@ func TestTransactionCapClearsFromAll(t *testing.T) {
 // the transactions are still kept.
 func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
-	event.InitRounter()
 	// Create the pool to test the limit enforcement with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 
@@ -1672,7 +1661,7 @@ func TestTransactionJournaling(t *testing.T)         { testTransactionJournaling
 func TestTransactionJournalingNoLocals(t *testing.T) { testTransactionJournaling(t, true) }
 
 func testTransactionJournaling(t *testing.T, nolocals bool) {
-	event.InitRounter()
+	event.Reset()
 	// Create a temporary file for the journal
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -1740,7 +1729,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 
 	manager.SetNonce(localName, 1)
 	blockchain = &testBlockChain{statedb, 1000000, new(event.Feed)}
-
+	event.Reset()
 	pool = New(config, params.DefaultChainconfig, blockchain)
 
 	pending, queued = pool.Stats()
@@ -1792,8 +1781,6 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 // TestTransactionStatusCheck tests that the pool can correctly retrieve the
 // pending status of individual transactions.
 func TestTransactionStatusCheck(t *testing.T) {
-
-	event.InitRounter()
 
 	// Create the pool to test the status retrievals with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))

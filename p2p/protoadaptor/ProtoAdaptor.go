@@ -35,7 +35,7 @@ type ProtoAdaptor struct {
 func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 	adaptor := &ProtoAdaptor{
 		Server: p2p.Server{
-			Config: *config,
+			Config: config,
 		},
 		peerMangaer: peerMangaer{
 			activePeers: make(map[[8]byte]*remotePeer),
