@@ -227,6 +227,7 @@ type ReadPacket struct {
 type Config struct {
 	// These settings are required and configure the UDP listener:
 	PrivateKey *ecdsa.PrivateKey
+	TCPPort    int // tcp port
 
 	// These settings are optional:
 	AnnounceAddr *net.UDPAddr      // local address announced in the DHT
@@ -251,7 +252,7 @@ func newUDP(c conn, cfg Config) (*Table, *udp, error) {
 	if cfg.AnnounceAddr != nil {
 		realaddr = cfg.AnnounceAddr
 	}
-	self := enode.NewV4(&cfg.PrivateKey.PublicKey, realaddr.IP, realaddr.Port, realaddr.Port)
+	self := enode.NewV4(&cfg.PrivateKey.PublicKey, realaddr.IP, cfg.TCPPort, realaddr.Port)
 	db, err := enode.OpenDB(cfg.NodeDBPath)
 	if err != nil {
 		return nil, nil, err

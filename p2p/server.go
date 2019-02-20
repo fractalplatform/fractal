@@ -413,6 +413,53 @@ func (s *sharedUDPConn) Close() error {
 	return nil
 }
 
+// DiscoverOnly ..
+func (srv *Server) DiscoverOnly() error {
+	srv.lock.Lock()
+	defer srv.lock.Unlock()
+	// static fields
+	if srv.PrivateKey == nil {
+		return fmt.Errorf("Server.PrivateKey must be set to a non-nil key")
+	}
+
+	addr, err := net.ResolveUDPAddr("udp", srv.ListenAddr)
+	if err != nil {
+		return err
+	}
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		return err
+	}
+	srv.quit = make(chan struct{})
+	cfg := discover.Config{
+		TCPPort:      0,
+		PrivateKey:   srv.PrivateKey,
+		AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
+		NodeDBPath:   srv.NodeDatabase,
+		NetRestrict:  srv.NetRestrict,
+		Bootnodes:    srv.BootstrapNodes,
+		Unhandled:    nil,
+	}
+	ntab, err := discover.ListenUDP(conn, cfg)
+	if err != nil {
+		return err
+	}
+	go func() {
+		timeout := time.NewTicker(10 * time.Minute)
+		defer timeout.Stop()
+		defer ntab.Close()
+		for {
+			select {
+			case <-timeout.C:
+				ntab.LookupRandom()
+			case <-srv.quit:
+				return
+			}
+		}
+	}()
+	return nil
+}
+
 // Start starts running the server.
 // Servers can not be re-used after stopping.
 func (srv *Server) Start() (err error) {
@@ -460,6 +507,7 @@ func (srv *Server) Start() (err error) {
 		}
 
 		cfg := discover.Config{
+			TCPPort:      conn.LocalAddr().(*net.UDPAddr).Port,
 			PrivateKey:   srv.PrivateKey,
 			AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
 			NodeDBPath:   srv.NodeDatabase,

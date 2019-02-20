@@ -23,6 +23,11 @@ all:
 	@go install ./cmd/ftkey
 	go build ./cmd/ftkey
 	mv ftkey ./build/bin
+
+	@go install ./cmd/ftfinder
+	go build ./cmd/ftfinder
+	mv ftfinder ./build/bin
+
 	
 run:
 	@./build/bin/ft
