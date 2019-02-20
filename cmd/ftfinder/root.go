@@ -42,7 +42,7 @@ var RootCmd = &cobra.Command{
 			Config: &p2p.Config{
 				PrivateKey:     nodekey,
 				Name:           "Finder",
-				ListenAddr:     "127.0.0.1:12345",
+				ListenAddr:     ":12345",
 				BootstrapNodes: nil,
 				NodeDatabase:   "",
 			},
