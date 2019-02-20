@@ -400,3 +400,41 @@ func ReadOptBlockHash(db DatabaseReader) common.Hash {
 	}
 	return common.BytesToHash(data)
 }
+
+func WriteBlockSnapshotLast(db DatabaseWriter, time uint64) {
+	if err := db.Put(blockSnapshotLast, encodeBlockNumber(time)); err != nil {
+		log.Crit("Failed to store block snapshot", "err", err)
+	}
+}
+
+func WriteBlockSnapshotTime(db DatabaseWriter, time uint64, snapshotmsg types.SnapshotMsg) {
+	data, err := rlp.EncodeToBytes(snapshotmsg)
+	if err != nil {
+		log.Crit("Failed to RLP encode state out", "err", err)
+	}
+	if err := db.Put(blockSnapshotTKey(time), data); err != nil {
+		log.Crit("Failed to store block snapshot", "err", err)
+	}
+}
+
+func ReadSnapshotLast(db DatabaseReader) []byte {
+	data, _ := db.Get(blockSnapshotLast)
+	if len(data) == 0 {
+		return nil
+	}
+	return data
+}
+
+func ReadSnapshotTime(db DatabaseReader, time uint64) *types.SnapshotMsg {
+	data, _ := db.Get(blockSnapshotTKey(time))
+	if len(data) == 0 {
+		return nil
+	}
+
+	snapshotmsg := new(types.SnapshotMsg)
+	if err := rlp.Decode(bytes.NewReader(data), snapshotmsg); err != nil {
+		log.Crit("Invalid block state RLP", "count", time, "err", err)
+		return nil
+	}
+	return snapshotmsg
+}

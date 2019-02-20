@@ -53,7 +53,7 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 
 	var gas uint64
 
-	if action.Type() == types.CreateContract {
+	if action.Type() == types.CreateContract || action.Type() == types.CreateAccount || action.Type() == types.IssueAsset {
 		gas += params.ActionGasContractCreation
 	} else {
 		gas += params.ActionGas

@@ -31,12 +31,17 @@ type ChainConfig struct {
 	BootNodes        []string    `json:"bootnodes"` // enode URLs of the P2P bootstrap nodes
 	SysName          common.Name `json:"sysName"`   // system name
 	SysToken         string      `json:"sysToken"`  // system token
+	AssetChargeRatio    uint64      `json:"assetChargeRatio"`
+	ContractChargeRatio uint64      `json:"contractChargeRatio"`
 	SysTokenID       uint64      `json:"-"`
 	SysTokenDecimals uint64      `json:"-"`
+	UpperLimit          *big.Int    `json:"upperlimit"` //
 }
 
 var DefaultChainconfig = &ChainConfig{
 	ChainID:  big.NewInt(1),
 	SysName:  "ftsystemio",
 	SysToken: "ftoken",
+	AssetChargeRatio:    80,
+	ContractChargeRatio: 80,
 }

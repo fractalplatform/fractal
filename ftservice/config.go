@@ -46,6 +46,9 @@ type Config struct {
 
 	CoinBase    common.Address
 	MetricsConf *metrics.Config
+
+	// snapshot
+	Snapshot bool
 }
 
 // MinerConfig miner config

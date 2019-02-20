@@ -42,3 +42,10 @@ type StateOut struct {
 	Number     uint64      // block num
 	Hash       common.Hash // current block hash
 }
+
+//CurSnapshotMsg
+type SnapshotMsg struct {
+	Time   uint64
+	Number uint64
+	Root   common.Hash
+}

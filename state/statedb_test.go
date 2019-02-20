@@ -17,12 +17,16 @@
 package state
 
 import (
+	"bytes"
 	"fmt"
+	"math/big"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/rawdb"
+	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
@@ -41,17 +45,19 @@ func TestSetState(t *testing.T) {
 			state.SetState(addr, common.BytesToHash(key), common.BytesToHash(value))
 		}
 	}
-	_, err := state.Commit(batch, curHash, 1)
+	root, err := state.Commit(batch, curHash, 1)
 	if err != nil {
 		t.Error("commit trie err", err)
 	}
-
+	triedb := state.db.TrieDB()
+	if err := triedb.Commit(root, false); err != nil {
+		t.Error("commit db err", err)
+	}
 	batch.Write()
-	state.CommitCache(curHash)
 
 	//get from db
 	cachedb1 := NewDatabase(db)
-	state3, _ := New(curHash, cachedb1)
+	state3, _ := New(root, cachedb1)
 	for i := 0; i < 4; i++ {
 		addr := string([]byte{byte(i)})
 		for j := 0; j < 4; j++ {
@@ -116,22 +122,26 @@ func TestTransToSpecBlock1(t *testing.T) {
 	addr := "addr01"
 	var curHash common.Hash
 	key1 := []byte("sk")
-
-	prevHash := common.Hash{}
+	root := common.Hash{}
+	var roothash [12]common.Hash
 
 	for i := 0; i < 12; i++ {
-		state, _ := New(prevHash, cachedb)
+		state, _ := New(root, cachedb)
 		value1 := []byte("sv" + strconv.Itoa(i))
 		state.SetState(addr, common.BytesToHash(key1), common.BytesToHash(value1))
 		curHash = common.BytesToHash([]byte("hash" + strconv.Itoa(i)))
-		_, err := state.Commit(batch, curHash, uint64(i))
 
+		root, err := state.Commit(batch, curHash, uint64(i))
 		if err != nil {
-			t.Error("Commit hash1 content failed")
+			t.Error("commit trie err", err)
 		}
+		triedb := state.db.TrieDB()
+		if err := triedb.Commit(root, false); err != nil {
+			t.Error("commit db err", err)
+		}
+		rawdb.WriteCanonicalHash(batch, curHash, uint64(i))
 		batch.Write()
-		state.CommitCache(curHash)
-		prevHash = curHash
+		roothash[i] = root
 	}
 
 	from := curHash
@@ -142,88 +152,12 @@ func TestTransToSpecBlock1(t *testing.T) {
 		t.Error("TransToSpecBlock return fail")
 	}
 
-	state, _ := New(to, cachedb)
+	state, _ := New(roothash[1], cachedb)
 	hash := state.GetState(addr, common.BytesToHash(key1))
 
 	value := []byte("sv" + strconv.Itoa(1))
 	if hash != common.BytesToHash(value) {
 		t.Error("TestTransToSpecBlock, to block 1 failed")
-	}
-}
-
-//element : 0->1->2
-//           ->3
-func TestTransToSpecBlock2(t *testing.T) {
-	db := fdb.NewMemDatabase()
-	batch := db.NewBatch()
-	cachedb := NewDatabase(db)
-	addr := "addr01"
-	var curHash common.Hash
-	key1 := []byte("sk")
-
-	//other branch
-	prevHash := common.Hash{}
-	state, _ := New(prevHash, cachedb)
-	value1 := []byte("sv" + strconv.Itoa(0))
-	state.SetState(addr, common.BytesToHash(key1), common.BytesToHash(value1))
-	curHash = common.BytesToHash([]byte("hash" + strconv.Itoa(0)))
-	_, err := state.Commit(batch, curHash, 0)
-
-	if err != nil {
-		t.Error("commit value 0 failed")
-	}
-	batch.Write()
-	state.CommitCache(curHash)
-
-	prevHash = curHash
-	state1, _ := New(prevHash, cachedb)
-	value3 := []byte("sv" + strconv.Itoa(3))
-	state1.SetState(addr, common.BytesToHash(key1), common.BytesToHash(value3))
-	curHash1 := common.BytesToHash([]byte("hash" + strconv.Itoa(3)))
-	_, err = state1.Commit(batch, curHash1, 1)
-	if err != nil {
-		t.Error("commit value 3 failed")
-	}
-	batch.Write()
-	state1.CommitCache(curHash1)
-
-	err = TransToSpecBlock(db, cachedb, curHash1, prevHash)
-
-	if err != nil {
-		t.Error("Trans to spec block failed ")
-	}
-
-	prevHash = curHash
-	for i := 1; i < 3; i++ {
-		state, _ := New(prevHash, cachedb)
-		value1 := []byte("sv" + strconv.Itoa(i))
-		state.SetState(addr, common.BytesToHash(key1), common.BytesToHash(value1))
-		curHash = common.BytesToHash([]byte("hash" + strconv.Itoa(i)))
-		_, err := state.Commit(batch, curHash, uint64(i))
-
-		if err != nil {
-			t.Error("Commit hash1 content failed")
-		}
-		batch.Write()
-		state.CommitCache(curHash)
-		prevHash = curHash
-	}
-
-	from := curHash
-	to := common.BytesToHash([]byte("hash" + strconv.Itoa(3)))
-	err = TransToSpecBlock(db, cachedb, from, to)
-
-	if err != nil {
-		t.Error("TransToSpecBlock return fail")
-	}
-
-	state, _ = New(to, cachedb)
-	hash := state.GetState(addr, common.BytesToHash(key1))
-
-	value := []byte("sv" + strconv.Itoa(3))
-
-	if hash != common.BytesToHash(value) {
-		t.Error("TestTransToSpecBlock, to block 3 failed")
 	}
 }
 
@@ -256,4 +190,89 @@ func TestStateDB_IntermediateRoot(t *testing.T) {
 	}
 	state.IntermediateRoot()
 	fmt.Println("time: ", time.Since(st))
+}
+
+func TestSnapshot(t *testing.T) {
+	db := fdb.NewMemDatabase()
+	batch := db.NewBatch()
+	cachedb := NewDatabase(db)
+	root := common.Hash{}
+
+	state, _ := New(root, cachedb)
+	addr := "addr01"
+	key := "abcdef"
+	value := []byte(strconv.Itoa(100))
+	state.Put(addr, key, value)
+
+	root = state.IntermediateRoot()
+
+	head := &types.Header{
+		ParentHash: common.Hash{},
+		Root:       root,
+		Number:     big.NewInt(0),
+		Time:       big.NewInt(1548582552502000000),
+	}
+
+	hash := head.Hash()
+
+	root1, err := state.Commit(batch, hash, 0)
+	if err != nil {
+		t.Error("commit trie err", err)
+	}
+
+	triedb := state.db.TrieDB()
+	if err := triedb.Commit(root1, false); err != nil {
+		t.Error("commit db err", err)
+	}
+	rawdb.WriteHeader(batch, head)
+	rawdb.WriteHeadBlockHash(batch, hash)
+	rawdb.WriteCanonicalHash(batch, hash, 0)
+	batch.Write()
+
+	go SnapShotblk(db, 3, 10)
+
+	for i := 1; i < 10; i++ {
+
+		state, _ = New(root, cachedb)
+		value := []byte(strconv.Itoa(100 * i))
+		state.Put(addr, key, value)
+
+		root = state.IntermediateRoot()
+		head.ParentHash = hash
+		head.Root = root
+		head.Number = big.NewInt(int64(i))
+		head.Time = big.NewInt(1548582552502000000 + int64(i*5000000000))
+
+		hash = head.Hash()
+
+		root, err = state.Commit(batch, hash, 0)
+		if err != nil {
+			t.Error("commit trie err", err)
+		}
+
+		triedb := state.db.TrieDB()
+		if err := triedb.Commit(root, false); err != nil {
+			t.Error("commit db err", err)
+		}
+
+		rawdb.WriteHeader(batch, head)
+		rawdb.WriteHeadBlockHash(batch, hash)
+		rawdb.WriteCanonicalHash(batch, hash, uint64(i))
+		batch.Write()
+	}
+
+	time.Sleep(time.Duration(10) * time.Second)
+
+	time, err := state.GetSnapshotLast()
+	pretime, _ := state.GetSnapshotPrev(time)
+
+	value1, _ := state.GetSnapshot(addr, key, time)
+	if bytes.Equal(value1, []byte(strconv.Itoa(100*6))) == false {
+		t.Error("Test snapshot failed")
+	}
+
+	value2, _ := state.GetSnapshot(addr, key, pretime)
+	if bytes.Equal(value2, []byte(strconv.Itoa(100*4))) == false {
+		t.Error("Test snapshot failed")
+	}
 }

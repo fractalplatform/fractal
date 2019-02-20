@@ -275,6 +275,9 @@ func init() {
 		"Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects")
 	falgs.StringVar(&ftconfig.NodeCfg.P2PTrustNodes, "p2p_trustnodes", ftconfig.NodeCfg.P2PStaticNodes,
 		"Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit")
+
+	// snapshot
+	falgs.BoolVar(&ftconfig.FtServiceCfg.Snapshot, "snapshot_enable", false, "snapshot enable")
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
