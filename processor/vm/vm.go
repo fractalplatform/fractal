@@ -216,18 +216,22 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		}
 	}
 	if action.Value().Sign() != 0 && evm.depth != 0 {
+		callValueGas := int64(params.CallValueTransferGas - contract.Gas)
+		if callValueGas < 0 {
+			callValueGas = 0
+		}
 		if len(assetFounder.String()) > 0 {
 			if _, ok := evm.FounderGasMap[assetFounder]; !ok {
-				evm.FounderGasMap[assetFounder] = int64(params.CallValueTransferGas * assetFounderRatio / 100)
+				evm.FounderGasMap[assetFounder] = int64(callValueGas * int64(assetFounderRatio) / 100)
 			} else {
-				evm.FounderGasMap[assetFounder] += int64(params.CallValueTransferGas * assetFounderRatio / 100)
+				evm.FounderGasMap[assetFounder] += int64(callValueGas * int64(assetFounderRatio) / 100)
 			}
 		}
 		if len(callerFounder.String()) > 0 {
 			if _, ok := evm.FounderGasMap[callerFounder]; !ok {
-				evm.FounderGasMap[callerFounder] = -int64(params.CallValueTransferGas * assetFounderRatio / 100)
+				evm.FounderGasMap[callerFounder] = -int64(callValueGas * int64(assetFounderRatio) / 100)
 			} else {
-				evm.FounderGasMap[callerFounder] -= int64(params.CallValueTransferGas * assetFounderRatio / 100)
+				evm.FounderGasMap[callerFounder] -= int64(callValueGas * int64(assetFounderRatio) / 100)
 			}
 		}
 	}
