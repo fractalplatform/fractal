@@ -155,7 +155,7 @@ func (worker *Worker) mintLoop() {
 func (worker *Worker) mintBlock(timestamp int64) {
 	dpos := worker.Engine().(*dpos.Dpos)
 	header := worker.CurrentHeader()
-	state, err := worker.StateAt(header.Hash())
+	state, err := worker.StateAt(header.Root)
 	if err != nil {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
@@ -240,9 +240,9 @@ func (worker *Worker) commitNewWork(timestamp int64) (*types.Block, error) {
 	if common.IsValidName(worker.coinbase) {
 		header.Coinbase = common.StrToName(worker.coinbase)
 	}
-	state, err := worker.StateAt(header.ParentHash)
+	state, err := worker.StateAt(parent.Root)
 	if err != nil {
-		return nil, fmt.Errorf("get parent state %v, err: %v ", header.ParentHash, err)
+		return nil, fmt.Errorf("get parent state %v, err: %v ", header.Root, err)
 	}
 
 	work := &Work{

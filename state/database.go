@@ -20,49 +20,71 @@ import (
 	"sync"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/hashicorp/golang-lru"
-	"github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/fractalplatform/fractal/utils/trie"
 )
 
 const (
 	kvCacheSize = 100000
 )
 
+var MaxTrieCacheGen = uint16(120)
+
 //Database cache db exported
 type Database interface {
-	Get(key string) ([]byte, error)
-	Put(key string, value []byte) error
-	Delete(key string) error
-	PutCache(key string, value []byte) error
-	DeleteCache(key string) error
 	GetDB() fdb.Database
-	GetHash() common.Hash
-	SetHash(hash common.Hash)
+	OpenTrie(root common.Hash) (Trie, error)
+	TrieDB() *trie.Database
 	Lock()
 	UnLock()
-	RLock()
-	RUnLock()
-	Purge()
+}
+
+type Trie interface {
+	TryGet(key []byte) ([]byte, error)
+	TryUpdate(key, value []byte) error
+	TryDelete(key []byte) error
+	Commit(onleaf trie.LeafCallback) (common.Hash, error)
+	Hash() common.Hash
+	NodeIterator(startKey []byte) trie.NodeIterator
+	GetKey([]byte) []byte // TODO(fjl): remove this when SecureTrie is removed
+	Prove(key []byte, fromLevel uint, proofDb fdb.Putter) error
 }
 
 // NewDatabase creates a backing store for state.
 func NewDatabase(db fdb.Database) Database {
-	kvch, _ := lru.New(kvCacheSize)
-	//get cache hash from db
-	curHash := rawdb.ReadOptBlockHash(db)
-
-	return &cachingDB{db: db,
-		kvCache: kvch,
-		hash:    curHash}
+	return &cachingDB{
+		db:     db,
+		triedb: trie.NewDatabase(db),
+	}
 }
 
 type cachingDB struct {
-	db      fdb.Database
-	lock    sync.RWMutex
-	kvCache *lru.Cache
-	hash    common.Hash
+	db     fdb.Database
+	lock   sync.Mutex
+	triedb *trie.Database
+}
+
+// cachedTrie inserts its trie into a cachingDB on commit.
+type cachedTrie struct {
+	*trie.SecureTrie
+	db *cachingDB
+}
+
+func (db *cachingDB) OpenTrie(root common.Hash) (Trie, error) {
+	db.lock.Lock()
+	defer db.lock.Unlock()
+
+	tr, err := trie.NewSecure(root, db.triedb, MaxTrieCacheGen)
+	if err != nil {
+		return nil, err
+	}
+
+	return cachedTrie{tr, db}, nil
+}
+
+// TrieDB retrieves any intermediate trie-node caching layer.
+func (db *cachingDB) TrieDB() *trie.Database {
+	return db.triedb
 }
 
 func (db *cachingDB) Lock() {
@@ -73,71 +95,6 @@ func (db *cachingDB) UnLock() {
 	db.lock.Unlock()
 }
 
-func (db *cachingDB) RLock() {
-	db.lock.RLock()
-}
-
-func (db *cachingDB) RUnLock() {
-	db.lock.RUnlock()
-}
-
 func (db *cachingDB) GetDB() fdb.Database {
 	return db.db
-}
-
-func (db *cachingDB) GetHash() common.Hash {
-	return db.hash
-}
-
-func (db *cachingDB) SetHash(hash common.Hash) {
-	db.hash = hash
-}
-
-func (db *cachingDB) Purge() {
-	db.kvCache.Purge()
-}
-
-func (db *cachingDB) Get(key string) ([]byte, error) {
-	if cached, ok := db.kvCache.Get(key); ok {
-		return cached.([]byte), nil
-	}
-
-	value, err := db.db.Get([]byte(key))
-	if err != nil {
-		if err != errors.ErrNotFound && err != fdb.ErrNotFound {
-			return nil, err
-		}
-		//not found return nil
-	}
-
-	db.kvCache.Add(key, common.CopyBytes(value))
-
-	return value, nil
-}
-
-func (db *cachingDB) Put(key string, value []byte) error {
-	err := db.db.Put([]byte(key), value)
-	if err != nil {
-		return err
-	}
-	db.kvCache.Add(key, common.CopyBytes(value))
-
-	return nil
-}
-
-//only put value to cache
-func (db *cachingDB) PutCache(key string, value []byte) error {
-	db.kvCache.Add(key, common.CopyBytes(value))
-
-	return nil
-}
-
-func (db *cachingDB) Delete(key string) error {
-	db.kvCache.Remove(key)
-	return db.db.Delete([]byte(key))
-}
-
-func (db *cachingDB) DeleteCache(key string) error {
-	db.kvCache.Remove(key)
-	return nil
 }

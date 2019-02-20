@@ -91,16 +91,39 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet := NewHomesteadInstructionSet()
 
 	//multi-asset InstructionSet
-
-	instructionSet[BALANCEEX] = operation{
-		execute:       opBalanceex,
-		gasCost:       gasBalanceex,
+	instructionSet[SNAPSHOTTIME] = operation{
+		execute:       opGetSnapshotTime,
+		gasCost:       gasGetSnapshotTime,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
 		returns:       true,
 	}
 
-	instructionSet[AddASSET] = operation{
+	instructionSet[ASSETAMOUNT] = operation{
+		execute:       opGetAssetAmount,
+		gasCost:       gasGetAssetAmount,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[SNAPBALANCE] = operation{
+		execute:       opSnapBalance,
+		gasCost:       gasSnapBalance,
+		validateStack: makeStackFunc(3, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[BALANCEEX] = operation{
+		execute:       opBalanceex,
+		gasCost:       gasBalanceex,
+		validateStack: makeStackFunc(1, 0),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[ADDASSET] = operation{
 		execute:       opAddAsset,
 		gasCost:       gasAddAsset,
 		validateStack: makeStackFunc(2, 1),

@@ -1,9 +1,9 @@
 pragma solidity ^0.4.24;
 
-contract Asset { 
+contract Asset {
     uint256 public totalSupply;
 
-    function Asset() {
+    constructor() public {
         totalSupply = 10;
     }
 
@@ -21,5 +21,14 @@ contract Asset {
     }
     function getbalance(address to, address assetId) public returns(uint) {
         return to.balanceex(assetId);
+    }
+    function getAssetAmount(uint256 assetId, uint256 t) public returns (uint256){
+        return assetamount(assetId,t);
+    }
+    function getSnapshotTime(uint256 i,uint256 t) public returns (uint256){
+        return snapshottime(i,t);
+    }
+    function getSnapBalance(address to,uint256 assetId,uint256 t) public returns (uint256){
+        return to.snapbalance(assetId,t);
     }
 }

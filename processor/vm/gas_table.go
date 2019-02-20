@@ -129,8 +129,8 @@ func gasSStore(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, m
 		return params.SstoreSetGas, nil
 	} else if val != (common.Hash{}) && y.Sign() == 0 {
 		// non 0 => 0
-		evm.StateDB.AddRefund(params.SstoreRefundGas)
-		return params.SstoreClearGas, nil
+		//evm.StateDB.AddRefund(params.SstoreRefundGas)
+		return 0, nil
 	} else {
 		// non 0 => non 0 (or 0 => 0)
 		return params.SstoreResetGas, nil
@@ -430,6 +430,18 @@ func gasDelegateCall(gt params.GasTable, evm *EVM, contract *Contract, stack *St
 
 func gasBalanceex(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.Balance, nil
+}
+
+func gasGetAssetAmount(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetAssetAmount, nil
+}
+
+func gasSnapBalance(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetAssetAmount, nil
+}
+
+func gasGetSnapshotTime(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetSnapshotTime, nil
 }
 
 func gasAddAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

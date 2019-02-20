@@ -160,7 +160,7 @@ func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.Blo
 	if header == nil || err != nil {
 		return nil, nil, err
 	}
-	stateDb, err := b.ftservice.blockchain.StateAt(b.ftservice.blockchain.CurrentBlock().Hash())
+	stateDb, err := b.ftservice.blockchain.StateAt(b.ftservice.blockchain.CurrentBlock().Root())
 	return stateDb, header, err
 }
 
