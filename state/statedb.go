@@ -18,17 +18,19 @@ package state
 
 import (
 	"container/list"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
 	"sync"
+	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
+	"github.com/fractalplatform/fractal/utils/trie"
 )
 
 type revision struct {
@@ -42,21 +44,14 @@ var (
 	linkSymbol     = "*"
 )
 
-const (
-	optAdd = 1 // Reverts/Changes record add key value
-	optUpd = 2 // Reverts/Changes record update key value
-	optDel = 3 // Reverts/Changes record delete key value
-)
-
 // StateDB store block operate info
 type StateDB struct {
-	db Database
+	db   Database
+	trie Trie
 
 	readSet  map[string][]byte   // save old/unmodified data
 	writeSet map[string][]byte   // last modify data
 	dirtySet map[string]struct{} // writeSet which key is modified
-
-	parentHash common.Hash // save previous block hash
 
 	dbErr  error
 	refund uint64 // unuse gas
@@ -73,8 +68,6 @@ type StateDB struct {
 	validRevisions []revision
 	nextRevisionID int
 
-	dirtyHash map[string]common.Hash
-
 	stateTrace bool // replay transaction, true is replayed , false is not replayed
 
 	lock sync.Mutex
@@ -88,24 +81,20 @@ type transferInfo struct {
 
 //New func generate a statedb object
 //parentHash: block's parent hash, db: cachedb
-func New(parentHash common.Hash, db Database) (*StateDB, error) {
-	//current cache hash
-	db.RLock()
-	hash := db.GetHash()
-	db.RUnLock()
-	if hash != parentHash {
-		err := fmt.Errorf("stateNew error, hash:%x,phash:%x", hash, parentHash)
+func New(root common.Hash, db Database) (*StateDB, error) {
+	tr, err := db.OpenTrie(root)
+	if err != nil {
 		return nil, err
 	}
+
 	return &StateDB{
 		db:         db,
-		parentHash: parentHash,
+		trie:       tr,
 		readSet:    make(map[string][]byte),
 		writeSet:   make(map[string][]byte),
 		dirtySet:   make(map[string]struct{}),
 		logs:       make(map[common.Hash][]*types.Log),
 		preimages:  make(map[common.Hash][]byte),
-		dirtyHash:  make(map[string]common.Hash),
 		journal:    newJournal(),
 		stateTrace: false}, nil
 }
@@ -121,12 +110,16 @@ func (s *StateDB) Error() error {
 	return s.dbErr
 }
 
-func (s *StateDB) Reset() error {
+func (s *StateDB) Reset(root common.Hash) error {
+	tr, err := s.db.OpenTrie(root)
+	if err != nil {
+		return err
+	}
+
+	s.trie = tr
 	s.readSet = make(map[string][]byte)
 	s.writeSet = make(map[string][]byte)
 	s.dirtySet = make(map[string]struct{})
-	s.dirtyHash = make(map[string]common.Hash)
-	s.parentHash = common.Hash{}
 	s.thash = common.Hash{}
 	s.bhash = common.Hash{}
 	s.txIndex = 0
@@ -229,27 +222,14 @@ func (s *StateDB) get(key string) ([]byte, error) {
 
 	// replay transaction
 	if s.stateTrace == true {
-		errInfo := fmt.Sprintf("No value when trace,phash:%x", s.parentHash)
+		errInfo := fmt.Sprintf("No value when trace.")
 		err := errors.New(errInfo)
 		s.setError(err)
 		return nil, err
 	}
 
-	s.db.RLock()
-	hash := s.db.GetHash()
-
-	if hash != s.parentHash {
-		errInfo := fmt.Sprintf("Inconsistent hash:%x phash:%x", hash, s.parentHash)
-		err := errors.New(errInfo)
-		s.setError(err)
-		s.db.RUnLock()
-		return nil, err
-	}
-
-	value, err := s.db.Get(key)
-	s.db.RUnLock()
-
-	if err != nil {
+	value, err := s.trie.TryGet([]byte(key))
+	if len(value) == 0 {
 		s.setError(err)
 		return nil, err
 	}
@@ -265,9 +245,9 @@ func (s *StateDB) get(key string) ([]byte, error) {
 func (s *StateDB) RpcGetState(account string, key common.Hash) common.Hash {
 	optKey := statePrefix + linkSymbol + account + linkSymbol + key.String()
 
-	value, err := s.db.Get(optKey)
-
-	if err != nil {
+	value, err := s.trie.TryGet([]byte(optKey))
+	if len(value) == 0 {
+		s.setError(err)
 		return common.Hash{}
 	}
 
@@ -278,9 +258,10 @@ func (s *StateDB) RpcGetState(account string, key common.Hash) common.Hash {
 //when called please RLock cachedb
 func (s *StateDB) RpcGet(account string, key string) ([]byte, error) {
 	optKey := acctDataPrefix + linkSymbol + account + linkSymbol + key
-	value, err := s.db.Get(optKey)
 
-	if err != nil {
+	value, err := s.trie.TryGet([]byte(optKey))
+	if len(value) == 0 {
+		s.setError(err)
 		return nil, err
 	}
 
@@ -295,17 +276,17 @@ func (s *StateDB) Copy() *StateDB {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	state := &StateDB{db: s.db,
-		readSet:    make(map[string][]byte, len(s.writeSet)),
-		writeSet:   make(map[string][]byte, len(s.writeSet)),
-		dirtySet:   make(map[string]struct{}, len(s.dirtySet)),
-		dirtyHash:  make(map[string]common.Hash),
-		parentHash: s.parentHash,
-		refund:     s.refund,
-		logs:       make(map[common.Hash][]*types.Log, len(s.logs)),
-		logSize:    s.logSize,
-		preimages:  make(map[common.Hash][]byte),
-		journal:    newJournal()}
+	state := &StateDB{
+		db:        s.db,
+		trie:      s.trie,
+		readSet:   make(map[string][]byte, len(s.writeSet)),
+		writeSet:  make(map[string][]byte, len(s.writeSet)),
+		dirtySet:  make(map[string]struct{}, len(s.dirtySet)),
+		refund:    s.refund,
+		logs:      make(map[common.Hash][]*types.Log, len(s.logs)),
+		logSize:   s.logSize,
+		preimages: make(map[common.Hash][]byte),
+		journal:   newJournal()}
 
 	for key := range s.journal.dirties {
 		value := s.writeSet[key]
@@ -361,58 +342,15 @@ func (s *StateDB) Delete(account string, key string) {
 	s.put(optKey, nil)
 }
 
-func kvRlpHash(kvNode *types.KvNode) (h common.Hash) {
-	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, kvNode)
-	hw.Sum(h[:0])
-	return h
-}
-
 // ReceiptRoot compute one tx‘ receipt hash
 func (s *StateDB) ReceiptRoot() common.Hash {
-	defer s.Finalise()
-
-	keys := make([]string, 0, len(s.journal.dirties))
-	for key := range s.journal.dirties {
-		keys = append(keys, key)
-	}
-
-	sort.Strings(keys)
-
-	dirtyHash := make([]common.Hash, 0, len(keys))
-
-	for _, key := range keys {
-		value := s.writeSet[key]
-		node := &types.KvNode{Key: key, Value: value}
-		hash := kvRlpHash(node)
-		dirtyHash = append(dirtyHash, hash)
-		s.dirtyHash[key] = hash
-	}
-
-	return common.MerkleRoot(dirtyHash)
+	s.Finalise()
+	return s.trie.Hash()
 }
 
 func (s *StateDB) IntermediateRoot() common.Hash {
-	defer s.Finalise()
-
-	if len(s.journal.dirties) != 0 {
-		s.ReceiptRoot()
-	}
-
-	keys := make([]string, 0, len(s.dirtyHash))
-	for key := range s.dirtyHash {
-		keys = append(keys, key)
-	}
-
-	sort.Strings(keys)
-
-	dirtyHash := make([]common.Hash, 0, len(keys))
-	for _, key := range keys {
-		hash := s.dirtyHash[key]
-		dirtyHash = append(dirtyHash, hash)
-	}
-
-	return common.MerkleRoot(dirtyHash)
+	s.Finalise()
+	return s.trie.Hash()
 }
 
 // execute transaction called
@@ -432,38 +370,31 @@ func (s *StateDB) Finalise() {
 	for key := range s.journal.dirties {
 		s.dirtySet[key] = struct{}{}
 	}
+
+	for key := range s.dirtySet {
+		value, exsit := s.writeSet[key]
+		if exsit == false {
+			panic("WriteSet is invalid when commit")
+		}
+		//update the value to trie
+		if value != nil {
+			s.trie.TryUpdate([]byte(key), value)
+		} else {
+			s.trie.TryDelete([]byte(key))
+		}
+		delete(s.dirtySet, key)
+	}
+
 	s.clearJournalAndRefund()
 }
 
 // commit call, save state change record
 func (s *StateDB) genBlockStateOut(parentHash, blockHash common.Hash, blockNum uint64) *types.StateOut {
-	stateOut := &types.StateOut{ParentHash: parentHash,
-		Number:  blockNum,
-		Hash:    blockHash,
-		ReadSet: make([]*types.KvNode, 0, len(s.readSet)),
-		Reverts: make([]*types.OptInfo, 0, len(s.dirtySet)),
-		Changes: make([]*types.OptInfo, 0, len(s.dirtySet))}
-
-	for key := range s.dirtySet {
-		readValue := s.readSet[key]
-		writeValue := s.writeSet[key]
-
-		if readValue != nil && writeValue != nil {
-			stateOut.Reverts = append(stateOut.Reverts,
-				&types.OptInfo{Key: key, Value: common.CopyBytes(readValue), Opt: optUpd})
-			stateOut.Changes = append(stateOut.Changes,
-				&types.OptInfo{Key: key, Value: common.CopyBytes(writeValue), Opt: optUpd})
-		} else if readValue != nil && writeValue == nil {
-			stateOut.Reverts = append(stateOut.Reverts,
-				&types.OptInfo{Key: key, Value: common.CopyBytes(readValue), Opt: optAdd})
-			stateOut.Changes = append(stateOut.Changes,
-				&types.OptInfo{Key: key, Value: nil, Opt: optDel})
-		} else {
-			stateOut.Reverts = append(stateOut.Reverts,
-				&types.OptInfo{Key: key, Value: common.CopyBytes(readValue), Opt: optDel})
-			stateOut.Changes = append(stateOut.Changes,
-				&types.OptInfo{Key: key, Value: common.CopyBytes(writeValue), Opt: optAdd})
-		}
+	stateOut := &types.StateOut{
+		ParentHash: parentHash,
+		Number:     blockNum,
+		Hash:       blockHash,
+		ReadSet:    make([]*types.KvNode, 0, len(s.readSet)),
 	}
 
 	// replay
@@ -481,219 +412,46 @@ func (s *StateDB) genBlockStateOut(parentHash, blockHash common.Hash, blockNum u
 func (s *StateDB) Commit(batch fdb.Batch, blockHash common.Hash, blockNum uint64) (common.Hash, error) {
 	defer s.clearJournalAndRefund()
 
+	var parentHash common.Hash
+	s.Finalise()
+
 	if s.Error() != nil {
 		return common.Hash{}, errors.New("DB error when commit")
 	}
 
-	for key := range s.journal.dirties {
-		s.dirtySet[key] = struct{}{}
-	}
-
-	// check parentHash
-	curHash := s.db.GetHash()
-
-	if curHash != s.parentHash {
-		return common.Hash{}, fmt.Errorf("Error hash when commit, cache: %x,parent: %x", curHash, s.parentHash)
+	db := s.db.GetDB()
+	if blockNum == 0 {
+		parentHash = common.Hash{}
+	} else {
+		parentHash = rawdb.ReadCanonicalHash(db, blockNum-1)
 	}
 
 	//generate revert and write to db
-	stateOut := s.genBlockStateOut(s.parentHash, blockHash, blockNum)
+	stateOut := s.genBlockStateOut(parentHash, blockHash, blockNum)
 	rawdb.WriteBlockStateOut(batch, blockHash, stateOut)
-
-	//scan dirtyset, commit to db
-	for key := range s.dirtySet {
-		value, exsit := s.writeSet[key]
-		if exsit == false {
-			panic("WriteSet is invalid when commit")
-		}
-		//update the value to db
-		var err error
-		if value != nil {
-			err = batch.Put([]byte(key), value)
-		} else {
-			err = batch.Delete([]byte(key))
-		}
-
-		if err != nil {
-			return common.Hash{}, err
-		}
-		//call commitcache write cache after
-	}
-
 	rawdb.WriteOptBlockHash(batch, blockHash)
-	hash := s.IntermediateRoot()
-	return hash, nil
-}
 
-//CommitCache commit the block state to cache
-//call after state commit to db success
-func (s *StateDB) CommitCache(blockHash common.Hash) {
-	//scan dirtyset, commit to cache
-	for key := range s.dirtySet {
-		value, exsit := s.writeSet[key]
-		if exsit == false {
-			panic("WriteSet is invalid when commitcache")
-		}
-		s.db.PutCache(key, value)
-	}
-	s.db.SetHash(blockHash)
-}
-
-func recoverDbByOptInfos(batch fdb.Batch, optInfos []*types.OptInfo) error {
-	var err error
-	for _, optinfo := range optInfos {
-		if optinfo.Opt == optAdd {
-			err = batch.Put([]byte(optinfo.Key), optinfo.Value)
-		} else if optinfo.Opt == optUpd {
-			err = batch.Put([]byte(optinfo.Key), optinfo.Value)
-		} else if optinfo.Opt == optDel {
-			err = batch.Delete([]byte(optinfo.Key))
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func recoverCacheByOptInfos(cache Database, optInfos []*types.OptInfo) {
-	for _, optinfo := range optInfos {
-		if optinfo.Opt == optAdd {
-			cache.PutCache(optinfo.Key, optinfo.Value)
-		} else if optinfo.Opt == optUpd {
-			cache.PutCache(optinfo.Key, optinfo.Value)
-		} else if optinfo.Opt == optDel {
-			cache.DeleteCache(optinfo.Key)
-		}
-	}
-}
-
-func writeTransferToDb(db fdb.Database, transInfo *transferInfo, to common.Hash) error {
-	var err error
-	var state *types.StateOut
-	rollList := &transInfo.rollBack
-	fwdList := &transInfo.forworad
-	batch := db.NewBatch()
-
-	for node := rollList.Front(); node != nil; node = node.Next() {
-		state = node.Value.(*types.StateOut)
-		err = recoverDbByOptInfos(batch, state.Reverts)
-		if err != nil {
-			return err
-		}
-
-		//delete rollback block state
-		rawdb.DeleteBlockStateOut(batch, state.Hash)
-	}
-
-	for node := fwdList.Front(); node != nil; node = node.Next() {
-		state = node.Value.(*types.StateOut)
-		err = recoverDbByOptInfos(batch, state.Changes)
-		if err != nil {
-			return err
-		}
-	}
-	rawdb.WriteOptBlockHash(batch, to)
-	err = batch.Write()
-	return err
-}
-
-func writeTransferToCache(cache Database, transInfo *transferInfo, to common.Hash) {
-	var state *types.StateOut
-	rollList := &transInfo.rollBack
-	fwdList := &transInfo.forworad
-
-	for node := rollList.Front(); node != nil; node = node.Next() {
-		state = node.Value.(*types.StateOut)
-		recoverCacheByOptInfos(cache, state.Reverts)
-	}
-
-	for node := fwdList.Front(); node != nil; node = node.Next() {
-		state = node.Value.(*types.StateOut)
-		recoverCacheByOptInfos(cache, state.Changes)
-	}
-
-	cache.SetHash(to)
-}
-
-func fetchBranch(db fdb.Database, from common.Hash, to common.Hash) (*transferInfo, error) {
-	var transInfo transferInfo
-
-	rollState := rawdb.ReadBlockStateOut(db, from)
-	fwdState := rawdb.ReadBlockStateOut(db, to)
-
-	if rollState == nil || fwdState == nil {
-		err := fmt.Errorf("from or to's stateout not exsit, from:%x to:%x", from, to)
-		return nil, err
-	}
-
-	for rollState.Number > fwdState.Number {
-		transInfo.rollBack.PushBack(rollState)
-		rollState = rawdb.ReadBlockStateOut(db, rollState.ParentHash)
-		if rollState == nil {
-			err := fmt.Errorf("fetch branch failed, rollBack state not exsit, from:%x to:%x", from, to)
-			return nil, err
-		}
-	}
-
-	for fwdState.Number > rollState.Number {
-		transInfo.forworad.PushFront(fwdState)
-		fwdState = rawdb.ReadBlockStateOut(db, fwdState.ParentHash)
-		if fwdState == nil {
-			err := fmt.Errorf("fetch branch failed, forward state not exsit, from:%x to:%x", from, to)
-			return nil, err
-		}
-	}
-
-	for rollState.ParentHash != fwdState.ParentHash {
-		transInfo.rollBack.PushBack(rollState)
-		transInfo.forworad.PushFront(fwdState)
-		rollState = rawdb.ReadBlockStateOut(db, rollState.ParentHash)
-		fwdState = rawdb.ReadBlockStateOut(db, fwdState.ParentHash)
-
-		if rollState == nil || fwdState == nil {
-			err := fmt.Errorf("fetch branch failed when rollback and forward, from:%x to:%x", from, to)
-			return nil, err
-		}
-	}
-
-	if rollState != nil && fwdState != nil {
-		//same node not push
-		if rollState.Hash != fwdState.Hash {
-			transInfo.rollBack.PushBack(rollState)
-			transInfo.forworad.PushFront(fwdState)
-		}
-	}
-
-	return &transInfo, nil
+	root, err := s.trie.Commit(nil)
+	return root, err
 }
 
 //TransToSpecBlock change block state (from->to)
 func TransToSpecBlock(db fdb.Database, cache Database, from common.Hash, to common.Hash) error {
-	//get near parent hash of from and to
-	transInfo, err := fetchBranch(db, from, to)
-	if err != nil {
+	batch := db.NewBatch()
+
+	rollState := rawdb.ReadBlockStateOut(db, from)
+	fwdState := rawdb.ReadBlockStateOut(db, to)
+	if rollState == nil || fwdState == nil {
+		err := fmt.Errorf("from or to's stateout not exsit, from:%x to:%x", from, to)
 		return err
 	}
 
-	cache.Lock()
-	defer cache.UnLock()
-	optHash := cache.GetHash()
-	if optHash != from {
-		errInfo := fmt.Sprintf("Invalid current hash, from:%x cur:%x", from, optHash)
-		return errors.New(errInfo)
+	for rollState.Number > fwdState.Number {
+		rawdb.DeleteBlockStateOut(batch, rollState.Hash)
+		rollState = rawdb.ReadBlockStateOut(db, rollState.ParentHash)
 	}
-	//exe rollback and forward
-	err = writeTransferToDb(db, transInfo, to)
-	if err != nil {
-		return err
-	}
-
-	writeTransferToCache(cache, transInfo, to)
-
-	return nil
+	err := batch.Write()
+	return err
 }
 
 //TraceNew get state of special block hash for trace
@@ -709,11 +467,9 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 
 	stateDb := &StateDB{
 		db:         cache,
-		parentHash: stateOut.ParentHash,
 		readSet:    make(map[string][]byte),
 		writeSet:   make(map[string][]byte),
 		dirtySet:   make(map[string]struct{}),
-		dirtyHash:  make(map[string]common.Hash),
 		logs:       make(map[common.Hash][]*types.Log),
 		preimages:  make(map[common.Hash][]byte),
 		journal:    newJournal(),
@@ -724,4 +480,181 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 	}
 
 	return stateDb, nil
+}
+
+func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotTime uint : second
+
+	var curSnapshotTime uint64
+	var blockNum uint64
+	var snapshotInfo types.SnapshotMsg
+
+	var prevHash, nextHash common.Hash
+	var prevTimeHour, nextTimeHour uint64
+	log.Info("Start snapshot", "tick=", Ticktime, "interval=", snapshotTime)
+
+	futureTimer := time.NewTicker(time.Duration(Ticktime) * time.Second)
+	defer futureTimer.Stop()
+
+	for {
+		select {
+		case <-futureTimer.C:
+			for {
+				snapshotTimeLast := rawdb.ReadSnapshotLast(db)
+				if len(snapshotTimeLast) == 0 {
+					blockNum = 0
+					prevHash = rawdb.ReadCanonicalHash(db, blockNum)
+					prevHead := rawdb.ReadHeader(db, prevHash, blockNum)
+					prevTime := prevHead.Time.Uint64()
+					curSnapshotTime = (prevTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
+
+					curBlockHash := rawdb.ReadHeadBlockHash(db)
+					number := rawdb.ReadHeaderNumber(db, curBlockHash)
+					curBlockHeader := rawdb.ReadHeader(db, curBlockHash, *number)
+					curBlockTime := curBlockHeader.Time.Uint64()
+
+					if curBlockTime-curSnapshotTime > 2*(snapshotTime*1000000000) {
+						for {
+							blockNum = blockNum + 1
+
+							nextHash = rawdb.ReadCanonicalHash(db, blockNum)
+							nextHead := rawdb.ReadHeader(db, nextHash, blockNum)
+
+							prevTimeHour = (prevTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
+							nextTime := nextHead.Time.Uint64()
+							nextTimeHour = (nextTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
+
+							if prevTimeHour == nextTimeHour {
+								prevTime = nextTime
+								continue
+							} else {
+								if curBlockTime-nextTimeHour < (snapshotTime*1000000000) || curBlockTime-nextTime < (snapshotTime*1000000000) {
+									break
+								}
+
+								snapshotInfo.Time = 0
+								snapshotInfo.Number = nextHead.Number.Uint64()
+								snapshotInfo.Root = nextHead.Root
+
+								batch := db.NewBatch()
+								rawdb.WriteBlockSnapshotTime(batch, nextTimeHour, snapshotInfo)
+								rawdb.WriteBlockSnapshotLast(batch, nextTimeHour)
+								if err := batch.Write(); err != nil {
+									log.Error("Failed to write snapshot to disk", "err", err)
+								}
+								log.Debug("Sanpshot moment", "time=", nextTimeHour)
+								break
+							}
+						}
+
+					}
+				} else {
+					curSnapshotTime = binary.BigEndian.Uint64(snapshotTimeLast)
+					snapshotInfo := rawdb.ReadSnapshotTime(db, curSnapshotTime)
+					blockNum = snapshotInfo.Number
+
+					curBlockHash := rawdb.ReadHeadBlockHash(db)
+					number := rawdb.ReadHeaderNumber(db, curBlockHash)
+					curBlockHeader := rawdb.ReadHeader(db, curBlockHash, *number)
+					curBlockTime := curBlockHeader.Time.Uint64()
+
+					if curBlockTime-curSnapshotTime > 2*(snapshotTime*1000000000) {
+						blockNum = blockNum + 1
+
+						prevHash = rawdb.ReadCanonicalHash(db, blockNum)
+						prevHead := rawdb.ReadHeader(db, prevHash, blockNum)
+						prevTime := prevHead.Time.Uint64()
+
+						for {
+							blockNum = blockNum + 1
+
+							nextHash = rawdb.ReadCanonicalHash(db, blockNum)
+							nextHead := rawdb.ReadHeader(db, nextHash, blockNum)
+
+							prevTimeHour = (prevTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
+							nextTime := nextHead.Time.Uint64()
+							nextTimeHour = (nextTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
+
+							if prevTimeHour == nextTimeHour {
+								prevTime = nextTime
+								continue
+							} else {
+								if curBlockTime-nextTimeHour < (snapshotTime * 1000000000) {
+									break
+								}
+
+								snapshotInfo.Time = curSnapshotTime
+								snapshotInfo.Number = nextHead.Number.Uint64()
+								snapshotInfo.Root = nextHead.Root
+								batch := db.NewBatch()
+								rawdb.WriteBlockSnapshotTime(batch, nextTimeHour, *snapshotInfo)
+								rawdb.WriteBlockSnapshotLast(batch, nextTimeHour)
+								if err := batch.Write(); err != nil {
+									log.Error("Failed to write snapshot to disk", "err", err)
+								}
+								log.Debug("Sanpshot moment", "time=", nextTimeHour)
+								break
+							}
+
+						}
+
+					}
+
+					if curBlockTime-nextTimeHour > 2*(snapshotTime*1000000000) {
+						continue
+					} else {
+						break
+					}
+
+				}
+			}
+		}
+	}
+}
+
+func (s *StateDB) GetSnapshot(account string, key string, time uint64) ([]byte, error) {
+	if time == 0 {
+		return nil, fmt.Errorf("Not snapshot info")
+	}
+
+	optKey := acctDataPrefix + linkSymbol + account + linkSymbol + key
+	db := s.db.GetDB()
+	snapshotInfo := rawdb.ReadSnapshotTime(db, time)
+	if snapshotInfo == nil {
+		return nil, fmt.Errorf("Not snapshot info")
+	}
+	triedb := trie.NewDatabase(db)
+	tr, err := trie.NewSecure(snapshotInfo.Root, triedb, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	value, err := tr.TryGet([]byte(optKey))
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+func (s *StateDB) GetSnapshotLast() (uint64, error) {
+	db := s.db.GetDB()
+	snapshotTimeLast := rawdb.ReadSnapshotLast(db)
+	if len(snapshotTimeLast) == 0 {
+		err := fmt.Errorf("Not snapshot info")
+		return 0, err
+	}
+	return binary.BigEndian.Uint64(snapshotTimeLast), nil
+}
+
+func (s *StateDB) GetSnapshotPrev(time uint64) (uint64, error) {
+	if time == 0 {
+		return 0, fmt.Errorf("Not snapshot info")
+	}
+
+	db := s.db.GetDB()
+	snapshotInfo := rawdb.ReadSnapshotTime(db, time)
+	if snapshotInfo == nil || snapshotInfo.Time == 0 {
+		err := fmt.Errorf("Not snapshot info")
+		return 0, err
+	}
+	return snapshotInfo.Time, nil
 }

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -394,6 +395,51 @@ func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 	return nil, nil
 }
 
+func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	time, num := stack.pop(), stack.pop()
+	index := num.Uint64()
+	t := time.Uint64()
+	tt, err := evm.AccountDB.GetSnapshotTime(index, t)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(tt))
+	}
+	evm.interpreter.intPool.put(num, time)
+	return nil, nil
+}
+
+func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	time, assetId := stack.pop(), stack.pop()
+	assetID := assetId.Uint64()
+	t := time.Uint64()
+	amount, err := evm.AccountDB.GetAssetAmountByTime(assetID, t)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(amount)
+	}
+	evm.interpreter.intPool.put(time, assetId)
+	return nil, nil
+}
+
+func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	time, assetId, account := stack.pop(), stack.pop(), stack.pop()
+	assetID := assetId.Uint64()
+	t := time.Uint64()
+	name, err := common.BigToName(account)
+	if err != nil {
+		return nil, err
+	}
+	balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, t)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(balance)
+	}
+	evm.interpreter.intPool.put(time, assetId)
+	return nil, nil
+}
 func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	assetId := stack.pop()
 	slot := stack.peek()
@@ -833,7 +879,7 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 }
 
 func execAddAsset(evm *EVM, contract *Contract, assetID uint64, value *big.Int) error {
-	asset := &asset.AssetObject{AssetId: assetID, Amount: value}
+	asset := &accountmanager.IncAsset{AssetId: assetID, Amount: value, To: contract.CallerName}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err
@@ -863,7 +909,7 @@ func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 func executeIssuseAsset(evm *EVM, contract *Contract, desc string) error {
 	input := strings.Split(desc, ",")
-	if len(input) != 5 {
+	if len(input) != 7 {
 		return fmt.Errorf("invalid desc string")
 	}
 	name := input[0]
@@ -877,8 +923,12 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) error {
 		return err
 	}
 	owner := common.Name(input[4])
-
-	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Decimals: decimal}
+	limit, ifOK := new(big.Int).SetString(input[5], 10)
+	if !ifOK {
+		return fmt.Errorf("amount not correct")
+	}
+	founder := common.Name(input[6])
+	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {

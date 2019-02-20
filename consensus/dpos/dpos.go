@@ -279,7 +279,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 	}
 	proudcer := header.Coinbase.String()
 	curheader := chain.CurrentHeader()
-	state, err := chain.StateAt(curheader.Hash())
+	state, err := chain.StateAt(curheader.Root)
 	if err != nil {
 		return err
 	}

@@ -19,7 +19,7 @@ package processor
 import (
 	"errors"
 	"math/big"
-
+        "fmt"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
@@ -44,6 +44,7 @@ type StateTransition struct {
 	assetID    uint64
 	account    *accountmanager.AccountManager
 	evm        *vm.EVM
+	chainConfig *params.ChainConfig
 }
 
 // NewStateTransition initialises and returns a new state transition object.
@@ -57,6 +58,7 @@ func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, a
 		gasPrice: gasPrice,
 		assetID:  assetID,
 		account:  accountDB,
+		chainConfig: config,
 	}
 }
 
@@ -165,12 +167,39 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return nil, st.gasUsed(), true, err, vmerr
 	}
 	st.refundGas()
-	st.account.AddAccountBalanceByID(st.evm.Coinbase, st.assetID, new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed())))
+
+	if st.action.Value().Sign() != 0 {
+		assetFounder, _ := st.account.GetAssetFounder(st.action.AssetID())
+		assetFounderRatio := st.chainConfig.AssetChargeRatio
+		if len(assetFounder.String()) > 0 {
+			if _, ok := evm.FounderGasMap[assetFounder]; !ok {
+				evm.FounderGasMap[assetFounder] = int64(params.ActionGas * assetFounderRatio / 100)
+			} else {
+				evm.FounderGasMap[assetFounder] += int64(params.ActionGas * assetFounderRatio / 100)
+			}
+		}
+	}
+	if err := st.distributeGas(); err != nil {
+		return ret, st.gasUsed(), true, err, vmerr
+	}
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 
+func (st *StateTransition) distributeGas() error {
+	var totalGas int64
+	for founder, gas := range st.evm.FounderGasMap {
+		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas)))
+		totalGas += gas
+	}
+	if totalGas > int64(st.gasUsed()) {
+		return fmt.Errorf("calc wrong gas used")
+	}
+	st.account.AddAccountBalanceByID(st.evm.Coinbase, st.assetID, new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas))))
+	return nil
+}
+
 func (st *StateTransition) refundGas() {
-	st.gas += st.evm.StateDB.GetRefund()
+	//st.gas += st.evm.StateDB.GetRefund()
 
 	// Return remaining gas, exchanged at the original rate.
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)

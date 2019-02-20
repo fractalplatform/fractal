@@ -30,7 +30,9 @@ func Test_newAssetObject(t *testing.T) {
 		symbol    string
 		amount    *big.Int
 		dec       uint64
+		founder   common.Name
 		owner     common.Name
+		UpperLimit *big.Int
 	}
 	tests := []struct {
 		name    string
@@ -39,19 +41,19 @@ func Test_newAssetObject(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name("a123")}, &AssetObject{0, "ft", "ft", big.NewInt(2), 18, common.Name("a123")}, false},
-		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a123")}, nil, true},
-		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a123")}, nil, true},
-		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a123")}, nil, true},
-		{"symbolempty", args{"ft", "", big.NewInt(2), 18, common.Name("a123")}, nil, true},
-		{"amount==0", args{"ft", "z", big.NewInt(-1), 18, common.Name("a123")}, nil, true},
-		{"ownerempty", args{"ft", "z", big.NewInt(2), 18, common.Name("")}, nil, true},
-		{"shortsymbol", args{"ft", "z", big.NewInt(2), 18, common.Name("a123")}, nil, true},
-		{"longsymbol", args{"ft", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a123")}, nil, true},
-		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a123")}, nil, true},
+		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""),common.Name("a123"),big.NewInt(999999)}, &AssetObject{0, "ft", "ft", big.NewInt(2), 18, common.Name(""),common.Name("a123"),big.NewInt(2),big.NewInt(999999)}, false},
+		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"symbolempty", args{"ft", "", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"amount==0", args{"ft", "z", big.NewInt(-1), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"ownerempty", args{"ft", "z", big.NewInt(2), 18, common.Name(""),common.Name(""),big.NewInt(999999)}, nil, true},
+		{"shortsymbol", args{"ft", "z", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"longsymbol", args{"ft", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
+		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a123"),common.Name("a123"),big.NewInt(999999)}, nil, true},
 	}
 	for _, tt := range tests {
-		got, err := NewAssetObject(tt.args.assetName, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.owner)
+		got, err := NewAssetObject(tt.args.assetName, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder,tt.args.owner,tt.args.UpperLimit)
 		if (err != nil) != tt.wantErr {
 			t.Errorf("%q. newAssetObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			continue
@@ -69,7 +71,10 @@ func TestAssetObject_GetAssetId(t *testing.T) {
 		Symbol    string
 		Amount    *big.Int
 		Decimals  uint64
+		founder   common.Name
 		Owner     common.Name
+		AddIssue  *big.Int
+		UpperLimit *big.Int
 	}
 	tests := []struct {
 		name   string
@@ -77,8 +82,8 @@ func TestAssetObject_GetAssetId(t *testing.T) {
 		want   uint64
 	}{
 		// TODO: Add test cases.
-		{"normal", fields{1, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 1},
-		{"max", fields{18446744073709551615, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 18446744073709551615},
+		{"normal", fields{1, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name(""),common.Name("a123"),big.NewInt(0),big.NewInt(999999)}, 1},
+		{"max", fields{18446744073709551615, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name(""),common.Name("a123"),big.NewInt(0),big.NewInt(999999)}, 18446744073709551615},
 		//{"min", fields{0, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 0},
 		//{">max", fields{18446744073709551616, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 0},
 	}
@@ -89,7 +94,10 @@ func TestAssetObject_GetAssetId(t *testing.T) {
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
 			Decimals:  tt.fields.Decimals,
+			Founder:   tt.fields.founder,
 			Owner:     tt.fields.Owner,
+			AddIssue:  tt.fields.AddIssue,
+			UpperLimit: tt.fields.UpperLimit,
 		}
 		if got := ao.GetAssetId(); got != tt.want {
 			t.Errorf("%q. AssetObject.GetAssetId() = %v, want %v", tt.name, got, tt.want)

@@ -40,6 +40,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/wallet"
@@ -97,6 +98,10 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vm.Config{}, ftservice.chainConfig, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
+	}
+
+	if config.Snapshot {
+		go state.SnapShotblk(chainDb, 300, 3600)
 	}
 
 	statedb, err := ftservice.blockchain.State()

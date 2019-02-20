@@ -58,6 +58,9 @@ var (
 	blockStateOutPrefix = []byte("S") // blockRevertPrefix + num (uint64 big endian) + hash -> block revert info
 
 	blockOptHash = []byte("LastOptHash")
+
+	blockSnapshotTPrefix = []byte("th")
+	blockSnapshotLast    = []byte("LastSp")
 )
 
 // TxLookupEntry is a positional metadata to help looking up the data content of
@@ -107,6 +110,10 @@ func blockReceiptsKey(number uint64, hash common.Hash) []byte {
 // blockStatePrefix + num (uint64 big endian) + hash -> block revert info
 func blockStateOutKey(hash common.Hash) []byte {
 	return append(blockStateOutPrefix, hash.Bytes()...)
+}
+
+func blockSnapshotTKey(time uint64) []byte {
+	return append(blockSnapshotTPrefix, encodeBlockNumber(time)...)
 }
 
 // txLookupKey = txLookupPrefix + hash

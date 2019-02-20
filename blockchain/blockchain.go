@@ -296,12 +296,12 @@ func (bc *BlockChain) Processor() processor.Processor {
 
 // State returns a new mutable state based on the current HEAD block.
 func (bc *BlockChain) State() (*state.StateDB, error) {
-	return bc.StateAt(bc.CurrentBlock().Hash())
+	return bc.StateAt(bc.CurrentBlock().Root())
 }
 
 // StateAt returns a new mutable state based on a particular point in time.
-func (bc *BlockChain) StateAt(block common.Hash) (*state.StateDB, error) {
-	return state.New(block, bc.stateCache)
+func (bc *BlockChain) StateAt(hash common.Hash) (*state.StateDB, error) {
+	return state.New(hash, bc.stateCache)
 }
 
 // insert injects a new head block into the current block chain.
@@ -535,23 +535,25 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	batch := bc.db.NewBatch()
 	rawdb.WriteBlock(batch, block)
 
-	_, err = state.Commit(batch, block.Hash(), block.NumberU64())
+	root, err := state.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
 		return err
 	}
+
+	triedb := bc.stateCache.TrieDB()
+	if err := triedb.Commit(root, false); err != nil {
+		return err
+	}
+
 	rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WriteTxLookupEntries(batch, block)
 	rawdb.WritePreimages(batch, block.NumberU64(), state.Preimages())
 	bc.insert(batch, block)
-	// write state
-	bc.stateCache.Lock()
 	if err := batch.Write(); err != nil {
-		bc.stateCache.UnLock()
 		return err
 	}
+
 	bc.currentBlock.Store(block)
-	state.CommitCache(block.Hash())
-	bc.stateCache.UnLock()
 	bc.futureBlocks.Remove(block.Hash())
 	log.Debug("Insert new block", "producer", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed())
 	return nil
@@ -690,7 +692,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 			parent = chain[i-1]
 		}
 
-		state, err := state.New(parent.Hash(), bc.stateCache)
+		state, err := state.New(parent.Root(), bc.stateCache)
 		if err != nil {
 			return i, events, coalescedLogs, err
 		}

@@ -5,17 +5,24 @@
 
 Welcome to the Fractal source code repository!
 
-## Homepage
-https://fractalproject.com/
+## What is Fractal?
+Fractal is a high-level blockchain framework that can implement the issuance, circulation, and dividends of tokens efficiently and reliably. Fractal can also steadily implement various community governance functions with voting as the core and foundation. These functions are the foundation for building the token economy of future.
 
-## Official documents
-[白皮书](https://fractalproject.com/fractal-whitepaper.pdf)  [whitepaper](https://fractalproject.com/fractal-whitepaper-en.pdf)
+home page:  https://fractalproject.com/
 
-[技术白皮书](https://fractalproject.com/fractal-technical-whitepaper.pdf)  [technical whitepaper](https://fractalproject.com/fractal-technical-whitepaper-en.pdf)
+
+## Executables
+
+The fractal project comes with several wrappers/executables found in the `cmd` directory.
+
+| Command    | Description |
+|:----------:|-------------|
+| **`ft`** | Our main fractal CLI client. It is the entry point into the fractal network (main-, test- or private net),  It can be used by other processes as a gateway into the fractal network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. `ft -h` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options. |
+| **`fkey`** | fractal key manager. You can use it generate ,change and inspect a keyfile,also to sign and verify message. `fkey -h ` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options. |
 
 
 ## Getting Started
-The following instructions overview the process of getting the code, building it, and running a simple test
+The following instructions overview the process of getting the code, building it, and start node.
 
 ### Getting the code
 To download all of the code:
@@ -23,10 +30,30 @@ To download all of the code:
 `git clone https://github.com/fractalplatform/fractal`
 
 ### Setting up a build/development environment
-TBD
 
-### Running a simple test
-TBD
+Install latest distribution of [Go](https://golang.org/) if you don't have it already. (go version >= go1.9  )
+
+Currently supports the following operating systems: 
+
+* Ubuntu 16.04
+* Ubuntu 18.04
+* MacOS Darwin 10.12 and higher
+
+more information see: [Installing Fractal](https://github.com/fractalplatform/fractal/wiki/Build-Fractal)
+
+
+### Running a node
+
+To run  `./ft ` , you can run your own FT instance.
+
+`$ ft `
+
+Join the fractal main network see: [Main Network](https://github.com/fractalplatform/fractal/wiki/Main-Network)
+
+Join the fractal test network see: [Test Network](https://github.com/fractalplatform/fractal/wiki/Test-Network)
+
+Operating a private network see:[Private Network](https://github.com/fractalplatform/fractal/wiki/Private-Network)
+
 
 
 ## License

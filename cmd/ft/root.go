@@ -198,7 +198,7 @@ func init() {
 	// logging
 	falgs.BoolVar(&logConfig.PrintOrigins, "log_debug", logConfig.PrintOrigins, "Prepends log messages with call-site location (file and line number)")
 	falgs.IntVar(&logConfig.Level, "log_level", logConfig.Level, "Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail")
-	falgs.StringVar(&logConfig.Vmodule, "log_vmodule", logConfig.Vmodule, "Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. eth/*=5,p2p=4)")
+	falgs.StringVar(&logConfig.Vmodule, "log_vmodule", logConfig.Vmodule, "Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. ft/*=5,p2p=4)")
 	falgs.StringVar(&logConfig.BacktraceAt, "log_backtrace", logConfig.BacktraceAt, "Request a stack trace at a specific logging statement (e.g. \"block.go:271\")")
 
 	// config file
@@ -221,9 +221,7 @@ func init() {
 	falgs.BoolVar(&ftconfig.NodeCfg.WSExposeAll, "ws_exposeall", ftconfig.NodeCfg.WSExposeAll, "RPC:ws exposes all API modules via the WebSocket RPC interface rather than just the public ones.")
 
 	// ftservice
-	falgs.IntVar(&ftconfig.FtServiceCfg.DatabaseCache, "FtService_databasecache", ftconfig.FtServiceCfg.DatabaseCache, "Megabytes of memory allocated to internal database caching")
-
-	// consensus
+	falgs.IntVar(&ftconfig.FtServiceCfg.DatabaseCache, "databasecache", ftconfig.FtServiceCfg.DatabaseCache, "Megabytes of memory allocated to internal database caching")
 
 	// txpool
 	falgs.BoolVar(&ftconfig.FtServiceCfg.TxPool.NoLocals, "txpool_nolocals", ftconfig.FtServiceCfg.TxPool.NoLocals, "Disables price exemptions for locally submitted transactions")
@@ -246,7 +244,6 @@ func init() {
 	// gas price oracle
 	falgs.IntVar(&ftconfig.FtServiceCfg.GasPrice.Blocks, "gpo_blocks", ftconfig.FtServiceCfg.GasPrice.Blocks, "Number of recent blocks to check for gas prices")
 	falgs.IntVar(&ftconfig.FtServiceCfg.GasPrice.Percentile, "gpo_percentile", ftconfig.FtServiceCfg.GasPrice.Percentile, "Suggested gas price is the given percentile of a set of recent transaction gas prices")
-
 	falgs.BoolVar(&ftconfig.FtServiceCfg.MetricsConf.MetricsFlag, "test_metricsflag", ftconfig.FtServiceCfg.MetricsConf.MetricsFlag, "flag that open statistical metrics")
 	falgs.BoolVar(&ftconfig.FtServiceCfg.MetricsConf.InfluxDBFlag, "test_influxdbflag", ftconfig.FtServiceCfg.MetricsConf.InfluxDBFlag, "flag that open influxdb thad store statistical metrics")
 	falgs.StringVar(&ftconfig.FtServiceCfg.MetricsConf.Url, "test_influxdburl", ftconfig.FtServiceCfg.MetricsConf.Url, "url that connect influxdb")
@@ -278,6 +275,9 @@ func init() {
 		"Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects")
 	falgs.StringVar(&ftconfig.NodeCfg.P2PTrustNodes, "p2p_trustnodes", ftconfig.NodeCfg.P2PStaticNodes,
 		"Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit")
+
+	// snapshot
+	falgs.BoolVar(&ftconfig.FtServiceCfg.Snapshot, "snapshot_enable", false, "snapshot enable")
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
