@@ -13,7 +13,7 @@
 		"ActivatedMinQuantity": 1000,
 		"BlockInterval": 3000,
 		"BlockFrequency": 6,
-		"ProducerScheduleSize": 21,
+		"ProducerScheduleSize": 15,
 		"DelayEcho": 2,
 		"AccountName": "ftsystemdpos",
 		"SystemName": "ftsystemio",
