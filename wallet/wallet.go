@@ -21,6 +21,7 @@ import (
 	crand "crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"math/big"
 	"os"
 	"time"
@@ -51,12 +52,24 @@ func NewWallet(keyStoredir string, scryptN, scryptP int) *Wallet {
 		cache: cache.NewAccountCache(keyStoredir),
 		ks:    &keystore.KeyStore{DirPath: keyStoredir, ScryptN: scryptN, ScryptP: scryptP},
 	}
-	w.bindingFilePath = w.ks.JoinPath("acountAddrBindingInfo.txt")
-	_, err := os.Stat(w.bindingFilePath)
-	if err == nil {
-		os.Create(w.bindingFilePath)
-	}
+	w.bindingFilePath = w.ks.JoinPath("acountKeyBindingInfo.txt")
+	createFileIfNotExist(w.bindingFilePath)
+
 	return w
+}
+
+func createFileIfNotExist(filePath string) error {
+	_, err := os.Stat(filePath)
+	if err != nil && os.IsNotExist(err) {
+		_, err = os.Create(filePath)
+		if err != nil {
+			log.Error("Create file fail:", "err=", err, "file=", filePath)
+			return  err
+		}
+		log.Info("Create file success:", "file=", filePath)
+		return  nil
+	}
+	return nil
 }
 
 // NewAccount generates a new key and stores it into the key directory.
@@ -65,8 +78,10 @@ func (w *Wallet) NewAccount(passphrase string) (cache.Account, error) {
 	if err != nil {
 		return cache.Account{}, err
 	}
-
-	a := cache.Account{Addr: key.Addr, Path: w.ks.JoinPath(keyFileName(key.Addr))}
+	publicKey := hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String()
+	a := cache.Account{Addr: key.Addr,
+	                   Path: w.ks.JoinPath(keyFileName(key.Addr)),
+	                   PublicKey: publicKey}
 
 	if err := w.ks.StoreKey(key, a.Path, passphrase); err != nil {
 		return cache.Account{}, err

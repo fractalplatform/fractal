@@ -49,8 +49,7 @@ func (api *PrivateKeyStoreAPI) NewAccount(ctx context.Context, passphrase string
 	return map[string]interface{}{
 		"address":    a.Addr,
 		"path":       a.Path,
-		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)),
-		"privateKey": hexutil.Bytes(crypto.FromECDSA(key.PrivateKey)),
+		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String(),
 	}, nil
 }
 
@@ -85,6 +84,7 @@ func (api *PrivateKeyStoreAPI) ImportRawKey(ctx context.Context, privkey string,
 	return map[string]interface{}{
 		"address": a.Addr,
 		"path":    a.Path,
+		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PublicKey)),
 	}, nil
 }
 
@@ -109,6 +109,7 @@ func (api *PrivateKeyStoreAPI) ListAccount(ctx context.Context) ([]map[string]in
 		tmpa := map[string]interface{}{
 			"address": account.Addr,
 			"path":    account.Path,
+			"publicKey": account.PublicKey,
 		}
 		ret = append(ret, tmpa)
 	}
