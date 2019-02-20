@@ -90,6 +90,7 @@ func (bs *BlockchainStation) handshake(e *router.Event) {
 	ch := make(chan *router.Event)
 	sub := router.Subscribe(station, ch, router.DownloaderStatusMsg, &statusData{})
 	defer sub.Unsubscribe()
+	router.StationRegister(station)
 	defer router.StationUnregister(station)
 
 	router.SendTo(station, e.From, router.DownloaderGetStatus, "")

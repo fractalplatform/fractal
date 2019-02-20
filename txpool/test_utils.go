@@ -101,7 +101,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 }
 
 func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
-	event.InitRounter()
+
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 	asset := asset.NewAsset(statedb)
 	asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner)

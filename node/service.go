@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	"github.com/fractalplatform/fractal/p2p"
+	"github.com/fractalplatform/fractal/p2p/enode"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -55,6 +56,15 @@ func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (fd
 // for emphemeral storage and the user's own input for absolute paths.
 func (ctx *ServiceContext) ResolvePath(path string) string {
 	return ctx.config.resolvePath(path)
+}
+
+// AppendBootNodes the enode URLs of the P2P bootstrap nodes running on the network.
+func (ctx *ServiceContext) AppendBootNodes(nodes []string) {
+	for _, nodestr := range nodes {
+		if node, err := enode.ParseV4(string(nodestr)); err == nil {
+			ctx.config.P2PConfig.BootstrapNodes = append(ctx.config.P2PConfig.BootstrapNodes, node)
+		}
+	}
 }
 
 // Service retrieves a currently running service registered of a specific type.

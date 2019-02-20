@@ -26,7 +26,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/metrics/influxdb"
@@ -48,8 +47,6 @@ var RootCmd = &cobra.Command{
 		}
 
 		logConfig.Setup()
-
-		event.InitRounter()
 
 		node, err := makeNode()
 		if err != nil {

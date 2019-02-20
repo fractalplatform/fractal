@@ -309,7 +309,7 @@ func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	updateHeads := rawdb.ReadCanonicalHash(bc.db, block.NumberU64()) != block.Hash()
 	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(batch, block.Hash())
-	bc.currentBlock.Store(block)
+	// bc.currentBlock.Store(block)
 	if updateHeads {
 		rawdb.WriteHeadFastBlockHash(batch, block.Hash())
 		bc.currentFastBlock.Store(block)
@@ -549,6 +549,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 		bc.stateCache.UnLock()
 		return err
 	}
+	bc.currentBlock.Store(block)
 	state.CommitCache(block.Hash())
 	bc.stateCache.UnLock()
 	bc.futureBlocks.Remove(block.Hash())
