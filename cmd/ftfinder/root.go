@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/spf13/cobra"
 )
@@ -38,14 +39,20 @@ var RootCmd = &cobra.Command{
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
 		nodekey, _ := crypto.GenerateKey()
+		cfg := node.Config{
+			P2PBootNodes: "./bootnodes",
+		}
 		srv := p2p.Server{
 			Config: &p2p.Config{
 				PrivateKey:     nodekey,
 				Name:           "Finder",
 				ListenAddr:     ":12345",
-				BootstrapNodes: nil,
+				BootstrapNodes: cfg.BootNodes(),
 				NodeDatabase:   "",
 			},
+		}
+		for i, n := range srv.Config.BootstrapNodes {
+			fmt.Println(i, n.String())
 		}
 		srv.DiscoverOnly()
 		sigc := make(chan os.Signal, 1)
