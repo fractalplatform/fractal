@@ -138,7 +138,7 @@ type Config struct {
 // Server manages all peer connections.
 type Server struct {
 	// Config fields may not be modified while the server is running.
-	Config
+	*Config
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
