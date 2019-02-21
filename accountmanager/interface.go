@@ -49,8 +49,8 @@ type IAccount interface {
 	IsSuicided() bool
 	SetSuicide()
 	//
-	IsDestoryed()
-	SetDestory()
+	IsDestroyed()
+	SetDestroy()
 }
 
 //export account manager interface

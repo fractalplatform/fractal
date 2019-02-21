@@ -312,13 +312,13 @@ func (a *Account) SetSuicide() {
 	a.Suicide = true
 }
 
-//IsDestoryed is destoryed
-func (a *Account) IsDestoryed() bool {
+//IsDestroyed is destroyed
+func (a *Account) IsDestroyed() bool {
 	return a.Destroy
 }
 
-//SetDestory set destory
-func (a *Account) SetDestory() {
+//SetDestroy set destroy
+func (a *Account) SetDestroy() {
 	//just make a sign now
 	a.Destroy = true
 }
