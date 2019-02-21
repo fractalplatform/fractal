@@ -248,7 +248,7 @@ func DefaultGenesisAssets() []*asset.AssetObject {
 			Amount:    supply,
 			Decimals:  18,
 			Owner:     params.DefaultChainconfig.SysName,
-			Founder:    params.DefaultChainconfig.SysName,
+			Founder:    common.Name(""),
 			UpperLimit: supply,
 		},
 	}
