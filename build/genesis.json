@@ -42,7 +42,7 @@
 			"decimals": 18,
 			"owner": "ftsystemio",
 			"founder": "ftsystemio",
-                	"UpperLimit":10000000000000000000000000000
+			"UpperLimit":10000000000000000000000000000
 		}
 	]
 }
