@@ -875,7 +875,7 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
 	}
-	return nil, err
+	return nil, nil
 }
 
 func execAddAsset(evm *EVM, contract *Contract, assetID uint64, value *big.Int) error {
@@ -904,7 +904,7 @@ func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
 	}
 	evm.interpreter.intPool.put(offset, size)
-	return nil, err
+	return nil, nil
 }
 
 func executeIssuseAsset(evm *EVM, contract *Contract, desc string) error {
@@ -951,9 +951,8 @@ func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, s
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
 	}
-	//todo
 	evm.interpreter.intPool.put(newOwner, assetId)
-	return nil, err
+	return nil, nil
 }
 
 func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner common.Name) error {
