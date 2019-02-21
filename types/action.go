@@ -55,7 +55,7 @@ const (
 	// IssueAsset repesents Issue asset action.
 	IssueAsset
         //destory asset
-	DestoryAsset
+	DestroyAsset
 	// SetAssetOwner repesents set asset new owner action.
 	SetAssetOwner
         //set asset founder
