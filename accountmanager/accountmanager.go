@@ -778,12 +778,8 @@ func (am *AccountManager) Process(action *types.Action) error {
 func (am *AccountManager) process(action *types.Action) error {
 	switch action.Type() {
 	case types.CreateAccount:
-		var acct AccountAction
-		err := rlp.DecodeBytes(action.Data(), &acct)
-		if err != nil {
-			return err
-		}
-		if err := am.CreateAccount(action.Recipient(), acct.Founder, 0, acct.PublicKey); err != nil {
+		key := common.BytesToPubKey(action.Data())
+		if err := am.CreateAccount(action.Recipient(), common.Name(""), 0, key); err != nil {
 			return err
 		}
 		break
