@@ -275,8 +275,8 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 	}
 	return nil
 }
-//destory asset
-func (a *Asset) DestoryAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
+//destroy asset
+func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
@@ -302,7 +302,7 @@ func (a *Asset) DestoryAsset(accountName common.Name, assetId uint64, amount *bi
 	//}
 	var total *big.Int
 	if total = new(big.Int).Sub(asset.GetAssetAmount(),amount); total.Cmp( big.NewInt(0)) < 0{
-		return ErrDestoryLimit
+		return ErrDestroyLimit
 	}
 	asset.SetAssetAmount(total)
 	err = a.SetAssetObject(asset)

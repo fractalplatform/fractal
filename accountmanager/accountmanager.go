@@ -105,6 +105,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 	if acct != nil {
 		return ErrAccountIsExist
 	}
+	var fname common.Name
 	if len(founderName.String()) > 0 {
 		f, err := am.GetAccountByName(founderName)
 		if err != nil {
@@ -113,11 +114,12 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		if f == nil {
 			return ErrAccountNotExist
 		}
+		fname.SetString(founderName.String())
 	}else {
-		founderName = accountName
+		fname.SetString(accountName.String())
 	}
 
-	acctObj, err := NewAccount(accountName, founderName, pubkey)
+	acctObj, err := NewAccount(accountName, fname, pubkey)
 	if err != nil {
 		return err
 	}
@@ -203,11 +205,6 @@ func (am *AccountManager) GetAccountByName(accountName common.Name) (*Account, e
 		return nil, err
 	}
 
-	//user can find destroyed account
-	//if acct.IsDestoryed() == true {
-	//	return nil, ErrAccountNotExist
-	//}
-
 	return &acct, nil
 }
 
@@ -216,7 +213,7 @@ func (am *AccountManager) SetAccount(acct *Account) error {
 	if acct == nil {
 		return ErrAccountIsNil
 	}
-	if acct.IsDestoryed() == true {
+	if acct.IsDestroyed() == true {
 		return ErrAccountIsDestroy
 	}
 	b, err := rlp.EncodeToBytes(acct)
@@ -237,7 +234,7 @@ func (am *AccountManager) DeleteAccountByName(accountName common.Name) error {
 		return ErrAccountNotExist
 	}
 
-	acct.SetDestory()
+	acct.SetDestroy()
 	b, err := rlp.EncodeToBytes(acct)
 	if err != nil {
 		return err
@@ -329,7 +326,7 @@ func (am *AccountManager) IsValidSign(accountName common.Name, aType types.Actio
 	if acct == nil {
 		return ErrAccountNotExist
 	}
-	if acct.IsDestoryed() {
+	if acct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
 	//TODO action type verify
@@ -709,7 +706,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if toAcct == nil {
 		return ErrAccountNotExist
 	}
-	if toAcct.IsDestoryed() {
+	if toAcct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
 	val, err = toAcct.GetBalanceByID(assetID)
@@ -826,7 +823,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		}
 		break
 
-	case types.DestoryAsset:
+	case types.DestroyAsset:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
@@ -835,7 +832,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err = am.SubAccountBalanceByID(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
 			return err
 		}
-		if err = am.ast.DestoryAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
+		if err = am.ast.DestroyAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
 			return err
 		}
 		break

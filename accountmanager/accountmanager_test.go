@@ -1611,7 +1611,7 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		t.Error("Process GetAccountByName err")
 	}
-	if !ac.IsDestoryed() {
+	if !ac.IsDestroyed() {
 		//t.Error("Process delete account failure")
 	}
 
