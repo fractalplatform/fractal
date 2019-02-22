@@ -99,7 +99,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	ftservice.wallet.SetBlockChain(ftservice.blockchain)
 	if config.Snapshot {
 		go state.SnapShotblk(chainDb, 300, 3600)
 	}

@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
+	am "github.com/fractalplatform/fractal/accountmanager"
 )
 
 type PrivateKeyStoreAPI struct {
@@ -152,38 +153,22 @@ func (api *PrivateKeyStoreAPI) SignData(ctx context.Context, addr common.Address
 	return hexutil.Bytes(sig), nil
 }
 
-func (api *PrivateKeyStoreAPI) BindAccountName(ctx context.Context, addr common.Address, passphrase string, accountName string) error {
-	a, err := api.b.Wallet().Find(addr)
-	if err != nil {
-		return err
-	}
-	return api.b.Wallet().BindAccountNameAddr(a, passphrase, accountName)
+func (api *PrivateKeyStoreAPI) BindAccountAndPublicKey(ctx context.Context, accountName string) error {
+	return api.b.Wallet().BindAccountAndPublicKey(accountName)
 }
 
-func (api *PrivateKeyStoreAPI) DeleteBound(ctx context.Context, addr common.Address, passphrase string, accountName string) error {
-	a, err := api.b.Wallet().Find(addr)
-	if err != nil {
-		return err
-	}
-	return api.b.Wallet().DeleteBound(a, passphrase, accountName)
+func (api *PrivateKeyStoreAPI) DeleteBound(ctx context.Context, accountName string) error {
+	return api.b.Wallet().DeleteBound(accountName)
 }
 
-func (api *PrivateKeyStoreAPI) UpdateBindingAddr(ctx context.Context, addr common.Address, passphrase string, accountName string, newAddr common.Address, newAddrPassphrase string) error {
-	a, err := api.b.Wallet().Find(addr)
-	if err != nil {
-		return err
-	}
-	newA, err := api.b.Wallet().Find(newAddr)
-	if err != nil {
-		return err
-	}
-	return api.b.Wallet().UpdateBindingAddr(a, passphrase, accountName, newA, newAddrPassphrase)
+func (api *PrivateKeyStoreAPI) UpdateBindingInfo(ctx context.Context, accountName string) error {
+	return api.b.Wallet().BindAccountAndPublicKey(accountName)
 }
 
-func (api *PrivateKeyStoreAPI) GetAccountNameByAddr(ctx context.Context, addr common.Address) ([]string, error) {
-	a, err := api.b.Wallet().Find(addr)
+func (api *PrivateKeyStoreAPI) GetAccountsByPublicKeys(ctx context.Context) ([]am.Account, error) {
+	accounts, err := api.b.Wallet().GetAllAccounts()
 	if err != nil {
 		return nil, err
 	}
-	return api.b.Wallet().GetAccountNameByAddr(a), nil
+	return accounts, nil
 }
