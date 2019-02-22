@@ -32,3 +32,5 @@ do
    echo $arg
    $arg
 done
+
+rm -rf ./build/_workspace

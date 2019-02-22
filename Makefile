@@ -23,7 +23,6 @@ all:
 	"go install ./cmd/ftkey" \
 	"go build ./cmd/ftkey" \
 	"mv ftkey ./build/bin"
-
 run:
 	@./build/bin/ft
 stop:
