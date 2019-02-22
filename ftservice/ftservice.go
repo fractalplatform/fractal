@@ -152,13 +152,8 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	bcc.Processor = txProcessor
 	ftservice.miner = miner.NewMiner(bcc)
-	if err := ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKey); err != nil {
-		log.Warn(fmt.Sprintf("SetCoinbase error %s", err))
-	}
-
-	if err := ftservice.miner.SetExtra([]byte(config.Miner.ExtraData)); err != nil {
-		log.Warn(fmt.Sprintf("SetExtra error %s", err))
-	}
+	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
+	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
 	if config.Miner.Start {
 		ftservice.miner.Start()
 	}

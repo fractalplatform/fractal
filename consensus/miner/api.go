@@ -41,8 +41,8 @@ func (api *API) Mining() bool {
 	return api.miner.Mining()
 }
 
-func (api *API) SetCoinbase(name string, privKey string) error {
-	return api.miner.SetCoinbase(name, privKey)
+func (api *API) SetCoinbase(name string, privKeys []string) error {
+	return api.miner.SetCoinbase(name, privKeys)
 }
 
 func (api *API) SetExtra(extra string) error {

@@ -238,7 +238,7 @@ func init() {
 	// miner
 	falgs.BoolVar(&ftconfig.FtServiceCfg.Miner.Start, "miner_start", false, "miner start")
 	falgs.StringVar(&ftconfig.FtServiceCfg.Miner.Name, "miner_coinbase", ftconfig.FtServiceCfg.Miner.Name, "name for block mining rewards")
-	falgs.StringVar(&ftconfig.FtServiceCfg.Miner.PrivateKey, "miner_private", ftconfig.FtServiceCfg.Miner.PrivateKey, "hex of private key for block mining rewards")
+	falgs.StringSliceVar(&ftconfig.FtServiceCfg.Miner.PrivateKeys, "miner_private", ftconfig.FtServiceCfg.Miner.PrivateKeys, "hex of private key for block mining rewards")
 	falgs.StringVar(&ftconfig.FtServiceCfg.Miner.ExtraData, "miner_extra", ftconfig.FtServiceCfg.Miner.ExtraData, "Block extra data set by the miner")
 
 	// gas price oracle

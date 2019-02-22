@@ -132,7 +132,7 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 }
 
 // SignFn signature function
-type SignFn func([]byte) ([]byte, error)
+type SignFn func([]byte, *state.StateDB) ([]byte, error)
 
 // Dpos dpos engine
 type Dpos struct {
@@ -260,7 +260,12 @@ func (dpos *Dpos) Seal(chain consensus.IChainReader, block *types.Block, stop <-
 		return nil, errUnknownBlock
 	}
 
-	sighash, err := dpos.signFn(signHash(header, chain.Config().ChainID.Bytes()).Bytes())
+	parent := chain.GetHeader(header.ParentHash, number-1)
+	state, err := chain.StateAt(parent.Root)
+	if err != nil {
+		return nil, err
+	}
+	sighash, err := dpos.signFn(signHash(header, chain.Config().ChainID.Bytes()).Bytes(), state)
 	if err != nil {
 		return nil, err
 	}
@@ -280,8 +285,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return errInvalidTimestamp
 	}
 	proudcer := header.Coinbase.String()
-	curheader := chain.CurrentHeader()
-	state, err := chain.StateAt(curheader.Root)
+	state, err := chain.StateAt(parent.Root)
 	if err != nil {
 		return err
 	}
@@ -291,7 +295,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return err
 	}
 
-	if err := dpos.IsValidateProducer(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, pubkey, state); err != nil {
+	if err := dpos.IsValidateProducer(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state); err != nil {
 		return err
 	}
 
@@ -311,7 +315,7 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 }
 
 //IsValidateProducer current producer
-func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, pubkey []byte, state *state.StateDB) error {
+func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, pubkeys [][]byte, state *state.StateDB) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
 	}
@@ -324,7 +328,14 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 	if !common.IsValidName(producer) {
 		return ErrIllegalProducerName
 	}
-	if !db.IsValidSign(producer, pubkey) {
+
+	has := false
+	for _, pubkey := range pubkeys {
+		if db.IsValidSign(producer, pubkey) {
+			has = true
+		}
+	}
+	if !has {
 		return ErrIllegalProducerPubKey
 	}
 

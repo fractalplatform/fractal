@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
@@ -55,8 +56,8 @@ type Worker struct {
 
 	mu       sync.Mutex
 	coinbase string
-	privKey  *ecdsa.PrivateKey
-	pubKey   []byte
+	privKeys []*ecdsa.PrivateKey
+	pubKeys  [][]byte
 	extra    []byte
 
 	currentWork *Work
@@ -135,8 +136,17 @@ func (worker *Worker) mintLoop() {
 	if !ok {
 		panic("only support dpos engine")
 	}
-	dpos.SetSignFn(func(content []byte) ([]byte, error) {
-		return crypto.Sign(content, worker.privKey)
+	dpos.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
+		accountDB, err := accountmanager.NewAccountManager(state)
+		if err != nil {
+			return nil, err
+		}
+		for index, privKey := range worker.privKeys {
+			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), types.ActionType(0), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
+				return crypto.Sign(content, privKey)
+			}
+		}
+		return nil, fmt.Errorf("not found match private key for sign")
 	})
 	interval := int64(dpos.BlockInterval())
 	timer := time.NewTimer(time.Duration(interval - (time.Now().UnixNano() % interval)))
@@ -177,7 +187,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
 	}
-	if err := cdpos.IsValidateProducer(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKey, state); err != nil {
+	if err := cdpos.IsValidateProducer(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKeys, state); err != nil {
 		switch err {
 		case dpos.ErrIllegalProducerName:
 			fallthrough
@@ -221,12 +231,15 @@ func (worker *Worker) stop() {
 	close(worker.quit)
 }
 
-func (worker *Worker) setCoinbase(name string, privKey *ecdsa.PrivateKey, pubKey []byte) {
+func (worker *Worker) setCoinbase(name string, privKeys []*ecdsa.PrivateKey) {
 	worker.mu.Lock()
 	defer worker.mu.Unlock()
 	worker.coinbase = name
-	worker.privKey = privKey
-	worker.pubKey = pubKey
+	worker.privKeys = privKeys
+	worker.pubKeys = nil
+	for _, privkey := range privKeys {
+		worker.pubKeys = append(worker.pubKeys, crypto.FromECDSAPub(&privkey.PublicKey))
+	}
 }
 
 func (worker *Worker) setExtra(extra []byte) {
