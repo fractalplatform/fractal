@@ -24,11 +24,9 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 )
 
-
-
 // AssetBalance asset and balance struct
 type AssetBalance struct {
-	AssetID uint64 `json:"assetID"`
+	AssetID uint64   `json:"assetID"`
 	Balance *big.Int `json:"balance"`
 }
 
@@ -43,14 +41,14 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 //Account account object
 type Account struct {
 	//LastTime *big.Int
-	AcctName  common.Name `json:"accountName"`
-	Founder  common.Name `json:"founder"`
-	ChargeRatio uint64 `json:"chargeRatio"`
-	Nonce     uint64 `json:"nonce"`
-	PublicKey common.PubKey `json:"publicKey"`
-	Code      []byte `json:"code"`
-	CodeHash  common.Hash `json:"codeHash"`
-	CodeSize  uint64 `json:"codeSize"`
+	AcctName    common.Name   `json:"accountName"`
+	Founder     common.Name   `json:"founder"`
+	ChargeRatio uint64        `json:"chargeRatio"`
+	Nonce       uint64        `json:"nonce"`
+	PublicKey   common.PubKey `json:"publicKey"`
+	Code        []byte        `json:"code"`
+	CodeHash    common.Hash   `json:"codeHash"`
+	CodeSize    uint64        `json:"codeSize"`
 	//sort by asset id asc
 	Balances []*AssetBalance `json:"balances"`
 	//code Suicide
@@ -60,22 +58,22 @@ type Account struct {
 }
 
 // NewAccount create a new account object.
-func NewAccount(accountName common.Name,founderName common.Name,pubkey common.PubKey) (*Account, error) {
+func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey) (*Account, error) {
 	if !common.IsValidName(accountName.String()) {
 		return nil, ErrAccountNameInvalid
 	}
 
 	acctObject := Account{
-		AcctName:  accountName,
-		Founder: founderName,
+		AcctName:    accountName,
+		Founder:     founderName,
 		ChargeRatio: 0,
-		PublicKey: pubkey,
-		Nonce:     0,
-		Balances:  make([]*AssetBalance, 0),
-		Code:      make([]byte, 0),
-		CodeHash:  crypto.Keccak256Hash(nil),
-		Suicide:   false,
-		Destroy:   false,
+		PublicKey:   pubkey,
+		Nonce:       0,
+		Balances:    make([]*AssetBalance, 0),
+		Code:        make([]byte, 0),
+		CodeHash:    crypto.Keccak256Hash(nil),
+		Suicide:     false,
+		Destroy:     false,
 	}
 	return &acctObject, nil
 }
@@ -96,7 +94,7 @@ func (a *Account) GetFounder() common.Name {
 	return a.Founder
 }
 
-func (a *Account) SetFounder(f common.Name)  {
+func (a *Account) SetFounder(f common.Name) {
 	a.Founder = f
 }
 

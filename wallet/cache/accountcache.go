@@ -165,8 +165,8 @@ func readAccount(path string) *Account {
 			return nil
 		}
 		return &Account{
-			Addr: common.HexToAddress(path[len(path)-40:]),
-			Path: path,
+			Addr:      common.HexToAddress(path[len(path)-40:]),
+			Path:      path,
 			PublicKey: publicKey,
 		}
 	}

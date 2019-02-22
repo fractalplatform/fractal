@@ -18,13 +18,13 @@ package api
 
 import (
 	"context"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	am "github.com/fractalplatform/fractal/accountmanager"
 )
 
 type PrivateKeyStoreAPI struct {
@@ -48,9 +48,9 @@ func (api *PrivateKeyStoreAPI) NewAccount(ctx context.Context, passphrase string
 	}
 
 	return map[string]interface{}{
-		"address":    a.Addr,
-		"path":       a.Path,
-		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String(),
+		"address":   a.Addr,
+		"path":      a.Path,
+		"publicKey": hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String(),
 	}, nil
 }
 
@@ -83,9 +83,9 @@ func (api *PrivateKeyStoreAPI) ImportRawKey(ctx context.Context, privkey string,
 		return nil, err
 	}
 	return map[string]interface{}{
-		"address": a.Addr,
-		"path":    a.Path,
-		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PublicKey)),
+		"address":   a.Addr,
+		"path":      a.Path,
+		"publicKey": hexutil.Bytes(crypto.FromECDSAPub(&key.PublicKey)),
 	}, nil
 }
 
@@ -108,8 +108,8 @@ func (api *PrivateKeyStoreAPI) ListAccount(ctx context.Context) ([]map[string]in
 	ret := make([]map[string]interface{}, 0)
 	for _, account := range accounts {
 		tmpa := map[string]interface{}{
-			"address": account.Addr,
-			"path":    account.Path,
+			"address":   account.Addr,
+			"path":      account.Path,
 			"publicKey": account.PublicKey,
 		}
 		ret = append(ret, tmpa)

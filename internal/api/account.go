@@ -155,7 +155,7 @@ func (aapi *AccountAPI) GetAssetInfoByID(ctx context.Context, assetID uint64) (*
 }
 
 //GetAccountBalanceByTime
-func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64,time uint64) (*big.Int, error) {
+func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName
 	if am == nil {
 		return nil, ErrGetAccounManagerErr
 	}
-	return am.GetBalanceByTime(accountName, assetID,time)
+	return am.GetBalanceByTime(accountName, assetID, time)
 }
 
 //GetSnapshotLast  get last snapshot time
@@ -179,7 +179,7 @@ func (aapi *AccountAPI) GetSnapshotLast(ctx context.Context) (uint64, error) {
 }
 
 //getSnapshottime  m: 1  preview time   2 next time
-func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context,m uint64, time uint64) (uint64, error) {
+func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint64) (uint64, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return 0, err
@@ -187,5 +187,5 @@ func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context,m uint64, time uint6
 	if am == nil {
 		return 0, ErrGetAccounManagerErr
 	}
-	return am.GetSnapshotTime(m,time)
+	return am.GetSnapshotTime(m, time)
 }

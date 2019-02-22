@@ -52,20 +52,20 @@ func NewAsset(sdb *state.StateDB) *Asset {
 }
 
 //GetAssetAmountByTime get asset amount by time
-func (a *Asset) GetAssetAmountByTime(assetID uint64,time uint64) (*big.Int, error) {
-	ao,err := a.GetAssetObjectByTime(assetID,time)
-    if err != nil{
-    	return big.NewInt(0),err
+func (a *Asset) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
+	ao, err := a.GetAssetObjectByTime(assetID, time)
+	if err != nil {
+		return big.NewInt(0), err
 	}
-    return ao.GetAssetAmount(),nil
+	return ao.GetAssetAmount(), nil
 }
 
 //GetAssetObjectByTime  get asset object by time
-func (a *Asset) GetAssetObjectByTime(assetID uint64,time uint64) (*AssetObject, error) {
+func (a *Asset) GetAssetObjectByTime(assetID uint64, time uint64) (*AssetObject, error) {
 	if assetID == 0 {
 		return nil, ErrAssetIdInvalid
 	}
-	b,err := a.sdb.GetSnapshot(sysAcct, assetObjectPrefix+strconv.FormatUint(assetID, 10),time)
+	b, err := a.sdb.GetSnapshot(sysAcct, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +97,14 @@ func (a *Asset) GetAssetIdByName(assetName string) (uint64, error) {
 	}
 	return assetID, nil
 }
+
 //get asset founder by id
 func (a *Asset) GetAssetFounderById(id uint64) (common.Name, error) {
-	ao,err := a.GetAssetObjectById(id);
-	if  err != nil{
+	ao, err := a.GetAssetObjectById(id)
+	if err != nil {
 		return "", err
 	}
-	return ao.GetAssetFounder(),nil
+	return ao.GetAssetFounder(), nil
 }
 
 //get asset by asset id
@@ -257,7 +258,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //issue asset
-func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name,owner common.Name,limit *big.Int) error {
+func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) error {
 	assetId, err := a.GetAssetIdByName(assetName)
 	if err != nil {
 		return err
@@ -265,7 +266,7 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 	if assetId > 0 {
 		return ErrAssetIsExist
 	}
-	ao, err := NewAssetObject(assetName, symbol, amount, dec,founder,owner,limit)
+	ao, err := NewAssetObject(assetName, symbol, amount, dec, founder, owner, limit)
 	if err != nil {
 		return err
 	}
@@ -275,6 +276,7 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 	}
 	return nil
 }
+
 //destory asset
 func (a *Asset) DestoryAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {
@@ -301,7 +303,7 @@ func (a *Asset) DestoryAsset(accountName common.Name, assetId uint64, amount *bi
 	//	return ErrAssetAmountZero
 	//}
 	var total *big.Int
-	if total = new(big.Int).Sub(asset.GetAssetAmount(),amount); total.Cmp( big.NewInt(0)) < 0{
+	if total = new(big.Int).Sub(asset.GetAssetAmount(), amount); total.Cmp(big.NewInt(0)) < 0 {
 		return ErrDestoryLimit
 	}
 	asset.SetAssetAmount(total)
@@ -334,12 +336,12 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 		return ErrOwnerMismatch
 	}
 	var AddIssue *big.Int
-	if AddIssue = new(big.Int).Add(asset.GetAssetAddIssue(),amount); AddIssue.Cmp( asset.GetUpperLimit()) >0{
+	if AddIssue = new(big.Int).Add(asset.GetAssetAddIssue(), amount); AddIssue.Cmp(asset.GetUpperLimit()) > 0 {
 		return ErrUpperLimit
 	}
 	asset.SetAssetAddIssue(AddIssue)
 	var total *big.Int
-	if total = new(big.Int).Add(asset.GetAssetAmount(),amount); total.Cmp( asset.GetUpperLimit()) >0{
+	if total = new(big.Int).Add(asset.GetAssetAmount(), amount); total.Cmp(asset.GetUpperLimit()) > 0 {
 		return ErrUpperLimit
 	}
 	asset.SetAssetAmount(total)

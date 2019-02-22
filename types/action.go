@@ -54,11 +54,11 @@ const (
 	IncreaseAsset ActionType = 0x200 + iota
 	// IssueAsset repesents Issue asset action.
 	IssueAsset
-        //destory asset
+	//destory asset
 	DestoryAsset
 	// SetAssetOwner repesents set asset new owner action.
 	SetAssetOwner
-        //set asset founder
+	//set asset founder
 	SetAssetFounder
 )
 

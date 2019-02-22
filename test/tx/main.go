@@ -96,12 +96,12 @@ func createAccount(from, newname common.Name, nonce uint64, prikey *ecdsa.Privat
 
 func issueAsset(from, Owner common.Name, amount *big.Int, assetname string, nonce uint64, prikey *ecdsa.PrivateKey) (common.Hash, error) {
 	ast := &asset.AssetObject{
-		AssetName: assetname,
-		Symbol:    fmt.Sprintf("symbol%d", nonce),
-		Amount:    amount,
-		Decimals:  2,
-		Owner:     Owner,
-		Founder:   from,
+		AssetName:  assetname,
+		Symbol:     fmt.Sprintf("symbol%d", nonce),
+		Amount:     amount,
+		Decimals:   2,
+		Owner:      Owner,
+		Founder:    from,
 		UpperLimit: big.NewInt(500000000000000000),
 	}
 	payload, err := rlp.EncodeToBytes(ast)

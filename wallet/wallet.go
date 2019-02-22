@@ -27,25 +27,25 @@ import (
 	"os"
 	"time"
 
+	"encoding/json"
+	"errors"
 	"github.com/ethereum/go-ethereum/log"
+	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/wallet/cache"
 	"github.com/fractalplatform/fractal/wallet/keystore"
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"errors"
 	"io/ioutil"
-	"encoding/json"
 )
 
 // Wallet represents a software wallet.
 type Wallet struct {
-	accounts cache.Accounts
-	cache    *cache.AccountCache
-	ks       *keystore.KeyStore
+	accounts        cache.Accounts
+	cache           *cache.AccountCache
+	ks              *keystore.KeyStore
 	bindingFilePath string
-	blockchain *blockchain.BlockChain
+	blockchain      *blockchain.BlockChain
 }
 
 // NewWallet creates a wallet to sign transaction.
@@ -67,10 +67,10 @@ func (w *Wallet) createFileIfNotExist(filePath string) error {
 		_, err = os.Create(filePath)
 		if err != nil {
 			log.Error("Create file fail:", "err=", err, "file=", filePath)
-			return  err
+			return err
 		}
 		log.Info("Create file success:", "file=", filePath)
-		return  nil
+		return nil
 	}
 	return nil
 }
@@ -84,6 +84,7 @@ func (w *Wallet) GetAccountManager() (*am.AccountManager, error) {
 	}
 	return am.NewAccountManager(statedb)
 }
+
 // NewAccount generates a new key and stores it into the key directory.
 func (w *Wallet) NewAccount(passphrase string) (cache.Account, error) {
 	key, err := keystore.NewKey(crand.Reader)
@@ -92,8 +93,8 @@ func (w *Wallet) NewAccount(passphrase string) (cache.Account, error) {
 	}
 	publicKey := hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String()
 	a := cache.Account{Addr: key.Addr,
-	                   Path: w.ks.JoinPath(keyFileName(key.Addr)),
-	                   PublicKey: publicKey}
+		Path:      w.ks.JoinPath(keyFileName(key.Addr)),
+		PublicKey: publicKey}
 
 	if err := w.ks.StoreKey(key, a.Path, passphrase); err != nil {
 		return cache.Account{}, err
@@ -365,10 +366,10 @@ func (w *Wallet) writeBindingInfo(addrAccountsMap map[string][]string) error {
 	log.Debug("writeBindingInfo:", "binging info", addrAccountsMap)
 	fileContent, err := json.Marshal(addrAccountsMap)
 	if err != nil {
-		log.Error("fail to marshall map to json string:",addrAccountsMap)
+		log.Error("fail to marshall map to json string:", addrAccountsMap)
 		return err
 	}
-	if ioutil.WriteFile(w.bindingFilePath, fileContent,0666) == nil {
+	if ioutil.WriteFile(w.bindingFilePath, fileContent, 0666) == nil {
 		log.Info("success to write binding info:", string(fileContent))
 		return nil
 	} else {
