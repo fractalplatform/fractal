@@ -17,11 +17,16 @@
 package miner
 
 import (
-	"crypto/ecdsa"
+	"encoding/hex"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -116,11 +121,40 @@ func (miner *Miner) Pending() (*types.Block, *state.StateDB) {
 }
 
 // SetCoinbase coinbase name & private key
-func (miner *Miner) SetCoinbase(name string, privKey *ecdsa.PrivateKey) {
-	miner.worker.setCoinbase(name, privKey)
+func (miner *Miner) SetCoinbase(name string, privKey string) error {
+	bts, err := hex.DecodeString(privKey)
+	if err != nil {
+		return err
+	}
+	priv, err := crypto.ToECDSA(bts)
+	if err != nil {
+		return err
+	}
+	if !common.IsValidName(name) {
+		return fmt.Errorf("invalid name %v", name)
+	}
+
+	state, err := miner.worker.StateAt(miner.worker.CurrentHeader().Root)
+	if err != nil {
+		return err
+	}
+	accountDB, err := accountmanager.NewAccountManager(state)
+	if err != nil {
+		return err
+	}
+	pubkey := crypto.FromECDSAPub(&priv.PublicKey)
+	if err := accountDB.IsValidSign(common.StrToName(name), types.ActionType(0), common.BytesToPubKey(pubkey)); err != nil {
+		return err
+	}
+	miner.worker.setCoinbase(name, priv, pubkey)
+	return nil
 }
 
 // SetExtra extra data
-func (miner *Miner) SetExtra(extra []byte) {
+func (miner *Miner) SetExtra(extra []byte) error {
+	if uint64(len(extra)) > params.MaximumExtraDataSize-65 {
+		return fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize)
+	}
 	miner.worker.setExtra(extra)
+	return nil
 }

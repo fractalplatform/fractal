@@ -17,7 +17,6 @@
 package ftservice
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sync"
@@ -25,11 +24,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/consensus/miner"
-	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/internal/api"
 	"github.com/fractalplatform/fractal/node"
@@ -155,18 +152,13 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	bcc.Processor = txProcessor
 	ftservice.miner = miner.NewMiner(bcc)
-	if bts, err := hex.DecodeString(config.Miner.PrivateKey); err == nil {
-		if !common.IsValidName(config.Miner.Name) {
-			log.Error(fmt.Sprintf("miner name %v invalid", config.Miner.Name))
-		} else if priv, err := crypto.ToECDSA(bts); err == nil {
-			ftservice.miner.SetCoinbase(config.Miner.Name, priv)
-		} else {
-			log.Error("miner private error", err)
-		}
-	} else {
-		log.Error("miner private error", err)
+	if err := ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKey); err != nil {
+		log.Warn(fmt.Sprintf("SetCoinbase error %s", err))
 	}
-	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
+
+	if err := ftservice.miner.SetExtra([]byte(config.Miner.ExtraData)); err != nil {
+		log.Warn(fmt.Sprintf("SetExtra error %s", err))
+	}
 	if config.Miner.Start {
 		ftservice.miner.Start()
 	}

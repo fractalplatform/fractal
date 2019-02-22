@@ -56,13 +56,15 @@ type Worker struct {
 	mu       sync.Mutex
 	coinbase string
 	privKey  *ecdsa.PrivateKey
+	pubKey   []byte
 	extra    []byte
 
 	currentWork *Work
 
-	mining   int32
-	quitWork chan struct{}
-	quit     chan struct{}
+	mining     int32
+	quitWork   chan struct{}
+	quitWorkRW sync.RWMutex
+	quit       chan struct{}
 }
 
 func newWorker(consensus consensus.IConsensus) *Worker {
@@ -71,7 +73,7 @@ func newWorker(consensus consensus.IConsensus) *Worker {
 		quit:       make(chan struct{}),
 	}
 	go worker.update()
-	worker.commitNewWork(time.Now().UnixNano())
+	worker.commitNewWork(time.Now().UnixNano(), nil)
 	return worker
 }
 
@@ -87,15 +89,17 @@ func (worker *Worker) update() {
 out:
 	for {
 		select {
-		// Handle ChainHeadEvent
 		case ev := <-chainHeadCh:
+			// Handle ChainHeadEvent
 			if atomic.LoadInt32(&worker.mining) != 0 {
 				if blk := ev.Data.(*types.Block); strings.Compare(blk.Coinbase().String(), worker.coinbase) != 0 {
+					worker.quitWorkRW.Lock()
 					if worker.quitWork != nil {
 						log.Debug("old parent hash coming, will be closing current work", "timestamp", worker.currentWork.currentHeader.Time)
 						close(worker.quitWork)
 						worker.quitWork = nil
 					}
+					worker.quitWorkRW.Unlock()
 				}
 			}
 		case ev := <-txsCh:
@@ -107,7 +111,7 @@ out:
 					from := action.Sender()
 					txs[from] = append(txs[from], tx)
 				}
-				worker.commitTransactions(worker.currentWork, types.NewTransactionsByPriceAndNonce(txs), uint64(time.Second))
+				worker.commitTransactions(worker.currentWork, types.NewTransactionsByPriceAndNonce(txs), math.MaxUint64)
 			}
 			// System stopped
 		case <-txsSub.Err():
@@ -135,16 +139,21 @@ func (worker *Worker) mintLoop() {
 		return crypto.Sign(content, worker.privKey)
 	})
 	interval := int64(dpos.BlockInterval())
-	// time.Sleep(time.Duration(interval - (time.Now().UnixNano() % interval)))
-	// ticker := time.NewTicker(time.Duration(interval)).C
 	timer := time.NewTimer(time.Duration(interval - (time.Now().UnixNano() % interval)))
 	defer timer.Stop()
 	for {
 		select {
-		// case now := <-ticker:
 		case now := <-timer.C:
+			worker.quitWorkRW.Lock()
+			if worker.quitWork != nil {
+				close(worker.quitWork)
+				worker.quitWork = nil
+				log.Debug("next time coming, will be closing current work", "timestamp", worker.currentWork.currentHeader.Time)
+			}
+			worker.quitWorkRW.Unlock()
+			quit := make(chan struct{})
+			worker.mintBlock(int64(dpos.Slot(uint64(now.UnixNano()))), quit)
 			timer.Reset(time.Duration(interval - (time.Now().UnixNano() % interval)))
-			worker.mintBlock(int64(dpos.Slot(uint64(now.UnixNano()))))
 		case <-worker.quit:
 			worker.quit = make(chan struct{})
 			return
@@ -152,23 +161,43 @@ func (worker *Worker) mintLoop() {
 	}
 }
 
-func (worker *Worker) mintBlock(timestamp int64) {
-	dpos := worker.Engine().(*dpos.Dpos)
+func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
+	worker.quitWorkRW.Lock()
+	worker.quitWork = quit
+	worker.quitWorkRW.Unlock()
+	defer func() {
+		worker.quitWorkRW.Lock()
+		worker.quitWork = nil
+		worker.quitWorkRW.Unlock()
+	}()
+	cdpos := worker.Engine().(*dpos.Dpos)
 	header := worker.CurrentHeader()
 	state, err := worker.StateAt(header.Root)
 	if err != nil {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
 	}
-	if err := dpos.IsValidateProducer(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, state); err != nil {
-		log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
+	if err := cdpos.IsValidateProducer(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKey, state); err != nil {
+		switch err {
+		case dpos.ErrIllegalProducerName:
+			fallthrough
+		case dpos.ErrIllegalProducerPubKey:
+			log.Error("failed to mint the block", "timestamp", timestamp, "err", err)
+		default:
+			log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
+		}
 		return
 	}
 	bstart := time.Now()
 outer:
 
 	for {
-		block, err := worker.commitNewWork(timestamp)
+		select {
+		case <-quit:
+			return
+		default:
+		}
+		block, err := worker.commitNewWork(timestamp, quit)
 		if err == nil {
 			log.Info("Mined new block", "producer", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 			break outer
@@ -176,9 +205,11 @@ outer:
 		if strings.Contains(err.Error(), "mint") {
 			log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 			break outer
+		} else if strings.Contains(err.Error(), "wait") {
+			time.Sleep(time.Duration(cdpos.BlockInterval() / 10))
 		}
+
 		log.Warn("failed to mint block", "timestamp", timestamp, "err", err)
-		// time.Sleep(time.Duration(dpos.BlockInterval() / 10))
 	}
 }
 
@@ -190,11 +221,12 @@ func (worker *Worker) stop() {
 	close(worker.quit)
 }
 
-func (worker *Worker) setCoinbase(name string, privKey *ecdsa.PrivateKey) {
+func (worker *Worker) setCoinbase(name string, privKey *ecdsa.PrivateKey, pubKey []byte) {
 	worker.mu.Lock()
 	defer worker.mu.Unlock()
 	worker.coinbase = name
 	worker.privKey = privKey
+	worker.pubKey = pubKey
 }
 
 func (worker *Worker) setExtra(extra []byte) {
@@ -209,7 +241,7 @@ func (worker *Worker) pending() (*types.Block, *state.StateDB) {
 	return worker.currentWork.currentBlock, worker.currentWork.currentState
 }
 
-func (worker *Worker) commitNewWork(timestamp int64) (*types.Block, error) {
+func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types.Block, error) {
 	parent := worker.CurrentHeader()
 	dpos := worker.Engine().(*dpos.Dpos)
 	if time.Now().UnixNano() >= timestamp+int64(dpos.BlockInterval()) {
@@ -252,10 +284,9 @@ func (worker *Worker) commitNewWork(timestamp int64) (*types.Block, error) {
 		currentReceipts: []*types.Receipt{},
 		currentGasPool:  new(common.GasPool).AddGas(header.GasLimit),
 		currentCnt:      0,
-		quit:            make(chan struct{}),
+		quit:            quit,
 	}
 	worker.mu.Lock()
-	worker.quitWork = work.quit
 	worker.currentWork = work
 	worker.mu.Unlock()
 
@@ -318,8 +349,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	for {
 		select {
 		case <-work.quit:
-			work.quit = nil
-			return errors.New("old parent hash has comed === signal")
+			return fmt.Errorf("mined block timestamp %v missing --- signal", work.currentHeader.Time.Int64())
 		default:
 		}
 		if work.currentGasPool.Gas() < params.ActionGas {
@@ -327,9 +357,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			break
 		}
 
-		// if uint64(time.Now().UnixNano())+interval/5 > work.currentHeader.Time.Uint64()+interval {
-		// 	log.Debug("Not enough time for further transactions")
-		if uint64(time.Now().UnixNano())+2*interval/5 >= work.currentHeader.Time.Uint64()+interval {
+		if interval != math.MaxUint64 && uint64(time.Now().UnixNano())+2*interval/5 >= work.currentHeader.Time.Uint64()+interval {
 			log.Debug("Not enough time for further transactions", "timestamp", work.currentHeader.Time.Int64())
 			break
 		}

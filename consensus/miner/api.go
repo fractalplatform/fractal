@@ -17,13 +17,7 @@
 package miner
 
 import (
-	"encoding/hex"
-	"fmt"
-
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"
 )
 
@@ -48,27 +42,12 @@ func (api *API) Mining() bool {
 }
 
 func (api *API) SetCoinbase(name string, privKey string) error {
-	bts, err := hex.DecodeString(privKey)
-	if err != nil {
-		return err
-	}
-	priv, err := crypto.ToECDSA(bts)
-	if err != nil {
-		return err
-	}
-	if !common.IsValidName(name) {
-		return fmt.Errorf("invalid name %v", name)
-	}
-	api.miner.SetCoinbase(name, priv)
-	return nil
+	return api.miner.SetCoinbase(name, privKey)
 }
 
 func (api *API) SetExtra(extra string) error {
-	if uint64(len(extra)) > params.MaximumExtraDataSize {
-		return fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize)
-	}
-	api.miner.SetExtra([]byte(extra))
-	return nil
+
+	return api.miner.SetExtra([]byte(extra))
 }
 
 func (miner *Miner) APIs(chain consensus.IChainReader) []rpc.API {
