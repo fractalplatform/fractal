@@ -21,6 +21,8 @@ import (
 	crand "crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/blockchain"
 	"math/big"
 	"os"
 	"time"
@@ -31,6 +33,10 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/wallet/cache"
 	"github.com/fractalplatform/fractal/wallet/keystore"
+	am "github.com/fractalplatform/fractal/accountmanager"
+	"errors"
+	"io/ioutil"
+	"encoding/json"
 )
 
 // Wallet represents a software wallet.
@@ -38,6 +44,8 @@ type Wallet struct {
 	accounts cache.Accounts
 	cache    *cache.AccountCache
 	ks       *keystore.KeyStore
+	bindingFilePath string
+	blockchain *blockchain.BlockChain
 }
 
 // NewWallet creates a wallet to sign transaction.
@@ -47,17 +55,45 @@ func NewWallet(keyStoredir string, scryptN, scryptP int) *Wallet {
 		cache: cache.NewAccountCache(keyStoredir),
 		ks:    &keystore.KeyStore{DirPath: keyStoredir, ScryptN: scryptN, ScryptP: scryptP},
 	}
+	w.bindingFilePath = w.ks.JoinPath("acountKeyBindingInfo.txt")
+	w.createFileIfNotExist(w.bindingFilePath)
+
 	return w
 }
 
+func (w *Wallet) createFileIfNotExist(filePath string) error {
+	_, err := os.Stat(filePath)
+	if err != nil && os.IsNotExist(err) {
+		_, err = os.Create(filePath)
+		if err != nil {
+			log.Error("Create file fail:", "err=", err, "file=", filePath)
+			return  err
+		}
+		log.Info("Create file success:", "file=", filePath)
+		return  nil
+	}
+	return nil
+}
+func (w *Wallet) SetBlockChain(blockchain *blockchain.BlockChain) {
+	w.blockchain = blockchain
+}
+func (w *Wallet) GetAccountManager() (*am.AccountManager, error) {
+	statedb, err := w.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+	return am.NewAccountManager(statedb)
+}
 // NewAccount generates a new key and stores it into the key directory.
 func (w *Wallet) NewAccount(passphrase string) (cache.Account, error) {
 	key, err := keystore.NewKey(crand.Reader)
 	if err != nil {
 		return cache.Account{}, err
 	}
-
-	a := cache.Account{Addr: key.Addr, Path: w.ks.JoinPath(keyFileName(key.Addr))}
+	publicKey := hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String()
+	a := cache.Account{Addr: key.Addr,
+	                   Path: w.ks.JoinPath(keyFileName(key.Addr)),
+	                   PublicKey: publicKey}
 
 	if err := w.ks.StoreKey(key, a.Path, passphrase); err != nil {
 		return cache.Account{}, err
@@ -203,4 +239,140 @@ func toISO8601(t time.Time) string {
 		tz = fmt.Sprintf("%03d00", offset/3600)
 	}
 	return fmt.Sprintf("%04d-%02d-%02dT%02d-%02d-%02d.%09d%s", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), tz)
+}
+
+// BindAccountNameAddr bind the account name and publicKey, the current publicKey is got from account manager.
+func (w *Wallet) BindAccountAndPublicKey(accountName string) error {
+	publicKeyAccountsMap := w.getBindingInfo()
+
+	// get account info firstly
+	accountMgr, err := w.GetAccountManager()
+	if err != nil {
+		return err
+	}
+	account, err := accountMgr.GetAccountByName(common.Name(accountName))
+	if err != nil {
+		return err
+	}
+	curPublicKey := account.PublicKey.String()
+
+	// We need consider 5 situations below:
+	// 1:publicKey exist, account NOT exist
+	// 2:publicKey NOT exist, account exist
+	// 3:publicKey AND account exist，but NOT matched
+	// 4:publicKey AND account exist，and matched
+	// 5:publicKey AND account both NOT exist
+
+	// below loop can resolve:
+	// (1) when account exist, if 4, return, if 2 and 3, it can dismatch them, but we need match new publicKey then
+	// (2) when account NOT exist, copy original info
+	tmpPublicKeyAccountsMap := make(map[string][]string)
+	for publicKey, accounts := range publicKeyAccountsMap {
+		tmpAccounts := make([]string, 0)
+		for _, account := range accounts {
+			if account != accountName {
+				tmpAccounts = append(tmpAccounts, account)
+				continue
+			} else if curPublicKey == publicKey {
+				return nil
+			}
+		}
+		if len(tmpAccounts) > 0 {
+			tmpPublicKeyAccountsMap[publicKey] = tmpAccounts
+		}
+	}
+	if _, ok := tmpPublicKeyAccountsMap[curPublicKey]; ok {
+		tmpPublicKeyAccountsMap[curPublicKey] = append(tmpPublicKeyAccountsMap[curPublicKey], accountName)
+	} else {
+		accounts := make([]string, 0)
+		accounts = append(accounts, accountName)
+		tmpPublicKeyAccountsMap[curPublicKey] = accounts
+	}
+
+	return w.writeBindingInfo(tmpPublicKeyAccountsMap)
+}
+
+// ps: in this func, we can't use account's publicKey to get accounts info,
+// because the account's publicKey has been updated by block chain.
+func (w *Wallet) DeleteBound(accountName string) error {
+	publicKeyAccountsMap := w.getBindingInfo()
+
+	tmpPublicKeyAccountsMap := make(map[string][]string)
+	for publicKey, accounts := range publicKeyAccountsMap {
+		tmpAccounts := make([]string, 0)
+		for _, account := range accounts {
+			if account != accountName {
+				tmpAccounts = append(tmpAccounts, account)
+				continue
+			}
+		}
+		if len(tmpAccounts) > 0 {
+			tmpPublicKeyAccountsMap[publicKey] = tmpAccounts
+		}
+	}
+	return w.writeBindingInfo(tmpPublicKeyAccountsMap)
+}
+
+func (w *Wallet) GetAccountsByPublicKey(publicKey string) ([]am.Account, error) {
+	publicKeyAccountsMap := w.getBindingInfo()
+	accounts := make([]am.Account, 0)
+	if accountNames, ok := publicKeyAccountsMap[publicKey]; ok {
+		accountMgr, err := w.GetAccountManager()
+		if err != nil {
+			return nil, err
+		}
+		for _, accountName := range accountNames {
+			account, err := accountMgr.GetAccountByName(common.Name(accountName))
+			if err != nil {
+				return nil, err
+			}
+			accounts = append(accounts, *account)
+		}
+	}
+	return accounts, nil
+}
+
+func (w *Wallet) GetAllAccounts() ([]am.Account, error) {
+	publicKeyAccountsMap := w.getBindingInfo()
+	accountMgr, err := w.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+	accounts := make([]am.Account, 0)
+	for _, accountNames := range publicKeyAccountsMap {
+		for _, accountName := range accountNames {
+			account, err := accountMgr.GetAccountByName(common.Name(accountName))
+			if err != nil {
+				return nil, err
+			}
+			accounts = append(accounts, *account)
+		}
+	}
+	return accounts, nil
+}
+
+func (w *Wallet) getBindingInfo() map[string][]string {
+	publicKeyAccountsMap := make(map[string][]string)
+	fileContent, _ := ioutil.ReadFile(w.bindingFilePath)
+	if len(fileContent) > 0 {
+		json.Unmarshal(fileContent, &publicKeyAccountsMap)
+	}
+	log.Debug("getBindingInfo:", "binging info", publicKeyAccountsMap)
+	return publicKeyAccountsMap
+}
+
+func (w *Wallet) writeBindingInfo(addrAccountsMap map[string][]string) error {
+	log.Debug("writeBindingInfo:", "binging info", addrAccountsMap)
+	fileContent, err := json.Marshal(addrAccountsMap)
+	if err != nil {
+		log.Error("fail to marshall map to json string:",addrAccountsMap)
+		return err
+	}
+	if ioutil.WriteFile(w.bindingFilePath, fileContent,0666) == nil {
+		log.Info("success to write binding info:", string(fileContent))
+		return nil
+	} else {
+		log.Error("fail to write binding info:", string(fileContent))
+		return errors.New("fail to write binding info")
+	}
 }
