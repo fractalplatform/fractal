@@ -18,10 +18,15 @@ package miner
 
 import (
 	"crypto/ecdsa"
+	"encoding/hex"
+	"fmt"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -116,11 +121,35 @@ func (miner *Miner) Pending() (*types.Block, *state.StateDB) {
 }
 
 // SetCoinbase coinbase name & private key
-func (miner *Miner) SetCoinbase(name string, privKey *ecdsa.PrivateKey) {
-	miner.worker.setCoinbase(name, privKey)
+func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
+	privs := []*ecdsa.PrivateKey{}
+	for _, privKey := range privKeys {
+		bts, err := hex.DecodeString(privKey)
+		if err != nil {
+			return err
+		}
+		priv, err := crypto.ToECDSA(bts)
+		if err != nil {
+			return err
+		}
+		privs = append(privs, priv)
+	}
+
+	if !common.IsValidName(name) {
+		return fmt.Errorf("invalid name %v", name)
+	}
+
+	miner.worker.setCoinbase(name, privs)
+	return nil
 }
 
 // SetExtra extra data
-func (miner *Miner) SetExtra(extra []byte) {
+func (miner *Miner) SetExtra(extra []byte) error {
+	if uint64(len(extra)) > params.MaximumExtraDataSize-65 {
+		err := fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize)
+		log.Warn("SetExtra", "error", err)
+		return err
+	}
 	miner.worker.setExtra(extra)
+	return nil
 }
