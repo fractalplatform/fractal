@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
+	am "github.com/fractalplatform/fractal/accountmanager"
 )
 
 type PrivateKeyStoreAPI struct {
@@ -49,8 +50,7 @@ func (api *PrivateKeyStoreAPI) NewAccount(ctx context.Context, passphrase string
 	return map[string]interface{}{
 		"address":    a.Addr,
 		"path":       a.Path,
-		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)),
-		"privateKey": hexutil.Bytes(crypto.FromECDSA(key.PrivateKey)),
+		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String(),
 	}, nil
 }
 
@@ -85,6 +85,7 @@ func (api *PrivateKeyStoreAPI) ImportRawKey(ctx context.Context, privkey string,
 	return map[string]interface{}{
 		"address": a.Addr,
 		"path":    a.Path,
+		"publicKey":  hexutil.Bytes(crypto.FromECDSAPub(&key.PublicKey)),
 	}, nil
 }
 
@@ -109,6 +110,7 @@ func (api *PrivateKeyStoreAPI) ListAccount(ctx context.Context) ([]map[string]in
 		tmpa := map[string]interface{}{
 			"address": account.Addr,
 			"path":    account.Path,
+			"publicKey": account.PublicKey,
 		}
 		ret = append(ret, tmpa)
 	}
@@ -149,4 +151,24 @@ func (api *PrivateKeyStoreAPI) SignData(ctx context.Context, addr common.Address
 	}
 
 	return hexutil.Bytes(sig), nil
+}
+
+func (api *PrivateKeyStoreAPI) BindAccountAndPublicKey(ctx context.Context, accountName string) error {
+	return api.b.Wallet().BindAccountAndPublicKey(accountName)
+}
+
+func (api *PrivateKeyStoreAPI) DeleteBound(ctx context.Context, accountName string) error {
+	return api.b.Wallet().DeleteBound(accountName)
+}
+
+func (api *PrivateKeyStoreAPI) UpdateBindingInfo(ctx context.Context, accountName string) error {
+	return api.b.Wallet().BindAccountAndPublicKey(accountName)
+}
+
+func (api *PrivateKeyStoreAPI) GetAccountsByPublicKeys(ctx context.Context) ([]am.Account, error) {
+	accounts, err := api.b.Wallet().GetAllAccounts()
+	if err != nil {
+		return nil, err
+	}
+	return accounts, nil
 }

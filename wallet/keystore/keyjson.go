@@ -22,6 +22,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"io"
 
 	"github.com/ethereum/go-ethereum/common/math"
@@ -36,6 +37,7 @@ const (
 
 type keyJSON struct {
 	Address    string `json:"address"`
+	PublicKey  string `json:"publickey"`
 	Cipher     string `json:"cipher"`
 	CipherText string `json:"ciphertext"`
 	CipherIV   string `json:"cipheriv"`
@@ -86,6 +88,7 @@ func (kj *keyJSON) encryptKey(key *Key, passphrase string, scryptN, scryptP int)
 	mac := crypto.Keccak256(derivedKey[16:32], cipherText)
 
 	kj.Address = key.Addr.Hex()
+	kj.PublicKey = hexutil.Bytes(crypto.FromECDSAPub(&key.PrivateKey.PublicKey)).String()
 	kj.Cipher = defaultCipher
 	kj.CipherIV = hex.EncodeToString(iv)
 	kj.CipherText = hex.EncodeToString(cipherText)
