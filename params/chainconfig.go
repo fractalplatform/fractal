@@ -27,21 +27,21 @@ const DefaultPubkeyHex = "047db227d7094ce215c3a0f57e1bcc732551fe351f942494719345
 // ChainConfig is the core config which determines the blockchain settings.
 // ChainConfig is stored in the database on a per block basis.
 type ChainConfig struct {
-	ChainID          *big.Int    `json:"chainId"`   // chainId identifies the current chain and is used for replay protection
-	BootNodes        []string    `json:"bootnodes"` // enode URLs of the P2P bootstrap nodes
-	SysName          common.Name `json:"sysName"`   // system name
-	SysToken         string      `json:"sysToken"`  // system token
+	ChainID             *big.Int    `json:"chainId"`   // chainId identifies the current chain and is used for replay protection
+	BootNodes           []string    `json:"bootnodes"` // enode URLs of the P2P bootstrap nodes
+	SysName             common.Name `json:"sysName"`   // system name
+	SysToken            string      `json:"sysToken"`  // system token
 	AssetChargeRatio    uint64      `json:"assetChargeRatio"`
 	ContractChargeRatio uint64      `json:"contractChargeRatio"`
-	SysTokenID       uint64      `json:"-"`
-	SysTokenDecimals uint64      `json:"-"`
+	SysTokenID          uint64      `json:"-"`
+	SysTokenDecimals    uint64      `json:"-"`
 	UpperLimit          *big.Int    `json:"upperlimit"` //
 }
 
 var DefaultChainconfig = &ChainConfig{
-	ChainID:  big.NewInt(1),
-	SysName:  "ftsystemio",
-	SysToken: "ftoken",
+	ChainID:             big.NewInt(1),
+	SysName:             "ftsystemio",
+	SysToken:            "ftoken",
 	AssetChargeRatio:    80,
 	ContractChargeRatio: 80,
 }
