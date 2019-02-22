@@ -69,6 +69,7 @@ func defaultNodeConfig() *node.Config {
 		HTTPPort:         8545,
 		HTTPModules:      []string{"ft", "miner", "dpos", "account", "txpool", "keystore"},
 		HTTPVirtualHosts: []string{"localhost"},
+		HTTPCors:         []string{"*"},
 
 		WSHost:    "localhost",
 		WSPort:    8546,

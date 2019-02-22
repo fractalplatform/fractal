@@ -199,21 +199,29 @@ const (
 )
 
 const (
+	//0xc0 range  new add for multi-asset
+	ISSUEASSET    OpCode = 0xc0 + iota
+	ADDASSET             = 0xc1
+	SETASSETOWNER        = 0xc2
+	BALANCEEX            = 0xc3
+	CALLEX               = 0xc4
+	ASSETAMOUNT          = 0xc5
+	//snapshot num
+	SNAPSHOTTIME = 0xc6
+	SNAPBALANCE  = 0xc7
+)
+
+const (
 	// 0xf0 range - closures
 	CREATE OpCode = 0xf0 + iota
 	CALL
 	CALLCODE
 	RETURN
 	DELEGATECALL
-	//add new asset for multi-asset
-	BALANCEEX     = 0xf5
-	SETASSETOWNER = 0xf6
-	AddASSET      = 0xf7
-	ISSUEASSET    = 0xf8
-	CALLEX        = 0xf9
-	STATICCALL    = 0xfa
-	REVERT        = 0xfd
-	SELFDESTRUCT  = 0xff
+	STATICCALL = 0xfa
+
+	REVERT       = 0xfd
+	SELFDESTRUCT = 0xff
 )
 
 // Since the opcodes aren't all in order we can't use a regular slice
@@ -374,8 +382,11 @@ var opCodeToString = map[OpCode]string{
 	//add new asset for multi-asset
 	BALANCEEX:     "BALANCEEX",
 	SETASSETOWNER: "SETASSETOWNER",
-	AddASSET:      "ADDASSET",
+	ADDASSET:      "ADDASSET",
 	ISSUEASSET:    "ISSUEASSET",
+	SNAPSHOTTIME:  "SNAPSHOTTIME",
+	ASSETAMOUNT:   "ASSETAMOUNT",
+	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
 	//add end
 	STATICCALL:   "STATICCALL",

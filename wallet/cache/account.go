@@ -25,8 +25,9 @@ import (
 
 // Account represents an fractal account.
 type Account struct {
-	Addr common.Address `json:"address"` // account address derived from the key.
-	Path string         `json:"path"`    // key json file path.
+	Addr      common.Address `json:"address"` // account address derived from the key.
+	Path      string         `json:"path"`    // key json file path.
+	PublicKey string         `json:"publicKey"`
 }
 
 // Cmp compares x and y and returns:

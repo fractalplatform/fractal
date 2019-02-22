@@ -266,7 +266,7 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 	if newHead == nil {
 		newHead = tp.chain.CurrentBlock().Header() // Special case during testing
 	}
-	statedb, err := tp.chain.StateAt(newHead.Hash())
+	statedb, err := tp.chain.StateAt(newHead.Root)
 	if err != nil {
 		log.Error("Failed to reset txpool state", "err", err)
 		return

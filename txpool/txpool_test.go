@@ -54,7 +54,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	)
 
 	// issue asset
-	if err := asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname); err != nil {
+	if err := asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -253,15 +253,15 @@ func TestTransactionChainFork(t *testing.T) {
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 		newmanager, _ := am.NewAccountManager(statedb)
 
-		if err := newmanager.CreateAccount(fname, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(tname, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname)
+		asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000))
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -299,15 +299,15 @@ func TestTransactionDoubleNonce(t *testing.T) {
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 		newmanager, _ := am.NewAccountManager(statedb)
 
-		if err := newmanager.CreateAccount(fname, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(tname, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname)
+		asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000))
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}

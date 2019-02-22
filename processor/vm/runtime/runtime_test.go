@@ -180,11 +180,13 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 
 func issueAssetAction(ownerName, toName common.Name) *types.Action {
 	asset := &asset.AssetObject{
-		AssetName: "bitcoin",
-		Symbol:    "btc",
-		Amount:    big.NewInt(1000000000000000000),
-		Decimals:  10,
-		Owner:     ownerName,
+		AssetName:  "bitcoin",
+		Symbol:     "btc",
+		Amount:     big.NewInt(1000000000000000000),
+		Decimals:   10,
+		Owner:      ownerName,
+		UpperLimit: big.NewInt(2000000000000000000),
+		Founder:    ownerName,
 	}
 
 	b, err := rlp.EncodeToBytes(asset)
@@ -206,12 +208,12 @@ func TestAsset(t *testing.T) {
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
 
-	if err := account.CreateAccount(senderName, senderPubkey); err != nil {
+	if err := account.CreateAccount(senderName, "", 0, senderPubkey); err != nil {
 		fmt.Println("create sender account error", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, receiverPubkey); err != nil {
+	if err := account.CreateAccount(receiverName, "", 0, receiverPubkey); err != nil {
 		fmt.Println("create receiver account error", err)
 		return
 	}
@@ -237,6 +239,10 @@ func TestAsset(t *testing.T) {
 	binfile := "./contract/Asset/Asset.bin"
 	abifile := "./contract/Asset/Asset.abi"
 	contractName := common.Name("assetcontract")
+	if err := account.CreateAccount(contractName, "", 0, receiverPubkey); err != nil {
+		fmt.Println("create contract account error", err)
+		return
+	}
 
 	err := createContract(abifile, binfile, contractName, runtimeConfig)
 	if err != nil {
@@ -244,7 +250,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	issuseAssetInput, err := input(abifile, "reg", "ethnewfromname2,ethereum,10000000000,10,jacobwolf")
+	issuseAssetInput, err := input(abifile, "reg", "ethnewfromname2,ethereum,10000000000,10,jacobwolf,20000000000,jacobwolf")
 	if err != nil {
 		fmt.Println("issuseAssetInput error ", err)
 		return
@@ -374,12 +380,12 @@ func TestBNB(t *testing.T) {
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
 
-	if err := account.CreateAccount(senderName, senderPubkey); err != nil {
+	if err := account.CreateAccount(senderName, common.Name(""), 0, senderPubkey); err != nil {
 		fmt.Println("create sender account error", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, receiverPubkey); err != nil {
+	if err := account.CreateAccount(receiverName, common.Name(""), 0, receiverPubkey); err != nil {
 		fmt.Println("create receiver account error", err)
 		return
 	}
@@ -411,8 +417,16 @@ func TestBNB(t *testing.T) {
 	ethvaultName := common.Name("ethvault")
 	venvaultName := common.Name("venvault")
 
-	account.CreateAccount(ethvaultName, senderPubkey)
-	account.CreateAccount(venvaultName, senderPubkey)
+	if err := account.CreateAccount(venContractName, common.Name(""), 0, receiverPubkey); err != nil {
+		fmt.Println("create venContractName account error", err)
+		return
+	}
+	if err := account.CreateAccount(venSaleContractName, common.Name(""), 0, receiverPubkey); err != nil {
+		fmt.Println("create venSaleContractName account error", err)
+		return
+	}
+	account.CreateAccount(ethvaultName, common.Name(""), 0, senderPubkey)
+	account.CreateAccount(venvaultName, common.Name(""), 0, senderPubkey)
 
 	err := createContract(VenSaleAbifile, VenSaleBinfile, venSaleContractName, runtimeConfig)
 	if err != nil {

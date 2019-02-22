@@ -141,7 +141,7 @@ func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Databas
 		st := blockInterval*uint64(time.Millisecond) + block.parent.Head.Time.Uint64()
 		starttime = st
 		block.OffsetTime(int64(tengine.Slot(st)))
-		state, err := state.New(genesis.Hash(), state.NewDatabase(tmpdb))
+		state, err := state.New(genesis.Root(), state.NewDatabase(tmpdb))
 		if err != nil {
 			t.Error("new state failed")
 		}
@@ -194,7 +194,7 @@ func makeNewChain(t *testing.T, gspec *Genesis, chain *BlockChain, db *fdb.Datab
 				return crypto.Sign(content, minerInfo.prikey)
 			})
 			b.OffsetTime(int64(tengine.Slot(headertime[j])))
-			state, err := state.New(b.parent.Hash(), state.NewDatabase(tmpdb))
+			state, err := state.New(b.parent.Root(), state.NewDatabase(tmpdb))
 			if err != nil {
 				t.Error("new state failed", err)
 			}
@@ -319,22 +319,23 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 			batch := db.NewBatch()
 
-			_, err = statedb.Commit(batch, block.Hash(), block.NumberU64())
+			root, err := statedb.Commit(batch, block.Hash(), block.NumberU64())
 			if err != nil {
 				panic(fmt.Sprintf("state Commit error: %v", err))
 			}
+			triedb := statedb.Database().TrieDB()
+			triedb.Commit(root, false)
 			if batch.Write() != nil {
 				panic(fmt.Sprintf("batch Write error: %v", err))
 
 			}
-			statedb.CommitCache(block.Hash())
 			return block, b.receipts
 		}
 		return nil, nil
 	}
 
 	for i := 0; i < n; i++ {
-		statedb, err := state.New(parent.Hash(), state.NewDatabase(db))
+		statedb, err := state.New(parent.Root(), state.NewDatabase(db))
 		if err != nil {
 			panic(err)
 		}

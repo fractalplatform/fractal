@@ -27,6 +27,8 @@ var (
 	ErrAssetObjectEmpty   = errors.New("asset object is empty")
 	ErrNewAssetObject     = errors.New("create asset object input invalid")
 	ErrAssetAmountZero    = errors.New("asset amount is zero")
+	ErrUpperLimit         = errors.New("asset amount over the issuance limit")
+	ErrDestoryLimit       = errors.New("asset destroy exceeding the lower limit")
 	ErrAssetCountNotExist = errors.New("asset total count not exist")
 	ErrAssetIdInvalid     = errors.New("asset id invalid")
 	//ErrAddNewAssetId      = errors.New("add new asset return id invalid")

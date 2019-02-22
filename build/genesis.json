@@ -3,7 +3,9 @@
 		"chainId": 1,
 		"bootnodes": [],
 		"sysName": "ftsystemio",
-		"sysToken": "ftoken"
+		"sysToken": "ftoken",
+		"assetChargeRatio": 80,
+		"contractChargeRatio": 80
 	},
 	"dpos": {
 		"MaxURLLen": 512,
@@ -38,7 +40,9 @@
 			"symbol": "ft",
 			"amount": 10000000000000000000000000000,
 			"decimals": 18,
-			"owner": "ftsystemio"
+			"owner": "ftsystemio",
+			"founder": "ftsystemio",
+			"UpperLimit":10000000000000000000000000000
 		}
 	]
 }

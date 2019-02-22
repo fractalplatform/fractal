@@ -17,12 +17,12 @@
 package accountmanager
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
-
-	"bytes"
-	"crypto/ecdsa"
 
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
@@ -61,13 +61,37 @@ func getAccountManager() *AccountManager {
 	return am
 }
 
+func TestSDB(t *testing.T) {
+
+	b, err := rlp.EncodeToBytes("aaaa")
+	if err != nil {
+		fmt.Printf("encode err = %v", err)
+	}
+	sdb.Put("test1", acctInfoPrefix, b)
+	b1, err := sdb.Get("test1", acctInfoPrefix)
+	if err != nil {
+		fmt.Printf("err = %v", err)
+	}
+	if len(b1) == 0 {
+		fmt.Printf("len = 0 err")
+	}
+
+	var s string
+	if err := rlp.DecodeBytes(b, &s); err != nil {
+		fmt.Printf("decode err = %v", err)
+	}
+	if s != "aaaa" {
+		fmt.Printf("err str = %v\n", s)
+	}
+
+}
 func TestNN(t *testing.T) {
-	if err := acctm.CreateAccount(common.Name("123asdf2"), *new(common.PubKey)); err != nil {
-		t.Errorf("errr create account\n")
+	if err := acctm.CreateAccount(common.Name("123asdf2"), common.Name(""), 0, *new(common.PubKey)); err != nil {
+		t.Errorf("err create account\n")
 	}
 	_, err := acctm.GetAccountBalanceByID(common.Name("123asdf2"), 1)
 	if err == nil {
-		t.Errorf("errr get balance err %v\n", err)
+		t.Errorf("err get balance err %v\n", err)
 	}
 }
 func TestNewAccountManager(t *testing.T) {
@@ -102,15 +126,18 @@ func TestNewAccountManager(t *testing.T) {
 
 func TestAccountManager_CreateAccount(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	pubkey := new(common.PubKey)
 	pubkey2 := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
+	//pubkey2.SetBytes([]byte("abcde123456789"))
 
+	pubkey3, _ := GeneragePubKey()
 	type args struct {
 		accountName common.Name
+		founderName common.Name
 		pubkey      common.PubKey
 	}
 	tests := []struct {
@@ -120,20 +147,33 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"createAccount", fields{sdb, ast}, args{common.Name("111"), *pubkey}, true},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeee"), *pubkey2}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeed"), *pubkey}, false},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a12345678-aeee"), *pubkey}, true},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a123456789aeeefgp"), *pubkey}, true},
+		{"createAccount", fields{sdb, ast}, args{common.Name("111222332a"), common.Name(""), pubkey3}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name(""), *pubkey2}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeed"), common.Name(""), *pubkey}, false},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a123456789aeeefgp"), common.Name(""), *pubkey}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.CreateAccount(tt.args.accountName, tt.args.pubkey); (err != nil) != tt.wantErr {
+		if err := am.CreateAccount(tt.args.accountName, tt.args.founderName, 1, tt.args.pubkey); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
+	}
+
+	am1 := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+	err := am1.CreateAccount(common.Name("aaaadddd"), common.Name("111222332a"), 1, *pubkey)
+	if err != nil {
+		t.Errorf("create acct err:%v", err)
+	}
+	ret, _ := am1.AccountIsExist(common.Name("aaaadddd"))
+	if ret != true {
+		t.Errorf("create acct err")
 	}
 }
 
@@ -153,8 +193,8 @@ func TestAccountManager_AccountIsExist(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"accountnotExist", fields{sdb, ast}, args{common.Name("111")}, false, false},
-		{"accountExist", fields{sdb, ast}, args{common.Name("a123456789aeee")}, true, false},
+		{"accountExist", fields{sdb, ast}, args{common.Name("111222332a")}, true, false},
+		{"accountnotExist", fields{sdb, ast}, args{common.Name("a123456789aeee1")}, false, false},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -188,7 +228,7 @@ func TestAccountManager_AccountIsEmpty(t *testing.T) {
 		wantErr error
 	}{
 		//
-		{"accountEmpty", fields{sdb, ast}, args{common.Name("111")}, false, ErrAccountNotExist},
+		{"accountEmpty", fields{sdb, ast}, args{common.Name("11122233")}, false, ErrAccountNotExist},
 		{"accountEmpty", fields{sdb, ast}, args{common.Name("a123456789aeee")}, true, nil},
 	}
 	for _, tt := range tests {
@@ -223,6 +263,8 @@ func TestAccountManager_UpdateAccount(t *testing.T) {
 	//fmt.Printf("UpdateAccount key=%v\n", pubkey3.Bytes())
 	type args struct {
 		accountName common.Name
+		founderName common.Name
+		chargeRatio uint64
 		pubkey      common.PubKey
 	}
 	tests := []struct {
@@ -232,9 +274,10 @@ func TestAccountManager_UpdateAccount(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"updateAccount", fields{sdb, ast}, args{common.Name("a123456789aeee"), pubkey3}, false},
-		//{"updateAccountNilKey", fields{sdb, ast}, args{common.Name("a123456789aeee"), *pubkey2}, false},
-		{"updateAccountInvaidName", fields{sdb, ast}, args{common.Name("a123456789aeeegty"), *pubkey2}, true},
+		{"updateAccount", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, pubkey3}, false},
+		{"updateAccount", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("111222332a"), 1, pubkey3}, false},
+		{"updateAccountNilFounder", fields{sdb, ast}, args{common.Name("111222332a"), common.Name("1112223-"), 1, *pubkey2}, true},
+		{"updateAccountInvaidName", fields{sdb, ast}, args{common.Name("a123456789aeeegty"), common.Name("a123456789aeeegty"), 1, *pubkey2}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -244,7 +287,7 @@ func TestAccountManager_UpdateAccount(t *testing.T) {
 		//if err := am.CreateAccount(tt.args.accountName, *pubkey2); (err != nil) != tt.wantErr {
 		//	t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		//}
-		if err := am.UpdateAccount(tt.args.accountName, tt.args.pubkey); (err != nil) != tt.wantErr {
+		if err := am.UpdateAccount(tt.args.accountName, tt.args.founderName, tt.args.chargeRatio, tt.args.pubkey); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.UpdateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -312,7 +355,7 @@ func TestAccountManager_SetAccount(t *testing.T) {
 		acct *Account
 	}
 	pubkey2 := new(common.PubKey)
-	acctm.CreateAccount(common.Name("a123456789"), *pubkey2)
+	acctm.CreateAccount(common.Name("a123456789"), common.Name(""), 0, *pubkey2)
 	ac, _ := acctm.GetAccountByName(common.Name("a123456789"))
 
 	tests := []struct {
@@ -535,7 +578,7 @@ func TestAccountManager_IsValidSign(t *testing.T) {
 	pubkey := new(common.PubKey)
 	pubkey2 := new(common.PubKey)
 	pubkey2.SetBytes([]byte("abcde123456789"))
-	acctm.UpdateAccount(common.Name("a123456789aeee"), *pubkey2)
+	acctm.UpdateAccount(common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, *pubkey2)
 	tests := []struct {
 		name    string
 		fields  fields
@@ -567,7 +610,7 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 		assetID     uint64
 	}
 
-	acctm.ast.IssueAsset("ziz", "zz", big.NewInt(1000), 10, common.Name("a123456789aeee"))
+	acctm.ast.IssueAsset("ziz", "zz", big.NewInt(1000), 10, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000))
 	id, _ := acctm.ast.GetAssetIdByName("ziz")
 	//t.Logf("GetAccountBalanceByID id=%v", id)
 	if err := acctm.AddAccountBalanceByID(common.Name("a123456789aeee"), id, big.NewInt(800)); err != nil {
@@ -613,6 +656,7 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 		t.Errorf("TestAccountManager_GetAccountBalanceByID = %v", val)
 	}
 }
+
 func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 	type fields struct {
 		sdb SdbIf
@@ -621,7 +665,7 @@ func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 	type args struct {
 		name string
 	}
-	ast1, err := asset.NewAssetObject("ziz", "zz", big.NewInt(1000), 10, common.Name("a123456789aeee"))
+	ast1, err := asset.NewAssetObject("ziz", "zz", big.NewInt(1000), 10, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000))
 	if err != nil {
 		t.Errorf("new asset object err")
 	}
@@ -635,7 +679,7 @@ func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 	}{
 		//
 		{"assetnotexist", fields{sdb, ast}, args{"ziz1"}, nil, true},
-		{"asssetexist", fields{sdb, ast}, args{"ziz"}, ast1, false},
+		{"assetexist", fields{sdb, ast}, args{"ziz"}, ast1, false},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -662,7 +706,7 @@ func TestAccountManager_GetAssetInfoByID(t *testing.T) {
 		assetID uint64
 	}
 
-	ast1, err := asset.NewAssetObject("ziz", "zz", big.NewInt(1000), 10, common.Name("a123456789aeee"))
+	ast1, err := asset.NewAssetObject("ziz", "zz", big.NewInt(1000), 10, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000))
 	if err != nil {
 		t.Errorf("new asset object err")
 	}
@@ -728,6 +772,241 @@ func TestAccountManager_GetAssetInfoByID(t *testing.T) {
 //		}
 //	}
 //}
+
+func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		assetID uint64
+		time    uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *big.Int
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetAssetAmountByTime(tt.args.assetID, tt.args.time)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetAssetAmountByTime() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. AccountManager.GetAssetAmountByTime() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAccountManager_GetAccountLastChange(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		accountName common.Name
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetAccountLastChange(tt.args.accountName)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetAccountLastChange() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("%q. AccountManager.GetAccountLastChange() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAccountManager_GetSnapshotTime(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		num  uint64
+		time uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetSnapshotTime(tt.args.num, tt.args.time)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetSnapshotTime() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("%q. AccountManager.GetSnapshotTime() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAccountManager_GetBalanceByTime(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		accountName common.Name
+		assetID     uint64
+		time        uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    *big.Int
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetBalanceByTime(tt.args.accountName, tt.args.assetID, tt.args.time)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetBalanceByTime() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. AccountManager.GetBalanceByTime() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAccountManager_GetAssetFounder(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		assetID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    common.Name
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetAssetFounder(tt.args.assetID)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetAssetFounder() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q. AccountManager.GetAssetFounder() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAccountManager_GetChargeRatio(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		accountName common.Name
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetChargeRatio(tt.args.accountName)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetChargeRatio() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("%q. AccountManager.GetChargeRatio() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
+
+func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		assetID uint64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    uint64
+		wantErr bool
+	}{
+	// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		got, err := am.GetAssetChargeRatio(tt.args.assetID)
+		if (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.GetAssetChargeRatio() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if got != tt.want {
+			t.Errorf("%q. AccountManager.GetAssetChargeRatio() = %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}
 
 func TestAccountManager_SubAccountBalanceByID(t *testing.T) {
 	type fields struct {
@@ -855,7 +1134,9 @@ func TestAccountManager_EnoughAccountBalance(t *testing.T) {
 		}
 	}
 	val, _ := acctm.GetAccountBalanceByID(common.Name("a123456789aeee"), 1)
-	t.Logf("TestAccountManager_EnoughAccountBalance = %v", val)
+	if val.Cmp(big.NewInt(1000)) != 0 {
+		t.Logf("TestAccountManager_EnoughAccountBalance = %v", val)
+	}
 }
 
 func TestAccountManager_GetCode(t *testing.T) {
@@ -868,7 +1149,7 @@ func TestAccountManager_GetCode(t *testing.T) {
 	}
 	pubkey2 := new(common.PubKey)
 	acct, _ := acctm.GetAccountByName(common.Name("a123456789aeee"))
-	acctm.CreateAccount(common.Name("a123456789aeed"), *pubkey2)
+	acctm.CreateAccount(common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, *pubkey2)
 	acct.SetCode([]byte("abcde123456789"))
 	acctm.SetAccount(acct)
 	//t.Logf("EnoughAccountBalance asset id=%v : val=%v\n", 1, val)
@@ -1062,7 +1343,9 @@ func TestAccountManager_TransferAsset(t *testing.T) {
 	if err != nil {
 		t.Error("TransferAsset GetAccountBalanceByID err")
 	}
-	t.Logf("TransferAsset GetAccountBalanceByID val=%v", val)
+	if val.Cmp(big.NewInt(1000)) != 0 {
+		t.Errorf("TransferAsset GetAccountBalanceByID val=%v", val)
+	}
 
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1077,7 +1360,10 @@ func TestAccountManager_TransferAsset(t *testing.T) {
 	if err != nil {
 		t.Error("TransferAsset GetAccountBalanceByID err")
 	}
-	t.Logf("TransferAsset1 GetAccountBalanceByID val=%v", val1)
+	if val1.Cmp(big.NewInt(997)) != 0 {
+		t.Errorf("TransferAsset1 GetAccountBalanceByID val=%v", val1)
+	}
+
 }
 
 func TestAccountManager_IssueAsset(t *testing.T) {
@@ -1095,7 +1381,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 	//if err != nil {
 	//	t.Fatal("IssueAsset err", err)
 	//}
-	ast1, err := asset.NewAssetObject("ziz0123456789ziz", "ziz", big.NewInt(2), 18, common.Name("a0123456789ziz"))
+	ast1, err := asset.NewAssetObject("ziz0123456789ziz", "ziz", big.NewInt(2), 18, common.Name("a0123456789ziz"), common.Name("a0123456789ziz"), big.NewInt(100000))
 	if err != nil {
 		t.Fatal("IssueAsset err", err)
 	}
@@ -1105,7 +1391,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 	//	t.Fatal("IssueAsset err", err)
 	//}
 
-	ast2, err := asset.NewAssetObject("ziz0123456789zi", "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"))
+	ast2, err := asset.NewAssetObject("ziz0123456789zi", "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(2))
 	if err != nil {
 		t.Fatal("IssueAsset err", err)
 	}
@@ -1155,8 +1441,8 @@ func TestAccountManager_IncAsset2Acct(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"ownerexist", fields{sdb, ast}, args{common.Name("a0123456789ziz"), common.Name("a123456789aeee"), 2, big.NewInt(1000)}, false},
-		{"ownernotexist", fields{sdb, ast}, args{common.Name("a0123456789ziz"), common.Name("a123456789aeef"), 2, big.NewInt(1000)}, true},
+		{"accountexist", fields{sdb, ast}, args{common.Name("a0123456789ziz"), common.Name("a123456789aeee"), 2, big.NewInt(10)}, false},
+		{"notexist", fields{sdb, ast}, args{common.Name("a0123456789ziz"), common.Name("a123456789aeef"), 2, big.NewInt(1)}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1206,21 +1492,38 @@ func TestAccountManager_Process(t *testing.T) {
 	type args struct {
 		action *types.Action
 	}
+
+	inc := &IncAsset{
+		AssetId: 4,
+		Amount:  big.NewInt(100000000),
+		To:      common.Name("a123456789aeee"),
+	}
+	payload2, err := rlp.EncodeToBytes(inc)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
 	ast0 := &asset.AssetObject{
-		AssetId:   4,
-		AssetName: "abced99",
-		Symbol:    "aaa",
-		Amount:    big.NewInt(100000000),
-		Decimals:  2,
-		Owner:     common.Name("a123456789aeee"),
+		AssetId:    4,
+		AssetName:  "abced99",
+		Symbol:     "aaa",
+		Amount:     big.NewInt(100000000),
+		Decimals:   2,
+		Founder:    common.Name("a123456789aeee"),
+		Owner:      common.Name("a123456789aeee"),
+		AddIssue:   big.NewInt(0),
+		UpperLimit: big.NewInt(1000000000),
 	}
 	ast1 := &asset.AssetObject{
-		AssetId:   4,
-		AssetName: "abced99",
-		Symbol:    "aaa",
-		Amount:    big.NewInt(100000000),
-		Decimals:  2,
-		Owner:     common.Name("a123456789addd"),
+		AssetId:    4,
+		AssetName:  "abced99",
+		Symbol:     "aaa",
+		Amount:     big.NewInt(100000000),
+		Decimals:   2,
+		Founder:    common.Name("a123456789addd"),
+		Owner:      common.Name("a123456789addd"),
+		AddIssue:   big.NewInt(0),
+		UpperLimit: big.NewInt(1000000000),
 	}
 	payload, err := rlp.EncodeToBytes(ast0)
 	if err != nil {
@@ -1232,15 +1535,31 @@ func TestAccountManager_Process(t *testing.T) {
 	}
 	pubkey, _ := GeneragePubKey()
 	pubkey1, _ := GeneragePubKey()
+	aa := &AccountAction{
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload3, err := rlp.EncodeToBytes(aa)
+	if err != nil {
+		panic("rlp payload err")
+	}
+	aa1 := &AccountAction{
+		ChargeRatio: 99,
+		PublicKey:   pubkey1,
+	}
+	payload4, err := rlp.EncodeToBytes(aa1)
+	if err != nil {
+		panic("rlp payload err")
+	}
 
 	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 0, big.NewInt(2), payload)
-	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(0), payload)
+	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(0), payload2)
 	action2 := types.NewAction(types.SetAssetOwner, common.Name("a123456789aeee"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload1)
-	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(10), pubkey[:])
-	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), pubkey1[:])
+	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(10), payload3)
+	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload4)
 	//action5 := types.NewAction(types.DeleteAccount, common.Name("123asdf2"), common.Name("123asdf2"), 1, 1, 2, big.NewInt(0), pubkey1[:])
-	action6 := types.NewAction(types.Transfer, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), pubkey1[:])
-	action7 := types.NewAction(types.Transfer, common.Name("a123456789addd"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), payload)
+	//action6 := types.NewAction(types.Transfer, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), pubkey1[:])
+	//action7 := types.NewAction(types.Transfer, common.Name("a123456789addd"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), payload)
 
 	tests := []struct {
 		name    string
@@ -1255,8 +1574,8 @@ func TestAccountManager_Process(t *testing.T) {
 		{"setowner", fields{sdb, ast}, args{action2}, false},
 		{"updateaccount", fields{sdb, ast}, args{action4}, false},
 		//{"deleteaccount", fields{sdb, ast}, args{action5}, false},
-		{"transfer2self", fields{sdb, ast}, args{action6}, false},
-		{"transfer", fields{sdb, ast}, args{action7}, false},
+		//{"transfer2self", fields{sdb, ast}, args{action6}, false},
+		//{"transfer", fields{sdb, ast}, args{action7}, false},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1272,7 +1591,7 @@ func TestAccountManager_Process(t *testing.T) {
 	if asset2 == nil {
 		t.Error("Process issue asset failure")
 	}
-	t.Logf("issue ok id=%v", asset2.AssetId)
+	//t.Logf("issue ok id=%v", asset2.AssetId)
 	if asset2.Amount.Cmp(big.NewInt(200000000)) != 0 {
 		t.Errorf("Process increase asset failure amount=%v", asset2.Amount)
 	}
@@ -1283,7 +1602,7 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		t.Error("Process GetAccountBalanceByID err")
 	}
-	t.Logf("Process GetAccountBalanceByID val=%v", val)
+	//t.Logf("Process GetAccountBalanceByID val=%v", val)
 
 	ac, err := acctm.GetAccountByName(common.Name("123asdf2"))
 	if err != nil {
@@ -1304,7 +1623,7 @@ func TestAccountManager_Process(t *testing.T) {
 		t.Error("Process update account failure")
 	}
 	val, err = ac1.GetBalanceByID(1)
-	if val.Cmp(big.NewInt(9)) != 0 {
+	if val.Cmp(big.NewInt(10)) != 0 {
 		t.Errorf("Process transfer  failure=%v", val)
 	}
 

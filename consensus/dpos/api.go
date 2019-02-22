@@ -142,7 +142,7 @@ func (api *API) ValidateEpcho() (interface{}, error) {
 }
 
 func (api *API) system() (*System, error) {
-	state, err := api.chain.StateAt(api.chain.CurrentHeader().Hash())
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
 	if err != nil {
 		return nil, err
 	}

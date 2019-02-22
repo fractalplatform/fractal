@@ -26,8 +26,8 @@ import (
 
 // AssetBalance asset and balance struct
 type AssetBalance struct {
-	AssetID uint64
-	Balance *big.Int
+	AssetID uint64   `json:"assetID"`
+	Balance *big.Int `json:"balance"`
 }
 
 func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
@@ -40,36 +40,40 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 
 //Account account object
 type Account struct {
-	AcctName  common.Name
-	Nonce     uint64
-	PublicKey common.PubKey
-	Code      []byte
-	CodeHash  common.Hash
-	CodeSize  uint64
+	//LastTime *big.Int
+	AcctName    common.Name   `json:"accountName"`
+	Founder     common.Name   `json:"founder"`
+	ChargeRatio uint64        `json:"chargeRatio"`
+	Nonce       uint64        `json:"nonce"`
+	PublicKey   common.PubKey `json:"publicKey"`
+	Code        []byte        `json:"code"`
+	CodeHash    common.Hash   `json:"codeHash"`
+	CodeSize    uint64        `json:"codeSize"`
 	//sort by asset id asc
-	Balances []*AssetBalance
+	Balances []*AssetBalance `json:"balances"`
 	//code Suicide
-	Suicide bool
+	Suicide bool `json:"suicide"`
 	//account destroy
-	Destroy bool
+	Destroy bool `json:"destroy"`
 }
 
 // NewAccount create a new account object.
-func NewAccount(accountName common.Name, pubkey common.PubKey) (*Account, error) {
-	//TODO give new accountName func
+func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey) (*Account, error) {
 	if !common.IsValidName(accountName.String()) {
 		return nil, ErrAccountNameInvalid
 	}
 
 	acctObject := Account{
-		AcctName:  accountName,
-		PublicKey: pubkey,
-		Nonce:     0,
-		Balances:  make([]*AssetBalance, 0),
-		Code:      make([]byte, 0),
-		CodeHash:  crypto.Keccak256Hash(nil),
-		Suicide:   false,
-		Destroy:   false,
+		AcctName:    accountName,
+		Founder:     founderName,
+		ChargeRatio: 0,
+		PublicKey:   pubkey,
+		Nonce:       0,
+		Balances:    make([]*AssetBalance, 0),
+		Code:        make([]byte, 0),
+		CodeHash:    crypto.Keccak256Hash(nil),
+		Suicide:     false,
+		Destroy:     false,
 	}
 	return &acctObject, nil
 }
@@ -84,6 +88,22 @@ func (a *Account) IsEmpty() bool {
 // GetName return account object name
 func (a *Account) GetName() common.Name {
 	return a.AcctName
+}
+
+func (a *Account) GetFounder() common.Name {
+	return a.Founder
+}
+
+func (a *Account) SetFounder(f common.Name) {
+	a.Founder = f
+}
+
+func (a *Account) GetChargeRatio() uint64 {
+	return a.ChargeRatio
+}
+
+func (a *Account) SetChargeRatio(ra uint64) {
+	a.ChargeRatio = ra
 }
 
 // GetNonce get nonce
@@ -187,9 +207,8 @@ func (a *Account) binarySearch(assetID uint64) (int64, bool) {
 	return high, false
 }
 
-//AddNewAssetByAssetID add a new asset to balance list and set the value to zero
+//AddNewAssetByAssetID add a new asset to balance list
 func (a *Account) AddNewAssetByAssetID(assetID uint64, amount *big.Int) {
-	//TODO dest account can recv asset
 	p, find := a.binarySearch(assetID)
 	if find {
 		a.Balances[p].Balance = amount

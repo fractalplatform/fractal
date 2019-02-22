@@ -16,24 +16,18 @@
 
 
 all:
-	@go install ./cmd/ft
-	go build ./cmd/ft
-	mv ft ./build/bin
-
-	@go install ./cmd/ftkey
-	go build ./cmd/ftkey
-	mv ftkey ./build/bin
-
-	@go install ./cmd/ftfinder
-	go build ./cmd/ftfinder
-	mv ftfinder ./build/bin
-
-	
+	@./build/env.sh \
+	"go install ./cmd/ft" \
+	"go build ./cmd/ft" \
+	"mv ft ./build/bin" \
+	"go install ./cmd/ftkey" \
+	"go build ./cmd/ftkey" \
+	"mv ftkey ./build/bin"
 run:
 	@./build/bin/ft
 stop:
 clear:
 test: all
-	./test.sh
+	./build/env.sh ./test.sh
 
 .PHONY: all run stop clear test

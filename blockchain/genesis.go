@@ -131,7 +131,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, account := range g.AllocAccounts {
-		if err := accountManager.CreateAccount(account.Name, account.PubKey); err != nil {
+		if err := accountManager.CreateAccount(account.Name, common.Name(""), 0, account.PubKey); err != nil {
 			panic(fmt.Sprintf("genesis create account err %v", err))
 		}
 	}
@@ -158,9 +158,11 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 
 	block := types.NewBlock(head, nil, nil)
 	batch := db.NewBatch()
-	if _, err := statedb.Commit(batch, block.Hash(), block.NumberU64()); err != nil {
+	roothash, err := statedb.Commit(batch, block.Hash(), block.NumberU64())
+	if err != nil {
 		panic(fmt.Sprintf("genesis statedb commit err: %v", err))
 	}
+	statedb.Database().TrieDB().Commit(roothash, false)
 	if err := batch.Write(); err != nil {
 		panic(fmt.Sprintf("genesis batch write err: %v", err))
 	}
@@ -241,11 +243,13 @@ func DefaultGenesisAssets() []*asset.AssetObject {
 	supply.SetString("100000000000000000000000000000", 10)
 	return []*asset.AssetObject{
 		&asset.AssetObject{
-			AssetName: params.DefaultChainconfig.SysToken,
-			Symbol:    "ft",
-			Amount:    supply,
-			Decimals:  18,
-			Owner:     params.DefaultChainconfig.SysName,
+			AssetName:  params.DefaultChainconfig.SysToken,
+			Symbol:     "ft",
+			Amount:     supply,
+			Decimals:   18,
+			Owner:      params.DefaultChainconfig.SysName,
+			Founder:    params.DefaultChainconfig.SysName,
+			UpperLimit: supply,
 		},
 	}
 }
