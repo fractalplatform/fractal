@@ -15,19 +15,30 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 
-all:
+all: ft ftkey ftfinder
+
+ft:
 	@./build/env.sh \
 	"go install ./cmd/ft" \
 	"go build ./cmd/ft" \
 	"mv ft ./build/bin" \
+
+ftkey:
+	@./build/env.sh \
 	"go install ./cmd/ftkey" \
 	"go build ./cmd/ftkey" \
 	"mv ftkey ./build/bin"
-run:
-	@./build/bin/ft
-stop:
-clear:
-test: all
+
+ftfinder:
+	@./build/env.sh \
+	"go install ./cmd/ftfinder" \
+	"go build ./cmd/ftfinder" \
+	"mv ftfinder ./build/bin"
+
+clean:
+	rm -rf build/bin build/_workspace
+
+test:
 	./build/env.sh ./test.sh
 
-.PHONY: all run stop clear test
+.PHONY: all clean test ftfinder ft ftkey ftfinder
