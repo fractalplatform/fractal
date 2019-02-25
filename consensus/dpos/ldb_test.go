@@ -62,7 +62,9 @@ func (ldb *levelDB) Undelegate(string, *big.Int) error {
 func (ldb *levelDB) IncAsset2Acct(string, string, *big.Int) error {
 	return nil
 }
-
+func (ldb *levelDB) GetSnapshot(string, uint64) ([]byte, error) {
+	return nil, nil
+}
 func newTestLDB() (*levelDB, func()) {
 	dirname, err := ioutil.TempDir(os.TempDir(), "dpos_test_")
 	if err != nil {
@@ -185,7 +187,7 @@ func TestLDBState(t *testing.T) {
 	db, _ := NewLDB(ldb)
 	defer function()
 	gstate := &globalState{
-		Height: 10,
+		Height:                          10,
 		ActivatedProducerScheduleUpdate: uint64(time.Now().UnixNano()),
 		ActivatedProducerSchedule:       []string{},
 		ActivatedTotalQuantity:          big.NewInt(1000),
