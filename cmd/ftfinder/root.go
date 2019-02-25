@@ -23,33 +23,28 @@ import (
 	"syscall"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/spf13/cobra"
 )
 
+var nodeConfig = node.Config{
+	P2PConfig: &p2p.Config{},
+}
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	//	Use:   "fkey",
-	//	Short: "fkey is a fractal key manager",
-	//	Long:  `fkey is a fractal key manager`,
+	//	Use:   "ftfinder",
+	//	Short: "ftfinder is a fractal node discoverer",
+	//	Long:  `ftfinder is a fractal node discoverer`,
 
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
-		nodekey, _ := crypto.GenerateKey()
-		cfg := node.Config{
-			P2PBootNodes: "./bootnodes",
-		}
+		nodeConfig.P2PConfig.PrivateKey = nodeConfig.NodeKey()
+		nodeConfig.P2PConfig.BootstrapNodes = nodeConfig.BootNodes()
 		srv := p2p.Server{
-			Config: &p2p.Config{
-				PrivateKey:     nodekey,
-				Name:           "Finder",
-				ListenAddr:     ":12345",
-				BootstrapNodes: cfg.BootNodes(),
-				NodeDatabase:   "",
-			},
+			Config: nodeConfig.P2PConfig,
 		}
 		for i, n := range srv.Config.BootstrapNodes {
 			fmt.Println(i, n.String())
@@ -66,31 +61,17 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	falgs := RootCmd.Flags()
-	_ = falgs
-	/*
-		falgs.IntVar(&ftconfig.NodeCfg.P2PConfig.MaxPeers, "p2p_maxpeers", ftconfig.NodeCfg.P2PConfig.MaxPeers,
-			"Maximum number of network peers (network disabled if set to 0)")
-		falgs.IntVar(&ftconfig.NodeCfg.P2PConfig.MaxPendingPeers, "p2p_maxpendpeers", ftconfig.NodeCfg.P2PConfig.MaxPendingPeers,
-			"Maximum number of pending connection attempts (defaults used if set to 0)")
-		falgs.IntVar(&ftconfig.NodeCfg.P2PConfig.DialRatio, "p2p_dialratio", ftconfig.NodeCfg.P2PConfig.DialRatio,
-			"DialRatio controls the ratio of inbound to dialed connections")
-		falgs.StringVar(&ftconfig.NodeCfg.P2PConfig.ListenAddr, "p2p_listenaddr", ftconfig.NodeCfg.P2PConfig.ListenAddr,
-			"Network listening address")
-		falgs.StringVar(&ftconfig.NodeCfg.P2PConfig.NodeDatabase, "p2p_nodedb", ftconfig.NodeCfg.P2PConfig.NodeDatabase,
-			"The path to the database containing the previously seen live nodes in the network")
-		falgs.StringVar(&ftconfig.NodeCfg.P2PConfig.Name, "p2p_nodename", ftconfig.NodeCfg.P2PConfig.Name,
-			"The node name of this server")
-		falgs.BoolVar(&ftconfig.NodeCfg.P2PConfig.NoDiscovery, "p2p_nodiscover", ftconfig.NodeCfg.P2PConfig.NoDiscovery,
-			"Disables the peer discovery mechanism (manual peer addition)")
-		falgs.BoolVar(&ftconfig.NodeCfg.P2PConfig.NoDial, "p2p_nodial", ftconfig.NodeCfg.P2PConfig.NoDial,
-			"The server will not dial any peers.")
-		falgs.StringVar(&ftconfig.NodeCfg.P2PBootNodes, "p2p_bootnodes", ftconfig.NodeCfg.P2PBootNodes,
-			"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network")
-		falgs.StringVar(&ftconfig.NodeCfg.P2PStaticNodes, "p2p_staticnodes", ftconfig.NodeCfg.P2PStaticNodes,
-			"Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects")
-		falgs.StringVar(&ftconfig.NodeCfg.P2PTrustNodes, "p2p_trustnodes", ftconfig.NodeCfg.P2PStaticNodes,
-			"Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit")
-	*/
+	// p2p
+	falgs.StringVarP(&nodeConfig.DataDir, "datadir", "d", nodeConfig.DataDir, "Data directory for the databases and keystore")
+	falgs.StringVar(&nodeConfig.P2PConfig.ListenAddr, "p2p_listenaddr", nodeConfig.P2PConfig.ListenAddr,
+		"Network listening address")
+	falgs.StringVar(&nodeConfig.P2PConfig.NodeDatabase, "p2p_nodedb", nodeConfig.P2PConfig.NodeDatabase,
+		"The path to the database containing the previously seen live nodes in the network")
+
+	falgs.UintVar(&nodeConfig.P2PConfig.NetworkID, "p2p_id", nodeConfig.P2PConfig.NetworkID,
+		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.")
+	falgs.StringVar(&nodeConfig.P2PBootNodes, "p2p_bootnodes", nodeConfig.P2PBootNodes,
+		"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network")
 	defaultLogConfig().Setup()
 }
 
