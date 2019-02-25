@@ -45,12 +45,12 @@ func newBlcokchainStation(bc *BlockChain, networkId uint64) *BlockchainStation {
 		networkId:  networkId,
 		downloader: NewDownloader(bc),
 	}
-	router.Subscribe(nil, bs.peerCh, router.P2pNewPeer, nil)
-	router.Subscribe(nil, bs.peerCh, router.P2pDelPeer, nil)
-	router.Subscribe(nil, bs.peerCh, router.DownloaderGetStatus, "")
-	router.Subscribe(nil, bs.peerCh, router.DownloaderGetBlockHashMsg, &getBlcokHashByNumber{})
-	router.Subscribe(nil, bs.peerCh, router.DownloaderGetBlockHeadersMsg, &getBlockHeadersData{})
-	router.Subscribe(nil, bs.peerCh, router.DownloaderGetBlockBodiesMsg, []common.Hash{})
+	router.Subscribe(nil, bs.peerCh, router.NewPeerNotify, nil)
+	router.Subscribe(nil, bs.peerCh, router.DelPeerNotify, nil)
+	router.Subscribe(nil, bs.peerCh, router.P2PGetStatus, "")
+	router.Subscribe(nil, bs.peerCh, router.P2PGetBlockHashMsg, &getBlcokHashByNumber{})
+	router.Subscribe(nil, bs.peerCh, router.P2PGetBlockHeadersMsg, &getBlockHeadersData{})
+	router.Subscribe(nil, bs.peerCh, router.P2PGetBlockBodiesMsg, []common.Hash{})
 
 	go bs.loop()
 	return bs
@@ -88,14 +88,14 @@ func checkChainStatus(local *statusData, remote *statusData) error {
 func (bs *BlockchainStation) handshake(e *router.Event) {
 	station := router.NewLocalStation("shake"+e.From.Name(), nil)
 	ch := make(chan *router.Event)
-	sub := router.Subscribe(station, ch, router.DownloaderStatusMsg, &statusData{})
+	sub := router.Subscribe(station, ch, router.P2PStatusMsg, &statusData{})
 	defer sub.Unsubscribe()
 	router.StationRegister(station)
 	defer router.StationUnregister(station)
 
-	router.SendTo(station, e.From, router.DownloaderGetStatus, "")
+	router.SendTo(station, e.From, router.P2PGetStatus, "")
 	disconnect := func() {
-		router.SendTo(nil, nil, router.P2pDisconectPeer, e.From)
+		router.SendTo(nil, nil, router.DisconectCtrl, e.From)
 	}
 	timer := time.After(5 * time.Second)
 	select {
@@ -118,9 +118,9 @@ func (bs *BlockchainStation) loop() {
 	for {
 		e := <-bs.peerCh
 		switch e.Typecode {
-		case router.P2pNewPeer:
+		case router.NewPeerNotify:
 			go bs.handshake(e)
-		case router.P2pDelPeer:
+		case router.DelPeerNotify:
 			go bs.downloader.DelStation(e.From)
 		default:
 			go bs.handleMsg(e)
@@ -132,11 +132,11 @@ func (bs *BlockchainStation) loop() {
 // peer. The remote connection is torn down upon returning any error.
 func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 	switch e.Typecode {
-	case router.DownloaderGetStatus:
+	case router.P2PGetStatus:
 		status := bs.chainStatus()
-		router.ReplyEvent(e, router.DownloaderStatusMsg, status)
+		router.ReplyEvent(e, router.P2PStatusMsg, status)
 
-	case router.DownloaderGetBlockHashMsg:
+	case router.P2PGetBlockHashMsg:
 		query := e.Data.(*getBlcokHashByNumber)
 		hashes := make([]common.Hash, 0, query.Amount)
 		for len(hashes) < int(query.Amount) {
@@ -154,15 +154,15 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 				query.Number += query.Skip + 1
 			}
 		}
-		router.ReplyEvent(e, router.BlockHashMsg, hashes)
+		router.ReplyEvent(e, router.P2PBlockHashMsg, hashes)
 	// Block header query, collect the requested headers and reply
-	case router.DownloaderGetBlockHeadersMsg:
+	case router.P2PGetBlockHeadersMsg:
 		// Decode the complex header query
 		query := e.Data.(*getBlockHeadersData)
 		if query.Origin.Hash != (common.Hash{}) {
 			header := bs.blockchain.GetHeaderByHash(query.Origin.Hash)
 			if header == nil {
-				router.ReplyEvent(e, router.BlockHeadersMsg, []*types.Header{})
+				router.ReplyEvent(e, router.P2PBlockHeadersMsg, []*types.Header{})
 				return nil
 			}
 			query.Origin.Number = header.Number.Uint64()
@@ -193,9 +193,9 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 			}
 		}
 
-		router.ReplyEvent(e, router.BlockHeadersMsg, headers)
+		router.ReplyEvent(e, router.P2PBlockHeadersMsg, headers)
 		return nil
-	case router.DownloaderGetBlockBodiesMsg:
+	case router.P2PGetBlockBodiesMsg:
 		// Decode the retrieval message
 		hashes := e.Data.([]common.Hash)
 		// Gather blocks until the fetch or network limits is reached
@@ -210,7 +210,7 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 			}
 			bodies = append(bodies, body)
 		}
-		router.ReplyEvent(e, router.BlockBodiesMsg, bodies)
+		router.ReplyEvent(e, router.P2PBlockBodiesMsg, bodies)
 		return nil
 	}
 	return nil

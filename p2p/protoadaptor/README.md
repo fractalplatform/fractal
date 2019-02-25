@@ -50,8 +50,8 @@ func StationLoop(name string) {
 	ch := make(chan *router.Event)
 	router.Subscribe(station, ch, router.RouterTestString, "")     // 订阅typecode为router.RouterTestString，消息类型为string的消息
 	router.Subscribe(station, ch, router.RouterTestInt, uint32(0)) // router.RouterTestInt => uint32
-	router.Subscribe(station, ch, router.P2pNewPeer, nil)          // 订阅NewPeer消息，无消息体
-	router.Subscribe(station, ch, router.P2pDelPeer, nil)          // 订阅DelPeer消息，无消息体
+	router.Subscribe(station, ch, router.NewPeerNotify, nil)          // 订阅NewPeer消息，无消息体
+	router.Subscribe(station, ch, router.DelPeerNotify, nil)          // 订阅DelPeer消息，无消息体
 
 	peerNum := uint32(0)
 	broadcastNum := func(num uint32) {
@@ -63,19 +63,19 @@ func StationLoop(name string) {
 		for {
 			e := <-ch
 			switch e.Typecode {
-			case router.P2pNewPeer:
+			case router.NewPeerNotify:
 				peerNum++
 				fmt.Println("new peer!", peerNum)
 				if peerNum > 2 {
 					fmt.Println("drop new peer")
-					router.SendTo(nil, nil, router.P2pDisconectPeer, e.From) // 断开连接
+					router.SendTo(nil, nil, router.DisconectCtrl, e.From) // 断开连接
 					continue
 				}
 				// 新入连接，e.From为RemoteStation
 				hello := fmt.Sprintf("Hello, I'm %s. How many peers do you have?", name)
 				fmt.Println(name, "> ", hello)
 				router.SendTo(station, e.From, router.RouterTestString, hello) // 发送字符串到新入节点
-			case router.P2pDelPeer:
+			case router.DelPeerNotify:
 				// 连接断开通知，e.From为RemoteStation
 				peerNum--
 				fmt.Println("deleted peer!", peerNum)

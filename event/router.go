@@ -69,40 +69,31 @@ type Event struct {
 
 // Type enumerator
 const (
-	RouterTestInt                int = iota // 0
-	RouterTestInt64                         // 1
-	RouterTestString                        // 2
-	P2pNewPeer                              // 3
-	P2pDelPeer                              // 4
-	P2pDisconectPeer                        // 5
-	DownloaderGetStatus                     // 6
-	DownloaderStatusMsg                     // 7
-	DownloaderGetBlockHashMsg               // 8
-	DownloaderGetBlockHeadersMsg            // 9
-	DownloaderGetBlockBodiesMsg             // 10
-	BlockHeadersMsg                         // 11
-	BlockBodiesMsg                          // 12
-	BlockHashMsg                            // 13
-	NewBlockHashesMsg                       // 14
-	TxMsg                                   // 15
-	P2pEndSize
-	ChainHeadEv = 1024 + iota - P2pEndSize // 1024
-	TxEv                                   // 1025
-	NewMinedEv                             // 1026
+	P2PRouterTestInt      int = iota // 0
+	P2PRouterTestInt64               // 1
+	P2PRouterTestString              // 2
+	P2PGetStatus                     // 3 Status request
+	P2PStatusMsg                     // 4 Status response
+	P2PGetBlockHashMsg               // 5 BlockHash request
+	P2PGetBlockHeadersMsg            // 6 BlockHeader request
+	P2PGetBlockBodiesMsg             // 7 BlockBodies request
+	P2PBlockHeadersMsg               // 8 BlockHeader response
+	P2PBlockBodiesMsg                // 9 BlockBodies response
+	P2PBlockHashMsg                  // 10 BlockHash response
+	P2PNewBlockHashesMsg             // 11 NewBlockHash notify
+	P2PTxMsg                         // 12 TxMsg notify
+	P2PEndSize
+	ChainHeadEv   = 1024 + iota - P2PEndSize // 1024
+	NewPeerNotify                            // 1025
+	DelPeerNotify                            // 1026
+	DisconectCtrl                            // 1027
+	TxEv                                     // 1028
+	NewMinedEv                               // 1029
 	EndSize
 )
 
 var typeListMutex sync.RWMutex
-var typeList = [EndSize]reflect.Type{
-	RouterTestInt:    nil,
-	RouterTestInt64:  nil,
-	RouterTestString: nil,
-	P2pNewPeer:       nil,
-	P2pDelPeer:       nil,
-	P2pDisconectPeer: nil,
-	ChainHeadEv:      nil,
-	TxEv:             nil,
-}
+var typeList = [EndSize]reflect.Type{}
 
 // ReplyEvent is equivalent to `SendTo(e.To, e.From, typecode, data)`
 func ReplyEvent(e *Event, typecode int, data interface{}) {
@@ -116,7 +107,7 @@ func ReplyEvent(e *Event, typecode int, data interface{}) {
 
 // GetTypeByCode return Type by typecode
 func GetTypeByCode(typecode int) reflect.Type {
-	if typecode < P2pEndSize {
+	if typecode < P2PEndSize {
 		typeListMutex.RLock()
 		defer typeListMutex.RUnlock()
 		return typeList[typecode]

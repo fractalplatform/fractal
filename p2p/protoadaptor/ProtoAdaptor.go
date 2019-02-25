@@ -53,7 +53,7 @@ func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 func (adaptor *ProtoAdaptor) Start() error {
 	router.StationRegister(adaptor.peerMangaer.station)
 	router.AdaptorRegister(adaptor)
-	router.Subscribe(nil, adaptor.event, router.P2pDisconectPeer, nil)
+	router.Subscribe(nil, adaptor.event, router.DisconectCtrl, nil)
 	go adaptor.adaptorEvent()
 	return adaptor.Server.Start()
 }
@@ -62,7 +62,7 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 	for {
 		e := <-adaptor.event
 		switch e.Typecode {
-		case router.P2pDisconectPeer:
+		case router.DisconectCtrl:
 			peer := e.Data.(router.Station).Data().(*remotePeer)
 			peer.peer.Disconnect(p2p.DiscSubprotocolError)
 			//peer.Disconnect(DiscSubprotocolError)
@@ -76,12 +76,12 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 	adaptor.peerMangaer.addActivePeer(&remote)
 	router.StationRegister(station)
 	url := remote.peer.Node().String()
-	router.SendTo(station, nil, router.P2pNewPeer, &url)
+	router.SendTo(station, nil, router.NewPeerNotify, &url)
 	defer func() {
 		adaptor.peerMangaer.delActivePeer(&remote)
 		router.StationUnregister(station)
 		url := remote.peer.Node().String()
-		router.SendTo(station, nil, router.P2pDelPeer, &url)
+		router.SendTo(station, nil, router.DelPeerNotify, &url)
 	}()
 
 	for {
