@@ -512,6 +512,7 @@ func (srv *Server) Start() (err error) {
 
 		cfg := discover.Config{
 			TCPPort:      conn.LocalAddr().(*net.UDPAddr).Port,
+			NetworkID:    srv.NetworkID,
 			PrivateKey:   srv.PrivateKey,
 			AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
 			NodeDBPath:   srv.NodeDatabase,
