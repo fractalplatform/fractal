@@ -269,6 +269,8 @@ func init() {
 		"Disables the peer discovery mechanism (manual peer addition)")
 	falgs.BoolVar(&ftconfig.NodeCfg.P2PConfig.NoDial, "p2p_nodial", ftconfig.NodeCfg.P2PConfig.NoDial,
 		"The server will not dial any peers.")
+	falgs.UintVar(&ftconfig.NodeCfg.P2PConfig.NetworkID, "p2p_id", ftconfig.NodeCfg.P2PConfig.NetworkID,
+		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.")
 	falgs.StringVar(&ftconfig.NodeCfg.P2PBootNodes, "p2p_bootnodes", ftconfig.NodeCfg.P2PBootNodes,
 		"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network")
 	falgs.StringVar(&ftconfig.NodeCfg.P2PStaticNodes, "p2p_staticnodes", ftconfig.NodeCfg.P2PStaticNodes,
