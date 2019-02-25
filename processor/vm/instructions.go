@@ -424,27 +424,34 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 }
 
 func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	time, assetId, account := stack.pop(), stack.pop(), stack.pop()
+	opt, time, assetId, account := stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	o := opt.Uint64()
 	assetID := assetId.Uint64()
 	t := time.Uint64()
-	name, err := common.BigToName(account)
-	if err != nil {
-		return nil, err
-	}
-	balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, t)
+	var rerr error
+	var rbalance = big.NewInt(0)
 
-	if assetID == evm.chainConfig.SysTokenID {
-		dbalance, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB)
-		if err != nil {
-			return nil, err
+	if name, err := common.BigToName(account); err == nil {
+		if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, t); err == nil {
+			if (o == 1) && (assetID == evm.chainConfig.SysTokenID) {
+				if dbalance, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+					rbalance = new(big.Int).Add(balance, dbalance)
+				} else {
+					rerr = err
+				}
+			}
+		} else {
+			rerr = err
 		}
-		balance = new(big.Int).Add(balance, dbalance)
+
+	} else {
+		rerr = err
 	}
 
-	if err != nil {
+	if rerr != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
-		stack.push(balance)
+		stack.push(rbalance)
 	}
 	evm.interpreter.intPool.put(time, assetId)
 	return nil, nil
