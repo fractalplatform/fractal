@@ -83,12 +83,13 @@ const (
 	P2PNewBlockHashesMsg             // 11 NewBlockHash notify
 	P2PTxMsg                         // 12 TxMsg notify
 	P2PEndSize
-	ChainHeadEv   = 1024 + iota - P2PEndSize // 1024
-	NewPeerNotify                            // 1025
-	DelPeerNotify                            // 1026
-	DisconectCtrl                            // 1027
-	TxEv                                     // 1028
-	NewMinedEv                               // 1029
+	ChainHeadEv         = 1024 + iota - P2PEndSize // 1024
+	NewPeerNotify                                  // 1025
+	DelPeerNotify                                  // 1026
+	DisconectCtrl                                  // 1027
+	NewPeerPassedNotify                            // 1028 same chain ID and gensis block
+	TxEv                                           // 1029
+	NewMinedEv                                     // 1030
 	EndSize
 )
 
