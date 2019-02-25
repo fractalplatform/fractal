@@ -35,6 +35,8 @@ type IDatabase interface {
 	Delegate(string, *big.Int) error
 	Undelegate(string, *big.Int) error
 	IncAsset2Acct(string, string, *big.Int) error
+
+	GetSnapshot(key string, timestamp uint64) ([]byte, error)
 }
 
 var (
@@ -338,6 +340,35 @@ func (db *LDB) DelState(height uint64) error {
 	}
 	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(height))}, Separator)
 	return db.Delete(key)
+}
+
+func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, error) {
+	key := strings.Join([]string{ProducerKeyPrefix, name}, Separator)
+	val, err := db.GetSnapshot(key, timestamp)
+	if err != nil {
+		return nil, err
+	}
+	if val != nil {
+		producerInfo := &producerInfo{}
+		if err := rlp.DecodeBytes(val, producerInfo); err != nil {
+			return nil, err
+		}
+		return producerInfo.Quantity, nil
+	}
+
+	key = strings.Join([]string{VoterKeyPrefix, name}, Separator)
+	val, err = db.GetSnapshot(key, timestamp)
+	if err != nil {
+		return nil, err
+	}
+	if val != nil {
+		voterInfo := &voterInfo{}
+		if err := rlp.DecodeBytes(val, voterInfo); err != nil {
+			return nil, err
+		}
+		return voterInfo.Quantity, nil
+	}
+	return nil, nil
 }
 
 func (db *LDB) lastestHeight() (uint64, error) {

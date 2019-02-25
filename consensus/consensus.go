@@ -94,6 +94,8 @@ type IEngine interface {
 
 	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error
 
+	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, error)
+
 	IAPI
 }
 

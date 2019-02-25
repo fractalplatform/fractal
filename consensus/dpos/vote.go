@@ -325,6 +325,14 @@ func (sys *System) UnvoteVoter(producer string, voter string) error {
 	return sys.unvoteProducer(voter)
 }
 
+func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, error) {
+	q, err := sys.IDB.GetDelegatedByTime(name, timestamp)
+	if err != nil {
+		return nil, err
+	}
+	return new(big.Int).Mul(q, sys.config.unitStake()), nil
+}
+
 func (sys *System) unvoteProducer(voter string) error {
 	// modify or update
 	vote, err := sys.GetVoter(voter)
@@ -369,7 +377,7 @@ func (sys *System) onblock(height uint64) error {
 		return err
 	}
 	ngstate := &globalState{
-		Height: height + 1,
+		Height:                          height + 1,
 		ActivatedProducerSchedule:       gstate.ActivatedProducerSchedule,
 		ActivatedProducerScheduleUpdate: gstate.ActivatedProducerScheduleUpdate,
 		ActivatedTotalQuantity:          gstate.ActivatedTotalQuantity,

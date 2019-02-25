@@ -33,6 +33,8 @@ import (
 type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
+	// GetDelegatedByTimeFunc returns the delegated balance
+	GetDelegatedByTimeFunc func(string, uint64, *state.StateDB) (*big.Int, error)
 )
 
 // Context provides the EVM with auxiliary information. Once provided
@@ -40,6 +42,9 @@ type (
 type Context struct {
 	// GetHash returns the hash corresponding to n
 	GetHash GetHashFunc
+
+	// GetDelegatedByTime returns the delegated balance
+	GetDelegatedByTime GetDelegatedByTimeFunc
 
 	// Message information
 	Origin     common.Name   // Provides information for ORIGIN

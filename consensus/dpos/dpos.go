@@ -51,6 +51,10 @@ type stateDB struct {
 	state   *state.StateDB
 }
 
+func (s *stateDB) GetSnapshot(key string, timestamp uint64) ([]byte, error) {
+	return s.state.GetSnapshot(s.name, key, timestamp)
+}
+
 func (s *stateDB) Get(key string) ([]byte, error) {
 	return s.state.Get(s.name, key)
 }
@@ -369,6 +373,19 @@ func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 
 func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
+}
+
+func (dpos *Dpos) GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, error) {
+	sys := &System{
+		config: dpos.config,
+		IDB: &LDB{
+			IDatabase: &stateDB{
+				name:  dpos.config.AccountName,
+				state: state,
+			},
+		},
+	}
+	return sys.GetDelegatedByTime(name, timestamp)
 }
 
 // Engine an engine

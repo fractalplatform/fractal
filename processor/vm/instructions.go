@@ -432,6 +432,15 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		return nil, err
 	}
 	balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, t)
+
+	if assetID == evm.chainConfig.SysTokenID {
+		dbalance, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB)
+		if err != nil {
+			return nil, err
+		}
+		balance = new(big.Int).Add(balance, dbalance)
+	}
+
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {

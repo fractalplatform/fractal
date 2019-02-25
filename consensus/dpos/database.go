@@ -47,6 +47,8 @@ type IDB interface {
 	Delegate(string, *big.Int) error
 	Undelegate(string, *big.Int) error
 	IncAsset2Acct(string, string, *big.Int) error
+
+	GetDelegatedByTime(string, uint64) (*big.Int, error)
 }
 
 type producerInfo struct {
