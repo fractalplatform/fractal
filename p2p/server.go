@@ -59,6 +59,9 @@ type Config struct {
 	// This field must be set to a valid secp256k1 private key.
 	PrivateKey *ecdsa.PrivateKey
 
+	// NetworkID is ID of network
+	NetworkID uint `mapstructure:"p2p-networkdID"`
+
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
 	MaxPeers int `mapstructure:"p2p-maxpeers"`
@@ -96,7 +99,7 @@ type Config struct {
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
 	// IP networks contained in the list are considered.
-	NetRestrict *netutil.Netlist
+	NetRestrict *netutil.Netlist `mapstructure:"p2p-badIP"`
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
@@ -142,7 +145,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn) transport
+	newTransport func(net.Conn, uint) transport
 	newPeerHook  func(*Peer)
 
 	lock    sync.Mutex // protects running
@@ -433,6 +436,7 @@ func (srv *Server) DiscoverOnly() error {
 	srv.quit = make(chan struct{})
 	cfg := discover.Config{
 		TCPPort:      0,
+		NetworkID:    srv.NetworkID,
 		PrivateKey:   srv.PrivateKey,
 		AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
 		NodeDBPath:   srv.NodeDatabase,
@@ -849,7 +853,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	if self == nil {
 		return errors.New("shutdown")
 	}
-	c := &conn{fd: fd, transport: srv.newTransport(fd), flags: flags, cont: make(chan error)}
+	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
 		c.close(err)

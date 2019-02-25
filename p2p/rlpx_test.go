@@ -56,25 +56,57 @@ func TestSharedSecret(t *testing.T) {
 }
 
 func TestEncHandshake(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 16; i++ {
 		start := time.Now()
-		if err := testEncHandshake(nil); err != nil {
+		if err := testEncHandshake(nil, 1<<uint(i), 1<<uint(i)); err != nil {
 			t.Fatalf("i=%d %v", i, err)
 		}
 		t.Logf("(without token) %d %v\n", i+1, time.Since(start))
 	}
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 16; i++ {
 		tok := make([]byte, shaLen)
 		rand.Reader.Read(tok)
 		start := time.Now()
-		if err := testEncHandshake(tok); err != nil {
+		if err := testEncHandshake(tok, 1<<uint(i), 1<<uint(i)); err != nil {
 			t.Fatalf("i=%d %v", i, err)
 		}
 		t.Logf("(with token) %d %v\n", i+1, time.Since(start))
 	}
 }
 
-func testEncHandshake(token []byte) error {
+func TestEncHandshakeErrors(t *testing.T) {
+	tests := []struct {
+		netid1 int
+		netid2 int
+		err    [2]error
+	}{
+		{
+			netid1: 0x0,
+			netid2: 0x100,
+			err: [2]error{
+				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=%d remote.NetID=%d", 0x100, 0x0),
+				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=%d remote.NetID=%d", 0x0, 0x100),
+			},
+		},
+		{
+			netid1: 0x100,
+			netid2: 0x0,
+			err: [2]error{
+				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=%d remote.NetID=%d", 0x0, 0x100),
+				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=%d remote.NetID=%d", 0x100, 0x0),
+			},
+		},
+	}
+
+	for i, test := range tests {
+		err := testEncHandshake(nil, test.netid1, test.netid2)
+		if !(reflect.DeepEqual(err, test.err[0]) || reflect.DeepEqual(err, test.err[1])) {
+			t.Errorf("test %d: error mismatch: got %q, want %q", i, err, test.err)
+		}
+	}
+}
+
+func testEncHandshake(token []byte, netid1, netid2 int) error {
 	type result struct {
 		side   string
 		pubkey *ecdsa.PublicKey
@@ -84,7 +116,7 @@ func testEncHandshake(token []byte) error {
 		prv0, _  = crypto.GenerateKey()
 		prv1, _  = crypto.GenerateKey()
 		fd0, fd1 = net.Pipe()
-		c0, c1   = newRLPX(fd0).(*rlpx), newRLPX(fd1).(*rlpx)
+		c0, c1   = newRLPX(fd0, netid1).(*rlpx), newRLPX(fd1, netid2).(*rlpx)
 		output   = make(chan result)
 	)
 

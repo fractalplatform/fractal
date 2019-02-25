@@ -51,8 +51,8 @@ const (
 	pubLen = 64 // 512 bit pubkey in uncompressed representation without format byte
 	shaLen = 32 // hash length (for nonce etc)
 
-	authMsgLen  = 169
-	authRespLen = 102
+	authMsgLen  = 170
+	authRespLen = 103
 
 	eciesOverhead = 65 /* pubkey */ + 16 /* IV */ + 32 /* MAC */
 
@@ -76,15 +76,16 @@ var errPlainMessageTooLarge = errors.New("message length >= 16MB")
 // rlpx is the transport protocol used by actual (non-test) connections.
 // It wraps the frame encoder with locks and read/write deadlines.
 type rlpx struct {
-	fd net.Conn
+	fd    net.Conn
+	netID uint
 
 	rmu, wmu sync.Mutex
 	rw       *rlpxFrameRW
 }
 
-func newRLPX(fd net.Conn) transport {
+func newRLPX(fd net.Conn, netid uint) transport {
 	fd.SetDeadline(time.Now().Add(handshakeTimeout))
-	return &rlpx{fd: fd}
+	return &rlpx{fd: fd, netID: netid}
 }
 
 func (t *rlpx) ReadMsg() (Msg, error) {
@@ -178,9 +179,9 @@ func (t *rlpx) doEncHandshake(prv *ecdsa.PrivateKey, dial *ecdsa.PublicKey) (*ec
 		err error
 	)
 	if dial == nil {
-		sec, err = receiverEncHandshake(t.fd, prv)
+		sec, err = receiverEncHandshake(t.fd, prv, t.netID)
 	} else {
-		sec, err = initiatorEncHandshake(t.fd, prv, dial)
+		sec, err = initiatorEncHandshake(t.fd, prv, dial, t.netID)
 	}
 	if err != nil {
 		return nil, err
@@ -215,6 +216,7 @@ type authMsgV4 struct {
 	InitiatorPubkey [pubLen]byte
 	Nonce           [shaLen]byte
 	Version         uint
+	NetID           uint
 }
 
 // RLPx v4 handshake response (defined in EIP-8).
@@ -222,6 +224,7 @@ type authRespV4 struct {
 	RandomPubkey [pubLen]byte
 	Nonce        [shaLen]byte
 	Version      uint
+	NetID        uint
 }
 
 // secrets is called after the handshake is completed.
@@ -267,9 +270,9 @@ func (h *encHandshake) staticSharedSecret(prv *ecdsa.PrivateKey) ([]byte, error)
 // it should be called on the dialing side of the connection.
 //
 // prv is the local client's private key.
-func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ecdsa.PublicKey) (s secrets, err error) {
+func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ecdsa.PublicKey, netid uint) (s secrets, err error) {
 	h := &encHandshake{initiator: true, remote: ecies.ImportECDSAPublic(remote)}
-	authMsg, err := h.makeAuthMsg(prv)
+	authMsg, err := h.makeAuthMsg(prv, netid)
 	if err != nil {
 		return s, err
 	}
@@ -280,9 +283,11 @@ func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ec
 
 	authRespMsg := new(authRespV4)
 	authRespPacket, err := readHandshakeMsg(authRespMsg, encAuthRespLen, prv, conn)
-	//fmt.Println("read authResp:", authRespMsg)
 	if err != nil {
 		return s, err
+	}
+	if authRespMsg.NetID != netid {
+		return s, fmt.Errorf("handshake with other network node. self.NetID=%d remote.NetID=%d", netid, authRespMsg.NetID)
 	}
 	if err := h.handleAuthResp(authRespMsg); err != nil {
 		return s, err
@@ -291,7 +296,7 @@ func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ec
 }
 
 // makeAuthMsg creates the initiator handshake message.
-func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey) (*authMsgV4, error) {
+func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey, netid uint) (*authMsgV4, error) {
 	// Generate random initiator nonce.
 	h.initNonce = make([]byte, shaLen)
 	_, err := rand.Read(h.initNonce)
@@ -319,6 +324,7 @@ func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey) (*authMsgV4, error) {
 	copy(msg.Signature[:], signature)
 	copy(msg.InitiatorPubkey[:], crypto.FromECDSAPub(&prv.PublicKey)[1:])
 	copy(msg.Nonce[:], h.initNonce)
+	msg.NetID = netid
 	msg.Version = 4
 	return msg, nil
 }
@@ -333,7 +339,7 @@ func (h *encHandshake) handleAuthResp(msg *authRespV4) (err error) {
 // it should be called on the listening side of the connection.
 //
 // prv is the local client's private key.
-func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey) (s secrets, err error) {
+func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, netid uint) (s secrets, err error) {
 	authMsg := new(authMsgV4)
 	authPacket, err := readHandshakeMsg(authMsg, encAuthMsgLen, prv, conn)
 	if err != nil {
@@ -344,7 +350,7 @@ func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey) (s secrets,
 		return s, err
 	}
 
-	authRespMsg, err := h.makeAuthResp()
+	authRespMsg, err := h.makeAuthResp(netid)
 	if err != nil {
 		return s, err
 	}
@@ -353,6 +359,9 @@ func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey) (s secrets,
 	authRespPacket, err = writeHandshakeMsg(authRespMsg, h, conn)
 	if err != nil {
 		return s, err
+	}
+	if authMsg.NetID != netid {
+		//return s, fmt.Errorf("handshake from other network node. self.NetID=%d remote.NetID=%d", netid, authMsg.NetID)
 	}
 	return h.secrets(authPacket, authRespPacket)
 }
@@ -389,7 +398,7 @@ func (h *encHandshake) handleAuthMsg(msg *authMsgV4, prv *ecdsa.PrivateKey) erro
 	return nil
 }
 
-func (h *encHandshake) makeAuthResp() (msg *authRespV4, err error) {
+func (h *encHandshake) makeAuthResp(netid uint) (msg *authRespV4, err error) {
 	// Generate random nonce.
 	h.respNonce = make([]byte, shaLen)
 	if _, err = rand.Read(h.respNonce); err != nil {
@@ -400,6 +409,7 @@ func (h *encHandshake) makeAuthResp() (msg *authRespV4, err error) {
 	copy(msg.Nonce[:], h.respNonce)
 	copy(msg.RandomPubkey[:], exportPubkey(&h.randomPrivKey.PublicKey))
 	msg.Version = 4
+	msg.NetID = netid
 	return msg, nil
 }
 
@@ -422,20 +432,27 @@ func writeHandshakeMsg(msg interface{}, h *encHandshake, w io.Writer) ([]byte, e
 }
 
 func readHandshakeMsg(msg interface{}, plainSize int, prv *ecdsa.PrivateKey, r io.Reader) ([]byte, error) {
-	pack := make([]byte, plainSize+2)
-	if _, err := io.ReadFull(r, pack); err != nil {
+	pack := make([]byte, plainSize+4)
+	prefix := pack[:2]
+	if _, err := io.ReadFull(r, prefix); err != nil {
 		return pack, err
 	}
-	prefix := pack[:2]
 	size := binary.BigEndian.Uint16(prefix)
-	if size != uint16(plainSize) {
-		return prefix, fmt.Errorf("size underflow, need at least %d bytes", plainSize)
+	if size < uint16(plainSize) {
+		return prefix, fmt.Errorf("size underflow, need at least %d bytes, actual %d bytes", plainSize, size)
 	}
-	buf := pack[2:]
 	key := ecies.ImportECDSA(prv)
+	if int(size)+2 > len(pack) {
+		pack = append(pack, make([]byte, int(size)+2-len(pack))...)
+	}
+	pack = pack[:size+2]
+	buf := pack[2:]
+	if _, err := io.ReadFull(r, buf); err != nil {
+		return pack, err
+	}
 	dec, err := key.Decrypt(buf, nil, prefix)
 	if err != nil {
-		return buf, err
+		return pack, err
 	}
 	// Can't use rlp.DecodeBytes here because it rejects
 	// trailing data (forward-compatibility).
