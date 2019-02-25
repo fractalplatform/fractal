@@ -97,7 +97,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
-		go router.SendEvent(e)
+		router.SendEvent(e)
 	}
 }
 
