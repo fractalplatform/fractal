@@ -76,8 +76,8 @@ func TestEncHandshake(t *testing.T) {
 
 func TestEncHandshakeErrors(t *testing.T) {
 	tests := []struct {
-		netid1 int
-		netid2 int
+		netid1 uint
+		netid2 uint
 		err    [2]error
 	}{
 		{
@@ -106,7 +106,7 @@ func TestEncHandshakeErrors(t *testing.T) {
 	}
 }
 
-func testEncHandshake(token []byte, netid1, netid2 int) error {
+func testEncHandshake(token []byte, netid1, netid2 uint) error {
 	type result struct {
 		side   string
 		pubkey *ecdsa.PublicKey

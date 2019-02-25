@@ -78,7 +78,7 @@ func startTestServer(t *testing.T, remoteKey *ecdsa.PublicKey, pf func(*Peer)) *
 	server := &Server{
 		Config:       config,
 		newPeerHook:  pf,
-		newTransport: func(fd net.Conn, _ int) transport { return newTestTransport(remoteKey, fd) },
+		newTransport: func(fd net.Conn, _ uint) transport { return newTestTransport(remoteKey, fd) },
 	}
 	if err := server.Start(); err != nil {
 		t.Fatalf("Could not start server: %v", err)
@@ -430,7 +430,7 @@ func TestServerPeerLimits(t *testing.T) {
 			NoDial:     true,
 			Protocols:  []Protocol{discard},
 		},
-		newTransport: func(fd net.Conn, _ int) transport { return tp },
+		newTransport: func(fd net.Conn, _ uint) transport { return tp },
 		log:          log.New(),
 	}
 	if err := srv.Start(); err != nil {
@@ -543,7 +543,7 @@ func TestServerSetupConn(t *testing.T) {
 				NoDial:     true,
 				Protocols:  []Protocol{discard},
 			},
-			newTransport: func(fd net.Conn, _ int) transport { return test.tt },
+			newTransport: func(fd net.Conn, _ uint) transport { return test.tt },
 			log:          log.New(),
 		}
 		if !test.dontstart {
