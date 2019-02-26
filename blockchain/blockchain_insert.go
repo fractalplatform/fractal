@@ -50,9 +50,8 @@ func (st *insertStats) report(chain []*types.Block, index int) {
 
 		// Assemble the log context and send it to the logger
 		context := []interface{}{
-			"blocks", st.processed, "txs", st.txsCnt, "mgas", float64(st.usedGas) / 1000000,
-			"elapsed", common.PrettyDuration(elapsed), "mgasps", float64(st.usedGas) * 1000 / float64(elapsed),
-			"number", end.Number(), "hash", end.Hash(),
+			"blocks", st.processed, "txs", st.txsCnt, "gas", float64(st.usedGas),
+			"elapsed", common.PrettyDuration(elapsed), "number", end.Number(), "hash", end.Hash(),
 		}
 
 		if st.queued > 0 {
