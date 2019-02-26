@@ -69,6 +69,7 @@ type (
 		Version    uint
 		From, To   rpcEndpoint
 		Expiration uint64
+		NetID      uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -82,6 +83,7 @@ type (
 
 		ReplyTok   []byte // This contains the hash of the ping packet.
 		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
+		NetID      uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -90,6 +92,7 @@ type (
 	findnode struct {
 		Target     encPubkey
 		Expiration uint64
+		NetID      uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -98,6 +101,7 @@ type (
 	neighbors struct {
 		Nodes      []rpcNode
 		Expiration uint64
+		NetID      uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -176,6 +180,7 @@ type udp struct {
 
 	closing chan struct{}
 	//nat     nat.Interface
+	netID uint
 
 	*Table
 }
@@ -227,6 +232,8 @@ type ReadPacket struct {
 type Config struct {
 	// These settings are required and configure the UDP listener:
 	PrivateKey *ecdsa.PrivateKey
+	TCPPort    int  // tcp port
+	NetworkID  uint // network id
 
 	// These settings are optional:
 	AnnounceAddr *net.UDPAddr      // local address announced in the DHT
@@ -251,7 +258,7 @@ func newUDP(c conn, cfg Config) (*Table, *udp, error) {
 	if cfg.AnnounceAddr != nil {
 		realaddr = cfg.AnnounceAddr
 	}
-	self := enode.NewV4(&cfg.PrivateKey.PublicKey, realaddr.IP, realaddr.Port, realaddr.Port)
+	self := enode.NewV4(&cfg.PrivateKey.PublicKey, realaddr.IP, cfg.TCPPort, realaddr.Port)
 	db, err := enode.OpenDB(cfg.NodeDBPath)
 	if err != nil {
 		return nil, nil, err
@@ -264,6 +271,7 @@ func newUDP(c conn, cfg Config) (*Table, *udp, error) {
 		closing:     make(chan struct{}),
 		gotreply:    make(chan reply),
 		addpending:  make(chan *pending),
+		netID:       cfg.NetworkID,
 	}
 	// TODO: separate TCP port
 	udp.ourEndpoint = makeEndpoint(realaddr, uint16(realaddr.Port))
@@ -294,6 +302,7 @@ func (t *udp) ping(toid enode.ID, toaddr *net.UDPAddr) error {
 // when the reply arrives.
 func (t *udp) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) <-chan error {
 	req := &ping{
+		NetID:      t.netID,
 		Version:    4,
 		From:       t.ourEndpoint,
 		To:         makeEndpoint(toaddr, 0), // TODO: maybe use known TCP port from DB
@@ -346,6 +355,7 @@ func (t *udp) findnode(toid enode.ID, toaddr *net.UDPAddr, target encPubkey) ([]
 		return nreceived >= bucketSize
 	})
 	t.send(toaddr, findnodePacket, &findnode{
+		NetID:      t.netID,
 		Target:     target,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 	})
@@ -616,11 +626,15 @@ func (req *ping) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	if expired(req.Expiration) {
 		return errExpired
 	}
+	if t.netID != req.NetID {
+		return fmt.Errorf("receive ping packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
+	}
 	key, err := decodePubkey(fromKey)
 	if err != nil {
 		return fmt.Errorf("invalid public key: %v", err)
 	}
 	t.send(from, pongPacket, &pong{
+		NetID:      t.netID,
 		To:         makeEndpoint(from, req.From.TCP),
 		ReplyTok:   mac,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
@@ -642,6 +656,9 @@ func (req *pong) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	if expired(req.Expiration) {
 		return errExpired
 	}
+	if t.netID != req.NetID {
+		return fmt.Errorf("receive pong packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
+	}
 	fromID := fromKey.id()
 	if !t.handleReply(fromID, pongPacket, req) {
 		return errUnsolicitedReply
@@ -655,6 +672,9 @@ func (req *pong) name() string { return "PONG/v4" }
 func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte) error {
 	if expired(req.Expiration) {
 		return errExpired
+	}
+	if t.netID != req.NetID {
+		return fmt.Errorf("receive findnode packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
 	}
 	fromID := fromKey.id()
 	if time.Since(t.db.LastPongReceived(fromID)) > bondExpiration {
@@ -671,7 +691,10 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 	closest := t.closest(target, bucketSize).entries
 	t.mutex.Unlock()
 
-	p := neighbors{Expiration: uint64(time.Now().Add(expiration).Unix())}
+	p := neighbors{
+		NetID:      t.netID,
+		Expiration: uint64(time.Now().Add(expiration).Unix()),
+	}
 	var sent bool
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
@@ -696,6 +719,9 @@ func (req *findnode) name() string { return "FINDNODE/v4" }
 func (req *neighbors) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte) error {
 	if expired(req.Expiration) {
 		return errExpired
+	}
+	if t.netID != req.NetID {
+		return fmt.Errorf("receive neighbors packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
 	}
 	if !t.handleReply(fromKey.id(), neighborsPacket, req) {
 		return errUnsolicitedReply

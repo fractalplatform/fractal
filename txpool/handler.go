@@ -33,8 +33,8 @@ func NewTxpoolStation(txpool *TxPool) *TxpoolStation {
 		txChan:  make(chan *router.Event),
 		txpool:  txpool,
 	}
-	router.Subscribe(nil, station.txChan, router.TxMsg, []*types.Transaction{})
-	router.Subscribe(nil, station.txChan, router.P2pNewPeer, nil)
+	router.Subscribe(nil, station.txChan, router.P2PTxMsg, []*types.Transaction{})
+	router.Subscribe(nil, station.txChan, router.NewPeerPassedNotify, nil)
 	go station.handleMsg()
 	return station
 }
@@ -43,10 +43,10 @@ func (s *TxpoolStation) handleMsg() {
 	for {
 		e := <-s.txChan
 		switch e.Typecode {
-		case router.TxMsg:
+		case router.P2PTxMsg:
 			txs := e.Data.([]*types.Transaction)
 			s.txpool.AddRemotes(txs)
-		case router.P2pNewPeer:
+		case router.NewPeerPassedNotify:
 			go s.syncTransactions(e)
 		}
 	}
@@ -61,5 +61,5 @@ func (s *TxpoolStation) syncTransactions(e *router.Event) {
 	if len(txs) == 0 {
 		return
 	}
-	router.SendTo(nil, e.From, router.TxMsg, txs)
+	router.SendTo(nil, e.From, router.P2PTxMsg, txs)
 }

@@ -4,6 +4,9 @@
 # or operating system, you probably want to add a global ignore instead:
 #   git config --global core.excludesfile ~/.gitignore_global
 build/bin
+build/_workspace
+
+*.bak
 
 *.a
 
@@ -14,13 +17,6 @@ build/bin
 
 # VS Code
 .vscode
-
-ft
-!/cmd/ft
-
-ftkey
-!/cmd/ftkey
-
 
 profile.out
 

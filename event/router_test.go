@@ -34,7 +34,7 @@ func BenchmarkSubscribe(t *testing.B) {
 			StationRegister(station)
 			defer StationUnregister(station)
 		}
-		sub := Subscribe(station, channel, RouterTestString, "")
+		sub := Subscribe(station, channel, P2PRouterTestString, "")
 		done.Add(1)
 		go func() {
 			defer done.Done()
@@ -52,7 +52,7 @@ func BenchmarkSubscribe(t *testing.B) {
 			case <-quit:
 				return
 			default:
-				SendTo(nil, station, RouterTestString, "Cocurrent")
+				SendTo(nil, station, P2PRouterTestString, "Cocurrent")
 			}
 		}
 	}
@@ -72,7 +72,7 @@ func BenchmarkSubscribe(t *testing.B) {
 		station1 := NewLocalStation("TestStation1", nil)
 		var channel1 chan *Event
 		var start = time.Now()
-		sub := Subscribe(station1, channel1, RouterTestString, "")
+		sub := Subscribe(station1, channel1, P2PRouterTestString, "")
 		duration := time.Now().Sub(start)
 		StationUnregister(station1)
 		sub.Unsubscribe()
@@ -113,9 +113,9 @@ func TestSendEventToStation(t *testing.T) {
 	defer StationUnregister(station2.station)
 	StationRegister(station3.station)
 	defer StationUnregister(station3.station)
-	sub1 = Subscribe(station1.station, station1.channel, RouterTestString, "")
-	sub2 = Subscribe(station2.station, station2.channel, RouterTestString, "")
-	sub3 = Subscribe(station3.station, station3.channel, RouterTestString, "")
+	sub1 = Subscribe(station1.station, station1.channel, P2PRouterTestString, "")
+	sub2 = Subscribe(station2.station, station2.channel, P2PRouterTestString, "")
+	sub3 = Subscribe(station3.station, station3.channel, P2PRouterTestString, "")
 
 	errorList := []string{}
 	recvAndCheck := func(station *testStation, expect interface{}) {
@@ -138,16 +138,16 @@ func TestSendEventToStation(t *testing.T) {
 	go recvAndCheck(station1, nil)
 	go recvAndCheck(station2, nil)
 	go recvAndCheck(station3, nil)
-	go SendTo(nil, nil, RouterTestString, msg)
+	go SendTo(nil, nil, P2PRouterTestString, msg)
 	done.Wait()
 
 	done.Add(3)
 	go recvAndCheck(station1, "1")
 	go recvAndCheck(station2, "2")
 	go recvAndCheck(station3, "3")
-	go SendTo(nil, GetStationByName("TestStation1"), RouterTestString, "1")
-	go SendTo(nil, GetStationByName("TestStation2"), RouterTestString, "2")
-	go SendTo(nil, GetStationByName("TestStation3"), RouterTestString, "3")
+	go SendTo(nil, GetStationByName("TestStation1"), P2PRouterTestString, "1")
+	go SendTo(nil, GetStationByName("TestStation2"), P2PRouterTestString, "2")
+	go SendTo(nil, GetStationByName("TestStation3"), P2PRouterTestString, "3")
 	done.Wait()
 	sub1.Unsubscribe()
 	sub2.Unsubscribe()
@@ -180,12 +180,12 @@ func TestSendEvent(t *testing.T) {
 	num := int(1)
 	for i := 0; i < nsubs; i++ {
 		ch := make(chan *Event)
-		Subscribe(nil, ch, RouterTestInt, num)
+		Subscribe(nil, ch, P2PRouterTestInt, num)
 		go subscriber(ch)
 	}
 
 	event := &Event{
-		Typecode: RouterTestInt,
+		Typecode: P2PRouterTestInt,
 		Data:     num,
 	}
 	nsend := SendEvent(event)
@@ -200,7 +200,7 @@ func TestSendEvent(t *testing.T) {
 		t.Fatalf("wrong int %d, want %d", nsubs, receive)
 	}
 
-	typ := GetTypeByCode(RouterTestInt)
+	typ := GetTypeByCode(P2PRouterTestInt)
 	if reflect.TypeOf(event.Data) != typ {
 		t.Fatalf("wrong type")
 	}
@@ -220,12 +220,12 @@ func TestUnsubscribe(t *testing.T) {
 	done.Add(nsubs)
 	for i := 0; i < nsubs; i++ {
 		ch := make(chan *Event)
-		sub := Subscribe(nil, ch, RouterTestInt64, reflect.Int64)
+		sub := Subscribe(nil, ch, P2PRouterTestInt64, reflect.Int64)
 		go subscriber(sub)
 	}
 
 	event := &Event{
-		Typecode: RouterTestInt64,
+		Typecode: P2PRouterTestInt64,
 		Data:     int64(1),
 	}
 	SendEvent(event)

@@ -63,6 +63,11 @@ func (n *Node) Incomplete() bool {
 	return n.IP() == nil
 }
 
+// IsFinderNode returns true for nodes only support node discover
+func (n *Node) IsFinderNode() bool {
+	return n.IP() != nil && n.TCP() == 0
+}
+
 // Load retrieves an entry from the underlying record.
 func (n *Node) Load(k enr.Entry) error {
 	return n.r.Load(k)

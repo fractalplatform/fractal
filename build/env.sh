@@ -11,6 +11,8 @@ fi
 workspace="$PWD/build/_workspace"
 root="$PWD"
 ftdir="$workspace/src/github.com/fractalplatform"
+bindir="$PWD/build/bin"
+mkdir -p $bindir
 if [ ! -L "$ftdir/fractal" ]; then
     mkdir -p "$ftdir"
     cd "$ftdir"
@@ -33,4 +35,3 @@ do
    $arg
 done
 
-rm -rf ./build/_workspace
