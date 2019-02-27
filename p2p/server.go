@@ -50,6 +50,8 @@ const (
 
 	// Maximum amount of time allowed for writing a complete message.
 	frameWriteTimeout = 20 * time.Second
+
+	rlpxVersion = 5
 )
 
 var errServerStopped = errors.New("server stopped")
@@ -145,7 +147,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn, uint) transport
+	newTransport func(net.Conn, uint, uint) transport
 	newPeerHook  func(*Peer)
 
 	lock    sync.Mutex // protects running
@@ -854,7 +856,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	if self == nil {
 		return errors.New("shutdown")
 	}
-	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID), flags: flags, cont: make(chan error)}
+	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID, rlpxVersion), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
 		c.close(err)
