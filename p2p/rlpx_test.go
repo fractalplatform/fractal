@@ -91,20 +91,6 @@ func TestCompatibility(t *testing.T) {
 			version2: 5,
 			err:      nil,
 		},
-		{
-			netid1:   0x100,
-			netid2:   0x100,
-			version1: 4,
-			version2: 6,
-			err:      nil,
-		},
-		{
-			netid1:   0x100,
-			netid2:   0x200,
-			version1: 4,
-			version2: 6,
-			err:      nil,
-		},
 	}
 	for i, test := range tests {
 		err := testEncHandshake(nil, test.netid1, test.version1, test.netid2, test.version2)
@@ -144,27 +130,7 @@ func TestEncHandshakeErrors(t *testing.T) {
 		{
 			netid1:   0x0,
 			netid2:   0x100,
-			version1: 6,
-			version2: 6,
-			err: [2]error{
-				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
-				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
-			},
-		},
-		{
-			netid1:   0x0,
-			netid2:   0x100,
 			version1: 5,
-			version2: 5,
-			err: [2]error{
-				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
-				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
-			},
-		},
-		{
-			netid1:   0x0,
-			netid2:   0x100,
-			version1: 6,
 			version2: 5,
 			err: [2]error{
 				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
@@ -174,28 +140,8 @@ func TestEncHandshakeErrors(t *testing.T) {
 		{
 			netid1:   0x100,
 			netid2:   0x0,
-			version1: 6,
-			version2: 6,
-			err: [2]error{
-				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
-				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
-			},
-		},
-		{
-			netid1:   0x100,
-			netid2:   0x0,
 			version1: 5,
 			version2: 5,
-			err: [2]error{
-				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
-				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
-			},
-		},
-		{
-			netid1:   0x100,
-			netid2:   0x0,
-			version1: 5,
-			version2: 6,
 			err: [2]error{
 				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
 				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),

@@ -223,14 +223,8 @@ type authMsgV4 struct {
 }
 
 func (msg authMsgV4) EncodeRLP(w io.Writer) error {
-	if msg.Version < 6 {
-		err := rlp.Encode(w, []interface{}{msg.Signature, msg.InitiatorPubkey, msg.Nonce, msg.Version}) // version 4
-		if err != nil {
-			return err
-		}
-		return rlp.Encode(w, msg.NetID) // version 5
-	}
-	return rlp.Encode(w, []interface{}{msg.Signature, msg.InitiatorPubkey, msg.Nonce, msg.Version, msg.NetID}) // version 6
+	return rlp.Encode(w, []interface{}{msg.Signature, msg.InitiatorPubkey, msg.Nonce, msg.Version}) // version 4.5
+	//return rlp.Encode(w, []interface{}{msg.Signature, msg.InitiatorPubkey, msg.Nonce, msg.Version, msg.NetID}) // version 5
 }
 
 func (msg *authMsgV4) DecodeRLP(s *rlp.Stream) error {
@@ -250,14 +244,8 @@ func (msg *authMsgV4) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&msg.Version); err != nil {
 		return err
 	}
-	if msg.Version == 4 {
+	if msg.Version < 5 {
 		return s.ListEnd()
-	}
-	if msg.Version == 5 {
-		if err := s.ListEnd(); err != nil {
-			return err
-		}
-		return s.Decode(&msg.NetID)
 	}
 	if err := s.Decode(&msg.NetID); err != nil {
 		return nil
@@ -269,10 +257,7 @@ func (msg *authMsgV4) DecodeRLP(s *rlp.Stream) error {
 		}
 		msg.Rest = append(msg.Rest, temp)
 	}
-	if err := s.ListEnd(); err != nil {
-		return err
-	}
-	return nil
+	return s.ListEnd()
 }
 
 // RLPx v4 handshake response (defined in EIP-8).
@@ -286,7 +271,7 @@ type authRespV4 struct {
 }
 
 func (msg authRespV4) EncodeRLP(w io.Writer) error {
-	if msg.Version == 4 {
+	if msg.Version < 5 {
 		return rlp.Encode(w, []interface{}{msg.RandomPubkey, msg.Nonce, msg.Version})
 	}
 	return rlp.Encode(w, []interface{}{msg.RandomPubkey, msg.Nonce, msg.Version, msg.NetID})
@@ -306,7 +291,7 @@ func (msg *authRespV4) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&msg.Version); err != nil {
 		return err
 	}
-	if msg.Version == 4 {
+	if msg.Version < 5 {
 		return s.ListEnd()
 	}
 	if err := s.Decode(&msg.NetID); err != nil {
@@ -319,10 +304,7 @@ func (msg *authRespV4) DecodeRLP(s *rlp.Stream) error {
 		}
 		msg.Rest = append(msg.Rest, temp)
 	}
-	if err := s.ListEnd(); err != nil {
-		return err
-	}
-	return nil
+	return s.ListEnd()
 }
 
 // secrets is called after the handshake is completed.
