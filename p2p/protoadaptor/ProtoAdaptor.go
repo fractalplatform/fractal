@@ -1,7 +1,6 @@
 package protoadaptor
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"time"
@@ -73,6 +72,7 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 
 func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) error {
 	remote := remotePeer{ws: ws, peer: peer}
+	log.Info("New remote station", "detail", remote.peer.String())
 	station := router.NewRemoteStation(string(remote.peer.ID().Bytes()[:8]), &remote)
 	adaptor.peerMangaer.addActivePeer(&remote)
 	router.StationRegister(station)
@@ -104,7 +104,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if ret {
 			router.SendTo(nil, nil, router.DisconectCtrl, e.From)
 			//ToDo blacklist
-			return errors.New(fmt.Sprint("DDos ", []byte(e.From.Name())))
+			return fmt.Errorf("DDos %x", e.From.Name())
 		}
 		router.SendEvent(e)
 	}
@@ -229,23 +229,24 @@ func pack2event(pack *pack, station router.Station) (*router.Event, error) {
 	isPtr := false
 	typ := router.GetTypeByCode(int(pack.Typecode))
 	if typ == nil {
-		return nil, errors.New(fmt.Sprint("unknow typecode:", pack.Typecode))
-	} else {
-		//for typ.Kind() == reflect.Ptr {
-		if typ.Kind() == reflect.Ptr {
-			isPtr = true
-			typ = typ.Elem()
-		}
-		obj := reflect.New(typ)
-		if err := rlp.DecodeBytes(pack.Payload, obj.Interface()); err != nil {
-			return nil, err
-		}
-		if isPtr {
-			elem = obj.Interface()
-		} else {
-			elem = obj.Elem().Interface()
-		}
+		return nil, fmt.Errorf("unknow typecode: %d", pack.Typecode)
 	}
+
+	//for typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Ptr {
+		isPtr = true
+		typ = typ.Elem()
+	}
+	obj := reflect.New(typ)
+	if err := rlp.DecodeBytes(pack.Payload, obj.Interface()); err != nil {
+		return nil, err
+	}
+	if isPtr {
+		elem = obj.Interface()
+	} else {
+		elem = obj.Elem().Interface()
+	}
+
 	if pack.From != "" {
 		station = router.NewRemoteStation(station.Name()+pack.From, station.Data())
 	}

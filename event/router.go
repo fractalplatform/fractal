@@ -72,9 +72,9 @@ const (
 	P2PRouterTestInt            int = iota // 0
 	P2PRouterTestInt64                     // 1
 	P2PRouterTestString                    // 2
-	P2PRouterTestNewPeer                   // 3 fiexd bug
-	P2PRouterTestDelPeer                   // 4 fiexd bug
-	P2PRouterTestDisconnectPeer            // 5 fiexd bug
+	P2PRouterTestNewPeer                   // 3 fixed bug
+	P2PRouterTestDelPeer                   // 4 fixed bug
+	P2PRouterTestDisconnectPeer            // 5 fixed bug
 	P2PGetStatus                           // 6 Status request
 	P2PStatusMsg                           // 7 Status response
 	P2PGetBlockHashMsg                     // 8 BlockHash request
