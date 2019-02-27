@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	router "github.com/fractalplatform/fractal/event"
@@ -84,6 +85,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		router.SendTo(station, nil, router.DelPeerNotify, &url)
 	}()
 
+	monitor := initMonitor()
 	for {
 		msg, err := ws.ReadMsg()
 		if err != nil {
@@ -97,8 +99,53 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
+
+		ret := checkDDOS(monitor, e)
+		if ret {
+			router.SendTo(nil, nil, router.DisconectCtrl, e.From)
+			//ToDo blacklist
+			return errors.New(fmt.Sprint("DDos ", []byte(e.From.Name())))
+		}
 		router.SendEvent(e)
 	}
+}
+
+func initMonitor() map[int][]int64 {
+	monitor := make(map[int][]int64)
+	monitor[router.P2PGetStatus] = make([]int64, 2)
+	monitor[router.P2PGetBlockHashMsg] = make([]int64, 2)
+	monitor[router.P2PGetBlockHeadersMsg] = make([]int64, 2)
+	monitor[router.P2PGetBlockBodiesMsg] = make([]int64, 2)
+	monitor[router.P2PNewBlockHashesMsg] = make([]int64, 2)
+	return monitor
+}
+func checkDDOS(m map[int][]int64, e *router.Event) bool {
+	t := e.Typecode
+	var limit int64
+	switch t {
+	case router.P2PGetStatus:
+		limit = 1
+	case router.P2PGetBlockHashMsg:
+		limit = 128
+	case router.P2PGetBlockHeadersMsg:
+		limit = 64
+	case router.P2PGetBlockBodiesMsg:
+		limit = 64
+	case router.P2PNewBlockHashesMsg:
+		limit = 3
+	default:
+		return false
+	}
+	if m[t][0] == time.Now().Unix() {
+		m[t][1]++
+	} else {
+		if m[t][1] > limit {
+			return true
+		}
+		m[t][0] = time.Now().Unix()
+		m[t][1] = 1
+	}
+	return false
 }
 
 // Protocols .
