@@ -656,6 +656,11 @@ func opGasLimit(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	return nil, nil
 }
 
+func opCallAssetId(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	stack.push(evm.interpreter.intPool.get().SetUint64(contract.AssetId))
+	return nil, nil
+}
+
 func opPop(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	evm.interpreter.intPool.put(stack.pop())
 	return nil, nil
@@ -880,11 +885,12 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 //multi-asset
 //Increase asset already exist
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	value, assetId := stack.pop(), stack.pop()
+	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
 	assetID := assetId.Uint64()
+	toName, _ := common.BigToName(to)
 	value = math.U256(value)
 
-	err := execAddAsset(evm, contract, assetID, value)
+	err := execAddAsset(evm, contract, assetID, toName, value)
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -894,8 +900,8 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	return nil, nil
 }
 
-func execAddAsset(evm *EVM, contract *Contract, assetID uint64, value *big.Int) error {
-	asset := &accountmanager.IncAsset{AssetId: assetID, Amount: value, To: contract.CallerName}
+func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Name, value *big.Int) error {
+	asset := &accountmanager.IncAsset{AssetId: assetID, Amount: value, To: toName}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err

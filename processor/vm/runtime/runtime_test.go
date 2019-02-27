@@ -278,7 +278,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset result ", b)
 	}
 
-	addAssetInput, err := input(abifile, "add", common.BigToAddress(big.NewInt(2)), big.NewInt(210000))
+	addAssetInput, err := input(abifile, "add", common.BigToAddress(big.NewInt(2)), common.BytesToAddress([]byte(senderName.String())), big.NewInt(210000))
 	if err != nil {
 		fmt.Println("addAssetInput error ", err)
 		return
@@ -367,6 +367,23 @@ func TestAsset(t *testing.T) {
 	}
 	num := new(big.Int).SetBytes(ret)
 	if num.Cmp(big.NewInt(10000)) != 0 {
+		t.Error("getBalance fail, want 10000, get ", num)
+	}
+
+	getAssetIDInput, err := input(abifile, "getAssetId")
+	if err != nil {
+		fmt.Println("getBalanceInput error ", err)
+		return
+	}
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput)
+
+	ret, _, err = Call(action, &runtimeConfig)
+	if err != nil {
+		fmt.Println("call error ", err)
+		return
+	}
+	num = new(big.Int).SetBytes(ret)
+	if num.Cmp(big.NewInt(2)) != 0 {
 		t.Error("getBalance fail, want 10000, get ", num)
 	}
 }

@@ -10,8 +10,11 @@ contract Asset {
     function reg(string desc) public {
         issueasset(desc);
     }
-    function add(address assetId, uint256 value) public {
-        addasset(assetId,value);
+    function add(address assetId, address to, uint256 value) public {
+        addasset(assetId,to,value);
+    }
+    function getAssetId() public returns (uint256) {
+        return msg.assetid;
     }
     function transAsset(address to, address assetId, uint256 value) public payable {
         to.transferex(assetId, value);
@@ -19,7 +22,7 @@ contract Asset {
     function setname(address newOwner, address assetId) public {
         setassetowner(assetId, newOwner);
     }
-    function getbalance(address to, address assetId) public returns(uint) {
+    function getbalance(address to, address assetId) public returns(uint256) {
         return to.balanceex(assetId);
     }
     function getAssetAmount(uint256 assetId, uint256 t) public returns (uint256){
