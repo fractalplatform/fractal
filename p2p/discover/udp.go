@@ -53,6 +53,7 @@ const (
 	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
 	ntpWarningCooldown  = 10 * time.Minute // Minimum amount of time to pass before repeating NTP warning
 	driftThreshold      = 10 * time.Second // Allowed clock drift before warning user
+	udpVersion          = 5
 )
 
 // RPC packet types
@@ -84,6 +85,7 @@ type (
 		ReplyTok   []byte // This contains the hash of the ping packet.
 		Expiration uint64 // Absolute timestamp at which the packet becomes invalid.
 		NetID      uint
+		Version    uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -93,6 +95,7 @@ type (
 		Target     encPubkey
 		Expiration uint64
 		NetID      uint
+		Version    uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -102,6 +105,7 @@ type (
 		Nodes      []rpcNode
 		Expiration uint64
 		NetID      uint
+		Version    uint
 		// Ignore additional fields (for forward compatibility).
 		Rest []rlp.RawValue `rlp:"tail"`
 	}
@@ -119,6 +123,117 @@ type (
 		TCP uint16 // for RLPx protocol
 	}
 )
+
+func (msg *ping) DecodeRLP(s *rlp.Stream) error {
+	if _, err := s.List(); err != nil {
+		return err
+	}
+	msg.Rest = []rlp.RawValue{}
+	if err := s.Decode(&msg.Version); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.From); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.To); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.Expiration); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.NetID); err != nil {
+		return s.ListEnd()
+	}
+	for {
+		var temp rlp.RawValue
+		if err := s.Decode(&temp); err != nil {
+			break
+		}
+		msg.Rest = append(msg.Rest, temp)
+	}
+	return s.ListEnd()
+}
+func (msg *pong) DecodeRLP(s *rlp.Stream) error {
+	if _, err := s.List(); err != nil {
+		return err
+	}
+	msg.Rest = []rlp.RawValue{}
+	if err := s.Decode(&msg.To); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.ReplyTok); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.Expiration); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.NetID); err != nil {
+		return s.ListEnd()
+	}
+	if err := s.Decode(&msg.Version); err != nil {
+		return err
+	}
+	for {
+		var temp rlp.RawValue
+		if err := s.Decode(&temp); err != nil {
+			break
+		}
+		msg.Rest = append(msg.Rest, temp)
+	}
+	return s.ListEnd()
+}
+func (msg *findnode) DecodeRLP(s *rlp.Stream) error {
+	if _, err := s.List(); err != nil {
+		return err
+	}
+	msg.Rest = []rlp.RawValue{}
+	if err := s.Decode(&msg.Target); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.Expiration); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.NetID); err != nil {
+		return s.ListEnd()
+	}
+	if err := s.Decode(&msg.Version); err != nil {
+		return err
+	}
+	for {
+		var temp rlp.RawValue
+		if err := s.Decode(&temp); err != nil {
+			break
+		}
+		msg.Rest = append(msg.Rest, temp)
+	}
+	return s.ListEnd()
+}
+func (msg *neighbors) DecodeRLP(s *rlp.Stream) error {
+	if _, err := s.List(); err != nil {
+		return err
+	}
+	msg.Rest = []rlp.RawValue{}
+	if err := s.Decode(&msg.Nodes); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.Expiration); err != nil {
+		return err
+	}
+	if err := s.Decode(&msg.NetID); err != nil {
+		return s.ListEnd()
+	}
+	if err := s.Decode(&msg.Version); err != nil {
+		return err
+	}
+	for {
+		var temp rlp.RawValue
+		if err := s.Decode(&temp); err != nil {
+			break
+		}
+		msg.Rest = append(msg.Rest, temp)
+	}
+	return s.ListEnd()
+}
 
 func makeEndpoint(addr *net.UDPAddr, tcpPort uint16) rpcEndpoint {
 	ip := addr.IP.To4()
@@ -303,7 +418,7 @@ func (t *udp) ping(toid enode.ID, toaddr *net.UDPAddr) error {
 func (t *udp) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) <-chan error {
 	req := &ping{
 		NetID:      t.netID,
-		Version:    4,
+		Version:    udpVersion,
 		From:       t.ourEndpoint,
 		To:         makeEndpoint(toaddr, 0), // TODO: maybe use known TCP port from DB
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
@@ -356,6 +471,7 @@ func (t *udp) findnode(toid enode.ID, toaddr *net.UDPAddr, target encPubkey) ([]
 	})
 	t.send(toaddr, findnodePacket, &findnode{
 		NetID:      t.netID,
+		Version:    udpVersion,
 		Target:     target,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 	})
@@ -626,7 +742,7 @@ func (req *ping) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
+	if t.netID != req.NetID && req.Version > 4 {
 		return fmt.Errorf("receive ping packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
 	}
 	key, err := decodePubkey(fromKey)
@@ -635,6 +751,7 @@ func (req *ping) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	}
 	t.send(from, pongPacket, &pong{
 		NetID:      t.netID,
+		Version:    udpVersion,
 		To:         makeEndpoint(from, req.From.TCP),
 		ReplyTok:   mac,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
@@ -656,7 +773,7 @@ func (req *pong) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
+	if t.netID != req.NetID && req.NetID > 0 {
 		return fmt.Errorf("receive pong packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
 	}
 	fromID := fromKey.id()
@@ -673,7 +790,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
+	if t.netID != req.NetID && req.NetID > 0 {
 		return fmt.Errorf("receive findnode packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
 	}
 	fromID := fromKey.id()
@@ -693,6 +810,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 
 	p := neighbors{
 		NetID:      t.netID,
+		Version:    udpVersion,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 	}
 	var sent bool
@@ -720,7 +838,7 @@ func (req *neighbors) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac [
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
+	if t.netID != req.NetID && req.NetID > 0 {
 		return fmt.Errorf("receive neighbors packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
 	}
 	if !t.handleReply(fromKey.id(), neighborsPacket, req) {
