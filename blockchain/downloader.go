@@ -109,11 +109,11 @@ func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
 	dl.knownBlocks.Add(sign)
 
 	dl.maxNumber = blockhash.Number
-	go router.SendTo(nil, router.GetStationByName("broadcast"), router.NewBlockHashesMsg, blockhash)
+	go router.SendTo(nil, router.GetStationByName("broadcast"), router.P2PNewBlockHashesMsg, blockhash)
 }
 
 func (dl *Downloader) syncstatus() {
-	router.Subscribe(nil, dl.statusCh, router.NewBlockHashesMsg, &NewBlockHashesData{})
+	router.Subscribe(nil, dl.statusCh, router.P2PNewBlockHashesMsg, &NewBlockHashesData{})
 	router.Subscribe(nil, dl.statusCh, router.NewMinedEv, NewMinedBlockEvent{})
 	for {
 		e := <-dl.statusCh
@@ -243,9 +243,9 @@ func syncReq(e *router.Event, recvCode int, recvData interface{}, errch chan str
 
 func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByNumber, errch chan struct{}) ([]common.Hash, error) {
 	ch := make(chan *router.Event)
-	sub := router.Subscribe(from, ch, router.BlockHashMsg, []common.Hash{})
+	sub := router.Subscribe(from, ch, router.P2PBlockHashMsg, []common.Hash{})
 	defer sub.Unsubscribe()
-	router.SendTo(from, to, router.DownloaderGetBlockHashMsg, req)
+	router.SendTo(from, to, router.P2PGetBlockHashMsg, req)
 	e, err := waitEvent(errch, ch, time.Second+time.Duration(req.Amount)*(10*time.Millisecond))
 	if err != nil {
 		return nil, err
@@ -255,9 +255,9 @@ func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByN
 
 func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData, errch chan struct{}) ([]*types.Header, error) {
 	ch := make(chan *router.Event)
-	sub := router.Subscribe(from, ch, router.BlockHeadersMsg, []*types.Header{})
+	sub := router.Subscribe(from, ch, router.P2PBlockHeadersMsg, []*types.Header{})
 	defer sub.Unsubscribe()
-	router.SendTo(from, to, router.DownloaderGetBlockHeadersMsg, req)
+	router.SendTo(from, to, router.P2PGetBlockHeadersMsg, req)
 	e, err := waitEvent(errch, ch, time.Second+time.Duration(req.Amount)*(50*time.Millisecond))
 	if err != nil {
 		return nil, err
@@ -267,9 +267,9 @@ func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData
 
 func getBlocks(from router.Station, to router.Station, hashes []common.Hash, errch chan struct{}) ([]*types.Body, error) {
 	ch := make(chan *router.Event)
-	sub := router.Subscribe(from, ch, router.BlockBodiesMsg, []*types.Body{})
+	sub := router.Subscribe(from, ch, router.P2PBlockBodiesMsg, []*types.Body{})
 	defer sub.Unsubscribe()
-	router.SendTo(from, to, router.DownloaderGetBlockBodiesMsg, hashes)
+	router.SendTo(from, to, router.P2PGetBlockBodiesMsg, hashes)
 	e, err := waitEvent(errch, ch, time.Second+time.Duration(len(hashes))*time.Second)
 	if err != nil {
 		return nil, err

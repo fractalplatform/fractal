@@ -293,6 +293,11 @@ func (t *dialTask) Do(srv *Server) {
 			return
 		}
 	}
+
+	if t.dest.IsFinderNode() {
+		return
+	}
+
 	err := t.dial(srv, t.dest)
 	if err != nil {
 		log.Trace("Dial error", "task", t, "err", err)
