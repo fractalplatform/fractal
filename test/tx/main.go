@@ -101,6 +101,8 @@ func issueAsset(from, Owner common.Name, amount *big.Int, assetname string, nonc
 		Amount:    amount,
 		Decimals:  2,
 		Owner:     Owner,
+		Founder:    from,
+		UpperLimit: big.NewInt(500000000000000000),
 	}
 	payload, err := rlp.EncodeToBytes(ast)
 	if err != nil {

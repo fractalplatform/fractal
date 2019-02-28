@@ -1538,6 +1538,7 @@ func TestAccountManager_Process(t *testing.T) {
 	pubkey, _ := GeneragePubKey()
 	pubkey1, _ := GeneragePubKey()
 	aa := &AccountAction{
+		AccountName: common.Name("a123456789addd"),
 		ChargeRatio:    10,
 		PublicKey:pubkey,
 	}
@@ -1546,6 +1547,7 @@ func TestAccountManager_Process(t *testing.T) {
 		panic("rlp payload err")
 	}
 	aa1 := &AccountAction{
+		AccountName: common.Name("a123456789addd"),
 		ChargeRatio:    99,
 		PublicKey:pubkey1,
 	}
@@ -1553,7 +1555,6 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		panic("rlp payload err")
 	}
-
 
 	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 0, big.NewInt(2), payload)
 	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(0), payload2)

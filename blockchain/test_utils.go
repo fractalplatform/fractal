@@ -226,10 +226,21 @@ func makeProducersTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, ne
 	delegateValue := new(big.Int)
 	delegateValue.SetString(issurevalue, 0)
 	var actions []*types.Action
+
 	for _, to := range newaccount {
 		amount := new(big.Int).Mul(delegateValue, big.NewInt(2))
-		pub := common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey))
-		action := types.NewAction(types.CreateAccount, common.StrToName(from), common.StrToName(to.name), nonce, uint64(1), uint64(210000), amount, pub[:])
+		//pub := common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey))
+		acct := &accountmanager.AccountAction{
+			AccountName: common.StrToName(to.name),
+			Founder:     common.StrToName(to.name),
+			ChargeRatio: 0,
+			PublicKey:   common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey)),
+		}
+		a, err := rlp.EncodeToBytes(acct)
+		if err != nil {
+			t.Errorf(fmt.Sprintf("makeProducersTx rlp account err %v", err))
+		}
+		action := types.NewAction(types.CreateAccount, common.StrToName(from), common.StrToName(to.name), nonce, uint64(1), uint64(210000), amount, a[:])
 		actions = append(actions, action)
 		nonce += 1
 	}

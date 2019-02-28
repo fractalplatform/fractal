@@ -37,13 +37,14 @@ const (
 )
 
 type AccountAction struct {
-	Founder     common.Name
-	ChargeRatio uint64
-	PublicKey   common.PubKey
+	AccountName common.Name   `json:"accountName,omitempty"`
+	Founder     common.Name   `json:"founder,omitempty"`
+	ChargeRatio uint64        `json:"chargeRatio,omitempty"`
+	PublicKey   common.PubKey `json:"publicKey,omitempty"`
 }
 
 type IncAsset struct {
-	AssetId uint64      `json:"assetid,omitempty"`
+	AssetId uint64      `json:"assetId,omitempty"`
 	Amount  *big.Int    `json:"amount,omitempty"`
 	To      common.Name `json:"account,omitempty"`
 }
@@ -76,6 +77,21 @@ func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) 
 		return true, nil
 	}
 	return false, nil
+}
+
+
+//AccountHaveCode check account have code
+func (am *AccountManager) AccountHaveCode(accountName common.Name) (bool, error) {
+	//check is exist
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return false, err
+	}
+	if acct == nil {
+		return false, ErrAccountNotExist
+	}
+
+	return acct.HaveCode(), nil	
 }
 
 //AccountIsEmpty check account is empty
@@ -778,8 +794,12 @@ func (am *AccountManager) Process(action *types.Action) error {
 func (am *AccountManager) process(action *types.Action) error {
 	switch action.Type() {
 	case types.CreateAccount:
-		key := common.BytesToPubKey(action.Data())
-		if err := am.CreateAccount(action.Recipient(), common.Name(""), 0, key); err != nil {
+		var acct AccountAction
+		err := rlp.DecodeBytes(action.Data(), &acct)
+		if err != nil {
+			return err
+		}		
+		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
 		break
@@ -868,8 +888,8 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 		break
-	//case types.Transfer:
-	//	return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+	case types.Transfer:   
+		return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 	default:
 		return ErrUnkownTxType
 	}

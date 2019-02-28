@@ -99,7 +99,7 @@ func (a *Asset) GetAssetIdByName(assetName string) (uint64, error) {
 }
 //get asset founder by id
 func (a *Asset) GetAssetFounderById(id uint64) (common.Name, error) {
-	ao,err := a.GetAssetObjectById(id);
+	ao, err := a.GetAssetObjectById(id)
 	if  err != nil{
 		return "", err
 	}
