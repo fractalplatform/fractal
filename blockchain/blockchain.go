@@ -34,7 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -76,6 +76,7 @@ type BlockChain struct {
 	procInterrupt    int32               // procInterrupt must be atomically called, interrupt signaler for block processing
 	wg               sync.WaitGroup      // chain processing wait group for shutting down
 	senderCacher     TxSenderCacher      // senderCacher is a concurrent tranaction sender recoverer sender cacher.
+	fcontroller      *ForkController
 	processor        processor.Processor // block processor interface
 	validator        processor.Validator // block and state validator interface
 	station          *BlockchainStation  // p2p station
@@ -107,6 +108,7 @@ func NewBlockChain(db fdb.Database, vmConfig vm.Config, chainConfig *params.Chai
 		futureBlocks: futureBlocks,
 		badBlocks:    badBlocks,
 		senderCacher: senderCacher,
+		fcontroller:  NewForkController(defaultForkConfig, chainConfig),
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)
@@ -299,6 +301,26 @@ func (bc *BlockChain) State() (*state.StateDB, error) {
 	return bc.StateAt(bc.CurrentBlock().Root())
 }
 
+// GetForkID returns the last current fork ID.
+func (bc *BlockChain) GetForkID(statedb *state.StateDB) (uint64, uint64, error) {
+	return bc.fcontroller.currentForkID(statedb)
+}
+
+// CheckForkID Checks the validity of forkID
+func (bc *BlockChain) CheckForkID(header *types.Header) error {
+	parentHeader := bc.GetHeader(header.ParentHash, uint64(header.Number.Int64()-1))
+	state, err := bc.StateAt(parentHeader.Root)
+	if err != nil {
+		return err
+	}
+	return bc.fcontroller.checkForkID(header, state)
+}
+
+// FillForkID fills the current and next forkID
+func (bc *BlockChain) FillForkID(header *types.Header, statedb *state.StateDB) error {
+	return bc.fcontroller.fillForkID(header, statedb)
+}
+
 // StateAt returns a new mutable state based on a particular point in time.
 func (bc *BlockChain) StateAt(hash common.Hash) (*state.StateDB, error) {
 	return state.New(hash, bc.stateCache)
@@ -461,7 +483,7 @@ func (bc *BlockChain) procFutureBlocks() {
 	if len(blocks) > 0 {
 		types.BlockBy(types.Number).Sort(blocks)
 		for i := range blocks {
-			bc.InsertChain(blocks[i: i+1])
+			bc.InsertChain(blocks[i : i+1])
 		}
 	}
 }
@@ -470,7 +492,7 @@ func (bc *BlockChain) procFutureBlocks() {
 type WriteStatus byte
 
 const (
-	NonStatTy   WriteStatus = iota
+	NonStatTy WriteStatus = iota
 	CanonStatTy
 	SideStatTy
 )
@@ -534,6 +556,10 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	// Write other block data using a batch.
 	batch := bc.db.NewBatch()
 	rawdb.WriteBlock(batch, block)
+
+	if err := bc.fcontroller.update(block, state); err != nil {
+		return err
+	}
 
 	root, err := state.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
@@ -619,7 +645,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		switch {
 		case err == processor.ErrKnownBlock:
 			if bc.CurrentBlock().NumberU64() >= block.NumberU64() {
-				stats.ignored += 1
+				stats.ignored++
 				continue
 			}
 		case err == processor.ErrFutureBlock:
@@ -628,13 +654,13 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 				return i, events, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
 			bc.futureBlocks.Add(block.Hash(), block)
-			stats.ignored += 1
-			stats.queued += 1
+			stats.ignored++
+			stats.queued++
 			continue
 		case err == processor.ErrUnknownAncestor && bc.futureBlocks.Contains(block.ParentHash()):
 			bc.futureBlocks.Add(block.Hash(), block)
-			stats.ignored += 1
-			stats.queued += 1
+			stats.ignored++
+			stats.queued++
 			continue
 		case err == processor.ErrPrunedAncestor:
 			// Block competing with the canonical chain, store in the db, but don't process
@@ -647,7 +673,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 					return i, events, coalescedLogs, err
 				}
 			} else {
-				newchain, err := bc.reorgState(currentBlock, block)
+				newchain, err := bc.reorgBlock(currentBlock, block)
 				if err != nil {
 					return i, events, coalescedLogs, err
 				}
@@ -680,11 +706,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 					return i, events, coalescedLogs, err
 				}
 				continue
-			} else {
-				_, err := bc.reorgState(currentBlock, block)
-				if err != nil {
-					return i, events, coalescedLogs, err
-				}
 			}
 		}
 
@@ -706,6 +727,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 			bc.reportBlock(block, receipts, err)
 			return i, events, coalescedLogs, err
 		}
+
 		err = bc.validator.ValidateState(block, parent, state, receipts, usedGas)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
@@ -715,7 +737,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		if err := bc.WriteBlockWithState(block, receipts, state); err != nil {
 			return i, events, coalescedLogs, err
 		}
-		stats.processed += 1
+		stats.processed++
 		stats.txsCnt += len(block.Txs)
 		stats.usedGas += usedGas
 		stats.report(chain, i)
@@ -729,7 +751,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 	return 0, events, coalescedLogs, nil
 }
 
-func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks, error) {
+func (bc *BlockChain) reorgBlock(oldBlock, newBlock *types.Block) (types.Blocks, error) {
 	var (
 		newChain    types.Blocks
 		oldChain    types.Blocks
@@ -749,10 +771,10 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 	}
 
 	if oldBlock == nil {
-		return nil, fmt.Errorf("Invalid old chain")
+		return nil, fmt.Errorf("reorg state not found old block , block hash: %v", oldBlock.Hash().Hex())
 	}
 	if newBlock == nil {
-		return nil, fmt.Errorf("Invalid new chain")
+		return nil, fmt.Errorf("reorg state not found new block , block hash: %v", newBlock.Hash().Hex())
 	}
 
 	for {
@@ -765,10 +787,10 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 		deletedTxs = append(deletedTxs, oldBlock.Txs...)
 		oldBlock, newBlock = bc.GetBlock(oldBlock.ParentHash(), oldBlock.NumberU64()-1), bc.GetBlock(newBlock.ParentHash(), newBlock.NumberU64()-1)
 		if oldBlock == nil {
-			return nil, fmt.Errorf("Invalid old chain")
+			return nil, fmt.Errorf("reorg state not found old block , block hash: %v", oldBlock.Hash().Hex())
 		}
 		if newBlock == nil {
-			return nil, fmt.Errorf("Invalid new chain")
+			return nil, fmt.Errorf("reorg state not found new block , block hash: %v", newBlock.Hash().Hex())
 		}
 	}
 
@@ -797,10 +819,6 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 	batch.Write()
 
 	if len(oldChain) > 0 {
-		//  rollback state
-		if err := state.TransToSpecBlock(bc.db, bc.stateCache, bc.CurrentBlock().Hash(), oldBlock.Hash()); err != nil {
-			return nil, err
-		}
 		bc.currentBlock.Store(oldBlock)
 	}
 	return newChain, nil
@@ -1000,6 +1018,11 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 // Config retrieves the blockchain's chain configuration.
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
+// CalcGasLimit computes the gas limit of the next block after parent.
 func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
 	return params.CalcGasLimit(parent)
+}
+
+func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
+	return bc.fcontroller.update(block, statedb)
 }

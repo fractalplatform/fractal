@@ -19,8 +19,8 @@ package blockchain
 import (
 	"time"
 
-	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/types"
 
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -63,6 +63,6 @@ func (st *insertStats) report(chain []*types.Block, index int) {
 		log.Info("Imported new chain segment", context...)
 
 		// Bump the stats reported to the next section
-		*st = insertStats{startTime: now,}
+		*st = insertStats{startTime: now}
 	}
 }

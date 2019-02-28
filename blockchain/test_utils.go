@@ -231,7 +231,7 @@ func makeProducersTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, ne
 		pub := common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey))
 		action := types.NewAction(types.CreateAccount, common.StrToName(from), common.StrToName(to.name), nonce, uint64(1), uint64(210000), amount, pub[:])
 		actions = append(actions, action)
-		nonce += 1
+		nonce++
 	}
 	tx := types.NewTransaction(uint64(1), big.NewInt(2), actions...)
 	for _, action := range actions {

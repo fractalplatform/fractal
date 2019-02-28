@@ -35,7 +35,7 @@ type ChainConfig struct {
 	ContractChargeRatio uint64      `json:"contractChargeRatio"`
 	SysTokenID          uint64      `json:"-"`
 	SysTokenDecimals    uint64      `json:"-"`
-	UpperLimit          *big.Int    `json:"upperlimit"` //
+	UpperLimit          *big.Int    `json:"upperlimit"`
 }
 
 var DefaultChainconfig = &ChainConfig{
@@ -45,3 +45,10 @@ var DefaultChainconfig = &ChainConfig{
 	AssetChargeRatio:    80,
 	ContractChargeRatio: 80,
 }
+
+const (
+	// TheForkNum this hard forking for add fork controller function.
+	TheForkNum uint64 = 500000
+	// NextForkID is the id of next fork
+	NextForkID uint64 = 0
+)
