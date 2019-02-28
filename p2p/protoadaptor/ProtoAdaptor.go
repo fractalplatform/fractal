@@ -102,6 +102,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 
 		ret := checkDDOS(monitor, e)
 		if ret {
+			time.Sleep(10 * time.Second) // delay to prevent the reconnection
 			router.SendTo(nil, nil, router.DisconectCtrl, e.From)
 			//ToDo blacklist
 			return fmt.Errorf("DDos %x", e.From.Name())
