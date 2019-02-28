@@ -20,9 +20,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/fractalplatform/fractal/utils/rlp"
-
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,14 +48,29 @@ func TestBlockEncodeRLPAndDecodeRLP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	newBlock := &Block{}
 	if err := newBlock.DecodeRLP(bytes); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, testBlock.Header(), newBlock.Header())
 	assert.Equal(t, testBlock.Transactions()[0].GasAssetID(), newBlock.Transactions()[0].GasAssetID())
 	assert.Equal(t, testBlock.Transactions()[0].GasPrice(), newBlock.Transactions()[0].GasPrice())
 	assert.Equal(t, testBlock.Hash(), newBlock.Hash())
+}
+
+func TestBlockForkID(t *testing.T) {
+	testHeader.WithForkID(1, 2)
+	testBlock := NewBlockWithHeader(testHeader)
+	bytes, err := testBlock.EncodeRLP()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newBlock := &Block{}
+	assert.NoError(t, newBlock.DecodeRLP(bytes))
+
+	assert.Equal(t, testBlock.CurForkID(), newBlock.CurForkID())
+	assert.Equal(t, testBlock.NextForkID(), newBlock.NextForkID())
 }
 
 func TestBlockHeaderEncodeRLPAndDecodeRLP(t *testing.T) {
@@ -69,7 +83,6 @@ func TestBlockHeaderEncodeRLPAndDecodeRLP(t *testing.T) {
 	if err := rlp.DecodeBytes(bytes, newHeader); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, testHeader, newHeader)
 	assert.Equal(t, testHeader.Hash(), newHeader.Hash())
 }
 

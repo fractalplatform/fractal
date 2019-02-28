@@ -290,6 +290,11 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		return nil, fmt.Errorf("get parent state %v, err: %v ", header.Root, err)
 	}
 
+	// fill ForkID
+	if err := worker.FillForkID(header, state); err != nil {
+		return nil, err
+	}
+
 	work := &Work{
 		currentHeader:   header,
 		currentState:    state,
@@ -322,6 +327,7 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		if err != nil {
 			return nil, fmt.Errorf("finalize block, err: %v", err)
 		}
+
 		work.currentBlock = blk
 
 		block, err := worker.Seal(worker.IConsensus, work.currentBlock, nil)

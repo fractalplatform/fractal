@@ -76,6 +76,7 @@ type BlockChain struct {
 	procInterrupt    int32               // procInterrupt must be atomically called, interrupt signaler for block processing
 	wg               sync.WaitGroup      // chain processing wait group for shutting down
 	senderCacher     TxSenderCacher      // senderCacher is a concurrent tranaction sender recoverer sender cacher.
+	fcontroller      *ForkController
 	processor        processor.Processor // block processor interface
 	validator        processor.Validator // block and state validator interface
 	station          *BlockchainStation  // p2p station
@@ -107,6 +108,7 @@ func NewBlockChain(db fdb.Database, vmConfig vm.Config, chainConfig *params.Chai
 		futureBlocks: futureBlocks,
 		badBlocks:    badBlocks,
 		senderCacher: senderCacher,
+		fcontroller:  NewForkController(defaultForkConfig, chainConfig),
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)
@@ -297,6 +299,26 @@ func (bc *BlockChain) Processor() processor.Processor {
 // State returns a new mutable state based on the current HEAD block.
 func (bc *BlockChain) State() (*state.StateDB, error) {
 	return bc.StateAt(bc.CurrentBlock().Root())
+}
+
+// GetForkID returns the last current fork ID.
+func (bc *BlockChain) GetForkID(statedb *state.StateDB) (uint64, uint64, error) {
+	return bc.fcontroller.currentForkID(statedb)
+}
+
+// CheckForkID Checks the validity of forkID
+func (bc *BlockChain) CheckForkID(header *types.Header) error {
+	parentHeader := bc.GetHeader(header.ParentHash, uint64(header.Number.Int64()-1))
+	state, err := bc.StateAt(parentHeader.Root)
+	if err != nil {
+		return err
+	}
+	return bc.fcontroller.checkForkID(header, state)
+}
+
+// FillForkID fills the current and next forkID
+func (bc *BlockChain) FillForkID(header *types.Header, statedb *state.StateDB) error {
+	return bc.fcontroller.fillForkID(header, statedb)
 }
 
 // StateAt returns a new mutable state based on a particular point in time.
@@ -619,7 +641,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		switch {
 		case err == processor.ErrKnownBlock:
 			if bc.CurrentBlock().NumberU64() >= block.NumberU64() {
-				stats.ignored += 1
+				stats.ignored++
 				continue
 			}
 		case err == processor.ErrFutureBlock:
@@ -628,13 +650,13 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 				return i, events, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
 			bc.futureBlocks.Add(block.Hash(), block)
-			stats.ignored += 1
-			stats.queued += 1
+			stats.ignored++
+			stats.queued++
 			continue
 		case err == processor.ErrUnknownAncestor && bc.futureBlocks.Contains(block.ParentHash()):
 			bc.futureBlocks.Add(block.Hash(), block)
-			stats.ignored += 1
-			stats.queued += 1
+			stats.ignored++
+			stats.queued++
 			continue
 		case err == processor.ErrPrunedAncestor:
 			// Block competing with the canonical chain, store in the db, but don't process
@@ -701,6 +723,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 			bc.reportBlock(block, receipts, err)
 			return i, events, coalescedLogs, err
 		}
+
 		err = bc.validator.ValidateState(block, parent, state, receipts, usedGas)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
@@ -710,7 +733,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		if err := bc.WriteBlockWithState(block, receipts, state); err != nil {
 			return i, events, coalescedLogs, err
 		}
-		stats.processed += 1
+		stats.processed++
 		stats.txsCnt += len(block.Txs)
 		stats.usedGas += usedGas
 		stats.report(chain, i)
@@ -991,6 +1014,11 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 // Config retrieves the blockchain's chain configuration.
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
+// CalcGasLimit computes the gas limit of the next block after parent.
 func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
 	return params.CalcGasLimit(parent)
+}
+
+func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
+	return bc.fcontroller.update(block, statedb)
 }

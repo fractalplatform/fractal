@@ -108,6 +108,11 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 		return ErrPrunedAncestor
 	}
 
+	// Checks the validity of forkID
+	if err := v.bc.CheckForkID(header); err != nil {
+		return err
+	}
+
 	// Verify the engine specific seal securing the block
 	if seal {
 		if err := v.engine.VerifySeal(v.bc, header); err != nil {
