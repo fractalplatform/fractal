@@ -74,13 +74,13 @@ func (bs *BlockchainStation) chainStatus() *statusData {
 
 func checkChainStatus(local *statusData, remote *statusData) error {
 	if local.GenesisBlock != remote.GenesisBlock {
-		return errResp(ErrGenesisBlockMismatch, "%x (!= %x)", remote.GenesisBlock[:8], local.GenesisBlock[:8])
+		return errResp(ErrGenesisBlockMismatch, "remote:%x (!= self:%x)", remote.GenesisBlock[:8], local.GenesisBlock[:8])
 	}
 	if local.NetworkId != remote.NetworkId {
-		return errResp(ErrNetworkIdMismatch, "%d (!= %d)", remote.NetworkId, local.NetworkId)
+		return errResp(ErrNetworkIdMismatch, "remote:%d (!= self:%d)", remote.NetworkId, local.NetworkId)
 	}
 	if local.ProtocolVersion != remote.ProtocolVersion {
-		return errResp(ErrProtocolVersionMismatch, "%d (!= %d)", remote.ProtocolVersion, local.ProtocolVersion)
+		return errResp(ErrProtocolVersionMismatch, "remote:%d (!= self:%d)", remote.ProtocolVersion, local.ProtocolVersion)
 	}
 	return nil
 }
@@ -103,14 +103,14 @@ func (bs *BlockchainStation) handshake(e *router.Event) {
 		remote := e.Data.(*statusData)
 		if err := checkChainStatus(bs.chainStatus(), remote); err != nil {
 			disconnect()
-			log.Warn(fmt.Sprintln("handshake error:", err))
+			log.Warn("Handshake failure", "error", err, "station", fmt.Sprintf("%x", e.From.Name()))
 			return
 		}
-		log.Info(fmt.Sprintf("new remote station:%x", []byte(e.From.Name())))
+		log.Info("Handshake complete", "station", fmt.Sprintf("%x", e.From.Name()))
 		bs.downloader.AddStation(e.From, remote.TD, remote.CurrentNumber, remote.CurrentBlock)
 		router.SendTo(e.From, nil, router.NewPeerPassedNotify, e.Data)
 	case <-timer:
-		log.Warn("handshake timeout", e.From.Name())
+		log.Warn("Handshake timeout", "station", fmt.Sprintf("%x", e.From.Name()))
 		disconnect()
 	}
 }
