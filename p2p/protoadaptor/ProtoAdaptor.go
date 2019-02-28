@@ -85,7 +85,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		router.SendTo(station, nil, router.DelPeerNotify, &url)
 	}()
 
-	monitor := initMonitor()
+	monitor := make(map[int][]int64)
 	for {
 		msg, err := ws.ReadMsg()
 		if err != nil {
@@ -110,32 +110,18 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 	}
 }
 
-func initMonitor() map[int][]int64 {
-	monitor := make(map[int][]int64)
-	monitor[router.P2PGetStatus] = make([]int64, 2)
-	monitor[router.P2PGetBlockHashMsg] = make([]int64, 2)
-	monitor[router.P2PGetBlockHeadersMsg] = make([]int64, 2)
-	monitor[router.P2PGetBlockBodiesMsg] = make([]int64, 2)
-	monitor[router.P2PNewBlockHashesMsg] = make([]int64, 2)
-	return monitor
-}
 func checkDDOS(m map[int][]int64, e *router.Event) bool {
 	t := e.Typecode
-	var limit int64
-	switch t {
-	case router.P2PGetStatus:
-		limit = 1
-	case router.P2PGetBlockHashMsg:
-		limit = 128
-	case router.P2PGetBlockHeadersMsg:
-		limit = 64
-	case router.P2PGetBlockBodiesMsg:
-		limit = 64
-	case router.P2PNewBlockHashesMsg:
-		limit = 3
-	default:
+	limit := int64(router.GetDDosLimit(t))
+	if limit == 0 {
 		return false
 	}
+
+	if len(m[t]) == 0 {
+		m[t] = make([]int64, 2)
+	}
+	//m[t][0] time
+	//m[t][1] request per second
 	if m[t][0] == time.Now().Unix() {
 		m[t][1]++
 	} else {

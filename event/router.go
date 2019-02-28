@@ -99,6 +99,14 @@ const (
 var typeListMutex sync.RWMutex
 var typeList = [EndSize]reflect.Type{}
 
+var typeLimit = [P2PEndSize]int{
+	P2PGetStatus:          1,
+	P2PGetBlockHashMsg:    128,
+	P2PGetBlockHeadersMsg: 64,
+	P2PGetBlockBodiesMsg:  64,
+	P2PNewBlockHashesMsg:  3,
+}
+
 // ReplyEvent is equivalent to `SendTo(e.To, e.From, typecode, data)`
 func ReplyEvent(e *Event, typecode int, data interface{}) {
 	SendEvent(&Event{
@@ -279,4 +287,9 @@ func SendEvents(es []*Event) (nsent int) {
 		nsent += SendEvent(e)
 	}
 	return
+}
+
+//GetDDosLimit get messagetype req limit per second
+func GetDDosLimit(t int) int {
+	return typeLimit[t]
 }
