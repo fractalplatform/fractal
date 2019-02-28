@@ -440,7 +440,7 @@ func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, netid, veri
 	if err != nil {
 		return s, err
 	}
-	if authMsg.NetID != netid && authMsg.Version > 4 {
+	if authMsg.NetID != netid && authMsg.NetID > 0 && authMsg.Version > 4 {
 		return s, fmt.Errorf("handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authMsg.NetID)
 	}
 	return h.secrets(authPacket, authRespPacket)
