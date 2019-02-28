@@ -232,7 +232,7 @@ func makeProducersTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, ne
 		//pub := common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey))
 		acct := &accountmanager.AccountAction{
 			AccountName: common.StrToName(to.name),
-			Founder:     common.StrToName(to.name),
+                        Founder:     common.Name(""),
 			ChargeRatio: 0,
 			PublicKey:   common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey)),
 		}
