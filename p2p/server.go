@@ -50,6 +50,8 @@ const (
 
 	// Maximum amount of time allowed for writing a complete message.
 	frameWriteTimeout = 20 * time.Second
+
+	rlpxVersion = 5
 )
 
 var errServerStopped = errors.New("server stopped")
@@ -58,6 +60,9 @@ var errServerStopped = errors.New("server stopped")
 type Config struct {
 	// This field must be set to a valid secp256k1 private key.
 	PrivateKey *ecdsa.PrivateKey
+
+	// NetworkID is ID of network
+	NetworkID uint `mapstructure:"p2p-networkdID"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
@@ -96,7 +101,7 @@ type Config struct {
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
 	// IP networks contained in the list are considered.
-	NetRestrict *netutil.Netlist
+	NetRestrict *netutil.Netlist `mapstructure:"p2p-badIP"`
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
@@ -142,7 +147,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn) transport
+	newTransport func(net.Conn, uint, uint) transport
 	newPeerHook  func(*Peer)
 
 	lock    sync.Mutex // protects running
@@ -413,6 +418,54 @@ func (s *sharedUDPConn) Close() error {
 	return nil
 }
 
+// DiscoverOnly ..
+func (srv *Server) DiscoverOnly() error {
+	srv.lock.Lock()
+	defer srv.lock.Unlock()
+	// static fields
+	if srv.PrivateKey == nil {
+		return fmt.Errorf("Server.PrivateKey must be set to a non-nil key")
+	}
+
+	addr, err := net.ResolveUDPAddr("udp", srv.ListenAddr)
+	if err != nil {
+		return err
+	}
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		return err
+	}
+	srv.quit = make(chan struct{})
+	cfg := discover.Config{
+		TCPPort:      0,
+		NetworkID:    srv.NetworkID,
+		PrivateKey:   srv.PrivateKey,
+		AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
+		NodeDBPath:   srv.NodeDatabase,
+		NetRestrict:  srv.NetRestrict,
+		Bootnodes:    srv.BootstrapNodes,
+		Unhandled:    nil,
+	}
+	ntab, err := discover.ListenUDP(conn, cfg)
+	if err != nil {
+		return err
+	}
+	go func() {
+		timeout := time.NewTicker(10 * time.Minute)
+		defer timeout.Stop()
+		defer ntab.Close()
+		for {
+			select {
+			case <-timeout.C:
+				ntab.LookupRandom()
+			case <-srv.quit:
+				return
+			}
+		}
+	}()
+	return nil
+}
+
 // Start starts running the server.
 // Servers can not be re-used after stopping.
 func (srv *Server) Start() (err error) {
@@ -460,6 +513,8 @@ func (srv *Server) Start() (err error) {
 		}
 
 		cfg := discover.Config{
+			TCPPort:      conn.LocalAddr().(*net.UDPAddr).Port,
+			NetworkID:    srv.NetworkID,
 			PrivateKey:   srv.PrivateKey,
 			AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
 			NodeDBPath:   srv.NodeDatabase,
@@ -801,7 +856,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	if self == nil {
 		return errors.New("shutdown")
 	}
-	c := &conn{fd: fd, transport: srv.newTransport(fd), flags: flags, cont: make(chan error)}
+	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID, rlpxVersion), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
 		c.close(err)

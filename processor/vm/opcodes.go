@@ -201,14 +201,14 @@ const (
 const (
 	//0xc0 range  new add for multi-asset
 	ISSUEASSET    OpCode = 0xc0 + iota
-	ADDASSET      = 0xc1
-	SETASSETOWNER = 0xc2
-	BALANCEEX     = 0xc3
-	CALLEX        = 0xc4
-	ASSETAMOUNT   = 0xc5
+	ADDASSET             = 0xc1
+	SETASSETOWNER        = 0xc2
+	BALANCEEX            = 0xc3
+	CALLEX               = 0xc4
+	ASSETAMOUNT          = 0xc5
 	//snapshot num
-	SNAPSHOTTIME  = 0xc6
-	SNAPBALANCE   = 0xc7
+	SNAPSHOTTIME = 0xc6
+	SNAPBALANCE  = 0xc7
 )
 
 const (
@@ -384,9 +384,9 @@ var opCodeToString = map[OpCode]string{
 	SETASSETOWNER: "SETASSETOWNER",
 	ADDASSET:      "ADDASSET",
 	ISSUEASSET:    "ISSUEASSET",
-	SNAPSHOTTIME: "SNAPSHOTTIME",
-	ASSETAMOUNT: "ASSETAMOUNT",
-	SNAPBALANCE: "SNAPBALANCE",
+	SNAPSHOTTIME:  "SNAPSHOTTIME",
+	ASSETAMOUNT:   "ASSETAMOUNT",
+	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
 	//add end
 	STATICCALL:   "STATICCALL",

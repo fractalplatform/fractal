@@ -135,7 +135,7 @@ func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Databas
 	blocks, _ := generateChain(gspec.Config, genesis, tengine, blockchain, tmpdb, 1, func(i int, block *BlockGenerator) {
 		genesisname := genesis.Coinbase()
 		block.SetCoinbase(genesisname)
-		tengine.SetSignFn(func(content []byte) ([]byte, error) {
+		tengine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 			return crypto.Sign(content, sysnameprikey)
 		})
 		st := blockInterval*uint64(time.Millisecond) + block.parent.Head.Time.Uint64()
@@ -159,7 +159,7 @@ func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Databas
 		blocks1, _ := generateChain(gspec.Config, blockchain.CurrentBlock(), tengine, blockchain, tmpdb, 1, func(i int, block *BlockGenerator) {
 			genesisname := genesis.Coinbase()
 			block.SetCoinbase(genesisname)
-			tengine.SetSignFn(func(content []byte) ([]byte, error) {
+			tengine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 				return crypto.Sign(content, sysnameprikey)
 			})
 			st := blockInterval*uint64(time.Millisecond) + starttime
@@ -190,7 +190,7 @@ func makeNewChain(t *testing.T, gspec *Genesis, chain *BlockChain, db *fdb.Datab
 				}
 			}
 			b.SetCoinbase(common.StrToName(minerInfo.name))
-			tengine.SetSignFn(func(content []byte) ([]byte, error) {
+			tengine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 				return crypto.Sign(content, minerInfo.prikey)
 			})
 			b.OffsetTime(int64(tengine.Slot(headertime[j])))
@@ -226,10 +226,21 @@ func makeProducersTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, ne
 	delegateValue := new(big.Int)
 	delegateValue.SetString(issurevalue, 0)
 	var actions []*types.Action
+
 	for _, to := range newaccount {
 		amount := new(big.Int).Mul(delegateValue, big.NewInt(2))
-		pub := common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey))
-		action := types.NewAction(types.CreateAccount, common.StrToName(from), common.StrToName(to.name), nonce, uint64(1), uint64(210000), amount, pub[:])
+		//pub := common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey))
+		acct := &accountmanager.AccountAction{
+			AccountName: common.StrToName(to.name),
+                        Founder:     common.Name(""),
+			ChargeRatio: 0,
+			PublicKey:   common.BytesToPubKey(crypto.FromECDSAPub(&to.prikey.PublicKey)),
+		}
+		a, err := rlp.EncodeToBytes(acct)
+		if err != nil {
+			t.Errorf(fmt.Sprintf("makeProducersTx rlp account err %v", err))
+		}
+		action := types.NewAction(types.CreateAccount, common.StrToName(from), common.StrToName(to.name), nonce, uint64(1), uint64(210000), amount, a[:])
 		actions = append(actions, action)
 		nonce += 1
 	}

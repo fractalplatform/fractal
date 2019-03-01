@@ -243,11 +243,11 @@ func DefaultGenesisAssets() []*asset.AssetObject {
 	supply.SetString("100000000000000000000000000000", 10)
 	return []*asset.AssetObject{
 		&asset.AssetObject{
-			AssetName: params.DefaultChainconfig.SysToken,
-			Symbol:    "ft",
-			Amount:    supply,
-			Decimals:  18,
-			Owner:     params.DefaultChainconfig.SysName,
+			AssetName:  params.DefaultChainconfig.SysToken,
+			Symbol:     "ft",
+			Amount:     supply,
+			Decimals:   18,
+			Owner:      params.DefaultChainconfig.SysName,
 			Founder:    params.DefaultChainconfig.SysName,
 			UpperLimit: supply,
 		},

@@ -1,9 +1,9 @@
 package protoadaptor
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	router "github.com/fractalplatform/fractal/event"
@@ -53,7 +53,7 @@ func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 func (adaptor *ProtoAdaptor) Start() error {
 	router.StationRegister(adaptor.peerMangaer.station)
 	router.AdaptorRegister(adaptor)
-	router.Subscribe(nil, adaptor.event, router.P2pDisconectPeer, nil)
+	router.Subscribe(nil, adaptor.event, router.DisconectCtrl, nil)
 	go adaptor.adaptorEvent()
 	return adaptor.Server.Start()
 }
@@ -62,7 +62,7 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 	for {
 		e := <-adaptor.event
 		switch e.Typecode {
-		case router.P2pDisconectPeer:
+		case router.DisconectCtrl:
 			peer := e.Data.(router.Station).Data().(*remotePeer)
 			peer.peer.Disconnect(p2p.DiscSubprotocolError)
 			//peer.Disconnect(DiscSubprotocolError)
@@ -72,18 +72,20 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 
 func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) error {
 	remote := remotePeer{ws: ws, peer: peer}
+	log.Info("New remote station", "detail", remote.peer.String())
 	station := router.NewRemoteStation(string(remote.peer.ID().Bytes()[:8]), &remote)
 	adaptor.peerMangaer.addActivePeer(&remote)
 	router.StationRegister(station)
 	url := remote.peer.Node().String()
-	router.SendTo(station, nil, router.P2pNewPeer, &url)
+	router.SendTo(station, nil, router.NewPeerNotify, &url)
 	defer func() {
 		adaptor.peerMangaer.delActivePeer(&remote)
 		router.StationUnregister(station)
 		url := remote.peer.Node().String()
-		router.SendTo(station, nil, router.P2pDelPeer, &url)
+		router.SendTo(station, nil, router.DelPeerNotify, &url)
 	}()
 
+	monitor := make(map[int][]int64)
 	for {
 		msg, err := ws.ReadMsg()
 		if err != nil {
@@ -97,8 +99,40 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
-		go router.SendEvent(e)
+
+		ret := checkDDOS(monitor, e)
+		if ret {
+			time.Sleep(10 * time.Second) // delay to prevent the reconnection
+			router.SendTo(nil, nil, router.DisconectCtrl, e.From)
+			//ToDo blacklist
+			return fmt.Errorf("DDos %x", e.From.Name())
+		}
+		router.SendEvent(e)
 	}
+}
+
+func checkDDOS(m map[int][]int64, e *router.Event) bool {
+	t := e.Typecode
+	limit := int64(router.GetDDosLimit(t))
+	if limit == 0 {
+		return false
+	}
+
+	if len(m[t]) == 0 {
+		m[t] = make([]int64, 2)
+	}
+	//m[t][0] time
+	//m[t][1] request per second
+	if m[t][0] == time.Now().Unix() {
+		m[t][1]++
+	} else {
+		if m[t][1] > limit {
+			return true
+		}
+		m[t][0] = time.Now().Unix()
+		m[t][1] = 1
+	}
+	return false
 }
 
 // Protocols .
@@ -182,23 +216,24 @@ func pack2event(pack *pack, station router.Station) (*router.Event, error) {
 	isPtr := false
 	typ := router.GetTypeByCode(int(pack.Typecode))
 	if typ == nil {
-		return nil, errors.New(fmt.Sprint("unknow typecode:", pack.Typecode))
-	} else {
-		//for typ.Kind() == reflect.Ptr {
-		if typ.Kind() == reflect.Ptr {
-			isPtr = true
-			typ = typ.Elem()
-		}
-		obj := reflect.New(typ)
-		if err := rlp.DecodeBytes(pack.Payload, obj.Interface()); err != nil {
-			return nil, err
-		}
-		if isPtr {
-			elem = obj.Interface()
-		} else {
-			elem = obj.Elem().Interface()
-		}
+		return nil, fmt.Errorf("unknow typecode: %d", pack.Typecode)
 	}
+
+	//for typ.Kind() == reflect.Ptr {
+	if typ.Kind() == reflect.Ptr {
+		isPtr = true
+		typ = typ.Elem()
+	}
+	obj := reflect.New(typ)
+	if err := rlp.DecodeBytes(pack.Payload, obj.Interface()); err != nil {
+		return nil, err
+	}
+	if isPtr {
+		elem = obj.Interface()
+	} else {
+		elem = obj.Elem().Interface()
+	}
+
 	if pack.From != "" {
 		station = router.NewRemoteStation(station.Name()+pack.From, station.Data())
 	}

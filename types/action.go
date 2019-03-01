@@ -34,8 +34,9 @@ var ErrInvalidSig = errors.New("invalid action v, r, s values")
 type ActionType uint64
 
 const (
-	// Transfer represents the ordinary and contract transfer action.
-	Transfer ActionType = iota
+
+	// CallContract represents the call contract action.
+	CallContract ActionType = iota
 	// CreateContract repesents the create contract action.
 	CreateContract
 )
@@ -54,12 +55,14 @@ const (
 	IncreaseAsset ActionType = 0x200 + iota
 	// IssueAsset repesents Issue asset action.
 	IssueAsset
-        //destory asset
+  //destroy asset
 	DestroyAsset
 	// SetAssetOwner repesents set asset new owner action.
 	SetAssetOwner
-        //set asset founder
+	//set asset founder
 	SetAssetFounder
+	//Transfer repesents transfer asset action.
+	Transfer
 )
 
 const (

@@ -14,16 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package vm
+package main
 
-import "errors"
-
-var (
-	ErrOutOfGas                 = errors.New("out of gas")
-	ErrCodeStoreOutOfGas        = errors.New("contract creation code storage out of gas")
-	ErrDepth                    = errors.New("max call depth exceeded")
-	ErrTraceLimitReached        = errors.New("the number of logs reached the specified limit")
-	ErrInsufficientBalance      = errors.New("insufficient balance for transfer")
-	ErrContractAddressCollision = errors.New("contract name collision")
-	ErrContractCodeCollision    = errors.New("contract code collision")
+import (
+	"runtime"
 )
+
+func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	Execute()
+}

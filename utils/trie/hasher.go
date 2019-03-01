@@ -20,9 +20,9 @@ import (
 	"hash"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/crypto/sha3"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
+	"golang.org/x/crypto/sha3"
 )
 
 type hasher struct {
@@ -57,7 +57,7 @@ var hasherPool = sync.Pool{
 	New: func() interface{} {
 		return &hasher{
 			tmp: make(sliceBuffer, 0, 550), // cap is as large as a full fullNode.
-			sha: sha3.NewKeccak256().(keccakState),
+			sha: sha3.NewLegacyKeccak256().(keccakState),
 		}
 	},
 }

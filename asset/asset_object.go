@@ -23,15 +23,15 @@ import (
 )
 
 type AssetObject struct {
-	AssetId   uint64      `json:"assetid,omitempty"`
-	AssetName string      `json:"assetname,omitempty"`
-	Symbol    string      `json:"symbol,omitempty"`
-	Amount    *big.Int    `json:"amount,omitempty"`
-	Decimals  uint64      `json:"decimals,omitempty"`
-	Founder   common.Name `json:"founder,omitempty"`
-	Owner     common.Name `json:"owner,omitempty"`
-	AddIssue  *big.Int    `json:"AddIssue,omitempty"`
-	UpperLimit *big.Int   `json:"UpperLimit,omitempty"`
+	AssetId    uint64      `json:"assetId,omitempty"`
+	AssetName  string      `json:"assetName,omitempty"`
+	Symbol     string      `json:"symbol,omitempty"`
+	Amount     *big.Int    `json:"amount,omitempty"`
+	Decimals   uint64      `json:"decimals,omitempty"`
+	Founder    common.Name `json:"founder,omitempty"`
+	Owner      common.Name `json:"owner,omitempty"`
+	AddIssue   *big.Int    `json:"addIssue,omitempty"`
+	UpperLimit *big.Int    `json:"upperLimit,omitempty"`
 }
 
 func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name,owner common.Name,limit *big.Int) (*AssetObject, error) {
@@ -39,7 +39,7 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 		return nil, ErrNewAssetObject
 	}
 
-	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(limit) > 0{
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(limit) > 0 {
 		return nil, ErrNewAssetObject
 	}
 
@@ -53,15 +53,15 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 	}
 
 	ao := AssetObject{
-		AssetId:   0,
-		AssetName: assetName,
-		Symbol:    symbol,
-		Amount:    amount,
-		Decimals:  dec,
-		Founder:   founder,
-		Owner:     owner,
-		AddIssue:  amount,
-		UpperLimit:limit,
+		AssetId:    0,
+		AssetName:  assetName,
+		Symbol:     symbol,
+		Amount:     amount,
+		Decimals:   dec,
+		Founder:    founder,
+		Owner:      owner,
+		AddIssue:   amount,
+		UpperLimit: limit,
 	}
 	return &ao, nil
 }
@@ -120,7 +120,7 @@ func (ao *AssetObject) GetAssetFounder() common.Name {
 	return ao.Founder
 }
 
-func (ao *AssetObject) SetAssetFounder(f common.Name ) {
+func (ao *AssetObject) SetAssetFounder(f common.Name) {
 	ao.Founder = f
 }
 

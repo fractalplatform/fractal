@@ -34,7 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -461,7 +461,7 @@ func (bc *BlockChain) procFutureBlocks() {
 	if len(blocks) > 0 {
 		types.BlockBy(types.Number).Sort(blocks)
 		for i := range blocks {
-			bc.InsertChain(blocks[i : i+1])
+			bc.InsertChain(blocks[i: i+1])
 		}
 	}
 }
@@ -470,7 +470,7 @@ func (bc *BlockChain) procFutureBlocks() {
 type WriteStatus byte
 
 const (
-	NonStatTy WriteStatus = iota
+	NonStatTy   WriteStatus = iota
 	CanonStatTy
 	SideStatTy
 )
@@ -596,6 +596,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 	defer bc.chainmu.Unlock()
 
 	var (
+		stats         = insertStats{startTime: time.Now()}
 		events        = make([]*event.Event, 0, len(chain))
 		lastCanon     *types.Block
 		coalescedLogs []*types.Log
@@ -611,8 +612,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 			log.Debug("Premature abort during blocks processing")
 			break
 		}
-
-		bstart := time.Now()
 		err := bc.validator.ValidateHeader(block.Header(), true)
 		if err == nil {
 			err = bc.Validator().ValidateBody(block)
@@ -620,6 +619,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		switch {
 		case err == processor.ErrKnownBlock:
 			if bc.CurrentBlock().NumberU64() >= block.NumberU64() {
+				stats.ignored += 1
 				continue
 			}
 		case err == processor.ErrFutureBlock:
@@ -628,9 +628,13 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 				return i, events, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
 			bc.futureBlocks.Add(block.Hash(), block)
+			stats.ignored += 1
+			stats.queued += 1
 			continue
 		case err == processor.ErrUnknownAncestor && bc.futureBlocks.Contains(block.ParentHash()):
 			bc.futureBlocks.Add(block.Hash(), block)
+			stats.ignored += 1
+			stats.queued += 1
 			continue
 		case err == processor.ErrPrunedAncestor:
 			// Block competing with the canonical chain, store in the db, but don't process
@@ -711,12 +715,13 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		if err := bc.WriteBlockWithState(block, receipts, state); err != nil {
 			return i, events, coalescedLogs, err
 		}
-
-		log.Info("Inserted new block", "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
+		stats.processed += 1
+		stats.txsCnt += len(block.Txs)
+		stats.usedGas += usedGas
+		stats.report(chain, i)
 		coalescedLogs = append(coalescedLogs, logs...)
 		lastCanon = block
 	}
-
 	if lastCanon != nil && bc.CurrentBlock().Hash() == lastCanon.Hash() {
 		events = append(events, &event.Event{Typecode: event.ChainHeadEv, Data: lastCanon})
 	}

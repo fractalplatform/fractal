@@ -471,9 +471,11 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 
-	// if err := evm.AccountDB.CreateAccount(contractName, evm.FromPubkey); err != nil {
-	// 	return nil, 0, err
-	// }
+	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil{
+		return nil,0,err
+	}else if b == true {
+		return nil, 0, ErrContractCodeCollision
+	}
 
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)

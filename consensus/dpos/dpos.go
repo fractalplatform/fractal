@@ -40,6 +40,8 @@ var (
 	errInvalidMintBlockTime       = errors.New("invalid time to mint the block")
 	errInvalidBlockProducer       = errors.New("invalid block producer")
 	errInvalidTimestamp           = errors.New("invalid timestamp")
+	ErrIllegalProducerName        = errors.New("illegal producer name")
+	ErrIllegalProducerPubKey      = errors.New("illegal producer pubkey")
 	errUnknownBlock               = errors.New("unknown block")
 	extraSeal                     = 65
 	timeOfGenesisBlock            int64
@@ -134,7 +136,7 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 }
 
 // SignFn signature function
-type SignFn func([]byte) ([]byte, error)
+type SignFn func([]byte, *state.StateDB) ([]byte, error)
 
 // Dpos dpos engine
 type Dpos struct {
@@ -262,7 +264,12 @@ func (dpos *Dpos) Seal(chain consensus.IChainReader, block *types.Block, stop <-
 		return nil, errUnknownBlock
 	}
 
-	sighash, err := dpos.signFn(signHash(header, chain.Config().ChainID.Bytes()).Bytes())
+	parent := chain.GetHeader(header.ParentHash, number-1)
+	state, err := chain.StateAt(parent.Root)
+	if err != nil {
+		return nil, err
+	}
+	sighash, err := dpos.signFn(signHash(header, chain.Config().ChainID.Bytes()).Bytes(), state)
 	if err != nil {
 		return nil, err
 	}
@@ -282,26 +289,20 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return errInvalidTimestamp
 	}
 	proudcer := header.Coinbase.String()
-	curheader := chain.CurrentHeader()
-	state, err := chain.StateAt(curheader.Root)
+	state, err := chain.StateAt(parent.Root)
 	if err != nil {
 		return err
 	}
 
-	if err := dpos.IsValidateProducer(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, state); err != nil {
-		return err
-	}
 	pubkey, err := ecrecover(header, chain.Config().ChainID.Bytes())
 	if err != nil {
 		return err
 	}
 
-	db := &stateDB{
-		state: state,
+	if err := dpos.IsValidateProducer(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state); err != nil {
+		return err
 	}
-	if !db.IsValidSign(proudcer, pubkey) {
-		return fmt.Errorf("invalid block signature")
-	}
+
 	return dpos.calcProposedIrreversible(chain)
 }
 
@@ -318,9 +319,28 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 }
 
 //IsValidateProducer current producer
-func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, state *state.StateDB) error {
+func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, pubkeys [][]byte, state *state.StateDB) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
+	}
+
+	db := &stateDB{
+		name:  dpos.config.AccountName,
+		state: state,
+	}
+
+	if !common.IsValidName(producer) {
+		return ErrIllegalProducerName
+	}
+
+	has := false
+	for _, pubkey := range pubkeys {
+		if db.IsValidSign(producer, pubkey) {
+			has = true
+		}
+	}
+	if !has {
+		return ErrIllegalProducerPubKey
 	}
 
 	target_ts := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
@@ -344,10 +364,7 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 	sys := &System{
 		config: dpos.config,
 		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:  dpos.config.AccountName,
-				state: state,
-			},
+			IDatabase: db,
 		},
 	}
 
