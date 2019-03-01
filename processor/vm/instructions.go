@@ -656,6 +656,11 @@ func opGasLimit(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	return nil, nil
 }
 
+func opCallAssetId(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	stack.push(evm.interpreter.intPool.get().SetUint64(contract.AssetId))
+	return nil, nil
+}
+
 func opPop(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	evm.interpreter.intPool.put(stack.pop())
 	return nil, nil
@@ -880,11 +885,12 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 //multi-asset
 //Increase asset already exist
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	value, assetId := stack.pop(), stack.pop()
+	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
 	assetID := assetId.Uint64()
+	toName, _ := common.BigToName(to)
 	value = math.U256(value)
 
-	err := execAddAsset(evm, contract, assetID, value)
+	err := execAddAsset(evm, contract, assetID, toName, value)
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -894,8 +900,8 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	return nil, nil
 }
 
-func execAddAsset(evm *EVM, contract *Contract, assetID uint64, value *big.Int) error {
-	asset := &accountmanager.IncAsset{AssetId: assetID, Amount: value, To: contract.CallerName}
+func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Name, value *big.Int) error {
+	asset := &accountmanager.IncAsset{AssetId: assetID, Amount: value, To: toName}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err
@@ -913,46 +919,56 @@ func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	ret = bytes.TrimRight(ret, "\x00")
 	desc := string(ret)
 
-	err := executeIssuseAsset(evm, contract, desc)
+	assetId, err := executeIssuseAsset(evm, contract, desc)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
-		stack.push(evm.interpreter.intPool.get().SetUint64(1))
+		stack.push(evm.interpreter.intPool.get().SetUint64(assetId))
 	}
 	evm.interpreter.intPool.put(offset, size)
 	return nil, nil
 }
 
-func executeIssuseAsset(evm *EVM, contract *Contract, desc string) error {
+func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, error) {
 	input := strings.Split(desc, ",")
 	if len(input) != 7 {
-		return fmt.Errorf("invalid desc string")
+		return 0, fmt.Errorf("invalid desc string")
 	}
 	name := input[0]
 	symbol := input[1]
 	total, ifOK := new(big.Int).SetString(input[2], 10)
 	if !ifOK {
-		return fmt.Errorf("amount not correct")
+		return 0, fmt.Errorf("amount not correct")
 	}
 	decimal, err := strconv.ParseUint(input[3], 10, 64)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	owner := common.Name(input[4])
 	limit, ifOK := new(big.Int).SetString(input[5], 10)
 	if !ifOK {
-		return fmt.Errorf("amount not correct")
+		return 0, fmt.Errorf("amount not correct")
 	}
 	founder := common.Name(input[6])
 	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	action := types.NewAction(types.IssueAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	return evm.AccountDB.Process(action)
+	err = evm.AccountDB.Process(action)
+	if err != nil {
+		return 0, err
+	} else {
+		assetInfo, err := evm.AccountDB.GetAssetInfoByName(name)
+		if err != nil {
+			return 0, err
+		} else {
+			return assetInfo.AssetId, nil
+		}
+	}
 }
 
 //issue an asset for multi-asset

@@ -97,6 +97,7 @@ const (
 	NUMBER
 	DIFFICULTY
 	GASLIMIT
+	CALLASSETID
 )
 
 const (
@@ -277,12 +278,13 @@ var opCodeToString = map[OpCode]string{
 	RETURNDATACOPY: "RETURNDATACOPY",
 
 	// 0x40 range - block operations
-	BLOCKHASH:  "BLOCKHASH",
-	COINBASE:   "COINBASE",
-	TIMESTAMP:  "TIMESTAMP",
-	NUMBER:     "NUMBER",
-	DIFFICULTY: "DIFFICULTY",
-	GASLIMIT:   "GASLIMIT",
+	BLOCKHASH:   "BLOCKHASH",
+	COINBASE:    "COINBASE",
+	TIMESTAMP:   "TIMESTAMP",
+	NUMBER:      "NUMBER",
+	DIFFICULTY:  "DIFFICULTY",
+	GASLIMIT:    "GASLIMIT",
+	CALLASSETID: "CALLASSETID",
 
 	// 0x50 range - 'storage' and execution
 	POP: "POP",
@@ -459,6 +461,7 @@ var stringToOp = map[string]OpCode{
 	"NUMBER":         NUMBER,
 	"DIFFICULTY":     DIFFICULTY,
 	"GASLIMIT":       GASLIMIT,
+	"CALLASSETID":    CALLASSETID,
 	"POP":            POP,
 	"MLOAD":          MLOAD,
 	"MSTORE":         MSTORE,

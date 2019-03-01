@@ -471,6 +471,12 @@ func NewFrontierInstructionSet() [256]operation {
 			validateStack: makeStackFunc(0, 1),
 			valid:         true,
 		},
+		CALLASSETID: {
+			execute:       opCallAssetId,
+			gasCost:       constGasFunc(GasQuickStep),
+			validateStack: makeStackFunc(0, 1),
+			valid:         true,
+		},
 		POP: {
 			execute:       opPop,
 			gasCost:       constGasFunc(GasQuickStep),
