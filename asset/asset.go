@@ -303,7 +303,7 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *bi
 	//}
 	var total *big.Int
 	if total = new(big.Int).Sub(asset.GetAssetAmount(), amount); total.Cmp(big.NewInt(0)) < 0 {
-		return ErrDestoryLimit
+		return ErrDestroyLimit
 	}
 	asset.SetAssetAmount(total)
 	err = a.SetAssetObject(asset)
