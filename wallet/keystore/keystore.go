@@ -78,6 +78,19 @@ func (ks *KeyStore) StoreKey(key *Key, filename, passphrase string) error {
 	return writeKeyFile(filename, keyjson)
 }
 
+func (ks *KeyStore) GetPublicKey(filename string) (string, error) {
+	keyjson, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+	keyj := new(keyJSON)
+	if err := json.Unmarshal(keyjson, keyj); err != nil {
+		return "", err
+	}
+
+	return keyj.PublicKey, nil
+}
+
 // JoinPath join file name into key dir path.
 func (ks *KeyStore) JoinPath(filename string) string {
 	if filepath.IsAbs(filename) {

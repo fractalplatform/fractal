@@ -29,7 +29,7 @@ const (
 	// VersionMinor is Minor version component of the current release
 	VersionMinor = 0
 	// VersionPatch is Patch version component of the current release
-	VersionPatch = 1
+	VersionPatch = 4
 	// VersionMeta is Version metadata to append to the version string
 	VersionMeta = "unstable"
 )

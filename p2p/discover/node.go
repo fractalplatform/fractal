@@ -88,9 +88,11 @@ func unwrapNode(n *node) *enode.Node {
 }
 
 func unwrapNodes(ns []*node) []*enode.Node {
-	result := make([]*enode.Node, len(ns))
-	for i, n := range ns {
-		result[i] = unwrapNode(n)
+	result := make([]*enode.Node, 0, len(ns))
+	for _, n := range ns {
+		if !n.IsFinderNode() {
+			result = append(result, unwrapNode(n))
+		}
 	}
 	return result
 }

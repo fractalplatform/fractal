@@ -53,8 +53,8 @@ func (api *PrivateP2pAPI) PeerEvents(ctx context.Context) (*rpc.Subscription, er
 	go func() {
 		ch := make(chan *router.Event)
 		var pstring *string
-		subNew := router.Subscribe(nil, ch, router.P2pNewPeer, pstring)
-		subDel := router.Subscribe(nil, ch, router.P2pDelPeer, pstring)
+		subNew := router.Subscribe(nil, ch, router.NewPeerNotify, pstring)
+		subDel := router.Subscribe(nil, ch, router.DelPeerNotify, pstring)
 		defer subNew.Unsubscribe()
 		defer subDel.Unsubscribe()
 
@@ -63,7 +63,7 @@ func (api *PrivateP2pAPI) PeerEvents(ctx context.Context) (*rpc.Subscription, er
 			case e := <-ch:
 				notifier.Notify(rpcSub.ID, &notifyEvent{
 					Count: api.b.PeerCount(),
-					Add:   e.Typecode == router.P2pNewPeer,
+					Add:   e.Typecode == router.NewPeerNotify,
 					Url:   e.Data.(*string),
 				})
 			case <-rpcSub.Err():

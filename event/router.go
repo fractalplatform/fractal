@@ -69,39 +69,42 @@ type Event struct {
 
 // Type enumerator
 const (
-	RouterTestInt                int = iota // 0
-	RouterTestInt64                         // 1
-	RouterTestString                        // 2
-	P2pNewPeer                              // 3
-	P2pDelPeer                              // 4
-	P2pDisconectPeer                        // 5
-	DownloaderGetStatus                     // 6
-	DownloaderStatusMsg                     // 7
-	DownloaderGetBlockHashMsg               // 8
-	DownloaderGetBlockHeadersMsg            // 9
-	DownloaderGetBlockBodiesMsg             // 10
-	BlockHeadersMsg                         // 11
-	BlockBodiesMsg                          // 12
-	BlockHashMsg                            // 13
-	NewBlockHashesMsg                       // 14
-	TxMsg                                   // 15
-	P2pEndSize
-	ChainHeadEv = 1024 + iota - P2pEndSize // 1024
-	TxEv                                   // 1025
-	NewMinedEv                             // 1026
+	P2PRouterTestInt            int = iota // 0
+	P2PRouterTestInt64                     // 1
+	P2PRouterTestString                    // 2
+	P2PRouterTestNewPeer                   // 3 fixed bug
+	P2PRouterTestDelPeer                   // 4 fixed bug
+	P2PRouterTestDisconnectPeer            // 5 fixed bug
+	P2PGetStatus                           // 6 Status request
+	P2PStatusMsg                           // 7 Status response
+	P2PGetBlockHashMsg                     // 8 BlockHash request
+	P2PGetBlockHeadersMsg                  // 9 BlockHeader request
+	P2PGetBlockBodiesMsg                   // 10 BlockBodies request
+	P2PBlockHeadersMsg                     // 11 BlockHeader response
+	P2PBlockBodiesMsg                      // 12 BlockBodies response
+	P2PBlockHashMsg                        // 13 BlockHash response
+	P2PNewBlockHashesMsg                   // 14 NewBlockHash notify
+	P2PTxMsg                               // 15 TxMsg notify
+	P2PEndSize
+	ChainHeadEv         = 1024 + iota - P2PEndSize // 1024
+	NewPeerNotify                                  // 1025
+	DelPeerNotify                                  // 1026
+	DisconectCtrl                                  // 1027
+	NewPeerPassedNotify                            // 1028 same chain ID and gensis block
+	TxEv                                           // 1029
+	NewMinedEv                                     // 1030
 	EndSize
 )
 
 var typeListMutex sync.RWMutex
-var typeList = [EndSize]reflect.Type{
-	RouterTestInt:    nil,
-	RouterTestInt64:  nil,
-	RouterTestString: nil,
-	P2pNewPeer:       nil,
-	P2pDelPeer:       nil,
-	P2pDisconectPeer: nil,
-	ChainHeadEv:      nil,
-	TxEv:             nil,
+var typeList = [EndSize]reflect.Type{}
+
+var typeLimit = [P2PEndSize]int{
+	P2PGetStatus:          1,
+	P2PGetBlockHashMsg:    128,
+	P2PGetBlockHeadersMsg: 64,
+	P2PGetBlockBodiesMsg:  64,
+	P2PNewBlockHashesMsg:  3,
 }
 
 // ReplyEvent is equivalent to `SendTo(e.To, e.From, typecode, data)`
@@ -116,7 +119,7 @@ func ReplyEvent(e *Event, typecode int, data interface{}) {
 
 // GetTypeByCode return Type by typecode
 func GetTypeByCode(typecode int) reflect.Type {
-	if typecode < P2pEndSize {
+	if typecode < P2PEndSize {
 		typeListMutex.RLock()
 		defer typeListMutex.RUnlock()
 		return typeList[typecode]
@@ -284,4 +287,9 @@ func SendEvents(es []*Event) (nsent int) {
 		nsent += SendEvent(e)
 	}
 	return
+}
+
+//GetDDosLimit get messagetype req limit per second
+func GetDDosLimit(t int) int {
+	return typeLimit[t]
 }

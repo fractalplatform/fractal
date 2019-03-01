@@ -135,7 +135,7 @@ func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Databas
 	blocks, _ := generateChain(gspec.Config, genesis, tengine, blockchain, tmpdb, 1, func(i int, block *BlockGenerator) {
 		genesisname := genesis.Coinbase()
 		block.SetCoinbase(genesisname)
-		tengine.SetSignFn(func(content []byte) ([]byte, error) {
+		tengine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 			return crypto.Sign(content, sysnameprikey)
 		})
 		st := blockInterval*uint64(time.Millisecond) + block.parent.Head.Time.Uint64()
@@ -159,7 +159,7 @@ func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Databas
 		blocks1, _ := generateChain(gspec.Config, blockchain.CurrentBlock(), tengine, blockchain, tmpdb, 1, func(i int, block *BlockGenerator) {
 			genesisname := genesis.Coinbase()
 			block.SetCoinbase(genesisname)
-			tengine.SetSignFn(func(content []byte) ([]byte, error) {
+			tengine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 				return crypto.Sign(content, sysnameprikey)
 			})
 			st := blockInterval*uint64(time.Millisecond) + starttime
@@ -190,7 +190,7 @@ func makeNewChain(t *testing.T, gspec *Genesis, chain *BlockChain, db *fdb.Datab
 				}
 			}
 			b.SetCoinbase(common.StrToName(minerInfo.name))
-			tengine.SetSignFn(func(content []byte) ([]byte, error) {
+			tengine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 				return crypto.Sign(content, minerInfo.prikey)
 			})
 			b.OffsetTime(int64(tengine.Slot(headertime[j])))

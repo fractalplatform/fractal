@@ -53,8 +53,8 @@ type Config struct {
 
 // MinerConfig miner config
 type MinerConfig struct {
-	Start      bool   `mapstructure:"miner-start"`
-	Name       string `mapstructure:"miner-name"`
-	PrivateKey string `mapstructure:"miner-private"`
-	ExtraData  string `mapstructure:"miner-extra"`
+	Start       bool     `mapstructure:"miner-start"`
+	Name        string   `mapstructure:"miner-name"`
+	PrivateKeys []string `mapstructure:"miner-private"`
+	ExtraData   string   `mapstructure:"miner-extra"`
 }

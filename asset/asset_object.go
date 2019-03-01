@@ -39,7 +39,7 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 		return nil, ErrNewAssetObject
 	}
 
-	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(limit) > 0{
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(limit) > 0 {
 		return nil, ErrNewAssetObject
 	}
 
@@ -53,15 +53,15 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 	}
 
 	ao := AssetObject{
-		AssetId:   0,
-		AssetName: assetName,
-		Symbol:    symbol,
-		Amount:    amount,
-		Decimals:  dec,
-		Founder:   founder,
-		Owner:     owner,
-		AddIssue:  amount,
-		UpperLimit:limit,
+		AssetId:    0,
+		AssetName:  assetName,
+		Symbol:     symbol,
+		Amount:     amount,
+		Decimals:   dec,
+		Founder:    founder,
+		Owner:      owner,
+		AddIssue:   amount,
+		UpperLimit: limit,
 	}
 	return &ao, nil
 }
@@ -120,7 +120,7 @@ func (ao *AssetObject) GetAssetFounder() common.Name {
 	return ao.Founder
 }
 
-func (ao *AssetObject) SetAssetFounder(f common.Name ) {
+func (ao *AssetObject) SetAssetFounder(f common.Name) {
 	ao.Founder = f
 }
 

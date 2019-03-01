@@ -18,8 +18,9 @@ package processor
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
-        "fmt"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
@@ -34,30 +35,30 @@ var (
 )
 
 type StateTransition struct {
-	engine     EgnineContext
-	from       common.Name
-	gp         *common.GasPool
-	action     *types.Action
-	gas        uint64
-	initialGas uint64
-	gasPrice   *big.Int
-	assetID    uint64
-	account    *accountmanager.AccountManager
-	evm        *vm.EVM
+	engine      EgnineContext
+	from        common.Name
+	gp          *common.GasPool
+	action      *types.Action
+	gas         uint64
+	initialGas  uint64
+	gasPrice    *big.Int
+	assetID     uint64
+	account     *accountmanager.AccountManager
+	evm         *vm.EVM
 	chainConfig *params.ChainConfig
 }
 
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EgnineContext) *StateTransition {
 	return &StateTransition{
-		engine:   engine,
-		from:     action.Sender(),
-		gp:       gp,
-		evm:      evm,
-		action:   action,
-		gasPrice: gasPrice,
-		assetID:  assetID,
-		account:  accountDB,
+		engine:      engine,
+		from:        action.Sender(),
+		gp:          gp,
+		evm:         evm,
+		action:      action,
+		gasPrice:    gasPrice,
+		assetID:     assetID,
+		account:     accountDB,
 		chainConfig: config,
 	}
 }

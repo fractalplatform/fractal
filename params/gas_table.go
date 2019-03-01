@@ -59,8 +59,8 @@ var (
 		CreateBySuicide: 25000,
 		SetOwner:        200,
 		GetSnapshotTime: 200,
-		GetAssetAmount: 200,
-		SnapBalance: 200,
+		GetAssetAmount:  200,
+		SnapBalance:     200,
 	}
 )
 

@@ -23,6 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/wallet/keystore"
 )
 
 const reloadInterval = 2 * time.Second
@@ -158,9 +159,15 @@ func readAccount(path string) *Account {
 		return nil
 	}
 	if common.IsHexAddress(path[len(path)-40:]) {
+		ks := &keystore.KeyStore{DirPath: "", ScryptN: 0, ScryptP: 0}
+		publicKey, err := ks.GetPublicKey(path)
+		if err != nil {
+			return nil
+		}
 		return &Account{
-			Addr: common.HexToAddress(path[len(path)-40:]),
-			Path: path,
+			Addr:      common.HexToAddress(path[len(path)-40:]),
+			Path:      path,
+			PublicKey: publicKey,
 		}
 	}
 	return nil
