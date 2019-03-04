@@ -138,8 +138,11 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		if vmerr != nil {
 			vmerrstr = vmerr.Error()
 		}
-		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, Error: vmerrstr})
-
+		var gasAllot []*types.GasDistribution
+		for account, gas := range vmenv.FounderGasMap {
+			gasAllot = append(gasAllot, &types.GasDistribution{Account: account, Gas: uint64(gas)})
+		}
+		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)

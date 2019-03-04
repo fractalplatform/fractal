@@ -31,20 +31,26 @@ const (
 )
 
 // ActionResult represents the results the transaction action.
+type GasDistribution struct {
+	Account common.Name
+	Gas     uint64
+}
 type ActionResult struct {
-	Status  uint64
-	Index   uint64
-	GasUsed uint64
-	Error   string
+	Status   uint64
+	Index    uint64
+	GasUsed  uint64
+	GasAllot []*GasDistribution
+	Error    string
 }
 
 // RPCActionResult that will serialize to the RPC representation of a ActionResult.
 type RPCActionResult struct {
-	ActionType uint64 `json:"actionType"`
-	Status     uint64 `json:"status"`
-	Index      uint64 `json:"index"`
-	GasUsed    uint64 `json:"gasUsed"`
-	Error      string `json:"error"`
+	ActionType uint64             `json:"actionType"`
+	Status     uint64             `json:"status"`
+	Index      uint64             `json:"index"`
+	GasUsed    uint64             `json:"gasUsed"`
+	GasAllot   []*GasDistribution `json:"gasAllot"`
+	Error      string             `json:"error"`
 }
 
 // NewRPCActionResult returns a ActionResult that will serialize to the RPC.
@@ -54,6 +60,7 @@ func (a *ActionResult) NewRPCActionResult(aType ActionType) *RPCActionResult {
 		Status:     a.Status,
 		Index:      a.Index,
 		GasUsed:    a.GasUsed,
+		GasAllot:   a.GasAllot,
 		Error:      a.Error,
 	}
 }
