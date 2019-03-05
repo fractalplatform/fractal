@@ -79,7 +79,6 @@ func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-
 //AccountHaveCode check account have code
 func (am *AccountManager) AccountHaveCode(accountName common.Name) (bool, error) {
 	//check is exist
@@ -91,7 +90,7 @@ func (am *AccountManager) AccountHaveCode(accountName common.Name) (bool, error)
 		return false, ErrAccountNotExist
 	}
 
-	return acct.HaveCode(), nil	
+	return acct.HaveCode(), nil
 }
 
 //AccountIsEmpty check account is empty
@@ -122,7 +121,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrAccountIsExist
 	}
 	var fname common.Name
-	if len(founderName.String()) > 0 {
+	if len(founderName.String()) > 0 && founderName != accountName {		
 		f, err := am.GetAccountByName(founderName)
 		if err != nil {
 			return err
@@ -131,7 +130,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 			return ErrAccountNotExist
 		}
 		fname.SetString(founderName.String())
-	}else {
+	} else {
 		fname.SetString(accountName.String())
 	}
 
@@ -703,7 +702,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	if fromAccount == toAccount {
+	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
 	val, err := fromAcct.GetBalanceByID(assetID)
@@ -798,7 +797,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
 			return err
-		}		
+		}
 		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
@@ -888,7 +887,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 		break
-	case types.Transfer:   
+	case types.Transfer:
 		return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 	default:
 		return ErrUnkownTxType

@@ -28,7 +28,13 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
+
+type ContractAction struct {
+	AccountName common.Name `json:"accountName,omitempty"`
+	Payload     []byte      `json:"payload,omitempty"`
+}
 
 type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
@@ -154,7 +160,13 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		return nil, gas, ErrInsufficientBalance
 	}
 
-	toName := action.Recipient()
+	var ca ContractAction
+	err = rlp.DecodeBytes(action.Data(), &ca)
+	if err != nil {
+		return nil, 0, err
+	}
+	toName := ca.AccountName
+	//toName := action.Recipient()
 
 	var (
 		to       = AccountRef(toName)
@@ -210,7 +222,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		}()
 	}
 
-	ret, err = run(evm, contract, action.Data())
+	ret, err = run(evm, contract, ca.Payload)
 	runGas := gas - contract.Gas
 
 	if runGas > 0 && len(contractFounder.String()) > 0 {
@@ -467,13 +479,18 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
-
-	contractName := action.Recipient()
+	var ca ContractAction
+	err = rlp.DecodeBytes(action.Data(), &ca)
+	if err != nil {
+		return nil, 0, err
+	}
+	contractName := ca.AccountName
+	//contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 
-	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil{
-		return nil,0,err
-	}else if b == true {
+	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
+		return nil, 0, err
+	} else if b == true {
 		return nil, 0, ErrContractCodeCollision
 	}
 
@@ -486,7 +503,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// E The contract is a scoped evmironment for this execution context
 	// only.
 	contract := NewContract(caller, AccountRef(contractName), action.Value(), gas, evm.AssetID)
-	contract.SetCallCode(&contractName, crypto.Keccak256Hash(action.Data()), action.Data())
+	contract.SetCallCode(&contractName, crypto.Keccak256Hash(ca.Payload), ca.Payload)
 
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil

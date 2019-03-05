@@ -26,6 +26,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/processor/vm"
 	testcommon "github.com/fractalplatform/fractal/test/common"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/abi"
@@ -171,7 +172,15 @@ func sendDeployContractTransaction() {
 		return
 	}
 	nonce, _ = testcommon.GetNonce(from)
-	sendTransferTx(types.CreateContract, from, contractAddr, nonce, assetID, big.NewInt(0), input)
+	ca := &vm.ContractAction{
+		AccountName: contractAddr,
+		Payload:     input,
+	}
+	b, err := rlp.EncodeToBytes(ca)
+	if err != nil {
+		return
+	}
+	sendTransferTx(types.CreateContract, from, contractAddr, nonce, assetID, big.NewInt(0), b)
 }
 
 func sendIssueTransaction() {
@@ -199,10 +208,18 @@ func sendTransferTransaction() {
 		jww.INFO.Println("sendDeployContractTransaction formCreateContractInput error ... ", err)
 		return
 	}
+	ca := &vm.ContractAction{
+		AccountName: contractAddr,
+		Payload:     input,
+	}
+	b, err := rlp.EncodeToBytes(ca)
+	if err != nil {
+		return
+	}
 
 	for {
 		nonce++
-		sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(0), input)
+		sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(0), b)
 	}
 }
 
