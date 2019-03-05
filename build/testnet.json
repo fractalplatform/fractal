@@ -3,6 +3,8 @@
 		"chainId": 45,
 		"bootnodes": ["enode://938597139178830dac79a3c1bcc7be70d41a79a1a1f479cde73862a3d2b808e83f60c6b7d9bd4ff999403828d2b4b5a27ff7323b3467ba3f45db6150db943c32@120.131.7.228:2018","enode://e30016f87e9f32895039c5b4fbbb40fbbf04fc2ef93299124a115df8344d81fff070591b2e455f043d2ccc9ffab3b881ce89c426ae111a5400034bb0fe64e1fa@120.131.7.101:2018"],
 		"sysName": "ftsystemio",
+		"assetmanager": "ftassetmanager",
+		"accountmanager": "ftacctmanager",		
 		"sysToken": "ftoken",
 		"assetChargeRatio": 80,
 		"contractChargeRatio": 80
@@ -32,6 +34,14 @@
 		{
 			"name": "ftsystemio",
 			"pubKey": "0x04474da0e3024d2089888dd60b7cdd79784725c4074f207b09dd7caa63a5b6ceb226b7141f4720c921003b54be581c84a05072c2d4752a1f5fae698684753424c5"
+		},
+		{
+			"name": "ftassetmanager",
+			"pubKey": ""
+		},
+		{
+			"name": "ftacctmanager",
+			"pubKey": ""
 		}
 	],
 	"allocAssets": [

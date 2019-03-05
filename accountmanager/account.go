@@ -19,6 +19,7 @@ package accountmanager
 import (
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -79,7 +80,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 }
 
 func (a *Account) HaveCode() bool {
-    if a.GetCodeSize() == 0 {
+	if a.GetCodeSize() == 0 {
 		return false
 	}
 	return true
@@ -173,6 +174,7 @@ func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	if p, find := a.binarySearch(assetID); find == true {
 		return a.Balances[p].Balance, nil
 	}
+	log.Error("%v,account=%v,asset=%v", ErrAccountAssetNotExist, a.AcctName, assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
 

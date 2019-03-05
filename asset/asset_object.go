@@ -27,14 +27,14 @@ type AssetObject struct {
 	AssetName  string      `json:"assetName,omitempty"`
 	Symbol     string      `json:"symbol,omitempty"`
 	Amount     *big.Int    `json:"amount,omitempty"`
-	Decimals   uint64      `json:"decimals,omitempty"` 
+	Decimals   uint64      `json:"decimals"`
 	Founder    common.Name `json:"founder,omitempty"`
 	Owner      common.Name `json:"owner,omitempty"`
 	AddIssue   *big.Int    `json:"addIssue,omitempty"`
 	UpperLimit *big.Int    `json:"upperLimit,omitempty"`
 }
 
-func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name,owner common.Name,limit *big.Int) (*AssetObject, error) {
+func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) (*AssetObject, error) {
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}

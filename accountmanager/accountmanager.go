@@ -22,12 +22,14 @@ import (
 
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var acctInfoPrefix = "AcctInfo"
+var acctManagerName = params.DefaultChainconfig.AccountManager.String()
 
 const (
 	//Account Type
@@ -121,7 +123,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrAccountIsExist
 	}
 	var fname common.Name
-	if len(founderName.String()) > 0 && founderName != accountName {		
+	if len(founderName.String()) > 0 && founderName != accountName {
 		f, err := am.GetAccountByName(founderName)
 		if err != nil {
 			return err
@@ -189,7 +191,7 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, founderName com
 
 //GetAccountByTime get account by name and time
 func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64) (*Account, error) {
-	b, err := am.sdb.GetSnapshot(accountName.String(), acctInfoPrefix, time)
+	b, err := am.sdb.GetSnapshot(acctManagerName, acctInfoPrefix+accountName.String(), time)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +209,7 @@ func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64)
 
 //GetAccountByName get account by name
 func (am *AccountManager) GetAccountByName(accountName common.Name) (*Account, error) {
-	b, err := am.sdb.Get(accountName.String(), acctInfoPrefix)
+	b, err := am.sdb.Get(acctManagerName, acctInfoPrefix+accountName.String())
 	if err != nil {
 		return nil, err
 	}
@@ -235,7 +237,7 @@ func (am *AccountManager) SetAccount(acct *Account) error {
 	if err != nil {
 		return err
 	}
-	am.sdb.Put(acct.GetName().String(), acctInfoPrefix, b)
+	am.sdb.Put(acctManagerName, acctInfoPrefix+acct.GetName().String(), b)
 	return nil
 }
 
@@ -332,7 +334,34 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 	return nil
 }
 
-// IsValidSign
+//IsValidAction verify action type
+func (am *AccountManager) IsValidAction(to common.Name, aType types.ActionType) bool {
+	switch aType {
+	case types.CreateAccount:
+	case types.UpdateAccount:
+		//case types.DeleteAccount:
+		if to != params.DefaultChainconfig.AccountManager {
+			return false
+		}
+		break
+	case types.IssueAsset:
+	case types.IncreaseAsset:
+	case types.DestroyAsset:
+	case types.SetAssetOwner:
+	case types.SetAssetFounder:
+		if to != params.DefaultChainconfig.AssetManager {
+			return false
+		}
+		break
+	case types.Transfer:
+		break
+	default:
+		return false
+	}
+	return true
+}
+
+//IsValidSign check the sign
 func (am *AccountManager) IsValidSign(accountName common.Name, aType types.ActionType, pub common.PubKey) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -430,17 +459,6 @@ func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint
 		return nil, ErrAccountNotExist
 	}
 	return acct.GetBalanceByID(assetID)
-	//if time == 0 {
-	//	//current
-	//	return acct.GetBalanceByID(assetID)
-	//}else {
-	//	//spec time balance
-	//	if acct, err = am.GetAccountByTime(accountName,time);err!= nil{
-	//		return nil,err
-	//	}
-	//	return acct.GetBalanceByID(assetID)
-	//}
-
 }
 
 //Get Account Founder
@@ -798,6 +816,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
+
 		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}

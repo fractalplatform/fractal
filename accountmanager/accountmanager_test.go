@@ -789,7 +789,7 @@ func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -822,7 +822,7 @@ func TestAccountManager_GetAccountLastChange(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -856,7 +856,7 @@ func TestAccountManager_GetSnapshotTime(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -891,7 +891,7 @@ func TestAccountManager_GetBalanceByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -924,7 +924,7 @@ func TestAccountManager_GetAssetFounder(t *testing.T) {
 		want    common.Name
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -957,7 +957,7 @@ func TestAccountManager_GetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -990,7 +990,7 @@ func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1537,8 +1537,8 @@ func TestAccountManager_Process(t *testing.T) {
 	pubkey1, _ := GeneragePubKey()
 	aa := &AccountAction{
 		AccountName: common.Name("a123456789addd"),
-		ChargeRatio:    10,
-		PublicKey:pubkey,
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
 	}
 	payload3, err := rlp.EncodeToBytes(aa)
 	if err != nil {
@@ -1546,8 +1546,8 @@ func TestAccountManager_Process(t *testing.T) {
 	}
 	aa1 := &AccountAction{
 		AccountName: common.Name("a123456789addd"),
-		ChargeRatio:    99,
-		PublicKey:pubkey1,
+		ChargeRatio: 99,
+		PublicKey:   pubkey1,
 	}
 	payload4, err := rlp.EncodeToBytes(aa1)
 	if err != nil {

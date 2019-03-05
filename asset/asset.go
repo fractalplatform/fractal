@@ -17,17 +17,19 @@
 package asset
 
 import (
+	"math/big"
+	"strconv"
+
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"math/big"
-	"strconv"
 )
 
-var sysAcct string
+//AssetManager is used to access asset
+var assetManagerName string
+
 var (
-	//sysAccount is used to access asset
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
 	assetObjectPrefix = "assetDefinitionObject"
@@ -42,10 +44,10 @@ func NewAsset(sdb *state.StateDB) *Asset {
 	asset := Asset{
 		sdb: sdb,
 	}
-	if len(params.DefaultChainconfig.SysName) > 0 {
-		sysAcct = params.DefaultChainconfig.SysName.String()
+	if len(params.DefaultChainconfig.AssetManager) > 0 {
+		assetManagerName = params.DefaultChainconfig.AssetManager.String()
 	} else {
-		sysAcct = "sysAccount"
+		assetManagerName = "ftassetmanager"
 	}
 	asset.InitAssetCount()
 	return &asset
@@ -65,7 +67,7 @@ func (a *Asset) GetAssetObjectByTime(assetID uint64, time uint64) (*AssetObject,
 	if assetID == 0 {
 		return nil, ErrAssetIdInvalid
 	}
-	b, err := a.sdb.GetSnapshot(sysAcct, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
+	b, err := a.sdb.GetSnapshot(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +86,7 @@ func (a *Asset) GetAssetIdByName(assetName string) (uint64, error) {
 	if assetName == "" {
 		return 0, ErrAssetNameEmpty
 	}
-	b, err := a.sdb.Get(sysAcct, assetNameIdPrefix+assetName)
+	b, err := a.sdb.Get(assetManagerName, assetNameIdPrefix+assetName)
 	if err != nil {
 		return 0, err
 	}
@@ -112,7 +114,7 @@ func (a *Asset) GetAssetObjectById(id uint64) (*AssetObject, error) {
 	if id == 0 {
 		return nil, ErrAssetIdInvalid
 	}
-	b, err := a.sdb.Get(sysAcct, assetObjectPrefix+strconv.FormatUint(id, 10))
+	b, err := a.sdb.Get(assetManagerName, assetObjectPrefix+strconv.FormatUint(id, 10))
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +130,7 @@ func (a *Asset) GetAssetObjectById(id uint64) (*AssetObject, error) {
 
 //get asset total count
 func (a *Asset) getAssetCount() (uint64, error) {
-	b, err := a.sdb.Get(sysAcct, assetCountPrefix)
+	b, err := a.sdb.Get(assetManagerName, assetCountPrefix)
 	if err != nil {
 		return 0, err
 	}
@@ -154,7 +156,7 @@ func (a *Asset) InitAssetCount() {
 		if err != nil {
 			panic(err)
 		}
-		a.sdb.Put(sysAcct, assetCountPrefix, b)
+		a.sdb.Put(assetManagerName, assetCountPrefix, b)
 	}
 	return
 }
@@ -215,9 +217,9 @@ func (a *Asset) addNewAssetObject(ao *AssetObject) (uint64, error) {
 		return 0, err
 	}
 
-	a.sdb.Put(sysAcct, assetObjectPrefix+strconv.FormatUint(assetCount, 10), aobject)
-	a.sdb.Put(sysAcct, assetNameIdPrefix+ao.GetAssetName(), aid)
-	a.sdb.Put(sysAcct, assetCountPrefix, b)
+	a.sdb.Put(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetCount, 10), aobject)
+	a.sdb.Put(assetManagerName, assetNameIdPrefix+ao.GetAssetName(), aid)
+	a.sdb.Put(assetManagerName, assetCountPrefix, b)
 	return assetCount, nil
 }
 
@@ -234,7 +236,7 @@ func (a *Asset) SetAssetObject(ao *AssetObject) error {
 	if err != nil {
 		return err
 	}
-	a.sdb.Put(sysAcct, assetObjectPrefix+strconv.FormatUint(assetId, 10), b)
+	a.sdb.Put(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetId, 10), b)
 	return nil
 }
 
@@ -276,6 +278,7 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 	}
 	return nil
 }
+
 //destroy asset
 func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {

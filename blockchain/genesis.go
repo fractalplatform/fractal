@@ -234,6 +234,10 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 			Name:   params.DefaultChainconfig.SysName,
 			PubKey: pubKey,
 		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.AssetManager,
+			PubKey: pubKey,
+		},
 	}
 }
 
