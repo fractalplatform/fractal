@@ -647,7 +647,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 					return i, events, coalescedLogs, err
 				}
 			} else {
-				newchain, err := bc.reorgState(currentBlock, block)
+				newchain, err := bc.reorgBlock(currentBlock, block)
 				if err != nil {
 					return i, events, coalescedLogs, err
 				}
@@ -680,11 +680,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 					return i, events, coalescedLogs, err
 				}
 				continue
-			} else {
-				_, err := bc.reorgState(currentBlock, block)
-				if err != nil {
-					return i, events, coalescedLogs, err
-				}
 			}
 		}
 
@@ -729,7 +724,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 	return 0, events, coalescedLogs, nil
 }
 
-func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks, error) {
+func (bc *BlockChain) reorgBlock(oldBlock, newBlock *types.Block) (types.Blocks, error) {
 	var (
 		newChain    types.Blocks
 		oldChain    types.Blocks
@@ -797,10 +792,6 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 	batch.Write()
 
 	if len(oldChain) > 0 {
-		//  rollback state
-		if err := state.TransToSpecBlock(bc.db, bc.stateCache, bc.CurrentBlock().Hash(), oldBlock.Hash()); err != nil {
-			return nil, err
-		}
 		bc.currentBlock.Store(oldBlock)
 	}
 	return newChain, nil
