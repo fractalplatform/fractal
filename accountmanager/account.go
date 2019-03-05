@@ -174,7 +174,7 @@ func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	if p, find := a.binarySearch(assetID); find == true {
 		return a.Balances[p].Balance, nil
 	}
-	log.Error("%v,account=%v,asset=%v", ErrAccountAssetNotExist, a.AcctName, assetID)
+	log.Info("asset not exist", "account", "asset", ErrAccountAssetNotExist, a.AcctName, assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
 
