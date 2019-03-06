@@ -67,6 +67,7 @@ type Receipt struct {
 	Logs              []*Log
 	TxHash            common.Hash
 	TotalGasUsed      uint64
+	internalTxsLog    *DetailTx
 }
 
 // NewReceipt creates a barebone transaction receipt, copying the init fields.
@@ -161,4 +162,12 @@ func (r *Receipt) ConsensusReceipt() *Receipt {
 	}
 	result.Logs = logs
 	return result
+}
+
+func (r *Receipt) GetInternalTxsLog() *DetailTx {
+	return r.internalTxsLog
+}
+
+func (r *Receipt) SetInternalTxsLog(dtxs *DetailTx) {
+	r.internalTxsLog = dtxs
 }

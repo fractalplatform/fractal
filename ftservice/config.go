@@ -48,7 +48,8 @@ type Config struct {
 	MetricsConf *metrics.Config
 
 	// snapshot
-	Snapshot bool
+	Snapshot        bool
+	ContractLogFlag bool `mapstructure:"ftservice-ContractLogFlag"`
 }
 
 // MinerConfig miner config

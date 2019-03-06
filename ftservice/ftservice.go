@@ -71,7 +71,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	ctx.AppendBootNodes(chainCfg.BootNodes)
 
 	ftservice := &FtService{
@@ -92,7 +91,10 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	}
 
 	//blockchain
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vm.Config{}, ftservice.chainConfig, txpool.SenderCacher)
+	vmconfig := vm.Config{
+		ContractLogFlag: config.ContractLogFlag,
+	}
+	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,6 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"fmt"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -153,5 +152,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	receipt.Bloom = types.CreateBloom([]*types.Receipt{receipt})
 
 	detailTx.TxHash = receipt.TxHash
+	detailTx.InternalTxs = internals
+	receipt.SetInternalTxsLog(detailTx)
 	return receipt, totalGas, nil
 }

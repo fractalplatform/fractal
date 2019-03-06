@@ -29,5 +29,11 @@ type InternalTx struct {
 	GasUsed    uint64
 	GasLimit   uint64
 	Depth      uint64
-	Error      error
+	Error      string
+}
+
+type BlockAndResult struct {
+	Block     *Block
+	Receipts  []*Receipt
+	DetailTxs []*DetailTx
 }
