@@ -21,8 +21,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"os"
+	"os/signal"
 	"sort"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -492,6 +495,28 @@ func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotT
 	var prevTimeHour, nextTimeHour uint64
 	log.Info("Start snapshot", "tick=", Ticktime, "interval=", snapshotTime)
 
+	interrupt := make(chan os.Signal, 1)
+	stop := make(chan struct{})
+	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(interrupt)
+	defer close(interrupt)
+
+	go func() {
+		if _, ok := <-interrupt; ok {
+			log.Info("Got interrupt, stop snashot...")
+		}
+		close(stop)
+	}()
+
+	checkInterrupt := func() bool {
+		select {
+		case <-stop:
+			return true
+		default:
+			return false
+		}
+	}
+
 	futureTimer := time.NewTicker(time.Duration(Ticktime) * time.Second)
 	defer futureTimer.Stop()
 
@@ -499,6 +524,10 @@ func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotT
 		select {
 		case <-futureTimer.C:
 			for {
+				if checkInterrupt() {
+					return
+				}
+
 				snapshotTimeLast := rawdb.ReadSnapshotLast(db)
 				if len(snapshotTimeLast) == 0 {
 					blockNum = 0
@@ -514,6 +543,10 @@ func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotT
 
 					if curBlockTime-curSnapshotTime > 2*(snapshotTime*1000000000) {
 						for {
+							if checkInterrupt() {
+								return
+							}
+
 							blockNum = blockNum + 1
 
 							nextHash = rawdb.ReadCanonicalHash(db, blockNum)
@@ -565,6 +598,10 @@ func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotT
 						prevTime := prevHead.Time.Uint64()
 
 						for {
+							if checkInterrupt() {
+								return
+							}
+
 							blockNum = blockNum + 1
 
 							nextHash = rawdb.ReadCanonicalHash(db, blockNum)
@@ -607,6 +644,8 @@ func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotT
 
 				}
 			}
+		case <-stop:
+			break
 		}
 	}
 }
