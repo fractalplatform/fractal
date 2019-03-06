@@ -820,6 +820,8 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	contract.Gas += returnGas
 
 	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
+	internalTx := &types.InternalTx{Action: action, ActionType: "call", GasUsed: gas - returnGas, GasLimit: gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return ret, nil
 }
 
@@ -854,6 +856,8 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	contract.Gas += returnGas
 
 	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
+	internalTx := &types.InternalTx{Action: action, ActionType: "callcode", GasUsed: gas - returnGas, GasLimit: gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return ret, nil
 }
 
@@ -879,6 +883,8 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	contract.Gas += returnGas
 
 	evm.interpreter.intPool.put(name, inOffset, inSize, retOffset, retSize)
+	internalTx := &types.InternalTx{ActionType: "delegatecall", GasUsed: gas - returnGas, GasLimit: gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return ret, nil
 }
 
@@ -909,6 +915,8 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 	action := types.NewAction(types.IncreaseAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
 	err = evm.AccountDB.Process(action)
+	internalTx := &types.InternalTx{Action: action, ActionType: "addasset", GasUsed: 0, GasLimit: contract.Gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return err
 }
 
@@ -959,6 +967,8 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	action := types.NewAction(types.IssueAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
 	err = evm.AccountDB.Process(action)
+	internalTx := &types.InternalTx{Action: action, ActionType: "issueasset", GasUsed: 0, GasLimit: contract.Gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	if err != nil {
 		return 0, err
 	} else {
@@ -995,6 +1005,8 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 	}
 
 	action := types.NewAction(types.SetAssetOwner, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
+	internalTx := &types.InternalTx{Action: action, ActionType: "setassetowner", GasUsed: 0, GasLimit: contract.Gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return evm.AccountDB.Process(action)
 
 }
@@ -1027,6 +1039,8 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	contract.Gas += returnGas
 
 	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
+	internalTx := &types.InternalTx{Action: action, ActionType: "transferex", GasUsed: 0, GasLimit: gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return ret, nil
 }
 
@@ -1052,6 +1066,8 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	contract.Gas += returnGas
 
 	evm.interpreter.intPool.put(name, inOffset, inSize, retOffset, retSize)
+	internalTx := &types.InternalTx{ActionType: "staticcall", GasUsed: gas - returnGas, GasLimit: gas, Error: err}
+	evm.InternalTxs = append(evm.InternalTxs, internalTx)
 	return ret, nil
 }
 

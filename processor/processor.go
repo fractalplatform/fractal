@@ -23,6 +23,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"fmt"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -92,6 +93,8 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 
 	var totalGas uint64
 	var ios []*types.ActionResult
+	detailTx := &types.DetailTx{}
+	var internals []*types.InternalTx
 	for i, action := range tx.GetActions() {
 		fromPubkey, err := types.Recover(types.NewSigner(config.ChainID), action, tx)
 		if err != nil {
@@ -139,7 +142,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			vmerrstr = vmerr.Error()
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, Error: vmerrstr})
-
+		internals = append(internals, vmenv.InternalTxs...)
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
@@ -149,5 +152,6 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	receipt.Logs = statedb.GetLogs(tx.Hash())
 	receipt.Bloom = types.CreateBloom([]*types.Receipt{receipt})
 
+	detailTx.TxHash = receipt.TxHash
 	return receipt, totalGas, nil
 }
