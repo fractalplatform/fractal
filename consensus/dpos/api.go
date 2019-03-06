@@ -32,9 +32,9 @@ type API struct {
 }
 
 type Irreversible_Ret struct {
-	ProposedIrreversible uint64
-	LastIrreversible     uint64
-	BftIrreversible      uint64
+	ProposedIrreversible uint64 `json:"proposedIrreversible"`
+	LastIrreversible     uint64 `json:"lastIrreversible"`
+	BftIrreversible      uint64 `json:"bftIrreversible"`
 }
 
 func (api *API) Info() (interface{}, error) {
