@@ -61,6 +61,15 @@ type ChainContext interface {
 
 	// WriteBlockWithState writes the block and all associated state to the database.
 	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) error
+
+	// CheckForkID checks the validity of forkID
+	CheckForkID(header *types.Header) error
+
+	// FillForkID fills the current and next forkID
+	FillForkID(header *types.Header, statedb *state.StateDB) error
+
+	// ForkUpdate checks and records the fork information
+	ForkUpdate(block *types.Block, statedb *state.StateDB) error
 }
 
 type EgnineContext interface {

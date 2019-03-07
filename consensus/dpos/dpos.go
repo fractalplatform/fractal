@@ -248,8 +248,20 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
 	sys.onblock(header.Number.Uint64())
-	header.Root = state.IntermediateRoot()
-	return types.NewBlock(header, txs, receipts), nil
+
+	blk := types.NewBlock(header, txs, receipts)
+
+	// first hard fork at a specific height
+	// If the block height is greater than or equal to the hard forking height,
+	// the fork function will take effect. This function is valid only in the test network.
+	if err := chain.ForkUpdate(blk, state); err != nil {
+		return nil, err
+	}
+
+	// update state root at the end
+	blk.Head.Root = state.IntermediateRoot()
+
+	return blk, nil
 }
 
 // Seal generates a new block for the given input block with the local miner's seal place on top.
