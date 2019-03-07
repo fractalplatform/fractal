@@ -24,7 +24,7 @@ var (
 	ErrAssetIDInvalid       = errors.New("asset id invalid")
 	ErrCreateAccountError   = errors.New("create account error")
 	ErrAccountIsExist       = errors.New("account is exist")
-	ErrAccountIsDestroy     = errors.New("account is destory")
+	ErrAccountIsDestroy     = errors.New("account is destroy")
 	ErrAccountNotExist      = errors.New("account not exist")
 	ErrHashIsEmpty          = errors.New("hash is empty")
 	ErrkeyNotSame           = errors.New("key not same")

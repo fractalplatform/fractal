@@ -257,10 +257,14 @@ func TestAsset(t *testing.T) {
 	}
 	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput)
 
-	_, _, err = Call(action, &runtimeConfig)
+	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
+	}
+	num := new(big.Int).SetBytes(ret)
+	if num.Cmp(big.NewInt(2)) != 0 {
+		t.Error("getBalance fail, want 2, get ", num)
 	}
 
 	senderAcc, err := account.GetAccountByName(senderName)
@@ -278,7 +282,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset result ", b)
 	}
 
-	addAssetInput, err := input(abifile, "add", common.BigToAddress(big.NewInt(2)), big.NewInt(210000))
+	addAssetInput, err := input(abifile, "add", big.NewInt(2), common.BytesToAddress([]byte(senderName.String())), big.NewInt(210000))
 	if err != nil {
 		fmt.Println("addAssetInput error ", err)
 		return
@@ -302,7 +306,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset result ", b)
 	}
 
-	transferExAssetInput, err := input(abifile, "transAsset", common.BytesToAddress([]byte(receiverName.String())), common.BigToAddress(big.NewInt(2)), big.NewInt(10000))
+	transferExAssetInput, err := input(abifile, "transAsset", common.BytesToAddress([]byte(receiverName.String())), big.NewInt(2), big.NewInt(10000))
 	if err != nil {
 		fmt.Println("transferExAssetInput error ", err)
 		return
@@ -339,7 +343,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset receiver result ", b)
 	}
 
-	setOwnerInput, err := input(abifile, "setname", common.BytesToAddress([]byte(receiverName.String())), common.BigToAddress(big.NewInt(2)))
+	setOwnerInput, err := input(abifile, "setname", common.BytesToAddress([]byte(receiverName.String())), big.NewInt(2))
 	if err != nil {
 		fmt.Println("setOwnerInput error ", err)
 		return
@@ -353,20 +357,37 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	getBalanceInput, err := input(abifile, "getbalance", common.BytesToAddress([]byte(receiverName.String())), common.BigToAddress(big.NewInt(2)))
+	getBalanceInput, err := input(abifile, "getbalance", common.BytesToAddress([]byte(receiverName.String())), big.NewInt(2))
 	if err != nil {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
 	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput)
 
-	ret, _, err := Call(action, &runtimeConfig)
+	ret, _, err = Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
 	}
-	num := new(big.Int).SetBytes(ret)
+	num = new(big.Int).SetBytes(ret)
 	if num.Cmp(big.NewInt(10000)) != 0 {
+		t.Error("getBalance fail, want 10000, get ", num)
+	}
+
+	getAssetIDInput, err := input(abifile, "getAssetId")
+	if err != nil {
+		fmt.Println("getBalanceInput error ", err)
+		return
+	}
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput)
+
+	ret, _, err = Call(action, &runtimeConfig)
+	if err != nil {
+		fmt.Println("call error ", err)
+		return
+	}
+	num = new(big.Int).SetBytes(ret)
+	if num.Cmp(big.NewInt(2)) != 0 {
 		t.Error("getBalance fail, want 10000, get ", num)
 	}
 }

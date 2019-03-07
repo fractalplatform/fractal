@@ -70,6 +70,8 @@ type EgnineContext interface {
 	Author(header *types.Header) (common.Name, error)
 
 	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error
+
+	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, error)
 }
 
 type EvmContext struct {
@@ -87,16 +89,17 @@ func NewEVMContext(sender common.Name, fromPubkey common.PubKey, assetID uint64,
 		beneficiary = *author
 	}
 	return vm.Context{
-		GetHash:     GetHashFn(header, chain),
-		Origin:      sender,
-		FromPubkey:  fromPubkey,
-		AssetID:     assetID,
-		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(header.Number),
-		Time:        new(big.Int).Set(header.Time),
-		Difficulty:  new(big.Int).Set(header.Difficulty),
-		GasLimit:    header.GasLimit,
-		GasPrice:    new(big.Int).Set(gasPrice),
+		GetHash:            GetHashFn(header, chain),
+		GetDelegatedByTime: chain.GetDelegatedByTime,
+		Origin:             sender,
+		FromPubkey:         fromPubkey,
+		AssetID:            assetID,
+		Coinbase:           beneficiary,
+		BlockNumber:        new(big.Int).Set(header.Number),
+		Time:               new(big.Int).Set(header.Time),
+		Difficulty:         new(big.Int).Set(header.Difficulty),
+		GasLimit:           header.GasLimit,
+		GasPrice:           new(big.Int).Set(gasPrice),
 	}
 }
 

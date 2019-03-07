@@ -1536,16 +1536,18 @@ func TestAccountManager_Process(t *testing.T) {
 	pubkey, _ := GeneragePubKey()
 	pubkey1, _ := GeneragePubKey()
 	aa := &AccountAction{
-		ChargeRatio: 10,
-		PublicKey:   pubkey,
+		AccountName: common.Name("a123456789addd"),
+		ChargeRatio:    10,
+		PublicKey:pubkey,
 	}
 	payload3, err := rlp.EncodeToBytes(aa)
 	if err != nil {
 		panic("rlp payload err")
 	}
 	aa1 := &AccountAction{
-		ChargeRatio: 99,
-		PublicKey:   pubkey1,
+		AccountName: common.Name("a123456789addd"),
+		ChargeRatio:    99,
+		PublicKey:pubkey1,
 	}
 	payload4, err := rlp.EncodeToBytes(aa1)
 	if err != nil {
@@ -1608,7 +1610,7 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		t.Error("Process GetAccountByName err")
 	}
-	if !ac.IsDestoryed() {
+	if !ac.IsDestroyed() {
 		//t.Error("Process delete account failure")
 	}
 

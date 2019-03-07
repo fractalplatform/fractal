@@ -872,7 +872,7 @@ func TestAccount_SetSuicide(t *testing.T) {
 	}
 }
 
-func TestAccount_IsDestoryed(t *testing.T) {
+func TestAccount_IsDestroyed(t *testing.T) {
 	type fields struct {
 		AcctName  common.Name
 		Nonce     uint64
@@ -903,13 +903,13 @@ func TestAccount_IsDestoryed(t *testing.T) {
 			Suicide:   tt.fields.Suicide,
 			Destroy:   tt.fields.Destroy,
 		}
-		if got := a.IsDestoryed(); got != tt.want {
-			t.Errorf("%q. Account.IsDestoryed() = %v, want %v", tt.name, got, tt.want)
+		if got := a.IsDestroyed(); got != tt.want {
+			t.Errorf("%q. Account.IsDestroyed() = %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }
 
-func TestAccount_SetDestory(t *testing.T) {
+func TestAccount_SetDestroy(t *testing.T) {
 	type fields struct {
 		AcctName  common.Name
 		Nonce     uint64
@@ -939,6 +939,6 @@ func TestAccount_SetDestory(t *testing.T) {
 			Suicide:   tt.fields.Suicide,
 			Destroy:   tt.fields.Destroy,
 		}
-		a.SetDestory()
+		a.SetDestroy()
 	}
 }
