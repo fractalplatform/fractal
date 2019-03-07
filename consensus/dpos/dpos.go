@@ -216,7 +216,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	currentEpoch := dpos.config.epoch(header.Time.Uint64())
 	if parentEpoch != currentEpoch {
 		tparent := parent
-		for dpos.config.epoch(tparent.Number.Uint64()) == dpos.config.epoch(parent.Time.Uint64()) {
+		for tparent.Number.Uint64() > 1 && dpos.config.epoch(tparent.Number.Uint64()) == dpos.config.epoch(parent.Time.Uint64()) {
 			counter++
 			tparent = chain.GetHeaderByHash(tparent.ParentHash)
 		}
