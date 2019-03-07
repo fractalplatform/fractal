@@ -30,8 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 var (
@@ -42,6 +41,7 @@ var (
 	errInvalidTimestamp           = errors.New("invalid timestamp")
 	ErrIllegalProducerName        = errors.New("illegal producer name")
 	ErrIllegalProducerPubKey      = errors.New("illegal producer pubkey")
+	ErrTooMuchRreversible         = errors.New("too much rreversible blocks")
 	errUnknownBlock               = errors.New("unknown block")
 	extraSeal                     = 65
 	timeOfGenesisBlock            int64
@@ -93,6 +93,7 @@ func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 	return accountDB.IsValidSign(common.StrToName(name), types.ActionType(0), common.BytesToPubKey(pubkey)) == nil
 }
 
+// Genesis dpos genesis store
 func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 	db := &LDB{
 		IDatabase: &stateDB{
@@ -143,11 +144,7 @@ type Dpos struct {
 	config *Config
 
 	// cache
-	proposedIrreversibleNum uint64
-	bftIrreversibleNum      uint64
-	producerIrreversibleNum map[string]uint64
-
-	firtEpcho uint64
+	bftIrreversibles *lru.Cache
 }
 
 // New creates a DPOS consensus engine
@@ -155,19 +152,8 @@ func New(config *Config, chain consensus.IChainReader) *Dpos {
 	dpos := &Dpos{
 		config: config,
 	}
-	if chain != nil {
-		dpos.init(chain)
-	}
+	dpos.bftIrreversibles, _ = lru.New(int(config.ProducerScheduleSize))
 	return dpos
-}
-
-func (dpos *Dpos) init(chain consensus.IChainReader) {
-	fheader := chain.GetHeaderByNumber(1)
-	if fheader == nil {
-		return
-	}
-	dpos.firtEpcho = dpos.config.epoch(fheader.Time.Uint64())
-	dpos.calcProposedIrreversible(chain)
 }
 
 // SetConfig set dpos config
@@ -221,25 +207,15 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		},
 	}
 
-	if dpos.firtEpcho == 0 {
-		if fheader := chain.GetHeaderByNumber(1); fheader != nil {
-			dpos.firtEpcho = dpos.config.epoch(fheader.Time.Uint64())
-		}
-	}
-
 	counter := int64(0)
-	if dpos.IsFirst(header.Time.Uint64()) {
-		timestamp := header.Time.Uint64() - dpos.config.blockInterval()*dpos.config.BlockFrequency
+	parentEpoch := dpos.config.epoch(parent.Time.Uint64())
+	currentEpoch := dpos.config.epoch(header.Time.Uint64())
+	if parentEpoch != currentEpoch {
 		tparent := parent
-		for tparent.Number.Uint64() > 0 && tparent.Time.Uint64() >= timestamp {
+		for dpos.config.epoch(tparent.Number.Uint64()) == dpos.config.epoch(parent.Time.Uint64()) {
 			counter++
 			tparent = chain.GetHeaderByHash(tparent.ParentHash)
 		}
-	}
-
-	parent_epoch := dpos.config.epoch(parent.Time.Uint64())
-	current_epoch := dpos.config.epoch(header.Time.Uint64())
-	if parent_epoch != current_epoch {
 		// next epoch
 		sys.updateElectedProducers(header.Time.Uint64())
 	}
@@ -249,6 +225,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
 	sys.onblock(header.Number.Uint64())
 	header.Root = state.IntermediateRoot()
+	dpos.bftIrreversibles.Add(header.Coinbase, header.ProposedIrreversible)
 	return types.NewBlock(header, txs, receipts), nil
 }
 
@@ -270,7 +247,6 @@ func (dpos *Dpos) Seal(chain consensus.IChainReader, block *types.Block, stop <-
 		return nil, err
 	}
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
-	dpos.calcProposedIrreversible(chain)
 	return block.WithSeal(header), nil
 }
 
@@ -299,7 +275,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return err
 	}
 
-	return dpos.calcProposedIrreversible(chain)
+	return nil
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm.
@@ -318,6 +294,10 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, pubkeys [][]byte, state *state.StateDB) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
+	}
+
+	if height-dpos.CalcProposedIrreversible(chain) >= dpos.config.ProducerScheduleSize*dpos.config.BlockFrequency {
+		return ErrTooMuchRreversible
 	}
 
 	db := &stateDB{
@@ -339,23 +319,17 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 		return ErrIllegalProducerPubKey
 	}
 
-	target_ts := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
+	targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
 	// find target block
 	var pheader *types.Header
 	for height > 0 {
 		pheader = chain.GetHeaderByNumber(height)
-		if pheader.Time.Cmp(target_ts) != 1 {
+		if pheader.Time.Cmp(targetTime) != 1 {
 			break
 		} else {
-			height -= 1
+			height--
 		}
 	}
-
-	// if height > dpos.config.DelayEcho {
-	// 	height = height - dpos.config.DelayEcho
-	// } else {
-	// 	height = uint64(0)
-	// }
 
 	sys := &System{
 		config: dpos.config,
@@ -380,10 +354,12 @@ func (dpos *Dpos) BlockInterval() uint64 {
 	return dpos.config.blockInterval()
 }
 
+// Slot
 func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 	return dpos.config.slot(timestamp)
 }
 
+// IsFirst the first of producer
 func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
 }
@@ -393,10 +369,13 @@ func (dpos *Dpos) Engine() consensus.IEngine {
 	return dpos
 }
 
-func (dpos *Dpos) calcLastIrreversible() uint64 {
+func (dpos *Dpos) CalcBFTIrreversible() uint64 {
 	irreversibles := UInt64Slice{}
-	for _, irreversible := range dpos.producerIrreversibleNum {
-		irreversibles = append(irreversibles, irreversible)
+	keys := dpos.bftIrreversibles.Keys()
+	for _, key := range keys {
+		if irreversible, ok := dpos.bftIrreversibles.Get(key); ok {
+			irreversibles = append(irreversibles, irreversible.(uint64))
+		}
 	}
 
 	if len(irreversibles) == 0 {
@@ -409,30 +388,33 @@ func (dpos *Dpos) calcLastIrreversible() uint64 {
 	return irreversibles[(len(irreversibles)-1)/3]
 }
 
-func (dpos *Dpos) calcProposedIrreversible(chain consensus.IChainReader) error {
+func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader) uint64 {
 	curHeader := chain.CurrentHeader()
-
+	state, _ := chain.StateAt(curHeader.Root)
+	sys := &System{
+		config: dpos.config,
+		IDB: &LDB{
+			IDatabase: &stateDB{
+				name:    dpos.config.AccountName,
+				assetid: chain.Config().SysTokenID,
+				state:   state,
+			},
+		},
+	}
 	producerMap := make(map[string]uint64)
-	for curHeader.Number.Uint64() > dpos.proposedIrreversibleNum {
-		if curHeader.Number.Uint64()-dpos.proposedIrreversibleNum+uint64(len(producerMap)) < dpos.config.consensusSize() {
-			return nil
+	for curHeader.Number.Uint64() > 0 {
+		if curHeader.Number.Uint64() <= dpos.config.DelayEcho*dpos.config.ProducerScheduleSize*dpos.config.BlockFrequency {
+			return curHeader.Number.Uint64()
+		} else if gstate, _ := sys.GetState(curHeader.Number.Uint64() - dpos.config.DelayEcho*dpos.config.ProducerScheduleSize*dpos.config.BlockFrequency); !sys.isdpos(gstate) {
+			return curHeader.Number.Uint64()
 		}
-		epoch := dpos.config.epoch(curHeader.Time.Uint64())
-		if e, ok := producerMap[curHeader.Coinbase.String()]; e != epoch && ok {
-			return nil
-		}
-		producerMap[curHeader.Coinbase.String()] = epoch
-
+		producerMap[curHeader.Coinbase.String()] = dpos.config.epoch(curHeader.Time.Uint64())
 		if uint64(len(producerMap)) >= dpos.config.consensusSize() {
-			dpos.proposedIrreversibleNum = curHeader.Number.Uint64()
-			return nil
+			return curHeader.Number.Uint64()
 		}
 		curHeader = chain.GetHeaderByHash(curHeader.ParentHash)
-		if curHeader == nil {
-			return nil
-		}
 	}
-	return nil
+	return 0
 }
 
 func ecrecover(header *types.Header, extra []byte) ([]byte, error) {
@@ -449,24 +431,9 @@ func ecrecover(header *types.Header, extra []byte) ([]byte, error) {
 }
 
 func signHash(header *types.Header, extra []byte) (hash common.Hash) {
-	hasher := sha3.NewLegacyKeccak256()
-	rlp.Encode(hasher, []interface{}{
-		header.ParentHash,
-		header.Coinbase,
-		header.Root,
-		header.TxsRoot,
-		header.ReceiptsRoot,
-		header.Bloom,
-		header.Difficulty,
-		header.Number,
-		header.GasLimit,
-		header.GasUsed,
-		header.Time,
-		header.Extra[:len(header.Extra)-extraSeal],
-		extra,
-	})
-	hasher.Sum(hash[:0])
-	return hash
+	theader := types.CopyHeader(header)
+	theader.Extra = theader.Extra[:len(theader.Extra)-extraSeal]
+	return theader.Hash()
 }
 
 // UInt64Slice attaches the methods of sort.Interface to []uint64, sorting in increasing order.

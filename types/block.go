@@ -31,18 +31,19 @@ import (
 
 // Header represents a block header in the blockchain.
 type Header struct {
-	ParentHash   common.Hash `json:"parentHash"`
-	Coinbase     common.Name `json:"miner"`
-	Root         common.Hash `json:"stateRoot"`
-	TxsRoot      common.Hash `json:"transactionsRoot"`
-	ReceiptsRoot common.Hash `json:"receiptsRoot"`
-	Bloom        Bloom       `json:"logsBloom"`
-	Difficulty   *big.Int    `json:"difficulty"`
-	Number       *big.Int    `json:"number"`
-	GasLimit     uint64      `json:"gasLimit"`
-	GasUsed      uint64      `json:"gasUsed"`
-	Time         *big.Int    `json:"timestamp"`
-	Extra        []byte      `json:"extraData"`
+	ParentHash           common.Hash `json:"parentHash"`
+	Coinbase             common.Name `json:"miner"`
+	ProposedIrreversible uint64      `json:"proposedIrreversible"`
+	Root                 common.Hash `json:"stateRoot"`
+	TxsRoot              common.Hash `json:"transactionsRoot"`
+	ReceiptsRoot         common.Hash `json:"receiptsRoot"`
+	Bloom                Bloom       `json:"logsBloom"`
+	Difficulty           *big.Int    `json:"difficulty"`
+	Number               *big.Int    `json:"number"`
+	GasLimit             uint64      `json:"gasLimit"`
+	GasUsed              uint64      `json:"gasUsed"`
+	Time                 *big.Int    `json:"timestamp"`
+	Extra                []byte      `json:"extraData"`
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its

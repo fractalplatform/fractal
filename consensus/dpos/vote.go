@@ -112,7 +112,7 @@ func (sys *System) UpdateProducer(producer string, url string, stake *big.Int) e
 	if err != nil {
 		return err
 	}
-	if sys.isdpos() && new(big.Int).Add(gstate.TotalQuantity, q).Cmp(sys.config.ActivatedMinQuantity) < 0 {
+	if sys.isdpos(gstate) && new(big.Int).Add(gstate.TotalQuantity, q).Cmp(sys.config.ActivatedMinQuantity) < 0 {
 		return fmt.Errorf("insufficient actived stake")
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
@@ -157,7 +157,7 @@ func (sys *System) UnregProducer(producer string) error {
 		if err != nil {
 			return err
 		}
-		if sys.isdpos() {
+		if sys.isdpos(gstate) {
 			if cnt, err := sys.ProducersSize(); err != nil {
 				return err
 			} else if uint64(cnt) <= sys.config.consensusSize() {
@@ -338,7 +338,7 @@ func (sys *System) unvoteProducer(voter string) error {
 	if err != nil {
 		return err
 	}
-	if sys.isdpos() && new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
+	if sys.isdpos(gstate) && new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
 		return fmt.Errorf("insufficient actived stake")
 	}
 	stake := new(big.Int).Mul(vote.Quantity, sys.config.unitStake())
@@ -369,7 +369,7 @@ func (sys *System) onblock(height uint64) error {
 		return err
 	}
 	ngstate := &globalState{
-		Height: height + 1,
+		Height:                          height + 1,
 		ActivatedProducerSchedule:       gstate.ActivatedProducerSchedule,
 		ActivatedProducerScheduleUpdate: gstate.ActivatedProducerScheduleUpdate,
 		ActivatedTotalQuantity:          gstate.ActivatedTotalQuantity,
@@ -427,13 +427,11 @@ func (sys *System) updateElectedProducers(timestamp uint64) error {
 	return sys.SetState(gstate)
 }
 
-func (sys *System) isdpos() bool {
-	if size, _ := sys.ProducersSize(); uint64(size) < sys.config.consensusSize() {
-		return false
+func (sys *System) isdpos(gstate *globalState) bool {
+	for _, producer := range gstate.ActivatedProducerSchedule {
+		if strings.Compare(producer, sys.config.SystemName) != 0 {
+			return true
+		}
 	}
-	gstate, _ := sys.GetState(LastBlockHeight)
-	if gstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) < 0 {
-		return false
-	}
-	return true
+	return false
 }
