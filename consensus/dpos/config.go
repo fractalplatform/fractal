@@ -48,21 +48,21 @@ var DefaultConfig = &Config{
 // Config dpos configures
 type Config struct {
 	// consensus fileds
-	MaxURLLen            uint64   // url length
-	UnitStake            *big.Int // state unit
-	ProducerMinQuantity  *big.Int // min quantity
-	VoterMinQuantity     *big.Int // min quantity
-	ActivatedMinQuantity *big.Int // min active quantity
-	BlockInterval        uint64
-	BlockFrequency       uint64
-	ProducerScheduleSize uint64
-	DelayEcho            uint64
-	AccountName          string
-	SystemName           string
-	SystemURL            string
-	ExtraBlockReward     *big.Int
-	BlockReward          *big.Int
-	Decimals             uint64
+	MaxURLLen            uint64   `json:"maxURLLen"`            // url length
+	UnitStake            *big.Int `json:"unitStake"`            // state unit
+	ProducerMinQuantity  *big.Int `json:"producerMinQuantity"`  // min quantity
+	VoterMinQuantity     *big.Int `json:"voterMinQuantity"`     // min quantity
+	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity"` // min active quantity
+	BlockInterval        uint64   `json:"blockInterval"`
+	BlockFrequency       uint64   `json:"blockFrequency"`
+	ProducerScheduleSize uint64   `json:"producerScheduleSize"`
+	DelayEcho            uint64   `json:"delayEcho"`
+	AccountName          string   `json:"accountName"`
+	SystemName           string   `json:"systemName"`
+	SystemURL            string   `json:"systemURL"`
+	ExtraBlockReward     *big.Int `json:"extraBlockReward"`
+	BlockReward          *big.Int `json:"blockReward"`
+	Decimals             uint64   `json:"decimals"`
 
 	// cache files
 	decimal    atomic.Value

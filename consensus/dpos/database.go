@@ -52,26 +52,26 @@ type IDB interface {
 }
 
 type producerInfo struct {
-	Name          string   // producer name
-	URL           string   // producer url
-	Quantity      *big.Int // producer stake quantity
-	TotalQuantity *big.Int // producer total stake quantity
-	Height        uint64   // timestamp
+	Name          string   `json:"name"`          // producer name
+	URL           string   `json:"url"`           // producer url
+	Quantity      *big.Int `json:"quantity"`      // producer stake quantity
+	TotalQuantity *big.Int `json:"totalQuantity"` // producer total stake quantity
+	Height        uint64   `json:"height"`        // timestamp
 }
 
 type voterInfo struct {
-	Name     string   // voter name
-	Producer string   // producer approved by this voter
-	Quantity *big.Int // stake approved by this voter
-	Height   uint64   // timestamp
+	Name     string   `json:"name"`     // voter name
+	Producer string   `json:"producer"` // producer approved by this voter
+	Quantity *big.Int `json:"quantity"` // stake approved by this voter
+	Height   uint64   `json:"height"`   // timestamp
 }
 
 type globalState struct {
-	Height                          uint64   // block height
-	ActivatedProducerScheduleUpdate uint64   // update time
-	ActivatedProducerSchedule       []string // producers
-	ActivatedTotalQuantity          *big.Int // the sum of activate producer votes
-	TotalQuantity                   *big.Int // the sum of all producer votes
+	Height                          uint64   `json:"height"`                          // block height
+	ActivatedProducerScheduleUpdate uint64   `json:"activatedProducerScheduleUpdate"` // update time
+	ActivatedProducerSchedule       []string `json:"activatedProducerSchedule"`       // producers
+	ActivatedTotalQuantity          *big.Int `json:"activatedTotalQuantity"`          // the sum of activate producer votes
+	TotalQuantity                   *big.Int `json:"totalQuantity"`                   // the sum of all producer votes
 }
 
 type producerInfoArray []*producerInfo
