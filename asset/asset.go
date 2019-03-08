@@ -20,6 +20,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
@@ -27,7 +28,7 @@ import (
 )
 
 //AssetManager is used to access asset
-var assetManagerName string
+var assetManagerName = params.DefaultChainconfig.SysName.String()
 
 var (
 	assetCountPrefix  = "assetCount"
@@ -39,15 +40,14 @@ type Asset struct {
 	sdb *state.StateDB
 }
 
-//New create Asset
+//NewAsset New create Asset
 func NewAsset(sdb *state.StateDB) *Asset {
 	asset := Asset{
 		sdb: sdb,
 	}
-	if len(params.DefaultChainconfig.AssetManager) > 0 {
-		assetManagerName = params.DefaultChainconfig.AssetManager.String()
-	} else {
-		assetManagerName = "ftassetmanager"
+	if len(assetManagerName) == 0 {
+		log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
+		return nil
 	}
 	asset.InitAssetCount()
 	return &asset
@@ -81,7 +81,7 @@ func (a *Asset) GetAssetObjectByTime(assetID uint64, time uint64) (*AssetObject,
 	return &asset, nil
 }
 
-//get assset id by asset name
+//GetAssetIdByName get assset id by asset name
 func (a *Asset) GetAssetIdByName(assetName string) (uint64, error) {
 	if assetName == "" {
 		return 0, ErrAssetNameEmpty
@@ -100,7 +100,7 @@ func (a *Asset) GetAssetIdByName(assetName string) (uint64, error) {
 	return assetID, nil
 }
 
-//get asset founder by id
+//GetAssetFounderById get asset founder by id
 func (a *Asset) GetAssetFounderById(id uint64) (common.Name, error) {
 	ao, err := a.GetAssetObjectById(id)
 	if err != nil {
@@ -109,7 +109,7 @@ func (a *Asset) GetAssetFounderById(id uint64) (common.Name, error) {
 	return ao.GetAssetFounder(), nil
 }
 
-//get asset by asset id
+//GetAssetObjectById get asset by asset id
 func (a *Asset) GetAssetObjectById(id uint64) (*AssetObject, error) {
 	if id == 0 {
 		return nil, ErrAssetIdInvalid
@@ -161,7 +161,7 @@ func (a *Asset) InitAssetCount() {
 	return
 }
 
-//
+//GetAllAssetObject get all asset
 func (a *Asset) GetAllAssetObject() ([]*AssetObject, error) {
 	assetCount, err := a.getAssetCount()
 	if err != nil {
@@ -180,7 +180,7 @@ func (a *Asset) GetAllAssetObject() ([]*AssetObject, error) {
 	return assets, nil
 }
 
-//get asset object by name
+//GetAssetObjectByName get asset object by name
 func (a *Asset) GetAssetObjectByName(assetName string) (*AssetObject, error) {
 	assetID, err := a.GetAssetIdByName(assetName)
 	if err != nil {
@@ -189,7 +189,7 @@ func (a *Asset) GetAssetObjectByName(assetName string) (*AssetObject, error) {
 	return a.GetAssetObjectById(assetID)
 }
 
-//add new asset object and store into database
+//addNewAssetObject add new asset object and store into database
 func (a *Asset) addNewAssetObject(ao *AssetObject) (uint64, error) {
 	if ao == nil {
 		return 0, ErrAssetObjectEmpty
@@ -223,7 +223,7 @@ func (a *Asset) addNewAssetObject(ao *AssetObject) (uint64, error) {
 	return assetCount, nil
 }
 
-//add an asset and store into database
+//SetAssetObject store an asset into database
 func (a *Asset) SetAssetObject(ao *AssetObject) error {
 	if ao == nil {
 		return ErrAssetObjectEmpty
@@ -240,7 +240,7 @@ func (a *Asset) SetAssetObject(ao *AssetObject) error {
 	return nil
 }
 
-//Issue Asset Object
+//IssueAssetObject Issue Asset Object
 func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 	if ao == nil {
 		return 0, ErrAssetObjectEmpty
@@ -259,7 +259,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 	return assetID, nil
 }
 
-//issue asset
+//IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) error {
 	assetId, err := a.GetAssetIdByName(assetName)
 	if err != nil {
@@ -279,7 +279,7 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 	return nil
 }
 
-//destroy asset
+//DestroyAsset destroy asset
 func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {
 		return ErrAccountNameNull
@@ -297,13 +297,12 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *bi
 	if asset == nil {
 		return ErrAssetNotExist
 	}
-	if asset.GetAssetOwner() != accountName {
-		return ErrOwnerMismatch
-	}
 
-	//if asset.GetAssetAmount().Cmp(amount) < 0{
-	//	return ErrAssetAmountZero
-	//}
+	//everyone can destory asset
+	// if asset.GetAssetOwner() != accountName {
+	// 	return ErrOwnerMismatch
+	// }
+
 	var total *big.Int
 	if total = new(big.Int).Sub(asset.GetAssetAmount(), amount); total.Cmp(big.NewInt(0)) < 0 {
 		return ErrDestroyLimit
@@ -316,7 +315,7 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *bi
 	return nil
 }
 
-//increase asset
+//IncreaseAsset increase asset, upperlimit == 0 means no upper limit
 func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {
 		return ErrAccountNameNull
@@ -337,16 +336,23 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 	if asset.GetAssetOwner() != accountName {
 		return ErrOwnerMismatch
 	}
+
+	//check AddIssue > UpperLimit
 	var AddIssue *big.Int
-	if AddIssue = new(big.Int).Add(asset.GetAssetAddIssue(), amount); AddIssue.Cmp(asset.GetUpperLimit()) > 0 {
+	AddIssue = new(big.Int).Add(asset.GetAssetAddIssue(), amount)
+	if asset.GetUpperLimit().Cmp(big.NewInt(0)) > 0 && AddIssue.Cmp(asset.GetUpperLimit()) > 0 {
 		return ErrUpperLimit
 	}
 	asset.SetAssetAddIssue(AddIssue)
+
+	//check Amount > UpperLimit
 	var total *big.Int
-	if total = new(big.Int).Add(asset.GetAssetAmount(), amount); total.Cmp(asset.GetUpperLimit()) > 0 {
+	total = new(big.Int).Add(asset.GetAssetAmount(), amount)
+	if asset.GetUpperLimit().Cmp(big.NewInt(0)) > 0 && total.Cmp(asset.GetUpperLimit()) > 0 {
 		return ErrUpperLimit
 	}
 	asset.SetAssetAmount(total)
+	//save
 	err = a.SetAssetObject(asset)
 	if err != nil {
 		return err
@@ -354,7 +360,30 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 	return nil
 }
 
-//change asset owner
+//SetAssetNewOwner change asset owner
+func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner common.Name, founderName common.Name) error {
+	if accountName == "" {
+		return ErrAccountNameNull
+	}
+	if assetId == 0 {
+		return ErrAssetIdInvalid
+	}
+	asset, err := a.GetAssetObjectById(assetId)
+	if err != nil {
+		return err
+	}
+	if asset == nil {
+		return ErrAssetNotExist
+	}
+	if asset.GetAssetOwner() != accountName {
+		return ErrOwnerMismatch
+	}
+	asset.SetAssetOwner(Owner)
+	asset.SetAssetFounder(founderName)
+	return a.SetAssetObject(asset)
+}
+
+//SetAssetNewOwner change asset owner
 func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwner common.Name) error {
 	if accountName == "" {
 		return ErrAccountNameNull
@@ -376,24 +405,24 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 	return a.SetAssetObject(asset)
 }
 
-//asset founder
-func (a *Asset) SetAssetFounder(accountName common.Name, assetId uint64, founderName common.Name) error {
-	if accountName == "" {
-		return ErrAccountNameNull
-	}
-	if assetId == 0 {
-		return ErrAssetIdInvalid
-	}
-	asset, err := a.GetAssetObjectById(assetId)
-	if err != nil {
-		return err
-	}
-	if asset == nil {
-		return ErrAssetNotExist
-	}
-	if asset.GetAssetOwner() != accountName {
-		return ErrOwnerMismatch
-	}
-	asset.SetAssetFounder(founderName)
-	return a.SetAssetObject(asset)
-}
+//SetAssetFounder asset founder
+// func (a *Asset) SetAssetFounder(accountName common.Name, assetId uint64, founderName common.Name) error {
+// 	if accountName == "" {
+// 		return ErrAccountNameNull
+// 	}
+// 	if assetId == 0 {
+// 		return ErrAssetIdInvalid
+// 	}
+// 	asset, err := a.GetAssetObjectById(assetId)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	if asset == nil {
+// 		return ErrAssetNotExist
+// 	}
+// 	if asset.GetAssetOwner() != accountName {
+// 		return ErrOwnerMismatch
+// 	}
+// 	asset.SetAssetFounder(founderName)
+// 	return a.SetAssetObject(asset)
+// }

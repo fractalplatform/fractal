@@ -154,6 +154,18 @@ func (aapi *AccountAPI) GetAssetInfoByID(ctx context.Context, assetID uint64) (*
 	return acct.GetAssetInfoByID(assetID)
 }
 
+//GetAssetAmountByTime
+func (aapi *AccountAPI) GetAssetAmountByTime(ctx context.Context, assetID uint64, time uint64) (*big.Int, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+	if am == nil {
+		return nil, ErrGetAccounManagerErr
+	}
+	return am.GetAssetAmountByTime(assetID, time)
+}
+
 //GetAccountBalanceByTime
 func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()

@@ -806,7 +806,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 		gas += params.CallStipend
 	}
 
-	action := types.NewAction(types.Transfer, contract.Name(), toName, 0, evm.AssetID, gas, value, args)
+	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, evm.AssetID, gas, value, args)
 
 	ret, returnGas, err := evm.Call(contract, action, gas)
 	if err != nil {
@@ -840,7 +840,7 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 		gas += params.CallStipend
 	}
 	// todo
-	action := types.NewAction(types.Transfer, contract.Name(), toName, 0, evm.AssetID, gas, value, args)
+	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, evm.AssetID, gas, value, args)
 
 	ret, returnGas, err := evm.CallCode(contract, action, gas)
 	if err != nil {
@@ -1013,7 +1013,7 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		gas += params.CallStipend
 	}
 
-	action := types.NewAction(types.Transfer, contract.Name(), toName, 0, assetID, gas, value, args)
+	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, assetID, gas, value, args)
 
 	ret, returnGas, err := evm.Call(contract, action, gas)
 	if err != nil {

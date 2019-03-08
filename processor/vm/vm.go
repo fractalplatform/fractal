@@ -28,7 +28,6 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 type ContractAction struct {
@@ -160,13 +159,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		return nil, gas, ErrInsufficientBalance
 	}
 
-	var ca ContractAction
-	err = rlp.DecodeBytes(action.Data(), &ca)
-	if err != nil {
-		return nil, 0, err
-	}
-	toName := ca.AccountName
-	//toName := action.Recipient()
+	toName := action.Recipient()
 
 	var (
 		to       = AccountRef(toName)
@@ -222,7 +215,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		}()
 	}
 
-	ret, err = run(evm, contract, ca.Payload)
+	ret, err = run(evm, contract, action.Data())
 	runGas := gas - contract.Gas
 
 	if runGas > 0 && len(contractFounder.String()) > 0 {
@@ -479,13 +472,13 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
-	var ca ContractAction
-	err = rlp.DecodeBytes(action.Data(), &ca)
-	if err != nil {
-		return nil, 0, err
-	}
-	contractName := ca.AccountName
-	//contractName := action.Recipient()
+	// var ca ContractAction
+	// err = rlp.DecodeBytes(action.Data(), &ca)
+	// if err != nil {
+	// 	return nil, 0, err
+	// }
+	// contractName := ca.AccountName
+	contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 
 	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
@@ -503,7 +496,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// E The contract is a scoped evmironment for this execution context
 	// only.
 	contract := NewContract(caller, AccountRef(contractName), action.Value(), gas, evm.AssetID)
-	contract.SetCallCode(&contractName, crypto.Keccak256Hash(ca.Payload), ca.Payload)
+	contract.SetCallCode(&contractName, crypto.Keccak256Hash(action.Data()), action.Data())
 
 	if evm.vmConfig.NoRecursion && evm.depth > 0 {
 		return nil, gas, nil
