@@ -24,7 +24,11 @@ type DetailTx struct {
 }
 
 type InternalTx struct {
-	Action     *Action
+	InterlnalLogs []*InternalLog
+}
+
+type InternalLog struct {
+	Action     *RPCAction
 	ActionType string
 	GasUsed    uint64
 	GasLimit   uint64
@@ -36,4 +40,5 @@ type BlockAndResult struct {
 	Block     *Block
 	Receipts  []*Receipt
 	DetailTxs []*DetailTx
+	Hash      common.Hash
 }

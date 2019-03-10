@@ -95,7 +95,7 @@ type EVM struct {
 	callGasTemp uint64
 
 	FounderGasMap map[common.Name]int64
-	InternalTxs   []*types.InternalTx
+	InternalTxs   []*types.InternalLog
 }
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should

@@ -136,6 +136,7 @@ func (b *APIBackend) GetBlockAndResult(ctx context.Context, blockNr rpc.BlockNum
 		Block:     block,
 		Receipts:  receipts,
 		DetailTxs: txDetails,
+		Hash:      block.Hash(),
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"math/big"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
@@ -141,7 +142,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			vmerrstr = vmerr.Error()
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, Error: vmerrstr})
-		internals = append(internals, vmenv.InternalTxs...)
+		internals = append(internals, &types.InternalTx{vmenv.InternalTxs})
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
