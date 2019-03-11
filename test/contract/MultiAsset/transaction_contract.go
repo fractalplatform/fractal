@@ -198,7 +198,7 @@ func sendIssueTransaction() {
 func sendFulfillContractTransaction() {
 	jww.INFO.Println("test sendFulfillContractTransaction... ")
 	nonce++
-	sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
+	sendTransferTx(types.CallContract, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
 }
 
 func sendTransferTransaction() {
@@ -208,18 +208,10 @@ func sendTransferTransaction() {
 		jww.INFO.Println("sendDeployContractTransaction formCreateContractInput error ... ", err)
 		return
 	}
-	ca := &vm.ContractAction{
-		AccountName: contractAddr,
-		Payload:     input,
-	}
-	b, err := rlp.EncodeToBytes(ca)
-	if err != nil {
-		return
-	}
 
 	for {
 		nonce++
-		sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(0), b)
+		sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(0), input)
 	}
 }
 

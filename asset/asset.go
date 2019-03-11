@@ -28,7 +28,7 @@ import (
 )
 
 //AssetManager is used to access asset
-var assetManagerName = params.DefaultChainconfig.SysName.String()
+var assetManagerName string
 
 var (
 	assetCountPrefix  = "assetCount"
@@ -45,10 +45,18 @@ func NewAsset(sdb *state.StateDB) *Asset {
 	asset := Asset{
 		sdb: sdb,
 	}
-	if len(assetManagerName) == 0 {
-		log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
-		return nil
+
+	if len(params.ChainConfig.SysName.String()) > 0 {
+		if common.IsValidName(params.ChainConfig.SysName) {
+			assetManagerName = params.ChainConfig.SysName.String()
+		} else {
+			log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
+			return nil
+		}
+	} else {
+		assetManagerName = params.DefaultChainconfig.SysName.String()
 	}
+
 	asset.InitAssetCount()
 	return &asset
 }

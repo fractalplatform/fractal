@@ -31,8 +31,7 @@ import (
 
 var acctInfoPrefix = "AcctInfo"
 
-//var acctManagerName = params.DefaultChainconfig.AccountManager.String()
-var acctManagerName = params.DefaultChainconfig.SysName.String()
+var acctManagerName string
 
 type AccountAction struct {
 	AccountName common.Name   `json:"accountName,omitempty"`
@@ -58,9 +57,16 @@ func NewAccountManager(db *state.StateDB) (*AccountManager, error) {
 	if db == nil {
 		return nil, ErrNewAccountErr
 	}
-	if len(acctManagerName) == 0 {
-		log.Error("NewAccountManager error", "name", ErrAccountManagerNotExist, acctManagerName)
-		return nil, ErrAccountManagerNotExist
+
+	if len(params.ChainConfig.SysName) > 0 {
+		if common.IsValidName(params.ChainConfig.SysName) {
+			acctManagerName = params.ChainConfig.SysName.String()
+		} else {
+			log.Error("NewAccountManager error", "name", ErrAccountManagerNotExist, acctManagerName)
+			return nil, ErrAccountManagerNotExist
+		}
+	} else {
+		acctManagerName = params.DefaultChainconfig.SysName.String()
 	}
 	return &AccountManager{
 		sdb: db,
