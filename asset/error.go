@@ -31,5 +31,5 @@ var (
 	ErrDestroyLimit   = errors.New("asset destroy exceeding the lower limit")
 	ErrAssetCountNotExist = errors.New("asset total count not exist")
 	ErrAssetIdInvalid     = errors.New("asset id invalid")
-	//ErrAddNewAssetId      = errors.New("add new asset return id invalid")
+	ErrAssetManagerNotExist = errors.New("asset manager name not exist")
 )
