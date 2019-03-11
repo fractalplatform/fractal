@@ -150,6 +150,8 @@ func (n *Node) Start() error {
 			Wallet:   n.wallet,
 			P2P:      n.p2pServer,
 		}
+
+		fmt.Println("len(services) = ", len(services))
 		for kind, s := range services { // copy needed for threaded access
 			ctx.services[kind] = s
 		}
@@ -159,6 +161,7 @@ func (n *Node) Start() error {
 			return err
 		}
 		kind := reflect.TypeOf(service)
+		fmt.Printf("kind(%T) = %v\n", kind, kind)
 		if _, exists := services[kind]; exists {
 			return fmt.Errorf("duplicate service: %v", kind)
 		}
@@ -171,7 +174,10 @@ func (n *Node) Start() error {
 
 	// Start each of the services
 	started := []reflect.Type{}
+	fmt.Println("len(services) = ", len(services))
 	for kind, service := range services {
+		fmt.Printf("service(%T) = %v\n", service, service)
+
 		// Start the next service, stopping all previous upon failure
 		if err := service.Start(); err != nil {
 			for _, kind := range started {
@@ -217,11 +223,14 @@ func (n *Node) Stop() error {
 	failure := &StopError{
 		Services: make(map[reflect.Type]error),
 	}
+
+	fmt.Println("len(n.services) = ", len(n.services))
 	for kind, service := range n.services {
 		if err := service.Stop(); err != nil {
 			failure.Services[kind] = err
 		}
 	}
+	fmt.Println("len(n.services) = ", len(n.services))
 
 	n.p2pServer.Stop()
 
