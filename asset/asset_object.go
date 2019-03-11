@@ -27,7 +27,7 @@ type AssetObject struct {
 	AssetName  string      `json:"assetName,omitempty"`
 	Symbol     string      `json:"symbol,omitempty"`
 	Amount     *big.Int    `json:"amount,omitempty"`
-	Decimals   uint64      `json:"decimals,omitempty"`
+	Decimals   uint64      `json:"decimals"`
 	Founder    common.Name `json:"founder,omitempty"`
 	Owner      common.Name `json:"owner,omitempty"`
 	AddIssue   *big.Int    `json:"addIssue,omitempty"`

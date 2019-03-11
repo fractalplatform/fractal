@@ -19,6 +19,7 @@ package accountmanager
 import (
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -173,6 +174,7 @@ func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	if p, find := a.binarySearch(assetID); find == true {
 		return a.Balances[p].Balance, nil
 	}
+	log.Info("asset not exist", "account", "asset", ErrAccountAssetNotExist, a.AcctName, assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
 

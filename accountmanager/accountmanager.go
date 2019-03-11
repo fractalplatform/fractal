@@ -122,7 +122,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrAccountIsExist
 	}
 	var fname common.Name
-	if len(founderName.String()) > 0 {
+	if len(founderName.String()) > 0 && founderName != accountName {
 		f, err := am.GetAccountByName(founderName)
 		if err != nil {
 			return err
@@ -431,17 +431,6 @@ func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint
 		return nil, ErrAccountNotExist
 	}
 	return acct.GetBalanceByID(assetID)
-	//if time == 0 {
-	//	//current
-	//	return acct.GetBalanceByID(assetID)
-	//}else {
-	//	//spec time balance
-	//	if acct, err = am.GetAccountByTime(accountName,time);err!= nil{
-	//		return nil,err
-	//	}
-	//	return acct.GetBalanceByID(assetID)
-	//}
-
 }
 
 //Get Account Founder
