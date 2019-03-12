@@ -51,24 +51,21 @@ func NewBlockValidator(blockchain ChainContext, engine consensus.IEngine) *Block
 // stock engine.
 func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	// Short circuit if the header is known, or it's parent not
-	number := header.Number.Uint64()
-	if v.bc.GetHeader(header.Hash(), number) != nil {
-		return nil
+	if v.bc.HasBlockAndState(header.Hash(), header.Number.Uint64()) {
+		return ErrKnownBlock
 	}
 
+	number := header.Number.Uint64()
 	parent := v.bc.GetHeader(header.ParentHash, number-1)
-	if parent == nil {
-		return ErrUnknownAncestor
-	}
 
 	// Ensure that the header's extra-data section is of a reasonable size
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
 
-	// if header.Time.Cmp(big.NewInt(time.Now().Add(allowedFutureBlockTime).Unix())) > 0 {
-	// 	return ErrFutureBlock
-	// }
+	if header.Time.Cmp(big.NewInt(time.Now().Add(allowedFutureBlockTime).UnixNano())) > 0 {
+		return ErrFutureBlock
+	}
 
 	if header.Time.Cmp(parent.Time) <= 0 {
 		return errZeroBlockTime
@@ -103,6 +100,14 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	if diff := new(big.Int).Sub(header.Number, parent.Number); diff.Cmp(big.NewInt(1)) != 0 {
 		return ErrInvalidNumber
 	}
+
+	if !v.bc.HasBlockAndState(header.ParentHash, header.Number.Uint64()-1) {
+		if !v.bc.HasBlock(header.ParentHash, header.Number.Uint64()-1) {
+			return ErrUnknownAncestor
+		}
+		return ErrPrunedAncestor
+	}
+
 	// Verify the engine specific seal securing the block
 	if seal {
 		if err := v.engine.VerifySeal(v.bc, header); err != nil {
@@ -113,26 +118,12 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	return nil
 }
 
-// ValidateBody validates the given block's uncles and verifies the the block
-// header's transaction and uncle roots. The headers are assumed to be already
-// validated at this point.
+// ValidateBody verifies the the block header's transaction roots.
+// The headers are assumed to be already validated at this point.
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
-	// Check whether the block's known, and if not, that it's linkable
-	if v.bc.HasBlockAndState(block.Hash(), block.NumberU64()) {
-		return ErrKnownBlock
-	}
-
-	if !v.bc.HasBlockAndState(block.ParentHash(), block.NumberU64()-1) {
-		if !v.bc.HasBlock(block.ParentHash(), block.NumberU64()-1) {
-			return ErrUnknownAncestor
-		}
-		return ErrPrunedAncestor
-	}
-
 	// Header validity is known at this point, check the uncles and transactions
-	header := block.Header()
-	if hash := types.DeriveTxsMerkleRoot(block.Txs); hash != header.TxsRoot {
-		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, header.TxsRoot)
+	if hash := types.DeriveTxsMerkleRoot(block.Txs); hash != block.TxHash() {
+		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, block.TxHash())
 	}
 	return nil
 }

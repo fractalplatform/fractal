@@ -819,9 +819,6 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		// if action.Value().Cmp(big.NewInt(0)) > 0 {
-		// 	return ErrAmountMustZero
-		// }
 		if err := am.UpdateAccount(action.Sender(), acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
@@ -837,9 +834,6 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		// if action.Value().Cmp(big.NewInt(0)) > 0 {
-		// 	return ErrAmountMustZero
-		// }
 		if err := am.IssueAsset(&asset); err != nil {
 			return err
 		}
@@ -850,9 +844,6 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		// if action.Value().Cmp(big.NewInt(0)) > 0 {
-		// 	return ErrAmountMustZero
-		// }
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return err
 		}
@@ -877,9 +868,6 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		// if action.Value().Cmp(big.NewInt(0)) > 0 {
-		// 	return ErrAmountMustZero
-		// }
 		acct, err := am.GetAccountByName(asset.GetAssetOwner())
 		if err != nil {
 			return err

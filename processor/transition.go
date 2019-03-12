@@ -195,6 +195,11 @@ func (st *StateTransition) distributeGas() error {
 	if totalGas > int64(st.gasUsed()) {
 		return fmt.Errorf("calc wrong gas used")
 	}
+	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
+		st.evm.FounderGasMap[st.evm.Coinbase] = int64(st.gasUsed()) - totalGas
+	} else {
+		st.evm.FounderGasMap[st.evm.Coinbase] += int64(st.gasUsed()) - totalGas
+	}
 	st.account.AddAccountBalanceByID(st.evm.Coinbase, st.assetID, new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas))))
 	return nil
 }

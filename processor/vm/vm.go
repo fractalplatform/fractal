@@ -30,11 +30,6 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type ContractAction struct {
-	AccountName common.Name `json:"accountName,omitempty"`
-	Payload     []byte      `json:"payload,omitempty"`
-}
-
 type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
@@ -472,12 +467,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
-	// var ca ContractAction
-	// err = rlp.DecodeBytes(action.Data(), &ca)
-	// if err != nil {
-	// 	return nil, 0, err
-	// }
-	// contractName := ca.AccountName
+
 	contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 

@@ -172,15 +172,7 @@ func sendDeployContractTransaction() {
 		return
 	}
 	nonce, _ = testcommon.GetNonce(from)
-	ca := &vm.ContractAction{
-		AccountName: contractAddr,
-		Payload:     input,
-	}
-	b, err := rlp.EncodeToBytes(ca)
-	if err != nil {
-		return
-	}
-	sendTransferTx(types.CreateContract, from, contractAddr, nonce, assetID, big.NewInt(0), b)
+	sendTransferTx(types.CreateContract, from, contractAddr, nonce, assetID, big.NewInt(0), input)
 }
 
 func sendIssueTransaction() {

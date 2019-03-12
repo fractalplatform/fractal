@@ -32,9 +32,8 @@ type API struct {
 }
 
 type Irreversible_Ret struct {
-	ProposedIrreversible uint64
-	LastIrreversible     uint64
-	BftIrreversible      uint64
+	ProposedIrreversible uint64 `json:"proposedIrreversible"`
+	BftIrreversible      uint64 `json:"bftIrreversible"`
 }
 
 func (api *API) Info() (interface{}, error) {
@@ -43,10 +42,8 @@ func (api *API) Info() (interface{}, error) {
 
 func (api *API) Irreversible() (interface{}, error) {
 	ret := &Irreversible_Ret{}
-
-	ret.ProposedIrreversible = api.dpos.proposedIrreversibleNum
-	ret.LastIrreversible = api.dpos.calcLastIrreversible()
-	ret.BftIrreversible = api.dpos.bftIrreversibleNum
+	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain)
+	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
 
 	return ret, nil
 }

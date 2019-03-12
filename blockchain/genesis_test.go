@@ -53,9 +53,6 @@ func TestSetupGenesis(t *testing.T) {
 		oldcustomghash = common.HexToHash("0x9af2210f9cf6162dfba5ada0bd7960c896b92035c1ae5e87e9e517991a8fc3f7")
 	)
 	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
-	// db1 := fdb.NewMemDatabase()
-	// _, _, h, _ := SetupGenesisBlock(db1, &oldcustomg)
-	// fmt.Printf("oldcustomg hash=%x", h)
 
 	tests := []struct {
 		name       string
@@ -102,8 +99,6 @@ func TestSetupGenesis(t *testing.T) {
 					return nil, nil, common.Hash{}, err
 				}
 				fmt.Println("=====>SetupGenesisBlock")
-				//_, _, h, _ := SetupGenesisBlock(db, &customg)
-				//fmt.Printf("calc hash=%x", h)
 				return SetupGenesisBlock(db, &customg)
 			},
 			wantErr: &GenesisMismatchError{
