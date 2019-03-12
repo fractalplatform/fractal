@@ -430,3 +430,13 @@ func (n *Node) stopWS() {
 		n.wsHandler = nil
 	}
 }
+
+func (n *Node) GetNodeConfig() *ServiceContext {
+	ctx := &ServiceContext{
+		config:   n.config,
+		services: make(map[reflect.Type]Service),
+		Wallet:   n.wallet,
+		P2P:      n.p2pServer,
+	}
+	return ctx
+}

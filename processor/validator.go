@@ -57,6 +57,9 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 
 	number := header.Number.Uint64()
 	parent := v.bc.GetHeader(header.ParentHash, number-1)
+	if parent == nil {
+		return errParentBlock
+	}
 
 	// Ensure that the header's extra-data section is of a reasonable size
 	if uint64(len(header.Extra)) > params.MaximumExtraDataSize {

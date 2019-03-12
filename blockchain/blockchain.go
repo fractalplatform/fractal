@@ -18,6 +18,7 @@ package blockchain
 
 import (
 	"fmt"
+	"io"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -993,4 +994,35 @@ func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
 func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
 	return params.CalcGasLimit(parent)
+}
+// Export writes the active chain to the given writer.
+func (bc *BlockChain) Export(w io.Writer) error {
+	return bc.ExportN(w, uint64(0), bc.CurrentBlock().NumberU64())
+}
+
+// ExportN writes a subset of the active chain to the given writer.
+func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
+	bc.chainmu.RLock()
+	defer bc.chainmu.RUnlock()
+
+	if first > last {
+		return fmt.Errorf("export failed: first (%d) is greater than last (%d)", first, last)
+	}
+	log.Info("Exporting batch of blocks", "count", last-first+1)
+
+	start, reported := time.Now(), time.Now()
+	for nr := first; nr <= last; nr++ {
+		block := bc.GetBlockByNumber(nr)
+		if block == nil {
+			return fmt.Errorf("export failed on #%d: not found", nr)
+		}
+		if err := block.ExtEncodeRLP(w); err != nil {
+			return err
+		}
+		if time.Since(reported) >= 8*time.Second {
+			log.Info("Exporting blocks", "exported", block.NumberU64()-first, "elapsed", common.PrettyDuration(time.Since(start)))
+			reported = time.Now()
+		}
+	}
+	return nil
 }

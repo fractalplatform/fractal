@@ -229,7 +229,9 @@ func TestSnapshot(t *testing.T) {
 	rawdb.WriteCanonicalHash(batch, hash, 0)
 	batch.Write()
 
-	go SnapShotblk(db, 3, 10)
+	snapshot := NewSnapshot(db, 3, 10)
+
+	go snapshot.SnapShotblk()
 
 	for i := 1; i < 10; i++ {
 
@@ -275,4 +277,52 @@ func TestSnapshot(t *testing.T) {
 	if bytes.Equal(value2, []byte(strconv.Itoa(100*4))) == false {
 		t.Error("Test snapshot failed")
 	}
+
+	//
+	err = state.StartGetAccountInfo(time)
+	if err != nil {
+		t.Error("Test snapshot get account failed")
+	}
+
+	var flag bool = true
+	var accountInfo []types.AccountInfo
+	for flag {
+		accountInfo, flag = state.LookupAccountInfo()
+	}
+
+	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*6))) == false {
+		t.Error("Test snapshot get account failed")
+	}
+
+	err = state.StopGetAccountInfo()
+	if err != nil {
+		t.Error("Test snapshot get account failed")
+	}
+
+	err = state.StartGetAccountInfo(time)
+	if err != nil {
+		t.Error("Test snapshot get account failed")
+	}
+
+	//
+	err = state.StartGetAccountInfo(pretime)
+	if err != nil {
+		t.Error("Test snapshot get account failed")
+	}
+
+	flag = true
+	accountInfo = accountInfo[:0]
+	for flag {
+		accountInfo, flag = state.LookupAccountInfo()
+	}
+
+	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*4))) == false {
+		t.Error("Test snapshot get account failed")
+	}
+
+	err = state.StopGetAccountInfo()
+	if err != nil {
+		t.Error("Test snapshot get account failed")
+	}
+
 }

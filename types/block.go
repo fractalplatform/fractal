@@ -20,6 +20,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math/big"
 	"sort"
 	"sync/atomic"
@@ -58,6 +59,12 @@ type Block struct {
 	// caches
 	hash atomic.Value
 	size atomic.Value
+}
+
+// "external" block encoding. used protocol, etc.
+type extblock struct {
+	Header *Header
+	Txs    []*Transaction
 }
 
 // NewBlock creates a new block. The input data is copied,
@@ -145,6 +152,14 @@ func (b *Block) Size() common.StorageSize {
 // EncodeRLP serializes b into the RLP block format.
 func (b *Block) EncodeRLP() ([]byte, error) {
 	return rlp.EncodeToBytes(b)
+}
+
+// EncodeRLP serializes b into RLP block format.
+func (b *Block) ExtEncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extblock{
+		Header: b.Head,
+		Txs:    b.Txs,
+	})
 }
 
 // DecodeRLP decodes the block
