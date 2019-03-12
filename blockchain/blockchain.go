@@ -34,7 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const (
@@ -461,7 +461,7 @@ func (bc *BlockChain) procFutureBlocks() {
 	if len(blocks) > 0 {
 		types.BlockBy(types.Number).Sort(blocks)
 		for i := range blocks {
-			bc.InsertChain(blocks[i: i+1])
+			bc.InsertChain(blocks[i : i+1])
 		}
 	}
 }
@@ -470,7 +470,7 @@ func (bc *BlockChain) procFutureBlocks() {
 type WriteStatus byte
 
 const (
-	NonStatTy   WriteStatus = iota
+	NonStatTy WriteStatus = iota
 	CanonStatTy
 	SideStatTy
 )
@@ -654,7 +654,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 					return i, events, coalescedLogs, err
 				}
 			} else {
-				newchain, err := bc.reorgState(currentBlock, block)
+				newchain, err := bc.reorgBlock(currentBlock, block)
 				if err != nil {
 					return i, events, coalescedLogs, err
 				}
@@ -687,11 +687,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 					return i, events, coalescedLogs, err
 				}
 				continue
-			} else {
-				_, err := bc.reorgState(currentBlock, block)
-				if err != nil {
-					return i, events, coalescedLogs, err
-				}
 			}
 		}
 
@@ -736,7 +731,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 	return 0, events, coalescedLogs, nil
 }
 
-func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks, error) {
+func (bc *BlockChain) reorgBlock(oldBlock, newBlock *types.Block) (types.Blocks, error) {
 	var (
 		newChain    types.Blocks
 		oldChain    types.Blocks
@@ -756,10 +751,10 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 	}
 
 	if oldBlock == nil {
-		return nil, fmt.Errorf("Invalid old chain")
+		return nil, fmt.Errorf("reorg state not found old block , block hash: %v", oldBlock.Hash().Hex())
 	}
 	if newBlock == nil {
-		return nil, fmt.Errorf("Invalid new chain")
+		return nil, fmt.Errorf("reorg state not found new block , block hash: %v", newBlock.Hash().Hex())
 	}
 
 	for {
@@ -772,10 +767,10 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 		deletedTxs = append(deletedTxs, oldBlock.Txs...)
 		oldBlock, newBlock = bc.GetBlock(oldBlock.ParentHash(), oldBlock.NumberU64()-1), bc.GetBlock(newBlock.ParentHash(), newBlock.NumberU64()-1)
 		if oldBlock == nil {
-			return nil, fmt.Errorf("Invalid old chain")
+			return nil, fmt.Errorf("reorg state not found old block , block hash: %v", oldBlock.Hash().Hex())
 		}
 		if newBlock == nil {
-			return nil, fmt.Errorf("Invalid new chain")
+			return nil, fmt.Errorf("reorg state not found new block , block hash: %v", newBlock.Hash().Hex())
 		}
 	}
 
@@ -804,10 +799,6 @@ func (bc *BlockChain) reorgState(oldBlock, newBlock *types.Block) (types.Blocks,
 	batch.Write()
 
 	if len(oldChain) > 0 {
-		//  rollback state
-		if err := state.TransToSpecBlock(bc.db, bc.stateCache, bc.CurrentBlock().Hash(), oldBlock.Hash()); err != nil {
-			return nil, err
-		}
 		bc.currentBlock.Store(oldBlock)
 	}
 	return newChain, nil

@@ -188,12 +188,12 @@ func TestVote(t *testing.T) {
 
 	//t.Log(dpos.isdpos())
 	err = dpos.UnregProducer(producer)
-	if err == nil || err.Error() != "insufficient actived producers" {
+	if err.Error() != "already has voter" {
 		t.Errorf("wrong err: %v", err)
 	}
 
 	err = dpos.UnvoteProducer(voter)
-	if err == nil || err.Error() != "insufficient actived stake" {
+	if err != nil {
 		t.Errorf("wrong err: %v", err)
 	}
 }

@@ -27,7 +27,8 @@ import (
 func TestReceiptEncodeAndDecode(t *testing.T) {
 	testR := NewReceipt([]byte("root"), 1000, 1000)
 	testR.Logs = make([]*Log, 0)
-	testR.ActionResults = append(testR.ActionResults, &ActionResult{Status: ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)})
+	gasAllot := make([]*GasDistribution, 0)
+	testR.ActionResults = append(testR.ActionResults, &ActionResult{Status: ReceiptStatusFailed, Index: uint64(0), GasAllot: gasAllot, GasUsed: uint64(100)})
 	bytes, err := rlp.EncodeToBytes(testR)
 	if err != nil {
 		t.Fatal(err)
