@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,6 +49,9 @@ var (
 type StateDB struct {
 	db   Database
 	trie Trie
+
+	iterator *trie.Iterator
+	triehd   *trie.SecureTrie
 
 	readSet  map[string][]byte   // save old/unmodified data
 	writeSet map[string][]byte   // last modify data
@@ -90,6 +94,8 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 	return &StateDB{
 		db:         db,
 		trie:       tr,
+		iterator:   nil,
+		triehd:     nil,
 		readSet:    make(map[string][]byte),
 		writeSet:   make(map[string][]byte),
 		dirtySet:   make(map[string]struct{}),
@@ -117,6 +123,8 @@ func (s *StateDB) Reset(root common.Hash) error {
 	}
 
 	s.trie = tr
+	s.iterator = nil
+	s.triehd = nil
 	s.readSet = make(map[string][]byte)
 	s.writeSet = make(map[string][]byte)
 	s.dirtySet = make(map[string]struct{})
@@ -279,6 +287,8 @@ func (s *StateDB) Copy() *StateDB {
 	state := &StateDB{
 		db:        s.db,
 		trie:      s.trie,
+		iterator:  nil,
+		triehd:    nil,
 		readSet:   make(map[string][]byte, len(s.writeSet)),
 		writeSet:  make(map[string][]byte, len(s.writeSet)),
 		dirtySet:  make(map[string]struct{}, len(s.dirtySet)),
@@ -482,131 +492,191 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 	return stateDb, nil
 }
 
-func SnapShotblk(db fdb.Database, Ticktime, snapshotTime uint64) { //  snapshotTime uint : second
+const second = 1000000000
 
-	var curSnapshotTime uint64
+type SnapshotSt struct {
+	db           fdb.Database
+	tickTime     uint64
+	snapshotTime uint64
+	intervalTime uint64
+	stop         chan struct{}
+}
+
+func NewSnapshot(db fdb.Database, sptick, sptime uint64) *SnapshotSt {
+	snapshot := &SnapshotSt{
+		db:           db,
+		tickTime:     sptick,
+		snapshotTime: sptime,
+		stop:         make(chan struct{}),
+		intervalTime: (sptime * second),
+	}
+
+	return snapshot
+}
+
+func (sn *SnapshotSt) Start() {
+	log.Info("Snapshot start", "tick=", sn.tickTime, "interval=", sn.snapshotTime)
+	go sn.SnapShotblk()
+}
+
+func (sn *SnapshotSt) Stop() {
+	close(sn.stop)
+	log.Info("Snapshot stopped")
+}
+
+func (sn *SnapshotSt) checkInterrupt() bool {
+	select {
+	case <-sn.stop:
+		return true
+	default:
+		return false
+	}
+}
+
+func (sn *SnapshotSt) getBlcok(blockNum uint64) (uint64, *types.Header) {
+	if sn.checkInterrupt() {
+		return 0, nil
+	}
+	hash := rawdb.ReadCanonicalHash(sn.db, blockNum)
+	head := rawdb.ReadHeader(sn.db, hash, blockNum)
+	time := head.Time.Uint64()
+	return time, head
+}
+
+func (sn *SnapshotSt) getlastBlcok() (uint64, uint64) {
+	if sn.checkInterrupt() {
+		return 0, 0
+	}
+	hash := rawdb.ReadHeadBlockHash(sn.db)
+	number := rawdb.ReadHeaderNumber(sn.db, hash)
+	head := rawdb.ReadHeader(sn.db, hash, *number)
+	time := head.Time.Uint64()
+	return time, *number
+}
+
+func (sn *SnapshotSt) writeSnapshot(snapshottime, prevsnptime, number uint64, root common.Hash) error {
+	if sn.checkInterrupt() {
+		return fmt.Errorf("interrupt")
+	}
+
+	snapshotmsg := types.SnapshotMsg{
+		Time:   prevsnptime,
+		Number: number,
+		Root:   root,
+	}
+
+	batch := sn.db.NewBatch()
+	rawdb.WriteBlockSnapshotTime(batch, snapshottime, snapshotmsg)
+	rawdb.WriteBlockSnapshotLast(batch, snapshottime)
+	if err := batch.Write(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sn *SnapshotSt) lookupBlock(blockNum, prevBlockTime, lastBlockTime, lastBlockNum uint64) (uint64, *types.Header) {
+	var nextHead *types.Header
+	var nextTimeHour, nextTime uint64
+	prevTimeHour := (prevBlockTime / sn.intervalTime) * sn.intervalTime
+
+	for {
+		nextTime, nextHead = sn.getBlcok(blockNum)
+		if nextHead == nil {
+			return 0, nil
+		}
+
+		nextTimeHour = (nextTime / sn.intervalTime) * sn.intervalTime
+		if prevTimeHour == nextTimeHour {
+			blockNum = blockNum + 1
+			if blockNum < lastBlockNum {
+				continue
+			} else {
+				return 0, nil
+			}
+		} else {
+			if lastBlockTime-nextTime >= sn.intervalTime {
+				break
+			} else {
+				return 0, nil
+			}
+		}
+	}
+	return nextTimeHour, nextHead
+}
+
+func (sn *SnapshotSt) snapshotRecord() bool {
+	var nextTimeHour uint64
 	var blockNum uint64
-	var snapshotInfo types.SnapshotMsg
+	var curSnapshotTime uint64
+	var prevTime uint64
+	var head *types.Header
 
-	var prevHash, nextHash common.Hash
-	var prevTimeHour, nextTimeHour uint64
-	log.Info("Start snapshot", "tick=", Ticktime, "interval=", snapshotTime)
+	snapshotTimeLast := rawdb.ReadSnapshotLast(sn.db)
+	if len(snapshotTimeLast) == 0 {
+		blockNum = 0
+		prevTime, head = sn.getBlcok(blockNum)
+		if head == nil {
+			return false
+		}
+		curSnapshotTime = (prevTime / sn.intervalTime) * sn.intervalTime
+	} else {
+		curSnapshotTime = binary.BigEndian.Uint64(snapshotTimeLast)
+		snapshotInfo := rawdb.ReadSnapshotTime(sn.db, curSnapshotTime)
+		blockNum = snapshotInfo.Number
+		prevTime, head = sn.getBlcok(blockNum)
+		if head == nil {
+			return false
+		}
+	}
 
-	futureTimer := time.NewTicker(time.Duration(Ticktime) * time.Second)
+	curBlockTime, lastBlockNum := sn.getlastBlcok()
+	if blockNum >= lastBlockNum {
+		return false
+	}
+
+	if curBlockTime-curSnapshotTime > 2*sn.intervalTime {
+		blockNum = blockNum + 1
+		nextTimeHour, nextHead := sn.lookupBlock(blockNum, prevTime, curBlockTime, lastBlockNum)
+		if nextHead != nil {
+			err := sn.writeSnapshot(nextTimeHour, curSnapshotTime, nextHead.Number.Uint64(), nextHead.Root)
+			if err != nil {
+				log.Error("Failed to write snapshot to disk", "err", err)
+			} else {
+				log.Debug("Sanpshot time", "time", nextTimeHour, "number", nextHead.Number.Uint64(), "hash", nextHead.Root.String())
+			}
+		} else {
+			return false
+		}
+	}
+
+	curBlockTime, _ = sn.getlastBlcok()
+	if curBlockTime-nextTimeHour > 2*sn.intervalTime {
+		return true
+	}
+
+	return false
+}
+
+func (sn *SnapshotSt) SnapShotblk() {
+
+	futureTimer := time.NewTicker(time.Duration(sn.tickTime) * time.Second)
 	defer futureTimer.Stop()
 
 	for {
 		select {
 		case <-futureTimer.C:
 			for {
-				snapshotTimeLast := rawdb.ReadSnapshotLast(db)
-				if len(snapshotTimeLast) == 0 {
-					blockNum = 0
-					prevHash = rawdb.ReadCanonicalHash(db, blockNum)
-					prevHead := rawdb.ReadHeader(db, prevHash, blockNum)
-					prevTime := prevHead.Time.Uint64()
-					curSnapshotTime = (prevTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
-
-					curBlockHash := rawdb.ReadHeadBlockHash(db)
-					number := rawdb.ReadHeaderNumber(db, curBlockHash)
-					curBlockHeader := rawdb.ReadHeader(db, curBlockHash, *number)
-					curBlockTime := curBlockHeader.Time.Uint64()
-
-					if curBlockTime-curSnapshotTime > 2*(snapshotTime*1000000000) {
-						for {
-							blockNum = blockNum + 1
-
-							nextHash = rawdb.ReadCanonicalHash(db, blockNum)
-							nextHead := rawdb.ReadHeader(db, nextHash, blockNum)
-
-							prevTimeHour = (prevTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
-							nextTime := nextHead.Time.Uint64()
-							nextTimeHour = (nextTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
-
-							if prevTimeHour == nextTimeHour {
-								prevTime = nextTime
-								continue
-							} else {
-								if curBlockTime-nextTimeHour < (snapshotTime*1000000000) || curBlockTime-nextTime < (snapshotTime*1000000000) {
-									break
-								}
-
-								snapshotInfo.Time = 0
-								snapshotInfo.Number = nextHead.Number.Uint64()
-								snapshotInfo.Root = nextHead.Root
-
-								batch := db.NewBatch()
-								rawdb.WriteBlockSnapshotTime(batch, nextTimeHour, snapshotInfo)
-								rawdb.WriteBlockSnapshotLast(batch, nextTimeHour)
-								if err := batch.Write(); err != nil {
-									log.Error("Failed to write snapshot to disk", "err", err)
-								}
-								log.Debug("Sanpshot moment", "time=", nextTimeHour)
-								break
-							}
-						}
-
-					}
+				if sn.checkInterrupt() {
+					return
+				}
+				flag := sn.snapshotRecord()
+				if flag {
+					continue
 				} else {
-					curSnapshotTime = binary.BigEndian.Uint64(snapshotTimeLast)
-					snapshotInfo := rawdb.ReadSnapshotTime(db, curSnapshotTime)
-					blockNum = snapshotInfo.Number
-
-					curBlockHash := rawdb.ReadHeadBlockHash(db)
-					number := rawdb.ReadHeaderNumber(db, curBlockHash)
-					curBlockHeader := rawdb.ReadHeader(db, curBlockHash, *number)
-					curBlockTime := curBlockHeader.Time.Uint64()
-
-					if curBlockTime-curSnapshotTime > 2*(snapshotTime*1000000000) {
-						blockNum = blockNum + 1
-
-						prevHash = rawdb.ReadCanonicalHash(db, blockNum)
-						prevHead := rawdb.ReadHeader(db, prevHash, blockNum)
-						prevTime := prevHead.Time.Uint64()
-
-						for {
-							blockNum = blockNum + 1
-
-							nextHash = rawdb.ReadCanonicalHash(db, blockNum)
-							nextHead := rawdb.ReadHeader(db, nextHash, blockNum)
-
-							prevTimeHour = (prevTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
-							nextTime := nextHead.Time.Uint64()
-							nextTimeHour = (nextTime / (snapshotTime * 1000000000)) * (snapshotTime * 1000000000)
-
-							if prevTimeHour == nextTimeHour {
-								prevTime = nextTime
-								continue
-							} else {
-								if curBlockTime-nextTimeHour < (snapshotTime * 1000000000) {
-									break
-								}
-
-								snapshotInfo.Time = curSnapshotTime
-								snapshotInfo.Number = nextHead.Number.Uint64()
-								snapshotInfo.Root = nextHead.Root
-								batch := db.NewBatch()
-								rawdb.WriteBlockSnapshotTime(batch, nextTimeHour, *snapshotInfo)
-								rawdb.WriteBlockSnapshotLast(batch, nextTimeHour)
-								if err := batch.Write(); err != nil {
-									log.Error("Failed to write snapshot to disk", "err", err)
-								}
-								log.Debug("Sanpshot moment", "time=", nextTimeHour)
-								break
-							}
-
-						}
-
-					}
-
-					if curBlockTime-nextTimeHour > 2*(snapshotTime*1000000000) {
-						continue
-					} else {
-						break
-					}
-
+					break
 				}
 			}
+
 		}
 	}
 }
@@ -657,4 +727,73 @@ func (s *StateDB) GetSnapshotPrev(time uint64) (uint64, error) {
 		return 0, err
 	}
 	return snapshotInfo.Time, nil
+}
+
+func (s *StateDB) StartGetAccountInfo(time uint64) error {
+	var err error
+	if time == 0 {
+		return fmt.Errorf("Not snapshot info")
+	}
+
+	// optKey := acctDataPrefix + linkSymbol + account + linkSymbol + key
+	db := s.db.GetDB()
+	snapshotInfo := rawdb.ReadSnapshotTime(db, time)
+	if snapshotInfo == nil {
+		return fmt.Errorf("Not snapshot info")
+	}
+
+	triedb := trie.NewDatabase(db)
+	s.triehd, err = trie.NewSecure(snapshotInfo.Root, triedb, 1)
+	if err != nil {
+		return err
+	}
+
+	s.iterator = trie.NewIterator(s.triehd.NodeIterator(nil))
+	return nil
+
+}
+
+func (s *StateDB) LookupAccountInfo() ([]types.AccountInfo, bool) {
+	var endFlag bool
+	var count uint64 = 1000
+	var accountInfo []types.AccountInfo
+
+	if s.iterator == nil {
+		return nil, false
+	}
+
+	for !endFlag {
+		flag := s.iterator.Next()
+		if flag == false {
+			return accountInfo, false
+		}
+		acckey := parseAcckey(string(s.triehd.GetKey(s.iterator.Key)))
+		if len(acckey) == 0 {
+			continue
+		}
+		count = count - 1
+		accountInfo = append(accountInfo, types.AccountInfo{acckey[0], acckey[1], s.iterator.Value})
+
+		if count == 0 {
+			endFlag = true
+		}
+
+	}
+	return accountInfo, true
+
+}
+
+func (s *StateDB) StopGetAccountInfo() error {
+	s.iterator = nil
+	s.triehd = nil
+	return nil
+}
+
+func parseAcckey(s string) []string {
+	if !strings.HasPrefix(s, acctDataPrefix+linkSymbol) {
+		return nil
+	}
+	tps := strings.TrimPrefix(s, acctDataPrefix+linkSymbol)
+	acckey := strings.SplitN(tps, linkSymbol, 2)
+	return acckey
 }

@@ -52,6 +52,8 @@ var (
 	ErrNonceTooLow = errors.New("nonce too low")
 
 	errZeroBlockTime = errors.New("timestamp equals parent's")
+
+	errParentBlock = errors.New("parent block not exist")
 )
 
 // GenesisMismatchError is raised when trying to overwrite an existing
