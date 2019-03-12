@@ -31,6 +31,7 @@ import (
 var acctInfoPrefix = "AcctInfo"
 
 var acctManagerName = "sysAccount"
+var sysName string = ""
 
 type AccountAction struct {
 	AccountName common.Name   `json:"accountName,omitempty"`
@@ -49,6 +50,15 @@ type IncAsset struct {
 type AccountManager struct {
 	sdb SdbIf
 	ast *asset.Asset
+}
+
+//SetAcctMangerName  set the global account manager name
+func SetSysName(name common.Name) bool {
+	if common.IsValidName(name.String()) {
+		sysName = name.String()
+		return true
+	}
+	return false
 }
 
 //SetAcctMangerName  set the global account manager name
@@ -222,6 +232,8 @@ func (am *AccountManager) GetAccountByName(accountName common.Name) (*Account, e
 		return nil, err
 	}
 	if len(b) == 0 {
+		log.Info("account not exist", "account", ErrAccountNotExist, accountName)
+		fmt.Printf("\naccount not exist =%v\n",accountName)
 		return nil, nil
 	}
 
@@ -800,6 +812,17 @@ func (am *AccountManager) Process(action *types.Action) error {
 }
 
 func (am *AccountManager) process(action *types.Action) error {
+	//transfer
+	if action.Value().Cmp(big.NewInt(0)) > 0 {
+		if action.Recipient().String() == sysName {
+			if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+				return err
+			}
+		} else {
+			return ErrToNameInvalid
+		}
+	}
+	//transaction
 	switch action.Type() {
 	case types.CreateAccount:
 		var acct AccountAction
@@ -819,6 +842,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
+
 		if err := am.UpdateAccount(action.Sender(), acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
@@ -930,8 +954,5 @@ func (am *AccountManager) process(action *types.Action) error {
 		return ErrUnkownTxType
 	}
 
-	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-	}
 	return nil
 }

@@ -54,10 +54,14 @@ func getAsset() *asset.Asset {
 }
 func getAccountManager() *AccountManager {
 	SetAcctMangerName("systestname")
+	SetSysName("systestname")
 	am, err := NewAccountManager(sdb)
 	if err != nil {
 		fmt.Printf("test getAccountManager() failure %v", err)
 	}
+	pubkey := new(common.PubKey)
+	pubkey.SetBytes([]byte("abcde123456789"))
+	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, *pubkey)
 	return am
 }
 
@@ -1523,8 +1527,8 @@ func TestAccountManager_Process(t *testing.T) {
 		Symbol:     "aaa",
 		Amount:     big.NewInt(100000000),
 		Decimals:   2,
-		Founder:    common.Name("a123456789addd"),
-		Owner:      common.Name("a123456789addd"),
+		Founder:    common.Name(sysName),
+		Owner:      common.Name(sysName),
 		AddIssue:   big.NewInt(0),
 		UpperLimit: big.NewInt(1000000000),
 	}
@@ -1540,6 +1544,7 @@ func TestAccountManager_Process(t *testing.T) {
 	pubkey1, _ := GeneragePubKey()
 	aa := &AccountAction{
 		AccountName: common.Name("a123456789addd"),
+		Founder:     common.Name(""),
 		ChargeRatio: 10,
 		PublicKey:   pubkey,
 	}
@@ -1549,6 +1554,7 @@ func TestAccountManager_Process(t *testing.T) {
 	}
 	aa1 := &AccountAction{
 		AccountName: common.Name("a123456789addd"),
+		Founder:     common.Name(""),
 		ChargeRatio: 99,
 		PublicKey:   pubkey1,
 	}
@@ -1560,7 +1566,7 @@ func TestAccountManager_Process(t *testing.T) {
 	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 0, big.NewInt(0), payload)
 	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(0), payload2)
 	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeee"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload1)
-	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(10), payload3)
+	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3)
 	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload4)
 	//action5 := types.NewAction(types.DeleteAccount, common.Name("123asdf2"), common.Name("123asdf2"), 1, 1, 2, big.NewInt(0), pubkey1[:])
 	//action6 := types.NewAction(types.Transfer, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), pubkey1[:])
@@ -1576,7 +1582,7 @@ func TestAccountManager_Process(t *testing.T) {
 		{"issue", fields{sdb, ast}, args{action}, false},
 		{"increase", fields{sdb, ast}, args{action1}, false},
 		{"createaccount", fields{sdb, ast}, args{action3}, false},
-		{"setowner", fields{sdb, ast}, args{action2}, false},
+		{"updateasset", fields{sdb, ast}, args{action2}, false},
 		{"updateaccount", fields{sdb, ast}, args{action4}, false},
 		//{"deleteaccount", fields{sdb, ast}, args{action5}, false},
 		//{"transfer2self", fields{sdb, ast}, args{action6}, false},
@@ -1628,7 +1634,7 @@ func TestAccountManager_Process(t *testing.T) {
 		t.Error("Process update account failure")
 	}
 	val, err = ac1.GetBalanceByID(1)
-	if val.Cmp(big.NewInt(10)) != 0 {
+	if val.Cmp(big.NewInt(0)) != 0 {
 		t.Errorf("Process transfer  failure=%v", val)
 	}
 
