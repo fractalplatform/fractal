@@ -23,7 +23,6 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"math/big"
 )
 
 // StateProcessor is a basic Processor, which takes care of transitioning
