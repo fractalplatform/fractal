@@ -131,6 +131,36 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 	return &Action{data: data}
 }
 
+//CheckValue check action type and value
+func (a *Action) CheckValue() bool {
+	switch a.Type() {
+	case Transfer:
+	case CallContract:
+	case CreateContract:
+	case CreateAccount:
+	case DestroyAsset:
+		break
+	case UpdateAccount:
+	case IssueAsset:
+	case IncreaseAsset:
+	case SetAssetOwner:
+	case UpdateAsset:
+	case RegProducer:
+	case UpdateProducer:
+	case UnregProducer:
+	case RemoveVoter:
+	case VoteProducer:
+	case ChangeProducer:
+	case UnvoteProducer:
+		if a.Value().Cmp(big.NewInt(0)) > 0 {
+			return false
+		}
+	default:
+		return false
+	}
+	return true
+}
+
 // Type returns action's type.
 func (a *Action) Type() ActionType { return a.data.AType }
 

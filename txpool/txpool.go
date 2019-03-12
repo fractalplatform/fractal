@@ -473,7 +473,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		//
-		if tp.CheckActionValue(action) != true {
+		if action.CheckValue() != true {
 			return ErrInvalidValue
 		}
 
@@ -1079,34 +1079,4 @@ func (tp *TxPool) demoteUnexecutables() {
 			delete(tp.beats, addr)
 		}
 	}
-}
-
-//CheckActionValue check action type and value
-func (tp *TxPool) CheckActionValue(action *types.Action) bool {
-	switch action.Type() {
-	case types.Transfer:
-	case types.CallContract:
-	case types.CreateContract:
-	case types.CreateAccount:
-	case types.DestroyAsset:
-		break
-	case types.UpdateAccount:
-	case types.IssueAsset:
-	case types.IncreaseAsset:
-	case types.SetAssetOwner:
-	case types.UpdateAssset:
-	case types.RegProducer:
-	case types.UpdateProducer:
-	case types.UnregProducer:
-	case types.RemoveVoter:
-	case types.VoteProducer:
-	case types.ChangeProducer:
-	case types.UnvoteProducer:
-		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			return false
-		}
-	default:
-		return false
-	}
-	return true
 }

@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -31,7 +30,7 @@ import (
 
 var acctInfoPrefix = "AcctInfo"
 
-var acctManagerName string
+var acctManagerName = "sysAccount"
 
 type AccountAction struct {
 	AccountName common.Name   `json:"accountName,omitempty"`
@@ -52,22 +51,25 @@ type AccountManager struct {
 	ast *asset.Asset
 }
 
+//SetAcctMangerName  set the global account manager name
+func SetAcctMangerName(name common.Name) bool {
+	if common.IsValidName(name.String()) {
+		acctManagerName = name.String()
+		return true
+	}
+	return false
+}
+
 //NewAccountManager create new account manager
 func NewAccountManager(db *state.StateDB) (*AccountManager, error) {
 	if db == nil {
 		return nil, ErrNewAccountErr
 	}
-
-	if len(params.ChainConfig.SysName) > 0 {
-		if common.IsValidName(params.ChainConfig.SysName) {
-			acctManagerName = params.ChainConfig.SysName.String()
-		} else {
-			log.Error("NewAccountManager error", "name", ErrAccountManagerNotExist, acctManagerName)
-			return nil, ErrAccountManagerNotExist
-		}
-	} else {
-		acctManagerName = params.DefaultChainconfig.SysName.String()
+	if len(acctManagerName) == 0 {
+		log.Error("NewAccountManager error", "name", ErrAccountManagerNotExist, acctManagerName)
+		return nil, ErrAccountManagerNotExist
 	}
+
 	return &AccountManager{
 		sdb: db,
 		ast: asset.NewAsset(db),
@@ -817,9 +819,9 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			return ErrAmountMustZero
-		}
+		// if action.Value().Cmp(big.NewInt(0)) > 0 {
+		// 	return ErrAmountMustZero
+		// }
 		if err := am.UpdateAccount(action.Sender(), acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
@@ -835,9 +837,9 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			return ErrAmountMustZero
-		}
+		// if action.Value().Cmp(big.NewInt(0)) > 0 {
+		// 	return ErrAmountMustZero
+		// }
 		if err := am.IssueAsset(&asset); err != nil {
 			return err
 		}
@@ -848,9 +850,9 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			return ErrAmountMustZero
-		}
+		// if action.Value().Cmp(big.NewInt(0)) > 0 {
+		// 	return ErrAmountMustZero
+		// }
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return err
 		}
@@ -875,9 +877,9 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			return ErrAmountMustZero
-		}
+		// if action.Value().Cmp(big.NewInt(0)) > 0 {
+		// 	return ErrAmountMustZero
+		// }
 		acct, err := am.GetAccountByName(asset.GetAssetOwner())
 		if err != nil {
 			return err

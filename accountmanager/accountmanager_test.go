@@ -43,7 +43,7 @@ func getStateDB() *state.StateDB {
 	tridb := state.NewDatabase(db)
 	statedb, err := state.New(common.Hash{}, tridb)
 	if err != nil {
-		//.Fatal("test NewState failure ", err)
+		fmt.Printf("test getStateDB() failure %v", err)
 		return nil
 	}
 
@@ -53,10 +53,10 @@ func getAsset() *asset.Asset {
 	return asset.NewAsset(sdb)
 }
 func getAccountManager() *AccountManager {
-
+	SetAcctMangerName("systestname")
 	am, err := NewAccountManager(sdb)
 	if err != nil {
-		//t.Fatal("test NewAccount failure ", err)
+		fmt.Printf("test getAccountManager() failure %v", err)
 	}
 	return am
 }

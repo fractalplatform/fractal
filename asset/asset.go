@@ -22,13 +22,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 //AssetManager is used to access asset
-var assetManagerName string
+var assetManagerName = "sysAccount"
 
 var (
 	assetCountPrefix  = "assetCount"
@@ -40,21 +39,24 @@ type Asset struct {
 	sdb *state.StateDB
 }
 
+//SetAssetMangerName  set the global asset manager name
+func SetAssetMangerName(name common.Name) bool {
+	if common.IsValidName(name.String()) {
+		assetManagerName = name.String()
+		return true
+	}
+	return false
+}
+
 //NewAsset New create Asset
 func NewAsset(sdb *state.StateDB) *Asset {
 	asset := Asset{
 		sdb: sdb,
 	}
 
-	if len(params.ChainConfig.SysName.String()) > 0 {
-		if common.IsValidName(params.ChainConfig.SysName) {
-			assetManagerName = params.ChainConfig.SysName.String()
-		} else {
-			log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
-			return nil
-		}
-	} else {
-		assetManagerName = params.DefaultChainconfig.SysName.String()
+	if len(assetManagerName) == 0 {
+		log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
+		return nil
 	}
 
 	asset.InitAssetCount()
