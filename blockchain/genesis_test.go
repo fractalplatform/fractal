@@ -41,7 +41,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x75f2289eee47acf7eb2c88c72492da2f1fa257ef17bf813c4994faf964ceea52")
+		customghash = common.HexToHash("0xf0ef187e3f23ac20aba4df4e4a6d6327f2eb56a0724c1a690be32d0af5ecb501")
 		customg     = Genesis{
 			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:          dpos.DefaultConfig,
@@ -50,7 +50,7 @@ func TestSetupGenesis(t *testing.T) {
 			AllocAssets:   DefaultGenesisAssets(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0xea9966a03a27f74b33733d2baf5ea2b3821d06a64830f5d144ed9a0b51be6306")
+		oldcustomghash = common.HexToHash("0x461543306818df6d262089961cb45becf06a551dd36f61ab4cee78af8fb47f64")
 	)
 	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
 

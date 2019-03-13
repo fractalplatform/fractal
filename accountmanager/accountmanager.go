@@ -46,13 +46,13 @@ type IncAsset struct {
 	To      common.Name `json:"account,omitempty"`
 }
 
-// AccountManager represents account management model.
+//AccountManager represents account management model.
 type AccountManager struct {
 	sdb SdbIf
 	ast *asset.Asset
 }
 
-//SetAcctMangerName  set the global account manager name
+//SetSysName set the global sys name
 func SetSysName(name common.Name) bool {
 	if common.IsValidName(name.String()) {
 		sysName = name.String()
@@ -233,7 +233,6 @@ func (am *AccountManager) GetAccountByName(accountName common.Name) (*Account, e
 	}
 	if len(b) == 0 {
 		log.Info("account not exist", "account", ErrAccountNotExist, accountName)
-		fmt.Printf("\naccount not exist =%v\n",accountName)
 		return nil, nil
 	}
 
@@ -245,7 +244,7 @@ func (am *AccountManager) GetAccountByName(accountName common.Name) (*Account, e
 	return &acct, nil
 }
 
-//store account object to db
+//SetAccount store account object to db
 func (am *AccountManager) SetAccount(acct *Account) error {
 	if acct == nil {
 		return ErrAccountIsNil
@@ -814,14 +813,16 @@ func (am *AccountManager) Process(action *types.Action) error {
 func (am *AccountManager) process(action *types.Action) error {
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		if action.Recipient().String() == sysName {
-			if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
-				return err
+		if action.Type() == types.CreateAccount || action.Type() == types.DestroyAsset {
+			if action.Recipient() != common.Name(sysName) {
+				return ErrToNameInvalid
 			}
-		} else {
-			return ErrToNameInvalid
+		}
+		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+			return err
 		}
 	}
+
 	//transaction
 	switch action.Type() {
 	case types.CreateAccount:
@@ -879,10 +880,16 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
-		if err = am.SubAccountBalanceByID(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
+
+		if err := am.TransferAsset(action.Sender(), common.Name(sysName), action.AssetID(), action.Value()); err != nil {
 			return err
 		}
-		if err = am.ast.DestroyAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
+
+		if err = am.SubAccountBalanceByID(common.Name(sysName), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
+			return err
+		}
+
+		if err = am.ast.DestroyAsset(common.Name(sysName), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
 			return err
 		}
 		break
@@ -949,7 +956,8 @@ func (am *AccountManager) process(action *types.Action) error {
 	// 	}
 	// 	break
 	case types.Transfer:
-		return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		//return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		break
 	default:
 		return ErrUnkownTxType
 	}
