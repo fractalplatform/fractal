@@ -16,71 +16,71 @@
 
 package blockchain
 
-import (
-	"testing"
+// import (
+// 	"testing"
 
-	"github.com/fractalplatform/fractal/rawdb"
-)
+// 	"github.com/fractalplatform/fractal/rawdb"
+// )
 
-func TestTheLastBlock(t *testing.T) {
-	genesis, db, chain, st, err := newCanonical(t, tengine)
-	if err != nil {
-		t.Error("newCanonical err", err)
-	}
-	defer chain.Stop()
+// func TestTheLastBlock(t *testing.T) {
+// 	genesis, db, chain, st, err := newCanonical(t, tengine)
+// 	if err != nil {
+// 		t.Error("newCanonical err", err)
+// 	}
+// 	defer chain.Stop()
 
-	prods, ht := makeProduceAndTime(st, 10)
-	_, _, blocks, err := makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, makeTransferTx)
-	if err != nil {
-		t.Error("makeNewChain err", err)
-	}
-	if blocks[len(blocks)-1].Hash() != rawdb.ReadHeadBlockHash(chain.db) {
-		t.Fatalf("Write/Get HeadBlockHash failed")
-	}
-}
+// 	prods, ht := makeProduceAndTime(st, 10)
+// 	_, _, blocks, err := makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, makeTransferTx)
+// 	if err != nil {
+// 		t.Error("makeNewChain err", err)
+// 	}
+// 	if blocks[len(blocks)-1].Hash() != rawdb.ReadHeadBlockHash(chain.db) {
+// 		t.Fatalf("Write/Get HeadBlockHash failed")
+// 	}
+// }
 
-func TestForkChain(t *testing.T) {
-	genesis, db, chain, st, err := newCanonical(t, tengine)
-	if err != nil {
-		t.Error("newCanonical err", err)
-	}
-	defer chain.Stop()
+// func TestForkChain(t *testing.T) {
+// 	genesis, db, chain, st, err := newCanonical(t, tengine)
+// 	if err != nil {
+// 		t.Error("newCanonical err", err)
+// 	}
+// 	defer chain.Stop()
 
-	prods, ht := makeProduceAndTime(st, 10)
-	_, _, blocks, err := makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, nil)
-	if err != nil {
-		t.Error("makeNewChain err", err)
-	}
+// 	prods, ht := makeProduceAndTime(st, 10)
+// 	_, _, blocks, err := makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, nil)
+// 	if err != nil {
+// 		t.Error("makeNewChain err", err)
+// 	}
 
-	prods = append(prods[0:3], prods[10:]...)
-	ht = append(ht[0:3], ht[10:]...)
-	genesis1, db1, chain1, _, err := newCanonical(t, tengine)
-	if err != nil {
-		t.Error("newCanonical err", err)
-	}
-	defer chain.Stop()
+// 	prods = append(prods[0:3], prods[10:]...)
+// 	ht = append(ht[0:3], ht[10:]...)
+// 	genesis1, db1, chain1, _, err := newCanonical(t, tengine)
+// 	if err != nil {
+// 		t.Error("newCanonical err", err)
+// 	}
+// 	defer chain.Stop()
 
-	_, _, _, err = makeNewChain(t, genesis1, chain1, &db1, len(prods), ht, prods, makeTransferTx)
-	if err != nil {
-		t.Error("makeNewChain err", err)
-	}
-	_, err = chain1.InsertChain(blocks)
-	if err != nil {
-		t.Error(err)
-	}
-	if chain1.CurrentBlock().Hash() != blocks[len(blocks)-1].Hash() {
-		t.Fatalf("fork chain err! actual hash %x,  want hash %x ", chain1.CurrentBlock().Hash(), blocks[len(blocks)-1].Hash())
-	}
-}
+// 	_, _, _, err = makeNewChain(t, genesis1, chain1, &db1, len(prods), ht, prods, makeTransferTx)
+// 	if err != nil {
+// 		t.Error("makeNewChain err", err)
+// 	}
+// 	_, err = chain1.InsertChain(blocks)
+// 	if err != nil {
+// 		t.Error(err)
+// 	}
+// 	if chain1.CurrentBlock().Hash() != blocks[len(blocks)-1].Hash() {
+// 		t.Fatalf("fork chain err! actual hash %x,  want hash %x ", chain1.CurrentBlock().Hash(), blocks[len(blocks)-1].Hash())
+// 	}
+// }
 
-func TestFullTxChain(t *testing.T) {
-	genesis, db, chain, st, err := newCanonical(t, tengine)
-	if err != nil {
-		t.Error("newCanonical err", err)
-	}
-	prods, ht := makeProduceAndTime(st, 100)
-	_, _, _, err = makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, makeTransferTx)
-	if err != nil {
-		t.Error("makeNewChain err", err)
-	}
-}
+// func TestFullTxChain(t *testing.T) {
+// 	genesis, db, chain, st, err := newCanonical(t, tengine)
+// 	if err != nil {
+// 		t.Error("newCanonical err", err)
+// 	}
+// 	prods, ht := makeProduceAndTime(st, 100)
+// 	_, _, _, err = makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, makeTransferTx)
+// 	if err != nil {
+// 		t.Error("makeNewChain err", err)
+// 	}
+// }
