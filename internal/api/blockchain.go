@@ -170,6 +170,10 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
 }
 
+func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
+	return s.b.GetBlockAndResult(ctx, blockNr), nil
+}
+
 type CallArgs struct {
 	ActionType types.ActionType `json:"actionType"`
 	From       common.Name      `json:"from"`

@@ -54,7 +54,8 @@ func defaultFtServiceConfig() *ftservice.Config {
 			Blocks:     20,
 			Percentile: 60,
 		},
-		MetricsConf: defaultMetricsConfig(),
+		MetricsConf:     defaultMetricsConfig(),
+		ContractLogFlag: false,
 	}
 }
 

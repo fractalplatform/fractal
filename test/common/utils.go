@@ -32,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rpc"
 	jww "github.com/spf13/jwalterweatherman"
+	"github.com/fractalplatform/fractal/types"
 )
 
 var (
@@ -128,6 +129,12 @@ func GetDposAccount(name common.Name) (map[string]interface{}, error) {
 	fields := map[string]interface{}{}
 	err := ClientCall("dpos_account", fields, name.String())
 	return fields, err
+}
+
+func GetBlockAndResult(blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
+	result := &types.BlockAndResult{}
+	err := ClientCall("ft_getBlockAndResultByNumber", result, blockNr)
+	return result, err
 }
 
 // defaultDataDir is the default data directory to use for the databases and other
