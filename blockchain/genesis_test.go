@@ -51,6 +51,32 @@ func TestSetupGenesis(t *testing.T) {
 		}
 		oldcustomg     = customg
 		oldcustomghash = common.HexToHash("0x63e705e6477865d0fa743ce6d7273a5cb03c95f403309c33b22d67daf464aea4")
+
+		dposConfig = &dpos.Config{
+			MaxURLLen:            512,
+			UnitStake:            big.NewInt(1000),
+			ProducerMinQuantity:  big.NewInt(10),
+			VoterMinQuantity:     big.NewInt(1),
+			ActivatedMinQuantity: big.NewInt(100),
+			BlockInterval:        3000,
+			BlockFrequency:       6,
+			ProducerScheduleSize: 3,
+			DelayEcho:            2,
+			AccountName:          "ftsystemdpos",
+			SystemName:           "ftsystemio",
+			SystemURL:            "www.fractalproject.com",
+			ExtraBlockReward:     big.NewInt(1),
+			BlockReward:          big.NewInt(5),
+			Decimals:             18,
+		}
+
+		chainConfig = &params.ChainConfig{
+			ChainID:             big.NewInt(1),
+			SysName:             "ftsystemio",
+			SysToken:            "ftoken",
+			AssetChargeRatio:    80,
+			ContractChargeRatio: 80,
+		}
 	)
 	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
 
@@ -89,8 +115,8 @@ func TestSetupGenesis(t *testing.T) {
 				return SetupGenesisBlock(db, nil)
 			},
 			wantHash:   defaultgenesisBlockHash,
-			wantConfig: params.DefaultChainconfig,
-			wantDpos:   dpos.DefaultConfig,
+			wantConfig: chainConfig,
+			wantDpos:   dposConfig,
 		},
 		{
 			name: "compatible config in DB",
@@ -123,6 +149,7 @@ func TestSetupGenesis(t *testing.T) {
 			spew := spew.ConfigState{DisablePointerAddresses: true, DisableCapacities: true}
 			t.Errorf("%s: returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
 		}
+
 		if !reflect.DeepEqual(config, test.wantConfig) {
 			t.Errorf("%s:\n returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
