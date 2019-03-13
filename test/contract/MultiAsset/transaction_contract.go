@@ -26,7 +26,6 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/processor/vm"
 	testcommon "github.com/fractalplatform/fractal/test/common"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/abi"
