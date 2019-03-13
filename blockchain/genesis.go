@@ -80,7 +80,12 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		if hash != stored {
 			return genesis.Config, genesis.Dpos, hash, &GenesisMismatchError{stored, hash}
 		}
+	} else {
+		genesis = new(Genesis)
+		head := rawdb.ReadHeader(db, stored, 0)
+		genesis.UnmarshalJSON(head.Extra)
 	}
+
 	// Get the existing dpos configuration.
 	newdpos := genesis.dposOrDefault(stored)
 
