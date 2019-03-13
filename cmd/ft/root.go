@@ -222,6 +222,7 @@ func init() {
 
 	// ftservice
 	falgs.IntVar(&ftconfig.FtServiceCfg.DatabaseCache, "databasecache", ftconfig.FtServiceCfg.DatabaseCache, "Megabytes of memory allocated to internal database caching")
+	falgs.BoolVar(&ftconfig.FtServiceCfg.ContractLogFlag, "contractlog", ftconfig.FtServiceCfg.ContractLogFlag, "flag for db to store contrat internal transaction log.")
 
 	// txpool
 	falgs.BoolVar(&ftconfig.FtServiceCfg.TxPool.NoLocals, "txpool_nolocals", ftconfig.FtServiceCfg.TxPool.NoLocals, "Disables price exemptions for locally submitted transactions")
