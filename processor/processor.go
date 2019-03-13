@@ -92,6 +92,8 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 
 	var totalGas uint64
 	var ios []*types.ActionResult
+	detailTx := &types.DetailTx{}
+	var internals []*types.InternalTx
 	for i, action := range tx.GetActions() {
 		if !action.CheckValue() {
 			return nil, 0, ErrActionInvalidValue
@@ -147,6 +149,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			gasAllot = append(gasAllot, &types.GasDistribution{Account: account, Gas: uint64(gas)})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
+		internals = append(internals, &types.InternalTx{vmenv.InternalTxs})
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
@@ -156,5 +159,8 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	receipt.Logs = statedb.GetLogs(tx.Hash())
 	receipt.Bloom = types.CreateBloom([]*types.Receipt{receipt})
 
+	detailTx.TxHash = receipt.TxHash
+	detailTx.InternalTxs = internals
+	receipt.SetInternalTxsLog(detailTx)
 	return receipt, totalGas, nil
 }
