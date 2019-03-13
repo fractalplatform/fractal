@@ -52,3 +52,19 @@ func TestActionEncodeAndDecode(t *testing.T) {
 
 	assert.Equal(t, testAction, actAction)
 }
+
+func TestAction_CheckValue(t *testing.T) {
+	actionBytes, err := rlp.EncodeToBytes(testAction)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actAction := &Action{}
+	if err := rlp.Decode(bytes.NewReader(actionBytes), &actAction); err != nil {
+		t.Fatal(err)
+	}
+
+	if actAction.CheckValue() == false {
+		t.Errorf("TestAction_CheckValue err, wantErr %v", true)
+	}
+}

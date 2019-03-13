@@ -42,9 +42,9 @@ const (
 )
 
 const (
-	// CreateAccount repesents the create account.
+	//CreateAccount repesents the create account.
 	CreateAccount ActionType = 0x100 + iota
-	// UpdateAccount repesents the update account action.
+	//UpdateAccount repesents update account.
 	UpdateAccount
 	// DeleteAccount repesents the delete account action.
 	DeleteAccount
@@ -55,12 +55,13 @@ const (
 	IncreaseAsset ActionType = 0x200 + iota
 	// IssueAsset repesents Issue asset action.
 	IssueAsset
-  //destroy asset
+	//destroy asset
 	DestroyAsset
 	// SetAssetOwner repesents set asset new owner action.
 	SetAssetOwner
 	//set asset founder
-	SetAssetFounder
+	//SetAssetFounder
+	UpdateAsset
 	//Transfer repesents transfer asset action.
 	Transfer
 )
@@ -128,6 +129,36 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		data.Amount.Set(amount)
 	}
 	return &Action{data: data}
+}
+
+//CheckValue check action type and value
+func (a *Action) CheckValue() bool {
+	switch a.Type() {
+	case Transfer:
+	case CallContract:
+	case CreateContract:
+	case CreateAccount:
+	case DestroyAsset:
+		break
+	case UpdateAccount:
+	case IssueAsset:
+	case IncreaseAsset:
+	case SetAssetOwner:
+	case UpdateAsset:
+	case RegProducer:
+	case UpdateProducer:
+	case UnregProducer:
+	case RemoveVoter:
+	case VoteProducer:
+	case ChangeProducer:
+	case UnvoteProducer:
+		if a.Value().Cmp(big.NewInt(0)) > 0 {
+			return false
+		}
+	default:
+		return false
+	}
+	return true
 }
 
 // Type returns action's type.

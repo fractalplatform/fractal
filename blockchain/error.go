@@ -40,5 +40,5 @@ type GenesisMismatchError struct {
 }
 
 func (e *GenesisMismatchError) Error() string {
-	return fmt.Sprintf("database already contains an incompatible genesis block (have %x, new %x)", e.Stored[:8], e.New[:8])
+	return fmt.Sprintf("database already contains an incompatible genesis block (have %x, new %x)", e.Stored[:], e.New[:])
 }

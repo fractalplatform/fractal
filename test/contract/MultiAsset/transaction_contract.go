@@ -190,7 +190,7 @@ func sendIssueTransaction() {
 func sendFulfillContractTransaction() {
 	jww.INFO.Println("test sendFulfillContractTransaction... ")
 	nonce++
-	sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
+	sendTransferTx(types.CallContract, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
 }
 
 func sendTransferTransaction() {

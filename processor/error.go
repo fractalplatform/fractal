@@ -54,6 +54,8 @@ var (
 	errZeroBlockTime = errors.New("timestamp equals parent's")
 
 	errParentBlock = errors.New("parent block not exist")
+	//
+	ErrActionInvalidValue = errors.New("action value invalid")
 )
 
 // GenesisMismatchError is raised when trying to overwrite an existing

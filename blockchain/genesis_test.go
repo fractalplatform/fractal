@@ -30,7 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0xaa68da4b9823e385074d8f73904ba4b5129df41e2a0ae7efa745b154b6dde1e9")
+var defaultgenesisBlockHash = common.HexToHash("0xa139f1d16692026cd921e437e45506f2dec998f8ea57a5075e878afd4b428cc3")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesis().ToBlock(nil)
@@ -41,7 +41,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0xf3082afdbb6b3087ff67e334fd32e20cf4a528141871333c5497ddeff3dedf3d")
+		customghash = common.HexToHash("0xf0ef187e3f23ac20aba4df4e4a6d6327f2eb56a0724c1a690be32d0af5ecb501")
 		customg     = Genesis{
 			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:          dpos.DefaultConfig,
@@ -50,7 +50,7 @@ func TestSetupGenesis(t *testing.T) {
 			AllocAssets:   DefaultGenesisAssets(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0x63e705e6477865d0fa743ce6d7273a5cb03c95f403309c33b22d67daf464aea4")
+		oldcustomghash = common.HexToHash("0x461543306818df6d262089961cb45becf06a551dd36f61ab4cee78af8fb47f64")
 
 		dposConfig = &dpos.Config{
 			MaxURLLen:            512,
@@ -139,32 +139,32 @@ func TestSetupGenesis(t *testing.T) {
 
 	for i, test := range tests {
 		db := fdb.NewMemDatabase()
-		fmt.Println("=====>", i, test.name)
+		fmt.Println("1=====>", i, test.name)
 
 		config, dpos, hash, err := test.fn(db)
-		fmt.Println("=====>", i, test.name, err)
+		fmt.Println("2=====>", i, test.name, err)
 
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
 			spew := spew.ConfigState{DisablePointerAddresses: true, DisableCapacities: true}
-			t.Errorf("%s: returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
+			t.Errorf("%s: 1 returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
 		}
 
 		if !reflect.DeepEqual(config, test.wantConfig) {
-			t.Errorf("%s:\n returned %v\nwant     %v", test.name, config, test.wantConfig)
+			t.Errorf("%s:\n 2 returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 
 		if !reflect.DeepEqual(dpos, test.wantDpos) {
-			t.Errorf("%s:\nreturned %v\nwant     %v", test.name, config, test.wantConfig)
+			t.Errorf("%s:\n 3returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 
 		if hash != test.wantHash {
-			t.Errorf("%s: returned hash %s, want %s", test.name, hash.Hex(), test.wantHash.Hex())
+			t.Errorf("%s: 4 returned hash %s, want %s", test.name, hash.Hex(), test.wantHash.Hex())
 		} else if err == nil {
 			// Check database content.
 			stored := rawdb.ReadBlock(db, test.wantHash, 0)
 			if stored.Hash() != test.wantHash {
-				t.Errorf("%s: block in DB has hash %s, want %s", test.name, stored.Hash(), test.wantHash)
+				t.Errorf("%s: 5 block in DB has hash %s, want %s", test.name, stored.Hash(), test.wantHash)
 			}
 		}
 	}

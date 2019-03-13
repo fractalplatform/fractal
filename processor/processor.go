@@ -95,6 +95,10 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx := &types.DetailTx{}
 	var internals []*types.InternalTx
 	for i, action := range tx.GetActions() {
+		if !action.CheckValue() {
+			return nil, 0, ErrActionInvalidValue
+		}
+
 		fromPubkey, err := types.Recover(types.NewSigner(config.ChainID), action, tx)
 		if err != nil {
 			return nil, 0, err

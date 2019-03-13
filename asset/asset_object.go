@@ -34,7 +34,7 @@ type AssetObject struct {
 	UpperLimit *big.Int    `json:"upperLimit,omitempty"`
 }
 
-func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name,owner common.Name,limit *big.Int) (*AssetObject, error) {
+func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) (*AssetObject, error) {
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}

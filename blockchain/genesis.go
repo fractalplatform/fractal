@@ -92,6 +92,17 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	// Get the existing chain configuration.
 	newcfg := genesis.configOrDefault(stored)
 
+	//init account and asset manager
+	// if !am.SetAcctMangerName(newcfg.SysName) {
+	// 	return newcfg, newdpos, stored, fmt.Errorf("genesis set account manager fail")
+	// }
+	if !am.SetSysName(newcfg.SysName) {
+		return newcfg, newdpos, stored, fmt.Errorf("genesis set account sys name fail")
+	}
+	// if !asset.SetAssetMangerName(newcfg.SysName) {
+	// 	return newcfg, newdpos, stored, fmt.Errorf("genesis set asset manager fail")
+	// }
+
 	height := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
 	if height == nil {
 		return newcfg, newdpos, stored, fmt.Errorf("missing block number for head header hash")

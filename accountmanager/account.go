@@ -80,7 +80,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 }
 
 func (a *Account) HaveCode() bool {
-    if a.GetCodeSize() == 0 {
+	if a.GetCodeSize() == 0 {
 		return false
 	}
 	return true

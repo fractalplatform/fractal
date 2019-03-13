@@ -60,4 +60,6 @@ var (
 	// than some meaningful limit a user might use. This is not a consensus error
 	// making the transaction invalid, rather a DOS protection.
 	ErrOversizedData = errors.New("oversized data")
+	//
+	ErrInvalidValue = errors.New("action value invalid")
 )
