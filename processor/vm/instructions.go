@@ -439,7 +439,10 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 				} else {
 					rerr = err
 				}
+			}else{
+				rbalance = balance
 			}
+			
 		} else {
 			rerr = err
 		}
@@ -447,7 +450,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	} else {
 		rerr = err
 	}
-
+     
 	if rerr != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
