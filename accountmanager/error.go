@@ -42,4 +42,6 @@ var (
 	ErrAccountManagerNotExist = errors.New("account manager name not exist")
 	ErrAmountMustZero         = errors.New("amount must be zero")
 	ErrToNameInvalid          = errors.New("action to name(Recipient) invalid")
+	ErrCounterNotExist        = errors.New("account global counter not exist")
+	ErrAccountIdInvalid       = errors.New("account id invalid")
 )

@@ -118,6 +118,10 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	if ok, err := accountManager.AccountIsExist(chainCfg.SysName); !ok {
 		panic(fmt.Sprintf("system account is not exist %v", err))
 	}
+	//init sysname
+	if !am.SetSysName(chainCfg.SysName) {
+		panic(fmt.Sprintf("accountmanager set sysname err"))
+	}
 
 	assetInfo, err := accountManager.GetAssetInfoByName(chainCfg.SysToken)
 	if err != nil {
