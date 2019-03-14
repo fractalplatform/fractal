@@ -128,6 +128,10 @@ func TestNewAccountManager(t *testing.T) {
 	}
 }
 
+func TestAccountManager_InitAccountCounter(t *testing.T) {
+    //TODO
+}
+
 func TestAccountManager_CreateAccount(t *testing.T) {
 	type fields struct {
 		sdb *state.StateDB
