@@ -368,7 +368,7 @@ func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, erro
 		}
 		return voterInfo.Quantity, nil
 	}
-	return nil, nil
+	return big.NewInt(0), nil
 }
 
 func (db *LDB) lastestHeight() (uint64, error) {

@@ -221,15 +221,11 @@ func (a *Asset) addNewAssetObject(ao *AssetObject) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	//store assetCount
-	b, err := rlp.EncodeToBytes(&assetCount)
-	if err != nil {
-		return 0, err
-	}
 
 	a.sdb.Put(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetCount, 10), aobject)
 	a.sdb.Put(assetManagerName, assetNameIdPrefix+ao.GetAssetName(), aid)
-	a.sdb.Put(assetManagerName, assetCountPrefix, b)
+	//store assetCount
+	a.sdb.Put(assetManagerName, assetCountPrefix, aid)
 	return assetCount, nil
 }
 
@@ -370,7 +366,7 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 	return nil
 }
 
-//SetAssetNewOwner change asset owner
+//UpdateAsset change asset info
 func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner common.Name, founderName common.Name) error {
 	if accountName == "" {
 		return ErrAccountNameNull

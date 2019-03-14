@@ -44,6 +44,7 @@ type Account struct {
 	//LastTime *big.Int
 	AcctName    common.Name   `json:"accountName"`
 	Founder     common.Name   `json:"founder"`
+	AccountID   uint64        `json:"accountID"`
 	ChargeRatio uint64        `json:"chargeRatio"`
 	Nonce       uint64        `json:"nonce"`
 	PublicKey   common.PubKey `json:"publicKey"`
@@ -67,6 +68,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 	acctObject := Account{
 		AcctName:    accountName,
 		Founder:     founderName,
+		AccountID:   0,
 		ChargeRatio: 0,
 		PublicKey:   pubkey,
 		Nonce:       0,
@@ -79,6 +81,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 	return &acctObject, nil
 }
 
+//HaveCode check account have code
 func (a *Account) HaveCode() bool {
 	if a.GetCodeSize() == 0 {
 		return false
@@ -86,6 +89,7 @@ func (a *Account) HaveCode() bool {
 	return true
 }
 
+// IsEmpty check account empty
 func (a *Account) IsEmpty() bool {
 	if a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0 {
 		return true
@@ -98,18 +102,32 @@ func (a *Account) GetName() common.Name {
 	return a.AcctName
 }
 
+//GetFounder return account object founder
 func (a *Account) GetFounder() common.Name {
 	return a.Founder
 }
 
+//SetFounder set account object founder
 func (a *Account) SetFounder(f common.Name) {
 	a.Founder = f
 }
 
+//GetAccountID return account object id
+func (a *Account) GetAccountID() uint64 {
+	return a.AccountID
+}
+
+//SetAccountID set account object id
+func (a *Account) SetAccountID(id uint64) {
+	a.AccountID = id
+}
+
+//GetChargeRatio return account charge ratio
 func (a *Account) GetChargeRatio() uint64 {
 	return a.ChargeRatio
 }
 
+//SetChargeRatio set account object charge ratio
 func (a *Account) SetChargeRatio(ra uint64) {
 	a.ChargeRatio = ra
 }

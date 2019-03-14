@@ -232,7 +232,7 @@ func TestAccountManager_AccountIsEmpty(t *testing.T) {
 		wantErr error
 	}{
 		//
-		{"accountEmpty", fields{sdb, ast}, args{common.Name("11122233")}, false, ErrAccountNotExist},
+		{"accountNotEmpty", fields{sdb, ast}, args{common.Name("11122233")}, false, ErrAccountNotExist},
 		{"accountEmpty", fields{sdb, ast}, args{common.Name("a123456789aeee")}, true, nil},
 	}
 	for _, tt := range tests {
@@ -1634,7 +1634,7 @@ func TestAccountManager_Process(t *testing.T) {
 		t.Error("Process update account failure")
 	}
 	val, err = ac1.GetBalanceByID(1)
-	if val.Cmp(big.NewInt(0)) != 0 {
+	if val.Cmp(big.NewInt(10)) != 0 {
 		t.Errorf("Process transfer  failure=%v", val)
 	}
 
