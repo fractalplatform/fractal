@@ -975,16 +975,16 @@ func (am *AccountManager) process(action *types.Action) error {
 		break
 
 	case types.DestroyAsset:
-		var asset asset.AssetObject
-		err := rlp.DecodeBytes(action.Data(), &asset)
-		if err != nil {
-			return err
-		}
-		if err = am.SubAccountBalanceByID(common.Name(sysName), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
+		// var asset asset.AssetObject
+		// err := rlp.DecodeBytes(action.Data(), &asset)
+		// if err != nil {
+		// 	return err
+		// }
+		if err := am.SubAccountBalanceByID(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
 			return err
 		}
 
-		if err = am.ast.DestroyAsset(common.Name(sysName), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
+		if err := am.ast.DestroyAsset(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
 			return err
 		}
 		break
