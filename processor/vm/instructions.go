@@ -32,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 var (
@@ -1105,6 +1106,12 @@ func opRevert(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 func opStop(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	return nil, nil
 }
+
+func opInvalid(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	log.Error("invalid opcode ")
+	return nil, nil
+}
+
 
 func opSuicide(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	//todo

@@ -267,7 +267,12 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, founderName com
 
 //GetAccountByTime get account by name and time
 func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64) (*Account, error) {
-	b, err := am.sdb.GetSnapshot(acctManagerName, acctInfoPrefix+accountName.String(), time)
+	accountID, err := am.GetAccountIDByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := am.sdb.GetSnapshot(acctManagerName, acctInfoPrefix+strconv.FormatUint(accountID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +328,7 @@ func (am *AccountManager) GetAccountById(id uint64) (*Account, error) {
 		return nil, err
 	}
 	if len(b) == 0 {
-		log.Info("account not exist", "id", ErrAccountNotExist, id)
+		log.Debug("account not exist", "id", ErrAccountNotExist, id)
 		return nil, nil
 	}
 	var acct Account

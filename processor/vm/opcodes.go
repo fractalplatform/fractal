@@ -222,6 +222,8 @@ const (
 	STATICCALL = 0xfa
 
 	REVERT       = 0xfd
+	///< invalid instruction for expressing runtime errors (e.g., division-by-zero)
+	INVALID      = 0xfe		
 	SELFDESTRUCT = 0xff
 )
 
