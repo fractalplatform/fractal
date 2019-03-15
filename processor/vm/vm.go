@@ -192,6 +192,9 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	if err != nil {
 		return nil, gas, err
 	}
+	if acct == nil {
+		return nil, gas, ErrAccountNotExist
+	}
 	codeHash, err := acct.GetCodeHash()
 	if err != nil {
 		return nil, gas, err

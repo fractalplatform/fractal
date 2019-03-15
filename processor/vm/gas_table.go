@@ -381,6 +381,10 @@ func gasRevert(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, m
 	return memoryGasCost(mem, memorySize)
 }
 
+func gasInvalid(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return 0,nil
+}
+
 func gasSuicide(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	var gas uint64
 	//todo

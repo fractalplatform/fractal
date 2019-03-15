@@ -186,6 +186,14 @@ func NewByzantiumInstructionSet() [256]operation {
 		reverts:       true,
 		returns:       true,
 	}
+	instructionSet[INVALID] = operation{
+		execute:       opInvalid,
+		gasCost:       gasInvalid,
+		validateStack: makeStackFunc(0, 0),		
+		valid:         false,
+		reverts:       true,
+		returns:       true,
+	}
 	return instructionSet
 }
 
