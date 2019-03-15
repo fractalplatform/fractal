@@ -210,6 +210,9 @@ const (
 	//snapshot num
 	SNAPSHOTTIME = 0xc6
 	SNAPBALANCE  = 0xc7
+	//
+	DESTROYASSET = 0xc8
+	GETACCOUNTID = 0xc9
 )
 
 const (
@@ -221,9 +224,9 @@ const (
 	DELEGATECALL
 	STATICCALL = 0xfa
 
-	REVERT       = 0xfd
+	REVERT = 0xfd
 	///< invalid instruction for expressing runtime errors (e.g., division-by-zero)
-	INVALID      = 0xfe		
+	INVALID      = 0xfe
 	SELFDESTRUCT = 0xff
 )
 

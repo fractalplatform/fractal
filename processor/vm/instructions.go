@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/math"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
@@ -32,7 +33,6 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/ethereum/go-ethereum/log"
 )
 
 var (
@@ -440,10 +440,10 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 				} else {
 					rerr = err
 				}
-			}else{
+			} else {
 				rbalance = balance
 			}
-			
+
 		} else {
 			rerr = err
 		}
@@ -451,7 +451,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	} else {
 		rerr = err
 	}
-     
+
 	if rerr != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
@@ -928,6 +928,44 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 	return err
 }
 
+func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	value, assetID := stack.pop(), stack.pop()
+	astID := assetID.Uint64()
+
+	action := types.NewAction(types.DestroyAsset, contract.CallerName, evm.chainConfig.SysName, 0, astID, 0, value, nil)
+
+	err := evm.AccountDB.Process(action)
+	if evm.vmConfig.ContractLogFlag {
+		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "destroyasset", GasUsed: 0, GasLimit: contract.Gas, Error: err.Error()}
+		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+	}
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(astID))
+	}
+	evm.interpreter.intPool.put(assetID)
+	return nil, nil
+}
+
+func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	account := stack.pop()
+	if name, err := common.BigToName(account); err == nil {
+		acctName := common.Name(name)
+		if accountID, err := evm.AccountDB.GetAccountIDByName(acctName); err != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(accountID))
+		} else {
+			stack.push(evm.interpreter.intPool.getZero())
+		}
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+	}
+
+	evm.interpreter.intPool.put(account)
+	return nil, nil
+}
+
 //issue an asset for multi-asset
 func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	offset, size := stack.pop(), stack.pop()
@@ -1111,7 +1149,6 @@ func opInvalid(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 	log.Error("invalid opcode ")
 	return nil, nil
 }
-
 
 func opSuicide(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	//todo

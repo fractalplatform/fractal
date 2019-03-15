@@ -41,6 +41,10 @@ type GasTable struct {
 	GetSnapshotTime uint64
 	GetAssetAmount  uint64
 	SnapBalance     uint64
+	IssueAsset      uint64
+	DestroyAsset    uint64
+	AddAsset        uint64
+	GetAccountID    uint64
 }
 
 // Variables containing gas prices for different ethereum phases.
@@ -61,6 +65,10 @@ var (
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
 		SnapBalance:     200,
+		IssueAsset:      200,
+		DestroyAsset:    200,
+		AddAsset:        200,
+		GetAccountID:    200,
 	}
 )
 
