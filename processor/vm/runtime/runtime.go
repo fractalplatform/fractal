@@ -106,7 +106,6 @@ func NewEnv(cfg *Config) *vm.EVM {
 		GetDelegatedByTime: func(string, uint64, *state.StateDB) (*big.Int, error) { return big.NewInt(0), nil },
 		Origin:             cfg.Origin,
 		From:               cfg.Origin,
-		FromPubkey:         cfg.FromPubkey,
 		Coinbase:           cfg.Coinbase,
 		BlockNumber:        cfg.BlockNumber,
 		Time:               cfg.Time,

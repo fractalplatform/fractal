@@ -83,6 +83,13 @@ const (
 	UnvoteProducer
 )
 
+type SignData struct {
+	V     *big.Int
+	R     *big.Int
+	S     *big.Int
+	Index []uint64
+}
+
 type actionData struct {
 	AType    ActionType
 	Nonce    uint64
@@ -97,6 +104,8 @@ type actionData struct {
 	V *big.Int
 	R *big.Int
 	S *big.Int
+
+	Sign []*SignData
 }
 
 // Action represents an entire action in the transaction.
@@ -124,11 +133,20 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
+		Sign:     make([]*SignData, 0),
 	}
 	if amount != nil {
 		data.Amount.Set(amount)
 	}
 	return &Action{data: data}
+}
+
+func (a *Action) GetSignIndex(i uint64) []uint64 {
+	return a.data.Sign[i].Index
+}
+
+func (a *Action) GetSign() []*SignData {
+	return a.data.Sign
 }
 
 //CheckValue check action type and value
@@ -211,12 +229,13 @@ func (a *Action) Hash() common.Hash {
 }
 
 // WithSignature returns a new transaction with the given signature.
-func (a *Action) WithSignature(signer Signer, sig []byte) error {
+func (a *Action) WithSignature(signer Signer, sig []byte, index []uint64) error {
 	r, s, v, err := signer.SignatureValues(sig)
 	if err != nil {
 		return err
 	}
 	a.data.R, a.data.S, a.data.V = r, s, v
+	a.data.Sign = append(a.data.Sign, &SignData{R: r, S: s, V: v, Index: index})
 	return nil
 }
 

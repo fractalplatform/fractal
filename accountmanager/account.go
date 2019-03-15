@@ -42,17 +42,21 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 //Account account object
 type Account struct {
 	//LastTime *big.Int
-	AcctName    common.Name   `json:"accountName"`
-	Founder     common.Name   `json:"founder"`
-	AccountID   uint64        `json:"accountID"`
-	ChargeRatio uint64        `json:"chargeRatio"`
-	Nonce       uint64        `json:"nonce"`
-	PublicKey   common.PubKey `json:"publicKey"`
-	Code        []byte        `json:"code"`
-	CodeHash    common.Hash   `json:"codeHash"`
-	CodeSize    uint64        `json:"codeSize"`
+	AcctName      common.Name   `json:"accountName"`
+	Founder       common.Name   `json:"founder"`
+	AccountID     uint64        `json:"accountID"`
+	ChargeRatio   uint64        `json:"chargeRatio"`
+	Nonce         uint64        `json:"nonce"`
+	PublicKey     common.PubKey `json:"publicKey"`
+	Code          []byte        `json:"code"`
+	CodeHash      common.Hash   `json:"codeHash"`
+	CodeSize      uint64        `json:"codeSize"`
+	Threshold     uint64        `json:"threshold"`
+	AuthorVersion uint64
 	//sort by asset id asc
 	Balances []*AssetBalance `json:"balances"`
+	//realated account, pubkey and address
+	Authors []*common.Author `json:"authors"`
 	//code Suicide
 	Suicide bool `json:"suicide"`
 	//account destroy
@@ -65,18 +69,22 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		return nil, ErrAccountNameInvalid
 	}
 
+	auth := common.NewAuthor(pubkey, 1)
 	acctObject := Account{
-		AcctName:    accountName,
-		Founder:     founderName,
-		AccountID:   0,
-		ChargeRatio: 0,
-		PublicKey:   pubkey,
-		Nonce:       0,
-		Balances:    make([]*AssetBalance, 0),
-		Code:        make([]byte, 0),
-		CodeHash:    crypto.Keccak256Hash(nil),
-		Suicide:     false,
-		Destroy:     false,
+		AcctName:      accountName,
+		Founder:       founderName,
+		AccountID:     0,
+		ChargeRatio:   0,
+		PublicKey:     pubkey,
+		Nonce:         0,
+		Balances:      make([]*AssetBalance, 0),
+		Code:          make([]byte, 0),
+		CodeHash:      crypto.Keccak256Hash(nil),
+		Threshold:     1,
+		AuthorVersion: 1,
+		Authors:       []*common.Author{auth},
+		Suicide:       false,
+		Destroy:       false,
 	}
 	return &acctObject, nil
 }

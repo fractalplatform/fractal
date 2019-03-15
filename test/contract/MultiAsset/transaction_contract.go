@@ -18,12 +18,14 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"math/big"
 	"strings"
 	"time"
 
+	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	testcommon "github.com/fractalplatform/fractal/test/common"
@@ -36,7 +38,7 @@ import (
 var (
 	abifile       = "MultiAsset.abi"
 	binfile       = "MultiAsset.bin"
-	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	privateKey, _ = crypto.HexToECDSA("38ca17df7ce2358c6caec338172680a16ffa32db0b8d127298f334122f742693")
 	from          = common.Name("ftsystemio")
 	to            = common.Name("toaddrname")
 	newFrom       = common.Name("newfromname")
@@ -55,15 +57,36 @@ func generateAccount() {
 	newPrivateKey, _ := crypto.GenerateKey()
 	pubKey := common.BytesToPubKey(crypto.FromECDSAPub(&newPrivateKey.PublicKey))
 
+	fmt.Println("priv ", hex.EncodeToString(crypto.FromECDSA(newPrivateKey)), " pub ", pubKey.String())
 	balance, _ := testcommon.GetAccountBalanceByID(from, assetID)
 	balance.Div(balance, big.NewInt(10))
 
 	newFrom = common.Name(fmt.Sprintf("newfromname%d", nonce))
 	contractAddr = common.Name(fmt.Sprintf("multiasset%d", nonce))
 
-	sendTransferTx(types.CreateAccount, from, newFrom, nonce, assetID, balance, pubKey.Bytes())
-	sendTransferTx(types.CreateAccount, from, to, nonce+1, assetID, big.NewInt(0), pubKey.Bytes())
-	sendTransferTx(types.CreateAccount, from, contractAddr, nonce+2, assetID, big.NewInt(0), pubKey.Bytes())
+	acct := &accountmanager.AccountAction{
+		AccountName: newFrom,
+		Founder:     newFrom,
+		PublicKey:   pubKey,
+	}
+	b, _ := rlp.EncodeToBytes(acct)
+	sendTransferTx(types.CreateAccount, from, from, nonce, assetID, balance, b)
+
+	acct = &accountmanager.AccountAction{
+		AccountName: to,
+		Founder:     to,
+		PublicKey:   pubKey,
+	}
+	b, _ = rlp.EncodeToBytes(acct)
+	sendTransferTx(types.CreateAccount, from, from, nonce+1, assetID, big.NewInt(0), b)
+
+	acct = &accountmanager.AccountAction{
+		AccountName: contractAddr,
+		Founder:     contractAddr,
+		PublicKey:   pubKey,
+	}
+	b, _ = rlp.EncodeToBytes(acct)
+	sendTransferTx(types.CreateAccount, from, from, nonce+2, assetID, big.NewInt(0), b)
 
 	for {
 		time.Sleep(10 * time.Second)
@@ -184,13 +207,13 @@ func sendIssueTransaction() {
 		return
 	}
 	nonce++
-	sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(0), input)
+	sendTransferTx(types.CallContract, from, contractAddr, nonce, assetID, big.NewInt(0), input)
 }
 
 func sendFulfillContractTransaction() {
 	jww.INFO.Println("test sendFulfillContractTransaction... ")
 	nonce++
-	sendTransferTx(types.CallContract, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
+	sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
 }
 
 func sendTransferTransaction() {
@@ -203,7 +226,8 @@ func sendTransferTransaction() {
 
 	for {
 		nonce++
-		sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(0), input)
+		sendTransferTx(types.CallContract, from, contractAddr, nonce, assetID, big.NewInt(0), input)
+		break
 	}
 }
 
@@ -213,7 +237,8 @@ func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetI
 	tx := types.NewTransaction(1, gasprice, action)
 
 	signer := types.MakeSigner(big.NewInt(1))
-	err := types.SignAction(action, tx, signer, privateKey)
+	key := types.MakeKeyPair(privateKey, []uint64{0})
+	err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key})
 	if err != nil {
 		jww.ERROR.Fatalln(err)
 	}

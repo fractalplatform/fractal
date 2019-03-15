@@ -437,13 +437,15 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
-		pub, err := types.Recover(signer, action, tx)
+		pubs, err := types.RecoverMultiKey(signer, action, tx)
 		if err != nil {
 			return err
 		}
-
-		if err := am.IsValidSign(action.Sender(), action.Type(), pub); err != nil {
-			return err
+		for i, pub := range pubs {
+			index := action.GetSignIndex(uint64(i))
+			if err := am.ValidSign(action.Sender(), pub, index); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -468,6 +470,66 @@ func (am *AccountManager) IsValidSign(accountName common.Name, aType types.Actio
 	}
 	return nil
 
+}
+
+//IsValidSign check the sign
+func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, index []uint64) error {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return err
+	}
+	if acct == nil {
+		return ErrAccountNotExist
+	}
+	if acct.IsDestroyed() {
+		return ErrAccountIsDestroy
+	}
+
+	var i int
+	var idx uint64
+	for i, idx = range index {
+		if idx >= uint64(len(acct.Authors)) {
+			return fmt.Errorf("acct authors modified")
+		}
+		if i == len(index)-1 {
+			break
+		}
+		switch relatedTy := acct.Authors[idx].Related.(type) {
+		case common.Name:
+			acct, err = am.GetAccountByName(relatedTy)
+			if err != nil {
+				return err
+			}
+			if acct == nil {
+				return ErrAccountNotExist
+			}
+			if acct.IsDestroyed() {
+				return ErrAccountIsDestroy
+			}
+		default:
+			return ErrAccountNotExist
+		}
+	}
+	return am.ValidOneSign(acct, idx, pub)
+}
+
+func (am *AccountManager) ValidOneSign(acct *Account, index uint64, pub common.PubKey) error {
+	switch relatedTy := acct.Authors[index].Related.(type) {
+	case common.Name:
+		return am.IsValidSign(relatedTy, 0, pub)
+	case common.PubKey:
+		if pub.Compare(relatedTy) != 0 {
+			return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, acct.GetPubKey().String(), pub.String())
+		}
+	case common.Address:
+		addr := common.BytesToAddress(pub.Bytes())
+		if addr.Compare(relatedTy) != 0 {
+			return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, acct.GetPubKey().String(), pub.String())
+		}
+	default:
+		return fmt.Errorf("wrong sign type")
+	}
+	return nil
 }
 
 //GetAssetInfoByName get asset info by asset name.

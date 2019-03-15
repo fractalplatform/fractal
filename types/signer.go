@@ -39,6 +39,15 @@ type sigCache struct {
 	pubKey []byte
 }
 
+type KeyPair struct {
+	priv  *ecdsa.PrivateKey
+	index []uint64
+}
+
+func MakeKeyPair(priv *ecdsa.PrivateKey, index []uint64) *KeyPair {
+	return &KeyPair{priv, index}
+}
+
 // MakeSigner returns a Signer based on the given chainID .
 func MakeSigner(chainID *big.Int) Signer {
 	return NewSigner(chainID)
@@ -51,7 +60,23 @@ func SignAction(a *Action, tx *Transaction, s Signer, prv *ecdsa.PrivateKey) err
 	if err != nil {
 		return err
 	}
-	return a.WithSignature(s, sig)
+	return a.WithSignature(s, sig, []uint64{0})
+}
+
+func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, keys []*KeyPair) error {
+	h := s.Hash(tx)
+	for _, key := range keys {
+		sig, err := crypto.Sign(h[:], key.priv)
+		if err != nil {
+			return err
+		}
+
+		err = a.WithSignature(s, sig, key.index)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Recover returns the pubkey derived from the signature (V, R, S) using secp256k1
@@ -73,6 +98,24 @@ func Recover(signer Signer, a *Action, tx *Transaction) (common.PubKey, error) {
 	}
 	a.sender.Store(sigCache{signer: signer, pubKey: pubKey})
 	return common.BytesToPubKey(pubKey), nil
+}
+
+func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
+	// if sc := a.sender.Load(); sc != nil {
+	// 	sigCache := sc.(sigCache)
+	// 	if sigCache.signer.Equal(signer) {
+	// 		pk := new(common.PubKey)
+	// 		pk.SetBytes(sigCache.pubKey)
+	// 		return *pk, nil
+	// 	}
+	// }
+
+	pubKeys, err := signer.PubKeys(a, tx)
+	if err != nil {
+		return []common.PubKey{}, err
+	}
+	//	a.sender.Store(sigCache{signer: signer, pubKey: pubKey})
+	return pubKeys, nil
 }
 
 // Signer implements Signer .
@@ -106,6 +149,24 @@ func (s Signer) PubKey(a *Action, tx *Transaction) ([]byte, error) {
 	V := new(big.Int).Sub(a.data.V, s.chainIDMul)
 	V.Sub(V, big8)
 	return recoverPlain(s.Hash(tx), a.data.R, a.data.S, V, true)
+}
+
+func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if a.ChainID().Cmp(s.chainID) != 0 {
+		return nil, ErrInvalidchainID
+	}
+	var pubKeys []common.PubKey
+	for _, sign := range a.data.Sign {
+		V := new(big.Int).Sub(sign.V, s.chainIDMul)
+		V.Sub(V, big8)
+		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V, true)
+		if err != nil {
+			return nil, err
+		}
+		pubKey := common.BytesToPubKey(data)
+		pubKeys = append(pubKeys, pubKey)
+	}
+	return pubKeys, nil
 }
 
 // SignatureValues returns a new transaction with the given signature. This signature
