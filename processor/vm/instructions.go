@@ -953,7 +953,7 @@ func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	account := stack.pop()
 	if name, err := common.BigToName(account); err == nil {
 		acctName := common.Name(name)
-		if accountID, err := evm.AccountDB.GetAccountIDByName(acctName); err != nil {
+		if accountID, err := evm.AccountDB.GetAccountIDByName(acctName); err == nil {
 			stack.push(evm.interpreter.intPool.get().SetUint64(accountID))
 		} else {
 			stack.push(evm.interpreter.intPool.getZero())
