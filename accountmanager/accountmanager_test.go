@@ -129,7 +129,7 @@ func TestNewAccountManager(t *testing.T) {
 }
 
 func TestAccountManager_InitAccountCounter(t *testing.T) {
-    //TODO
+	//TODO
 }
 
 func TestAccountManager_CreateAccount(t *testing.T) {

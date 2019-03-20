@@ -930,6 +930,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
+
 		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}

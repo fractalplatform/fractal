@@ -60,7 +60,7 @@ func (aapi *AccountAPI) GetAccountByID(ctx context.Context, accountID uint64) (*
 	if am == nil {
 		return nil, ErrGetAccounManagerErr
 	}
-	return am.GetAccountById(accountID)	
+	return am.GetAccountById(accountID)
 }
 
 //GetAccountByName
