@@ -51,6 +51,18 @@ func (aapi *AccountAPI) AccountIsExist(ctx context.Context, acctName common.Name
 	return acct.AccountIsExist(acctName)
 }
 
+//GetAccountByID
+func (aapi *AccountAPI) GetAccountByID(ctx context.Context, accountID uint64) (*accountmanager.Account, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+	if am == nil {
+		return nil, ErrGetAccounManagerErr
+	}
+	return am.GetAccountById(accountID)	
+}
+
 //GetAccountByName
 func (aapi *AccountAPI) GetAccountByName(ctx context.Context, accountName common.Name) (*accountmanager.Account, error) {
 	am, err := aapi.b.GetAccountManager()
@@ -152,6 +164,18 @@ func (aapi *AccountAPI) GetAssetInfoByID(ctx context.Context, assetID uint64) (*
 		return nil, ErrGetAccounManagerErr
 	}
 	return acct.GetAssetInfoByID(assetID)
+}
+
+//GetAssetAmountByTime
+func (aapi *AccountAPI) GetAssetAmountByTime(ctx context.Context, assetID uint64, time uint64) (*big.Int, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+	if am == nil {
+		return nil, ErrGetAccounManagerErr
+	}
+	return am.GetAssetAmountByTime(assetID, time)
 }
 
 //GetAccountBalanceByTime

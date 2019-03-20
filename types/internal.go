@@ -14,18 +14,31 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package rpc
+package types
 
-import (
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-)
+import "github.com/fractalplatform/fractal/common"
 
-var (
-	SystemAccountPriKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	SystemAccountPubKey    = common.HexToPubKey("0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd")
-	Gaslimit               = uint64(2000000)
-	SystemAccount          = "ftsystemio"
-	Minernonce             = uint64(0)
-	MaxTxNumInTxpool       = 40960 + 4096
-)
+type DetailTx struct {
+	TxHash      common.Hash
+	InternalTxs []*InternalTx
+}
+
+type InternalTx struct {
+	InterlnalLogs []*InternalLog
+}
+
+type InternalLog struct {
+	Action     *RPCAction
+	ActionType string
+	GasUsed    uint64
+	GasLimit   uint64
+	Depth      uint64
+	Error      string
+}
+
+type BlockAndResult struct {
+	Block     *Block
+	Receipts  []*Receipt
+	DetailTxs []*DetailTx
+	Hash      common.Hash
+}

@@ -28,6 +28,8 @@ var (
 
 	ErrNoGenesis = errors.New("Genesis not found in chain")
 
+	errReorgSystemBlock = errors.New("not reorg system block")
+
 	errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
 	errGenesisNoDpos = errors.New("genesis has no dpos configuration")
@@ -40,5 +42,5 @@ type GenesisMismatchError struct {
 }
 
 func (e *GenesisMismatchError) Error() string {
-	return fmt.Sprintf("database already contains an incompatible genesis block (have %x, new %x)", e.Stored[:8], e.New[:8])
+	return fmt.Sprintf("database already contains an incompatible genesis block (have %x, new %x)", e.Stored[:], e.New[:])
 }

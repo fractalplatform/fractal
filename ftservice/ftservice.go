@@ -58,6 +58,7 @@ type FtService struct {
 	gasPrice     *big.Int
 	lock         sync.RWMutex // Protects the variadic fields (e.g. gas price)
 	APIBackend   *APIBackend
+	snapshot     *state.SnapshotSt
 }
 
 // New creates a new ftservice object (including the initialisation of the common ftservice object)
@@ -71,7 +72,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	ctx.AppendBootNodes(chainCfg.BootNodes)
 
 	ftservice := &FtService{
@@ -92,14 +92,20 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	}
 
 	//blockchain
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vm.Config{}, ftservice.chainConfig, txpool.SenderCacher)
+	vmconfig := vm.Config{
+		ContractLogFlag: config.ContractLogFlag,
+	}
+	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
 	}
-	ftservice.wallet.SetBlockChain(ftservice.blockchain)
+
+	ftservice.snapshot = state.NewSnapshot(chainDb, 300, 3600)
 	if config.Snapshot {
-		go state.SnapShotblk(chainDb, 300, 3600)
+		ftservice.snapshot.Start()
 	}
+
+	ftservice.wallet.SetBlockChain(ftservice.blockchain)
 
 	statedb, err := ftservice.blockchain.State()
 	if err != nil {
@@ -111,6 +117,10 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	}
 	if ok, err := accountManager.AccountIsExist(chainCfg.SysName); !ok {
 		panic(fmt.Sprintf("system account is not exist %v", err))
+	}
+	//init sysname
+	if !am.SetSysName(chainCfg.SysName) {
+		panic(fmt.Sprintf("accountmanager set sysname err"))
 	}
 
 	assetInfo, err := accountManager.GetAssetInfoByName(chainCfg.SysToken)
@@ -155,7 +165,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
 	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
 	if config.Miner.Start {
-		ftservice.miner.Start()
+		ftservice.miner.Start(false)
 	}
 
 	ftservice.APIBackend = &APIBackend{ftservice: ftservice}
@@ -179,6 +189,7 @@ func (fs *FtService) Start() error {
 
 // Stop implements node.Service, terminating all internal goroutine
 func (fs *FtService) Stop() error {
+	fs.snapshot.Stop()
 	fs.blockchain.Stop()
 	fs.txPool.Stop()
 	fs.chainDb.Close()

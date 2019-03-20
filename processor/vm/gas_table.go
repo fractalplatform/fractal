@@ -381,6 +381,10 @@ func gasRevert(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, m
 	return memoryGasCost(mem, memorySize)
 }
 
+func gasInvalid(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return 0, nil
+}
+
 func gasSuicide(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	var gas uint64
 	//todo
@@ -428,6 +432,10 @@ func gasDelegateCall(gt params.GasTable, evm *EVM, contract *Contract, stack *St
 	return gas, nil
 }
 
+func gasIssueAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.IssueAsset, nil
+}
+
 func gasBalanceex(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.Balance, nil
 }
@@ -437,7 +445,7 @@ func gasGetAssetAmount(gt params.GasTable, evm *EVM, contract *Contract, stack *
 }
 
 func gasSnapBalance(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
-	return gt.GetAssetAmount, nil
+	return gt.SnapBalance, nil
 }
 
 func gasGetSnapshotTime(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
@@ -446,7 +454,17 @@ func gasGetSnapshotTime(gt params.GasTable, evm *EVM, contract *Contract, stack 
 
 func gasAddAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 
-	return params.CallValueTransferGas + gt.Calls, nil
+	return gt.AddAsset, nil
+}
+
+func gasGetAccountID(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+
+	return gt.GetAccountID, nil
+}
+
+func gasDestroyAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+
+	return gt.DestroyAsset, nil
 }
 
 func gasSetAssetOwner(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

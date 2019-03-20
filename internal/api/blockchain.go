@@ -90,6 +90,7 @@ func (s *PublicBlockChainAPI) GetTxNumByBlockHash(ctx context.Context, blockHash
 	}
 	return 0, err
 }
+
 func (s *PublicBlockChainAPI) GetTxNumByBlockNum(ctx context.Context, blockNr rpc.BlockNumber) (int, error) {
 	block, err := s.b.BlockByNumber(ctx, blockNr)
 	if block != nil {
@@ -97,6 +98,7 @@ func (s *PublicBlockChainAPI) GetTxNumByBlockNum(ctx context.Context, blockNr rp
 	}
 	return 0, err
 }
+
 func (s *PublicBlockChainAPI) GetTotalTxNumByBlockHash(ctx context.Context, blockHash common.Hash, lookbackNum uint64) (*big.Int, error) {
 	block, err := s.b.GetBlock(ctx, blockHash)
 	if block != nil {
@@ -116,6 +118,7 @@ func (s *PublicBlockChainAPI) GetTotalTxNumByBlockHash(ctx context.Context, bloc
 
 	return nil, err
 }
+
 func (s *PublicBlockChainAPI) GetTotalTxNumByBlockNum(ctx context.Context, blockNr rpc.BlockNumber, lookbackNum uint64) (*big.Int, error) {
 	totalTxNum := big.NewInt(0)
 	for i := blockNr; i >= 0 && i > blockNr-rpc.BlockNumber(lookbackNum); i-- {
@@ -168,6 +171,10 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 	receipt := receipts[index]
 
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
+}
+
+func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
+	return s.b.GetBlockAndResult(ctx, blockNr), nil
 }
 
 type CallArgs struct {

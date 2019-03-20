@@ -17,7 +17,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -30,7 +29,7 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0xaa68da4b9823e385074d8f73904ba4b5129df41e2a0ae7efa745b154b6dde1e9")
+var defaultgenesisBlockHash = common.HexToHash("0x364bd3992fab22d8ef84f1168042e942585aa4990d2a4b0b280b379e254f164a")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesis().ToBlock(nil)
@@ -41,7 +40,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0xf3082afdbb6b3087ff67e334fd32e20cf4a528141871333c5497ddeff3dedf3d")
+		customghash = common.HexToHash("0x4a8fbed6696cf57ae8081e9d17a1b4518f26075d7f6602912329561bcfdd5c35")
 		customg     = Genesis{
 			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:          dpos.DefaultConfig,
@@ -50,7 +49,32 @@ func TestSetupGenesis(t *testing.T) {
 			AllocAssets:   DefaultGenesisAssets(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0x63e705e6477865d0fa743ce6d7273a5cb03c95f403309c33b22d67daf464aea4")
+		oldcustomghash = common.HexToHash("768c8e4e507b3d691c2b85e5cdc912ba06829ee72d373b3724159e61f32731c6")
+		dposConfig     = &dpos.Config{
+			MaxURLLen:            512,
+			UnitStake:            big.NewInt(1000),
+			CadidateMinQuantity:  big.NewInt(10),
+			VoterMinQuantity:     big.NewInt(1),
+			ActivatedMinQuantity: big.NewInt(100),
+			BlockInterval:        3000,
+			BlockFrequency:       6,
+			CadidateScheduleSize: 3,
+			DelayEcho:            2,
+			AccountName:          "ftsystemdpos",
+			SystemName:           "ftsystemio",
+			SystemURL:            "www.fractalproject.com",
+			ExtraBlockReward:     big.NewInt(1),
+			BlockReward:          big.NewInt(5),
+			Decimals:             18,
+		}
+
+		chainConfig = &params.ChainConfig{
+			ChainID:             big.NewInt(1),
+			SysName:             "ftsystemio",
+			SysToken:            "ftoken",
+			AssetChargeRatio:    80,
+			ContractChargeRatio: 80,
+		}
 	)
 	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
 
@@ -89,8 +113,8 @@ func TestSetupGenesis(t *testing.T) {
 				return SetupGenesisBlock(db, nil)
 			},
 			wantHash:   defaultgenesisBlockHash,
-			wantConfig: params.DefaultChainconfig,
-			wantDpos:   dpos.DefaultConfig,
+			wantConfig: chainConfig,
+			wantDpos:   dposConfig,
 		},
 		{
 			name: "compatible config in DB",
@@ -98,7 +122,6 @@ func TestSetupGenesis(t *testing.T) {
 				if _, err := oldcustomg.Commit(db); err != nil {
 					return nil, nil, common.Hash{}, err
 				}
-				fmt.Println("=====>SetupGenesisBlock")
 				return SetupGenesisBlock(db, &customg)
 			},
 			wantErr: &GenesisMismatchError{
@@ -111,33 +134,32 @@ func TestSetupGenesis(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
+	for _, test := range tests {
 		db := fdb.NewMemDatabase()
-		fmt.Println("=====>", i, test.name)
 
 		config, dpos, hash, err := test.fn(db)
-		fmt.Println("=====>", i, test.name, err)
 
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
 			spew := spew.ConfigState{DisablePointerAddresses: true, DisableCapacities: true}
-			t.Errorf("%s: returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
+			t.Errorf("%s: 1 returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
 		}
+
 		if !reflect.DeepEqual(config, test.wantConfig) {
-			t.Errorf("%s:\n returned %v\nwant     %v", test.name, config, test.wantConfig)
+			t.Errorf("%s:\n 2 returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 
 		if !reflect.DeepEqual(dpos, test.wantDpos) {
-			t.Errorf("%s:\nreturned %v\nwant     %v", test.name, config, test.wantConfig)
+			t.Errorf("%s:\n 3returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 
 		if hash != test.wantHash {
-			t.Errorf("%s: returned hash %s, want %s", test.name, hash.Hex(), test.wantHash.Hex())
+			t.Errorf("%s: 4 returned hash %s, want %s", test.name, hash.Hex(), test.wantHash.Hex())
 		} else if err == nil {
 			// Check database content.
 			stored := rawdb.ReadBlock(db, test.wantHash, 0)
 			if stored.Hash() != test.wantHash {
-				t.Errorf("%s: block in DB has hash %s, want %s", test.name, stored.Hash(), test.wantHash)
+				t.Errorf("%s: 5 block in DB has hash %s, want %s", test.name, stored.Hash(), test.wantHash)
 			}
 		}
 	}

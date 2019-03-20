@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package blockchain
 
 import (
@@ -57,6 +58,7 @@ func (status *stationStatus) getStatus() *NewBlockHashesData {
 	return (*NewBlockHashesData)(latest)
 }
 
+// Downloader for blockchain sync block.
 type Downloader struct {
 	station         router.Station
 	statusCh        chan *router.Event

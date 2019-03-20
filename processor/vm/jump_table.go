@@ -133,9 +133,25 @@ func NewByzantiumInstructionSet() [256]operation {
 
 	instructionSet[ISSUEASSET] = operation{
 		execute:       opIssueAsset,
-		gasCost:       gasCreate,
+		gasCost:       gasIssueAsset,
 		validateStack: makeStackFunc(1, 1),
 		memorySize:    memoryReturn,
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[DESTROYASSET] = operation{
+		execute:       opDestroyAsset,
+		gasCost:       gasDestroyAsset,
+		validateStack: makeStackFunc(1, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETACCOUNTID] = operation{
+		execute:       opGetAccountID,
+		gasCost:       gasGetAccountID,
+		validateStack: makeStackFunc(1, 1),
 		valid:         true,
 		returns:       true,
 	}
@@ -183,6 +199,14 @@ func NewByzantiumInstructionSet() [256]operation {
 		validateStack: makeStackFunc(2, 0),
 		memorySize:    memoryRevert,
 		valid:         true,
+		reverts:       true,
+		returns:       true,
+	}
+	instructionSet[INVALID] = operation{
+		execute:       opInvalid,
+		gasCost:       gasInvalid,
+		validateStack: makeStackFunc(0, 0),
+		valid:         false,
 		reverts:       true,
 		returns:       true,
 	}

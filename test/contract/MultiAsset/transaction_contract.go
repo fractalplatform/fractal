@@ -63,6 +63,7 @@ func generateAccount() {
 
 	sendTransferTx(types.CreateAccount, from, newFrom, nonce, assetID, balance, pubKey.Bytes())
 	sendTransferTx(types.CreateAccount, from, to, nonce+1, assetID, big.NewInt(0), pubKey.Bytes())
+	sendTransferTx(types.CreateAccount, from, contractAddr, nonce+2, assetID, big.NewInt(0), pubKey.Bytes())
 
 	for {
 		time.Sleep(10 * time.Second)
@@ -176,7 +177,7 @@ func sendDeployContractTransaction() {
 
 func sendIssueTransaction() {
 	jww.INFO.Println("test sendIssueTransaction... ")
-	issueStr := "eth" + from.String() + ",ethereum,10000000000,10," + from.String()
+	issueStr := "eth" + from.String() + ",ethereum,10000000000,10," + from.String() + ",10000000000," + from.String()
 	input, err := formIssueAssetInput(abifile, issueStr)
 	if err != nil {
 		jww.INFO.Println("sendIssueTransaction formIssueAssetInput error ... ", err)
@@ -189,7 +190,7 @@ func sendIssueTransaction() {
 func sendFulfillContractTransaction() {
 	jww.INFO.Println("test sendFulfillContractTransaction... ")
 	nonce++
-	sendTransferTx(types.Transfer, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
+	sendTransferTx(types.CallContract, from, contractAddr, nonce, assetID, big.NewInt(1000000000), nil)
 }
 
 func sendTransferTransaction() {

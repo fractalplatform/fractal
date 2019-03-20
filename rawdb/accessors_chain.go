@@ -77,6 +77,25 @@ func WriteHeadHeaderHash(db DatabaseWriter, hash common.Hash) {
 	}
 }
 
+// ReadIrreversibleNumber retrieves the irreversible number of chain.
+func ReadIrreversibleNumber(db DatabaseReader) uint64 {
+	data, err := db.Get(irreversibleNumberKey)
+	if err != nil {
+		log.Crit("Failed to get irreversible number ", "err", err)
+	}
+	if len(data) == 0 {
+		return 0
+	}
+	return decodeBlockNumber(data)
+}
+
+// WriteIrreversibleNumber stores the irreversible number of chain.
+func WriteIrreversibleNumber(db DatabaseWriter, number uint64) {
+	if err := db.Put(irreversibleNumberKey, encodeBlockNumber(number)); err != nil {
+		log.Crit("Failed to store irreversible number ", "err", err)
+	}
+}
+
 // ReadHeadBlockHash retrieves the hash of the current canonical head block.
 func ReadHeadBlockHash(db DatabaseReader) common.Hash {
 	data, _ := db.Get(headBlockKey)
@@ -90,22 +109,6 @@ func ReadHeadBlockHash(db DatabaseReader) common.Hash {
 func WriteHeadBlockHash(db DatabaseWriter, hash common.Hash) {
 	if err := db.Put(headBlockKey, hash.Bytes()); err != nil {
 		log.Crit("Failed to store last block's hash", "err", err)
-	}
-}
-
-// ReadHeadFastBlockHash retrieves the hash of the current fast-sync head block.
-func ReadHeadFastBlockHash(db DatabaseReader) common.Hash {
-	data, _ := db.Get(headFastBlockKey)
-	if len(data) == 0 {
-		return common.Hash{}
-	}
-	return common.BytesToHash(data)
-}
-
-// WriteHeadFastBlockHash stores the hash of the current fast-sync head block.
-func WriteHeadFastBlockHash(db DatabaseWriter, hash common.Hash) {
-	if err := db.Put(headFastBlockKey, hash.Bytes()); err != nil {
-		log.Crit("Failed to store last fast block's hash", "err", err)
 	}
 }
 
@@ -249,6 +252,7 @@ func WriteBlock(db DatabaseWriter, block *types.Block) {
 // DeleteBlock removes all block data associated with a hash.
 func DeleteBlock(db DatabaseDeleter, hash common.Hash, number uint64) {
 	DeleteReceipts(db, hash, number)
+	DeleteDetailTxs(db, hash, number)
 	DeleteHeader(db, hash, number)
 	DeleteBody(db, hash, number)
 	DeleteTd(db, hash, number)
@@ -327,6 +331,50 @@ func WriteReceipts(db DatabaseWriter, hash common.Hash, number uint64, receipts 
 func DeleteReceipts(db DatabaseDeleter, hash common.Hash, number uint64) {
 	if err := db.Delete(blockReceiptsKey(number, hash)); err != nil {
 		log.Crit("Failed to delete block receipts", "err", err)
+	}
+}
+
+// ReadDetailTxs retrieves all the contract log belonging to a block.
+func ReadDetailTxs(db DatabaseReader, hash common.Hash, number uint64) []*types.DetailTx {
+	// Retrieve the flattened receipt slice
+	data, _ := db.Get(blockDetailTxsKey(number, hash))
+	if len(data) == 0 {
+		return nil
+	}
+	// Convert the revceipts from their storage form to their internal representation
+	storageDetailTxs := []*types.DetailTx{}
+	if err := rlp.DecodeBytes(data, &storageDetailTxs); err != nil {
+		fmt.Println("Invalid detailtxs array RLP", "hash", hash.String(), "err", err)
+		return nil
+	}
+	detailtxs := make([]*types.DetailTx, len(storageDetailTxs))
+	for i, detailtx := range storageDetailTxs {
+		detailtxs[i] = (*types.DetailTx)(detailtx)
+	}
+	return detailtxs
+}
+
+// WriteDetailTxs stores all the contract log belonging to a block.
+func WriteDetailTxs(db DatabaseWriter, hash common.Hash, number uint64, dtxs []*types.DetailTx) {
+	// Convert the receipts into their storage form and serialize them
+	storageDetailTxs := make([]*types.DetailTx, len(dtxs))
+	for i, dtx := range dtxs {
+		storageDetailTxs[i] = (*types.DetailTx)(dtx)
+	}
+	bytes, err := rlp.EncodeToBytes(storageDetailTxs)
+	if err != nil {
+		log.Crit("Failed to encode block detailtxs", "err", err)
+	}
+	// Store the flattened receipt slice
+	if err := db.Put(blockDetailTxsKey(number, hash), bytes); err != nil {
+		log.Crit("Failed to store block detailtxs", "err", err)
+	}
+}
+
+// DeleteDetailTxs removes all contract log data associated with a block hash.
+func DeleteDetailTxs(db DatabaseDeleter, hash common.Hash, number uint64) {
+	if err := db.Delete(blockDetailTxsKey(number, hash)); err != nil {
+		log.Crit("Failed to delete block detailtxs", "err", err)
 	}
 }
 

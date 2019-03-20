@@ -20,6 +20,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math/big"
 	"sort"
 	"sync/atomic"
@@ -28,6 +29,12 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"golang.org/x/crypto/sha3"
 )
+
+// ForkID  represents a blockchain fork
+type ForkID struct {
+	Cur  uint64
+	Next uint64
+}
 
 // Header represents a block header in the blockchain.
 type Header struct {
@@ -44,11 +51,43 @@ type Header struct {
 	GasUsed              uint64      `json:"gasUsed"`
 	Time                 *big.Int    `json:"timestamp"`
 	Extra                []byte      `json:"extraData"`
+
+	// cache
+	forkID atomic.Value
+
+	// additional fields (for forward compatibility).
+	AdditionalFields []rlp.RawValue `rlp:"tail"`
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
 func (h *Header) Hash() common.Hash { return rlpHash(h) }
+
+// WithForkID store fork id
+func (h *Header) WithForkID(cur, next uint64) {
+	forkID := ForkID{Cur: cur, Next: next}
+	bytes, _ := rlp.EncodeToBytes(forkID)
+	h.AdditionalFields = append(h.AdditionalFields, rlp.RawValue(bytes))
+	h.forkID.Store(forkID)
+}
+
+// CurForkID returns the header's current fork ID.
+func (h *Header) CurForkID() uint64 { return h.getForkID().Cur }
+
+// NextForkID returns the header's next fork ID.
+func (h *Header) NextForkID() uint64 { return h.getForkID().Next }
+
+func (h *Header) getForkID() ForkID {
+	if forkID := h.forkID.Load(); forkID != nil {
+		return forkID.(ForkID)
+	}
+	forkID := ForkID{}
+	if len(h.AdditionalFields) > 0 {
+		rlp.DecodeBytes(h.AdditionalFields[0], &forkID)
+		h.forkID.Store(forkID)
+	}
+	return forkID
+}
 
 // Block represents an entire block in the blockchain.
 type Block struct {
@@ -58,6 +97,12 @@ type Block struct {
 	// caches
 	hash atomic.Value
 	size atomic.Value
+}
+
+// "external" block encoding. used protocol, etc.
+type extblock struct {
+	Header *Header
+	Txs    []*Transaction
 }
 
 // NewBlock creates a new block. The input data is copied,
@@ -75,6 +120,7 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
 	b.Txs = make([]*Transaction, len(txs))
 	copy(b.Txs, txs)
 	b.Head.Bloom = CreateBloom(receipts)
+
 	return b
 }
 
@@ -130,6 +176,12 @@ func (b *Block) Header() *Header { return CopyHeader(b.Head) }
 // Body returns the block's Body.
 func (b *Block) Body() *Body { return &Body{b.Txs} }
 
+// CurForkID returns the block's current fork ID.
+func (b *Block) CurForkID() uint64 { return b.Head.CurForkID() }
+
+// NextForkID returns the block's current fork ID.
+func (b *Block) NextForkID() uint64 { return b.Head.NextForkID() }
+
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
 func (b *Block) Size() common.StorageSize {
@@ -145,6 +197,14 @@ func (b *Block) Size() common.StorageSize {
 // EncodeRLP serializes b into the RLP block format.
 func (b *Block) EncodeRLP() ([]byte, error) {
 	return rlp.EncodeToBytes(b)
+}
+
+// EncodeRLP serializes b into RLP block format.
+func (b *Block) ExtEncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extblock{
+		Header: b.Head,
+		Txs:    b.Txs,
+	})
 }
 
 // DecodeRLP decodes the block
@@ -259,7 +319,10 @@ func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 
 func rlpHash(x interface{}) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		panic(fmt.Sprintf("rlp hash encode err: %v", err))
+	}
 	hw.Sum(h[:0])
 	return h
 }

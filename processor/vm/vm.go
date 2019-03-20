@@ -95,6 +95,7 @@ type EVM struct {
 	callGasTemp uint64
 
 	FounderGasMap map[common.Name]int64
+	InternalTxs   []*types.InternalLog
 }
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
@@ -190,6 +191,9 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	acct, err := evm.AccountDB.GetAccountByName(toName)
 	if err != nil {
 		return nil, gas, err
+	}
+	if acct == nil {
+		return nil, gas, ErrAccountNotExist
 	}
 	codeHash, err := acct.GetCodeHash()
 	if err != nil {
@@ -471,9 +475,9 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 
-	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil{
-		return nil,0,err
-	}else if b == true {
+	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
+		return nil, 0, err
+	} else if b == true {
 		return nil, 0, ErrContractCodeCollision
 	}
 
