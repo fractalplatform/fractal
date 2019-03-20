@@ -135,7 +135,7 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 		privs = append(privs, priv)
 	}
 
-	if !common.IsValidName(name) {
+	if !common.IsValidAccountName(name) {
 		return fmt.Errorf("invalid name %v", name)
 	}
 

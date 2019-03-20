@@ -56,9 +56,24 @@ type AccountManager struct {
 	ast *asset.Asset
 }
 
+func SetAccountNameConfig(config *Config) bool {
+	if config.AccountNameLevel < 0 || config.AccountNameLength <= 8 {
+		return false
+	}
+
+	if config.AccountNameLevel > 0 {
+		if config.SubAccountNameLength < 1 {
+			return false
+		}
+	}
+
+	common.SetAccountNameCheck(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
+	return true
+}
+
 //SetSysName set the global sys name
 func SetSysName(name common.Name) bool {
-	if common.IsValidName(name.String()) {
+	if common.IsValidAccountName(name.String()) {
 		sysName = name.String()
 		return true
 	}
@@ -67,7 +82,7 @@ func SetSysName(name common.Name) bool {
 
 //SetAcctMangerName  set the global account manager name
 func SetAcctMangerName(name common.Name) bool {
-	if common.IsValidName(name.String()) {
+	if common.IsValidAccountName(name.String()) {
 		acctManagerName = name.String()
 		return true
 	}
@@ -172,6 +187,10 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 
 //CreateAccount contract account
 func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+	if !common.IsValidAccountName(accountName.String()) {
+		return fmt.Errorf("account %s is invalid", accountName.String())
+	}
+
 	//check is exist
 	accountID, err := am.GetAccountIDByName(accountName)
 	if err != nil {
@@ -928,6 +947,12 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
+		if acct.AccountName.AccountNameLevel() > 1 {
+			if !action.Sender().IsValidCreator(acct.AccountName.String()) {
+				return ErrAccountInvaid
+			}
+		}
+
 		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
@@ -959,6 +984,7 @@ func (am *AccountManager) process(action *types.Action) error {
 		if err != nil {
 			return err
 		}
+
 		if err := am.IssueAsset(&asset); err != nil {
 			return err
 		}

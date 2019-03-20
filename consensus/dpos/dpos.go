@@ -309,7 +309,7 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 		state: state,
 	}
 
-	if !common.IsValidName(producer) {
+	if !common.IsValidAccountName(producer) {
 		return ErrIllegalProducerName
 	}
 

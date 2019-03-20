@@ -17,6 +17,8 @@
 package ftservice
 
 import (
+	am "github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
@@ -50,6 +52,8 @@ type Config struct {
 	// snapshot
 	Snapshot        bool
 	ContractLogFlag bool `mapstructure:"ftservice-ContractLogFlag"`
+	AccountNameConf *am.Config
+	AssetNameConf   *asset.Config
 }
 
 // MinerConfig miner config

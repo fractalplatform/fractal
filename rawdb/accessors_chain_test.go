@@ -30,6 +30,7 @@ import (
 
 // Tests block header storage and retrieval operations.
 func TestHeaderStorage(t *testing.T) {
+
 	db := fdb.NewMemDatabase()
 
 	// Create a test header to move around the database and make sure it's really new

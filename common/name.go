@@ -29,9 +29,56 @@ import (
 // Name represents the account name
 type Name string
 
-// IsValidName verifies whether a string can represent a valid name or not.
-func IsValidName(s string) bool {
-	return regexp.MustCompile("^[a-z0-9]{8,16}$").MatchString(s)
+var accountNameCheck *regexp.Regexp
+var assetNameCheck *regexp.Regexp
+
+var (
+	AccountNameLevel  uint64 = 2
+	AccountNameLen    uint64 = 16
+	SubAccountNameLen uint64 = 6
+	AssetNameLevel    uint64 = 2
+	AssetNameLen      uint64 = 16
+	SubAssetNameLen   uint64 = 6
+)
+
+func init() {
+	SetAccountNameCheck(AccountNameLevel, AccountNameLen, SubAccountNameLen)
+	SetAssetNameCheck(AssetNameLevel, AssetNameLen, SubAssetNameLen)
+}
+
+func SetAccountNameCheck(nameLevel, nameLen, subNameLen uint64) {
+	var nameCheck string
+	if nameLevel == 0 {
+		nameCheck = fmt.Sprintf("^[a-z0-9]{8,%d}$", nameLen)
+	} else {
+		nameCheck = fmt.Sprintf("^[a-z0-9]{8,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
+	}
+	accountNameCheck = regexp.MustCompile(nameCheck)
+}
+
+func SetAssetNameCheck(nameLevel, nameLen, subNameLen uint64) {
+	var nameCheck string
+	if nameLevel == 0 {
+		nameCheck = fmt.Sprintf("^[a-z0-9]{2,%d}$", nameLen)
+	} else {
+		nameCheck = fmt.Sprintf("^[a-z0-9]{2,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
+	}
+	assetNameCheck = regexp.MustCompile(nameCheck)
+}
+
+// IsValidAccountName verifies whether a string can represent a valid name or not.
+func IsValidAccountName(s string) bool {
+	if accountNameCheck == nil {
+		return false
+	}
+	return accountNameCheck.MatchString(s)
+}
+
+func IsValidAssetName(s string) bool {
+	if assetNameCheck == nil {
+		return false
+	}
+	return assetNameCheck.MatchString(s)
 }
 
 // StrToName  returns Name with string of s.
@@ -61,7 +108,7 @@ func BigToName(b *big.Int) (Name, error) { return BytesToName(b.Bytes()) }
 
 // SetString  sets the name to the value of b..
 func (n *Name) SetString(s string) bool {
-	if !IsValidName(s) {
+	if !IsValidAccountName(s) {
 		return false
 	}
 	*n = Name(s)
@@ -124,3 +171,24 @@ func (n Name) String() string {
 
 // Big converts a name to a big integer.
 func (n Name) Big() *big.Int { return new(big.Int).SetBytes([]byte(n.String())) }
+
+func (n Name) IsValidCreator(name string) bool {
+
+	creator := n.String()
+	current := name
+	trimName := strings.TrimPrefix(current, creator)
+
+	if strings.Index(trimName, ".") != 0 {
+		return false
+	}
+
+	return true
+}
+
+func (n Name) AccountNameLevel() int {
+	return len(strings.Split(n.String(), "."))
+}
+
+func SplitString(s string) []string {
+	return strings.Split(s, ".")
+}

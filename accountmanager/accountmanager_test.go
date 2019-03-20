@@ -66,10 +66,10 @@ func getAccountManager() *AccountManager {
 }
 
 func TestSDB(t *testing.T) {
-
 	b, err := rlp.EncodeToBytes("aaaa")
 	if err != nil {
 		fmt.Printf("encode err = %v", err)
+
 	}
 	sdb.Put("test1", acctInfoPrefix, b)
 	b1, err := sdb.Get("test1", acctInfoPrefix)
@@ -129,7 +129,7 @@ func TestNewAccountManager(t *testing.T) {
 }
 
 func TestAccountManager_InitAccountCounter(t *testing.T) {
-    //TODO
+	//TODO
 }
 
 func TestAccountManager_CreateAccount(t *testing.T) {
@@ -1592,6 +1592,7 @@ func TestAccountManager_Process(t *testing.T) {
 		//{"transfer2self", fields{sdb, ast}, args{action6}, false},
 		//{"transfer", fields{sdb, ast}, args{action7}, false},
 	}
+
 	for _, tt := range tests {
 		am := &AccountManager{
 			sdb: tt.fields.sdb,

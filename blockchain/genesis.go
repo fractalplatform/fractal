@@ -124,7 +124,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	// dpos
-	if !common.IsValidName(g.Dpos.SystemName) {
+	if !common.IsValidAccountName(g.Dpos.SystemName) {
 		panic(fmt.Sprintf("genesis invalid dpos account name %v", g.Dpos.SystemName))
 	}
 	g.AllocAccounts = append(g.AllocAccounts, &GenesisAccount{
@@ -136,6 +136,10 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, account := range g.AllocAccounts {
+		if account.Name.AccountNameLevel() > 1 {
+			panic(fmt.Sprintf("genesis create account %s err", account.Name.String()))
+		}
+
 		if err := accountManager.CreateAccount(account.Name, common.Name(""), 0, account.PubKey); err != nil {
 			panic(fmt.Sprintf("genesis create account err %v", err))
 		}
