@@ -28,13 +28,15 @@ type API struct {
 }
 
 func (api *API) Start() bool {
-	api.miner.Start()
-	return true
+	return api.miner.Start(false)
+}
+
+func (api *API) Force() bool {
+	return api.miner.Start(true)
 }
 
 func (api *API) Stop() bool {
-	api.miner.Stop()
-	return true
+	return api.miner.Stop()
 }
 
 func (api *API) Mining() bool {

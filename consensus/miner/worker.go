@@ -66,6 +66,7 @@ type Worker struct {
 	quitWork   chan struct{}
 	quitWorkRW sync.RWMutex
 	quit       chan struct{}
+	force      bool
 }
 
 func newWorker(consensus consensus.IConsensus) *Worker {
@@ -123,11 +124,12 @@ out:
 	}
 }
 
-func (worker *Worker) start() {
+func (worker *Worker) start(force bool) {
 	if !atomic.CompareAndSwapInt32(&worker.mining, 0, 1) {
 		log.Warn("worker already started")
 		return
 	}
+	worker.force = force
 	go worker.mintLoop()
 }
 
@@ -187,17 +189,20 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
 	}
-	if err := cdpos.IsValidateProducer(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKeys, state); err != nil {
+	if err := cdpos.IsValidateCadidate(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
 		switch err {
-		case dpos.ErrIllegalProducerName:
+		case dpos.ErrTooMuchRreversible:
 			fallthrough
-		case dpos.ErrIllegalProducerPubKey:
+		case dpos.ErrIllegalCadidateName:
+			fallthrough
+		case dpos.ErrIllegalCadidatePubKey:
 			log.Error("failed to mint the block", "timestamp", timestamp, "err", err)
 		default:
 			log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
 		}
 		return
 	}
+
 	bstart := time.Now()
 outer:
 
@@ -209,7 +214,7 @@ outer:
 		}
 		block, err := worker.commitNewWork(timestamp, quit)
 		if err == nil {
-			log.Info("Mined new block", "producer", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
+			log.Info("Mined new block", "cadidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 			break outer
 		}
 		if strings.Contains(err.Error(), "mint") {
@@ -284,11 +289,16 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 	}
 	if common.IsValidAccountName(worker.coinbase) {
 		header.Coinbase = common.StrToName(worker.coinbase)
-		header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker)
+		header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, false)
 	}
 	state, err := worker.StateAt(parent.Root)
 	if err != nil {
 		return nil, fmt.Errorf("get parent state %v, err: %v ", header.Root, err)
+	}
+
+	// fill ForkID
+	if err := worker.FillForkID(header, state); err != nil {
+		return nil, err
 	}
 
 	work := &Work{
@@ -323,6 +333,7 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		if err != nil {
 			return nil, fmt.Errorf("finalize block, err: %v", err)
 		}
+
 		work.currentBlock = blk
 
 		block, err := worker.Seal(worker.IConsensus, work.currentBlock, nil)
@@ -343,7 +354,7 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		if bytes.Compare(block.ParentHash().Bytes(), worker.CurrentHeader().Hash().Bytes()) != 0 {
 			return nil, fmt.Errorf("old parent hash")
 		}
-		if err := worker.WriteBlockWithState(block, work.currentReceipts, work.currentState); err != nil {
+		if _, err := worker.WriteBlockWithState(block, work.currentReceipts, work.currentState); err != nil {
 			return nil, fmt.Errorf("writing block to chain, err: %v", err)
 		}
 

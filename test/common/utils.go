@@ -31,8 +31,8 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rpc"
-	jww "github.com/spf13/jwalterweatherman"
 	"github.com/fractalplatform/fractal/types"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 var (

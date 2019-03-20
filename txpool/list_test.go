@@ -31,7 +31,7 @@ func TestStrictTxListAdd(t *testing.T) {
 
 	txs := make([]*types.Transaction, 1024)
 	for i := 0; i < len(txs); i++ {
-		txs[i] = transaction(uint64(i), "from", "to", 0, key)
+		txs[i] = transaction(uint64(i), "fromtest", "tototest", 0, key)
 	}
 
 	// Insert the transactions in a random order
@@ -39,6 +39,7 @@ func TestStrictTxListAdd(t *testing.T) {
 	for _, v := range rand.Perm(len(txs)) {
 		list.Add(txs[v], 10)
 	}
+
 	// Verify internal state
 	assert.Equal(t, len(list.txs.items), len(txs))
 

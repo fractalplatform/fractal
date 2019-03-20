@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/accountmanager"
@@ -72,20 +73,16 @@ func (bg *BlockGenerator) AddTx(tx *types.Transaction) {
 }
 
 // TxNonce retrun nonce
-func (bg *BlockGenerator) TxNonce(addr common.Name) uint64 {
+func (bg *BlockGenerator) TxNonce(name common.Name) uint64 {
 	am, _ := accountmanager.NewAccountManager(bg.statedb)
-	a, err := am.GetAccountByName(addr)
+	a, err := am.GetAccountByName(name)
 	if err != nil {
-		return 0
+		panic(fmt.Sprintf("name: %v, GetTxNonce failed: %v", name, err))
 	}
 	if a == nil {
 		panic("Account Not exist")
 	}
-	nonce := a.GetNonce()
-	//if err != nil {
-	//	panic(fmt.Sprintf("addr GetTxNonce failed: %v", err))
-	//}
-	return nonce
+	return a.GetNonce()
 }
 
 type chainContext struct {
@@ -106,7 +103,7 @@ func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
 
 	receipt, _, err := bg.bc.processor.ApplyTransaction(&bg.header.Coinbase, bg.gasPool, bg.statedb, bg.header, tx, &bg.header.GasUsed, vm.Config{})
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf(" apply transaction hash:%v ,err %v", tx.Hash().Hex(), err))
 	}
 
 	bg.txs = append(bg.txs, tx)

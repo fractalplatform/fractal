@@ -16,71 +16,125 @@
 
 package blockchain
 
-// import (
-// 	"testing"
+import (
+	"testing"
 
-// 	"github.com/fractalplatform/fractal/rawdb"
-// )
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/params"
+)
 
-// func TestTheLastBlock(t *testing.T) {
-// 	genesis, db, chain, st, err := newCanonical(t, tengine)
-// 	if err != nil {
-// 		t.Error("newCanonical err", err)
-// 	}
-// 	defer chain.Stop()
+func TestTheLastBlock(t *testing.T) {
+	// printLog(log.LvlDebug)
+	genesis := DefaultGenesis()
+	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	chain := newCanonical(t, genesis)
+	defer chain.Stop()
 
-// 	prods, ht := makeProduceAndTime(st, 10)
-// 	_, _, blocks, err := makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, makeTransferTx)
-// 	if err != nil {
-// 		t.Error("makeNewChain err", err)
-// 	}
-// 	if blocks[len(blocks)-1].Hash() != rawdb.ReadHeadBlockHash(chain.db) {
-// 		t.Fatalf("Write/Get HeadBlockHash failed")
-// 	}
-// }
+	allCadidates, allHeaderTimes := genCanonicalCadidatesAndTimes(genesis)
+	_, blocks := makeNewChain(t, genesis, chain, allCadidates, allHeaderTimes)
 
-// func TestForkChain(t *testing.T) {
-// 	genesis, db, chain, st, err := newCanonical(t, tengine)
-// 	if err != nil {
-// 		t.Error("newCanonical err", err)
-// 	}
-// 	defer chain.Stop()
+	// check chain block hash
+	checkBlocksInsert(t, chain, blocks)
+}
 
-// 	prods, ht := makeProduceAndTime(st, 10)
-// 	_, _, blocks, err := makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, nil)
-// 	if err != nil {
-// 		t.Error("makeNewChain err", err)
-// 	}
+func TestSystemForkChain(t *testing.T) {
+	var (
+		allCadidates, allCadidates1 []string
+		allHeaderTimes              []uint64
+	)
 
-// 	prods = append(prods[0:3], prods[10:]...)
-// 	ht = append(ht[0:3], ht[10:]...)
-// 	genesis1, db1, chain1, _, err := newCanonical(t, tengine)
-// 	if err != nil {
-// 		t.Error("newCanonical err", err)
-// 	}
-// 	defer chain.Stop()
+	//printLog(log.LvlTrace)
+	genesis := DefaultGenesis()
 
-// 	_, _, _, err = makeNewChain(t, genesis1, chain1, &db1, len(prods), ht, prods, makeTransferTx)
-// 	if err != nil {
-// 		t.Error("makeNewChain err", err)
-// 	}
-// 	_, err = chain1.InsertChain(blocks)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	if chain1.CurrentBlock().Hash() != blocks[len(blocks)-1].Hash() {
-// 		t.Fatalf("fork chain err! actual hash %x,  want hash %x ", chain1.CurrentBlock().Hash(), blocks[len(blocks)-1].Hash())
-// 	}
-// }
+	allCadidates, allHeaderTimes = genCanonicalCadidatesAndTimes(genesis)
 
-// func TestFullTxChain(t *testing.T) {
-// 	genesis, db, chain, st, err := newCanonical(t, tengine)
-// 	if err != nil {
-// 		t.Error("newCanonical err", err)
-// 	}
-// 	prods, ht := makeProduceAndTime(st, 100)
-// 	_, _, _, err = makeNewChain(t, genesis, chain, &db, len(prods), ht, prods, makeTransferTx)
-// 	if err != nil {
-// 		t.Error("makeNewChain err", err)
-// 	}
-// }
+	allCadidates1 = append(allCadidates1, allCadidates...)
+
+	allCadidates1[len(allCadidates1)-1] = params.DefaultChainconfig.SysName.String()
+
+	testFork(t, allCadidates, allCadidates1, allHeaderTimes, allHeaderTimes)
+}
+
+func TestOtherCadidatesForkSystemChain(t *testing.T) {
+	var (
+		allCadidates, allCadidates1     []string
+		allHeaderTimes, allHeaderTimes1 []uint64
+	)
+
+	printLog(log.LvlWarn)
+	genesis := DefaultGenesis()
+
+	allCadidates, allHeaderTimes = genCanonicalCadidatesAndTimes(genesis)
+	allCadidates1 = append(allCadidates1, allCadidates...)
+	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes...)
+
+	allCadidates = allCadidates[0 : len(allCadidates)-1]
+	allHeaderTimes = allHeaderTimes[0 : len(allHeaderTimes)-1]
+
+	allCadidates[len(allCadidates)-1] = params.DefaultChainconfig.SysName.String()
+
+	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	chain := newCanonical(t, genesis)
+	defer chain.Stop()
+
+	chain, _ = makeNewChain(t, genesis, chain, allCadidates, allHeaderTimes)
+
+	// generate fork blocks
+	blocks := generateForkBlocks(t, DefaultGenesis(), allCadidates1, allHeaderTimes1)
+
+	_, err := chain.InsertChain(blocks)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// check if is complete block chain
+	checkCompleteChain(t, chain)
+
+	if chain.CurrentBlock().Coinbase().String() != genesis.Config.SysName.String() {
+		t.Fatalf("other cadidate:%v  ,can't fork the system: %v ", chain.CurrentBlock().Coinbase(), genesis.Config.SysName)
+	}
+
+}
+
+func genCanonicalCadidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
+	var (
+		dposEpochNum   uint64 = 1
+		allCadidates   []string
+		allHeaderTimes []uint64
+	)
+
+	// geaerate block's cadidates and block header time
+	// system's cadidates headertimes
+	sysCadidates, sysHeaderTimes := makeSystemCadidatesAndTime(genesis.Timestamp, genesis)
+	allCadidates = append(allCadidates, sysCadidates...)
+	allHeaderTimes = append(allHeaderTimes, sysHeaderTimes...)
+
+	// elected cadidates headertimes
+	cadidates, headerTimes := makeCadidatesAndTime(sysHeaderTimes[len(sysHeaderTimes)-1], genesis, dposEpochNum)
+	allCadidates = append(allCadidates, cadidates...)
+	allHeaderTimes = append(allHeaderTimes, headerTimes...)
+
+	return allCadidates, allHeaderTimes
+}
+
+func testFork(t *testing.T, cadidates, forkCadidates []string, headerTimes, forkHeaderTimes []uint64) {
+	genesis := DefaultGenesis()
+	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	chain := newCanonical(t, genesis)
+	defer chain.Stop()
+
+	chain, _ = makeNewChain(t, genesis, chain, cadidates, headerTimes)
+	// generate fork blocks
+	blocks := generateForkBlocks(t, DefaultGenesis(), forkCadidates, forkHeaderTimes)
+
+	_, err := chain.InsertChain(blocks)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// check chain block hash
+	checkBlocksInsert(t, chain, blocks)
+
+	// check if is complete block chain
+	checkCompleteChain(t, chain)
+}
