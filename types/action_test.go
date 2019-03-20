@@ -117,6 +117,6 @@ func TestAction_CheckValue(t *testing.T) {
 	}
 
 	if actAction3.CheckValue() == false {
-		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 }
