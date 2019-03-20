@@ -37,6 +37,28 @@ var (
 		big.NewInt(1000),
 		[]byte("test action"),
 	)
+
+	testAction2 = NewAction(
+		UpdateAccount,
+		common.Name("fromname"),
+		common.Name("totoname"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(1000),
+		[]byte("test action"),
+	)
+
+	testAction3 = NewAction(
+		UpdateAccount,
+		common.Name("fromname"),
+		common.Name("totoname"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
 )
 
 func TestActionEncodeAndDecode(t *testing.T) {
@@ -66,5 +88,35 @@ func TestAction_CheckValue(t *testing.T) {
 
 	if actAction.CheckValue() == false {
 		t.Errorf("TestAction_CheckValue err, wantErr %v", true)
+	}
+
+	//test2
+	actionBytes2, err := rlp.EncodeToBytes(testAction2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actAction2 := &Action{}
+	if err := rlp.Decode(bytes.NewReader(actionBytes2), &actAction2); err != nil {
+		t.Fatal(err)
+	}
+
+	if actAction2.CheckValue() == true {
+		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
+	}
+
+	//test3
+	actionBytes3, err := rlp.EncodeToBytes(testAction3)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actAction3 := &Action{}
+	if err := rlp.Decode(bytes.NewReader(actionBytes3), &actAction3); err != nil {
+		t.Fatal(err)
+	}
+
+	if actAction3.CheckValue() == false {
+		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
 	}
 }
