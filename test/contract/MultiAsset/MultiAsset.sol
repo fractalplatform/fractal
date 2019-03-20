@@ -9,11 +9,11 @@ contract MultiAsset {
         return issueasset(desc);
     }
 
-    function destroyasset(uint256 assetId, uint256 value) public returns(uint256)  {
+    function destroyasset1(uint256 assetId, uint256 value) public returns(uint256)  {
         return destroyasset(assetId, value);
     }
 
-    function getaccountid(address desc) public returns(uint256) {
+    function getaccountbyid(address desc) public returns(uint256) {
         return getaccountid(desc);
     }
 

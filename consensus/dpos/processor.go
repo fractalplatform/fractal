@@ -17,6 +17,7 @@
 package dpos
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/accountmanager"
@@ -70,6 +71,11 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 			},
 		},
 	}
+
+	if action.Value().Cmp(big.NewInt(0)) > 0 {
+		return fmt.Errorf("invalid action value, must be zero")
+	}
+
 	switch action.Type() {
 	case types.RegProducer:
 		arg := &RegisterProducer{}
@@ -122,12 +128,12 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	default:
 		return accountmanager.ErrUnkownTxType
 	}
-	accountDB, err := accountmanager.NewAccountManager(state)
-	if err != nil {
-		return err
-	}
-	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-	}
+	// accountDB, err := accountmanager.NewAccountManager(state)
+	// if err != nil {
+	// 	return err
+	// }
+	// if action.Value().Cmp(big.NewInt(0)) > 0 {
+	// 	accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+	// }
 	return nil
 }
