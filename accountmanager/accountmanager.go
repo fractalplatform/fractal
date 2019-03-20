@@ -913,7 +913,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			if action.Recipient() != common.Name(sysName) {
 				return ErrToNameInvalid
 			}
-		} else {
+		} else if action.Type() != types.Transfer {
 			return ErrAmountValueInvalid
 		}
 

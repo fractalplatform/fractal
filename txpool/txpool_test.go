@@ -216,27 +216,6 @@ func TestTransactionQueue(t *testing.T) {
 	}
 }
 
-func TestTransactionNegativeValue(t *testing.T) {
-
-	var (
-		fname = common.Name("fromname")
-		tname = common.Name("totestname")
-	)
-	pool, manager := setupTxPool(fname)
-	defer pool.Stop()
-	fkey := generateAccount(t, fname, manager)
-	generateAccount(t, tname, manager)
-
-	tx := newTx(big.NewInt(1), newAction(0, fname, tname, big.NewInt(-1), 100, nil))
-	if err := types.SignAction(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), fkey); err != nil {
-		panic(err)
-	}
-
-	if err := pool.AddRemote(tx); err != ErrNegativeValue {
-		t.Fatal("expected", ErrNegativeValue, "got", err)
-	}
-}
-
 func TestTransactionChainFork(t *testing.T) {
 
 	var (

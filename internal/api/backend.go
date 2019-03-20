@@ -50,7 +50,7 @@ type Backend interface {
 	GetBlock(ctx context.Context, blockHash common.Hash) (*types.Block, error)
 	GetReceipts(ctx context.Context, blockHash common.Hash) ([]*types.Receipt, error)
 	GetDetailTxsLog(ctx context.Context, hash common.Hash) ([]*types.DetailTx, error)
-	GetBlockAndResult(ctx context.Context, blockNr rpc.BlockNumber) (*types.BlockAndResult)
+	GetBlockAndResult(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult
 	GetTd(blockHash common.Hash) *big.Int
 	GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error)
 

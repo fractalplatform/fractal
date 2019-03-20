@@ -17,6 +17,7 @@
 package processor
 
 import (
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
@@ -143,6 +144,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		vmerrstr := ""
 		if vmerr != nil {
 			vmerrstr = vmerr.Error()
+			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 		}
 		var gasAllot []*types.GasDistribution
 		for account, gas := range vmenv.FounderGasMap {

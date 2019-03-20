@@ -137,7 +137,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 
 	for _, account := range g.AllocAccounts {
 		if err := accountManager.CreateAccount(account.Name, common.Name(""), 0, account.PubKey); err != nil {
-			panic(fmt.Sprintf("genesis create account err %v", err))
+			panic(fmt.Sprintf("genesis create account %v ,err %v", account.Name, err))
 		}
 	}
 
@@ -148,7 +148,11 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	root := statedb.IntermediateRoot()
-	gjson, _ := g.MarshalJSON()
+	gjson, err := g.MarshalJSON()
+	if err != nil {
+		panic(fmt.Sprintf("genesis json marshal json err %v", err))
+	}
+
 	head := &types.Header{
 		Number:     number,
 		Time:       new(big.Int).SetUint64(g.Timestamp),
@@ -198,6 +202,7 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 	}
 
 	rawdb.WriteChainConfig(db, block.Hash(), config)
+	rawdb.WriteIrreversibleNumber(db, uint64(0))
 	return block, nil
 }
 

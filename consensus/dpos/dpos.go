@@ -35,12 +35,12 @@ import (
 
 var (
 	errMissingSignature           = errors.New("extra-data 65 byte suffix signature missing")
-	errMismatchSignerAndValidator = errors.New("mismatch block signer and producer")
+	errMismatchSignerAndValidator = errors.New("mismatch block signer and cadidate")
 	errInvalidMintBlockTime       = errors.New("invalid time to mint the block")
-	errInvalidBlockProducer       = errors.New("invalid block producer")
+	errInvalidBlockCadidate       = errors.New("invalid block cadidate")
 	errInvalidTimestamp           = errors.New("invalid timestamp")
-	ErrIllegalProducerName        = errors.New("illegal producer name")
-	ErrIllegalProducerPubKey      = errors.New("illegal producer pubkey")
+	ErrIllegalCadidateName        = errors.New("illegal cadidate name")
+	ErrIllegalCadidatePubKey      = errors.New("illegal cadidate pubkey")
 	ErrTooMuchRreversible         = errors.New("too much rreversible blocks")
 	errUnknownBlock               = errors.New("unknown block")
 	extraSeal                     = 65
@@ -105,7 +105,7 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 			state: state,
 		},
 	}
-	if err := db.SetProducer(&producerInfo{
+	if err := db.SetCadidate(&cadidateInfo{
 		Name:          cfg.SystemName,
 		URL:           cfg.SystemURL,
 		Quantity:      big.NewInt(0),
@@ -115,21 +115,21 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 		return err
 	}
 
-	activatedProducerSchedule := []string{}
-	for i := uint64(0); i < cfg.ProducerScheduleSize; i++ {
-		activatedProducerSchedule = append(activatedProducerSchedule, cfg.SystemName)
+	activatedCadidateSchedule := []string{}
+	for i := uint64(0); i < cfg.CadidateScheduleSize; i++ {
+		activatedCadidateSchedule = append(activatedCadidateSchedule, cfg.SystemName)
 	}
 	if err := db.SetState(&globalState{
 		Height:                    height,
 		ActivatedTotalQuantity:    big.NewInt(0),
-		ActivatedProducerSchedule: activatedProducerSchedule,
+		ActivatedCadidateSchedule: activatedCadidateSchedule,
 	}); err != nil {
 		return err
 	}
 	if err := db.SetState(&globalState{
 		Height:                    height + 1,
 		ActivatedTotalQuantity:    big.NewInt(0),
-		ActivatedProducerSchedule: activatedProducerSchedule,
+		ActivatedCadidateSchedule: activatedCadidateSchedule,
 	}); err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func New(config *Config, chain consensus.IChainReader) *Dpos {
 	dpos := &Dpos{
 		config: config,
 	}
-	dpos.bftIrreversibles, _ = lru.New(int(config.ProducerScheduleSize))
+	dpos.bftIrreversibles, _ = lru.New(int(config.CadidateScheduleSize))
 	return dpos
 }
 
@@ -221,16 +221,27 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			tparent = chain.GetHeaderByHash(tparent.ParentHash)
 		}
 		// next epoch
-		sys.updateElectedProducers(header.Time.Uint64())
+		sys.updateElectedCadidates(header.Time.Uint64())
 	}
 
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
 	sys.onblock(header.Number.Uint64())
-	header.Root = state.IntermediateRoot()
+
+	blk := types.NewBlock(header, txs, receipts)
+
+	// first hard fork at a specific height
+	// If the block height is greater than or equal to the hard forking height,
+	// the fork function will take effect. This function is valid only in the test network.
+	if err := chain.ForkUpdate(blk, state); err != nil {
+		return nil, err
+	}
+
+	// update state root at the end
+	blk.Head.Root = state.IntermediateRoot()
 	dpos.bftIrreversibles.Add(header.Coinbase, header.ProposedIrreversible)
-	return types.NewBlock(header, txs, receipts), nil
+	return blk, nil
 }
 
 // Seal generates a new block for the given input block with the local miner's seal place on top.
@@ -250,6 +261,7 @@ func (dpos *Dpos) Seal(chain consensus.IChainReader, block *types.Block, stop <-
 	if err != nil {
 		return nil, err
 	}
+
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
 	return block.WithSeal(header), nil
 }
@@ -275,7 +287,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return err
 	}
 
-	if err := dpos.IsValidateProducer(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state); err != nil {
+	if err := dpos.IsValidateCadidate(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state, true); err != nil {
 		return err
 	}
 
@@ -294,14 +306,10 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 	return big.NewInt((int64(time)-timeOfGenesisBlock)/int64(dpos.config.blockInterval()) + 1)
 }
 
-//IsValidateProducer current producer
-func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, pubkeys [][]byte, state *state.StateDB) error {
+//IsValidateCadidate current cadidate
+func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, height uint64, timestamp uint64, cadidate string, pubkeys [][]byte, state *state.StateDB, force bool) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
-	}
-
-	if height-dpos.CalcProposedIrreversible(chain) >= dpos.config.ProducerScheduleSize*dpos.config.BlockFrequency {
-		return ErrTooMuchRreversible
 	}
 
 	db := &stateDB{
@@ -309,18 +317,24 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 		state: state,
 	}
 
-	if !common.IsValidName(producer) {
-		return ErrIllegalProducerName
+	if !common.IsValidName(cadidate) {
+		return ErrIllegalCadidateName
 	}
 
 	has := false
 	for _, pubkey := range pubkeys {
-		if db.IsValidSign(producer, pubkey) {
+		if db.IsValidSign(cadidate, pubkey) {
 			has = true
 		}
 	}
 	if !has {
-		return ErrIllegalProducerPubKey
+		return ErrIllegalCadidatePubKey
+	}
+
+	if sys := strings.Compare(cadidate, dpos.config.SystemName) == 0; force && sys {
+		return nil
+	} else if !sys && dpos.CalcProposedIrreversible(chain, true) == 0 {
+		return ErrTooMuchRreversible
 	}
 
 	targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
@@ -328,6 +342,9 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 	var pheader *types.Header
 	for height > 0 {
 		pheader = chain.GetHeaderByNumber(height)
+		if pheader == nil {
+			return fmt.Errorf("not found block by number %v", height)
+		}
 		if pheader.Time.Cmp(targetTime) != 1 {
 			break
 		} else {
@@ -347,8 +364,8 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 		return err
 	}
 	offset := dpos.config.getoffset(timestamp)
-	if gstate == nil || offset >= uint64(len(gstate.ActivatedProducerSchedule)) || strings.Compare(gstate.ActivatedProducerSchedule[offset], producer) != 0 {
-		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockProducer, producer, gstate.ActivatedProducerSchedule, offset, timestamp/dpos.config.epochInterval())
+	if gstate == nil || offset >= uint64(len(gstate.ActivatedCadidateSchedule)) || strings.Compare(gstate.ActivatedCadidateSchedule[offset], cadidate) != 0 {
+		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCadidate, cadidate, gstate.ActivatedCadidateSchedule, offset, timestamp/dpos.config.epochInterval())
 	}
 	return nil
 }
@@ -363,7 +380,7 @@ func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 	return dpos.config.slot(timestamp)
 }
 
-// IsFirst the first of producer
+// IsFirst the first of cadidate
 func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
 }
@@ -405,28 +422,19 @@ func (dpos *Dpos) CalcBFTIrreversible() uint64 {
 	return irreversibles[(len(irreversibles)-1)/3]
 }
 
-func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader) uint64 {
+func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, strict bool) uint64 {
 	curHeader := chain.CurrentHeader()
-	state, _ := chain.StateAt(curHeader.Root)
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:    dpos.config.AccountName,
-				assetid: chain.Config().SysTokenID,
-				state:   state,
-			},
-		},
-	}
-	producerMap := make(map[string]uint64)
+	cadidateMap := make(map[string]uint64)
+	timestamp := curHeader.Time.Uint64()
 	for curHeader.Number.Uint64() > 0 {
-		if curHeader.Number.Uint64() <= dpos.config.DelayEcho*dpos.config.ProducerScheduleSize*dpos.config.BlockFrequency {
-			return curHeader.Number.Uint64()
-		} else if gstate, _ := sys.GetState(curHeader.Number.Uint64() - dpos.config.DelayEcho*dpos.config.ProducerScheduleSize*dpos.config.BlockFrequency); !sys.isdpos(gstate) {
+		if strings.Compare(curHeader.Coinbase.String(), dpos.config.SystemName) == 0 {
 			return curHeader.Number.Uint64()
 		}
-		producerMap[curHeader.Coinbase.String()] = dpos.config.epoch(curHeader.Time.Uint64())
-		if uint64(len(producerMap)) >= dpos.config.consensusSize() {
+		if strict && timestamp-curHeader.Time.Uint64() >= 2*dpos.config.epochInterval() {
+			break
+		}
+		cadidateMap[curHeader.Coinbase.String()]++
+		if uint64(len(cadidateMap)) >= dpos.config.consensusSize() {
 			return curHeader.Number.Uint64()
 		}
 		curHeader = chain.GetHeaderByHash(curHeader.ParentHash)

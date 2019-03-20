@@ -27,15 +27,13 @@ import (
 var (
 	// databaseVerisionKey tracks the current database version.
 	databaseVerisionKey = []byte("DatabaseVersion")
-
+	//irreversibleNumberKey tracks the blcokchain irreversible number
+	irreversibleNumberKey = []byte("irreversibleNumber")
 	// headHeaderKey tracks the latest know header's hash.
 	headHeaderKey = []byte("LastHeader")
 
 	// headBlockKey tracks the latest know full block's hash.
 	headBlockKey = []byte("LastBlock")
-
-	// headFastBlockKey tracks the latest known incomplete block's hash duirng fast sync.
-	headFastBlockKey = []byte("LastFast")
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
 	headerPrefix       = []byte("h") // headerPrefix + num (uint64 big endian) + hash -> header
@@ -77,6 +75,11 @@ func encodeBlockNumber(number uint64) []byte {
 	enc := make([]byte, 8)
 	binary.BigEndian.PutUint64(enc, number)
 	return enc
+}
+
+// decodeBlockNumber decodes bytes as uint64
+func decodeBlockNumber(dec []byte) uint64 {
+	return binary.BigEndian.Uint64(dec)
 }
 
 // headerKey = headerPrefix + num (uint64 big endian) + hash

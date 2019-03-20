@@ -77,6 +77,25 @@ func WriteHeadHeaderHash(db DatabaseWriter, hash common.Hash) {
 	}
 }
 
+// ReadIrreversibleNumber retrieves the irreversible number of chain.
+func ReadIrreversibleNumber(db DatabaseReader) uint64 {
+	data, err := db.Get(irreversibleNumberKey)
+	if err != nil {
+		log.Crit("Failed to get irreversible number ", "err", err)
+	}
+	if len(data) == 0 {
+		return 0
+	}
+	return decodeBlockNumber(data)
+}
+
+// WriteIrreversibleNumber stores the irreversible number of chain.
+func WriteIrreversibleNumber(db DatabaseWriter, number uint64) {
+	if err := db.Put(irreversibleNumberKey, encodeBlockNumber(number)); err != nil {
+		log.Crit("Failed to store irreversible number ", "err", err)
+	}
+}
+
 // ReadHeadBlockHash retrieves the hash of the current canonical head block.
 func ReadHeadBlockHash(db DatabaseReader) common.Hash {
 	data, _ := db.Get(headBlockKey)
@@ -90,22 +109,6 @@ func ReadHeadBlockHash(db DatabaseReader) common.Hash {
 func WriteHeadBlockHash(db DatabaseWriter, hash common.Hash) {
 	if err := db.Put(headBlockKey, hash.Bytes()); err != nil {
 		log.Crit("Failed to store last block's hash", "err", err)
-	}
-}
-
-// ReadHeadFastBlockHash retrieves the hash of the current fast-sync head block.
-func ReadHeadFastBlockHash(db DatabaseReader) common.Hash {
-	data, _ := db.Get(headFastBlockKey)
-	if len(data) == 0 {
-		return common.Hash{}
-	}
-	return common.BytesToHash(data)
-}
-
-// WriteHeadFastBlockHash stores the hash of the current fast-sync head block.
-func WriteHeadFastBlockHash(db DatabaseWriter, hash common.Hash) {
-	if err := db.Put(headFastBlockKey, hash.Bytes()); err != nil {
-		log.Crit("Failed to store last fast block's hash", "err", err)
 	}
 }
 

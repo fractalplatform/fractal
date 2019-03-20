@@ -97,9 +97,9 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 	return rawtx
 }
 
-// RegProducer
-func (acc *Account) RegProducer(to common.Name, value *big.Int, id uint64, gas uint64, url string, state *big.Int) []byte {
-	arg := &args.RegisterProducer{
+// RegCadidate
+func (acc *Account) RegCadidate(to common.Name, value *big.Int, id uint64, gas uint64, url string, state *big.Int) []byte {
+	arg := &args.RegisterCadidate{
 		Url:   url,
 		Stake: state,
 	}
@@ -110,7 +110,7 @@ func (acc *Account) RegProducer(to common.Name, value *big.Int, id uint64, gas u
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.RegProducer, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.RegCadidate, acc.name, to, acc.nonce, id, gas, value, payload)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -126,9 +126,9 @@ func (acc *Account) RegProducer(to common.Name, value *big.Int, id uint64, gas u
 	return rawtx
 }
 
-// UpdateProducer
-func (acc *Account) UpdateProducer(to common.Name, value *big.Int, id uint64, gas uint64, url string, state *big.Int) []byte {
-	arg := &args.UpdateProducer{
+// UpdateCadidate
+func (acc *Account) UpdateCadidate(to common.Name, value *big.Int, id uint64, gas uint64, url string, state *big.Int) []byte {
+	arg := &args.UpdateCadidate{
 		Url:   url,
 		Stake: state,
 	}
@@ -139,7 +139,7 @@ func (acc *Account) UpdateProducer(to common.Name, value *big.Int, id uint64, ga
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.UpdateProducer, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.UpdateCadidate, acc.name, to, acc.nonce, id, gas, value, payload)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -155,12 +155,12 @@ func (acc *Account) UpdateProducer(to common.Name, value *big.Int, id uint64, ga
 	return rawtx
 }
 
-// UnRegProducer
-func (acc *Account) UnRegProducer(to common.Name, value *big.Int, id uint64, gas uint64) []byte {
+// UnRegCadidate
+func (acc *Account) UnRegCadidate(to common.Name, value *big.Int, id uint64, gas uint64) []byte {
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.UnregProducer, acc.name, to, acc.nonce, id, gas, value, nil)
+	action := types.NewAction(types.UnregCadidate, acc.name, to, acc.nonce, id, gas, value, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -176,10 +176,10 @@ func (acc *Account) UnRegProducer(to common.Name, value *big.Int, id uint64, gas
 	return rawtx
 }
 
-// VoteProducer
-func (acc *Account) VoteProducer(to common.Name, value *big.Int, id uint64, gas uint64, producer string, state *big.Int) []byte {
-	arg := &args.VoteProducer{
-		Producer: producer,
+// VoteCadidate
+func (acc *Account) VoteCadidate(to common.Name, value *big.Int, id uint64, gas uint64, cadidate string, state *big.Int) []byte {
+	arg := &args.VoteCadidate{
+		Cadidate: cadidate,
 		Stake:    state,
 	}
 	payload, err := rlp.EncodeToBytes(arg)
@@ -189,7 +189,7 @@ func (acc *Account) VoteProducer(to common.Name, value *big.Int, id uint64, gas 
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.VoteProducer, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.VoteCadidate, acc.name, to, acc.nonce, id, gas, value, payload)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -205,10 +205,10 @@ func (acc *Account) VoteProducer(to common.Name, value *big.Int, id uint64, gas 
 	return rawtx
 }
 
-// ChangeProducer
-func (acc *Account) ChangeProducer(to common.Name, value *big.Int, id uint64, gas uint64, producer string) []byte {
-	arg := &args.ChangeProducer{
-		Producer: producer,
+// ChangeCadidate
+func (acc *Account) ChangeCadidate(to common.Name, value *big.Int, id uint64, gas uint64, cadidate string) []byte {
+	arg := &args.ChangeCadidate{
+		Cadidate: cadidate,
 	}
 	payload, err := rlp.EncodeToBytes(arg)
 	if err != nil {
@@ -217,7 +217,7 @@ func (acc *Account) ChangeProducer(to common.Name, value *big.Int, id uint64, ga
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.ChangeProducer, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.ChangeCadidate, acc.name, to, acc.nonce, id, gas, value, payload)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -233,11 +233,11 @@ func (acc *Account) ChangeProducer(to common.Name, value *big.Int, id uint64, ga
 	return rawtx
 }
 
-func (acc *Account) UnvoteProducer(to common.Name, value *big.Int, id uint64, gas uint64) []byte {
+func (acc *Account) UnvoteCadidate(to common.Name, value *big.Int, id uint64, gas uint64) []byte {
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.UnvoteProducer, acc.name, to, acc.nonce, id, gas, value, nil)
+	action := types.NewAction(types.UnvoteCadidate, acc.name, to, acc.nonce, id, gas, value, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}

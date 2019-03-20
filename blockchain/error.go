@@ -28,6 +28,8 @@ var (
 
 	ErrNoGenesis = errors.New("Genesis not found in chain")
 
+	errReorgSystemBlock = errors.New("not reorg system block")
+
 	errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
 	errGenesisNoDpos = errors.New("genesis has no dpos configuration")

@@ -90,7 +90,7 @@ func (n *Name) UnmarshalJSON(data []byte) error {
 }
 
 // EncodeRLP implements rlp.Encoder
-func (n *Name) EncodeRLP(w io.Writer) error {
+func (n Name) EncodeRLP(w io.Writer) error {
 	str := n.String()
 	if len(str) != 0 {
 		if _, err := parseName(str); err != nil {

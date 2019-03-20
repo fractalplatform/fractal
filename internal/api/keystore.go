@@ -23,8 +23,6 @@ import (
 	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 type PrivateKeyStoreAPI struct {
@@ -115,42 +113,6 @@ func (api *PrivateKeyStoreAPI) ListAccount(ctx context.Context) ([]map[string]in
 		ret = append(ret, tmpa)
 	}
 	return ret, nil
-}
-
-// SignTransaction sign transaction and return raw hex .
-func (api *PrivateKeyStoreAPI) SignTransaction(ctx context.Context, addr common.Address, passphrase string, tx *types.Transaction) (hexutil.Bytes, error) {
-	a, err := api.b.Wallet().Find(addr)
-	if err != nil {
-		return nil, err
-	}
-	signed, err := api.b.Wallet().SignTxWithPassphrase(a, passphrase, tx, tx.GetActions()[0], api.b.ChainConfig().ChainID)
-	if err != nil {
-		return nil, err
-	}
-	rawtx, err := rlp.EncodeToBytes(signed)
-	if err != nil {
-		return nil, err
-	}
-	return hexutil.Bytes(rawtx), nil
-}
-
-// SignData sign data and return raw hex
-func (api *PrivateKeyStoreAPI) SignData(ctx context.Context, addr common.Address, passphrase string, data hexutil.Bytes) (hexutil.Bytes, error) {
-	a, err := api.b.Wallet().NewAccount(passphrase)
-	if err != nil {
-		return nil, err
-	}
-	key, err := api.b.Wallet().GetPrivateKey(a, passphrase)
-	if err != nil {
-		return nil, err
-	}
-
-	sig, err := crypto.Sign(data[:], key.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return hexutil.Bytes(sig), nil
 }
 
 func (api *PrivateKeyStoreAPI) BindAccountAndPublicKey(ctx context.Context, accountName string) error {

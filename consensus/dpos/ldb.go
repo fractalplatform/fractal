@@ -40,23 +40,23 @@ type IDatabase interface {
 }
 
 var (
-	// ProducerKeyPrefix producer name --> producerInfo
-	ProducerKeyPrefix = "prod"
+	// CadidateKeyPrefix cadidate name --> cadidateInfo
+	CadidateKeyPrefix = "prod"
 	// VoterKeyPrefix voter name ---> voterInfo
 	VoterKeyPrefix = "vote"
-	// // DelegatorKeyPrfix producer name ----> voter names
+	// // DelegatorKeyPrfix cadidate name ----> voter names
 	// DelegatorKeyPrfix = "dele"
-	// ProducersKeyPrefix produces ----> producer names
-	ProducersKeyPrefix = "prods"
+	// CadidatesKeyPrefix produces ----> cadidate names
+	CadidatesKeyPrefix = "prods"
 	// StateKeyPrefix height --> globalState
 	StateKeyPrefix = "state"
 	// Separator Split characters
 	Separator = "_"
 
-	// ProducersKey producers
-	ProducersKey = "prods"
-	// ProducersSizeKey producers size
-	ProducersSizeKey = "prodsize"
+	// CadidatesKey cadidates
+	CadidatesKey = "prods"
+	// CadidatesSizeKey cadidates size
+	CadidatesSizeKey = "prodsize"
 	// LastestStateKey lastest
 	LastestStateKey = "lastest"
 )
@@ -75,17 +75,17 @@ func NewLDB(db IDatabase) (*LDB, error) {
 	return ldb, nil
 }
 
-func (db *LDB) GetProducer(name string) (*producerInfo, error) {
-	key := strings.Join([]string{ProducerKeyPrefix, name}, Separator)
-	producerInfo := &producerInfo{}
+func (db *LDB) GetCadidate(name string) (*cadidateInfo, error) {
+	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
+	cadidateInfo := &cadidateInfo{}
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
 		return nil, nil
-	} else if err := rlp.DecodeBytes(val, producerInfo); err != nil {
+	} else if err := rlp.DecodeBytes(val, cadidateInfo); err != nil {
 		return nil, err
 	}
-	return producerInfo, nil
+	return cadidateInfo, nil
 }
 
 func (db *LDB) GetVoter(name string) (*voterInfo, error) {
@@ -101,8 +101,8 @@ func (db *LDB) GetVoter(name string) (*voterInfo, error) {
 	return voterInfo, nil
 }
 
-// func (db *LDB) GetDelegators(producer string) ([]string, error) {
-// 	key := strings.Join([]string{DelegatorKeyPrfix, producer}, Separator)
+// func (db *LDB) GetDelegators(cadidate string) ([]string, error) {
+// 	key := strings.Join([]string{DelegatorKeyPrfix, cadidate}, Separator)
 // 	delegators := []string{}
 // 	if val, err := db.Get(key); err != nil {
 // 		return nil, err
@@ -114,33 +114,33 @@ func (db *LDB) GetVoter(name string) (*voterInfo, error) {
 // 	return delegators, nil
 // }
 
-func (db *LDB) SetProducer(producer *producerInfo) error {
-	key := strings.Join([]string{ProducerKeyPrefix, producer.Name}, Separator)
-	if val, err := rlp.EncodeToBytes(producer); err != nil {
+func (db *LDB) SetCadidate(cadidate *cadidateInfo) error {
+	key := strings.Join([]string{CadidateKeyPrefix, cadidate.Name}, Separator)
+	if val, err := rlp.EncodeToBytes(cadidate); err != nil {
 		return err
 	} else if err := db.Put(key, val); err != nil {
 		return err
 	}
 
-	// producers
-	producers := []string{}
-	pkey := strings.Join([]string{ProducersKeyPrefix, ProducersKey}, Separator)
+	// cadidates
+	cadidates := []string{}
+	pkey := strings.Join([]string{CadidatesKeyPrefix, CadidatesKey}, Separator)
 	if pval, err := db.Get(pkey); err != nil {
 		return err
 	} else if pval == nil {
 
-	} else if err := rlp.DecodeBytes(pval, &producers); err != nil {
+	} else if err := rlp.DecodeBytes(pval, &cadidates); err != nil {
 		return err
 	}
 
-	for _, name := range producers {
-		if strings.Compare(name, producer.Name) == 0 {
+	for _, name := range cadidates {
+		if strings.Compare(name, cadidate.Name) == 0 {
 			return nil
 		}
 	}
 
-	producers = append(producers, producer.Name)
-	npval, err := rlp.EncodeToBytes(producers)
+	cadidates = append(cadidates, cadidate.Name)
+	npval, err := rlp.EncodeToBytes(cadidates)
 	if err != nil {
 		return err
 	}
@@ -148,8 +148,8 @@ func (db *LDB) SetProducer(producer *producerInfo) error {
 		return err
 	}
 
-	skey := strings.Join([]string{ProducersKeyPrefix, ProducersSizeKey}, Separator)
-	return db.Put(skey, uint64tobytes(uint64(len(producers))))
+	skey := strings.Join([]string{CadidatesKeyPrefix, CadidatesSizeKey}, Separator)
+	return db.Put(skey, uint64tobytes(uint64(len(cadidates))))
 }
 
 func (db *LDB) SetVoter(voter *voterInfo) error {
@@ -162,7 +162,7 @@ func (db *LDB) SetVoter(voter *voterInfo) error {
 
 	// 	// delegators
 	// 	delegators := []string{}
-	// 	dkey := strings.Join([]string{DelegatorKeyPrfix, voter.Producer}, Separator)
+	// 	dkey := strings.Join([]string{DelegatorKeyPrfix, voter.Cadidate}, Separator)
 
 	// 	if dval, err := db.Get(dkey); err != nil {
 	// 		return err
@@ -184,45 +184,45 @@ func (db *LDB) SetVoter(voter *voterInfo) error {
 	return nil
 }
 
-func (db *LDB) DelProducer(name string) error {
-	key := strings.Join([]string{ProducerKeyPrefix, name}, Separator)
+func (db *LDB) DelCadidate(name string) error {
+	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
 	if err := db.Delete(key); err != nil {
 		return err
 	}
 
-	// producers
-	producers := []string{}
-	pkey := strings.Join([]string{ProducersKeyPrefix, ProducersKey}, Separator)
+	// cadidates
+	cadidates := []string{}
+	pkey := strings.Join([]string{CadidatesKeyPrefix, CadidatesKey}, Separator)
 	if pval, err := db.Get(pkey); err != nil {
 		return err
 	} else if pval == nil {
 
-	} else if err := rlp.DecodeBytes(pval, &producers); err != nil {
+	} else if err := rlp.DecodeBytes(pval, &cadidates); err != nil {
 		return err
 	}
-	for index, prod := range producers {
+	for index, prod := range cadidates {
 		if strings.Compare(prod, name) == 0 {
-			producers = append(producers[:index], producers[index+1:]...)
+			cadidates = append(cadidates[:index], cadidates[index+1:]...)
 			break
 		}
 	}
 
-	skey := strings.Join([]string{ProducersKeyPrefix, ProducersSizeKey}, Separator)
-	if err := db.Put(skey, uint64tobytes(uint64(len(producers)))); err != nil {
+	skey := strings.Join([]string{CadidatesKeyPrefix, CadidatesSizeKey}, Separator)
+	if err := db.Put(skey, uint64tobytes(uint64(len(cadidates)))); err != nil {
 		return err
 	}
 
-	if len(producers) == 0 {
+	if len(cadidates) == 0 {
 		return db.Delete(pkey)
 	}
-	npval, err := rlp.EncodeToBytes(producers)
+	npval, err := rlp.EncodeToBytes(cadidates)
 	if err != nil {
 		return err
 	}
 	return db.Put(pkey, npval)
 }
 
-func (db *LDB) DelVoter(name string, producer string) error {
+func (db *LDB) DelVoter(name string, cadidate string) error {
 	key := strings.Join([]string{VoterKeyPrefix, name}, Separator)
 	if err := db.Delete(key); err != nil {
 		return err
@@ -230,7 +230,7 @@ func (db *LDB) DelVoter(name string, producer string) error {
 
 	// delegators
 	// delegators := []string{}
-	// dkey := strings.Join([]string{DelegatorKeyPrfix, producer}, Separator)
+	// dkey := strings.Join([]string{DelegatorKeyPrfix, cadidate}, Separator)
 	// if dval, err := db.Get(dkey); err != nil {
 	// 	return err
 	// } else if dval == nil {
@@ -255,21 +255,21 @@ func (db *LDB) DelVoter(name string, producer string) error {
 	return nil
 }
 
-func (db *LDB) Producers() ([]*producerInfo, error) {
-	// producers
-	pkey := strings.Join([]string{ProducersKeyPrefix, ProducersKey}, Separator)
-	producers := []string{}
+func (db *LDB) Cadidates() ([]*cadidateInfo, error) {
+	// cadidates
+	pkey := strings.Join([]string{CadidatesKeyPrefix, CadidatesKey}, Separator)
+	cadidates := []string{}
 	if pval, err := db.Get(pkey); err != nil {
 		return nil, err
 	} else if pval == nil {
 		return nil, nil
-	} else if err := rlp.DecodeBytes(pval, &producers); err != nil {
+	} else if err := rlp.DecodeBytes(pval, &cadidates); err != nil {
 		return nil, err
 	}
 
-	prods := producerInfoArray{}
-	for _, producer := range producers {
-		prod, err := db.GetProducer(producer)
+	prods := cadidateInfoArray{}
+	for _, cadidate := range cadidates {
+		prod, err := db.GetCadidate(cadidate)
 		if err != nil {
 			return nil, err
 		}
@@ -279,9 +279,9 @@ func (db *LDB) Producers() ([]*producerInfo, error) {
 	return prods, nil
 }
 
-func (db *LDB) ProducersSize() (uint64, error) {
+func (db *LDB) CadidatesSize() (uint64, error) {
 	size := uint64(0)
-	skey := strings.Join([]string{ProducersKeyPrefix, ProducersSizeKey}, Separator)
+	skey := strings.Join([]string{CadidatesKeyPrefix, CadidatesSizeKey}, Separator)
 	if sval, err := db.Get(skey); err != nil {
 		return 0, err
 	} else if sval != nil {
@@ -343,17 +343,17 @@ func (db *LDB) DelState(height uint64) error {
 }
 
 func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, error) {
-	key := strings.Join([]string{ProducerKeyPrefix, name}, Separator)
+	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
 	if err != nil {
 		return nil, err
 	}
 	if val != nil {
-		producerInfo := &producerInfo{}
-		if err := rlp.DecodeBytes(val, producerInfo); err != nil {
+		cadidateInfo := &cadidateInfo{}
+		if err := rlp.DecodeBytes(val, cadidateInfo); err != nil {
 			return nil, err
 		}
-		return producerInfo.Quantity, nil
+		return cadidateInfo.Quantity, nil
 	}
 
 	key = strings.Join([]string{VoterKeyPrefix, name}, Separator)

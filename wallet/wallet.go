@@ -20,23 +20,23 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/fractalplatform/fractal/blockchain"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"time"
 
-	"encoding/json"
-	"errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/wallet/cache"
 	"github.com/fractalplatform/fractal/wallet/keystore"
-	"io/ioutil"
 )
 
 // Wallet represents a software wallet.
@@ -57,7 +57,6 @@ func NewWallet(keyStoredir string, scryptN, scryptP int) *Wallet {
 	}
 	w.bindingFilePath = w.ks.JoinPath("acountKeyBindingInfo.txt")
 	w.createFileIfNotExist(w.bindingFilePath)
-
 	return w
 }
 

@@ -121,7 +121,7 @@ func (b *APIBackend) GetDetailTxsLog(ctx context.Context, hash common.Hash) ([]*
 	return nil, nil
 }
 
-func (b *APIBackend) GetBlockAndResult(ctx context.Context, blockNr rpc.BlockNumber) (*types.BlockAndResult) {
+func (b *APIBackend) GetBlockAndResult(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
 	hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(blockNr))
 	if hash == (common.Hash{}) {
 		return nil

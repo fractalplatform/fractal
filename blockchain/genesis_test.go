@@ -17,7 +17,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -30,7 +29,7 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("3b9d8a76a7ea8bc82f07978c58318d346d581553efb78e9980299fd2603916a0")
+var defaultgenesisBlockHash = common.HexToHash("0x364bd3992fab22d8ef84f1168042e942585aa4990d2a4b0b280b379e254f164a")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesis().ToBlock(nil)
@@ -41,7 +40,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x1519f4b0ee03a8250b4c077705f3c88289bef6d32428d812e00eae624e59c75b")
+		customghash = common.HexToHash("0x4a8fbed6696cf57ae8081e9d17a1b4518f26075d7f6602912329561bcfdd5c35")
 		customg     = Genesis{
 			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:          dpos.DefaultConfig,
@@ -50,17 +49,16 @@ func TestSetupGenesis(t *testing.T) {
 			AllocAssets:   DefaultGenesisAssets(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0x954dba22b0197e16402283f3372ed57b7e2a2645888fe82833caf45b0069f0ff")
-
-		dposConfig = &dpos.Config{
+		oldcustomghash = common.HexToHash("768c8e4e507b3d691c2b85e5cdc912ba06829ee72d373b3724159e61f32731c6")
+		dposConfig     = &dpos.Config{
 			MaxURLLen:            512,
 			UnitStake:            big.NewInt(1000),
-			ProducerMinQuantity:  big.NewInt(10),
+			CadidateMinQuantity:  big.NewInt(10),
 			VoterMinQuantity:     big.NewInt(1),
 			ActivatedMinQuantity: big.NewInt(100),
 			BlockInterval:        3000,
 			BlockFrequency:       6,
-			ProducerScheduleSize: 3,
+			CadidateScheduleSize: 3,
 			DelayEcho:            2,
 			AccountName:          "ftsystemdpos",
 			SystemName:           "ftsystemio",
@@ -124,7 +122,6 @@ func TestSetupGenesis(t *testing.T) {
 				if _, err := oldcustomg.Commit(db); err != nil {
 					return nil, nil, common.Hash{}, err
 				}
-				fmt.Println("=====>SetupGenesisBlock")
 				return SetupGenesisBlock(db, &customg)
 			},
 			wantErr: &GenesisMismatchError{
@@ -137,12 +134,10 @@ func TestSetupGenesis(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
+	for _, test := range tests {
 		db := fdb.NewMemDatabase()
-		fmt.Println("1=====>", i, test.name)
 
 		config, dpos, hash, err := test.fn(db)
-		fmt.Println("2=====>", i, test.name, err)
 
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
