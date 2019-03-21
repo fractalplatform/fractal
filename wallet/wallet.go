@@ -20,23 +20,23 @@ import (
 	"crypto/ecdsa"
 	crand "crypto/rand"
 	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/fractalplatform/fractal/blockchain"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"time"
 
-	"encoding/json"
-	"errors"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/wallet/cache"
 	"github.com/fractalplatform/fractal/wallet/keystore"
-	"io/ioutil"
 )
 
 // Wallet represents a software wallet.
@@ -55,9 +55,8 @@ func NewWallet(keyStoredir string, scryptN, scryptP int) *Wallet {
 		cache: cache.NewAccountCache(keyStoredir),
 		ks:    &keystore.KeyStore{DirPath: keyStoredir, ScryptN: scryptN, ScryptP: scryptP},
 	}
-	w.bindingFilePath = w.ks.JoinPath("acountKeyBindingInfo.txt")
-	w.createFileIfNotExist(w.bindingFilePath)
 
+	w.bindingFilePath = w.ks.JoinPath("accountKeyBindingInfo.txt")
 	return w
 }
 
@@ -355,7 +354,7 @@ func (w *Wallet) GetAllAccounts() ([]am.Account, error) {
 func (w *Wallet) getBindingInfo() map[string][]string {
 	publicKeyAccountsMap := make(map[string][]string)
 	fileContent, _ := ioutil.ReadFile(w.bindingFilePath)
-	if len(fileContent) > 0 {
+	if fileContent != nil && len(fileContent) > 0 {
 		json.Unmarshal(fileContent, &publicKeyAccountsMap)
 	}
 	log.Debug("getBindingInfo:", "binging info", publicKeyAccountsMap)
@@ -369,8 +368,9 @@ func (w *Wallet) writeBindingInfo(addrAccountsMap map[string][]string) error {
 		log.Error("fail to marshall map to json string:", addrAccountsMap)
 		return err
 	}
+
 	if ioutil.WriteFile(w.bindingFilePath, fileContent, 0666) == nil {
-		log.Info("success to write binding info:", string(fileContent))
+		log.Debug("success to write binding info:", string(fileContent))
 		return nil
 	} else {
 		log.Error("fail to write binding info:", string(fileContent))
