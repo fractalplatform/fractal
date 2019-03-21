@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
 var (
@@ -104,7 +105,7 @@ func (db *MemDatabase) Copy() *MemDatabase {
 }
 func (db *MemDatabase) Close() {}
 
-func (db *MemDatabase) NewBatch() Batch {
+func (db *MemDatabase) NewBatch() fdb.Batch {
 	return &memBatch{db: db}
 }
 

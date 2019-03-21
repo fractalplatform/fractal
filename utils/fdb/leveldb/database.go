@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package fdb
+package leveldb
 
 import (
 	"fmt"
@@ -25,6 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/metrics"
+	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"
@@ -346,37 +347,9 @@ func (db *LDBDatabase) meter(refresh time.Duration) {
 	errc <- merr
 }
 
-func (db *LDBDatabase) NewBatch() Batch {
-	return &ldbBatch{db: db.db, b: new(leveldb.Batch)}
-}
-
-type ldbBatch struct {
-	db   *leveldb.DB
-	b    *leveldb.Batch
-	size int
-}
-
-func (b *ldbBatch) Put(key, value []byte) error {
-	b.b.Put(key, value)
-	b.size += len(value)
-	return nil
-}
-
-func (b *ldbBatch) Delete(key []byte) error {
-	b.b.Delete(key)
-	b.size++
-	return nil
-}
-
-func (b *ldbBatch) Write() error {
-	return b.db.Write(b.b, nil)
-}
-
-func (b *ldbBatch) ValueSize() int {
-	return b.size
-}
-
-func (b *ldbBatch) Reset() {
-	b.b.Reset()
-	b.size = 0
+func (db *LDBDatabase) NewBatch() fdb.Batch {
+	return &ldbBatch{
+		db: db.db,
+		b:  new(leveldb.Batch),
+	}
 }

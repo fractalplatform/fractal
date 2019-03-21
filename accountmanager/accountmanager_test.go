@@ -29,7 +29,7 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -39,7 +39,7 @@ var acctm = getAccountManager()
 var ast = getAsset()
 
 func getStateDB() *state.StateDB {
-	db := fdb.NewMemDatabase()
+	db := memdb.NewMemDatabase()
 	tridb := state.NewDatabase(db)
 	statedb, err := state.New(common.Hash{}, tridb)
 	if err != nil {
@@ -789,7 +789,7 @@ func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -822,7 +822,7 @@ func TestAccountManager_GetAccountLastChange(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -856,7 +856,7 @@ func TestAccountManager_GetSnapshotTime(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -891,7 +891,7 @@ func TestAccountManager_GetBalanceByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -924,7 +924,7 @@ func TestAccountManager_GetAssetFounder(t *testing.T) {
 		want    common.Name
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -957,7 +957,7 @@ func TestAccountManager_GetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -990,7 +990,7 @@ func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{

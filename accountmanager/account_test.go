@@ -34,7 +34,7 @@ func Test_newAssetBalance(t *testing.T) {
 		args args
 		want *AssetBalance
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		if got := newAssetBalance(tt.args.assetID, tt.args.amount); !reflect.DeepEqual(got, tt.want) {
@@ -55,7 +55,7 @@ func TestNewAccount(t *testing.T) {
 		want    *Account
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		got, err := NewAccount(tt.args.accountName, tt.args.founderName, tt.args.pubkey)
@@ -86,7 +86,7 @@ func TestAccount_GetName(t *testing.T) {
 		fields fields
 		want   common.Name
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -123,7 +123,7 @@ func TestAccount_GetNonce(t *testing.T) {
 		fields fields
 		want   uint64
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -163,7 +163,7 @@ func TestAccount_SetNonce(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -198,7 +198,7 @@ func TestAccount_GetPubKey(t *testing.T) {
 		fields fields
 		want   common.PubKey
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -238,7 +238,7 @@ func TestAccount_SetPubKey(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -274,7 +274,7 @@ func TestAccount_GetCode(t *testing.T) {
 		want    []byte
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -316,7 +316,7 @@ func TestAccount_GetCodeSize(t *testing.T) {
 		fields fields
 		want   uint64
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -357,7 +357,7 @@ func TestAccount_SetCode(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -395,7 +395,7 @@ func TestAccount_GetCodeHash(t *testing.T) {
 		want    common.Hash
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -442,7 +442,7 @@ func TestAccount_GetBalanceByID(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -484,7 +484,7 @@ func TestAccount_GetBalancesList(t *testing.T) {
 		fields fields
 		want   []*AssetBalance
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -522,7 +522,7 @@ func TestAccount_GetAllBalances(t *testing.T) {
 		want    map[uint64]*big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -569,7 +569,7 @@ func TestAccount_binarySearch(t *testing.T) {
 		want   int64
 		want1  bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -614,7 +614,7 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 
 	for _, tt := range tests {
@@ -655,7 +655,7 @@ func TestAccount_SetBalance(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -697,7 +697,7 @@ func TestAccount_SubBalanceByID(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -739,7 +739,7 @@ func TestAccount_AddBalanceByID(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -781,7 +781,7 @@ func TestAccount_EnoughAccountBalance(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -818,7 +818,7 @@ func TestAccount_IsSuicided(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -854,7 +854,7 @@ func TestAccount_SetSuicide(t *testing.T) {
 		name   string
 		fields fields
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -889,7 +889,7 @@ func TestAccount_IsDestoryed(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -925,7 +925,7 @@ func TestAccount_SetDestory(t *testing.T) {
 		name   string
 		fields fields
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{

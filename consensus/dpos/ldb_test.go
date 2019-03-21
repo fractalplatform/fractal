@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/utils/fdb"
+	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 )
 
 type levelDB struct {
@@ -68,7 +69,7 @@ func newTestLDB() (*levelDB, func()) {
 	if err != nil {
 		panic("failed to create test file: " + err.Error())
 	}
-	db, err := fdb.NewLDBDatabase(dirname, 0, 0)
+	db, err := ldb.NewLDBDatabase(dirname, 0, 0)
 	if err != nil {
 		panic("failed to create test database: " + err.Error())
 	}
@@ -185,7 +186,7 @@ func TestLDBState(t *testing.T) {
 	db, _ := NewLDB(ldb)
 	defer function()
 	gstate := &globalState{
-		Height: 10,
+		Height:                          10,
 		ActivatedProducerScheduleUpdate: uint64(time.Now().UnixNano()),
 		ActivatedProducerSchedule:       []string{},
 		ActivatedTotalQuantity:          big.NewInt(1000),

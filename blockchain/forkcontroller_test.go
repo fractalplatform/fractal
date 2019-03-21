@@ -24,14 +24,14 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestForkController(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = fdb.NewMemDatabase()
+		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
 
@@ -66,7 +66,7 @@ func TestForkController(t *testing.T) {
 func TestUpdateDifferentForkBlock(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = fdb.NewMemDatabase()
+		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
 
@@ -93,7 +93,7 @@ func TestUpdateDifferentForkBlock(t *testing.T) {
 func TestFillForkID(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = fdb.NewMemDatabase()
+		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
 

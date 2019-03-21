@@ -19,42 +19,14 @@ package fdb
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"strconv"
 	"sync"
 	"testing"
 )
 
-func newTestLDB() (*LDBDatabase, func()) {
-	dirname, err := ioutil.TempDir(os.TempDir(), "ethdb_test_")
-	if err != nil {
-		panic("failed to create test file: " + err.Error())
-	}
-	db, err := NewLDBDatabase(dirname, 0, 0)
-	if err != nil {
-		panic("failed to create test database: " + err.Error())
-	}
-
-	return db, func() {
-		db.Close()
-		os.RemoveAll(dirname)
-	}
-}
-
 var testValues = []string{"", "a", "1251", "\x00123\x00"}
 
-func TestLDB_PutGet(t *testing.T) {
-	db, remove := newTestLDB()
-	defer remove()
-	testPutGet(db, t)
-}
-
-func TestMemoryDB_PutGet(t *testing.T) {
-	testPutGet(NewMemDatabase(), t)
-}
-
-func testPutGet(db Database, t *testing.T) {
+func TestPutGet(db Database, t *testing.T) {
 	t.Parallel()
 
 	for _, v := range testValues {
@@ -121,17 +93,7 @@ func testPutGet(db Database, t *testing.T) {
 	}
 }
 
-func TestLDB_ParallelPutGet(t *testing.T) {
-	db, remove := newTestLDB()
-	defer remove()
-	testParallelPutGet(db, t)
-}
-
-func TestMemoryDB_ParallelPutGet(t *testing.T) {
-	testParallelPutGet(NewMemDatabase(), t)
-}
-
-func testParallelPutGet(db Database, t *testing.T) {
+func TestParallelPutGet(db Database, t *testing.T) {
 	const n = 8
 	var pending sync.WaitGroup
 

@@ -36,6 +36,7 @@ import (
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -105,7 +106,7 @@ func makeProduceAndTime(st uint64, rounds int) ([]string, []uint64) {
 func newCanonical(t *testing.T, engine consensus.IEngine) (*Genesis, fdb.Database, *BlockChain, uint64, error) {
 
 	var (
-		db         = fdb.NewMemDatabase()
+		db         = memdb.NewMemDatabase()
 		gspec      = DefaultGenesis()
 		genesis, _ = gspec.Commit(db)
 	)
@@ -286,11 +287,11 @@ func makeTransferTx(t *testing.T, from, to string, fromprikey *ecdsa.PrivateKey,
 }
 
 func deepCopyDB(db fdb.Database) (fdb.Database, error) {
-	memdb, ok := db.(*fdb.MemDatabase)
+	mdb, ok := db.(*memdb.MemDatabase)
 	if !ok {
 		return nil, errors.New("db must fdb.MemDatabase")
 	}
-	return memdb.Copy(), nil
+	return mdb.Copy(), nil
 }
 
 func generateChain(config *params.ChainConfig, parent *types.Block, engine consensus.IEngine, chain *BlockChain, db fdb.Database, n int, gen func(int, *BlockGenerator)) ([]*types.Block, [][]*types.Receipt) {

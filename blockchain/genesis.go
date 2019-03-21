@@ -33,6 +33,7 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // GenesisAccount is an account in the state of the genesis block.
@@ -100,7 +101,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 // to the given database (or discards it if nil).
 func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	if db == nil {
-		db = fdb.NewMemDatabase()
+		db = memdb.NewMemDatabase()
 	}
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))

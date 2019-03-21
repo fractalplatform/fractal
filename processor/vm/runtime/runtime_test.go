@@ -31,7 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/abi"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -199,7 +199,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 }
 
 func TestAsset(t *testing.T) {
-	state, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
+	state, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	account, _ := accountmanager.NewAccountManager(state)
 
 	senderName := common.Name("jacobwolf")
@@ -371,7 +371,7 @@ func TestAsset(t *testing.T) {
 	}
 }
 func TestBNB(t *testing.T) {
-	state, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
+	state, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	account, _ := accountmanager.NewAccountManager(state)
 
 	senderName := common.Name("jacobwolf")

@@ -17,7 +17,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -28,6 +27,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 var defaultgenesisBlockHash = common.HexToHash("0x045dae5bce93fa1e02abba85ee6f645bf45ed54b2c60fdf238b03ffeaca46792")
@@ -98,7 +98,6 @@ func TestSetupGenesis(t *testing.T) {
 				if _, err := oldcustomg.Commit(db); err != nil {
 					return nil, nil, common.Hash{}, err
 				}
-				fmt.Println("=====>SetupGenesisBlock")
 				return SetupGenesisBlock(db, &customg)
 			},
 			wantErr: &GenesisMismatchError{
@@ -111,12 +110,10 @@ func TestSetupGenesis(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
-		db := fdb.NewMemDatabase()
-		fmt.Println("=====>", i, test.name)
+	for _, test := range tests {
+		db := memdb.NewMemDatabase()
 
 		config, dpos, hash, err := test.fn(db)
-		fmt.Println("=====>", i, test.name, err)
 
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
