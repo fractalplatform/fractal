@@ -17,6 +17,7 @@
 package asset
 
 import (
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -39,9 +40,24 @@ type Asset struct {
 	sdb *state.StateDB
 }
 
+func SetAssetNameConfig(config *Config) bool {
+	if config.AssetNameLevel < 0 || config.AssetNameLength <= 2 {
+		return false
+	}
+
+	if config.AssetNameLevel > 0 {
+		if config.SubAssetNameLength < 1 {
+			return false
+		}
+	}
+
+	common.SetAssetNameCheck(config.AssetNameLevel, config.AssetNameLength, config.SubAssetNameLength)
+	return true
+}
+
 //SetAssetMangerName  set the global asset manager name
 func SetAssetMangerName(name common.Name) bool {
-	if common.IsValidName(name.String()) {
+	if common.IsValidAccountName(name.String()) {
 		assetManagerName = name.String()
 		return true
 	}
@@ -267,6 +283,10 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 
 //IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) error {
+	if !common.IsValidAssetName(assetName) {
+		return fmt.Errorf("%s is invalid", assetName)
+	}
+
 	assetId, err := a.GetAssetIdByName(assetName)
 	if err != nil {
 		return err
@@ -274,6 +294,11 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 	if assetId > 0 {
 		return ErrAssetIsExist
 	}
+
+	if !a.IsValidOwner(assetName, owner) {
+		return fmt.Errorf("%s, onwer %s is invalid", assetName, owner)
+	}
+
 	ao, err := NewAssetObject(assetName, symbol, amount, dec, founder, owner, limit)
 	if err != nil {
 		return err
@@ -432,3 +457,44 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // 	asset.SetAssetFounder(founderName)
 // 	return a.SetAssetObject(asset)
 // }
+
+func (a *Asset) IsValidOwner(assetName string, owner common.Name) bool {
+	assetNames := common.SplitString(assetName)
+	if len(assetNames) == 1 {
+		return true
+	}
+
+	var an string
+	for i := 0; i < len(assetNames)-1; i++ {
+		if i == 0 {
+			an = assetNames[i]
+		} else {
+			an = an + "." + assetNames[i]
+		}
+
+		assetId, err := a.GetAssetIdByName(an)
+		if err != nil {
+			return false
+		}
+
+		if assetId <= 0 {
+			return false
+		}
+
+		assetObj, err := a.GetAssetObjectById(assetId)
+		if err != nil {
+			return false
+		}
+
+		if assetObj == nil {
+			return false
+		}
+
+		if assetObj.GetAssetOwner() == owner {
+			return true
+		}
+
+	}
+
+	return false
+}

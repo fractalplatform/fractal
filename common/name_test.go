@@ -42,8 +42,8 @@ func TestValidateName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if result := IsValidName(test.str); result != test.exp {
-			t.Errorf("IsValidName(%s) == %v; expected %v, len:%v",
+		if result := IsValidAccountName(test.str); result != test.exp {
+			t.Errorf("IsValidAccountName(%s) == %v; expected %v, len:%v",
 				test.str, result, test.exp, len(test.str))
 		}
 	}
@@ -65,6 +65,7 @@ func TestNameUnmarshalJSON(t *testing.T) {
 		{"short", true},
 		{"longnamelongnamelongnamelongname", true},
 	}
+
 	for i, test := range tests {
 
 		bytes, err := json.Marshal(test.Input)

@@ -66,10 +66,10 @@ func getAccountManager() *AccountManager {
 }
 
 func TestSDB(t *testing.T) {
-
 	b, err := rlp.EncodeToBytes("aaaa")
 	if err != nil {
 		fmt.Printf("encode err = %v", err)
+
 	}
 	sdb.Put("test1", acctInfoPrefix, b)
 	b1, err := sdb.Get("test1", acctInfoPrefix)
@@ -1592,6 +1592,7 @@ func TestAccountManager_Process(t *testing.T) {
 		//{"transfer2self", fields{sdb, ast}, args{action6}, false},
 		//{"transfer", fields{sdb, ast}, args{action7}, false},
 	}
+
 	for _, tt := range tests {
 		am := &AccountManager{
 			sdb: tt.fields.sdb,
@@ -1640,6 +1641,210 @@ func TestAccountManager_Process(t *testing.T) {
 	val, err = ac1.GetBalanceByID(1)
 	if val.Cmp(big.NewInt(10)) != 0 {
 		t.Errorf("Process transfer  failure=%v", val)
+	}
+
+}
+
+func TestAccountManager_SubAccount(t *testing.T) {
+
+	type fields struct {
+		sdb SdbIf
+		ast *asset.Asset
+	}
+	type args struct {
+		action *types.Action
+	}
+
+	pubkey, _ := GeneragePubKey()
+	a := &AccountAction{
+		AccountName: common.Name("bbbbbbbb"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload, err := rlp.EncodeToBytes(a)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a1 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.cc"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload1, err := rlp.EncodeToBytes(a1)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a2 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.dd"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload2, err := rlp.EncodeToBytes(a2)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a3 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.ccc"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload3, err := rlp.EncodeToBytes(a3)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a4 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.cc.dd"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload4, err := rlp.EncodeToBytes(a4)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a5 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.cc.ee"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload5, err := rlp.EncodeToBytes(a5)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a6 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.cc.ff"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload6, err := rlp.EncodeToBytes(a6)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a7 := &AccountAction{
+		AccountName: common.Name("cccccccc"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload7, err := rlp.EncodeToBytes(a7)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a8 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb.ee"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	payload8, err := rlp.EncodeToBytes(a8)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	a9 := &AccountAction{
+		AccountName: common.Name("bbbbbbbb."),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	_, err = rlp.EncodeToBytes(a9)
+	if err == nil {
+		panic("rlp payload err")
+	}
+
+	a10 := &AccountAction{
+		AccountName: common.Name("bbbbbbb"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	_, err = rlp.EncodeToBytes(a10)
+	if err == nil {
+		panic("rlp payload err")
+	}
+
+	a11 := &AccountAction{
+		AccountName: common.Name("bbbbbbbbbbbbbbbbb"),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	_, err = rlp.EncodeToBytes(a11)
+	if err == nil {
+		panic("rlp payload err")
+	}
+
+	a12 := &AccountAction{
+		AccountName: common.Name("bbbbbbbbbbbbbb.."),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	_, err = rlp.EncodeToBytes(a12)
+	if err == nil {
+		panic("rlp payload err")
+	}
+
+	a13 := &AccountAction{
+		AccountName: common.Name("bbbbbbbbbbbbbbbb.aaa.."),
+		Founder:     common.Name(""),
+		ChargeRatio: 10,
+		PublicKey:   pubkey,
+	}
+	_, err = rlp.EncodeToBytes(a13)
+	if err == nil {
+		panic("rlp payload err")
+	}
+
+	action := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(40), payload)
+	action1 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload1)
+	action2 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload2)
+	action3 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3)
+	action4 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload4)
+	action5 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb.cc"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload5)
+	action6 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb.ccc"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload6)
+	action7 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(30), payload7)
+	action8 := types.NewAction(types.CreateAccount, common.Name("cccccccc"), common.Name(sysName), 1, 1, 2, big.NewInt(30), payload8)
+
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{"createaccount", fields{sdb, ast}, args{action}, false},
+		{"createsubaccount1", fields{sdb, ast}, args{action1}, false},
+		{"createsubaccount2", fields{sdb, ast}, args{action2}, false},
+		{"createsubaccount3", fields{sdb, ast}, args{action3}, false},
+		{"createsubaccount4", fields{sdb, ast}, args{action4}, false},
+		{"createsubaccount5", fields{sdb, ast}, args{action5}, false},
+		{"createsubaccount6", fields{sdb, ast}, args{action6}, true},
+		{"createsubaccount7", fields{sdb, ast}, args{action7}, false},
+		{"createsubaccount8", fields{sdb, ast}, args{action8}, true},
+	}
+
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		if err := am.Process(tt.args.action); (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
 	}
 
 }

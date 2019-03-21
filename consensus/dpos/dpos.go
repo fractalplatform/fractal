@@ -326,7 +326,8 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, height uint64
 		state: state,
 	}
 
-	if !common.IsValidName(cadidate) {
+
+	if !common.IsValidAccountName(cadidate) {
 		return ErrIllegalCadidateName
 	}
 

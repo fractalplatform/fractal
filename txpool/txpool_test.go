@@ -41,7 +41,6 @@ import (
 // state reset and tests whether the pending state is in sync with the
 // block head event that initiated the resetState().
 func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
-
 	var (
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
 		manager, _ = am.NewAccountManager(statedb)

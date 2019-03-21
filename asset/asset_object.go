@@ -17,7 +17,6 @@ package asset
 
 import (
 	"math/big"
-	"regexp"
 
 	"github.com/fractalplatform/fractal/common"
 )
@@ -43,12 +42,13 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 		return nil, ErrNewAssetObject
 	}
 
-	reg := regexp.MustCompile("^[a-z0-9]{2,16}$")
-	if reg.MatchString(assetName) == false {
+	// reg := regexp.MustCompile("^[a-z0-9]{2,16}$")
+
+	if common.IsValidAssetName(assetName) == false {
 		return nil, ErrNewAssetObject
 	}
 
-	if reg.MatchString(symbol) == false {
+	if common.IsValidAssetName(symbol) == false {
 		return nil, ErrNewAssetObject
 	}
 

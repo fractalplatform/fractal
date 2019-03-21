@@ -23,6 +23,7 @@ var (
 	ErrNewAccountErr          = errors.New("new account err")
 	ErrAssetIDInvalid         = errors.New("asset id invalid")
 	ErrCreateAccountError     = errors.New("create account error")
+	ErrAccountInvaid          = errors.New("account not permission")
 	ErrAccountIsExist         = errors.New("account is exist")
 	ErrAccountIsDestroy       = errors.New("account is destroy")
 	ErrAccountNotExist        = errors.New("account not exist")
