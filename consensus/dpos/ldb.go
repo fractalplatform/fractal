@@ -342,33 +342,33 @@ func (db *LDB) DelState(height uint64) error {
 	return db.Delete(key)
 }
 
-func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, error) {
+func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
 	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), big.NewInt(0), 0, err
 	}
 	if val != nil {
 		cadidateInfo := &cadidateInfo{}
 		if err := rlp.DecodeBytes(val, cadidateInfo); err != nil {
-			return nil, err
+			return big.NewInt(0), big.NewInt(0), 0, err
 		}
-		return cadidateInfo.Quantity, nil
+		return cadidateInfo.Quantity, cadidateInfo.TotalQuantity, cadidateInfo.Counter, nil
 	}
 
 	key = strings.Join([]string{VoterKeyPrefix, name}, Separator)
 	val, err = db.GetSnapshot(key, timestamp)
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), big.NewInt(0), 0, err
 	}
 	if val != nil {
 		voterInfo := &voterInfo{}
 		if err := rlp.DecodeBytes(val, voterInfo); err != nil {
-			return nil, err
+			return big.NewInt(0), big.NewInt(0), 0, err
 		}
-		return voterInfo.Quantity, nil
+		return voterInfo.Quantity, big.NewInt(0), 0, nil
 	}
-	return big.NewInt(0), nil
+	return big.NewInt(0), big.NewInt(0), 0, nil
 }
 
 func (db *LDB) lastestHeight() (uint64, error) {

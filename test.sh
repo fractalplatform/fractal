@@ -3,8 +3,9 @@
 # start test node
 mkdir ./build/test_sdk
 
+# kill test node 
+ps -ef | grep ./build/test_sdk/ft | grep -v grep |  awk -F ' ' '{print $2}' | xargs kill -9
 ./build/bin/ft --datadir ./build/test_sdk/ft --miner_start > ./build/test_sdk/test.log 2>&1 &
-
 
 # collect code coverrage data
 set -e
@@ -20,7 +21,7 @@ for d in $(go list ./... | grep -v vendor | grep -v test); do
 done
 
 # kill test node 
-ps -ef | grep ./build/bin/ft | grep -v grep |  awk -F ' ' '{print $2}' | xargs kill -9
+ps -ef | grep ./build/test_sdk/ft | grep -v grep |  awk -F ' ' '{print $2}' | xargs kill -9
 
 # clear test_sdk data
 rm -r ./build/test_sdk

@@ -325,12 +325,12 @@ func (sys *System) UnvoteVoter(cadidate string, voter string) error {
 	return sys.unvoteCadidate(voter)
 }
 
-func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, error) {
-	q, err := sys.IDB.GetDelegatedByTime(name, timestamp)
+func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
+	q, tq, c, err := sys.IDB.GetDelegatedByTime(name, timestamp)
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), big.NewInt(0), 0, err
 	}
-	return new(big.Int).Mul(q, sys.config.unitStake()), nil
+	return new(big.Int).Mul(q, sys.config.unitStake()), new(big.Int).Mul(tq, sys.config.unitStake()), c, nil
 }
 
 func (sys *System) KickedCadidate(name string, cadidates []string, invalid bool) error {
