@@ -303,7 +303,7 @@ func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(batch, block.Hash())
 	// store cur block
-	bc.currentBlock.Store(block)
+	// bc.currentBlock.Store(block)
 
 	if block.Coinbase().String() == bc.chainConfig.SysName.String() {
 		rawdb.WriteIrreversibleNumber(batch, block.NumberU64())
@@ -518,7 +518,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	if reorg {
 		// Reorganise the chain if the parent is not the head block
 		if block.ParentHash() != currentBlock.Hash() {
-			if err := bc.reorgChain(currentBlock, block); err != nil {
+			if err := bc.reorgChain(currentBlock, block, batch); err != nil {
 				if err == errReorgSystemBlock {
 					goto Target
 				}
@@ -540,6 +540,10 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 Target:
 	if err := batch.Write(); err != nil {
 		return false, err
+	}
+
+	if isCanon {
+		bc.currentBlock.Store(block)
 	}
 
 	bc.futureBlocks.Remove(block.Hash())
@@ -733,7 +737,7 @@ func (bc *BlockChain) insertSideChain(block *types.Block) ([]*event.Event, []*ty
 
 }
 
-func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block) error {
+func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batch) error {
 	var (
 		newChain    types.Blocks
 		oldChain    types.Blocks
@@ -792,7 +796,6 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block) error {
 	} else {
 		log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(), "oldhash", oldBlock.Hash(), "newnum", newBlock.Number(), "newhash", newBlock.Hash())
 	}
-	batch := bc.db.NewBatch()
 
 	var addedTxs []*types.Transaction
 	for i := len(newChain) - 1; i >= 0; i-- {
@@ -804,7 +807,6 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block) error {
 	for _, tx := range diff {
 		rawdb.DeleteTxLookupEntry(batch, tx.Hash())
 	}
-	batch.Write()
 
 	return nil
 }

@@ -296,7 +296,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return err
 	}
 
-	if err := dpos.IsValidateCadidate(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state, true); err != nil {
+	if err := dpos.IsValidateCadidate(chain, parent, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state, true); err != nil {
 		return err
 	}
 
@@ -316,7 +316,7 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 }
 
 //IsValidateCadidate current cadidate
-func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, height uint64, timestamp uint64, cadidate string, pubkeys [][]byte, state *state.StateDB, force bool) error {
+func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types.Header, timestamp uint64, cadidate string, pubkeys [][]byte, state *state.StateDB, force bool) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
 	}
@@ -348,17 +348,11 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, height uint64
 
 	targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
 	// find target block
-	var pheader *types.Header
-	for height > 0 {
-		pheader = chain.GetHeaderByNumber(height)
-		if pheader == nil {
-			return fmt.Errorf("not found block by number %v", height)
-		}
-		if pheader.Time.Cmp(targetTime) != 1 {
+	for parent.Number.Uint64() > 0 {
+		if parent.Time.Cmp(targetTime) != 1 {
 			break
-		} else {
-			height--
 		}
+		parent = chain.GetHeaderByHash(parent.ParentHash)
 	}
 
 	sys := &System{
@@ -368,7 +362,7 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, height uint64
 		},
 	}
 
-	gstate, err := sys.GetState(height)
+	gstate, err := sys.GetState(parent.Number.Uint64())
 	if err != nil {
 		return err
 	}

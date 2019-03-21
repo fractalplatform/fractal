@@ -189,7 +189,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
 	}
-	if err := cdpos.IsValidateCadidate(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
+	if err := cdpos.IsValidateCadidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
 		switch err {
 		case dpos.ErrTooMuchRreversible:
 			fallthrough
