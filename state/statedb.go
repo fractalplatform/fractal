@@ -28,9 +28,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
+	trie "github.com/fractalplatform/fractal/state/mtp"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/utils/trie"
 )
 
 type revision struct {
