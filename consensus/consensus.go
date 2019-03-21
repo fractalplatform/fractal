@@ -56,7 +56,7 @@ type IChainReader interface {
 	StateAt(hash common.Hash) (*state.StateDB, error)
 
 	// WriteBlockWithState writes the block and all associated state to the database.
-	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) error
+	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (bool, error)
 
 	// CalcGasLimit computes the gas limit of the next block after parent.
 	CalcGasLimit(parent *types.Block) uint64
@@ -67,6 +67,12 @@ type IChainReader interface {
 
 	// HasBlock checks if a block is fully present in the database or not.
 	HasBlock(hash common.Hash, number uint64) bool
+
+	// FillForkID fills the current and next forkID
+	FillForkID(header *types.Header, statedb *state.StateDB) error
+
+	// ForkUpdate checks and records the fork information
+	ForkUpdate(block *types.Block, statedb *state.StateDB) error
 }
 
 // IEngine is an algorithm agnostic consensus engine.
@@ -94,7 +100,7 @@ type IEngine interface {
 
 	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error
 
-	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, error)
+	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error)
 
 	IAPI
 }

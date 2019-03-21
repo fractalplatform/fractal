@@ -50,12 +50,14 @@ func NewBlockValidator(blockchain ChainContext, engine consensus.IEngine) *Block
 // ValidateHeader checks whether a header conforms to the consensus rules of the
 // stock engine.
 func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
+
 	// Short circuit if the header is known, or it's parent not
 	if v.bc.HasBlockAndState(header.Hash(), header.Number.Uint64()) {
 		return ErrKnownBlock
 	}
 
 	number := header.Number.Uint64()
+
 	parent := v.bc.GetHeader(header.ParentHash, number-1)
 	if parent == nil {
 		return errParentBlock
@@ -109,6 +111,11 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 			return ErrUnknownAncestor
 		}
 		return ErrPrunedAncestor
+	}
+
+	// Checks the validity of forkID
+	if err := v.bc.CheckForkID(header); err != nil {
+		return err
 	}
 
 	// Verify the engine specific seal securing the block

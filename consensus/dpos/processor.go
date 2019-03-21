@@ -17,7 +17,9 @@
 package dpos
 
 import (
+	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -27,27 +29,32 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type RegisterProducer struct {
+type RegisterCadidate struct {
 	Url   string
 	Stake *big.Int
 }
 
-type UpdateProducer struct {
+type UpdateCadidate struct {
 	Url   string
 	Stake *big.Int
 }
 
-type VoteProducer struct {
-	Producer string
+type VoteCadidate struct {
+	Cadidate string
 	Stake    *big.Int
 }
 
-type ChangeProducer struct {
-	Producer string
+type ChangeCadidate struct {
+	Cadidate string
 }
 
 type RemoveVoter struct {
 	Voter string
+}
+
+type KickedCadidate struct {
+	Cadidates []string
+	Invalid   bool
 }
 
 func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error {
@@ -70,25 +77,30 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 			},
 		},
 	}
+
+	if action.Value().Cmp(big.NewInt(0)) > 0 {
+		return fmt.Errorf("invalid action value, must be zero")
+	}
+
 	switch action.Type() {
-	case types.RegProducer:
-		arg := &RegisterProducer{}
+	case types.RegCadidate:
+		arg := &RegisterCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.RegProducer(action.Sender().String(), arg.Url, arg.Stake); err != nil {
+		if err := sys.RegCadidate(action.Sender().String(), arg.Url, arg.Stake); err != nil {
 			return err
 		}
-	case types.UpdateProducer:
-		arg := &UpdateProducer{}
+	case types.UpdateCadidate:
+		arg := &UpdateCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.UpdateProducer(action.Sender().String(), arg.Url, arg.Stake); err != nil {
+		if err := sys.UpdateCadidate(action.Sender().String(), arg.Url, arg.Stake); err != nil {
 			return err
 		}
-	case types.UnregProducer:
-		if err := sys.UnregProducer(action.Sender().String()); err != nil {
+	case types.UnregCadidate:
+		if err := sys.UnregCadidate(action.Sender().String()); err != nil {
 			return err
 		}
 	case types.RemoveVoter:
@@ -99,35 +111,46 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := sys.UnvoteVoter(action.Sender().String(), arg.Voter); err != nil {
 			return err
 		}
-	case types.VoteProducer:
-		arg := &VoteProducer{}
+	case types.VoteCadidate:
+		arg := &VoteCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.VoteProducer(action.Sender().String(), arg.Producer, arg.Stake); err != nil {
+		if err := sys.VoteCadidate(action.Sender().String(), arg.Cadidate, arg.Stake); err != nil {
 			return err
 		}
-	case types.ChangeProducer:
-		arg := &ChangeProducer{}
+	case types.ChangeCadidate:
+		arg := &ChangeCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.ChangeProducer(action.Sender().String(), arg.Producer); err != nil {
+		if err := sys.ChangeCadidate(action.Sender().String(), arg.Cadidate); err != nil {
 			return err
 		}
-	case types.UnvoteProducer:
-		if err := sys.UnvoteProducer(action.Sender().String()); err != nil {
+	case types.UnvoteCadidate:
+		if err := sys.UnvoteCadidate(action.Sender().String()); err != nil {
+			return err
+		}
+	case types.KickedCadidate:
+		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+			return fmt.Errorf("no permission for kicking cadidates")
+		}
+		arg := &KickedCadidate{}
+		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
+			return err
+		}
+		if err := sys.KickedCadidate(action.Sender().String(), arg.Cadidates, arg.Invalid); err != nil {
 			return err
 		}
 	default:
 		return accountmanager.ErrUnkownTxType
 	}
-	accountDB, err := accountmanager.NewAccountManager(state)
-	if err != nil {
-		return err
-	}
-	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-	}
+	// accountDB, err := accountmanager.NewAccountManager(state)
+	// if err != nil {
+	// 	return err
+	// }
+	// if action.Value().Cmp(big.NewInt(0)) > 0 {
+	// 	accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+	// }
 	return nil
 }

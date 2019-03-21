@@ -55,11 +55,11 @@ const (
 	IncreaseAsset ActionType = 0x200 + iota
 	// IssueAsset repesents Issue asset action.
 	IssueAsset
-	//destroy asset
+	//DestroyAsset destroy asset
 	DestroyAsset
 	// SetAssetOwner repesents set asset new owner action.
 	SetAssetOwner
-	//set asset founder
+	//SetAssetFounder set asset founder
 	//SetAssetFounder
 	UpdateAsset
 	//Transfer repesents transfer asset action.
@@ -67,20 +67,25 @@ const (
 )
 
 const (
-	// RegProducer repesents register producer action.
-	RegProducer ActionType = 0x300 + iota
-	// UpdateProducer repesents update producer action.
-	UpdateProducer
-	// UnregProducer repesents unregister producer action.
-	UnregProducer
-	// RemoveVoter repesents producer remove voter action.
+	// RegCadidate repesents register cadidate action.
+	RegCadidate ActionType = 0x300 + iota
+	// UpdateCadidate repesents update cadidate action.
+	UpdateCadidate
+	// UnregCadidate repesents unregister cadidate action.
+	UnregCadidate
+	// RemoveVoter repesents cadidate remove voter action.
 	RemoveVoter
-	// VoteProducer repesents voter vote producer action.
-	VoteProducer
-	// ChangeProducer repesents voter change producer action.
-	ChangeProducer
-	// UnvoteProducer repesents voter cancel vote some producer action.
-	UnvoteProducer
+	// VoteCadidate repesents voter vote cadidate action.
+	VoteCadidate
+	// ChangeCadidate repesents voter change cadidate action.
+	ChangeCadidate
+	// UnvoteCadidate repesents voter cancel vote some cadidate action.
+	UnvoteCadidate
+)
+
+const (
+	// KickedCadidate
+	KickedCadidate ActionType = 0x400 + iota
 )
 
 type actionData struct {
@@ -134,29 +139,33 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 //CheckValue check action type and value
 func (a *Action) CheckValue() bool {
 	switch a.Type() {
-	case Transfer:
-	case CallContract:
-	case CreateContract:
-	case CreateAccount:
-	case DestroyAsset:
-		break
 	case UpdateAccount:
+		fallthrough
 	case IssueAsset:
+		fallthrough
 	case IncreaseAsset:
+		fallthrough
 	case SetAssetOwner:
+		fallthrough
 	case UpdateAsset:
-	case RegProducer:
-	case UpdateProducer:
-	case UnregProducer:
+		fallthrough
+	case RegCadidate:
+		fallthrough
+	case UpdateCadidate:
+		fallthrough
+	case UnregCadidate:
+		fallthrough
 	case RemoveVoter:
-	case VoteProducer:
-	case ChangeProducer:
-	case UnvoteProducer:
-		if a.Value().Cmp(big.NewInt(0)) > 0 {
-			return false
-		}
+		fallthrough
+	case VoteCadidate:
+		fallthrough
+	case ChangeCadidate:
+		fallthrough
+	case UnvoteCadidate:
+		fallthrough
+	case KickedCadidate:
+		return a.Value().Cmp(big.NewInt(0)) == 0
 	default:
-		return false
 	}
 	return true
 }

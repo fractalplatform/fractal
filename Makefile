@@ -38,7 +38,7 @@ ftfinder:
 clean:
 	rm -rf build/bin build/_workspace
 
-test:
+test: all
 	./build/env.sh ./test.sh
 
 .PHONY: all clean test ftfinder ft ftkey ftfinder

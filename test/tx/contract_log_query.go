@@ -1,10 +1,10 @@
 package main
 
 import (
-	tc "github.com/fractalplatform/fractal/test/common"
-	"github.com/fractalplatform/fractal/rpc"
-	jww "github.com/spf13/jwalterweatherman"
 	"fmt"
+	"github.com/fractalplatform/fractal/rpc"
+	tc "github.com/fractalplatform/fractal/test/common"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 func init() {

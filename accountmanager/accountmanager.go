@@ -932,7 +932,10 @@ func (am *AccountManager) process(action *types.Action) error {
 			if action.Recipient() != common.Name(sysName) {
 				return ErrToNameInvalid
 			}
+		} else if action.Type() != types.Transfer {
+			return ErrAmountValueInvalid
 		}
+
 		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
 			return err
 		}

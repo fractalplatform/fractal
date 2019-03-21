@@ -45,14 +45,14 @@ var (
 	basefrom []string
 	baseto   []string
 
-	ftproducer1key, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	ftproducer1name   = common.Name("ftproducer1")
+	ftcadidate1key, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	ftcadidate1name   = common.Name("ftcadidate1")
 
-	ftproducer2key, _ = crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
-	ftproducer2name   = common.Name("ftproducer2")
+	ftcadidate2key, _ = crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
+	ftcadidate2name   = common.Name("ftcadidate2")
 
-	ftproducer3key, _ = crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
-	ftproducer3name   = common.Name("ftproducer3")
+	ftcadidate3key, _ = crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
+	ftcadidate3name   = common.Name("ftcadidate3")
 
 	gaslimit       = uint64(200000)
 	issueAmount    = big.NewInt(100000000000000)
@@ -73,8 +73,8 @@ func init() {
 	//syspubkey := common.HexToPubKey("0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd")
 	minerprikey = append(minerprikey, sysprikey)
 	minername = append(minername, params.DefaultChainconfig.SysName)
-	minerprikey = append(minerprikey, ftproducer1key, ftproducer2key, ftproducer3key)
-	minername = append(minername, ftproducer1name, ftproducer2name, ftproducer3name)
+	minerprikey = append(minerprikey, ftcadidate1key, ftcadidate2key, ftcadidate3key)
+	minername = append(minername, ftcadidate1name, ftcadidate2name, ftcadidate3name)
 	ipc = append(ipc, "/home/Fractal/piTest/node_01/data/ft.ipc", "/home/Fractal/piTest/node_02/data/ft.ipc", "/home/Fractal/piTest/node_03/data/ft.ipc")
 
 	basefrom = append(basefrom, "newnamefrom1%s", "newnamefrom2%s", "newnamefrom3%s")
@@ -96,11 +96,11 @@ func createAccount(from, newname common.Name, nonce uint64, prikey *ecdsa.Privat
 
 func issueAsset(from, Owner common.Name, amount *big.Int, assetname string, nonce uint64, prikey *ecdsa.PrivateKey) (common.Hash, error) {
 	ast := &asset.AssetObject{
-		AssetName: assetname,
-		Symbol:    fmt.Sprintf("symbol%d", nonce),
-		Amount:    amount,
-		Decimals:  2,
-		Owner:     Owner,
+		AssetName:  assetname,
+		Symbol:     fmt.Sprintf("symbol%d", nonce),
+		Amount:     amount,
+		Decimals:   2,
+		Owner:      Owner,
 		Founder:    from,
 		UpperLimit: big.NewInt(500000000000000000),
 	}

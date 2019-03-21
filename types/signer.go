@@ -128,7 +128,7 @@ func (s Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 // Hash returns the hash to be signed by the sender.
 func (s Signer) Hash(tx *Transaction) common.Hash {
 	actionHashs := make([]common.Hash, len(tx.GetActions()))
-	for _, a := range tx.GetActions() {
+	for i, a := range tx.GetActions() {
 		hash := rlpHash([]interface{}{
 			a.data.From,
 			a.data.AType,
@@ -139,7 +139,7 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 			a.data.Payload,
 			s.chainID, uint(0), uint(0),
 		})
-		actionHashs = append(actionHashs, hash)
+		actionHashs[i] = hash
 	}
 
 	return rlpHash([]interface{}{
