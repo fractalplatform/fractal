@@ -435,7 +435,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	if name, err := common.BigToName(account); err == nil {
 		if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, t); err == nil {
 			if (o == 1) && (assetID == evm.chainConfig.SysTokenID) {
-				if dbalance, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+				if dbalance, _, _, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
 					rbalance = new(big.Int).Add(balance, dbalance)
 				} else {
 					rerr = err

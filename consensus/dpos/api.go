@@ -122,21 +122,17 @@ func (api *API) LatestEpcho() (interface{}, error) {
 }
 
 func (api *API) ValidateEpcho() (interface{}, error) {
-
-	cur_header := api.chain.CurrentHeader()
-	height := cur_header.Number.Uint64() - 1
-
-	target_ts := big.NewInt(cur_header.Time.Int64() - int64(api.dpos.config.DelayEcho*api.dpos.config.epochInterval()))
-
+	curHeader := api.chain.CurrentHeader()
+	targetTS := big.NewInt(curHeader.Time.Int64() - int64(api.dpos.config.DelayEcho*api.dpos.config.epochInterval()))
+	height := curHeader.Number.Uint64()
 	for height > 0 {
 		pheader := api.chain.GetHeaderByNumber(height)
-		if pheader.Time.Cmp(target_ts) != 1 {
+		if pheader.Time.Cmp(targetTS) != 1 {
 			break
 		} else {
-			height -= 1
+			height--
 		}
 	}
-
 	return api.Epcho(height)
 }
 

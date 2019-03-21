@@ -224,6 +224,15 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		sys.updateElectedCadidates(header.Time.Uint64())
 	}
 
+	cadidate, err := sys.GetCadidate(header.Coinbase.String())
+	if err != nil {
+		return nil, err
+	}
+	cadidate.Counter++
+	if err := sys.SetCadidate(cadidate); err != nil {
+		return nil, err
+	}
+
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
@@ -333,7 +342,7 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, height uint64
 
 	if sys := strings.Compare(cadidate, dpos.config.SystemName) == 0; force && sys {
 		return nil
-	} else if !sys && dpos.CalcProposedIrreversible(chain, true) == 0 {
+	} else if !sys && dpos.CalcProposedIrreversible(chain, !force) == 0 {
 		return ErrTooMuchRreversible
 	}
 
@@ -385,7 +394,7 @@ func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
 }
 
-func (dpos *Dpos) GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, error) {
+func (dpos *Dpos) GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error) {
 	sys := &System{
 		config: dpos.config,
 		IDB: &LDB{

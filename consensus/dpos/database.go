@@ -48,7 +48,7 @@ type IDB interface {
 	Undelegate(string, *big.Int) error
 	IncAsset2Acct(string, string, *big.Int) error
 
-	GetDelegatedByTime(string, uint64) (*big.Int, error)
+	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
 }
 
 type cadidateInfo struct {
@@ -57,6 +57,7 @@ type cadidateInfo struct {
 	Quantity      *big.Int `json:"quantity"`      // cadidate stake quantity
 	TotalQuantity *big.Int `json:"totalQuantity"` // cadidate total stake quantity
 	Height        uint64   `json:"height"`        // timestamp
+	Counter       uint64   `json:"counter"`
 	Invalid       bool     `json:"invalid"`
 }
 
