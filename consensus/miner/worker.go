@@ -144,7 +144,7 @@ func (worker *Worker) mintLoop() {
 			return nil, err
 		}
 		for index, privKey := range worker.privKeys {
-			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), types.ActionType(0), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
+			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
 				return crypto.Sign(content, privKey)
 			}
 		}
@@ -191,6 +191,8 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 	}
 	if err := cdpos.IsValidateCadidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
 		switch err {
+		case dpos.ErrSystemTakeOver:
+			fallthrough
 		case dpos.ErrTooMuchRreversible:
 			fallthrough
 		case dpos.ErrIllegalCadidateName:
@@ -395,6 +397,16 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 		}
 
 		action := tx.GetActions()[0]
+
+		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName.String()) != 0 {
+			switch action.Type() {
+			case types.KickedCadidate:
+				fallthrough
+			case types.ExitTakeOver:
+				continue
+			default:
+			}
+		}
 
 		from := action.Sender()
 		// Start executing the transaction

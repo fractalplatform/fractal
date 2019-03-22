@@ -17,6 +17,7 @@
 package common
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -115,6 +116,10 @@ func (a *Address) SetBytes(b []byte) {
 // MarshalText returns the hex representation of a.
 func (a Address) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(a[:]).MarshalText()
+}
+
+func (a Address) Compare(x Address) int {
+	return bytes.Compare(a.Bytes(), x.Bytes())
 }
 
 // UnmarshalText parses a hash in hex syntax.

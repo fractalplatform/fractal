@@ -269,8 +269,9 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 		nonce++
 	}
 	tx := types.NewTransaction(uint64(1), big.NewInt(2), actions...)
+	keyPair := types.MakeKeyPair(fromprikey, []uint64{0})
 	for _, action := range actions {
-		err := types.SignAction(action, tx, signer, fromprikey)
+		err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
 		}
@@ -293,7 +294,8 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(2), actions1...)
 	for _, action := range actions1 {
-		err := types.SignAction(action, tx1, signer, getCadidates()[action.Recipient().String()].prikey)
+		keyPair = types.MakeKeyPair(getCadidates()[action.Recipient().String()].prikey, []uint64{0})
+		err := types.SignActionWithMultiKey(action, tx1, signer, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
 		}
@@ -321,8 +323,8 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 	blocks, receipts := make(types.Blocks, n), make([][]*types.Receipt, n)
 	genblock := func(i int, parent *types.Block, statedb *state.StateDB) (*types.Block, []*types.Receipt) {
-		b := &BlockGenerator{i: i, parent: parent, statedb: statedb, config: config, engine: engine, bc: chain}
-		b.header = makeHeader(b.bc, parent, statedb, b.engine)
+		b := &BlockGenerator{i: i, parent: parent, statedb: statedb, config: config, engine: engine, BlockChain: chain}
+		b.header = makeHeader(b, parent, statedb, b.engine)
 
 		// Execute any user modifications to the block
 		if gen != nil {
@@ -331,16 +333,16 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		if b.engine != nil {
 			// Finalize and seal the block
-			if err := b.engine.Prepare(b.bc, b.header, b.txs, nil, nil); err != nil {
+			if err := b.engine.Prepare(b, b.header, b.txs, nil, nil); err != nil {
 				panic(fmt.Sprintf("engine prepare error: %v", err))
 			}
 
-			block, err := b.engine.Finalize(b.bc, b.header, b.txs, b.receipts, b.statedb)
+			block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.statedb)
 			if err != nil {
 				panic(fmt.Sprintf("engine finalize error: %v", err))
 			}
 
-			block, err = b.engine.Seal(b.bc, block, nil)
+			block, err = b.engine.Seal(b, block, nil)
 			if err != nil {
 				panic(fmt.Sprintf("engine seal error: %v", err))
 			}

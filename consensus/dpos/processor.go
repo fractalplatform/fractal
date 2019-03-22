@@ -49,12 +49,11 @@ type ChangeCadidate struct {
 }
 
 type RemoveVoter struct {
-	Voter string
+	Voters []string
 }
 
 type KickedCadidate struct {
 	Cadidates []string
-	Invalid   bool
 }
 
 func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error {
@@ -108,8 +107,10 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.UnvoteVoter(action.Sender().String(), arg.Voter); err != nil {
-			return err
+		for _, voter := range arg.Voters {
+			if err := sys.UnvoteVoter(action.Sender().String(), voter); err != nil {
+				return err
+			}
 		}
 	case types.VoteCadidate:
 		arg := &VoteCadidate{}
@@ -139,9 +140,16 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.KickedCadidate(action.Sender().String(), arg.Cadidates, arg.Invalid); err != nil {
-			return err
+		for _, cadicate := range arg.Cadidates {
+			if err := sys.KickedCadidate(cadicate); err != nil {
+				return err
+			}
 		}
+	case types.ExitTakeOver:
+		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+			return fmt.Errorf("no permission for exit take over")
+		}
+		sys.ExitTakeOver()
 	default:
 		return accountmanager.ErrUnkownTxType
 	}

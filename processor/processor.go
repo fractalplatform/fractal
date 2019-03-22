@@ -99,14 +99,10 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		if !action.CheckValue() {
 			return nil, 0, ErrActionInvalidValue
 		}
-
-		fromPubkey, err := types.Recover(types.NewSigner(config.ChainID), action, tx)
-		if err != nil {
-			return nil, 0, err
-		}
-
-		if err := accountDB.IsValidSign(action.Sender(), action.Type(), fromPubkey); err != nil {
-			return nil, 0, err
+		if needCheckSign(accountDB, action) {
+			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
+				return nil, 0, err
+			}
 		}
 
 		nonce, err := accountDB.GetNonce(action.Sender())
@@ -123,7 +119,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			ChainContext:  p.bc,
 			EgnineContext: p.engine,
 		}
-		context := NewEVMContext(action.Sender(), fromPubkey, assetID, tx.GasPrice(), header, evmcontext, author)
+		context := NewEVMContext(action.Sender(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)
 
 		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, assetID, config, p.engine)
@@ -165,4 +161,17 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx.InternalTxs = internals
 	receipt.SetInternalTxsLog(detailTx)
 	return receipt, totalGas, nil
+}
+
+func needCheckSign(accountDB *accountmanager.AccountManager, action *types.Action) bool {
+	authorVersion := types.GetAuthorCache(action)
+	if len(authorVersion) == 0 {
+		return true
+	}
+	for name, version := range authorVersion {
+		if tmpVersion, err := accountDB.GetAuthorVersion(name); err != nil || version != tmpVersion {
+			return true
+		}
+	}
+	return false
 }

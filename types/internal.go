@@ -37,8 +37,7 @@ type InternalLog struct {
 }
 
 type BlockAndResult struct {
-	Block     *Block
+	Block     map[string]interface{}
 	Receipts  []*Receipt
 	DetailTxs []*DetailTx
-	Hash      common.Hash
 }

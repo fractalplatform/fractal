@@ -43,7 +43,7 @@ type BlockGenerator struct {
 
 	config *params.ChainConfig
 	engine consensus.IEngine
-	bc     *BlockChain
+	*BlockChain
 }
 
 // SetCoinbase sets the coinbase of the generated block.
@@ -62,9 +62,9 @@ func (bg *BlockGenerator) SetCoinbase(addr common.Name) {
 func (bg *BlockGenerator) OffsetTime(seconds int64) {
 	bg.header.Time.Add(bg.header.Time, new(big.Int).SetInt64(seconds))
 	if bg.header.Time.Cmp(bg.parent.Header().Time) <= 0 {
-		panic("block time out of range")
+		panic(fmt.Sprintf("header time %d less than parent header time %v ", bg.header.Time.Uint64(), bg.parent.Time().Uint64()))
 	}
-	bg.header.Difficulty = bg.engine.CalcDifficulty(bg.bc, bg.header.Time.Uint64(), bg.parent.Header())
+	bg.header.Difficulty = bg.engine.CalcDifficulty(bg, bg.header.Time.Uint64(), bg.parent.Header())
 }
 
 // AddTx adds a transaction to the generated block.
@@ -96,16 +96,20 @@ func (cc *chainContext) Author(header *types.Header) (common.Name, error) {
 // AddTxWithChain adds a transaction to the generated block.
 func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
 	if bg.gasPool == nil {
-		bg.SetCoinbase(bg.bc.genesisBlock.Coinbase())
+		bg.SetCoinbase(bg.genesisBlock.Coinbase())
 	}
 
 	bg.statedb.Prepare(tx.Hash(), common.Hash{}, len(bg.txs))
 
-	receipt, _, err := bg.bc.processor.ApplyTransaction(&bg.header.Coinbase, bg.gasPool, bg.statedb, bg.header, tx, &bg.header.GasUsed, vm.Config{})
+	receipt, _, err := bg.processor.ApplyTransaction(&bg.header.Coinbase, bg.gasPool, bg.statedb, bg.header, tx, &bg.header.GasUsed, vm.Config{})
 	if err != nil {
 		panic(fmt.Sprintf(" apply transaction hash:%v ,err %v", tx.Hash().Hex(), err))
 	}
 
 	bg.txs = append(bg.txs, tx)
 	bg.receipts = append(bg.receipts, receipt)
+}
+
+func (bg *BlockGenerator) CurrentHeader() *types.Header {
+	return bg.parent.Head
 }

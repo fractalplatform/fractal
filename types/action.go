@@ -48,6 +48,8 @@ const (
 	UpdateAccount
 	// DeleteAccount repesents the delete account action.
 	DeleteAccount
+	//UpdateAccountAuthor represents the update account author.
+	UpdateAccountAuthor
 )
 
 const (
@@ -86,7 +88,16 @@ const (
 const (
 	// KickedCadidate
 	KickedCadidate ActionType = 0x400 + iota
+	// exit
+	ExitTakeOver
 )
+
+type SignData struct {
+	V     *big.Int
+	R     *big.Int
+	S     *big.Int
+	Index []uint64
+}
 
 type actionData struct {
 	AType    ActionType
@@ -98,10 +109,7 @@ type actionData struct {
 	Amount   *big.Int
 	Payload  []byte
 
-	// Signature values
-	V *big.Int
-	R *big.Int
-	S *big.Int
+	Sign []*SignData
 }
 
 // Action represents an entire action in the transaction.
@@ -110,6 +118,7 @@ type Action struct {
 	// cache
 	hash   atomic.Value
 	sender atomic.Value
+	author atomic.Value
 }
 
 // NewAction initialize transaction's action.
@@ -126,14 +135,20 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		GasLimit: gasLimit,
 		Amount:   new(big.Int),
 		Payload:  payload,
-		V:        new(big.Int),
-		R:        new(big.Int),
-		S:        new(big.Int),
+		Sign:     make([]*SignData, 0),
 	}
 	if amount != nil {
 		data.Amount.Set(amount)
 	}
 	return &Action{data: data}
+}
+
+func (a *Action) GetSignIndex(i uint64) []uint64 {
+	return a.data.Sign[i].Index
+}
+
+func (a *Action) GetSign() []*SignData {
+	return a.data.Sign
 }
 
 //CheckValue check action type and value
@@ -164,6 +179,8 @@ func (a *Action) CheckValue() bool {
 	case UnvoteCadidate:
 		fallthrough
 	case KickedCadidate:
+		fallthrough
+	case ExitTakeOver:
 		return a.Value().Cmp(big.NewInt(0)) == 0
 	default:
 	}
@@ -206,7 +223,7 @@ func (a *Action) DecodeRLP(s *rlp.Stream) error {
 
 // ChainID returns which chain id this action was signed for (if at all)
 func (a *Action) ChainID() *big.Int {
-	return deriveChainID(a.data.V)
+	return deriveChainID(a.data.Sign[0].V)
 }
 
 // Hash hashes the RLP encoding of action.
@@ -220,18 +237,13 @@ func (a *Action) Hash() common.Hash {
 }
 
 // WithSignature returns a new transaction with the given signature.
-func (a *Action) WithSignature(signer Signer, sig []byte) error {
+func (a *Action) WithSignature(signer Signer, sig []byte, index []uint64) error {
 	r, s, v, err := signer.SignatureValues(sig)
 	if err != nil {
 		return err
 	}
-	a.data.R, a.data.S, a.data.V = r, s, v
+	a.data.Sign = append(a.data.Sign, &SignData{R: r, S: s, V: v, Index: index})
 	return nil
-}
-
-// RawSignatureValues return raw signature values.
-func (a *Action) RawSignatureValues() (*big.Int, *big.Int, *big.Int) {
-	return a.data.V, a.data.R, a.data.S
 }
 
 // RPCAction represents a action that will serialize to the RPC representation of a action.
@@ -244,16 +256,12 @@ type RPCAction struct {
 	GasLimit   uint64        `json:"gas"`
 	Amount     *big.Int      `json:"value"`
 	Payload    hexutil.Bytes `json:"payload"`
-	V          *hexutil.Big  `json:"v"`
-	R          *hexutil.Big  `json:"r"`
-	S          *hexutil.Big  `json:"s"`
 	Hash       common.Hash   `json:"actionHash"`
 	ActionIdex uint64        `json:"actionIndex"`
 }
 
 // NewRPCAction returns a action that will serialize to the RPC.
 func (a *Action) NewRPCAction(index uint64) *RPCAction {
-	v, r, s := a.RawSignatureValues()
 	return &RPCAction{
 		Type:       uint64(a.Type()),
 		Nonce:      a.Nonce(),
@@ -264,9 +272,6 @@ func (a *Action) NewRPCAction(index uint64) *RPCAction {
 		Amount:     a.Value(),
 		Payload:    hexutil.Bytes(a.Data()),
 		Hash:       a.Hash(),
-		V:          (*hexutil.Big)(v),
-		R:          (*hexutil.Big)(r),
-		S:          (*hexutil.Big)(s),
 		ActionIdex: index,
 	}
 }

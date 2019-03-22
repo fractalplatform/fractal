@@ -17,6 +17,7 @@
 package accountmanager
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -31,6 +32,16 @@ type AssetBalance struct {
 	Balance *big.Int `json:"balance"`
 }
 
+type recoverActionResult struct {
+	acctAuthors map[common.Name]*accountAuthor
+}
+
+type accountAuthor struct {
+	threshold   uint64
+	version     uint64
+	indexWeight map[uint64]uint64
+}
+
 func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 	ab := AssetBalance{
 		AssetID: assetID,
@@ -42,17 +53,20 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 //Account account object
 type Account struct {
 	//LastTime *big.Int
-	AcctName    common.Name   `json:"accountName"`
-	Founder     common.Name   `json:"founder"`
-	AccountID   uint64        `json:"accountID"`
-	ChargeRatio uint64        `json:"chargeRatio"`
-	Nonce       uint64        `json:"nonce"`
-	PublicKey   common.PubKey `json:"publicKey"`
-	Code        []byte        `json:"code"`
-	CodeHash    common.Hash   `json:"codeHash"`
-	CodeSize    uint64        `json:"codeSize"`
+	AcctName      common.Name `json:"accountName"`
+	Founder       common.Name `json:"founder"`
+	AccountID     uint64      `json:"accountID"`
+	ChargeRatio   uint64      `json:"chargeRatio"`
+	Nonce         uint64      `json:"nonce"`
+	Code          []byte      `json:"code"`
+	CodeHash      common.Hash `json:"codeHash"`
+	CodeSize      uint64      `json:"codeSize"`
+	Threshold     uint64      `json:"threshold"`
+	AuthorVersion uint64      `json:"authorVersion"`
 	//sort by asset id asc
 	Balances []*AssetBalance `json:"balances"`
+	//realated account, pubkey and address
+	Authors []*common.Author `json:"authors"`
 	//code Suicide
 	Suicide bool `json:"suicide"`
 	//account destroy
@@ -65,18 +79,21 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		return nil, ErrAccountNameInvalid
 	}
 
+	auth := common.NewAuthor(pubkey, 1)
 	acctObject := Account{
-		AcctName:    accountName,
-		Founder:     founderName,
-		AccountID:   0,
-		ChargeRatio: 0,
-		PublicKey:   pubkey,
-		Nonce:       0,
-		Balances:    make([]*AssetBalance, 0),
-		Code:        make([]byte, 0),
-		CodeHash:    crypto.Keccak256Hash(nil),
-		Suicide:     false,
-		Destroy:     false,
+		AcctName:      accountName,
+		Founder:       founderName,
+		AccountID:     0,
+		ChargeRatio:   0,
+		Nonce:         0,
+		Balances:      make([]*AssetBalance, 0),
+		Code:          make([]byte, 0),
+		CodeHash:      crypto.Keccak256Hash(nil),
+		Threshold:     1,
+		AuthorVersion: 1,
+		Authors:       []*common.Author{auth},
+		Suicide:       false,
+		Destroy:       false,
 	}
 	return &acctObject, nil
 }
@@ -142,14 +159,12 @@ func (a *Account) SetNonce(nonce uint64) {
 	a.Nonce = nonce
 }
 
-//GetPubKey get bugkey
-func (a *Account) GetPubKey() common.PubKey {
-	return a.PublicKey
+func (a *Account) GetAuthorVersion() uint64 {
+	return a.AuthorVersion
 }
 
-//SetPubKey set pub key
-func (a *Account) SetPubKey(pubkey common.PubKey) {
-	a.PublicKey.SetBytes(pubkey.Bytes())
+func (a *Account) SetAuthorVersion() {
+	a.AuthorVersion++
 }
 
 //GetCode get code
@@ -173,6 +188,44 @@ func (a *Account) SetCode(code []byte) error {
 	a.Code = code
 	a.CodeHash = crypto.Keccak256Hash(code)
 	a.CodeSize = uint64(len(code))
+	return nil
+}
+
+func (a *Account) GetThreshold() uint64 {
+	return a.Threshold
+}
+
+func (a *Account) SetThreshold(t uint64) {
+	a.Threshold = t
+}
+
+func (a *Account) AddAuthor(author *common.Author) error {
+	for _, auth := range a.Authors {
+		if author.Owner.String() == auth.Owner.String() {
+			return fmt.Errorf("%s already exist", auth.Owner.String())
+		}
+	}
+	a.Authors = append(a.Authors, author)
+	return nil
+}
+
+func (a *Account) UpdateAuthor(author *common.Author) error {
+	for _, auth := range a.Authors {
+		if author.Owner.String() == auth.Owner.String() {
+			auth.Weight = author.Weight
+			break
+		}
+	}
+	return nil
+}
+
+func (a *Account) DeleteAuthor(author *common.Author) error {
+	for i, auth := range a.Authors {
+		if author.Owner.String() == auth.Owner.String() {
+			a.Authors = append(a.Authors[:i], a.Authors[i+1:]...)
+			break
+		}
+	}
 	return nil
 }
 

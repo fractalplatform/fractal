@@ -3,7 +3,6 @@ package sdk
 import (
 	"math/big"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 )
 
@@ -15,8 +14,8 @@ func (api *API) AccountIsExist(name string) (bool, error) {
 }
 
 // AccountInfo get account by name
-func (api *API) AccountInfo(name string) (*accountmanager.Account, error) {
-	account := &accountmanager.Account{}
+func (api *API) AccountInfo(name string) (map[string]interface{}, error) {
+	account := map[string]interface{}{}
 	err := api.client.Call(account, "account_getAccountByName", name)
 	return account, err
 }

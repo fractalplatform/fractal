@@ -58,7 +58,7 @@ type cadidateInfo struct {
 	TotalQuantity *big.Int `json:"totalQuantity"` // cadidate total stake quantity
 	Height        uint64   `json:"height"`        // timestamp
 	Counter       uint64   `json:"counter"`
-	Invalid       bool     `json:"invalid"`
+	InBlackList   bool     `json:"inBlackList"`
 }
 
 type voterInfo struct {
@@ -74,6 +74,7 @@ type globalState struct {
 	ActivatedCadidateSchedule       []string `json:"activatedCadidateSchedule"`       // cadidates
 	ActivatedTotalQuantity          *big.Int `json:"activatedTotalQuantity"`          // the sum of activate cadidate votes
 	TotalQuantity                   *big.Int `json:"totalQuantity"`                   // the sum of all cadidate votes
+	TakeOver                        bool     `json:"takeOver"`                        // systemio take over dpos
 }
 
 type cadidateInfoArray []*cadidateInfo

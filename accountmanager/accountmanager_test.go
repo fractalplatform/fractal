@@ -17,7 +17,6 @@
 package accountmanager
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"fmt"
 	"math/big"
@@ -257,52 +256,6 @@ func TestAccountManager_AccountIsEmpty(t *testing.T) {
 func GeneragePubKey() (common.PubKey, *ecdsa.PrivateKey) {
 	prikey, _ := crypto.GenerateKey()
 	return common.BytesToPubKey(crypto.FromECDSAPub(&prikey.PublicKey)), prikey
-}
-func TestAccountManager_UpdateAccount(t *testing.T) {
-	type fields struct {
-		sdb SdbIf
-		ast *asset.Asset
-	}
-	pubkey := new(common.PubKey)
-	pubkey2 := new(common.PubKey)
-	pubkey.SetBytes([]byte("abcde123456789"))
-
-	pubkey3, _ := GeneragePubKey()
-	//fmt.Printf("UpdateAccount key=%v\n", pubkey3.Bytes())
-	type args struct {
-		accountName common.Name
-		founderName common.Name
-		chargeRatio uint64
-		pubkey      common.PubKey
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		//
-		{"updateAccount", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, pubkey3}, false},
-		{"updateAccount", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("111222332a"), 1, pubkey3}, false},
-		{"updateAccountNilFounder", fields{sdb, ast}, args{common.Name("111222332a"), common.Name("1112223-"), 1, *pubkey2}, true},
-		{"updateAccountInvaidName", fields{sdb, ast}, args{common.Name("a123456789aeeegty"), common.Name("a123456789aeeegty"), 1, *pubkey2}, true},
-	}
-	for _, tt := range tests {
-		am := &AccountManager{
-			sdb: tt.fields.sdb,
-			ast: tt.fields.ast,
-		}
-		//if err := am.CreateAccount(tt.args.accountName, *pubkey2); (err != nil) != tt.wantErr {
-		//	t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
-		//}
-		if err := am.UpdateAccount(tt.args.accountName, tt.args.founderName, tt.args.chargeRatio, tt.args.pubkey); (err != nil) != tt.wantErr {
-			t.Errorf("%q. AccountManager.UpdateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
-		}
-	}
-	acct, _ := acctm.GetAccountByName(common.Name("a123456789aeee"))
-	if bytes.Compare(acct.PublicKey.Bytes(), pubkey3.Bytes()) != 0 {
-		t.Errorf("AccountManager.UpdateAccount() error key not eque:%v\n =%v", acct.PublicKey.Bytes(), []byte("abcde123456789"))
-	}
 }
 
 func TestAccountManager_GetAccountByName(t *testing.T) {
@@ -580,13 +533,12 @@ func TestAccountManager_IsValidSign(t *testing.T) {
 	}
 	type args struct {
 		accountName common.Name
-		aType       types.ActionType
 		pub         common.PubKey
 	}
 	pubkey := new(common.PubKey)
 	pubkey2 := new(common.PubKey)
 	pubkey2.SetBytes([]byte("abcde123456789"))
-	acctm.UpdateAccount(common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, *pubkey2)
+	//acctm.UpdateAccount(common.Name("a123456789aeee"), &AccountAction{common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, *pubkey2})
 	tests := []struct {
 		name    string
 		fields  fields
@@ -594,15 +546,15 @@ func TestAccountManager_IsValidSign(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"invalidsign", fields{sdb, ast}, args{common.Name("a123456789aeee"), types.CreateContract, *pubkey}, true},
-		{"validsign", fields{sdb, ast}, args{common.Name("a123456789aeee"), types.CreateContract, *pubkey2}, false},
+		{"invalidsign", fields{sdb, ast}, args{common.Name("a123456789aeee"), *pubkey}, false},
+		{"validsign", fields{sdb, ast}, args{common.Name("a123456789aeee"), *pubkey2}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.IsValidSign(tt.args.accountName, tt.args.aType, tt.args.pub); (err != nil) != tt.wantErr {
+		if err := am.IsValidSign(tt.args.accountName, tt.args.pub); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IsValidSign() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -797,7 +749,7 @@ func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -830,7 +782,7 @@ func TestAccountManager_GetAccountLastChange(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -864,7 +816,7 @@ func TestAccountManager_GetSnapshotTime(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -899,7 +851,7 @@ func TestAccountManager_GetBalanceByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -932,7 +884,7 @@ func TestAccountManager_GetAssetFounder(t *testing.T) {
 		want    common.Name
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -965,7 +917,7 @@ func TestAccountManager_GetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -998,7 +950,7 @@ func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1566,12 +1518,24 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		panic("rlp payload err")
 	}
+	ca1 := common.NewAuthor(common.Name("a123456789aeee"), 1)
+	autha1 := &AuthorAction{ActionType: 0, Author: ca1}
+	ca2 := common.NewAuthor(common.Name("a123456789aeee"), 2)
+	autha2 := &AuthorAction{ActionType: 1, Author: ca2}
+
+	aaa1 := &AccountAuthorAction{Threshold: 10, AuthorActions: []*AuthorAction{autha1, autha2}}
+	payload5, err := rlp.EncodeToBytes(aaa1)
+	if err != nil {
+		panic("rlp payload err")
+	}
 
 	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 0, big.NewInt(0), payload)
 	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(0), payload2)
 	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeee"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload1)
 	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3)
 	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload4)
+	action5 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload5)
+
 	//action5 := types.NewAction(types.DeleteAccount, common.Name("123asdf2"), common.Name("123asdf2"), 1, 1, 2, big.NewInt(0), pubkey1[:])
 	//action6 := types.NewAction(types.Transfer, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), pubkey1[:])
 	//action7 := types.NewAction(types.Transfer, common.Name("a123456789addd"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), payload)
@@ -1588,6 +1552,8 @@ func TestAccountManager_Process(t *testing.T) {
 		{"createaccount", fields{sdb, ast}, args{action3}, false},
 		{"updateasset", fields{sdb, ast}, args{action2}, false},
 		{"updateaccount", fields{sdb, ast}, args{action4}, false},
+		{"updateaccountauthor", fields{sdb, ast}, args{action5}, false},
+
 		//{"deleteaccount", fields{sdb, ast}, args{action5}, false},
 		//{"transfer2self", fields{sdb, ast}, args{action6}, false},
 		//{"transfer", fields{sdb, ast}, args{action7}, false},
@@ -1635,12 +1601,49 @@ func TestAccountManager_Process(t *testing.T) {
 	if ac1 == nil {
 		t.Error("Process create account err")
 	}
-	if bytes.Compare(ac1.PublicKey.Bytes(), pubkey1[:]) != 0 {
-		t.Error("Process update account failure")
+	if ac1.Authors[1].Weight != 2 {
+		t.Errorf("Process update accountauthor fail")
 	}
 	val, err = ac1.GetBalanceByID(1)
 	if val.Cmp(big.NewInt(10)) != 0 {
 		t.Errorf("Process transfer  failure=%v", val)
+	}
+	ca3 := common.NewAuthor(common.Name("a123456789aeee"), 1)
+	autha3 := &AuthorAction{ActionType: 2, Author: ca3}
+	aaa2 := &AccountAuthorAction{AuthorActions: []*AuthorAction{autha3}}
+
+	payload6, err := rlp.EncodeToBytes(aaa2)
+	if err != nil {
+		panic("rlp payload err")
+	}
+	action6 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name("a123456789addd"), 1, 1, 2, big.NewInt(0), payload6)
+
+	tests = []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{"updateaccountauthor", fields{sdb, ast}, args{action6}, false},
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		if err := am.Process(tt.args.action); (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+	ac2, err := acctm.GetAccountByName(common.Name("a123456789addd"))
+	if err != nil {
+		t.Error("Process GetAccountByName err")
+	}
+	if ac2 == nil {
+		t.Error("Process create account err")
+	}
+	if len(ac2.Authors) != 1 && ac2.Threshold != 10 {
+		t.Errorf("Process delete accountauthor fail")
 	}
 
 }

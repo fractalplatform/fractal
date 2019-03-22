@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -37,11 +38,29 @@ var (
 var acctManagerName = "sysAccount"
 var sysName string = ""
 
+type AuthorActionType uint64
+
+const (
+	AddAuthor AuthorActionType = iota
+	UpdateAuthor
+	DeleteAuthor
+)
+
 type AccountAction struct {
 	AccountName common.Name   `json:"accountName,omitempty"`
 	Founder     common.Name   `json:"founder,omitempty"`
 	ChargeRatio uint64        `json:"chargeRatio,omitempty"`
 	PublicKey   common.PubKey `json:"publicKey,omitempty"`
+}
+
+type AuthorAction struct {
+	ActionType AuthorActionType
+	Author     *common.Author
+}
+
+type AccountAuthorAction struct {
+	Threshold     uint64          `json:"threshold,omitempty"`
+	AuthorActions []*AuthorAction `json:"authorActions,omitempty"`
 }
 
 type IncAsset struct {
@@ -67,7 +86,7 @@ func SetAccountNameConfig(config *Config) bool {
 		}
 	}
 
-	common.SetAccountNameCheck(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
+	common.SetAccountNameCheckRule(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
 	return true
 }
 
@@ -185,6 +204,21 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+
+	if accountName.AccountNameLevel() > 1 {
+		if !fromName.IsValidCreator(accountName.String()) {
+			return ErrAccountInvaid
+		}
+	}
+
+	if err := am.CreateAccount(accountName, founderName, 0, pubkey); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //CreateAccount contract account
 func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
 	if !common.IsValidAccountName(accountName.String()) {
@@ -258,7 +292,7 @@ func (am *AccountManager) SetChargeRatio(accountName common.Name, ra uint64) err
 }
 
 //UpdateAccount update the pubkey of the accunt
-func (am *AccountManager) UpdateAccount(accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *AccountAction) error {
 	acct, err := am.GetAccountByName(accountName)
 	if acct == nil {
 		return ErrAccountNotExist
@@ -266,8 +300,8 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, founderName com
 	if err != nil {
 		return err
 	}
-	if len(founderName.String()) > 0 {
-		f, err := am.GetAccountByName(founderName)
+	if len(accountAction.Founder.String()) > 0 {
+		f, err := am.GetAccountByName(accountAction.Founder)
 		if err != nil {
 			return err
 		}
@@ -275,12 +309,39 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, founderName com
 			return ErrAccountNotExist
 		}
 	}
-	if chargeRatio > 100 {
+	if accountAction.ChargeRatio > 100 {
 		return ErrChargeRatioInvalid
 	}
-	acct.SetFounder(founderName)
-	acct.SetChargeRatio(chargeRatio)
-	acct.SetPubKey(pubkey)
+	acct.SetFounder(accountAction.Founder)
+	acct.SetChargeRatio(accountAction.ChargeRatio)
+	return am.SetAccount(acct)
+}
+
+func (am *AccountManager) UpdateAccountAuthor(accountName common.Name, acctAuth *AccountAuthorAction) error {
+	acct, err := am.GetAccountByName(accountName)
+	if acct == nil {
+		return ErrAccountNotExist
+	}
+	if err != nil {
+		return err
+	}
+	if acctAuth.Threshold != 0 {
+		acct.SetThreshold(acctAuth.Threshold)
+	}
+	for _, authorAct := range acctAuth.AuthorActions {
+		actionTy := authorAct.ActionType
+		switch actionTy {
+		case AddAuthor:
+			acct.AddAuthor(authorAct.Author)
+		case UpdateAuthor:
+			acct.UpdateAuthor(authorAct.Author)
+		case DeleteAuthor:
+			acct.DeleteAuthor(authorAct.Author)
+		default:
+			return fmt.Errorf("invalid account author operation type %d", actionTy)
+		}
+	}
+	acct.SetAuthorVersion()
 	return am.SetAccount(acct)
 }
 
@@ -419,6 +480,18 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 	return am.SetAccount(acct)
 }
 
+// GetNonce get nonce
+func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return 0, err
+	}
+	if acct == nil {
+		return 0, ErrAccountNotExist
+	}
+	return acct.GetAuthorVersion(), nil
+}
+
 //GetBalancesList get Balances return a list
 //func (am *AccountManager) GetBalancesList(accountName common.Name) ([]*AssetBalance, error) {
 //	acct, err := am.GetAccountByName(accountName)
@@ -456,20 +529,37 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
-		pub, err := types.Recover(signer, action, tx)
+		pubs, err := types.RecoverMultiKey(signer, action, tx)
 		if err != nil {
 			return err
 		}
 
-		if err := am.IsValidSign(action.Sender(), action.Type(), pub); err != nil {
-			return err
+		recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor, 0)}
+		for i, pub := range pubs {
+			index := action.GetSignIndex(uint64(i))
+			if err := am.ValidSign(action.Sender(), pub, index, recoverRes); err != nil {
+				return err
+			}
 		}
+
+		authorVersion := make(map[common.Name]uint64, 0)
+		for name, acctAuthor := range recoverRes.acctAuthors {
+			var count uint64
+			for _, weight := range acctAuthor.indexWeight {
+				count += weight
+			}
+			if count < acctAuthor.threshold {
+				return fmt.Errorf("account %s want threshold %d, but actual is %d", name, acctAuthor.threshold, count)
+			}
+			authorVersion[name] = acctAuthor.version
+		}
+		types.StoreAuthorCache(action, authorVersion)
 	}
 	return nil
 }
 
-//IsValidSign check the sign
-func (am *AccountManager) IsValidSign(accountName common.Name, aType types.ActionType, pub common.PubKey) error {
+// IsValidSign
+func (am *AccountManager) IsValidSign(accountName common.Name, pub common.PubKey) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
 		return err
@@ -482,11 +572,83 @@ func (am *AccountManager) IsValidSign(accountName common.Name, aType types.Actio
 	}
 	//TODO action type verify
 
-	if acct.GetPubKey().Compare(pub) != 0 {
-		return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, acct.GetPubKey().String(), pub.String())
+	for _, author := range acct.Authors {
+		if author.String() == pub.String() && author.GetWeight() >= acct.GetThreshold() {
+			return nil
+		}
 	}
-	return nil
+	return fmt.Errorf("%v %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String())
+}
 
+//IsValidSign check the sign
+func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, index []uint64, recoverRes *recoverActionResult) error {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return err
+	}
+	if acct == nil {
+		return ErrAccountNotExist
+	}
+	if acct.IsDestroyed() {
+		return ErrAccountIsDestroy
+	}
+
+	var i int
+	var idx uint64
+	for i, idx = range index {
+		if idx >= uint64(len(acct.Authors)) {
+			return fmt.Errorf("acct authors modified")
+		}
+		if i == len(index)-1 {
+			break
+		}
+		switch ownerTy := acct.Authors[idx].Owner.(type) {
+		case common.Name:
+			nextacct, err := am.GetAccountByName(ownerTy)
+			if err != nil {
+				return err
+			}
+			if nextacct == nil {
+				return ErrAccountNotExist
+			}
+			if nextacct.IsDestroyed() {
+				return ErrAccountIsDestroy
+			}
+			if recoverRes.acctAuthors[acct.GetName()] == nil {
+				a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, indexWeight: map[uint64]uint64{idx: acct.Authors[idx].GetWeight()}}
+				recoverRes.acctAuthors[acct.GetName()] = a
+			} else {
+				recoverRes.acctAuthors[acct.GetName()].indexWeight[idx] = acct.Authors[idx].GetWeight()
+			}
+			acct = nextacct
+		default:
+			return ErrAccountNotExist
+		}
+	}
+	return am.ValidOneSign(acct, idx, pub, recoverRes)
+}
+
+func (am *AccountManager) ValidOneSign(acct *Account, index uint64, pub common.PubKey, recoverRes *recoverActionResult) error {
+	switch ownerTy := acct.Authors[index].Owner.(type) {
+	case common.PubKey:
+		if pub.Compare(ownerTy) != 0 {
+			return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String(), ownerTy.String())
+		}
+	case common.Address:
+		addr := common.BytesToAddress(crypto.Keccak256(pub.Bytes()[1:])[12:])
+		if addr.Compare(ownerTy) != 0 {
+			return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, addr.String(), ownerTy.String())
+		}
+	default:
+		return fmt.Errorf("wrong sign type")
+	}
+	if recoverRes.acctAuthors[acct.GetName()] == nil {
+		a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, indexWeight: map[uint64]uint64{index: acct.Authors[index].GetWeight()}}
+		recoverRes.acctAuthors[acct.GetName()] = a
+		return nil
+	}
+	recoverRes.acctAuthors[acct.GetName()].indexWeight[index] = acct.Authors[index].GetWeight()
+	return nil
 }
 
 //GetAssetInfoByName get asset info by asset name.
@@ -693,6 +855,7 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 	if acct == nil {
 		return ErrAccountNotExist
 	}
+
 	assetID, err := am.ast.GetAssetIdByName(assetName)
 	if err != nil {
 		return err
@@ -864,6 +1027,17 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) error {
+	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
+		return fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
+	}
+
+	if err := am.IssueAsset(asset); err != nil {
+		return err
+	}
+	return nil
+}
+
 //IssueAsset issue asset
 func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	//check owner
@@ -886,10 +1060,10 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	} else {
 		asset.SetAssetFounder(asset.GetAssetOwner())
 	}
-
 	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
 		return err
 	}
+
 	//add the asset to owner
 	return am.AddAccountBalanceByName(asset.GetAssetOwner(), asset.GetAssetName(), asset.GetAssetAmount())
 }
@@ -950,15 +1124,10 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if acct.AccountName.AccountNameLevel() > 1 {
-			if !action.Sender().IsValidCreator(acct.AccountName.String()) {
-				return ErrAccountInvaid
-			}
-		}
-
-		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
+
 		if action.Value().Cmp(big.NewInt(0)) > 0 {
 			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
 				return err
@@ -972,15 +1141,20 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if err := am.UpdateAccount(action.Sender(), acct.Founder, 0, acct.PublicKey); err != nil {
+		if err := am.UpdateAccount(action.Sender(), &acct); err != nil {
 			return err
 		}
 		break
-		//case types.DeleteAccount:
-		//	if err := am.DeleteAccountByName(action.Sender()); err != nil {
-		//		return err
-		//	}
-		//	break
+	case types.UpdateAccountAuthor:
+		var acctAuth AccountAuthorAction
+		err := rlp.DecodeBytes(action.Data(), &acctAuth)
+		if err != nil {
+			return err
+		}
+		if err := am.UpdateAccountAuthor(action.Sender(), &acctAuth); err != nil {
+			return err
+		}
+		break
 	case types.IssueAsset:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
@@ -988,7 +1162,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if err := am.IssueAsset(&asset); err != nil {
+		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return err
 		}
 		break
@@ -1087,4 +1261,38 @@ func (am *AccountManager) process(action *types.Action) error {
 	}
 
 	return nil
+}
+
+func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
+	var ba = make(map[uint64]*big.Int, 0)
+
+	b, err := acct.GetBalanceByID(assetId)
+	if err != nil {
+		return nil, err
+	}
+	ba[assetId] = b
+
+	assetObj, err := am.ast.GetAssetObjectById(assetId)
+	if err != nil {
+		return nil, err
+	}
+
+	assetName := assetObj.GetAssetName()
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return nil, err
+	}
+
+	for id, balance := range balances {
+		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		if err != nil {
+			return nil, err
+		}
+
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+			ba[id] = balance
+		}
+	}
+
+	return ba, nil
 }

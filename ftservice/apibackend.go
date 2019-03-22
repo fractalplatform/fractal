@@ -121,22 +121,16 @@ func (b *APIBackend) GetDetailTxsLog(ctx context.Context, hash common.Hash) ([]*
 	return nil, nil
 }
 
-func (b *APIBackend) GetBlockAndResult(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
+func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
 	hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(blockNr))
 	if hash == (common.Hash{}) {
-		return nil
-	}
-	block := b.ftservice.blockchain.GetBlockByNumber(uint64(blockNr))
-	if block == nil {
 		return nil
 	}
 	receipts := rawdb.ReadReceipts(b.ftservice.chainDb, hash, uint64(blockNr))
 	txDetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, uint64(blockNr))
 	return &types.BlockAndResult{
-		Block:     block,
 		Receipts:  receipts,
 		DetailTxs: txDetails,
-		Hash:      block.Hash(),
 	}
 }
 
@@ -199,8 +193,7 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 		EgnineContext: b.ftservice.Engine(),
 	}
 
-	fromPubkey := common.PubKey{}
-	context := processor.NewEVMContext(from, fromPubkey, assetID, gasPrice, header, evmcontext, nil)
+	context := processor.NewEVMContext(from, assetID, gasPrice, header, evmcontext, nil)
 	return vm.NewEVM(context, account, state, b.ChainConfig(), vmCfg), vmError, nil
 }
 

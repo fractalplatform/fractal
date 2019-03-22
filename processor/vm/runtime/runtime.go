@@ -108,7 +108,6 @@ func NewEnv(cfg *Config) *vm.EVM {
 		},
 		Origin:      cfg.Origin,
 		From:        cfg.Origin,
-		FromPubkey:  cfg.FromPubkey,
 		Coinbase:    cfg.Coinbase,
 		BlockNumber: cfg.BlockNumber,
 		Time:        cfg.Time,

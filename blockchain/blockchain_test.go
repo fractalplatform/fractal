@@ -18,8 +18,8 @@ package blockchain
 
 import (
 	"testing"
+	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/params"
 )
 
@@ -39,61 +39,23 @@ func TestTheLastBlock(t *testing.T) {
 
 func TestSystemForkChain(t *testing.T) {
 	var (
-		allCadidates, allCadidates1 []string
-		allHeaderTimes              []uint64
-	)
-
-	//printLog(log.LvlTrace)
-	genesis := DefaultGenesis()
-
-	allCadidates, allHeaderTimes = genCanonicalCadidatesAndTimes(genesis)
-
-	allCadidates1 = append(allCadidates1, allCadidates...)
-
-	allCadidates1[len(allCadidates1)-1] = params.DefaultChainconfig.SysName.String()
-
-	testFork(t, allCadidates, allCadidates1, allHeaderTimes, allHeaderTimes)
-}
-
-func TestOtherCadidatesForkSystemChain(t *testing.T) {
-	var (
 		allCadidates, allCadidates1     []string
 		allHeaderTimes, allHeaderTimes1 []uint64
 	)
-
-	printLog(log.LvlWarn)
+	// printLog(log.LvlTrace)
 	genesis := DefaultGenesis()
 
 	allCadidates, allHeaderTimes = genCanonicalCadidatesAndTimes(genesis)
+
 	allCadidates1 = append(allCadidates1, allCadidates...)
+	allCadidates1 = append(allCadidates1, "syscadidate0")
+	allCadidates1 = append(allCadidates1, params.DefaultChainconfig.SysName.String())
+
 	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes...)
+	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes[len(allHeaderTimes)-1]+1000*uint64(time.Millisecond)*3*7)
+	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes1[len(allHeaderTimes1)-1]+1000*uint64(time.Millisecond)*3)
 
-	allCadidates = allCadidates[0 : len(allCadidates)-1]
-	allHeaderTimes = allHeaderTimes[0 : len(allHeaderTimes)-1]
-
-	allCadidates[len(allCadidates)-1] = params.DefaultChainconfig.SysName.String()
-
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
-	chain := newCanonical(t, genesis)
-	defer chain.Stop()
-
-	chain, _ = makeNewChain(t, genesis, chain, allCadidates, allHeaderTimes)
-
-	// generate fork blocks
-	blocks := generateForkBlocks(t, DefaultGenesis(), allCadidates1, allHeaderTimes1)
-
-	_, err := chain.InsertChain(blocks)
-	if err != nil {
-		t.Error(err)
-	}
-
-	// check if is complete block chain
-	checkCompleteChain(t, chain)
-
-	if chain.CurrentBlock().Coinbase().String() != genesis.Config.SysName.String() {
-		t.Fatalf("other cadidate:%v  ,can't fork the system: %v ", chain.CurrentBlock().Coinbase(), genesis.Config.SysName)
-	}
-
+	testFork(t, allCadidates, allCadidates1, allHeaderTimes, allHeaderTimes1)
 }
 
 func genCanonicalCadidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
@@ -111,8 +73,13 @@ func genCanonicalCadidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
 
 	// elected cadidates headertimes
 	cadidates, headerTimes := makeCadidatesAndTime(sysHeaderTimes[len(sysHeaderTimes)-1], genesis, dposEpochNum)
-	allCadidates = append(allCadidates, cadidates...)
-	allHeaderTimes = append(allHeaderTimes, headerTimes...)
+	allCadidates = append(allCadidates, cadidates[:12]...)
+	allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
+
+	// elected cadidates headertimes
+	cadidates, headerTimes = makeCadidatesAndTime(headerTimes[len(headerTimes)-1], genesis, dposEpochNum)
+	allCadidates = append(allCadidates, cadidates[:12]...)
+	allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
 
 	return allCadidates, allHeaderTimes
 }
@@ -124,12 +91,13 @@ func testFork(t *testing.T, cadidates, forkCadidates []string, headerTimes, fork
 	defer chain.Stop()
 
 	chain, _ = makeNewChain(t, genesis, chain, cadidates, headerTimes)
+
 	// generate fork blocks
 	blocks := generateForkBlocks(t, DefaultGenesis(), forkCadidates, forkHeaderTimes)
 
 	_, err := chain.InsertChain(blocks)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	// check chain block hash

@@ -42,6 +42,7 @@ var (
 	ErrIllegalCadidateName        = errors.New("illegal cadidate name")
 	ErrIllegalCadidatePubKey      = errors.New("illegal cadidate pubkey")
 	ErrTooMuchRreversible         = errors.New("too much rreversible blocks")
+	ErrSystemTakeOver             = errors.New("system account take over")
 	errUnknownBlock               = errors.New("unknown block")
 	extraSeal                     = 65
 	timeOfGenesisBlock            int64
@@ -94,7 +95,7 @@ func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 	if err != nil {
 		return false
 	}
-	return accountDB.IsValidSign(common.StrToName(name), types.ActionType(0), common.BytesToPubKey(pubkey)) == nil
+	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)) == nil
 }
 
 // Genesis dpos genesis store
@@ -224,6 +225,19 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		sys.updateElectedCadidates(header.Time.Uint64())
 	}
 
+	if parent.Number.Uint64() > 0 && dpos.CalcProposedIrreversible(chain, true) == 0 {
+		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
+			latest, err := sys.GetState(header.Number.Uint64())
+			if err != nil {
+				return nil, err
+			}
+			latest.TakeOver = true
+			if err := sys.SetState(latest); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	cadidate, err := sys.GetCadidate(header.Coinbase.String())
 	if err != nil {
 		return nil, err
@@ -341,9 +355,29 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 		return ErrIllegalCadidatePubKey
 	}
 
-	if sys := strings.Compare(cadidate, dpos.config.SystemName) == 0; force && sys {
-		return nil
-	} else if !sys && dpos.CalcProposedIrreversible(chain, !force) == 0 {
+	sys := &System{
+		config: dpos.config,
+		IDB: &LDB{
+			IDatabase: db,
+		},
+	}
+
+	latest, err := sys.GetState(parent.Number.Uint64())
+	if err != nil {
+		return err
+	}
+
+	systemio := strings.Compare(cadidate, dpos.config.SystemName) == 0
+	if latest.TakeOver {
+		if force && systemio {
+			return nil
+		}
+		return ErrSystemTakeOver
+	} else if parent.Number.Uint64() > 0 && dpos.CalcProposedIrreversible(chain, true) == 0 {
+		if force && systemio {
+			// first take over
+			return nil
+		}
 		return ErrTooMuchRreversible
 	}
 
@@ -354,13 +388,6 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 			break
 		}
 		parent = chain.GetHeaderByHash(parent.ParentHash)
-	}
-
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: db,
-		},
 	}
 
 	gstate, err := sys.GetState(parent.Number.Uint64())
