@@ -227,10 +227,11 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	cadidate, err := sys.GetCadidate(header.Coinbase.String())
 	if err != nil {
 		return nil, err
-	}
-	cadidate.Counter++
-	if err := sys.SetCadidate(cadidate); err != nil {
-		return nil, err
+	} else if cadidate != nil {
+		cadidate.Counter++
+		if err := sys.SetCadidate(cadidate); err != nil {
+			return nil, err
+		}
 	}
 
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
@@ -325,7 +326,6 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 		name:  dpos.config.AccountName,
 		state: state,
 	}
-
 
 	if !common.IsValidAccountName(cadidate) {
 		return ErrIllegalCadidateName

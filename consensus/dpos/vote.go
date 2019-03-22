@@ -406,8 +406,6 @@ func (sys *System) updateElectedCadidates(timestamp uint64) error {
 	}
 
 	size, _ := sys.CadidatesSize()
-	// fmt.Println("====>", gstate.TotalQuantity)
-
 	if gstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) < 0 || uint64(size) < sys.config.consensusSize() {
 		activatedCadidateSchedule := []string{}
 		activeTotalQuantity := big.NewInt(0)
@@ -439,7 +437,7 @@ func (sys *System) updateElectedCadidates(timestamp uint64) error {
 		}
 	}
 
-	for uint64(len(activatedCadidateSchedule)) != sys.config.CadidateScheduleSize {
+	for uint64(len(activatedCadidateSchedule)) != sys.config.consensusSize() {
 		activatedCadidateSchedule = append(activatedCadidateSchedule, sys.config.SystemName)
 	}
 
