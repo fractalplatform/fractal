@@ -557,12 +557,18 @@ func opReturnDataCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 
 func opExtCodeSize(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	slot := stack.peek()
-	name, err := common.BigToName(slot)
+	//name, err := common.BigToName(slot)
+	acctId := slot.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(acctId)
 	if err != nil {
 		slot.SetUint64(0)
 		return nil, nil
 	}
-	account, _ := evm.AccountDB.GetAccountByName(name)
+	if acct == nil {
+		slot.SetUint64(0)
+		return nil, fmt.Errorf("account is not exist")
+	}
+	account, _ := evm.AccountDB.GetAccountByName(acct.GetName())
 	if account == nil {
 		slot.SetUint64(0)
 		return nil, nil
@@ -875,11 +881,22 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	gas := evm.callGasTemp
 	// Pop other call parameters.
 	name, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
-	toName, _ := common.BigToName(name)
+	//change id to name
+	acct, err := evm.AccountDB.GetAccountById(name.Uint64())
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, err
+	}
+	if acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, fmt.Errorf("account is not exist")
+	}
+	//toName, _ := common.BigToName(name)
+
 	// Get arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
-	ret, returnGas, err := evm.DelegateCall(contract, toName, args, gas)
+	ret, returnGas, err := evm.DelegateCall(contract, acct.GetName(), args, gas)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
