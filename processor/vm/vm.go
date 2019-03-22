@@ -47,11 +47,10 @@ type Context struct {
 	GetDelegatedByTime GetDelegatedByTimeFunc
 
 	// Message information
-	Origin     common.Name   // Provides information for ORIGIN
-	From       common.Name   // Provides information for ORIGIN
-	FromPubkey common.PubKey // provides from pubkey
-	AssetID    uint64        // provides assetId
-	GasPrice   *big.Int      // Provides information for GASPRICE
+	Origin   common.Name // Provides information for ORIGIN
+	From     common.Name // Provides information for ORIGIN
+	AssetID  uint64      // provides assetId
+	GasPrice *big.Int    // Provides information for GASPRICE
 
 	// Block information
 	Coinbase    common.Name // Provides information for COINBASE

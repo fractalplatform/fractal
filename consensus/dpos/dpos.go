@@ -94,7 +94,7 @@ func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 	if err != nil {
 		return false
 	}
-	return accountDB.IsValidSign(common.StrToName(name), types.ActionType(0), common.BytesToPubKey(pubkey)) == nil
+	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)) == nil
 }
 
 // Genesis dpos genesis store

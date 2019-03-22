@@ -86,19 +86,18 @@ func TestAccount_GetName(t *testing.T) {
 		fields fields
 		want   common.Name
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if got := a.GetName(); !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%q. Account.GetName() = %v, want %v", tt.name, got, tt.want)
@@ -123,19 +122,18 @@ func TestAccount_GetNonce(t *testing.T) {
 		fields fields
 		want   uint64
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if got := a.GetNonce(); got != tt.want {
 			t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, got, tt.want)
@@ -167,92 +165,16 @@ func TestAccount_SetNonce(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		a.SetNonce(tt.args.nonce)
-	}
-}
-
-func TestAccount_GetPubKey(t *testing.T) {
-	type fields struct {
-		AcctName  common.Name
-		Nonce     uint64
-		PublicKey common.PubKey
-		Code      []byte
-		CodeHash  common.Hash
-		CodeSize  uint64
-		Balances  []*AssetBalance
-		Suicide   bool
-		Destroy   bool
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   common.PubKey
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
-		}
-		if got := a.GetPubKey(); !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. Account.GetPubKey() = %v, want %v", tt.name, got, tt.want)
-		}
-	}
-}
-
-func TestAccount_SetPubKey(t *testing.T) {
-	type fields struct {
-		AcctName  common.Name
-		Nonce     uint64
-		PublicKey common.PubKey
-		Code      []byte
-		CodeHash  common.Hash
-		CodeSize  uint64
-		Balances  []*AssetBalance
-		Suicide   bool
-		Destroy   bool
-	}
-	type args struct {
-		pubkey common.PubKey
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
-		}
-		a.SetPubKey(tt.args.pubkey)
 	}
 }
 
@@ -278,15 +200,14 @@ func TestAccount_GetCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		got, err := a.GetCode()
 		if (err != nil) != tt.wantErr {
@@ -320,15 +241,14 @@ func TestAccount_GetCodeSize(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if got := a.GetCodeSize(); got != tt.want {
 			t.Errorf("%q. Account.GetCodeSize() = %v, want %v", tt.name, got, tt.want)
@@ -361,15 +281,14 @@ func TestAccount_SetCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if err := a.SetCode(tt.args.code); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.SetCode() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -399,15 +318,14 @@ func TestAccount_GetCodeHash(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		got, err := a.GetCodeHash()
 		if (err != nil) != tt.wantErr {
@@ -446,15 +364,14 @@ func TestAccount_GetBalanceByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		got, err := a.GetBalanceByID(tt.args.assetID)
 		if (err != nil) != tt.wantErr {
@@ -488,15 +405,14 @@ func TestAccount_GetBalancesList(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if got := a.GetBalancesList(); !reflect.DeepEqual(got, tt.want) {
 			t.Errorf("%q. Account.GetBalancesList() = %v, want %v", tt.name, got, tt.want)
@@ -526,15 +442,14 @@ func TestAccount_GetAllBalances(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		got, err := a.GetAllBalances()
 		if (err != nil) != tt.wantErr {
@@ -573,15 +488,14 @@ func TestAccount_binarySearch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		got, got1 := a.binarySearch(tt.args.assetID)
 		if got != tt.want {
@@ -619,15 +533,14 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		a.AddNewAssetByAssetID(tt.args.assetID, tt.args.amount)
 	}
@@ -659,15 +572,14 @@ func TestAccount_SetBalance(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if err := a.SetBalance(tt.args.assetID, tt.args.amount); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.SetBalance() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -701,15 +613,14 @@ func TestAccount_SubBalanceByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if err := a.SubBalanceByID(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.SubBalanceByID() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -743,15 +654,14 @@ func TestAccount_AddBalanceByID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if err := a.AddBalanceByID(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.AddBalanceByID() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -785,15 +695,14 @@ func TestAccount_EnoughAccountBalance(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if err := a.EnoughAccountBalance(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.EnoughAccountBalance() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -822,15 +731,14 @@ func TestAccount_IsSuicided(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if got := a.IsSuicided(); got != tt.want {
 			t.Errorf("%q. Account.IsSuicided() = %v, want %v", tt.name, got, tt.want)
@@ -858,15 +766,14 @@ func TestAccount_SetSuicide(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		a.SetSuicide()
 	}
@@ -893,15 +800,14 @@ func TestAccount_IsDestroyed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		if got := a.IsDestroyed(); got != tt.want {
 			t.Errorf("%q. Account.IsDestroyed() = %v, want %v", tt.name, got, tt.want)
@@ -929,15 +835,14 @@ func TestAccount_SetDestroy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		a := &Account{
-			AcctName:  tt.fields.AcctName,
-			Nonce:     tt.fields.Nonce,
-			PublicKey: tt.fields.PublicKey,
-			Code:      tt.fields.Code,
-			CodeHash:  tt.fields.CodeHash,
-			CodeSize:  tt.fields.CodeSize,
-			Balances:  tt.fields.Balances,
-			Suicide:   tt.fields.Suicide,
-			Destroy:   tt.fields.Destroy,
+			AcctName: tt.fields.AcctName,
+			Nonce:    tt.fields.Nonce,
+			Code:     tt.fields.Code,
+			CodeHash: tt.fields.CodeHash,
+			CodeSize: tt.fields.CodeSize,
+			Balances: tt.fields.Balances,
+			Suicide:  tt.fields.Suicide,
+			Destroy:  tt.fields.Destroy,
 		}
 		a.SetDestroy()
 	}
