@@ -42,11 +42,11 @@ var (
 )
 
 func init() {
-	SetAccountNameCheck(AccountNameLevel, AccountNameLen, SubAccountNameLen)
-	SetAssetNameCheck(AssetNameLevel, AssetNameLen, SubAssetNameLen)
+	SetAccountNameCheckRule(AccountNameLevel, AccountNameLen, SubAccountNameLen)
+	SetAssetNameCheckRule(AssetNameLevel, AssetNameLen, SubAssetNameLen)
 }
 
-func SetAccountNameCheck(nameLevel, nameLen, subNameLen uint64) {
+func SetAccountNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	var nameCheck string
 	if nameLevel == 0 {
 		nameCheck = fmt.Sprintf("^[a-z0-9]{8,%d}$", nameLen)
@@ -56,7 +56,7 @@ func SetAccountNameCheck(nameLevel, nameLen, subNameLen uint64) {
 	accountNameCheck = regexp.MustCompile(nameCheck)
 }
 
-func SetAssetNameCheck(nameLevel, nameLen, subNameLen uint64) {
+func SetAssetNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	var nameCheck string
 	if nameLevel == 0 {
 		nameCheck = fmt.Sprintf("^[a-z0-9]{2,%d}$", nameLen)
@@ -191,4 +191,17 @@ func (n Name) AccountNameLevel() int {
 
 func SplitString(s string) []string {
 	return strings.Split(s, ".")
+}
+
+func IsValidCreator(name string, subName string) bool {
+
+	creator := name
+	current := subName
+	trimName := strings.TrimPrefix(current, creator)
+
+	if strings.Index(trimName, ".") != 0 {
+		return false
+	}
+
+	return true
 }

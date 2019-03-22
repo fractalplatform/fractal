@@ -67,7 +67,7 @@ func SetAccountNameConfig(config *Config) bool {
 		}
 	}
 
-	common.SetAccountNameCheck(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
+	common.SetAccountNameCheckRule(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
 	return true
 }
 
@@ -183,6 +183,21 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 		return true, nil
 	}
 	return false, nil
+}
+
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+
+	if accountName.AccountNameLevel() > 1 {
+		if !fromName.IsValidCreator(accountName.String()) {
+			return ErrAccountInvaid
+		}
+	}
+
+	if err := am.CreateAccount(accountName, founderName, 0, pubkey); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //CreateAccount contract account
@@ -864,6 +879,17 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) error {
+	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
+		return fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
+	}
+
+	if err := am.IssueAsset(asset); err != nil {
+		return err
+	}
+	return nil
+}
+
 //IssueAsset issue asset
 func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	//check owner
@@ -950,15 +976,10 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if acct.AccountName.AccountNameLevel() > 1 {
-			if !action.Sender().IsValidCreator(acct.AccountName.String()) {
-				return ErrAccountInvaid
-			}
-		}
-
-		if err := am.CreateAccount(acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
 			return err
 		}
+
 		if action.Value().Cmp(big.NewInt(0)) > 0 {
 			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
 				return err
@@ -988,7 +1009,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if err := am.IssueAsset(&asset); err != nil {
+		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return err
 		}
 		break
@@ -1087,4 +1108,38 @@ func (am *AccountManager) process(action *types.Action) error {
 	}
 
 	return nil
+}
+
+func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
+	var ba = make(map[uint64]*big.Int, 0)
+
+	b, err := acct.GetBalanceByID(assetId)
+	if err != nil {
+		return nil, err
+	}
+	ba[assetId] = b
+
+	assetObj, err := am.ast.GetAssetObjectById(assetId)
+	if err != nil {
+		return nil, err
+	}
+
+	assetName := assetObj.GetAssetName()
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return nil, err
+	}
+
+	for id, balance := range balances {
+		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		if err != nil {
+			return nil, err
+		}
+
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+			ba[id] = balance
+		}
+	}
+
+	return ba, nil
 }

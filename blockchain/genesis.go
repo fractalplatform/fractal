@@ -136,17 +136,13 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, account := range g.AllocAccounts {
-		if account.Name.AccountNameLevel() > 1 {
-			panic(fmt.Sprintf("genesis create account %s err", account.Name.String()))
-		}
-
-		if err := accountManager.CreateAccount(account.Name, common.Name(""), 0, account.PubKey); err != nil {
+		if err := accountManager.CreateAnyAccount("", account.Name, common.Name(""), 0, account.PubKey); err != nil {
 			panic(fmt.Sprintf("genesis create account %v ,err %v", account.Name, err))
 		}
 	}
 
 	for _, asset := range g.AllocAssets {
-		if err := accountManager.IssueAsset(asset); err != nil {
+		if err := accountManager.IssueAnyAsset("", asset); err != nil {
 			panic(fmt.Sprintf("genesis issue asset err %v", err))
 		}
 	}
