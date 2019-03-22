@@ -67,7 +67,7 @@ func SetAccountNameConfig(config *Config) bool {
 		}
 	}
 
-	common.SetAccountNameCheck(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
+	common.SetAccountNameCheckRule(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
 	return true
 }
 
@@ -880,8 +880,8 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 }
 
 func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) error {
-	if err := am.ast.IsValidOwner(fromName, asset.GetAssetName()); err != nil {
-		return err
+	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
+		return fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
 	}
 
 	if err := am.IssueAsset(asset); err != nil {
@@ -1136,8 +1136,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 			return nil, err
 		}
 
-		subAssetName := subAssetObj.GetAssetName()
-		if common.IsValidCreator(assetName, subAssetName) {
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
 			ba[id] = balance
 		}
 	}

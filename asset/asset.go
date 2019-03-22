@@ -51,7 +51,7 @@ func SetAssetNameConfig(config *Config) bool {
 		}
 	}
 
-	common.SetAssetNameCheck(config.AssetNameLevel, config.AssetNameLength, config.SubAssetNameLength)
+	common.SetAssetNameCheckRule(config.AssetNameLevel, config.AssetNameLength, config.SubAssetNameLength)
 	return true
 }
 
@@ -454,14 +454,14 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // 	return a.SetAssetObject(asset)
 // }
 
-func (a *Asset) IsValidOwner(fromName common.Name, assetName string) error {
+func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
 	assetNames := common.SplitString(assetName)
 	if len(assetNames) == 1 {
-		return nil
+		return true
 	}
 
 	if !common.IsValidAssetName(assetName) {
-		return fmt.Errorf("%s is invalid", assetName)
+		return false
 	}
 
 	var an string
@@ -474,27 +474,27 @@ func (a *Asset) IsValidOwner(fromName common.Name, assetName string) error {
 
 		assetId, err := a.GetAssetIdByName(an)
 		if err != nil {
-			return err
+			continue
 		}
 
 		if assetId <= 0 {
-			return fmt.Errorf("asset %s not exist", an)
+			continue
 		}
 
 		assetObj, err := a.GetAssetObjectById(assetId)
 		if err != nil {
-			return err
+			continue
 		}
 
 		if assetObj == nil {
-			return fmt.Errorf("asset %s not exist", an)
+			continue
 		}
 
 		if assetObj.GetAssetOwner() == fromName {
 			log.Debug("Asset create", "name", an, "onwer", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
-			return nil
+			return true
 		}
 	}
 	log.Debug("Asset create failed", "account", fromName, "name", assetName)
-	return fmt.Errorf("account %s can not create %s", fromName, assetName)
+	return false
 }
