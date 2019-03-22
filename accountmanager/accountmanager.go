@@ -865,7 +865,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
+func (am *AccountManager) IssueAsset(fromName common.Name, asset *asset.AssetObject) error {
 	//check owner
 	acct, err := am.GetAccountByName(asset.GetAssetOwner())
 	if err != nil {
@@ -887,7 +887,9 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 		asset.SetAssetFounder(asset.GetAssetOwner())
 	}
 
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
+	if err := am.ast.IssueAnyAsset(fromName, asset.GetAssetCreator(), asset.GetAssetName(),
+		asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(),
+		asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
 		return err
 	}
 	//add the asset to owner
@@ -988,7 +990,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if err := am.IssueAsset(&asset); err != nil {
+		if err := am.IssueAsset(action.Sender(), &asset); err != nil {
 			return err
 		}
 		break
@@ -1087,4 +1089,33 @@ func (am *AccountManager) process(action *types.Action) error {
 	}
 
 	return nil
+}
+
+func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
+	var ba = make(map[uint64]*big.Int, 0)
+
+	b, err := acct.GetBalanceByID(assetId)
+	if err != nil {
+		return nil, err
+	}
+	ba[assetId] = b
+
+	assetName, err := am.ast.GetAssetNameById(assetId)
+	if err != nil {
+		return nil, err
+	}
+
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return nil, err
+	}
+
+	for id, balance := range balances {
+		subAssetName, _ := am.ast.GetAssetNameById(id)
+		if common.IsValidCreator(assetName, subAssetName) {
+			ba[id] = balance
+		}
+	}
+
+	return ba, nil
 }

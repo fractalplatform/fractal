@@ -146,7 +146,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, asset := range g.AllocAssets {
-		if err := accountManager.IssueAsset(asset); err != nil {
+		if err := accountManager.IssueAsset("", asset); err != nil {
 			panic(fmt.Sprintf("genesis issue asset err %v", err))
 		}
 	}

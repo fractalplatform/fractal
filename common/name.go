@@ -192,3 +192,16 @@ func (n Name) AccountNameLevel() int {
 func SplitString(s string) []string {
 	return strings.Split(s, ".")
 }
+
+func IsValidCreator(name string, subName string) bool {
+
+	creator := name
+	current := subName
+	trimName := strings.TrimPrefix(current, creator)
+
+	if strings.Index(trimName, ".") != 0 {
+		return false
+	}
+
+	return true
+}

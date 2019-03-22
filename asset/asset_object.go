@@ -22,15 +22,16 @@ import (
 )
 
 type AssetObject struct {
-	AssetId    uint64      `json:"assetId,omitempty"`
-	AssetName  string      `json:"assetName,omitempty"`
-	Symbol     string      `json:"symbol,omitempty"`
-	Amount     *big.Int    `json:"amount,omitempty"`
-	Decimals   uint64      `json:"decimals"`
-	Founder    common.Name `json:"founder,omitempty"`
-	Owner      common.Name `json:"owner,omitempty"`
-	AddIssue   *big.Int    `json:"addIssue,omitempty"`
-	UpperLimit *big.Int    `json:"upperLimit,omitempty"`
+	AssetId      uint64      `json:"assetId,omitempty"`
+	AssetCreator string      `json:"AssetCreator,omitempty"`
+	AssetName    string      `json:"assetName,omitempty"`
+	Symbol       string      `json:"symbol,omitempty"`
+	Amount       *big.Int    `json:"amount,omitempty"`
+	Decimals     uint64      `json:"decimals"`
+	Founder      common.Name `json:"founder,omitempty"`
+	Owner        common.Name `json:"owner,omitempty"`
+	AddIssue     *big.Int    `json:"addIssue,omitempty"`
+	UpperLimit   *big.Int    `json:"upperLimit,omitempty"`
 }
 
 func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) (*AssetObject, error) {
@@ -92,6 +93,11 @@ func (ao *AssetObject) SetDecimals(dec uint64) {
 func (ao *AssetObject) GetAssetName() string {
 	return ao.AssetName
 }
+
+func (ao *AssetObject) GetAssetCreator() string {
+	return ao.AssetCreator
+}
+
 func (ao *AssetObject) SetAssetName(assetName string) {
 	ao.AssetName = assetName
 }

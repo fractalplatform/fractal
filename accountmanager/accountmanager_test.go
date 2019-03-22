@@ -1427,7 +1427,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.IssueAsset(tt.args.asset); (err != nil) != tt.wantErr {
+		if err := am.IssueAsset("", tt.args.asset); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
