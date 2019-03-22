@@ -295,10 +295,6 @@ func (a *Asset) IssueAsset(assetName string, symbol string, amount *big.Int, dec
 		return ErrAssetIsExist
 	}
 
-	if !a.IsValidOwner(assetName, owner) {
-		return fmt.Errorf("%s, onwer %s is invalid", assetName, owner)
-	}
-
 	ao, err := NewAssetObject(assetName, symbol, amount, dec, founder, owner, limit)
 	if err != nil {
 		return err
@@ -458,10 +454,14 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // 	return a.SetAssetObject(asset)
 // }
 
-func (a *Asset) IsValidOwner(assetName string, owner common.Name) bool {
+func (a *Asset) IsValidOwner(fromName common.Name, assetName string) error {
 	assetNames := common.SplitString(assetName)
 	if len(assetNames) == 1 {
-		return true
+		return nil
+	}
+
+	if !common.IsValidAssetName(assetName) {
+		return fmt.Errorf("%s is invalid", assetName)
 	}
 
 	var an string
@@ -474,27 +474,27 @@ func (a *Asset) IsValidOwner(assetName string, owner common.Name) bool {
 
 		assetId, err := a.GetAssetIdByName(an)
 		if err != nil {
-			return false
+			return err
 		}
 
 		if assetId <= 0 {
-			return false
+			return fmt.Errorf("asset %s not exist", an)
 		}
 
 		assetObj, err := a.GetAssetObjectById(assetId)
 		if err != nil {
-			return false
+			return err
 		}
 
 		if assetObj == nil {
-			return false
+			return fmt.Errorf("asset %s not exist", an)
 		}
 
-		if assetObj.GetAssetOwner() == owner {
-			return true
+		if assetObj.GetAssetOwner() == fromName {
+			log.Debug("Asset create", "name", an, "onwer", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
+			return nil
 		}
-
 	}
-
-	return false
+	log.Debug("Asset create failed", "account", fromName, "name", assetName)
+	return fmt.Errorf("account %s can not create %s", fromName, assetName)
 }
