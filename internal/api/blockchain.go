@@ -174,7 +174,13 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 }
 
 func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
-	return s.b.GetBlockAndResult(ctx, blockNr), nil
+	r := s.b.GetBlockDetailLog(ctx, blockNr)
+	if r == nil {
+		return nil, nil
+	}
+	block, err := s.GetBlockByNumber(ctx, blockNr, true)
+	r.Block = block
+	return r, err
 }
 
 type CallArgs struct {
