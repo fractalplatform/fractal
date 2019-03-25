@@ -193,7 +193,8 @@ func (w *Wallet) SignTxWithPassphrase(a cache.Account, passphrase string, tx *ty
 	if err != nil {
 		return nil, err
 	}
-	if err := types.SignAction(action, tx, types.NewSigner(chainID), key.PrivateKey); err != nil {
+	keyPair := types.MakeKeyPair(key.PrivateKey, []uint64{0})
+	if err := types.SignActionWithMultiKey(action, tx, types.NewSigner(chainID), []*types.KeyPair{keyPair}); err != nil {
 		return nil, err
 	}
 	return tx, nil
@@ -254,7 +255,7 @@ func (w *Wallet) BindAccountAndPublicKey(accountName string) error {
 	if err != nil {
 		return err
 	}
-	curPublicKey := account.PublicKey.String()
+	curPublicKey := account.Authors[0].Owner.String()
 
 	// We need consider 5 situations below:
 	// 1:publicKey exist, account NOT exist

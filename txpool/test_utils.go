@@ -80,7 +80,8 @@ func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa
 
 func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
 	tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
-	if err := types.SignAction(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), key); err != nil {
+	keyPair := types.MakeKeyPair(key, []uint64{0})
+	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 	return tx
@@ -172,18 +173,6 @@ func validateEvents(events chan *event.Event, count int) error {
 		// really nothing gets injected.
 	}
 	return nil
-}
-
-func deriveSender(tx *types.Transaction) ([]common.PubKey, error) {
-	var pubkeys []common.PubKey
-	for _, a := range tx.GetActions() {
-		pubkey, err := types.Recover(types.NewSigner(params.DefaultChainconfig.ChainID), a, tx)
-		if err != nil {
-			return nil, err
-		}
-		pubkeys = append(pubkeys, pubkey)
-	}
-	return pubkeys, nil
 }
 
 type testChain struct {

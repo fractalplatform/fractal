@@ -66,7 +66,8 @@ func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -87,7 +88,8 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -116,7 +118,8 @@ func (acc *Account) RegCadidate(to common.Name, value *big.Int, id uint64, gas u
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -145,7 +148,8 @@ func (acc *Account) UpdateCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -166,7 +170,9 @@ func (acc *Account) UnRegCadidate(to common.Name, value *big.Int, id uint64, gas
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -195,7 +201,9 @@ func (acc *Account) VoteCadidate(to common.Name, value *big.Int, id uint64, gas 
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -223,7 +231,9 @@ func (acc *Account) ChangeCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -243,7 +253,9 @@ func (acc *Account) UnvoteCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)
@@ -271,7 +283,9 @@ func (acc *Account) UnvoteVoter(to common.Name, value *big.Int, id uint64, gas u
 	}
 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	if err := types.SignAction(action, tx, signer, acc.priv); err != nil {
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
 		panic(err)
 	}
 	rawtx, err := rlp.EncodeToBytes(tx)

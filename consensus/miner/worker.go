@@ -144,7 +144,7 @@ func (worker *Worker) mintLoop() {
 			return nil, err
 		}
 		for index, privKey := range worker.privKeys {
-			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), types.ActionType(0), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
+			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
 				return crypto.Sign(content, privKey)
 			}
 		}

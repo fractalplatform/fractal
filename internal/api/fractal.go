@@ -84,7 +84,7 @@ func (s *PublicFractalAPI) SendTransaction(ctx context.Context, args SendArgs) (
 		return common.Hash{}, errors.New("invalid user")
 	}
 
-	pubByte, _ := crypto.UnmarshalPubkey(fromAcct.PublicKey.Bytes())
+	pubByte, _ := crypto.UnmarshalPubkey(fromAcct.Authors[0].Owner.(common.PubKey).Bytes())
 	if !s.b.Wallet().HasAddress(crypto.PubkeyToAddress(*pubByte)) {
 		return common.Hash{}, errors.New("user not in local wallet")
 	}
