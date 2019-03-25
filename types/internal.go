@@ -40,5 +40,4 @@ type BlockAndResult struct {
 	Block     map[string]interface{}
 	Receipts  []*Receipt
 	DetailTxs []*DetailTx
-	Hash      common.Hash
 }
