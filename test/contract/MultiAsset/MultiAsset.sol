@@ -2,51 +2,42 @@ pragma solidity ^0.4.24;
 
 contract MultiAsset {
     constructor() public payable {
-
     }
-
-    function reg(string desc) public returns(uint256){
-        return issueasset(desc);
+    function reg(string desc) public payable{
+        issueasset(desc);
+    } 
+    function add(uint256 assetId, address to, uint256 value ) public {
+        addasset(assetId,to,value);
     }
-
-    function destroyasset1(uint256 assetId, uint256 value) public returns(uint256)  {
-        return destroyasset(assetId, value);
-    }
-
-    function getaccountbyid(address desc) public returns(uint256) {
-        return getaccountid(desc);
-    }
-
-    function add(uint256 assetId, address toname,uint256 value) public returns(uint256)  {
-        return addasset(assetId,toname,value);
-    }
-
-    function changeOwner(address newOwner, uint256 assetId) public returns(uint256)  {
-       return setassetowner(assetId, newOwner);
-    }
-    
     function transAsset(address to, uint256 assetId, uint256 value) public payable {
         to.transferex(assetId, value);
     }
-    
-    function getBalanceEx(address to,uint256 assetId) public {
+    function changeOwner(address newOwner, uint256 assetId) public {
+        setassetowner(assetId, newOwner);
+    }
+   function getBalanceEx(address to,uint256 assetId) public {
         log1(bytes32(to.balanceex(assetId)),"getbalanceex");
+       // return to.balanceex(assetId);
     }
     
-    function getAssetAmount(uint256 assetId, uint256 time) public{
-        uint256 x;
-        x = assetamount(assetId,time);
-        log1(bytes32(x),"getassetamount");
-    }
-    
+   function getAssetAmount(uint256 assetId, uint256 time) public{
+            uint256 x;
+            x = assetamount(assetId,time);
+            log1(bytes32(x),"getassetamount");
+     }
+
     function getSnapshotTime(uint256 t,uint256 time) public{
-        uint256 x;
-        x = snapshottime(t,time);
-        log1(bytes32(x),"getSnapshotTime" ); 
-    }
-    function getSnapBalance(address to,uint256 assetId,uint256 time,uint256 t) public {
+              uint256 x;
+             x = snapshottime(t,time);
+             log1(bytes32(x),"getSnapshotTime" );
+
+     }
+    function getSnapBalance(address to,uint256 assetId,uint256 time) public {
         uint256 x ;
-        x = to.snapbalance(assetId,time,t);
+        x = to.snapbalance(assetId,time,1);
         log1(bytes32(x),"getSnapBalance");
+    }
+    function balances(uint256 a) public pure returns (uint256 balance) { 
+        balance = a; 
     }
 }

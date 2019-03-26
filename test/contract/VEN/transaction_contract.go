@@ -190,7 +190,8 @@ func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetI
 	tx := types.NewTransaction(assetID, gasprice, action)
 
 	signer := types.MakeSigner(big.NewInt(1))
-	err := types.SignAction(action, tx, signer, privateKey)
+	keypair := types.MakeKeyPair(privateKey, []uint64{0})
+	err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{keypair})
 	if err != nil {
 		jww.ERROR.Fatalln(err)
 	}
