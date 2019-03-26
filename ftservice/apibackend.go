@@ -134,6 +134,61 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
+func (b *APIBackend) GetDetailTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
+	lastnum := uint64(blockNr) - lookbackNum
+
+	txdetails := make([]*types.DetailTx, 0)
+
+	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+
+		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
+		if hash == (common.Hash{}) {
+			continue
+		}
+
+		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
+		for _, txd := range batch_txdetails {
+
+			txloop:
+			for _, intx := range txd.InternalTxs {
+				for _, inlog := range intx.InterlnalLogs {
+					if inlog.Action.From == acctName ||
+					inlog.Action.To == acctName {
+						txdetails = append(txdetails, txd)
+						break txloop
+					}
+				}
+			}
+
+		}
+	}
+
+	return txdetails
+}
+
+func (b *APIBackend) GetDetailTxByBloom(ctx context.Context, bloom types.Bloom, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
+	lastnum := uint64(blockNr) - lookbackNum
+
+	txdetails := make([]*types.DetailTx, 0)
+
+	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+
+		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
+		if hash == (common.Hash{}) {
+			continue
+		}
+
+		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
+		for _, txd := range batch_txdetails {
+			if bloom.TestBytes(txd.TxHash.Bytes()) {
+				txdetails = append(txdetails, txd)
+			}
+		}
+	}
+
+	return txdetails
+}
+
 func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
 	return b.ftservice.blockchain.GetTdByHash(blockHash)
 }

@@ -183,6 +183,33 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 	return r, err
 }
 
+func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+	return s.b.GetDetailTxByAccount(ctx, acctName, blockNr, lookbackNum), nil
+}
+
+func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomStr string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+	bloom := types.BytesToBloom([]byte(bloomStr))
+	return s.b.GetDetailTxByBloom(ctx, bloom, blockNr, lookbackNum), nil
+}
+
+func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash common.Hash) (*types.DetailTx, error) {
+	tx, blockHash, _, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
+	if tx == nil {
+		return nil, nil
+	}
+
+	receipts, err := s.b.GetReceipts(ctx, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	if len(receipts) <= int(index) {
+		return nil, nil
+	}
+	receipt := receipts[index]
+
+	return receipt.GetInternalTxsLog(), nil
+}
+
 type CallArgs struct {
 	ActionType types.ActionType `json:"actionType"`
 	From       common.Name      `json:"from"`
