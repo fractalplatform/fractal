@@ -346,9 +346,17 @@ func (sys *System) KickedCadidate(cadidate string) error {
 		if err := sys.Undelegate(sys.config.SystemName, new(big.Int).Mul(prod.Quantity, sys.config.unitStake())); err != nil {
 			return err
 		}
+		state, err := sys.GetState(LastBlockHeight)
+		if err != nil {
+			return err
+		}
+		state.TotalQuantity = new(big.Int).Sub(state.TotalQuantity, prod.Quantity)
 		prod.TotalQuantity = new(big.Int).Sub(prod.TotalQuantity, prod.Quantity)
 		prod.Quantity = big.NewInt(0)
 		prod.InBlackList = true
+		if err := sys.SetState(state); err != nil {
+			return err
+		}
 		return sys.SetCadidate(prod)
 	}
 	return err
