@@ -23,101 +23,56 @@
 		{
 			"checksumSHA1": "ZHiU5+5SfOMryI5MkCSXErdz0EU=",
 			"path": "github.com/ethereum/go-ethereum/common/bitutil",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "VfQBQZL87++ZpC7Pn6dJQxjdA7M=",
 			"path": "github.com/ethereum/go-ethereum/common/fdlimit",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "2EkKilu0Q1uuX7XoHks8qnW/LXo=",
 			"path": "github.com/ethereum/go-ethereum/common/hexutil",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "BP3m/oEeoC9ustdCYzAVS/gabqg=",
 			"path": "github.com/ethereum/go-ethereum/common/math",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "H8uV6Utd4i6GoV/zgVlbGyoQDz0=",
 			"path": "github.com/ethereum/go-ethereum/crypto/bn256",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "aFyQMEKNzIyIRzEAdo8vGkOYqqc=",
 			"path": "github.com/ethereum/go-ethereum/crypto/bn256/cloudflare",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "Su8qqDZsl8ty3UJJMt/xY9ADa7A=",
 			"path": "github.com/ethereum/go-ethereum/crypto/bn256/google",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "09V3eE1EhOkdfksyjsH+03c5fQg=",
 			"path": "github.com/ethereum/go-ethereum/crypto/secp256k1",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "KSRJC/V4LkGTakqzakXY/Ces0sw=",
 			"path": "github.com/ethereum/go-ethereum/log",
-<<<<<<< Updated upstream
-			"revision": "257bfff316e4efb8952fbeb67c91f86af579cb0a",
-			"revisionTime": "2019-01-17T16:25:27Z"
-=======
 			"revision": "c53c5e616f04ae8b041bfb64309cbc7f3e70303a",
 			"revisionTime": "2019-03-20T08:35:05Z"
->>>>>>> Stashed changes
 		},
 		{
 			"checksumSHA1": "YImPVNZRCKOaaReWnFEH+AaP8NM=",
