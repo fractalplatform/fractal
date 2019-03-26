@@ -855,6 +855,7 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 	if acct == nil {
 		return ErrAccountNotExist
 	}
+
 	assetID, err := am.ast.GetAssetIdByName(assetName)
 	if err != nil {
 		return err
@@ -1059,10 +1060,10 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	} else {
 		asset.SetAssetFounder(asset.GetAssetOwner())
 	}
-
 	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
 		return err
 	}
+
 	//add the asset to owner
 	return am.AddAccountBalanceByName(asset.GetAssetOwner(), asset.GetAssetName(), asset.GetAssetAmount())
 }

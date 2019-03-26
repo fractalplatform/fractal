@@ -88,6 +88,8 @@ const (
 const (
 	// KickedCadidate
 	KickedCadidate ActionType = 0x400 + iota
+	// exit
+	ExitTakeOver
 )
 
 type SignData struct {
@@ -177,6 +179,8 @@ func (a *Action) CheckValue() bool {
 	case UnvoteCadidate:
 		fallthrough
 	case KickedCadidate:
+		fallthrough
+	case ExitTakeOver:
 		return a.Value().Cmp(big.NewInt(0)) == 0
 	default:
 	}

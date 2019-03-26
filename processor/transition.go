@@ -147,6 +147,8 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		fallthrough
 	case actionType == types.KickedCadidate:
 		fallthrough
+	case actionType == types.ExitTakeOver:
+		fallthrough
 	case actionType == types.UnvoteCadidate:
 		vmerr = st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
 	default:

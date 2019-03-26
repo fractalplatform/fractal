@@ -20,9 +20,10 @@ func TestCurrentBlock(t *testing.T) {
 func TestBlockByHash(t *testing.T) {
 	Convey("ft_getBlockByHash", t, func() {
 		api := NewAPI(rpchost)
-		block, _ := api.CurrentBlock(false)
+		block, err := api.CurrentBlock(false)
+		So(err, ShouldBeNil)
 		hash := common.HexToHash(block["hash"].(string))
-		block, err := api.BlockByHash(hash, false)
+		block, err = api.BlockByHash(hash, false)
 		So(err, ShouldBeNil)
 		So(block, ShouldNotBeNil)
 	})
@@ -31,8 +32,9 @@ func TestBlockByHash(t *testing.T) {
 func TestBlockByNumber(t *testing.T) {
 	Convey("ft_getBlockByNumber", t, func() {
 		api := NewAPI(rpchost)
-		block, _ := api.CurrentBlock(false)
-		block, err := api.BlockByNumber((int64(block["number"].(float64))), false)
+		block, err := api.CurrentBlock(false)
+		So(err, ShouldBeNil)
+		block, err = api.BlockByNumber((int64(block["number"].(float64))), false)
 		So(err, ShouldBeNil)
 		So(block, ShouldNotBeNil)
 	})

@@ -163,7 +163,7 @@ func TestDPOS(t *testing.T) {
 
 		// UnvoteVoter
 		hash, err = acct.UnvoteVoter(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.RemoveVoter{
-			Voter: accountName2.String(),
+			Voters: []string{accountName2.String()},
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
@@ -188,9 +188,7 @@ func TestManual(t *testing.T) {
 
 		hash, err := sysAcct.KickedCadidate(common.StrToName(systemaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
 			Cadidates: []string{"ftcadidate1", "ftcadidate2", "ftcadidate3"},
-			Invalid:   true,
 		})
-		fmt.Println("====", err, hash.String())
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 	})

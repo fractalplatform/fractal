@@ -186,9 +186,16 @@ func (sys *System) UnregCadidate(cadidate string) error {
 		if err := sys.Undelegate(cadidate, stake); err != nil {
 			return fmt.Errorf("undelegate %v failed(%v)", stake, err)
 		}
-		if err := sys.DelCadidate(prod.Name); err != nil {
-			return err
+		if prod.InBlackList {
+			if err := sys.SetCadidate(prod); err != nil {
+				return err
+			}
+		} else {
+			if err := sys.DelCadidate(prod.Name); err != nil {
+				return err
+			}
 		}
+
 		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.Quantity)
 		if err := sys.SetState(gstate); err != nil {
 			return err
@@ -333,16 +340,27 @@ func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, 
 	return new(big.Int).Mul(q, sys.config.unitStake()), new(big.Int).Mul(tq, sys.config.unitStake()), c, nil
 }
 
-func (sys *System) KickedCadidate(name string, cadidates []string, invalid bool) error {
-	if strings.Compare(name, sys.config.SystemName) == 0 {
-		for _, cadidate := range cadidates {
-			if prod, _ := sys.GetCadidate(cadidate); prod != nil {
-				prod.Invalid = invalid
-				sys.SetCadidate(prod)
-			}
+func (sys *System) KickedCadidate(cadidate string) error {
+	prod, err := sys.GetCadidate(cadidate)
+	if prod != nil {
+		if err := sys.Undelegate(sys.config.SystemName, new(big.Int).Mul(prod.Quantity, sys.config.unitStake())); err != nil {
+			return err
 		}
+		prod.TotalQuantity = new(big.Int).Sub(prod.TotalQuantity, prod.Quantity)
+		prod.Quantity = big.NewInt(0)
+		prod.InBlackList = true
+		return sys.SetCadidate(prod)
 	}
-	return nil
+	return err
+}
+
+func (sys *System) ExitTakeOver() error {
+	latest, err := sys.GetState(LastBlockHeight)
+	if latest != nil {
+		latest.TakeOver = false
+		return sys.SetState(latest)
+	}
+	return err
 }
 
 func (sys *System) unvoteCadidate(voter string) error {
@@ -394,6 +412,7 @@ func (sys *System) onblock(height uint64) error {
 		ActivatedCadidateScheduleUpdate: gstate.ActivatedCadidateScheduleUpdate,
 		ActivatedTotalQuantity:          gstate.ActivatedTotalQuantity,
 		TotalQuantity:                   new(big.Int).SetBytes(gstate.TotalQuantity.Bytes()),
+		TakeOver:                        gstate.TakeOver,
 	}
 	sys.SetState(ngstate)
 	return nil
@@ -427,7 +446,7 @@ func (sys *System) updateElectedCadidates(timestamp uint64) error {
 	activatedCadidateSchedule := []string{}
 	activeTotalQuantity := big.NewInt(0)
 	for _, cadidate := range cadidates {
-		if cadidate.Invalid {
+		if cadidate.InBlackList || strings.Compare(cadidate.Name, sys.config.SystemName) == 0 {
 			continue
 		}
 		activatedCadidateSchedule = append(activatedCadidateSchedule, cadidate.Name)
@@ -435,10 +454,6 @@ func (sys *System) updateElectedCadidates(timestamp uint64) error {
 		if uint64(len(activatedCadidateSchedule)) == sys.config.CadidateScheduleSize {
 			break
 		}
-	}
-
-	for uint64(len(activatedCadidateSchedule)) != sys.config.consensusSize() {
-		activatedCadidateSchedule = append(activatedCadidateSchedule, sys.config.SystemName)
 	}
 
 	seed := int64(timestamp)

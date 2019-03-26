@@ -864,3 +864,52 @@ func (acc *Account) KickedCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 	return
 }
+
+// ExitTakeOver exit take over
+func (acc *Account) ExitTakeOver(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
+	nonce := acc.nonce
+	if nonce == math.MaxUint64 {
+		nonce, err = acc.api.AccountNonce(acc.name.String())
+		if err != nil {
+			return
+		}
+	}
+
+	action := types.NewAction(types.ExitTakeOver, acc.name, to, nonce, id, gas, value, nil)
+	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	if err != nil {
+		return
+	}
+	rawtx, _ := rlp.EncodeToBytes(tx)
+	checked := acc.checked || acc.nonce == math.MaxUint64
+	var checkedfunc func() error
+	if checked {
+		// before
+		checkedfunc, err = acc.chekKickedCadidate(action)
+		if err != nil {
+			return
+		}
+	}
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if checked {
+		// after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+		err = checkedfunc()
+		if err != nil {
+			return
+		}
+	}
+
+	if acc.nonce != math.MaxUint64 {
+		acc.nonce++
+	}
+	return
+}
