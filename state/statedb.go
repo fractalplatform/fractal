@@ -605,7 +605,6 @@ func (sn *SnapshotSt) lookupBlock(blockNum, prevBlockTime, lastBlockTime, lastBl
 }
 
 func (sn *SnapshotSt) snapshotRecord() bool {
-	var nextTimeHour uint64
 	var blockNum uint64
 	var curSnapshotTime uint64
 	var prevTime uint64
@@ -647,10 +646,15 @@ func (sn *SnapshotSt) snapshotRecord() bool {
 		} else {
 			return false
 		}
+
+		curBlockTime, _ = sn.getlastBlcok()
+		if curBlockTime-nextTimeHour > 2*sn.intervalTime {
+			return true
+		}
 	}
 
 	curBlockTime, _ = sn.getlastBlcok()
-	if curBlockTime-nextTimeHour > 2*sn.intervalTime {
+	if curBlockTime-curSnapshotTime > 2*sn.intervalTime {
 		return true
 	}
 
