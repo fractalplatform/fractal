@@ -18,7 +18,6 @@ package api
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"math"
 	"math/big"
@@ -189,11 +188,7 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 }
 
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomStr string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
-	bloombytes, err := hex.DecodeString(bloomStr)
-	if err != nil {
-		return nil, err
-	}
-	bloom := types.BytesToBloom(bloombytes)
+	bloom := types.BytesToBloom(common.FromHex(bloomStr))
 	return s.b.GetDetailTxByBloom(ctx, bloom, blockNr, lookbackNum), nil
 }
 
