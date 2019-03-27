@@ -180,10 +180,20 @@ func (b *APIBackend) GetDetailTxByBloom(ctx context.Context, bloom types.Bloom, 
 
 		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
 		for _, txd := range batch_txdetails {
-			if bloom.TestBytes(txd.TxHash.Bytes()) {
-				txdetails = append(txdetails, txd)
+
+			txloop:
+			for _, intx := range txd.InternalTxs {
+				for _, inlog := range intx.InterlnalLogs {
+
+					if bloom.TestBytes([]byte(inlog.Action.From))  ||
+					bloom.TestBytes([]byte(inlog.Action.To)) {
+						txdetails = append(txdetails, txd)
+						break txloop
+					}
+				}
 			}
 		}
+
 	}
 
 	return txdetails
