@@ -188,7 +188,7 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 }
 
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomStr string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
-	bloom := types.BytesToBloom([]byte(bloomStr))
+	bloom := types.BytesToBloom(common.FromHex(bloomStr))
 	return s.b.GetDetailTxByBloom(ctx, bloom, blockNr, lookbackNum), nil
 }
 
