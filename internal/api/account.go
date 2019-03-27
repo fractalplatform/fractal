@@ -213,3 +213,27 @@ func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint
 	}
 	return am.GetSnapshotTime(m, time)
 }
+
+//GetAllBalancebyName get Account Balace, balance(asset) = asset + subAsset
+func (aapi *AccountAPI) GetAllBalancebyName(ctx context.Context, accountName common.Name, assetID uint64) (*big.Int, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+	if am == nil {
+		return nil, ErrGetAccounManagerErr
+	}
+	return am.GetAllBalanceByName(accountName, assetID)
+}
+
+//GetAllBalanceByTime get Account Balace by time
+func (aapi *AccountAPI) GetAllBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+	if am == nil {
+		return nil, ErrGetAccounManagerErr
+	}
+	return am.GetAllBalanceByTime(accountName, assetID, time)
+}
