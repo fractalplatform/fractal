@@ -43,15 +43,17 @@ type GenesisAccount struct {
 
 // Genesis specifies the header fields, state of a genesis block.
 type Genesis struct {
-	Config        *params.ChainConfig  `json:"config"`
-	Dpos          *dpos.Config         `json:"dpos"`
-	Timestamp     uint64               `json:"timestamp"`
-	ExtraData     []byte               `json:"extraData"`
-	GasLimit      uint64               `json:"gasLimit" `
-	Difficulty    *big.Int             `json:"difficulty" `
-	Coinbase      common.Name          `json:"coinbase"`
-	AllocAccounts []*GenesisAccount    `json:"allocAccounts"`
-	AllocAssets   []*asset.AssetObject `json:"allocAssets"`
+	Config           *params.ChainConfig  `json:"config"`
+	Dpos             *dpos.Config         `json:"dpos"`
+	Timestamp        uint64               `json:"timestamp"`
+	ExtraData        []byte               `json:"extraData"`
+	GasLimit         uint64               `json:"gasLimit" `
+	Difficulty       *big.Int             `json:"difficulty" `
+	Coinbase         common.Name          `json:"coinbase"`
+	AllocAccounts    []*GenesisAccount    `json:"allocAccounts"`
+	AllocAssets      []*asset.AssetObject `json:"allocAssets"`
+	AccountNameLevel *am.Config           `json:"accountNameLevel"`
+	AssetNameLevel   *asset.Config        `json:"assetNameLevel"`
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
@@ -71,6 +73,13 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		}
 		block, err := genesis.Commit(db)
 		log.Info("Writing genesis block", "hash", block.Hash().Hex())
+
+		// Set account name level
+		genesis.accountLevelConfig()
+
+		// Set asset name level
+		genesis.assetLevelConfig()
+
 		return genesis.Config, genesis.Dpos, block.Hash(), err
 	}
 
@@ -85,6 +94,12 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		head := rawdb.ReadHeader(db, stored, 0)
 		genesis.UnmarshalJSON(head.Extra)
 	}
+
+	// Set account name level
+	genesis.accountLevelConfig()
+
+	// Set asset name level
+	genesis.assetLevelConfig()
 
 	// Get the existing dpos configuration.
 	newdpos := genesis.dposOrDefault(stored)
@@ -220,19 +235,53 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 	return params.DefaultChainconfig
 }
 
+func (g *Genesis) accountLevelConfig() error {
+	if g != nil {
+		cfg := g.AccountNameLevel
+		if !am.SetAccountNameConfig(cfg) {
+			panic(fmt.Sprintf("gensis set account name level(%d,%d,%d) err", cfg.AccountNameLevel, cfg.AccountNameLength, cfg.SubAccountNameLength))
+		}
+		return nil
+	}
+
+	cfg := am.DefaultAccountNameConf()
+	if !am.SetAccountNameConfig(cfg) {
+		panic(fmt.Sprintf("gensis set account name level(%d,%d,%d) err", cfg.AccountNameLevel, cfg.AccountNameLength, cfg.SubAccountNameLength))
+	}
+	return nil
+}
+
+func (g *Genesis) assetLevelConfig() error {
+	if g != nil {
+		cfg := g.AssetNameLevel
+		if !asset.SetAssetNameConfig(cfg) {
+			panic(fmt.Sprintf("gensis set asset name level(%d,%d,%d) err", cfg.AssetNameLevel, cfg.AssetNameLength, cfg.SubAssetNameLength))
+		}
+		return nil
+	}
+
+	cfg := asset.DefaultAssetNameConf()
+	if !asset.SetAssetNameConfig(cfg) {
+		panic(fmt.Sprintf("gensis set asset name level(%d,%d,%d) err", cfg.AssetNameLevel, cfg.AssetNameLength, cfg.SubAssetNameLength))
+	}
+	return nil
+}
+
 // DefaultGenesis returns the ft net genesis block.
 func DefaultGenesis() *Genesis {
 	gtime, _ := time.Parse("2006-01-02 15:04:05.999999999", "2019-01-16 00:00:00")
 	return &Genesis{
-		Config:        params.DefaultChainconfig,
-		Dpos:          dpos.DefaultConfig,
-		Timestamp:     uint64(gtime.UnixNano()),
-		ExtraData:     hexutil.MustDecode(hexutil.Encode([]byte("ft Genesis Block"))),
-		GasLimit:      params.GenesisGasLimit,
-		Difficulty:    params.GenesisDifficulty,
-		Coinbase:      params.DefaultChainconfig.SysName,
-		AllocAccounts: DefaultGenesisAccounts(),
-		AllocAssets:   DefaultGenesisAssets(),
+		Config:           params.DefaultChainconfig,
+		Dpos:             dpos.DefaultConfig,
+		Timestamp:        uint64(gtime.UnixNano()),
+		ExtraData:        hexutil.MustDecode(hexutil.Encode([]byte("ft Genesis Block"))),
+		GasLimit:         params.GenesisGasLimit,
+		Difficulty:       params.GenesisDifficulty,
+		Coinbase:         params.DefaultChainconfig.SysName,
+		AllocAccounts:    DefaultGenesisAccounts(),
+		AllocAssets:      DefaultGenesisAssets(),
+		AccountNameLevel: am.DefaultAccountNameConf(),
+		AssetNameLevel:   asset.DefaultAssetNameConf(),
 	}
 }
 

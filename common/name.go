@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -33,12 +34,12 @@ var accountNameCheck *regexp.Regexp
 var assetNameCheck *regexp.Regexp
 
 var (
-	AccountNameLevel  uint64 = 2
+	AccountNameLevel  uint64 = 1
 	AccountNameLen    uint64 = 16
-	SubAccountNameLen uint64 = 6
-	AssetNameLevel    uint64 = 2
+	SubAccountNameLen uint64 = 8
+	AssetNameLevel    uint64 = 1
 	AssetNameLen      uint64 = 16
-	SubAssetNameLen   uint64 = 6
+	SubAssetNameLen   uint64 = 8
 )
 
 func init() {
@@ -53,6 +54,7 @@ func SetAccountNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	} else {
 		nameCheck = fmt.Sprintf("^[a-z0-9]{8,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
 	}
+	log.Info("Account name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
 	accountNameCheck = regexp.MustCompile(nameCheck)
 }
 
@@ -63,6 +65,7 @@ func SetAssetNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	} else {
 		nameCheck = fmt.Sprintf("^[a-z0-9]{2,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
 	}
+	log.Info("Asset name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
 	assetNameCheck = regexp.MustCompile(nameCheck)
 }
 

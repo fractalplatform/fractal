@@ -749,7 +749,7 @@ func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -782,7 +782,7 @@ func TestAccountManager_GetAccountLastChange(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -816,7 +816,7 @@ func TestAccountManager_GetSnapshotTime(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -851,7 +851,7 @@ func TestAccountManager_GetBalanceByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -884,7 +884,7 @@ func TestAccountManager_GetAssetFounder(t *testing.T) {
 		want    common.Name
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -917,7 +917,7 @@ func TestAccountManager_GetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -950,7 +950,7 @@ func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1710,7 +1710,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey:   pubkey,
 	}
 	payload4, err := rlp.EncodeToBytes(a4)
-	if err != nil {
+	if err == nil {
 		panic("rlp payload err")
 	}
 
@@ -1721,7 +1721,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey:   pubkey,
 	}
 	payload5, err := rlp.EncodeToBytes(a5)
-	if err != nil {
+	if err == nil {
 		panic("rlp payload err")
 	}
 
@@ -1732,7 +1732,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey:   pubkey,
 	}
 	payload6, err := rlp.EncodeToBytes(a6)
-	if err != nil {
+	if err == nil {
 		panic("rlp payload err")
 	}
 
@@ -1833,8 +1833,8 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		{"createsubaccount1", fields{sdb, ast}, args{action1}, false},
 		{"createsubaccount2", fields{sdb, ast}, args{action2}, false},
 		{"createsubaccount3", fields{sdb, ast}, args{action3}, false},
-		{"createsubaccount4", fields{sdb, ast}, args{action4}, false},
-		{"createsubaccount5", fields{sdb, ast}, args{action5}, false},
+		{"createsubaccount4", fields{sdb, ast}, args{action4}, true},
+		{"createsubaccount5", fields{sdb, ast}, args{action5}, true},
 		{"createsubaccount6", fields{sdb, ast}, args{action6}, true},
 		{"createsubaccount7", fields{sdb, ast}, args{action7}, false},
 		{"createsubaccount8", fields{sdb, ast}, args{action8}, true},

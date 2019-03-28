@@ -17,11 +17,14 @@
 package blockchain
 
 import (
+	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/params"
@@ -29,7 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0x9969c2ff692df22935758df5131a7e4046e5342848ee8d4ed16e8c7945ce6f6b")
+var defaultgenesisBlockHash = common.HexToHash("0x1668d5715e3efd7cbf775d7b3fc27bb2fd18ca44564baef666e6bee40a1abb9c")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesis().ToBlock(nil)
@@ -40,16 +43,18 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0xf42bff704e9cd06c35cb8922efd5125d90b9f104f3391de5ec0a6ac7bd5a598a")
+		customghash = common.HexToHash("0x4be005bb6eb49576c39b4bc625cd8d296fff336f5b4a70ee384175a3e17818fe")
 		customg     = Genesis{
-			Config:        &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
-			Dpos:          dpos.DefaultConfig,
-			Coinbase:      "coinbase",
-			AllocAccounts: DefaultGenesisAccounts(),
-			AllocAssets:   DefaultGenesisAssets(),
+			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
+			Dpos:             dpos.DefaultConfig,
+			Coinbase:         "coinbase",
+			AllocAccounts:    DefaultGenesisAccounts(),
+			AllocAssets:      DefaultGenesisAssets(),
+			AccountNameLevel: accountmanager.DefaultAccountNameConf(),
+			AssetNameLevel:   asset.DefaultAssetNameConf(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("160ad38ce543a6f7cf3018a9532ea9275fecedbb8c82321f5067d47072381c42")
+		oldcustomghash = common.HexToHash("0xc9abcce17a0622eca98f8bad908241d3b65688f38f3ac89838aca132c4422074")
 		dposConfig     = &dpos.Config{
 			MaxURLLen:            512,
 			UnitStake:            big.NewInt(1000),
@@ -107,6 +112,7 @@ func TestSetupGenesis(t *testing.T) {
 		{
 			name: "mainnet block in DB, genesis == nil",
 			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+				fmt.Println("===========================>")
 				if _, err := DefaultGenesis().Commit(db); err != nil {
 					return nil, nil, common.Hash{}, err
 				}

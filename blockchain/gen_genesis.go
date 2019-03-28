@@ -22,6 +22,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
@@ -30,17 +31,19 @@ import (
 
 func (g Genesis) MarshalJSON() ([]byte, error) {
 	type genesisJSON struct {
-		Config        *params.ChainConfig   `json:"config"`
-		Dpos          *dpos.Config          `json:"dpos"`
-		Nonce         math.HexOrDecimal64   `json:"nonce"`
-		Timestamp     math.HexOrDecimal64   `json:"timestamp"`
-		ExtraData     hexutil.Bytes         `json:"extraData"`
-		GasLimit      math.HexOrDecimal64   `json:"gasLimit"`
-		Difficulty    *math.HexOrDecimal256 `json:"difficulty"`
-		Mixhash       common.Hash           `json:"mixHash"`
-		Coinbase      common.Name           `json:"coinbase"`
-		AllocAccounts []*GenesisAccount     `json:"allocAccounts"`
-		AllocAssets   []*asset.AssetObject  `json:"allocAssets"`
+		Config           *params.ChainConfig   `json:"config"`
+		Dpos             *dpos.Config          `json:"dpos"`
+		Nonce            math.HexOrDecimal64   `json:"nonce"`
+		Timestamp        math.HexOrDecimal64   `json:"timestamp"`
+		ExtraData        hexutil.Bytes         `json:"extraData"`
+		GasLimit         math.HexOrDecimal64   `json:"gasLimit"`
+		Difficulty       *math.HexOrDecimal256 `json:"difficulty"`
+		Mixhash          common.Hash           `json:"mixHash"`
+		Coinbase         common.Name           `json:"coinbase"`
+		AllocAccounts    []*GenesisAccount     `json:"allocAccounts"`
+		AllocAssets      []*asset.AssetObject  `json:"allocAssets"`
+		AccountNameLevel *am.Config            `json:"accountNameLevel"`
+		AssetNameLevel   *asset.Config         `json:"assetNameLevel"`
 	}
 	var enc genesisJSON
 	enc.Config = g.Config
@@ -52,22 +55,26 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 	enc.Coinbase = g.Coinbase
 	enc.AllocAccounts = g.AllocAccounts
 	enc.AllocAssets = g.AllocAssets
+	enc.AccountNameLevel = g.AccountNameLevel
+	enc.AssetNameLevel = g.AssetNameLevel
 	return json.Marshal(&enc)
 }
 
 func (g *Genesis) UnmarshalJSON(input []byte) error {
 	type genesisJSON struct {
-		Config        *params.ChainConfig   `json:"config"`
-		Dpos          *dpos.Config          `json:"dpos"`
-		Nonce         *math.HexOrDecimal64  `json:"nonce"`
-		Timestamp     *math.HexOrDecimal64  `json:"timestamp"`
-		ExtraData     *hexutil.Bytes        `json:"extraData"`
-		GasLimit      *math.HexOrDecimal64  `json:"gasLimit"`
-		Difficulty    *math.HexOrDecimal256 `json:"difficulty"`
-		Mixhash       *common.Hash          `json:"mixHash"`
-		Coinbase      common.Name           `json:"coinbase"`
-		AllocAccounts []*GenesisAccount     `json:"allocAccounts"`
-		AllocAssets   []*asset.AssetObject  `json:"allocAssets"`
+		Config           *params.ChainConfig   `json:"config"`
+		Dpos             *dpos.Config          `json:"dpos"`
+		Nonce            *math.HexOrDecimal64  `json:"nonce"`
+		Timestamp        *math.HexOrDecimal64  `json:"timestamp"`
+		ExtraData        *hexutil.Bytes        `json:"extraData"`
+		GasLimit         *math.HexOrDecimal64  `json:"gasLimit"`
+		Difficulty       *math.HexOrDecimal256 `json:"difficulty"`
+		Mixhash          *common.Hash          `json:"mixHash"`
+		Coinbase         common.Name           `json:"coinbase"`
+		AllocAccounts    []*GenesisAccount     `json:"allocAccounts"`
+		AllocAssets      []*asset.AssetObject  `json:"allocAssets"`
+		AccountNameLevel *am.Config            `json:"accountNameLevel"`
+		AssetNameLevel   *asset.Config         `json:"assetNameLevel"`
 	}
 	var dec genesisJSON
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -101,5 +108,14 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 	if len(dec.AllocAssets) > 0 {
 		g.AllocAssets = dec.AllocAssets
 	}
+
+	if dec.AccountNameLevel != nil {
+		g.AccountNameLevel = dec.AccountNameLevel
+	}
+
+	if dec.AssetNameLevel != nil {
+		g.AssetNameLevel = dec.AssetNameLevel
+	}
+
 	return nil
 }
