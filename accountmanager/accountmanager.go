@@ -25,6 +25,7 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -534,9 +535,17 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			return err
 		}
 
+		if uint64(len(pubs)) > params.MaxSignLength {
+			return fmt.Errorf("exceed max sign length, want most %d, actual is %d", params.MaxSignLength, len(pubs))
+		}
+
 		recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor, 0)}
 		for i, pub := range pubs {
 			index := action.GetSignIndex(uint64(i))
+			if uint64(len(index)) > params.MaxSignDepth {
+				return fmt.Errorf("exceed max sign depth, want most %d, actual is %d", params.MaxSignDepth, len(index))
+			}
+
 			if err := am.ValidSign(action.Sender(), pub, index, recoverRes); err != nil {
 				return err
 			}

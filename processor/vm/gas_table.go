@@ -319,14 +319,6 @@ func gasCall(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem
 		gas            = gt.Calls
 		transfersValue = stack.Back(2).Sign() != 0
 	)
-	name, err := common.BigToName(stack.Back(1))
-	if err != nil {
-		return 0, err
-	}
-	accountExist, _ := evm.AccountDB.AccountIsExist(name)
-	if transfersValue && accountExist {
-		gas += params.CallNewAccountGas
-	}
 	if transfersValue {
 		gas += params.CallValueTransferGas
 	}
