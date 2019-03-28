@@ -23,7 +23,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/consensus/dpos"
@@ -69,18 +68,11 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
-	if !am.SetAccountNameConfig(config.AccountNameConf) {
-		panic(fmt.Sprintf("accountmanager set accountNameConfig err"))
-	}
-
-	if !asset.SetAssetNameConfig(config.AssetNameConf) {
-		panic(fmt.Sprintf("asset set assetNameConfig err"))
-	}
-
 	chainCfg, dposCfg, _, err := blockchain.SetupGenesisBlock(chainDb, config.Genesis)
 	if err != nil {
 		return nil, err
 	}
+
 	ctx.AppendBootNodes(chainCfg.BootNodes)
 
 	ftservice := &FtService{

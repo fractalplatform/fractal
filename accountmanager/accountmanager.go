@@ -76,6 +76,10 @@ type AccountManager struct {
 }
 
 func SetAccountNameConfig(config *Config) bool {
+	if config == nil {
+		return false
+	}
+
 	if config.AccountNameLevel < 0 || config.AccountNameLength <= 8 {
 		return false
 	}

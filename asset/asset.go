@@ -41,6 +41,10 @@ type Asset struct {
 }
 
 func SetAssetNameConfig(config *Config) bool {
+	if config == nil {
+		return false
+	}
+
 	if config.AssetNameLevel < 0 || config.AssetNameLength <= 2 {
 		return false
 	}

@@ -16,8 +16,18 @@
 
 package asset
 
+// Config Asset name level
 type Config struct {
-	AssetNameLevel     uint64
-	AssetNameLength    uint64
-	SubAssetNameLength uint64
+	AssetNameLevel     uint64 `json:"assetNameLevel"`
+	AssetNameLength    uint64 `json:"assetNameLength"`
+	SubAssetNameLength uint64 `json:"subAssetNameLength"`
+}
+
+// DefaultAssetNameConf return asset config
+func DefaultAssetNameConf() *Config {
+	return &Config{
+		AssetNameLevel:     0,
+		AssetNameLength:    16,
+		SubAssetNameLength: 0,
+	}
 }

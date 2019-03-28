@@ -20,8 +20,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/metrics"
@@ -58,8 +56,6 @@ func defaultFtServiceConfig() *ftservice.Config {
 		},
 		MetricsConf:     defaultMetricsConfig(),
 		ContractLogFlag: false,
-		AccountNameConf: defaultAccountNameConf(),
-		AssetNameConf:   defaultAssetNameConf(),
 	}
 }
 
@@ -129,21 +125,5 @@ func defaultMetricsConfig() *metrics.Config {
 		UserName:     "",
 		PassWd:       "",
 		NameSpace:    "fractal/",
-	}
-}
-
-func defaultAccountNameConf() *am.Config {
-	return &am.Config{
-		AccountNameLevel:     1,
-		AccountNameLength:    16,
-		SubAccountNameLength: 8,
-	}
-}
-
-func defaultAssetNameConf() *asset.Config {
-	return &asset.Config{
-		AssetNameLevel:     1,
-		AssetNameLength:    16,
-		SubAssetNameLength: 8,
 	}
 }
