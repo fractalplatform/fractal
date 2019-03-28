@@ -38,8 +38,14 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 		return nil, ErrNewAssetObject
 	}
 
-	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(limit) > 0 {
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 {
 		return nil, ErrNewAssetObject
+	}
+
+	if limit.Cmp(big.NewInt(0)) > 0 {
+		if amount.Cmp(limit) > 0 {
+			return nil, ErrNewAssetObject
+		}
 	}
 
 	// reg := regexp.MustCompile("^[a-z0-9]{2,16}$")
