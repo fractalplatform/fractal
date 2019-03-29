@@ -24,10 +24,10 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -502,10 +502,9 @@ type SnapshotSt struct {
 	stop         chan struct{}
 }
 
-func NewSnapshot(db fdb.Database, sptick, sptime uint64) *SnapshotSt {
+func NewSnapshot(db fdb.Database, sptime uint64) *SnapshotSt {
 	snapshot := &SnapshotSt{
 		db:           db,
-		tickTime:     sptick,
 		snapshotTime: sptime,
 		stop:         make(chan struct{}),
 		intervalTime: (sptime * second),
@@ -604,7 +603,7 @@ func (sn *SnapshotSt) lookupBlock(blockNum, prevBlockTime, lastBlockTime, lastBl
 	return nextTimeHour, nextHead
 }
 
-func (sn *SnapshotSt) snapshotRecord() bool {
+func (sn *SnapshotSt) snapshotRecord(block *types.Block) bool {
 	var blockNum uint64
 	var curSnapshotTime uint64
 	var prevTime uint64
@@ -628,7 +627,7 @@ func (sn *SnapshotSt) snapshotRecord() bool {
 		}
 	}
 
-	curBlockTime, lastBlockNum := sn.getlastBlcok()
+	curBlockTime, lastBlockNum := block.Head.Time.Uint64(), block.Head.Number.Uint64()
 	if blockNum >= lastBlockNum {
 		return false
 	}
@@ -646,41 +645,31 @@ func (sn *SnapshotSt) snapshotRecord() bool {
 		} else {
 			return false
 		}
-
-		curBlockTime, _ = sn.getlastBlcok()
-		if curBlockTime-nextTimeHour > 2*sn.intervalTime {
-			return true
-		}
-	}
-
-	curBlockTime, _ = sn.getlastBlcok()
-	if curBlockTime-curSnapshotTime > 2*sn.intervalTime {
-		return true
 	}
 
 	return false
 }
 
-func (sn *SnapshotSt) SnapShotblk() {
+const (
+	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
+	chainHeadChanSize = 10
+)
 
-	futureTimer := time.NewTicker(time.Duration(sn.tickTime) * time.Second)
-	defer futureTimer.Stop()
+func (sn *SnapshotSt) SnapShotblk() {
+	chainHeadCh := make(chan *event.Event, chainHeadChanSize)
+	chainHeadSub := event.Subscribe(nil, chainHeadCh, event.ChainHeadEv, &types.Block{})
+	defer chainHeadSub.Unsubscribe()
 
 	for {
 		select {
-		case <-futureTimer.C:
-			for {
-				if sn.checkInterrupt() {
-					return
-				}
-				flag := sn.snapshotRecord()
-				if flag {
-					continue
-				} else {
-					break
-				}
+		case ev := <-chainHeadCh:
+			// Handle ChainHeadEvent
+			if sn.checkInterrupt() {
+				return
 			}
 
+			blk := ev.Data.(*types.Block)
+			sn.snapshotRecord(blk)
 		}
 	}
 }
