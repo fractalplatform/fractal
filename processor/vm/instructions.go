@@ -410,6 +410,45 @@ func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory,
 	return nil, nil
 }
 
+func opGetAccountAllBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	name, id := stack.pop(), stack.pop()
+	assetID := id.Uint64()
+	accName, err := common.BigToName(name)
+	if err != nil {
+		name.Set(big.NewInt(0))
+		return nil, nil
+	}
+
+	balance, err := evm.AccountDB.GetAllBalanceByName(accName, assetID)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(balance)
+	}
+	evm.interpreter.intPool.put(name, id)
+	return nil, nil
+}
+
+func opGetSnapAccountAllBalace(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	name, id, time := stack.pop(), stack.pop(), stack.pop()
+	assetID := id.Uint64()
+	t := time.Uint64()
+	accName, err := common.BigToName(name)
+	if err != nil {
+		name.Set(big.NewInt(0))
+		return nil, nil
+	}
+
+	balance, err := evm.AccountDB.GetAllBalanceByTime(accName, assetID, t)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(balance)
+	}
+	evm.interpreter.intPool.put(name, id, time)
+	return nil, nil
+}
+
 func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	time, assetId := stack.pop(), stack.pop()
 	assetID := assetId.Uint64()

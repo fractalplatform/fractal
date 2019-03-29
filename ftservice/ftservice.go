@@ -101,7 +101,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
-	ftservice.snapshot = state.NewSnapshot(chainDb, 300, 3600)
+	ftservice.snapshot = state.NewSnapshot(chainDb, 3600)
 	if config.Snapshot {
 		ftservice.snapshot.Start()
 	}

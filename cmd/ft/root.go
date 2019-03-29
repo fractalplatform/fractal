@@ -280,7 +280,7 @@ func init() {
 		"Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit")
 
 	// snapshot
-	falgs.BoolVar(&ftconfig.FtServiceCfg.Snapshot, "snapshot_enable", false, "snapshot enable")
+	falgs.BoolVar(&ftconfig.FtServiceCfg.Snapshot, "snapshot_disable", true, "snapshot disable")
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.

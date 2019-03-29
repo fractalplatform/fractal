@@ -213,6 +213,10 @@ func TestSnapshot(t *testing.T) {
 		Time:       big.NewInt(1548582552502000000),
 	}
 
+	block := &types.Block{
+		Head: head,
+	}
+
 	hash := head.Hash()
 
 	root1, err := state.Commit(batch, hash, 0)
@@ -227,11 +231,12 @@ func TestSnapshot(t *testing.T) {
 	rawdb.WriteHeader(batch, head)
 	rawdb.WriteHeadBlockHash(batch, hash)
 	rawdb.WriteCanonicalHash(batch, hash, 0)
+	// rawdb.WriteBlock(batch, block)
 	batch.Write()
 
-	snapshot := NewSnapshot(db, 3, 10)
+	snapshot := NewSnapshot(db, 10)
 
-	go snapshot.SnapShotblk()
+	snapshot.snapshotRecord(block)
 
 	for i := 1; i < 10; i++ {
 
@@ -244,6 +249,10 @@ func TestSnapshot(t *testing.T) {
 		head.Root = root
 		head.Number = big.NewInt(int64(i))
 		head.Time = big.NewInt(1548582552502000000 + int64(i*5000000000))
+
+		block := &types.Block{
+			Head: head,
+		}
 
 		hash = head.Hash()
 
@@ -261,9 +270,9 @@ func TestSnapshot(t *testing.T) {
 		rawdb.WriteHeadBlockHash(batch, hash)
 		rawdb.WriteCanonicalHash(batch, hash, uint64(i))
 		batch.Write()
-	}
 
-	time.Sleep(time.Duration(10) * time.Second)
+		snapshot.snapshotRecord(block)
+	}
 
 	time, err := state.GetSnapshotLast()
 	pretime, _ := state.GetSnapshotPrev(time)
