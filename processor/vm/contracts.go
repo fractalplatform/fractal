@@ -57,6 +57,8 @@ var PrecompiledContractsByzantium = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{6}): &bn256Add{},
 	common.BytesToAddress([]byte{7}): &bn256ScalarMul{},
 	common.BytesToAddress([]byte{8}): &bn256Pairing{},
+	//TODO  common.BytesToAddress([]byte{1024}): &ecdsa{},
+
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.

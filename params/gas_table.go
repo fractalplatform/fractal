@@ -45,6 +45,7 @@ type GasTable struct {
 	DestroyAsset    uint64
 	AddAsset        uint64
 	GetAccountID    uint64
+	GetDelegate     uint64
 }
 
 // Variables containing gas prices for different ethereum phases.
@@ -69,6 +70,7 @@ var (
 		DestroyAsset:    200,
 		AddAsset:        200,
 		GetAccountID:    200,
+		GetDelegate:     200,
 	}
 )
 

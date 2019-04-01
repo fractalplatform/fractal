@@ -424,18 +424,48 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	return nil, nil
 }
 
+func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	time, account := stack.pop(), stack.pop()
+	t := time.Uint64()
+	var rerr error
+
+	if name, err := common.BigToName(account); err == nil {
+		if dbalance, totalDelegate, totalNum, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
+			stack.push(totalDelegate)
+			stack.push(dbalance)
+		} else {
+			rerr = err
+		}
+	} else {
+		rerr = err
+	}
+
+	if rerr != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+	}
+	evm.interpreter.intPool.put(time, account)
+	return nil, nil
+}
+
 func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	opt, time, typeId, assetId, account := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	opt, time, assetId, account := stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	o := opt.Uint64()
 	assetID := assetId.Uint64()
 	t := time.Uint64()
-	id := typeId.Uint64()
+
 	var rerr error
 	var rbalance = big.NewInt(0)
+	var id uint64 = 0
 
 	if name, err := common.BigToName(account); err == nil {
+		if o == 2 || o == 3 {
+			id = 1
+		}
 		if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, id, t); err == nil {
-			if (o == 1) && (assetID == evm.chainConfig.SysTokenID) {
+			if (o == 1 || o == 3) && (assetID == evm.chainConfig.SysTokenID) {
 				if dbalance, _, _, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
 					rbalance = new(big.Int).Add(balance, dbalance)
 				} else {
