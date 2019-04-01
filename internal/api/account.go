@@ -76,7 +76,7 @@ func (aapi *AccountAPI) GetAccountByName(ctx context.Context, accountName common
 }
 
 //GetAccountBalanceByID
-func (aapi *AccountAPI) GetAccountBalanceByID(ctx context.Context, accountName common.Name, assetID uint64) (*big.Int, error) {
+func (aapi *AccountAPI) GetAccountBalanceByID(ctx context.Context, accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (aapi *AccountAPI) GetAccountBalanceByID(ctx context.Context, accountName c
 	if am == nil {
 		return nil, ErrGetAccounManagerErr
 	}
-	return am.GetAccountBalanceByID(accountName, assetID)
+	return am.GetAccountBalanceByID(accountName, assetID, typeID)
 }
 
 //func (aapi *AccountAPI) GetAccountBalanceByName(ctx context.Context, accountName common.Name, assetName string) (*big.Int, error) {
@@ -179,7 +179,7 @@ func (aapi *AccountAPI) GetAssetAmountByTime(ctx context.Context, assetID uint64
 }
 
 //GetAccountBalanceByTime
-func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
+func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
@@ -187,7 +187,7 @@ func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName
 	if am == nil {
 		return nil, ErrGetAccounManagerErr
 	}
-	return am.GetBalanceByTime(accountName, assetID, time)
+	return am.GetBalanceByTime(accountName, assetID, typeID, time)
 }
 
 //GetSnapshotLast  get last snapshot time
@@ -212,28 +212,4 @@ func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint
 		return 0, ErrGetAccounManagerErr
 	}
 	return am.GetSnapshotTime(m, time)
-}
-
-//GetAllBalancebyName get Account Balace, balance(asset) = asset + subAsset
-func (aapi *AccountAPI) GetAllBalancebyName(ctx context.Context, accountName common.Name, assetID uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
-	if err != nil {
-		return nil, err
-	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
-	}
-	return am.GetAllBalanceByName(accountName, assetID)
-}
-
-//GetAllBalanceByTime get Account Balace by time
-func (aapi *AccountAPI) GetAllBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
-	if err != nil {
-		return nil, err
-	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
-	}
-	return am.GetAllBalanceByTime(accountName, assetID, time)
 }

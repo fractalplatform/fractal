@@ -447,7 +447,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID())
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
 		if err != nil {
 			return err
 		}
@@ -458,7 +458,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID())
+		balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
 		if err != nil {
 			return err
 		}
@@ -860,7 +860,7 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
 		// todo assetID
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID)
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
 		if err != nil {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
@@ -1047,7 +1047,7 @@ func (tp *TxPool) demoteUnexecutables() {
 		}
 
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID)
+		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
 		if err != nil && err != am.ErrAccountNotExist {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}

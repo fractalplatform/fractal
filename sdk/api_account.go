@@ -49,8 +49,8 @@ func (api *API) AssetInfoByID(id uint64) (*asset.AssetObject, error) {
 }
 
 // BalanceByAssetID get asset balance
-func (api *API) BalanceByAssetID(name string, id uint64) (*big.Int, error) {
+func (api *API) BalanceByAssetID(name string, id uint64, typeID uint64) (*big.Int, error) {
 	balance := big.NewInt(0)
-	err := api.client.Call(balance, "account_getAccountBalanceByID", name, id)
+	err := api.client.Call(balance, "account_getAccountBalanceByID", name, id, typeID)
 	return balance, err
 }

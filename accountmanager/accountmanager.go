@@ -678,18 +678,6 @@ func (am *AccountManager) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, 
 	return am.ast.GetAssetObjectById(assetID)
 }
 
-//GetAccountBalanceByID get account balance by ID
-func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByName(accountName)
-	if err != nil {
-		return big.NewInt(0), err
-	}
-	if acct == nil {
-		return big.NewInt(0), ErrAccountNotExist
-	}
-	return acct.GetBalanceByID(assetID)
-}
-
 //GetAssetAmountByTime get asset amount by time
 func (am *AccountManager) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
 	return am.ast.GetAssetAmountByTime(assetID, time)
@@ -729,18 +717,6 @@ func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, erro
 		}
 	}
 	return 0, ErrTimeTypeInvalid
-}
-
-//GetBalanceByTime get account balance by Time
-func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByTime(accountName, time)
-	if err != nil {
-		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrAccountNotExist
-	}
-	return acct.GetBalanceByID(assetID)
 }
 
 //GetFounder Get Account Founder
@@ -1347,28 +1323,39 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 	return ba, nil
 }
 
-//GetAllBalanceByName get account all balance
-func (am *AccountManager) GetAllBalanceByName(accountName common.Name, assetID uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByName(accountName)
-	if err != nil {
-		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrAccountNotExist
-	}
-
-	return am.GetAllBalancebyAssetID(acct, assetID)
-}
-
-//GetAllBalanceByTime get account all balance by Time
-func (am *AccountManager) GetAllBalanceByTime(accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
+//GetBalanceByTime get account balance by Time
+func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
 	acct, err := am.GetAccountByTime(accountName, time)
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), err
 	}
 	if acct == nil {
-		return nil, ErrAccountNotExist
+		return big.NewInt(0), ErrAccountNotExist
 	}
 
-	return am.GetAllBalancebyAssetID(acct, assetID)
+	if typeID == 0 {
+		return acct.GetBalanceByID(assetID)
+	} else if typeID == 1 {
+		return am.GetAllBalancebyAssetID(acct, assetID)
+	} else {
+		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
+	}
+}
+
+//GetAccountBalanceByID get account balance by ID
+func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	if acct == nil {
+		return big.NewInt(0), ErrAccountNotExist
+	}
+	if typeID == 0 {
+		return acct.GetBalanceByID(assetID)
+	} else if typeID == 1 {
+		return am.GetAllBalancebyAssetID(acct, assetID)
+	} else {
+		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
+	}
 }
