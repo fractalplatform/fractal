@@ -428,8 +428,10 @@ func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	time, account := stack.pop(), stack.pop()
 	t := time.Uint64()
 	var rerr error
+	userID := account.Uint64()
 
-	if name, err := common.BigToName(account); err == nil {
+	if acct, err := evm.AccountDB.GetAccountById(userID); err == nil {
+		name := acct.GetName()
 		if dbalance, totalDelegate, totalNum, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
 			stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
 			stack.push(totalDelegate)
@@ -455,12 +457,14 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	o := opt.Uint64()
 	assetID := assetId.Uint64()
 	t := time.Uint64()
+	userID := account.Uint64()
 
 	var rerr error
 	var rbalance = big.NewInt(0)
 	var id uint64 = 0
 
-	if name, err := common.BigToName(account); err == nil {
+	if acct, err := evm.AccountDB.GetAccountById(userID); err == nil {
+		name := acct.GetName()
 		if o == 2 || o == 3 {
 			id = 1
 		}
@@ -494,12 +498,13 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	assetId := stack.pop()
 	slot := stack.peek()
-	name, err := common.BigToName(slot)
+	userID := slot.Uint64()
+	account, err := evm.AccountDB.GetAccountById(userID)
 	if err != nil {
 		slot.Set(big.NewInt(0))
 		return nil, nil
 	}
-	account, _ := evm.AccountDB.GetAccountByName(name)
+
 	if account == nil {
 		slot.Set(big.NewInt(0))
 		return nil, nil
@@ -511,12 +516,14 @@ func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 
 func opBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	slot := stack.peek()
-	name, err := common.BigToName(slot)
+	userID := slot.Uint64()
+	//name, err := common.BigToName(slot)
+	account, err := evm.AccountDB.GetAccountById(userID)
 	if err != nil {
 		slot.Set(big.NewInt(0))
 		return nil, nil
 	}
-	account, _ := evm.AccountDB.GetAccountByName(name)
+	//account, _ := evm.AccountDB.GetAccountByName(name)
 	if account == nil {
 		slot.Set(big.NewInt(0))
 		return nil, nil
@@ -589,8 +596,8 @@ func opReturnDataCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 func opExtCodeSize(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	slot := stack.peek()
 	//name, err := common.BigToName(slot)
-	acctId := slot.Uint64()
-	acct, err := evm.AccountDB.GetAccountById(acctId)
+	userID := slot.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
 	if err != nil {
 		slot.SetUint64(0)
 		return nil, nil
@@ -599,12 +606,8 @@ func opExtCodeSize(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		slot.SetUint64(0)
 		return nil, fmt.Errorf("account is not exist")
 	}
-	account, _ := evm.AccountDB.GetAccountByName(acct.GetName())
-	if account == nil {
-		slot.SetUint64(0)
-		return nil, nil
-	}
-	codeSize := account.GetCodeSize()
+
+	codeSize := acct.GetCodeSize()
 	slot.SetUint64(uint64(codeSize))
 	return nil, nil
 }
@@ -631,18 +634,14 @@ func opCodeCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 
 func opExtCodeCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	var (
+		addr       = stack.pop()
 		memOffset  = stack.pop()
 		codeOffset = stack.pop()
 		length     = stack.pop()
 	)
-	name, err := common.BigToName(stack.pop())
-	if err != nil {
-		memory.Set(memOffset.Uint64(), length.Uint64(), nil)
-		evm.interpreter.intPool.put(memOffset, codeOffset, length)
-		return nil, nil
-	}
-	account, _ := evm.AccountDB.GetAccountByName(name)
-	if account == nil {
+
+	account, err := evm.AccountDB.GetAccountById(addr.Uint64())
+	if err != nil || account == nil {
 		memory.Set(memOffset.Uint64(), length.Uint64(), nil)
 		evm.interpreter.intPool.put(memOffset, codeOffset, length)
 	} else {
@@ -838,8 +837,16 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	gas := evm.callGasTemp
 	// Pop other call parameters.
 	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
-	toName, _ := common.BigToName(name)
 	value = math.U256(value)
+	//toName, _ := common.BigToName(name)
+	userID := name.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+	toName := acct.GetName()
+
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
@@ -880,7 +887,16 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	//addr, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	//addr, assetId,value, inOffset, inSize, retOffset, retSize := stack.pop(),stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
-	toName, _ := common.BigToName(name)
+	//toName, _ := common.BigToName(name)
+	userID := name.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	toName := acct.GetName()
+
 	value = math.U256(value)
 	// Get arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
@@ -922,14 +938,18 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	name, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	//change id to name
 	acct, err := evm.AccountDB.GetAccountById(name.Uint64())
-	if err != nil {
+	if err != nil || acct == nil {
 		stack.push(evm.interpreter.intPool.getZero())
-		return nil, err
+		return nil, nil
 	}
-	if acct == nil {
-		stack.push(evm.interpreter.intPool.getZero())
-		return nil, fmt.Errorf("account is not exist")
-	}
+	// if err != nil {
+	// 	stack.push(evm.interpreter.intPool.getZero())
+	// 	return nil, err
+	// }
+	// if acct == nil {
+	// 	stack.push(evm.interpreter.intPool.getZero())
+	// 	return nil, fmt.Errorf("account is not exist")
+	// }
 	//toName, _ := common.BigToName(name)
 
 	// Get arguments from the memory.
@@ -955,10 +975,16 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
 	assetID := assetId.Uint64()
-	toName, _ := common.BigToName(to)
+	//toName, _ := common.BigToName(to)
 	value = math.U256(value)
+	userID := to.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 
-	err := execAddAsset(evm, contract, assetID, toName, value)
+	err = execAddAsset(evm, contract, assetID, acct.GetName(), value)
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1015,10 +1041,11 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	account := stack.pop()
-	if name, err := common.BigToName(account); err == nil {
-		acctName := common.Name(name)
-		if accountID, err := evm.AccountDB.GetAccountIDByName(acctName); err == nil {
-			stack.push(evm.interpreter.intPool.get().SetUint64(accountID))
+	userID := account.Uint64()
+
+	if acct, err := evm.AccountDB.GetAccountById(userID); err == nil {
+		if acct != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
 		} else {
 			stack.push(evm.interpreter.intPool.getZero())
 		}
@@ -1100,10 +1127,16 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 //issue an asset for multi-asset
 func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	newOwner, assetId := stack.pop(), stack.pop()
-	newOwnerName, _ := common.BigToName(newOwner)
+	//newOwnerName, _ := common.BigToName(newOwner)
+	userID := newOwner.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 	assetID := assetId.Uint64()
 
-	err := execSetAssetOwner(evm, contract, assetID, newOwnerName)
+	err = execSetAssetOwner(evm, contract, assetID, acct.GetName())
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
@@ -1138,7 +1171,12 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	evm.interpreter.intPool.put(stack.pop())
 	gas := evm.callGasTemp
 	name, assetId, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
-	toName, _ := common.BigToName(name)
+
+	//toName, _ := common.BigToName(name)
+	userID := name.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	toName := acct.GetName()
+
 	assetID := assetId.Uint64()
 	value = math.U256(value)
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
@@ -1178,7 +1216,12 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	gas := evm.callGasTemp
 	// Pop other call parameters.
 	name, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
-	toName, _ := common.BigToName(name)
+
+	//toName, _ := common.BigToName(name)
+	userID := name.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	toName := acct.GetName()
+
 	// Get arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
