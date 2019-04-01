@@ -179,6 +179,20 @@ func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) 
 	}
 }
 
+// AccountIDIsExist check account is exist by ID.
+func (am *AccountManager) AccountIDIsExist(accountID uint64) (bool, error) {
+	//check is exist
+	account, err := am.GetAccountById(accountID)
+	if err != nil {
+		return false, err
+	}
+	if account != nil {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
 //AccountHaveCode check account have code
 func (am *AccountManager) AccountHaveCode(accountName common.Name) (bool, error) {
 	//check is exist
