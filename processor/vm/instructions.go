@@ -427,23 +427,23 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	time, account := stack.pop(), stack.pop()
 	t := time.Uint64()
-	var rerr error
 	userID := account.Uint64()
 
-	if acct, err := evm.AccountDB.GetAccountById(userID); err == nil {
-		name := acct.GetName()
-		if dbalance, totalDelegate, totalNum, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
-			stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
-			stack.push(totalDelegate)
-			stack.push(dbalance)
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err == nil {
+		if acct != nil {
+			name := acct.GetName()
+			if dbalance, totalDelegate, totalNum, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+				stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
+				stack.push(totalDelegate)
+				stack.push(dbalance)
+			}
 		} else {
-			rerr = err
+			err = errors.New("account object is null")
 		}
-	} else {
-		rerr = err
 	}
 
-	if rerr != nil {
+	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
