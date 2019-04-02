@@ -514,7 +514,7 @@ func NewSnapshot(db fdb.Database, sptime uint64) *SnapshotSt {
 }
 
 func (sn *SnapshotSt) Start() {
-	log.Info("Snapshot start", "tick=", sn.tickTime, "interval=", sn.snapshotTime)
+	log.Info("Snapshot start", "snapshot interval=", sn.snapshotTime)
 	go sn.SnapShotblk()
 }
 

@@ -42,4 +42,8 @@ contract MultiAsset {
     function balances(uint256 a) public pure returns (uint256 balance) { 
         balance = a; 
     }
+
+    function getdg(address user, uint256 t) external returns (uint256 a, uint256 b, uint256 c) {
+        return getdelegate(user,t);
+    }
 }
