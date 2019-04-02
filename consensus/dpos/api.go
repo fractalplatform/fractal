@@ -130,7 +130,7 @@ func (api *API) ValidateEpcho() (interface{}, error) {
 		}
 		curHeader = api.chain.GetHeaderByHash(curHeader.ParentHash)
 	}
-	return api.Epcho(curHeader.Number.Uint64())
+	return api.Epcho(curHeader.Number.Uint64() - 1)
 }
 
 func (api *API) system() (*System, error) {

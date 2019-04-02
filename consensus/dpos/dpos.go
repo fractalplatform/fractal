@@ -390,7 +390,7 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 		parent = chain.GetHeaderByHash(parent.ParentHash)
 	}
 
-	gstate, err := sys.GetState(parent.Number.Uint64())
+	gstate, err := sys.GetState(parent.Number.Uint64() - 1)
 	if err != nil {
 		return err
 	}
