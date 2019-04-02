@@ -57,7 +57,7 @@ func TestAssetInfoByID(t *testing.T) {
 func TestBalanceByAssetID(t *testing.T) {
 	Convey("account_getAccountBalanceByID", t, func() {
 		api := NewAPI(rpchost)
-		balance, err := api.BalanceByAssetID(systemaccount, systemassetid)
+		balance, err := api.BalanceByAssetID(systemaccount, systemassetid, 0)
 		So(err, ShouldBeNil)
 		So(balance, ShouldNotBeNil)
 	})

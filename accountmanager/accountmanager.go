@@ -38,6 +38,7 @@ var (
 )
 var acctManagerName = "sysAccount"
 var sysName string = ""
+var counterID uint64 = 4096
 
 type AuthorActionType uint64
 
@@ -135,8 +136,8 @@ func NewAccountManager(db *state.StateDB) (*AccountManager, error) {
 func (am *AccountManager) InitAccountCounter() {
 	_, err := am.getAccountCounter()
 	if err == ErrCounterNotExist {
-		var counterID uint64
-		counterID = 0
+		//var counterID uint64
+		//counterID = 0
 		//store assetCount
 		b, err := rlp.EncodeToBytes(&counterID)
 		if err != nil {
@@ -172,6 +173,20 @@ func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) 
 		return false, err
 	}
 	if accountID > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
+// AccountIDIsExist check account is exist by ID.
+func (am *AccountManager) AccountIDIsExist(accountID uint64) (bool, error) {
+	//check is exist
+	account, err := am.GetAccountById(accountID)
+	if err != nil {
+		return false, err
+	}
+	if account != nil {
 		return true, nil
 	} else {
 		return false, nil
@@ -296,7 +311,7 @@ func (am *AccountManager) SetChargeRatio(accountName common.Name, ra uint64) err
 	return am.SetAccount(acct)
 }
 
-//UpdateAccount update the pubkey of the accunt
+//UpdateAccount update the pubkey of the account
 func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *AccountAction) error {
 	acct, err := am.GetAccountByName(accountName)
 	if acct == nil {
@@ -678,8 +693,95 @@ func (am *AccountManager) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, 
 	return am.ast.GetAssetObjectById(assetID)
 }
 
+// GetAllAssetbyAssetId get accout asset and subAsset Info
+func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
+	var ba = make(map[uint64]*big.Int, 0)
+
+	b, err := acct.GetBalanceByID(assetId)
+	if err != nil {
+		return nil, err
+	}
+	ba[assetId] = b
+
+	assetObj, err := am.ast.GetAssetObjectById(assetId)
+	if err != nil {
+		return nil, err
+	}
+
+	assetName := assetObj.GetAssetName()
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return nil, err
+	}
+
+	for id, balance := range balances {
+		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		if err != nil {
+			return nil, err
+		}
+
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+			ba[id] = balance
+		}
+	}
+
+	return ba, nil
+}
+
+// GetAllBalancebyAssetID get account balance, balance(asset) = asset + subAsset
+func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) (*big.Int, error) {
+	var ba *big.Int
+	ba = big.NewInt(0)
+
+	b, _ := acct.GetBalanceByID(assetID)
+	ba = ba.Add(ba, b)
+
+	assetObj, err := am.ast.GetAssetObjectById(assetID)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	assetName := assetObj.GetAssetName()
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	for id, balance := range balances {
+		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		if err != nil {
+			return big.NewInt(0), err
+		}
+
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+			ba = ba.Add(ba, balance)
+		}
+	}
+
+	return ba, nil
+}
+
+//GetBalanceByTime get account balance by Time
+func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
+	acct, err := am.GetAccountByTime(accountName, time)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	if acct == nil {
+		return big.NewInt(0), ErrAccountNotExist
+	}
+
+	if typeID == 0 {
+		return acct.GetBalanceByID(assetID)
+	} else if typeID == 1 {
+		return am.GetAllBalancebyAssetID(acct, assetID)
+	} else {
+		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
+	}
+}
+
 //GetAccountBalanceByID get account balance by ID
-func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID uint64) (*big.Int, error) {
+func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
 		return big.NewInt(0), err
@@ -687,7 +789,13 @@ func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID
 	if acct == nil {
 		return big.NewInt(0), ErrAccountNotExist
 	}
-	return acct.GetBalanceByID(assetID)
+	if typeID == 0 {
+		return acct.GetBalanceByID(assetID)
+	} else if typeID == 1 {
+		return am.GetAllBalancebyAssetID(acct, assetID)
+	} else {
+		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
+	}
 }
 
 //GetAssetAmountByTime get asset amount by time
@@ -729,18 +837,6 @@ func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, erro
 		}
 	}
 	return 0, ErrTimeTypeInvalid
-}
-
-//GetBalanceByTime get account balance by Time
-func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByTime(accountName, time)
-	if err != nil {
-		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrAccountNotExist
-	}
-	return acct.GetBalanceByID(assetID)
 }
 
 //GetFounder Get Account Founder
@@ -824,15 +920,12 @@ func (am *AccountManager) SubAccountBalanceByID(accountName common.Name, assetID
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	//
-	val, err := acct.GetBalanceByID(assetID)
+
+	err = acct.SubBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
-	if val.Cmp(big.NewInt(0)) < 0 || val.Cmp(value) < 0 {
-		return ErrInsufficientBalance
-	}
-	acct.SetBalance(assetID, new(big.Int).Sub(val, value))
+
 	return am.SetAccount(acct)
 }
 
@@ -850,12 +943,11 @@ func (am *AccountManager) AddAccountBalanceByID(accountName common.Name, assetID
 		return ErrAmountValueInvalid
 	}
 
-	val, err := acct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		acct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		acct.SetBalance(assetID, new(big.Int).Add(val, value))
+	err = acct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
+
 	return am.SetAccount(acct)
 }
 
@@ -881,12 +973,11 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return ErrAmountValueInvalid
 	}
 
-	val, err := acct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		acct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		acct.SetBalance(assetID, new(big.Int).Add(val, value))
+	err = acct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
+
 	return am.SetAccount(acct)
 }
 
@@ -1274,101 +1365,4 @@ func (am *AccountManager) process(action *types.Action) error {
 	}
 
 	return nil
-}
-
-// GetAllAssetbyAssetId get accout asset and subAsset Info
-func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
-	var ba = make(map[uint64]*big.Int, 0)
-
-	b, err := acct.GetBalanceByID(assetId)
-	if err != nil {
-		return nil, err
-	}
-	ba[assetId] = b
-
-	assetObj, err := am.ast.GetAssetObjectById(assetId)
-	if err != nil {
-		return nil, err
-	}
-
-	assetName := assetObj.GetAssetName()
-	balances, err := acct.GetAllBalances()
-	if err != nil {
-		return nil, err
-	}
-
-	for id, balance := range balances {
-		subAssetObj, err := am.ast.GetAssetObjectById(id)
-		if err != nil {
-			return nil, err
-		}
-
-		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
-			ba[id] = balance
-		}
-	}
-
-	return ba, nil
-}
-
-// GetAllBalancebyAssetID get account balance, balance(asset) = asset + subAsset
-func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) (*big.Int, error) {
-	var ba *big.Int
-	ba = big.NewInt(0)
-
-	b, err := acct.GetBalanceByID(assetID)
-	if err != nil {
-		return nil, err
-	}
-	ba = ba.Add(ba, b)
-
-	assetObj, err := am.ast.GetAssetObjectById(assetID)
-	if err != nil {
-		return nil, err
-	}
-
-	assetName := assetObj.GetAssetName()
-	balances, err := acct.GetAllBalances()
-	if err != nil {
-		return nil, err
-	}
-
-	for id, balance := range balances {
-		subAssetObj, err := am.ast.GetAssetObjectById(id)
-		if err != nil {
-			return nil, err
-		}
-
-		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
-			ba = ba.Add(ba, balance)
-		}
-	}
-
-	return ba, nil
-}
-
-//GetAllBalanceByName get account all balance
-func (am *AccountManager) GetAllBalanceByName(accountName common.Name, assetID uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByName(accountName)
-	if err != nil {
-		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrAccountNotExist
-	}
-
-	return am.GetAllBalancebyAssetID(acct, assetID)
-}
-
-//GetAllBalanceByTime get account all balance by Time
-func (am *AccountManager) GetAllBalanceByTime(accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByTime(accountName, time)
-	if err != nil {
-		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrAccountNotExist
-	}
-
-	return am.GetAllBalancebyAssetID(acct, assetID)
 }

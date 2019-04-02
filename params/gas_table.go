@@ -36,17 +36,16 @@ type GasTable struct {
 	// not exist. This logic is similar
 	// to call. May be left nil. Nil means
 	// not charged.
-	CreateBySuicide         uint64
-	SetOwner                uint64
-	GetSnapshotTime         uint64
-	GetAssetAmount          uint64
-	SnapBalance             uint64
-	IssueAsset              uint64
-	DestroyAsset            uint64
-	AddAsset                uint64
-	GetAccountID            uint64
-	GetAccountAllBalance    uint64
-	GetSnapAccountAllBalace uint64
+	CreateBySuicide uint64
+	SetOwner        uint64
+	GetSnapshotTime uint64
+	GetAssetAmount  uint64
+	SnapBalance     uint64
+	IssueAsset      uint64
+	DestroyAsset    uint64
+	AddAsset        uint64
+	GetAccountID    uint64
+	GetDelegate     uint64
 }
 
 // Variables containing gas prices for different ethereum phases.
@@ -62,17 +61,16 @@ var (
 		Suicide:     5000,
 		ExpByte:     50,
 
-		CreateBySuicide:         25000,
-		SetOwner:                200,
-		GetSnapshotTime:         200,
-		GetAssetAmount:          200,
-		SnapBalance:             200,
-		IssueAsset:              200,
-		DestroyAsset:            200,
-		AddAsset:                200,
-		GetAccountID:            200,
-		GetAccountAllBalance:    200,
-		GetSnapAccountAllBalace: 200,
+		CreateBySuicide: 25000,
+		SetOwner:        200,
+		GetSnapshotTime: 200,
+		GetAssetAmount:  200,
+		SnapBalance:     200,
+		IssueAsset:      200,
+		DestroyAsset:    200,
+		AddAsset:        200,
+		GetAccountID:    200,
+		GetDelegate:     200,
 	}
 )
 

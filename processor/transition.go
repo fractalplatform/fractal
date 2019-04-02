@@ -82,7 +82,7 @@ func (st *StateTransition) preCheck() error {
 
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
-	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID)
+	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
 	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID)
 	if err != nil {
 		return err

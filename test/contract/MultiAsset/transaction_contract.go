@@ -18,21 +18,22 @@ package main
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"math/big"
 	"strings"
 	"time"
-	"crypto/ecdsa"
 
 	jww "github.com/spf13/jwalterweatherman"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	tc "github.com/fractalplatform/fractal/test/common"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/abi"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	tc "github.com/fractalplatform/fractal/test/common"
 )
 
 var (
@@ -134,6 +135,15 @@ func formTransferAssetInput(abifile string, toAddr common.Address, assetId *big.
 	return common.Hex2Bytes(transferAssetInput), nil
 }
 
+func formGetDelgateInput(abifile string, user common.Address, time *big.Int) ([]byte, error) {
+	issueAssetInput, err := input(abifile, "getdg", user, time)
+	if err != nil {
+		jww.INFO.Println("createInput error ", err)
+		return nil, err
+	}
+	return common.Hex2Bytes(issueAssetInput), nil
+}
+
 func init() {
 	jww.SetLogThreshold(jww.LevelTrace)
 	jww.SetStdoutThreshold(jww.LevelInfo)
@@ -205,6 +215,21 @@ func sendTransferTransaction() {
 	sendTx(types.CallContract, systemname, contractAddr, nonce, assetID, big.NewInt(0), input, systemprikey)
 }
 
+func sendGetDelgateContractTransaction() {
+	jww.INFO.Println("test sendGetDelgateContractTransaction... ")
+
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, 4099)
+
+	input, err := formGetDelgateInput(abifile, common.BytesToAddress(b), big.NewInt(0))
+	if err != nil {
+		jww.INFO.Println("sendGetDelgateContractTransaction formGetDelgateInput error ... ", err)
+		return
+	}
+	nonce, _ := tc.GetNonce(systemname)
+	sendTx(types.CallContract, systemname, contractAddr, nonce, assetID, big.NewInt(0), input, systemprikey)
+}
+
 func sendTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, prikey *ecdsa.PrivateKey) {
 	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input)
 	gasprice, _ := tc.GasPrice()
@@ -239,4 +264,7 @@ func main() {
 	sendTransferTransaction()
 	time.Sleep(time.Duration(3) * time.Second)
 	sendSetOwnerIssueTransaction()
+	time.Sleep(time.Duration(3) * time.Second)
+	sendGetDelgateContractTransaction()
+	time.Sleep(time.Duration(3) * time.Second)
 }

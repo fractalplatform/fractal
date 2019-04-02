@@ -264,33 +264,3 @@ func (acc *Account) UnvoteCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 	return rawtx
 }
-
-// UnvoteVoter
-func (acc *Account) UnvoteVoter(to common.Name, value *big.Int, id uint64, gas uint64, voter string) []byte {
-	arg := &args.RemoveVoter{
-		Voter: voter,
-	}
-	payload, err := rlp.EncodeToBytes(arg)
-	if err != nil {
-		panic(err)
-	}
-	if acc.getnonce != nil {
-		acc.nonce = acc.getnonce(acc.name)
-	}
-	action := types.NewAction(types.RemoveVoter, acc.name, to, acc.nonce, id, gas, value, payload)
-	if acc.getnonce == nil {
-		acc.nonce++
-	}
-
-	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	key := types.MakeKeyPair(acc.priv, []uint64{0})
-
-	if err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key}); err != nil {
-		panic(err)
-	}
-	rawtx, err := rlp.EncodeToBytes(tx)
-	if err != nil {
-		panic(err)
-	}
-	return rawtx
-}

@@ -214,8 +214,7 @@ const (
 	DESTROYASSET = 0xc8
 	GETACCOUNTID = 0xc9
 
-	GETALLBALANCE     = 0xca
-	GETSNAPALLBALANCE = 0xcb
+	GETDELEGATE = 0xca
 )
 
 const (

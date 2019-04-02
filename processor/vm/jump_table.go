@@ -99,18 +99,10 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
-	instructionSet[GETALLBALANCE] = operation{
-		execute:       opGetAccountAllBalance,
-		gasCost:       gasGetAccountAllBalance,
+	instructionSet[GETDELEGATE] = operation{
+		execute:       opGetDelegate,
+		gasCost:       gasGetDelegate,
 		validateStack: makeStackFunc(2, 1),
-		valid:         true,
-		returns:       true,
-	}
-
-	instructionSet[GETSNAPALLBALANCE] = operation{
-		execute:       opGetSnapAccountAllBalace,
-		gasCost:       gasGetSnapAccountAllBalace,
-		validateStack: makeStackFunc(3, 1),
 		valid:         true,
 		returns:       true,
 	}
@@ -126,7 +118,7 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[SNAPBALANCE] = operation{
 		execute:       opSnapBalance,
 		gasCost:       gasSnapBalance,
-		validateStack: makeStackFunc(3, 1),
+		validateStack: makeStackFunc(4, 1),
 		valid:         true,
 		returns:       true,
 	}
