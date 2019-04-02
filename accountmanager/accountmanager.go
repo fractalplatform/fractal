@@ -733,27 +733,24 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 	var ba *big.Int
 	ba = big.NewInt(0)
 
-	b, err := acct.GetBalanceByID(assetID)
-	if err != nil {
-		return nil, err
-	}
+	b, _ := acct.GetBalanceByID(assetID)
 	ba = ba.Add(ba, b)
 
 	assetObj, err := am.ast.GetAssetObjectById(assetID)
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), err
 	}
 
 	assetName := assetObj.GetAssetName()
 	balances, err := acct.GetAllBalances()
 	if err != nil {
-		return nil, err
+		return big.NewInt(0), err
 	}
 
 	for id, balance := range balances {
 		subAssetObj, err := am.ast.GetAssetObjectById(id)
 		if err != nil {
-			return nil, err
+			return big.NewInt(0), err
 		}
 
 		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {

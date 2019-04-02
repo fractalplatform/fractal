@@ -31,12 +31,14 @@ contract MultiAsset {
              x = snapshottime(t,time);
              log1(bytes32(x),"getSnapshotTime" );
 
-     }
-    function getSnapBalance(address to,uint256 assetId,uint256 time) public {
+    }
+
+    function getSnapBalance(address to,uint256 assetId, uint256 time, uint256 typeId) public {
         uint256 x ;
-        x = to.snapbalance(assetId,time,1);
+        x = to.snapbalance(assetId,time,typeId);
         log1(bytes32(x),"getSnapBalance");
     }
+
     function balances(uint256 a) public pure returns (uint256 balance) { 
         balance = a; 
     }
