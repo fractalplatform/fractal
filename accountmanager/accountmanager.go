@@ -311,7 +311,7 @@ func (am *AccountManager) SetChargeRatio(accountName common.Name, ra uint64) err
 	return am.SetAccount(acct)
 }
 
-//UpdateAccount update the pubkey of the accunt
+//UpdateAccount update the pubkey of the account
 func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *AccountAction) error {
 	acct, err := am.GetAccountByName(accountName)
 	if acct == nil {
@@ -920,15 +920,12 @@ func (am *AccountManager) SubAccountBalanceByID(accountName common.Name, assetID
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	//
-	val, err := acct.GetBalanceByID(assetID)
+
+	err = acct.SubBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
-	if val.Cmp(big.NewInt(0)) < 0 || val.Cmp(value) < 0 {
-		return ErrInsufficientBalance
-	}
-	acct.SetBalance(assetID, new(big.Int).Sub(val, value))
+
 	return am.SetAccount(acct)
 }
 
@@ -946,12 +943,11 @@ func (am *AccountManager) AddAccountBalanceByID(accountName common.Name, assetID
 		return ErrAmountValueInvalid
 	}
 
-	val, err := acct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		acct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		acct.SetBalance(assetID, new(big.Int).Add(val, value))
+	err = acct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
+
 	return am.SetAccount(acct)
 }
 
@@ -977,12 +973,11 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return ErrAmountValueInvalid
 	}
 
-	val, err := acct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		acct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		acct.SetBalance(assetID, new(big.Int).Add(val, value))
+	err = acct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
+
 	return am.SetAccount(acct)
 }
 

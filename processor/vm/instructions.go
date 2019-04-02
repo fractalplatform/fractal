@@ -1041,9 +1041,9 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	account := stack.pop()
-	userID := account.Uint64()
+	name, _ := common.BigToName(account)
 
-	if acct, err := evm.AccountDB.GetAccountById(userID); err == nil {
+	if acct, err := evm.AccountDB.GetAccountByName(name); err == nil {
 		if acct != nil {
 			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
 		} else {
