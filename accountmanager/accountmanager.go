@@ -224,7 +224,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, numer uint64, chargeRatio uint64, pubkey common.PubKey) error {
 
 	if accountName.AccountNameLevel() > 1 {
 		if !fromName.IsValidCreator(accountName.String()) {
@@ -232,7 +232,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 		}
 	}
 
-	if err := am.CreateAccount(accountName, founderName, 0, pubkey); err != nil {
+	if err := am.CreateAccount(accountName, founderName, numer, 0, pubkey); err != nil {
 		return err
 	}
 
@@ -240,7 +240,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 }
 
 //CreateAccount contract account
-func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
 	if !common.IsValidAccountName(accountName.String()) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
@@ -290,7 +290,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 	if err != nil {
 		return err
 	}
-
+	acctObj.SetAccountNumber(number)
 	acctObj.SetChargeRatio(0)
 	am.SetAccount(acctObj)
 	am.sdb.Put(acctManagerName, accountNameIDPrefix+accountName.String(), aid)
@@ -1164,7 +1164,7 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	} else {
 		asset.SetAssetFounder(asset.GetAssetOwner())
 	}
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
+	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
 		return err
 	}
 
@@ -1194,16 +1194,19 @@ func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name
 //}
 
 //Process account action
-func (am *AccountManager) Process(action *types.Action) error {
+func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) error {
 	snap := am.sdb.Snapshot()
-	err := am.process(action)
+	err := am.process(accountManagerContext)
 	if err != nil {
 		am.sdb.RevertToSnapshot(snap)
 	}
 	return err
 }
 
-func (am *AccountManager) process(action *types.Action) error {
+func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) error {
+	action := accountManagerContext.Action
+	number := accountManagerContext.Number
+
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		if action.Type() == types.CreateAccount || action.Type() == types.DestroyAsset {
@@ -1228,7 +1231,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
-		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, 0, acct.PublicKey); err != nil {
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, 0, acct.PublicKey); err != nil {
 			return err
 		}
 
@@ -1266,6 +1269,7 @@ func (am *AccountManager) process(action *types.Action) error {
 			return err
 		}
 
+		asset.SetAssetNumber(number)
 		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return err
 		}

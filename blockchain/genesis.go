@@ -151,7 +151,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, account := range g.AllocAccounts {
-		if err := accountManager.CreateAnyAccount("", account.Name, common.Name(""), 0, account.PubKey); err != nil {
+		if err := accountManager.CreateAnyAccount("", account.Name, common.Name(""), 0, 0, account.PubKey); err != nil {
 			panic(fmt.Sprintf("genesis create account %v ,err %v", account.Name, err))
 		}
 	}

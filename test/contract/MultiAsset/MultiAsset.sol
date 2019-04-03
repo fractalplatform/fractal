@@ -44,6 +44,17 @@ contract MultiAsset {
     }
 
     function getdg(address user, uint256 t) external returns (uint256 a, uint256 b, uint256 c) {
-        return getdelegate(user,t);
+        uint256 aa;
+        uint256 bb;
+        uint256 cc;
+        (aa,bb,cc) = getdelegate(user,t);
+        log1(bytes32(aa), "delegateNum");
+        log1(bytes32(bb), "VoteNum");
+        log1(bytes32(cc), "BlockNum");
+        return (aa,bb,cc);
+    }
+
+   function setdestroyasset(uint256 assetId, uint256 value) public returns (uint256) {
+        return destroyasset(assetId, value);
     }
 }

@@ -118,7 +118,7 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[SNAPBALANCE] = operation{
 		execute:       opSnapBalance,
 		gasCost:       gasSnapBalance,
-		validateStack: makeStackFunc(4, 1),
+		validateStack: makeStackFunc(3, 1),
 		valid:         true,
 		returns:       true,
 	}
