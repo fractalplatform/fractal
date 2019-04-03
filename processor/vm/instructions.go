@@ -459,35 +459,32 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	t := time.Uint64()
 	userID := account.Uint64()
 
-	var rerr error
 	var rbalance = big.NewInt(0)
-	var id uint64 = 0
 
-	if acct, err := evm.AccountDB.GetAccountById(userID); err == nil {
-		name := acct.GetName()
-		if o == 2 || o == 3 {
-			id = 1
-		}
-		if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, id, t); err == nil {
-			if (o == 1 || o == 3) && (assetID == evm.chainConfig.SysTokenID) {
-				if dbalance, _, _, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
-					rbalance = new(big.Int).Add(balance, dbalance)
-				} else {
-					rerr = err
-				}
-			} else {
-				rbalance = balance
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err == nil {
+		if acct != nil {
+			name := acct.GetName()
+			var id uint64
+			if o == 2 || o == 3 {
+				id = 1
 			}
+			if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, id, t); err == nil {
+				if (o == 1 || o == 3) && (assetID == evm.chainConfig.SysTokenID) {
+					if dbalance, _, _, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+						rbalance = new(big.Int).Add(balance, dbalance)
+					}
+				} else {
+					rbalance = balance
+				}
 
+			}
 		} else {
-			rerr = err
+			err = errors.New("account object is null")
 		}
-
-	} else {
-		rerr = err
 	}
 
-	if rerr != nil {
+	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(rbalance)
