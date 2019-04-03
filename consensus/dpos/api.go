@@ -125,12 +125,12 @@ func (api *API) ValidateEpcho() (interface{}, error) {
 	curHeader := api.chain.CurrentHeader()
 	targetTS := big.NewInt(curHeader.Time.Int64() - int64(api.dpos.config.DelayEcho*api.dpos.config.epochInterval()))
 	for curHeader.Number.Uint64() > 0 {
-		if curHeader.Time.Cmp(targetTS) != 1 {
+		if curHeader.Time.Cmp(targetTS) == -1 {
 			break
 		}
 		curHeader = api.chain.GetHeaderByHash(curHeader.ParentHash)
 	}
-	return api.Epcho(curHeader.Number.Uint64() - 1)
+	return api.Epcho(curHeader.Number.Uint64() + 1)
 }
 
 func (api *API) system() (*System, error) {
