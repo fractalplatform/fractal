@@ -152,7 +152,10 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.UnvoteCadidate:
 		vmerr = st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
 	default:
-		vmerr = st.account.Process(st.action)
+		vmerr = st.account.Process(&types.AccountManagerContext{
+			Action: st.action,
+			Number: st.evm.Context.BlockNumber.Uint64(),
+		})
 	}
 	if vmerr != nil {
 		log.Debug("VM returned with error", "err", vmerr)

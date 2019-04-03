@@ -56,6 +56,7 @@ type Account struct {
 	AcctName      common.Name `json:"accountName"`
 	Founder       common.Name `json:"founder"`
 	AccountID     uint64      `json:"accountID"`
+	Number        uint64      `json:"number"`
 	ChargeRatio   uint64      `json:"chargeRatio"`
 	Nonce         uint64      `json:"nonce"`
 	Code          []byte      `json:"code"`
@@ -84,6 +85,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		AcctName:      accountName,
 		Founder:       founderName,
 		AccountID:     0,
+		Number:        0,
 		ChargeRatio:   0,
 		Nonce:         0,
 		Balances:      make([]*AssetBalance, 0),
@@ -137,6 +139,16 @@ func (a *Account) GetAccountID() uint64 {
 //SetAccountID set account object id
 func (a *Account) SetAccountID(id uint64) {
 	a.AccountID = id
+}
+
+//GetAccountNumber return account object number
+func (a *Account) GetAccountNumber() uint64 {
+	return a.Number
+}
+
+//SetAccountNumber set account object number
+func (a *Account) SetAccountNumber(number uint64) {
+	a.Number = number
 }
 
 //GetChargeRatio return account charge ratio

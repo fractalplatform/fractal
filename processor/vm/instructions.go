@@ -997,9 +997,10 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 	if err != nil {
 		return err
 	}
+
 	action := types.NewAction(types.IncreaseAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	err = evm.AccountDB.Process(action)
+	err = evm.AccountDB.Process(&types.AccountManagerContext{action, evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1017,7 +1018,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 	action := types.NewAction(types.DestroyAsset, contract.CallerName, evm.chainConfig.SysName, 0, astID, 0, value, nil)
 
-	err := evm.AccountDB.Process(action)
+	err := evm.AccountDB.Process(&types.AccountManagerContext{action, evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1100,7 +1101,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	}
 	action := types.NewAction(types.IssueAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	err = evm.AccountDB.Process(action)
+	err = evm.AccountDB.Process(&types.AccountManagerContext{action, evm.Context.BlockNumber.Uint64()})
 	if err != nil {
 		return 0, err
 	} else {
@@ -1159,7 +1160,7 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "setassetowner", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
 	}
-	return evm.AccountDB.Process(action)
+	return evm.AccountDB.Process(&types.AccountManagerContext{action, evm.Context.BlockNumber.Uint64()})
 
 }
 
