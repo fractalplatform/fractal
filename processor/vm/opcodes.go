@@ -215,6 +215,7 @@ const (
 	GETACCOUNTID = 0xc9
 
 	GETDELEGATE = 0xca
+	ECIESCALC   = 0xcb
 )
 
 const (
