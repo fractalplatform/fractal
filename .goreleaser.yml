@@ -1,7 +1,35 @@
 # This is an example goreleaser.yaml file with some sane defaults.
 # Make sure to check the documentation at http://goreleaser.com
 builds:
-- main: ./cmd/ft
+- binary: ft
+  main: ./cmd/ft
+  goos:
+     - windows
+     - darwin
+     - linux
+  goarch:
+     - amd64
+     - 386
+- binary: ftkey
+  main: ./cmd/ftkey
+  goos:
+     - windows
+     - darwin
+     - linux
+  goarch:
+     - amd64
+     - 386
+- binary: ftfinder
+  main: ./cmd/ftfinder
+  goos:
+     - windows
+     - darwin
+     - linux
+  goarch:
+     - amd64
+     - 386
+  env:
+    - CGO_ENABLED=0
   ldflags:
     - -s -w
     - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
@@ -9,54 +37,14 @@ builds:
 archive:
   replacements:
     darwin: Darwin
+    linux: Linux
+    windows: Windows
     386: i386
     amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-    - '^docs:'
-    - '^test:'
-  
-  - main: ./cmd/ftkey
-  ldflags:
-    - -s -w
-    - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
-    - -X github.com/fractalplatform/fractal/utils.date={{.Date}}
-archive:
-  replacements:
-    darwin: Darwin
-    386: i386
-    amd64: x86_64
-checksum:
-  name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ .Tag }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-    - '^docs:'
-    - '^test:'
-
-- main: ./cmd/build_ftfinder
-  ldflags:
-    - -s -w
-    - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
-    - -X github.com/fractalplatform/fractal/utils.date={{.Date}}
-archive:
-  replacements:
-    darwin: Darwin
-    386: i386
-    amd64: x86_64
-checksum:
-  name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "{{ .Tag }}"
 changelog:
   sort: asc
   filters:

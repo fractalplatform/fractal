@@ -9,6 +9,12 @@
 			"revisionTime": "2019-03-19T23:46:15Z"
 		},
 		{
+			"checksumSHA1": "FmH+tId9Y4Bz2GphqzVaiFoaGgg=",
+			"path": "github.com/btcsuite/btcd/btcec",
+			"revision": "aa6e0f35703c1438cc45860ddc0c3f6e6c633c93",
+			"revisionTime": "2019-03-15T20:16:42Z"
+		},
+		{
 			"checksumSHA1": "CSPbwbyzqA6sfORicn4HFtIhF/c=",
 			"path": "github.com/davecgh/go-spew/spew",
 			"revision": "d8f796af33cc11cb798c1aaeb27a4ebc5099927d",

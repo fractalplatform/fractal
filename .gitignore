@@ -22,4 +22,6 @@ profile.out
 
 coverage.out
 
+dist
+
 commit_hash.txt
