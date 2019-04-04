@@ -106,7 +106,7 @@ type DistributeGas struct {
 const (
 	AssetGas    = 0
 	ContractGas = 1
-	Coinbase    = 2
+	CoinbaseGas = 2
 )
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
@@ -184,17 +184,23 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		return nil, gas, err
 	}
 
+	var assetName common.Name
 	assetFounder, _ := evm.AccountDB.GetAssetFounder(action.AssetID()) //get asset founder name
-	assetFounderRatio := evm.chainConfig.AssetChargeRatio              //get asset founder charge ratio
-	contractFounder, _ := evm.AccountDB.GetFounder(toName)
-	if len(contractFounder.String()) == 0 {
-		contractFounder = toName
+
+	if len(assetFounder.String()) > 0 {
+		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(action.AssetID())
+		assetName = common.Name(assetInfo.GetAssetName())
 	}
+
+	assetFounderRatio := evm.chainConfig.AssetChargeRatio //get asset founder charge ratio
+
+	//
+	contractName := toName
+
 	contratFounderRatio := evm.chainConfig.ContractChargeRatio
-	callerFounder, _ := evm.AccountDB.GetFounder(caller.Name())
-	if len(callerFounder.String()) == 0 {
-		callerFounder = caller.Name()
-	}
+	//
+	callerName := caller.Name()
+
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 
@@ -228,14 +234,14 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	ret, err = run(evm, contract, action.Data())
 	runGas := gas - contract.Gas
 
-	if runGas > 0 && len(contractFounder.String()) > 0 {
-		if _, ok := evm.FounderGasMap[contractFounder]; !ok {
+	if runGas > 0 && len(contractName.String()) > 0 {
+		if _, ok := evm.FounderGasMap[contractName]; !ok {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			evm.FounderGasMap[contractFounder] = dGas
+			evm.FounderGasMap[contractName] = dGas
 		} else {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			dGas.Value = evm.FounderGasMap[contractFounder].Value + dGas.Value
-			evm.FounderGasMap[contractFounder] = dGas
+			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
+			evm.FounderGasMap[contractName] = dGas
 		}
 	}
 
@@ -244,25 +250,25 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		if callValueGas < 0 {
 			callValueGas = 0
 		}
-		if len(assetFounder.String()) > 0 {
-			if _, ok := evm.FounderGasMap[assetFounder]; !ok {
+		if len(assetName.String()) > 0 {
+			if _, ok := evm.FounderGasMap[assetName]; !ok {
 				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				evm.FounderGasMap[assetFounder] = dGas
+				evm.FounderGasMap[assetName] = dGas
 			} else {
 				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				dGas.Value = evm.FounderGasMap[assetFounder].Value + dGas.Value
-				evm.FounderGasMap[assetFounder] = dGas
+				dGas.Value = evm.FounderGasMap[assetName].Value + dGas.Value
+				evm.FounderGasMap[assetName] = dGas
 			}
 		}
-		if len(callerFounder.String()) > 0 {
-			if _, ok := evm.FounderGasMap[callerFounder]; !ok {
+		if len(callerName.String()) > 0 {
+			if _, ok := evm.FounderGasMap[callerName]; !ok {
 				dGas := DistributeGas{-int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				dGas.Value = evm.FounderGasMap[callerFounder].Value - dGas.Value
-				evm.FounderGasMap[callerFounder] = dGas
+				dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
+				evm.FounderGasMap[callerName] = dGas
 			} else {
 				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				dGas.Value = evm.FounderGasMap[callerFounder].Value - dGas.Value
-				evm.FounderGasMap[callerFounder] = dGas
+				dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
+				evm.FounderGasMap[callerName] = dGas
 			}
 		}
 	}
@@ -335,21 +341,24 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 	ret, err = run(evm, contract, action.Data())
 	runGas := gas - contract.Gas
 
+	var contractName common.Name
 	contractFounder, _ := evm.AccountDB.GetFounder(toName)
 	if len(contractFounder.String()) == 0 {
-		contractFounder = toName
+		contractName = toName
 	}
+
 	contratFounderRatio := evm.chainConfig.ContractChargeRatio
-	if runGas > 0 && len(contractFounder.String()) > 0 {
-		if _, ok := evm.FounderGasMap[contractFounder]; !ok {
+	if runGas > 0 && len(contractName.String()) > 0 {
+		if _, ok := evm.FounderGasMap[contractName]; !ok {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			evm.FounderGasMap[contractFounder] = dGas
+			evm.FounderGasMap[contractName] = dGas
 		} else {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			dGas.Value = evm.FounderGasMap[contractFounder].Value + dGas.Value
-			evm.FounderGasMap[contractFounder] = dGas
+			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
+			evm.FounderGasMap[contractName] = dGas
 		}
 	}
+
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		if err != errExecutionReverted {
@@ -396,19 +405,21 @@ func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte,
 	ret, err = run(evm, contract, input)
 	runGas := gas - contract.Gas
 
+	var contractName common.Name
 	contractFounder, _ := evm.AccountDB.GetFounder(name)
 	if len(contractFounder.String()) == 0 {
-		contractFounder = name
+		contractName = name
 	}
+
 	contratFounderRatio := evm.chainConfig.ContractChargeRatio
-	if runGas > 0 && len(contractFounder.String()) > 0 {
-		if _, ok := evm.FounderGasMap[contractFounder]; !ok {
+	if runGas > 0 && len(contractName.String()) > 0 {
+		if _, ok := evm.FounderGasMap[contractName]; !ok {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			evm.FounderGasMap[contractFounder] = dGas
+			evm.FounderGasMap[contractName] = dGas
 		} else {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			dGas.Value = evm.FounderGasMap[contractFounder].Value + dGas.Value
-			evm.FounderGasMap[contractFounder] = dGas
+			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
+			evm.FounderGasMap[contractName] = dGas
 		}
 	}
 
@@ -468,21 +479,24 @@ func (evm *EVM) StaticCall(caller ContractRef, name common.Name, input []byte, g
 	ret, err = run(evm, contract, input)
 	runGas := gas - contract.Gas
 
+	var contractName common.Name
 	contractFounder, _ := evm.AccountDB.GetFounder(to.Name())
 	if len(contractFounder.String()) == 0 {
-		contractFounder = to.Name()
+		contractName = to.Name()
 	}
+
 	contratFounderRatio := evm.chainConfig.ContractChargeRatio
-	if runGas > 0 && len(contractFounder.String()) > 0 {
-		if _, ok := evm.FounderGasMap[contractFounder]; !ok {
+	if runGas > 0 && len(contractName.String()) > 0 {
+		if _, ok := evm.FounderGasMap[contractName]; !ok {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			evm.FounderGasMap[contractFounder] = dGas
+			evm.FounderGasMap[contractName] = dGas
 		} else {
 			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			dGas.Value = evm.FounderGasMap[contractFounder].Value + dGas.Value
-			evm.FounderGasMap[contractFounder] = dGas
+			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
+			evm.FounderGasMap[contractName] = dGas
 		}
 	}
+
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		if err != errExecutionReverted {
@@ -534,6 +548,19 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	start := time.Now()
 
 	ret, err = run(evm, contract, nil)
+	runGas := gas - contract.Gas
+
+	contratFounderRatio := evm.chainConfig.ContractChargeRatio
+	if runGas > 0 && len(contractName.String()) > 0 {
+		if _, ok := evm.FounderGasMap[contractName]; !ok {
+			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
+			evm.FounderGasMap[contractName] = dGas
+		} else {
+			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
+			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
+			evm.FounderGasMap[contractName] = dGas
+		}
+	}
 
 	// check whether the max code size has been exceeded
 	//maxCodeSizeExceeded := evm.ChainConfig().IsEIP158(evm.BlockNumber) && len(ret) > params.MaxCodeSize
