@@ -32,9 +32,9 @@ const (
 
 // ActionResult represents the results the transaction action.
 type GasDistribution struct {
-	Account string `json:"account"`
+	Account string `json:"name"`
 	Gas     uint64 `json:"gas"`
-	TypeID  uint64 `json: "typeid"`
+	TypeID  uint64 `json:"typeId"`
 }
 
 type ActionResult struct {
