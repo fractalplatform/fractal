@@ -384,13 +384,13 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 	targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
 	// find target block
 	for parent.Number.Uint64() > 0 {
-		if parent.Time.Cmp(targetTime) != 1 {
+		if parent.Time.Cmp(targetTime) == -1 {
 			break
 		}
 		parent = chain.GetHeaderByHash(parent.ParentHash)
 	}
 
-	gstate, err := sys.GetState(parent.Number.Uint64())
+	gstate, err := sys.GetState(parent.Number.Uint64() + 1)
 	if err != nil {
 		return err
 	}

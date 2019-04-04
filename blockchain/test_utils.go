@@ -88,7 +88,7 @@ func makeSystemCadidatesAndTime(parentTime uint64, genesis *Genesis) ([]string, 
 		baseCadidates = getCadidates()
 	)
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < int(genesis.Dpos.DelayEcho)+1; i++ {
 		for j := 0; j < len(baseCadidates); j++ {
 			for k := 0; k < int(genesis.Dpos.BlockFrequency); k++ {
 				cadidates = append(cadidates, genesis.Config.SysName.String())
