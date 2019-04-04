@@ -25,6 +25,7 @@ before_install:
 
 os:   
   - windows   
+  install: choco install mingw
   script:
   - travis_wait 30 mingw32-make test
 
@@ -35,7 +36,6 @@ os:
   - osx
   script:
   - travis_wait 30 make test
-
 
 after_success:
   - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci 
