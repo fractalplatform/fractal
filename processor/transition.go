@@ -178,12 +178,16 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 	if st.action.Value().Sign() != 0 {
 		assetFounder, _ := st.account.GetAssetFounder(st.action.AssetID())
+
 		assetFounderRatio := st.chainConfig.AssetChargeRatio
 		if len(assetFounder.String()) > 0 {
 			if _, ok := evm.FounderGasMap[assetFounder]; !ok {
-				evm.FounderGasMap[assetFounder] = int64(params.ActionGas * assetFounderRatio / 100)
+				dGas := vm.DistributeGas{int64(params.ActionGas * assetFounderRatio / 100), vm.AssetGas}
+				evm.FounderGasMap[assetFounder] = dGas
 			} else {
-				evm.FounderGasMap[assetFounder] += int64(params.ActionGas * assetFounderRatio / 100)
+				dGas := vm.DistributeGas{int64(params.ActionGas * assetFounderRatio / 100), vm.AssetGas}
+				dGas.Value = evm.FounderGasMap[assetFounder].Value + dGas.Value
+				evm.FounderGasMap[assetFounder] = dGas
 			}
 		}
 	}
@@ -196,16 +200,18 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 func (st *StateTransition) distributeGas() error {
 	var totalGas int64
 	for founder, gas := range st.evm.FounderGasMap {
-		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas)))
-		totalGas += gas
+		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value)))
+		totalGas += gas.Value
 	}
 	if totalGas > int64(st.gasUsed()) {
 		return fmt.Errorf("calc wrong gas used")
 	}
 	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
-		st.evm.FounderGasMap[st.evm.Coinbase] = int64(st.gasUsed()) - totalGas
+		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{int64(st.gasUsed()) - totalGas, vm.Coinbase}
 	} else {
-		st.evm.FounderGasMap[st.evm.Coinbase] += int64(st.gasUsed()) - totalGas
+		dGas := vm.DistributeGas{int64(st.gasUsed()) - totalGas, vm.Coinbase}
+		dGas.Value = st.evm.FounderGasMap[st.evm.Coinbase].Value + dGas.Value
+		st.evm.FounderGasMap[st.evm.Coinbase] = dGas
 	}
 	st.account.AddAccountBalanceByID(st.evm.Coinbase, st.assetID, new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas))))
 	return nil

@@ -434,9 +434,9 @@ func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		if acct != nil {
 			name := acct.GetName()
 			if dbalance, totalDelegate, totalNum, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
-				stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
-				stack.push(totalDelegate)
 				stack.push(dbalance)
+				stack.push(totalDelegate)
+				stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
 			}
 		} else {
 			err = errors.New("account object is null")

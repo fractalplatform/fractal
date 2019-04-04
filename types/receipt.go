@@ -34,6 +34,7 @@ const (
 type GasDistribution struct {
 	Account common.Name `json:"account"`
 	Gas     uint64      `json:"gas"`
+	TypeID  uint64      `json: "typeid"`
 }
 
 type ActionResult struct {
