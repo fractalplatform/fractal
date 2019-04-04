@@ -177,17 +177,19 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	st.refundGas()
 
 	if st.action.Value().Sign() != 0 {
-		assetFounder, _ := st.account.GetAssetFounder(st.action.AssetID())
+
+		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
+		assetName := common.Name(assetInfo.GetAssetName())
 
 		assetFounderRatio := st.chainConfig.AssetChargeRatio
-		if len(assetFounder.String()) > 0 {
-			if _, ok := evm.FounderGasMap[assetFounder]; !ok {
+		if len(assetName.String()) > 0 {
+			if _, ok := evm.FounderGasMap[assetName]; !ok {
 				dGas := vm.DistributeGas{int64(params.ActionGas * assetFounderRatio / 100), vm.AssetGas}
-				evm.FounderGasMap[assetFounder] = dGas
+				evm.FounderGasMap[assetName] = dGas
 			} else {
 				dGas := vm.DistributeGas{int64(params.ActionGas * assetFounderRatio / 100), vm.AssetGas}
-				dGas.Value = evm.FounderGasMap[assetFounder].Value + dGas.Value
-				evm.FounderGasMap[assetFounder] = dGas
+				dGas.Value = evm.FounderGasMap[assetName].Value + dGas.Value
+				evm.FounderGasMap[assetName] = dGas
 			}
 		}
 	}
@@ -199,7 +201,19 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 func (st *StateTransition) distributeGas() error {
 	var totalGas int64
-	for founder, gas := range st.evm.FounderGasMap {
+	for name, gas := range st.evm.FounderGasMap {
+		var founder common.Name
+		if vm.AssetGas == gas.TypeID {
+			assetInfo, _ := st.account.GetAssetInfoByName(name.String())
+			if assetInfo != nil {
+				founder = assetInfo.GetAssetFounder()
+			}
+		} else if vm.ContractGas == gas.TypeID {
+			founder, _ = st.account.GetFounder(name)
+		} else if vm.CoinbaseGas == gas.TypeID {
+			founder = name
+		}
+
 		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value)))
 		totalGas += gas.Value
 	}
@@ -207,9 +221,9 @@ func (st *StateTransition) distributeGas() error {
 		return fmt.Errorf("calc wrong gas used")
 	}
 	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
-		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{int64(st.gasUsed()) - totalGas, vm.Coinbase}
+		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{int64(st.gasUsed()) - totalGas, vm.CoinbaseGas}
 	} else {
-		dGas := vm.DistributeGas{int64(st.gasUsed()) - totalGas, vm.Coinbase}
+		dGas := vm.DistributeGas{int64(st.gasUsed()) - totalGas, vm.CoinbaseGas}
 		dGas.Value = st.evm.FounderGasMap[st.evm.Coinbase].Value + dGas.Value
 		st.evm.FounderGasMap[st.evm.Coinbase] = dGas
 	}
