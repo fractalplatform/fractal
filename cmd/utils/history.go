@@ -41,6 +41,12 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.6 - 2019-04-04",
+		`### Added
+- [CRYPTO] add btcd secp256k1 crypto
+### Fixed
+- [MAKEFILE] fixed cross platform
+`,
 		"0.0.5 - 2019-04-04",
 		`### Added
 - [README] add license badge

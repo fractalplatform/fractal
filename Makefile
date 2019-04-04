@@ -20,6 +20,7 @@ GOFILES_NOVENDOR := $(shell go list -f "{{.Dir}}" ./...)
 PACKAGES_NOVENDOR := $(shell go list ./...)
 WORK_SPACE := ${REPO}/build/_workspace
 FT_DIR :=${WORK_SPACE}/src/github.com/fractalplatform
+TEMP_GOPATH := $(GOPATH)
 
 export GOPATH := ${WORK_SPACE}
 
@@ -86,9 +87,15 @@ build_ftfinder: commit_hash check build_workspace
 ### Test
 
 .PHONY: test 
-test: check build_workspace
+test: build_workspace
 	@cd ${FT_DIR}/fractal  && scripts/test.sh
 
+.PHONY: test_win 
+test_win: 
+	@export GOPATH=${TEMP_GOPATH}
+	@echo ${TEMP_GOPATH}
+	@echo ${GOPATH}
+	@bash scripts/test.sh
 
 ### Clean up
 
