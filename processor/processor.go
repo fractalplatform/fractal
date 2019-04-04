@@ -144,7 +144,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		}
 		var gasAllot []*types.GasDistribution
 		for account, gas := range vmenv.FounderGasMap {
-			gasAllot = append(gasAllot, &types.GasDistribution{Account: account, Gas: uint64(gas)})
+			gasAllot = append(gasAllot, &types.GasDistribution{Account: account, Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 		internals = append(internals, &types.InternalTx{vmenv.InternalTxs})
