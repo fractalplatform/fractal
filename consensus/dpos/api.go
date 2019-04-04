@@ -44,7 +44,7 @@ func (api *API) Info() (interface{}, error) {
 func (api *API) Irreversible() (interface{}, error) {
 	ret := &Irreversible_Ret{}
 	ret.Reversible = api.chain.CurrentHeader().Number.Uint64()
-	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, false)
+	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
 	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
 
 	return ret, nil

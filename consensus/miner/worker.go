@@ -291,7 +291,7 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 	}
 	if common.IsValidAccountName(worker.coinbase) {
 		header.Coinbase = common.StrToName(worker.coinbase)
-		header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, false)
+		header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, parent, false)
 	}
 	state, err := worker.StateAt(parent.Root)
 	if err != nil {

@@ -225,7 +225,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		sys.updateElectedCadidates(header.Time.Uint64())
 	}
 
-	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
+	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
 		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
 			latest, err := sys.GetState(header.Number.Uint64())
 			if err != nil {
@@ -373,7 +373,7 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 			return nil
 		}
 		return ErrSystemTakeOver
-	} else if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, true) == 0 || timestamp-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
+	} else if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || timestamp-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
 		if force && systemio {
 			// first take over
 			return nil
@@ -453,8 +453,11 @@ func (dpos *Dpos) CalcBFTIrreversible() uint64 {
 	return irreversibles[(len(irreversibles)-1)/3]
 }
 
-func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, strict bool) uint64 {
+func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, parent *types.Header, strict bool) uint64 {
 	curHeader := chain.CurrentHeader()
+	if parent != nil {
+		curHeader = chain.GetHeaderByHash(parent.Hash())
+	}
 	cadidateMap := make(map[string]uint64)
 	timestamp := curHeader.Time.Uint64()
 	for curHeader.Number.Uint64() > 0 {
