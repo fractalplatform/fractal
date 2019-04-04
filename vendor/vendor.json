@@ -243,6 +243,12 @@
 			"revisionTime": "2018-10-05T04:51:35Z"
 		},
 		{
+			"checksumSHA1": "HdErR3OssPwsqWIH8culQoxfUbc=",
+			"path": "github.com/monax/relic",
+			"revision": "d583255174bbccaecbbfa58ecbdd3a4f319a0fcc",
+			"revisionTime": "2019-03-25T19:38:13Z"
+		},
+		{
 			"checksumSHA1": "A6nZdZ1/lTOVINhIndyw2ZWN9JU=",
 			"path": "github.com/naoina/go-stringutil",
 			"revision": "6b638e95a32d0c1131db0e7fe83775cbea4a0d0b",

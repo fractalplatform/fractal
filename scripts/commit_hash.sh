@@ -12,19 +12,15 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http:#www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-language: go
+#!/usr/bin/env bash
 
-go:
-  - 1.12
+# Gets the git commit hash of the working dir and adds an additional hash of any tracked modified files
+commit=$(git describe --tags)
+dirty=$(git ls-files -m)
+if [[ -n ${dirty} ]]; then
+    commit="$commit+dirty.$(echo ${dirty} | git hash-object --stdin | head -c8)"
+fi
+echo "$commit"
 
-before_install:
-- go get golang.org/x/tools/cmd/cover
-- go get github.com/mattn/goveralls
-
-script:
-  - travis_wait 30 make test
-
-after_success:
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci 

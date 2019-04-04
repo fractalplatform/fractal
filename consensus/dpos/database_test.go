@@ -30,7 +30,7 @@ import (
 func TestDatabase(t *testing.T) {
 	// gstate
 	gstate := &globalState{
-		Height: 10,
+		Height:                          10,
 		ActivatedProducerScheduleUpdate: uint64(time.Now().UnixNano()),
 		ActivatedProducerSchedule:       []string{},
 		ActivatedTotalQuantity:          big.NewInt(1000),

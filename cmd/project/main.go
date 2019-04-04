@@ -14,29 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package params
+package main
 
 import (
-	"io/ioutil"
-	"path"
-	"strings"
+	"fmt"
+	"os"
+
+	"github.com/fractalplatform/fractal/cmd/utils"
 )
 
-// GitCommit  Git SHA1 commit hash of the release (set via linker flags)
-var GitCommit = func() string {
-	head := readGitFile("HEAD")
-	if splits := strings.Split(head, " "); len(splits) == 2 {
-		head = splits[1]
-		return readGitFile(head)
+func main() {
+	switch os.Args[1] {
+	case "changelog":
+		fmt.Println(utils.History.MustChangelog())
+	case "notes":
+		fmt.Println(utils.History.CurrentNotes())
+	case "version":
+		fmt.Println(utils.History.CurrentVersion().String())
 	}
-	return ""
-}
-
-// readGitFile returns content of file in .git directory.
-func readGitFile(file string) string {
-	content, err := ioutil.ReadFile(path.Join(".git", file))
-	if err != nil {
-		return ""
-	}
-	return strings.TrimSpace(string(content))
 }

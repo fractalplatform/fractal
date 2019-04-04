@@ -12,19 +12,11 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http:#www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-language: go
+#!/usr/bin/env bash
+# Gives us a non-zero exit code if there are tracked or untracked changes in the working
+# directory
+export stat=$(git status --porcelain)
+[[ -z "$stat" ]] || (echo "Dirty checkout:" && echo "$stat" && exit 1)
 
-go:
-  - 1.12
-
-before_install:
-- go get golang.org/x/tools/cmd/cover
-- go get github.com/mattn/goveralls
-
-script:
-  - travis_wait 30 make test
-
-after_success:
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci 

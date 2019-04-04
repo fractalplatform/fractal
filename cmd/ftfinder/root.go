@@ -23,6 +23,7 @@ import (
 	"syscall"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/spf13/cobra"
@@ -60,6 +61,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	RootCmd.AddCommand(utils.VersionCmd)
 	falgs := RootCmd.Flags()
 	// p2p
 	falgs.StringVarP(&nodeConfig.DataDir, "datadir", "d", nodeConfig.DataDir, "Data directory for the databases and keystore")

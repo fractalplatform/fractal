@@ -1,0 +1,65 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+builds:
+- main: ./cmd/ft
+  ldflags:
+    - -s -w
+    - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
+    - -X github.com/fractalplatform/fractal/utils.date={{.Date}}
+archive:
+  replacements:
+    darwin: Darwin
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+  
+  - main: ./cmd/ftkey
+  ldflags:
+    - -s -w
+    - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
+    - -X github.com/fractalplatform/fractal/utils.date={{.Date}}
+archive:
+  replacements:
+    darwin: Darwin
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+
+- main: ./cmd/build_ftfinder
+  ldflags:
+    - -s -w
+    - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
+    - -X github.com/fractalplatform/fractal/utils.date={{.Date}}
+archive:
+  replacements:
+    darwin: Darwin
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'

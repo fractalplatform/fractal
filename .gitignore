@@ -21,3 +21,5 @@ build/_workspace
 profile.out
 
 coverage.out
+
+commit_hash.txt

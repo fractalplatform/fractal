@@ -12,19 +12,19 @@
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http:#www.gnu.org/licenses/>.
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-language: go
+#!/usr/bin/env bash
 
-go:
-  - 1.12
+set -e
+echo "mode: count" >coverage.out
 
-before_install:
-- go get golang.org/x/tools/cmd/cover
-- go get github.com/mattn/goveralls
+for d in $(go list ./... | grep -v vendor | grep -v test); do
+    echo testing $d ...
+    go test -coverprofile=profile.out -covermode=count $d
+    if [ -f profile.out ]; then
+        cat profile.out | grep -v "mode: count" | cat >> coverage.out
+        rm profile.out
+    fi
+done
 
-script:
-  - travis_wait 30 make test
-
-after_success:
-  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci 
