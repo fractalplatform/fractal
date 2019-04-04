@@ -462,6 +462,11 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	var rbalance = big.NewInt(0)
 
 	acct, err := evm.AccountDB.GetAccountById(userID)
+
+	if o >= 4 {
+		err = errors.New("type id is error")
+	}
+
 	if err == nil {
 		if acct != nil {
 			name := acct.GetName()
@@ -469,6 +474,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 			if o == 2 || o == 3 {
 				id = 1
 			}
+
 			if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, id, t); err == nil {
 				if (o == 1 || o == 3) && (assetID == evm.chainConfig.SysTokenID) {
 					if dbalance, _, _, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {

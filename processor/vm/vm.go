@@ -279,8 +279,9 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 
 	actualUsedGas := gas - contract.Gas
 	if evm.depth == 0 && actualUsedGas != runGas {
-		for _, gas := range evm.FounderGasMap {
-			gas.Value = (gas.Value / int64(runGas)) * int64(actualUsedGas)
+		for name, gas := range evm.FounderGasMap {
+			v := DistributeGas{(gas.Value / int64(runGas)) * int64(actualUsedGas), gas.TypeID}
+			evm.FounderGasMap[name] = v
 		}
 	}
 
