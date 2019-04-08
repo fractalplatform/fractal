@@ -20,12 +20,12 @@ go: 1.12
 
 matrix:
   include:
-    - os: windows  
-      before_install:
-        - go get golang.org/x/tools/cmd/cover
-        - go get github.com/mattn/goveralls 
-      install: choco install mingw
-      script: travis_wait 30 mingw32-make test_win
+    # - os: windows  
+    #   before_install:
+    #     - go get golang.org/x/tools/cmd/cover
+    #     - go get github.com/mattn/goveralls 
+    #   install: choco install mingw
+    #   script: travis_wait 30 mingw32-make test_win
 
     - os: linux   
       before_install:

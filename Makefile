@@ -92,10 +92,7 @@ test: build_workspace
 
 .PHONY: test_win 
 test_win: 
-	@export GOPATH=${TEMP_GOPATH}
-	@echo ${TEMP_GOPATH}
-	@echo ${GOPATH}
-	@bash scripts/test.sh
+	@export GOPATH=${TEMP_GOPATH} && bash scripts/test.sh
 
 ### Clean up
 
@@ -130,7 +127,7 @@ tag_release: test check docs all
 .PHONY: release
 release: test check docs all
 	@scripts/is_checkout_dirty.sh || (echo "checkout is dirty so not releasing!" && exit 1)
-	@scripts/release.sh
+	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
 
 
 
