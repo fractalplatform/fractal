@@ -191,8 +191,8 @@ func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName comm
 	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
-func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomStr string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
-	bloom := types.BytesToBloom(common.FromHex(bloomStr))
+func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
+	bloom := types.BytesToBloom(bloomByte)
 
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
@@ -204,8 +204,8 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 	return s.b.GetDetailTxByAccount(ctx, acctName, blockNr, lookbackNum), nil
 }
 
-func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomStr string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
-	bloom := types.BytesToBloom(common.FromHex(bloomStr))
+func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+	bloom := types.BytesToBloom(bloomByte)
 	return s.b.GetDetailTxByBloom(ctx, bloom, blockNr, lookbackNum), nil
 }
 
