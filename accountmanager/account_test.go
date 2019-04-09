@@ -86,7 +86,7 @@ func TestAccount_GetName(t *testing.T) {
 		fields fields
 		want   common.Name
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -122,7 +122,7 @@ func TestAccount_GetNonce(t *testing.T) {
 		fields fields
 		want   uint64
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		a := &Account{

@@ -17,7 +17,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"math/big"
 	"reflect"
 	"testing"
@@ -30,9 +29,10 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0xed2cab82f94e40326cbeaa6d95f3a9a818b4dfe4cf9a87b04916b0286212262c")
+var defaultgenesisBlockHash = common.HexToHash("0x5910495ac2ca9ca6eeae09b98001337d4ab86af8993f3ea42b222956cc1e4dbd")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block := DefaultGenesis().ToBlock(nil)
@@ -43,7 +43,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x528db907aee831d2a76ea7e0215c32717529076c4d3086952100b60e6ac1a826")
+		customghash = common.HexToHash("0xf26d153793a925c8a4b09fe3dc86ca9e6bab7c3b05346e35432bb8beb4914e7a")
 		customg     = Genesis{
 			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
 			Dpos:             dpos.DefaultConfig,
@@ -54,7 +54,7 @@ func TestSetupGenesis(t *testing.T) {
 			AssetNameLevel:   asset.DefaultAssetNameConf(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0xd262c3ed5e7842a4e59ae1ae3538ef4cea7a258536e8f98d7d794586c5292279")
+		oldcustomghash = common.HexToHash("0xccc4fbf25831629ad31f623ac10ebc7bb35b274e1e1cbfb347a651c4e2ad1df5")
 		dposConfig     = &dpos.Config{
 			MaxURLLen:            512,
 			UnitStake:            big.NewInt(1000),
@@ -112,7 +112,6 @@ func TestSetupGenesis(t *testing.T) {
 		{
 			name: "mainnet block in DB, genesis == nil",
 			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
-				fmt.Println("===========================>")
 				if _, err := DefaultGenesis().Commit(db); err != nil {
 					return nil, nil, common.Hash{}, err
 				}
@@ -141,7 +140,7 @@ func TestSetupGenesis(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		db := fdb.NewMemDatabase()
+		db := memdb.NewMemDatabase()
 
 		config, dpos, hash, err := test.fn(db)
 

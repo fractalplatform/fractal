@@ -24,6 +24,8 @@ import (
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
+	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/wallet"
 )
 
@@ -42,9 +44,9 @@ type ServiceContext struct {
 // node is an ephemeral one, a memory database is returned.
 func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (fdb.Database, error) {
 	if ctx.config.DataDir == "" {
-		return fdb.NewMemDatabase(), nil
+		return mdb.NewMemDatabase(), nil
 	}
-	db, err := fdb.NewLDBDatabase(ctx.config.resolvePath(name), cache, handles)
+	db, err := ldb.NewLDBDatabase(ctx.config.resolvePath(name), cache, handles)
 	if err != nil {
 		return nil, err
 	}

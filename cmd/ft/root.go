@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
+	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/metrics/influxdb"
@@ -193,6 +194,7 @@ func initConfig() {
 }
 
 func init() {
+	RootCmd.AddCommand(utils.VersionCmd)
 	cobra.OnInitialize(initConfig)
 	falgs := RootCmd.Flags()
 	// logging

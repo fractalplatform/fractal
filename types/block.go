@@ -51,12 +51,7 @@ type Header struct {
 	GasUsed              uint64      `json:"gasUsed"`
 	Time                 *big.Int    `json:"timestamp"`
 	Extra                []byte      `json:"extraData"`
-
-	// cache
-	forkID atomic.Value
-
-	// additional fields (for forward compatibility).
-	AdditionalFields []rlp.RawValue `rlp:"tail"`
+	ForkID               ForkID      `json:"forkID"`
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
@@ -65,29 +60,14 @@ func (h *Header) Hash() common.Hash { return rlpHash(h) }
 
 // WithForkID store fork id
 func (h *Header) WithForkID(cur, next uint64) {
-	forkID := ForkID{Cur: cur, Next: next}
-	bytes, _ := rlp.EncodeToBytes(forkID)
-	h.AdditionalFields = append(h.AdditionalFields, rlp.RawValue(bytes))
-	h.forkID.Store(forkID)
+	h.ForkID = ForkID{Cur: cur, Next: next}
 }
 
 // CurForkID returns the header's current fork ID.
-func (h *Header) CurForkID() uint64 { return h.getForkID().Cur }
+func (h *Header) CurForkID() uint64 { return h.ForkID.Cur }
 
 // NextForkID returns the header's next fork ID.
-func (h *Header) NextForkID() uint64 { return h.getForkID().Next }
-
-func (h *Header) getForkID() ForkID {
-	if forkID := h.forkID.Load(); forkID != nil {
-		return forkID.(ForkID)
-	}
-	forkID := ForkID{}
-	if len(h.AdditionalFields) > 0 {
-		rlp.DecodeBytes(h.AdditionalFields[0], &forkID)
-		h.forkID.Store(forkID)
-	}
-	return forkID
-}
+func (h *Header) NextForkID() uint64 { return h.ForkID.Next }
 
 // Block represents an entire block in the blockchain.
 type Block struct {

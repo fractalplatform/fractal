@@ -18,17 +18,17 @@ package main
 
 import (
 	"crypto/ecdsa"
+	"fmt"
 	"math/big"
 	"time"
-	"fmt"
 
-	jww "github.com/spf13/jwalterweatherman"
+	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
+	jww "github.com/spf13/jwalterweatherman"
 
 	tc "github.com/fractalplatform/fractal/test/common"
 )
@@ -253,7 +253,7 @@ func main() {
 	issueAsset(types.IssueAsset, 0, newname3, newname3, newname3, big.NewInt(10000000000000), "testnewasset", t3nonce, prikey2)
 	time.Sleep(time.Duration(3) * time.Second)
 
-	t3nonce ++
+	t3nonce++
 	increaseAsset(newname3, newname3, 2, t3nonce, prikey2)
 	time.Sleep(time.Duration(3) * time.Second)
 
@@ -261,7 +261,7 @@ func main() {
 	issueAsset(types.SetAssetOwner, 2, newname3, toname, "", big.NewInt(100000), "testnewasset", t3nonce, prikey2)
 	time.Sleep(time.Duration(3) * time.Second)
 
-	t3nonce ++
+	t3nonce++
 	issueAsset(types.DestroyAsset, 2, toname, "", "", big.NewInt(100000), "testnewasset", t3nonce, prikey1)
 
 }

@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package api implements the general Ethereum API functions.
+// Package api implements the general API functions.
 package api
 
 import (

@@ -35,7 +35,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/bitutil"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/crypto/ecies"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -470,7 +469,7 @@ func (h *encHandshake) handleAuthMsg(msg *authMsgV4, prv *ecdsa.PrivateKey) erro
 		return err
 	}
 	signedMsg := xor(token, h.initNonce)
-	remoteRandomPub, err := secp256k1.RecoverPubkey(signedMsg, msg.Signature[:])
+	remoteRandomPub, err := crypto.Ecrecover(signedMsg, msg.Signature[:])
 	if err != nil {
 		return err
 	}

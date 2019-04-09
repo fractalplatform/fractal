@@ -34,7 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/spf13/cobra"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -216,7 +216,7 @@ func importChain(args []string) error {
 
 	log.Info("Import done in ", "time", time.Since(start))
 
-	db := ftsrv.ChainDb().(*fdb.LDBDatabase)
+	db := ftsrv.ChainDb().(*ldb.LDBDatabase)
 	stats, err := db.LDB().GetProperty("leveldb.stats")
 	if err != nil {
 		return fmt.Errorf("Failed to read database stats: %v", err)

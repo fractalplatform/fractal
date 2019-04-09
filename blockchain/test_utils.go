@@ -41,6 +41,7 @@ import (
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -124,7 +125,7 @@ func makeCadidatesAndTime(parentTime uint64, genesis *Genesis, rounds uint64) ([
 
 func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	// Initialize a fresh chain with only a genesis block
-	chainDb := fdb.NewMemDatabase()
+	chainDb := memdb.NewMemDatabase()
 	chainCfg, dposCfg, _, err := SetupGenesisBlock(chainDb, genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -307,11 +308,11 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 }
 
 func deepCopyDB(db fdb.Database) (fdb.Database, error) {
-	memdb, ok := db.(*fdb.MemDatabase)
+	mdb, ok := db.(*memdb.MemDatabase)
 	if !ok {
 		return nil, errors.New("db must fdb.MemDatabase")
 	}
-	return memdb.Copy(), nil
+	return mdb.Copy(), nil
 }
 
 func generateChain(config *params.ChainConfig, parent *types.Block, engine consensus.IEngine, chain *BlockChain, db fdb.Database, n int, gen func(int, *BlockGenerator)) ([]*types.Block, [][]*types.Receipt) {
@@ -350,7 +351,6 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			block.Head.ReceiptsRoot = types.DeriveReceiptsMerkleRoot(b.receipts)
 			block.Head.TxsRoot = types.DeriveTxsMerkleRoot(b.txs)
 			block.Head.Bloom = types.CreateBloom(b.receipts)
-
 			batch := db.NewBatch()
 
 			root, err := b.statedb.Commit(batch, block.Hash(), block.NumberU64())
