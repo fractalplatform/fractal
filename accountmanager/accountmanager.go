@@ -254,6 +254,11 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrAccountIsExist
 	}
 
+	assetID, _ := am.ast.GetAssetIdByName(accountName.String())
+	if assetID > 0 {
+		return ErrNameIsExist
+	}
+
 	var fname common.Name
 	if len(founderName.String()) > 0 && founderName != accountName {
 		f, err := am.GetAccountByName(founderName)
@@ -1164,6 +1169,14 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	} else {
 		asset.SetAssetFounder(asset.GetAssetOwner())
 	}
+
+	if name, err := common.StringToName(asset.GetAssetName()); err == nil {
+		accountID, _ := am.GetAccountIDByName(name)
+		if accountID > 0 {
+			return ErrNameIsExist
+		}
+	}
+
 	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
 		return err
 	}

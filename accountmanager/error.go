@@ -25,6 +25,7 @@ var (
 	ErrCreateAccountError     = errors.New("create account error")
 	ErrAccountInvaid          = errors.New("account not permission")
 	ErrAccountIsExist         = errors.New("account is exist")
+	ErrNameIsExist            = errors.New("name is exist")
 	ErrAccountIsDestroy       = errors.New("account is destroy")
 	ErrAccountNotExist        = errors.New("account not exist")
 	ErrHashIsEmpty            = errors.New("hash is empty")
