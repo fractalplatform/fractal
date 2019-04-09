@@ -134,7 +134,7 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
 	lastnum := uint64(blockNr) - lookbackNum
 
 	txHashs := make([]common.Hash, 0)
@@ -157,8 +157,7 @@ func (b *APIBackend) GetTxsByAccount(ctx context.Context, acctName common.Name, 
 			// normal tx
 			btxAppend := false
 			for _, act := range batch_txs[i].GetActions() {
-				if act.Sender() == acctName ||
-					act.Recipient() == acctName {
+				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
 					txHashs = append(txHashs, batch_txs[i].Hash())
 					btxAppend = true
 					break
@@ -174,62 +173,7 @@ func (b *APIBackend) GetTxsByAccount(ctx context.Context, acctName common.Name, 
 		txloop:
 			for _, intx := range txd.InternalTxs {
 				for _, inlog := range intx.InterlnalLogs {
-					if inlog.Action.From == acctName ||
-						inlog.Action.To == acctName {
-						txHashs = append(txHashs, txd.TxHash)
-						break txloop
-					}
-				}
-			}
-
-		}
-	}
-
-	return txHashs
-}
-
-func (b *APIBackend) GetTxsByBloom(ctx context.Context, bloom types.Bloom, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
-	lastnum := uint64(blockNr) - lookbackNum
-
-	txHashs := make([]common.Hash, 0)
-
-	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
-
-		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
-		if hash == (common.Hash{}) {
-			continue
-		}
-
-		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
-		blockBody := rawdb.ReadBody(b.ftservice.chainDb, hash, ublocknum)
-		if blockBody == nil {
-			continue
-		}
-		batch_txs := blockBody.Transactions
-
-		for i := 0; i < len(batch_txs); i++ {
-			// normal tx
-			btxAppend := false
-			for _, act := range batch_txs[i].GetActions() {
-				if bloom.TestBytes([]byte(act.Sender())) ||
-					bloom.TestBytes([]byte(act.Recipient())) {
-					txHashs = append(txHashs, batch_txs[i].Hash())
-					btxAppend = true
-					break
-				}
-			}
-
-			if btxAppend {
-				continue
-			}
-
-			// internal tx
-			txd := batch_txdetails[i]
-		txloop:
-			for _, intx := range txd.InternalTxs {
-				for _, inlog := range intx.InterlnalLogs {
-					if bloom.TestBytes([]byte(inlog.Action.From)) ||
-						bloom.TestBytes([]byte(inlog.Action.To)) {
+					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
 						txHashs = append(txHashs, txd.TxHash)
 						break txloop
 					}

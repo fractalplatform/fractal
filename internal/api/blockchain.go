@@ -184,14 +184,20 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 }
 
 func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
+	filterFn := func(name common.Name) bool {
+		return name == acctName
+	}
 
-	return s.b.GetTxsByAccount(ctx, acctName, blockNr, lookbackNum), nil
+	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
 func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomStr string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	bloom := types.BytesToBloom(common.FromHex(bloomStr))
 
-	return s.b.GetTxsByBloom(ctx, bloom, blockNr, lookbackNum), nil
+	filterFn := func(name common.Name) bool {
+		return bloom.TestBytes([]byte(name))
+	}
+	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
 func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
