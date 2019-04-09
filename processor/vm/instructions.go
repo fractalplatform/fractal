@@ -1112,7 +1112,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 		return 0, err
 	} else {
 		assetInfo, err := evm.AccountDB.GetAssetInfoByName(name)
-		if err != nil {
+		if err != nil || assetInfo == nil {
 			return 0, err
 		} else {
 			if evm.vmConfig.ContractLogFlag {
