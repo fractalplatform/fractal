@@ -55,6 +55,8 @@ type Backend interface {
 	GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error)
 	GetDetailTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
 	GetDetailTxByBloom(ctx context.Context, bloom types.Bloom, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
+	GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash
+	GetTxsByBloom(ctx context.Context, bloom types.Bloom, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash
 
 	// TxPool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
