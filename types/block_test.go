@@ -68,7 +68,6 @@ func TestBlockForkID(t *testing.T) {
 
 	newBlock := &Block{}
 	assert.NoError(t, newBlock.DecodeRLP(bytes))
-
 	assert.Equal(t, testBlock.CurForkID(), newBlock.CurForkID())
 	assert.Equal(t, testBlock.NextForkID(), newBlock.NextForkID())
 }

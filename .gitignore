@@ -22,3 +22,7 @@ build/test_sdk
 profile.out
 
 coverage.out
+
+dist
+
+commit_hash.txt

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +43,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
+	RootCmd.AddCommand(utils.VersionCmd)
 	RootCmd.PersistentFlags().StringVar(&passphraseFlag, "passwordfile", "", "the file that contains the passphrase for the keyfile")
 	RootCmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "output JSON instead of human-readable format")
 }

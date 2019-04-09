@@ -35,17 +35,17 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// PublicBlockChainAPI provides an API to access the Ethereum blockchain.
+// PublicBlockChainAPI provides an API to access the blockchain.
 // It offers only methods that operate on public data that is freely available to anyone.
 const (
-	defaultGasPrice = params.GWei
+	defaultGasPrice = 1e9
 )
 
 type PublicBlockChainAPI struct {
 	b Backend
 }
 
-// NewPublicBlockChainAPI creates a new Ethereum blockchain API.
+// NewPublicBlockChainAPI creates a new blockchain API.
 func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
 }

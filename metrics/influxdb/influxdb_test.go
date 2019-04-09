@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/metrics"
-	client "github.com/influxdata/influxdb/client"
+	client "github.com/influxdata/influxdb1-client"
 )
 
 const (

@@ -25,14 +25,13 @@ import (
 
 	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
-
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // testTxPoolConfig is a transaction pool configuration without stateful disk
@@ -103,7 +102,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 
 func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
 
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
 	asset := asset.NewAsset(statedb)
 	asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -191,7 +190,7 @@ func (c *testChain) State() (*state.StateDB, error) {
 	// a state change between those fetches.
 	stdb := c.statedb
 	if *c.trigger {
-		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(fdb.NewMemDatabase()))
+		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
 		am, err := am.NewAccountManager(c.statedb)
 		if err != nil {
 			return nil, err

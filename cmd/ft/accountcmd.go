@@ -190,7 +190,7 @@ The account is saved in encrypted format, you are prompted for a passphrase.
 You must remember this passphrase to unlock your account in the future.
 
 Note:
-As you can directly copy your encrypted accounts to another ethereum instance,
+As you can directly copy your encrypted accounts to another instance,
 this import mechanism is not needed when you transfer an account between
 nodes.
 `,

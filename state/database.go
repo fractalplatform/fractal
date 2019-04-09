@@ -20,8 +20,8 @@ import (
 	"sync"
 
 	"github.com/fractalplatform/fractal/common"
+	trie "github.com/fractalplatform/fractal/state/mtp"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/utils/trie"
 )
 
 const (

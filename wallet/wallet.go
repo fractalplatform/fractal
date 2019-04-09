@@ -355,7 +355,7 @@ func (w *Wallet) GetAllAccounts() ([]am.Account, error) {
 func (w *Wallet) getBindingInfo() map[string][]string {
 	publicKeyAccountsMap := make(map[string][]string)
 	fileContent, _ := ioutil.ReadFile(w.bindingFilePath)
-	if len(fileContent) > 0 {
+	if fileContent != nil && len(fileContent) > 0 {
 		json.Unmarshal(fileContent, &publicKeyAccountsMap)
 	}
 	log.Debug("getBindingInfo:", "binging info", publicKeyAccountsMap)
@@ -369,8 +369,9 @@ func (w *Wallet) writeBindingInfo(addrAccountsMap map[string][]string) error {
 		log.Error("fail to marshall map to json string:", addrAccountsMap)
 		return err
 	}
+
 	if ioutil.WriteFile(w.bindingFilePath, fileContent, 0666) == nil {
-		log.Info("success to write binding info:", string(fileContent))
+		log.Debug("success to write binding info:", string(fileContent))
 		return nil
 	} else {
 		log.Error("fail to write binding info:", string(fileContent))

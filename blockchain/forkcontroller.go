@@ -89,11 +89,6 @@ func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) err
 }
 
 func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) error {
-	// first hard fork at a specific height
-	if block.NumberU64() < params.TheForkNum {
-		return nil
-	}
-
 	info, err := fc.getForkInfo(statedb)
 	if err != nil {
 		return err
@@ -143,28 +138,22 @@ func (fc *ForkController) currentForkID(statedb *state.StateDB) (uint64, uint64,
 }
 
 func (fc *ForkController) checkForkID(header *types.Header, state *state.StateDB) error {
-	// first hard fork at a specific height
-	if header.Number.Uint64() >= params.TheForkNum {
-		// check current fork id and next fork id
-		if curForkID, _, err := fc.currentForkID(state); err != nil {
-			return err
-		} else if header.CurForkID() != curForkID || header.NextForkID() < curForkID {
-			return fmt.Errorf("invild header curForkID: %v, header nextForkID: %v,actual curForkID %v, header hash: %v, header number: %v",
-				header.CurForkID(), header.NextForkID(), curForkID, header.Hash().Hex(), header.Number.Uint64())
-		}
+	// check current fork id and next fork id
+	if curForkID, _, err := fc.currentForkID(state); err != nil {
+		return err
+	} else if header.CurForkID() != curForkID || header.NextForkID() < curForkID {
+		return fmt.Errorf("invild header curForkID: %v, header nextForkID: %v,actual curForkID %v, header hash: %v, header number: %v",
+			header.CurForkID(), header.NextForkID(), curForkID, header.Hash().Hex(), header.Number.Uint64())
 	}
 	return nil
 }
 
 func (fc *ForkController) fillForkID(header *types.Header, state *state.StateDB) error {
-	// first hard fork at a specific height
-	if header.Number.Uint64() >= params.TheForkNum {
-		// check current fork id and next fork id
-		curForkID, nextForkID, err := fc.currentForkID(state)
-		if err != nil {
-			return err
-		}
-		header.WithForkID(curForkID, nextForkID)
+	// check current fork id and next fork id
+	curForkID, nextForkID, err := fc.currentForkID(state)
+	if err != nil {
+		return err
 	}
+	header.WithForkID(curForkID, nextForkID)
 	return nil
 }

@@ -19,3 +19,8 @@ package params
 const (
 	Fractal = 1e18
 )
+
+const (
+	//ClientIdentifier Client identifier to advertise over the network
+	ClientIdentifier = "ft"
+)

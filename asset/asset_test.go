@@ -23,7 +23,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 var astdb = getStateDB()
@@ -31,7 +31,7 @@ var astdb = getStateDB()
 var ast = getAsset()
 
 func getStateDB() *state.StateDB {
-	db := fdb.NewMemDatabase()
+	db := memdb.NewMemDatabase()
 	tridb := state.NewDatabase(db)
 	statedb, err := state.New(common.Hash{}, tridb)
 	if err != nil {
@@ -48,7 +48,7 @@ func TestAsset_InitAssetCount(t *testing.T) {
 	type fields struct {
 		sdb *state.StateDB
 	}
-	db := fdb.NewMemDatabase()
+	db := memdb.NewMemDatabase()
 	tridb := state.NewDatabase(db)
 	statedb, err := state.New(common.Hash{}, tridb)
 	if err != nil {

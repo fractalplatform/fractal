@@ -149,11 +149,11 @@ func (b *APIBackend) GetDetailTxByAccount(ctx context.Context, acctName common.N
 		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
 		for _, txd := range batch_txdetails {
 
-			txloop:
+		txloop:
 			for _, intx := range txd.InternalTxs {
 				for _, inlog := range intx.InterlnalLogs {
 					if inlog.Action.From == acctName ||
-					inlog.Action.To == acctName {
+						inlog.Action.To == acctName {
 						txdetails = append(txdetails, txd)
 						break txloop
 					}
@@ -181,12 +181,12 @@ func (b *APIBackend) GetDetailTxByBloom(ctx context.Context, bloom types.Bloom, 
 		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
 		for _, txd := range batch_txdetails {
 
-			txloop:
+		txloop:
 			for _, intx := range txd.InternalTxs {
 				for _, inlog := range intx.InterlnalLogs {
 
-					if bloom.TestBytes([]byte(inlog.Action.From))  ||
-					bloom.TestBytes([]byte(inlog.Action.To)) {
+					if bloom.TestBytes([]byte(inlog.Action.From)) ||
+						bloom.TestBytes([]byte(inlog.Action.To)) {
 						txdetails = append(txdetails, txd)
 						break txloop
 					}

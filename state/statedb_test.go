@@ -27,11 +27,11 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 func TestSetState(t *testing.T) {
-	db := fdb.NewMemDatabase()
+	db := mdb.NewMemDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
 	prevHash := common.Hash{}
@@ -73,7 +73,7 @@ func TestSetState(t *testing.T) {
 }
 
 func TestRevertSnap(t *testing.T) {
-	db := fdb.NewMemDatabase()
+	db := mdb.NewMemDatabase()
 	cachedb := NewDatabase(db)
 	prevHash := common.Hash{}
 	state, _ := New(prevHash, cachedb)
@@ -116,7 +116,7 @@ func TestRevertSnap(t *testing.T) {
 
 //element : 1->2->3
 func TestTransToSpecBlock1(t *testing.T) {
-	db := fdb.NewMemDatabase()
+	db := mdb.NewMemDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
 	addr := "addr01"
@@ -162,7 +162,7 @@ func TestTransToSpecBlock1(t *testing.T) {
 }
 
 func TestStateDB_IntermediateRoot(t *testing.T) {
-	state, err := New(common.Hash{}, NewDatabase(fdb.NewMemDatabase()))
+	state, err := New(common.Hash{}, NewDatabase(mdb.NewMemDatabase()))
 	if err != nil {
 		t.Error("New err")
 	}
@@ -193,7 +193,7 @@ func TestStateDB_IntermediateRoot(t *testing.T) {
 }
 
 func TestSnapshot(t *testing.T) {
-	db := fdb.NewMemDatabase()
+	db := mdb.NewMemDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
 	root := common.Hash{}
