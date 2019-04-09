@@ -44,5 +44,15 @@
 			"founder": "ftsystemio",
 			"UpperLimit":10000000000000000000000000000
 		}
-	]
+	],
+	"accountNameLevel": {
+		"accountNameLevel": 1,
+		"accountNameLength": 16,
+		"subAccountNameLength": 8
+	},
+	"assetNameLevel": {
+		"assetNameLevel":1,
+		"assetNameLength":16,
+		"subAssetNameLength":8
+	}
 }

@@ -93,6 +93,15 @@ func StrToName(s string) Name {
 	return n
 }
 
+// StrToName  returns Name with string of s.
+func StringToName(s string) (Name, error) {
+	var n Name
+	if !n.SetString(s) {
+		return n, fmt.Errorf("invalid name %v", s)
+	}
+	return n, nil
+}
+
 func parseName(s string) (Name, error) {
 	var n Name
 	if !n.SetString(s) {
