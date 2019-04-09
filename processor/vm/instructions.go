@@ -1179,6 +1179,10 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	//toName, _ := common.BigToName(name)
 	userID := name.Uint64()
 	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 	toName := acct.GetName()
 
 	assetID := assetId.Uint64()
@@ -1224,6 +1228,10 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	//toName, _ := common.BigToName(name)
 	userID := name.Uint64()
 	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 	toName := acct.GetName()
 
 	// Get arguments from the memory.
