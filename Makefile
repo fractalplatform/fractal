@@ -17,7 +17,7 @@
 SHELL:=/bin/bash
 REPO := $(shell pwd)
 GOFILES_NOVENDOR := $(shell go list -f "{{.Dir}}" ./...)
-PACKAGES_NOVENDOR := $(shell go list ./...)
+PACKAGES_NOVENDOR := $(shell go list ./... | grep -v test)
 WORK_SPACE := ${REPO}/build/_workspace
 FT_DIR :=${WORK_SPACE}/src/github.com/fractalplatform
 TEMP_GOPATH := $(GOPATH)
@@ -38,7 +38,7 @@ endef
 # check the code for style standards; currently enforces go formatting.
 # display output first, then check for success	
 .PHONY: check
-check:
+check: vet
 	@echo "Checking code for formatting style compliance."
 	@gofmt -l -d ${GOFILES_NOVENDOR}
 	@gofmt -l ${GOFILES_NOVENDOR} | read && echo && echo "Your marmot has found a problem with the formatting style of the code." 1>&2 && exit 1 || true
@@ -49,6 +49,13 @@ check:
 fmt:
 	@echo "Correcting any formatting style corrections."
 	@gofmt -l -w ${GOFILES_NOVENDOR}
+
+# vet runs extended compilation checks to find recommendations for
+# suspicious code constructs.
+.PHONY: vet
+vet:
+	@echo "Running go vet."
+	@go vet ${PACKAGES_NOVENDOR}
 
 ### Building project
 

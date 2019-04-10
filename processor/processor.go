@@ -147,7 +147,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			gasAllot = append(gasAllot, &types.GasDistribution{Account: account.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
-		internals = append(internals, &types.InternalTx{vmenv.InternalTxs})
+		internals = append(internals, &types.InternalTx{InterlnalLogs: vmenv.InternalTxs})
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
