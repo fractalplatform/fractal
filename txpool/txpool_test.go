@@ -1428,12 +1428,12 @@ func TestTransactionQueueLimitingEquivalency(t *testing.T)   { testTransactionLi
 func TestTransactionPendingLimitingEquivalency(t *testing.T) { testTransactionLimitingEquivalency(t, 0) }
 
 func testTransactionLimitingEquivalency(t *testing.T, origin uint64) {
-
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
 		assetID = uint64(1)
 	)
+	event.Reset()
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
@@ -1590,7 +1590,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	config := testTxPoolConfig
 	config.GlobalSlots = 0
-
+	event.Reset()
 	pool := New(config, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 

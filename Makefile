@@ -38,7 +38,7 @@ endef
 # check the code for style standards; currently enforces go formatting.
 # display output first, then check for success	
 .PHONY: check
-check: vet
+check:
 	@echo "Checking code for formatting style compliance."
 	@gofmt -l -d ${GOFILES_NOVENDOR}
 	@gofmt -l ${GOFILES_NOVENDOR} | read && echo && echo "Your marmot has found a problem with the formatting style of the code." 1>&2 && exit 1 || true
