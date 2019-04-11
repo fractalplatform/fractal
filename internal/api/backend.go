@@ -53,8 +53,7 @@ type Backend interface {
 	GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult
 	GetTd(blockHash common.Hash) *big.Int
 	GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error)
-	GetDetailTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
-	GetDetailTxByBloom(ctx context.Context, bloom types.Bloom, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
+	GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
 	GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash
 
 	// TxPool API
