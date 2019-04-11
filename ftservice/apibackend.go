@@ -146,47 +146,26 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 			continue
 		}
 
-		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
 		blockBody := rawdb.ReadBody(b.ftservice.chainDb, hash, ublocknum)
 		if blockBody == nil {
 			continue
 		}
 		batch_txs := blockBody.Transactions
 
-		for i := 0; i < len(batch_txs); i++ {
-			// normal tx
-			btxAppend := false
-			for _, act := range batch_txs[i].GetActions() {
+		for _, tx := range batch_txs {
+			for _, act := range tx.GetActions() {
 				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
-					txHashs = append(txHashs, batch_txs[i].Hash())
-					btxAppend = true
+					txHashs = append(txHashs, tx.Hash())
 					break
 				}
 			}
-
-			if btxAppend {
-				continue
-			}
-
-			// internal tx
-			txd := batch_txdetails[i]
-		txloop:
-			for _, intx := range txd.InternalTxs {
-				for _, inlog := range intx.InterlnalLogs {
-					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
-						txHashs = append(txHashs, txd.TxHash)
-						break txloop
-					}
-				}
-			}
-
 		}
 	}
 
 	return txHashs
 }
 
-func (b *APIBackend) GetDetailTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
+func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
 	lastnum := uint64(blockNr) - lookbackNum
 
 	txdetails := make([]*types.DetailTx, 0)
@@ -204,8 +183,7 @@ func (b *APIBackend) GetDetailTxByAccount(ctx context.Context, acctName common.N
 		txloop:
 			for _, intx := range txd.InternalTxs {
 				for _, inlog := range intx.InterlnalLogs {
-					if inlog.Action.From == acctName ||
-						inlog.Action.To == acctName {
+					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
 						txdetails = append(txdetails, txd)
 						break txloop
 					}
@@ -213,39 +191,6 @@ func (b *APIBackend) GetDetailTxByAccount(ctx context.Context, acctName common.N
 			}
 
 		}
-	}
-
-	return txdetails
-}
-
-func (b *APIBackend) GetDetailTxByBloom(ctx context.Context, bloom types.Bloom, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
-	lastnum := uint64(blockNr) - lookbackNum
-
-	txdetails := make([]*types.DetailTx, 0)
-
-	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
-
-		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
-		if hash == (common.Hash{}) {
-			continue
-		}
-
-		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
-		for _, txd := range batch_txdetails {
-
-		txloop:
-			for _, intx := range txd.InternalTxs {
-				for _, inlog := range intx.InterlnalLogs {
-
-					if bloom.TestBytes([]byte(inlog.Action.From)) ||
-						bloom.TestBytes([]byte(inlog.Action.To)) {
-						txdetails = append(txdetails, txd)
-						break txloop
-					}
-				}
-			}
-		}
-
 	}
 
 	return txdetails

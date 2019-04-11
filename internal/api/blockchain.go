@@ -201,12 +201,20 @@ func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexut
 }
 
 func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
-	return s.b.GetDetailTxByAccount(ctx, acctName, blockNr, lookbackNum), nil
+	filterFn := func(name common.Name) bool {
+		return name == acctName
+	}
+
+	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	bloom := types.BytesToBloom(bloomByte)
-	return s.b.GetDetailTxByBloom(ctx, bloom, blockNr, lookbackNum), nil
+
+	filterFn := func(name common.Name) bool {
+		return bloom.TestBytes([]byte(name))
+	}
+	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
 func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash common.Hash) (*types.DetailTx, error) {
