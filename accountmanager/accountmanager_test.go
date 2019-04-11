@@ -1564,7 +1564,7 @@ func TestAccountManager_Process(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.Process(&types.AccountManagerContext{tt.args.action, 0}); (err != nil) != tt.wantErr {
+		if err := am.Process(&types.AccountManagerContext{Action: tt.args.action, Number: 0}); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1631,7 +1631,7 @@ func TestAccountManager_Process(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.Process(&types.AccountManagerContext{tt.args.action, 0}); (err != nil) != tt.wantErr {
+		if err := am.Process(&types.AccountManagerContext{Action: tt.args.action, Number: 0}); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1845,7 +1845,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.Process(&types.AccountManagerContext{tt.args.action, 0}); (err != nil) != tt.wantErr {
+		if err := am.Process(&types.AccountManagerContext{Action: tt.args.action, Number: 0}); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}

@@ -765,7 +765,10 @@ func (s *StateDB) LookupAccountInfo() ([]types.AccountInfo, bool) {
 			continue
 		}
 		count = count - 1
-		accountInfo = append(accountInfo, types.AccountInfo{acckey[0], acckey[1], s.iterator.Value})
+		accountInfo = append(accountInfo, types.AccountInfo{
+			Name:  acckey[0],
+			Key:   acckey[1],
+			Value: s.iterator.Value})
 
 		if count == 0 {
 			endFlag = true

@@ -1428,12 +1428,12 @@ func TestTransactionQueueLimitingEquivalency(t *testing.T)   { testTransactionLi
 func TestTransactionPendingLimitingEquivalency(t *testing.T) { testTransactionLimitingEquivalency(t, 0) }
 
 func testTransactionLimitingEquivalency(t *testing.T, origin uint64) {
-
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
 		assetID = uint64(1)
 	)
+	event.Reset()
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
@@ -1590,7 +1590,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	config := testTxPoolConfig
 	config.GlobalSlots = 0
-
+	event.Reset()
 	pool := New(config, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
@@ -1640,7 +1640,6 @@ func TestTransactionJournaling(t *testing.T)         { testTransactionJournaling
 func TestTransactionJournalingNoLocals(t *testing.T) { testTransactionJournaling(t, true) }
 
 func testTransactionJournaling(t *testing.T, nolocals bool) {
-	event.Reset()
 	// Create a temporary file for the journal
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -1662,6 +1661,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	config.Journal = journal
 	config.Rejournal = time.Second
 
+	event.Reset()
 	pool := New(config, params.DefaultChainconfig, blockchain)
 
 	var (
@@ -1736,6 +1736,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 
 	manager.SetNonce(localName, 1)
 	blockchain = &testBlockChain{statedb, 1000000, new(event.Feed)}
+	event.Reset()
 	pool = New(config, params.DefaultChainconfig, blockchain)
 
 	pending, queued = pool.Stats()
@@ -1764,7 +1765,7 @@ func TestTransactionStatusCheck(t *testing.T) {
 	// Create the pool to test the status retrievals with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
-
+	event.Reset()
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 

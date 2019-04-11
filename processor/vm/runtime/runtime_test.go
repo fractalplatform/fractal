@@ -219,7 +219,7 @@ func TestAsset(t *testing.T) {
 	}
 
 	action := issueAssetAction(senderName, receiverName)
-	if err := account.Process(&types.AccountManagerContext{action, 0}); err != nil {
+	if err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
 		fmt.Println("issue asset error", err)
 		return
 	}
@@ -412,7 +412,7 @@ func TestBNB(t *testing.T) {
 	}
 
 	action := issueAssetAction(senderName, receiverName)
-	if err := account.Process(&types.AccountManagerContext{action, 0}); err != nil {
+	if err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
 		fmt.Println("issue asset error", err)
 		return
 	}
