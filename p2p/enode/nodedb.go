@@ -175,7 +175,7 @@ func (db *DB) Node(id ID) *Node {
 func mustDecodeNode(id, data []byte) *Node {
 	node := new(Node)
 	if err := rlp.DecodeBytes(data, &node.r); err != nil {
-		panic(fmt.Errorf("p2p/enode: can't decode node %x in DB: %v", id, err))
+		panic(fmt.Errorf("p2p/fnode: can't decode node %x in DB: %v", id, err))
 	}
 	// Restore node id cache.
 	copy(node.id[:], id)

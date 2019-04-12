@@ -155,7 +155,7 @@ func (n ID) String() string {
 
 // The Go syntax representation of a ID is a call to HexID.
 func (n ID) GoString() string {
-	return fmt.Sprintf("enode.HexID(\"%x\")", n[:])
+	return fmt.Sprintf("fnode.HexID(\"%x\")", n[:])
 }
 
 // TerminalString returns a shortened hex string for terminal logging.
