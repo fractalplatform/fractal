@@ -19,6 +19,7 @@ package blockchain
 import (
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -140,8 +141,8 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	// dpos
-	if !common.IsValidAccountName(g.Dpos.SystemName) {
-		panic(fmt.Sprintf("genesis invalid dpos account name %v", g.Dpos.SystemName))
+	if strings.Compare(g.Dpos.SystemName, g.Config.SysName.String()) != 0 {
+		panic(fmt.Sprintf("wrong dpos systemname %v", g.Dpos.SystemName))
 	}
 	g.AllocAccounts = append(g.AllocAccounts, &GenesisAccount{
 		Name:   common.StrToName(g.Dpos.AccountName),
@@ -152,13 +153,31 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, account := range g.AllocAccounts {
-		if err := accountManager.CreateAnyAccount("", account.Name, common.Name(""), 0, 0, account.PubKey); err != nil {
+		pname := common.Name("")
+		slt := strings.Split(account.Name.String(), ".")
+		if len(slt) > 0 {
+			pname = common.Name(slt[0])
+			if ok, _ := accountManager.AccountIsExist(pname); !ok {
+				panic(fmt.Sprintf("parent account not exist %v", account.Name))
+			}
+		}
+
+		if err := accountManager.CreateAnyAccount(pname, account.Name, common.Name(""), 0, 0, account.PubKey); err != nil {
 			panic(fmt.Sprintf("genesis create account %v ,err %v", account.Name, err))
 		}
 	}
 
 	for _, asset := range g.AllocAssets {
-		if err := accountManager.IssueAnyAsset("", asset); err != nil {
+		pname := common.Name("")
+		slt := strings.Split(asset.AssetName, ".")
+		if len(slt) > 0 {
+			if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
+				panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
+			} else {
+				pname = ast.Owner
+			}
+		}
+		if err := accountManager.IssueAnyAsset(pname, asset); err != nil {
 			panic(fmt.Sprintf("genesis issue asset err %v", err))
 		}
 	}
