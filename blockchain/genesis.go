@@ -142,7 +142,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 
 	// dpos
 	if strings.Compare(g.Dpos.SystemName, g.Config.SysName.String()) != 0 {
-		panic(fmt.Sprintf("wrong dpos systemname %v", g.Dpos.SystemName))
+		panic(fmt.Sprintf("wrong dpos systemname %v, systemname %v", g.Dpos.SystemName, g.Config.SysName.String()))
 	}
 	g.AllocAccounts = append(g.AllocAccounts, &GenesisAccount{
 		Name:   common.StrToName(g.Dpos.AccountName),
@@ -155,7 +155,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	for _, account := range g.AllocAccounts {
 		pname := common.Name("")
 		slt := strings.Split(account.Name.String(), ".")
-		if len(slt) > 0 {
+		if len(slt) > 1 {
 			pname = common.Name(slt[0])
 			if ok, _ := accountManager.AccountIsExist(pname); !ok {
 				panic(fmt.Sprintf("parent account not exist %v", account.Name))
@@ -170,7 +170,7 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	for _, asset := range g.AllocAssets {
 		pname := common.Name("")
 		slt := strings.Split(asset.AssetName, ".")
-		if len(slt) > 0 {
+		if len(slt) > 1 {
 			if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
 				panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
 			} else {
