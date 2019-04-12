@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"errors"
 	"math/big"
 	"reflect"
 	"testing"
@@ -136,6 +137,16 @@ func TestSetupGenesis(t *testing.T) {
 			wantHash:   customghash,
 			wantConfig: customg.Config,
 			wantDpos:   customg.Dpos,
+		},
+		{
+			name: "test recover panic",
+			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+				return SetupGenesisBlock(db, &customg)
+			},
+			wantErr:    errors.New("genesis create account ftsystemdpos ,err account is exist"),
+			wantHash:   common.Hash{},
+			wantConfig: params.DefaultChainconfig,
+			wantDpos:   dpos.DefaultConfig,
 		},
 	}
 
