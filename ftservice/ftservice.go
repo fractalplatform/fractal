@@ -35,7 +35,6 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
@@ -82,14 +81,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		wallet:       ctx.Wallet,
 		p2pServer:    ctx.P2P,
 		shutdownChan: make(chan bool),
-	}
-
-	if !config.SkipBcVersionCheck {
-		bcVersion := rawdb.ReadDatabaseVersion(chainDb)
-		if bcVersion != blockchain.BlockChainVersion && bcVersion != 0 {
-			return nil, fmt.Errorf("Blockchain DB version mismatch (%d / %d)", bcVersion, blockchain.BlockChainVersion)
-		}
-		rawdb.WriteDatabaseVersion(chainDb, blockchain.BlockChainVersion)
 	}
 
 	//blockchain

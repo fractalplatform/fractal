@@ -76,12 +76,6 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		block, err := genesis.Commit(db)
 		log.Info("Writing genesis block", "hash", block.Hash().Hex())
 
-		// Set account name level
-		genesis.accountLevelConfig()
-
-		// Set asset name level
-		genesis.assetLevelConfig()
-
 		return genesis.Config, genesis.Dpos, block.Hash(), err
 	}
 
@@ -95,13 +89,13 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		genesis = new(Genesis)
 		head := rawdb.ReadHeader(db, stored, 0)
 		genesis.UnmarshalJSON(head.Extra)
+
+		// Set account name level
+		genesis.accountLevelConfig()
+
+		// Set asset name level
+		genesis.assetLevelConfig()
 	}
-
-	// Set account name level
-	genesis.accountLevelConfig()
-
-	// Set asset name level
-	genesis.assetLevelConfig()
 
 	// Get the existing dpos configuration.
 	newdpos := genesis.dposOrDefault(stored)
@@ -124,6 +118,12 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	if db == nil {
 		db = memdb.NewMemDatabase()
 	}
+	// Set account name level
+	g.accountLevelConfig()
+
+	// Set asset name level
+	g.assetLevelConfig()
+
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
