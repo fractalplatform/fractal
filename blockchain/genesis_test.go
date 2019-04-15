@@ -44,9 +44,9 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0xf26d153793a925c8a4b09fe3dc86ca9e6bab7c3b05346e35432bb8beb4914e7a")
+		customghash = common.HexToHash("0xa634d33068db6a977f7f7613ad52709d4b385bc1bbb2666c35cc5ffc1000be67")
 		customg     = Genesis{
-			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
+			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "ftsystemio", SysToken: "fractalfoundation"},
 			Dpos:             dpos.DefaultConfig,
 			Coinbase:         "coinbase",
 			AllocAccounts:    DefaultGenesisAccounts(),
@@ -55,7 +55,7 @@ func TestSetupGenesis(t *testing.T) {
 			AssetNameLevel:   asset.DefaultAssetNameConf(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0xccc4fbf25831629ad31f623ac10ebc7bb35b274e1e1cbfb347a651c4e2ad1df5")
+		oldcustomghash = common.HexToHash("0xcbd5760a5aff97a07ceb84f6c16310530cd3edb2cddc61df5c2a918964b75aa5")
 		dposConfig     = &dpos.Config{
 			MaxURLLen:            512,
 			UnitStake:            big.NewInt(1000),
@@ -82,7 +82,7 @@ func TestSetupGenesis(t *testing.T) {
 			ContractChargeRatio: 80,
 		}
 	)
-	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
+	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystemio", SysToken: "ftoken"}
 
 	tests := []struct {
 		name       string

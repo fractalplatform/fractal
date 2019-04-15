@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -87,12 +88,6 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		block, err := genesis.Commit(db)
 		log.Info("Writing genesis block", "hash", block.Hash().Hex())
 
-		// Set account name level
-		genesis.accountLevelConfig()
-
-		// Set asset name level
-		genesis.assetLevelConfig()
-
 		return genesis.Config, genesis.Dpos, block.Hash(), err
 	}
 
@@ -106,13 +101,13 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		genesis = new(Genesis)
 		head := rawdb.ReadHeader(db, stored, 0)
 		genesis.UnmarshalJSON(head.Extra)
+
+		// Set account name level
+		genesis.accountLevelConfig()
+
+		// Set asset name level
+		genesis.assetLevelConfig()
 	}
-
-	// Set account name level
-	genesis.accountLevelConfig()
-
-	// Set asset name level
-	genesis.assetLevelConfig()
 
 	// Get the existing dpos configuration.
 	newdpos := genesis.dposOrDefault(stored)
@@ -135,6 +130,12 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	if db == nil {
 		db = memdb.NewMemDatabase()
 	}
+	// Set account name level
+	g.accountLevelConfig()
+
+	// Set asset name level
+	g.assetLevelConfig()
+
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
@@ -152,8 +153,8 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	// dpos
-	if !common.IsValidAccountName(g.Dpos.SystemName) {
-		panic(fmt.Sprintf("genesis invalid dpos account name %v", g.Dpos.SystemName))
+	if strings.Compare(g.Dpos.SystemName, g.Config.SysName.String()) != 0 {
+		panic(fmt.Sprintf("wrong dpos systemname %v, systemname %v", g.Dpos.SystemName, g.Config.SysName.String()))
 	}
 	g.AllocAccounts = append(g.AllocAccounts, &GenesisAccount{
 		Name:   common.StrToName(g.Dpos.AccountName),
@@ -164,13 +165,31 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 
 	for _, account := range g.AllocAccounts {
-		if err := accountManager.CreateAnyAccount("", account.Name, common.Name(""), 0, 0, account.PubKey); err != nil {
+		pname := common.Name("")
+		slt := strings.Split(account.Name.String(), ".")
+		if len(slt) > 1 {
+			pname = common.Name(slt[0])
+			if ok, _ := accountManager.AccountIsExist(pname); !ok {
+				panic(fmt.Sprintf("parent account not exist %v", account.Name))
+			}
+		}
+
+		if err := accountManager.CreateAnyAccount(pname, account.Name, common.Name(""), 0, 0, account.PubKey); err != nil {
 			panic(fmt.Sprintf("genesis create account %v ,err %v", account.Name, err))
 		}
 	}
 
 	for _, asset := range g.AllocAssets {
-		if err := accountManager.IssueAnyAsset("", asset); err != nil {
+		pname := common.Name("")
+		slt := strings.Split(asset.AssetName, ".")
+		if len(slt) > 1 {
+			if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
+				panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
+			} else {
+				pname = ast.Owner
+			}
+		}
+		if err := accountManager.IssueAnyAsset(pname, asset); err != nil {
 			panic(fmt.Sprintf("genesis issue asset err %v", err))
 		}
 	}

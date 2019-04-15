@@ -18,7 +18,6 @@ package ftservice
 
 import (
 	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/txpool"
@@ -31,9 +30,8 @@ type Config struct {
 	Genesis *blockchain.Genesis `toml:",omitempty"`
 
 	// Database options
-	SkipBcVersionCheck bool `mapstructure:"ftservice-skipvcversioncheck"`
-	DatabaseHandles    int  `mapstructure:"ftservice-databasehandles"`
-	DatabaseCache      int  `mapstructure:"ftservice-databasecache"`
+	DatabaseHandles int `mapstructure:"ftservice-databasehandles"`
+	DatabaseCache   int `mapstructure:"ftservice-databasecache"`
 
 	// Transaction pool options
 	TxPool *txpool.Config
@@ -44,7 +42,6 @@ type Config struct {
 	// miner
 	Miner *MinerConfig
 
-	CoinBase    common.Address
 	MetricsConf *metrics.Config
 
 	// snapshot
