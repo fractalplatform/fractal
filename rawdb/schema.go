@@ -25,8 +25,6 @@ import (
 
 // The fields below define the low level database schema prefixing.
 var (
-	// databaseVerisionKey tracks the current database version.
-	databaseVerisionKey = []byte("DatabaseVersion")
 	//irreversibleNumberKey tracks the blcokchain irreversible number
 	irreversibleNumberKey = []byte("irreversibleNumber")
 	// headHeaderKey tracks the latest know header's hash.
