@@ -164,15 +164,9 @@ func (a *Action) CheckValue() bool {
 		fallthrough
 	case UpdateAsset:
 		fallthrough
-	case RegCadidate:
-		fallthrough
-	case UpdateCadidate:
-		fallthrough
 	case UnregCadidate:
 		fallthrough
 	case RemoveVoter:
-		fallthrough
-	case VoteCadidate:
 		fallthrough
 	case ChangeCadidate:
 		fallthrough

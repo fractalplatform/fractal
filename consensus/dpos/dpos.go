@@ -70,11 +70,12 @@ func (s *stateDB) Delete(key string) error {
 	return nil
 }
 func (s *stateDB) Delegate(from string, amount *big.Int) error {
-	accountDB, err := accountmanager.NewAccountManager(s.state)
-	if err != nil {
-		return err
-	}
-	return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
+	return nil
+	// accountDB, err := accountmanager.NewAccountManager(s.state)
+	// if err != nil {
+	// 	return err
+	// }
+	// return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
 }
 func (s *stateDB) Undelegate(to string, amount *big.Int) error {
 	accountDB, err := accountmanager.NewAccountManager(s.state)

@@ -285,17 +285,16 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 		to := getCadidates()[syscadidatePrefix+strconv.Itoa(i)]
 		url := "www." + to.name + ".io"
 		arg := &dpos.RegisterCadidate{
-			Url:   url,
-			Stake: delegateValue,
+			Url: url,
 		}
 		payload, _ := rlp.EncodeToBytes(arg)
-		action := types.NewAction(types.RegCadidate, common.StrToName(to.name), common.StrToName(to.name), 0, uint64(1), uint64(210000), big.NewInt(0), payload)
+		action := types.NewAction(types.RegCadidate, common.StrToName(to.name), common.StrToName(dpos.DefaultConfig.AccountName), 0, uint64(1), uint64(210000), delegateValue, payload)
 		actions1 = append(actions1, action)
 	}
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(2), actions1...)
 	for _, action := range actions1 {
-		keyPair = types.MakeKeyPair(getCadidates()[action.Recipient().String()].prikey, []uint64{0})
+		keyPair = types.MakeKeyPair(getCadidates()[action.Sender().String()].prikey, []uint64{0})
 		err := types.SignActionWithMultiKey(action, tx1, signer, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))

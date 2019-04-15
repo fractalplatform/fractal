@@ -21,6 +21,7 @@ var (
 	// 	tAssetID     uint64
 	rpchost         = "http://127.0.0.1:8545"
 	systemaccount   = "ftsystemio"
+	dposaccount     = "ftsystemdpos"
 	systemprivkey   = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
 	systemassetname = "ftoken"
 	systemassetid   = uint64(1)
@@ -126,56 +127,53 @@ func TestDPOS(t *testing.T) {
 		// RegCadidate
 		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
 		acct2 := NewAccount(api, accountName2, priv2, systemassetid, math.MaxUint64, true, chainid)
-		hash, err = acct.RegCadidate(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.RegisterCadidate{
-			Url:   fmt.Sprintf("www.%s.com", accountName.String()),
-			Stake: new(big.Int).Div(tValue, big.NewInt(3)),
+		hash, err = acct.RegCadidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.RegisterCadidate{
+			Url: fmt.Sprintf("www.%s.com", accountName.String()),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		// VoteCadidate
-		hash, err = acct2.VoteCadidate(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.VoteCadidate{
+		hash, err = acct2.VoteCadidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCadidate{
 			Cadidate: accountName.String(),
-			Stake:    new(big.Int).Div(tValue, big.NewInt(3)),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		// UnvoteCadidate
-		hash, err = acct2.UnvoteCadidate(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
+		hash, err = acct2.UnvoteCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		// VoteCadidate
-		hash, err = acct2.VoteCadidate(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.VoteCadidate{
+		hash, err = acct2.VoteCadidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCadidate{
 			Cadidate: systemaccount,
-			Stake:    new(big.Int).Div(tValue, big.NewInt(3)),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		// ChangeCadidate
-		hash, err = acct2.ChangeCadidate(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.ChangeCadidate{
+		hash, err = acct2.ChangeCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.ChangeCadidate{
 			Cadidate: accountName.String(),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		// UnvoteVoter
-		hash, err = acct.UnvoteVoter(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.RemoveVoter{
+		hash, err = acct.UnvoteVoter(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.RemoveVoter{
 			Voters: []string{accountName2.String()},
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		hash, err = sysAcct.KickedCadidate(common.StrToName(systemaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
+		hash, err = sysAcct.KickedCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
 			Cadidates: []string{accountName.String()},
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		// UnRegCadidate
-		hash, err = acct.UnRegCadidate(accountName, new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
+		hash, err = acct.UnRegCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 	})
@@ -186,7 +184,7 @@ func TestManual(t *testing.T) {
 		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
 		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
 
-		hash, err := sysAcct.KickedCadidate(common.StrToName(systemaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
+		hash, err := sysAcct.KickedCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
 			Cadidates: []string{"ftcadidate1", "ftcadidate2", "ftcadidate3"},
 		})
 		So(err, ShouldBeNil)
