@@ -31,6 +31,8 @@ var (
 	ErrInvalidchainID = errors.New("invalid chain id for signer")
 	//ErrSigUnprotected signature is considered unprotected
 	ErrSigUnprotected = errors.New("signature is considered unprotected")
+	//ErrSignEmpty signature is considered unprotected
+	ErrSignEmpty = errors.New("signature is nil")
 )
 
 // sigCache is used to cache the derived sender and contains the signer used to derive it.
@@ -127,6 +129,9 @@ func (s Signer) Equal(s2 Signer) bool {
 var big8 = big.NewInt(8)
 
 func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if len(a.GetSign()) == 0 {
+		return nil, ErrSignEmpty
+	}
 	if a.ChainID().Cmp(s.chainID) != 0 {
 		return nil, ErrInvalidchainID
 	}
