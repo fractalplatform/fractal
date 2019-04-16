@@ -224,7 +224,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, numer uint64, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
 
 	if accountName.AccountNameLevel() > 1 {
 		if !fromName.IsValidCreator(accountName.String()) {
@@ -232,7 +232,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 		}
 	}
 
-	if err := am.CreateAccount(accountName, founderName, numer, 0, pubkey); err != nil {
+	if err := am.CreateAccount(accountName, founderName, number, 0, pubkey); err != nil {
 		return err
 	}
 
@@ -333,7 +333,10 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *
 		if f == nil {
 			return ErrAccountNotExist
 		}
+	} else {
+		accountAction.Founder.SetString(accountName.String())
 	}
+
 	if accountAction.ChargeRatio > 100 {
 		return ErrChargeRatioInvalid
 	}

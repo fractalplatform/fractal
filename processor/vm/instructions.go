@@ -397,9 +397,16 @@ func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 }
 
 func opGetAccountTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	num := stack.pop()
-	index := num.Uint64()
-	head := evm.Context.GetHeaderByNumber(index)
+	account := stack.pop()
+	userID := account.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	number := acct.GetAccountNumber()
+	head := evm.Context.GetHeaderByNumber(number)
 	if head == nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {

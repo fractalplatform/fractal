@@ -205,7 +205,7 @@ func (a *Asset) GetAllAssetObject() ([]*AssetObject, error) {
 		if err != nil {
 			return nil, err
 		}
-		assets[i] = asset
+		assets[i-1] = asset
 	}
 	return assets, nil
 }
