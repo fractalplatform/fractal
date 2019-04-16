@@ -31,8 +31,8 @@ import (
 var maxPrice = big.NewInt(500 * 1e9)
 
 type Config struct {
-	Blocks     int `mapstructure:"gpo-blocks"`
-	Percentile int `mapstructure:"gpo-percentile"`
+	Blocks     int `mapstructure:"blocks"`
+	Percentile int `mapstructure:"percentile"`
 	Default    *big.Int
 }
 

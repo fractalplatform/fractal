@@ -46,20 +46,22 @@ const (
 
 var (
 	importCommnad = &cobra.Command{
-		Use:   "import",
+		Use:   "import -d <datadir> -g <genesis.json> <block file name>",
 		Short: "Import a blockchain file",
 		Long:  "Import a blockchain file",
 		Run: func(cmd *cobra.Command, args []string) {
+			ftCfgInstance.LogCfg.Setup()
 			if err := importChain(args); err != nil {
 				fmt.Println(err)
 			}
 		},
 	}
 	exportCommand = &cobra.Command{
-		Use:   "export",
+		Use:   "export -d <datadir> <block file name> <start num> <end num>",
 		Short: "Export blockchain to file",
 		Long:  "Export blockchain to file",
 		Run: func(cmd *cobra.Command, args []string) {
+			ftCfgInstance.LogCfg.Setup()
 			if err := exportChain(args); err != nil {
 				fmt.Println(err)
 			}
@@ -69,16 +71,14 @@ var (
 
 func init() {
 	RootCmd.AddCommand(importCommnad, exportCommand)
-	importCommnad.Flags().StringVarP(&ftconfig.NodeCfg.DataDir, "datadir", "d", defaultDataDir(), "Data directory for the databases and keystore")
-	importCommnad.Flags().StringVarP(&ftconfig.GenesisFileFlag, "genesis", "g", "", "genesis json file")
-	exportCommand.Flags().StringVarP(&ftconfig.NodeCfg.DataDir, "datadir", "d", defaultDataDir(), "Data directory for the databases and keystore")
+	importCommnad.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases and keystore")
+	importCommnad.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "genesis json file")
+	exportCommand.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases and keystore")
 }
 
 func exportChain(args []string) error {
-	logConfig.Setup()
-
 	if len(args) < 1 {
-		return errors.New("This command requires an argument.")
+		return errors.New("This command requires an argument")
 	}
 
 	start := time.Now()
@@ -89,7 +89,7 @@ func exportChain(args []string) error {
 	}
 
 	ctx := stack.GetNodeConfig()
-	ftsrv, err := ftservice.New(ctx, ftconfig.FtServiceCfg)
+	ftsrv, err := ftservice.New(ctx, ftCfgInstance.FtServiceCfg)
 	if err != nil {
 		return err
 	}
@@ -101,10 +101,10 @@ func exportChain(args []string) error {
 		first, ferr := strconv.ParseInt(args[1], 10, 64)
 		last, lerr := strconv.ParseInt(args[2], 10, 64)
 		if ferr != nil || lerr != nil {
-			return errors.New("Export error in parsing parameters: block number not an integer.")
+			return errors.New("Export error in parsing parameters: block number not an integer")
 		}
 		if first < 0 || last < 0 {
-			return errors.New("Export error: block number must be greater than 0.")
+			return errors.New("Export error: block number must be greater than 0")
 		}
 		err = exportAppendBlockChain(ftsrv.BlockChain(), fp, uint64(first), uint64(last))
 	}
@@ -118,7 +118,6 @@ func exportChain(args []string) error {
 
 func exportBlockChain(b *blockchain.BlockChain, fn string) error {
 	log.Info("Exporting blockchain", "file", fn)
-
 	// Open the file handle and potentially wrap with a gzip stream
 	fh, err := os.OpenFile(fn, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	if err != nil {
@@ -144,7 +143,6 @@ func exportBlockChain(b *blockchain.BlockChain, fn string) error {
 // the file if data already exists in it.
 func exportAppendBlockChain(b *blockchain.BlockChain, fn string, first uint64, last uint64) error {
 	log.Info("Exporting blockchain", "file", fn)
-
 	// Open the file handle and potentially wrap with a gzip stream
 	fh, err := os.OpenFile(fn, os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
 	if err != nil {
@@ -166,10 +164,8 @@ func exportAppendBlockChain(b *blockchain.BlockChain, fn string, first uint64, l
 }
 
 func importChain(args []string) error {
-	logConfig.Setup()
-
 	if len(args) < 1 {
-		return errors.New("This command requires an argument.")
+		return errors.New("This command requires an argument")
 	}
 
 	stack, err := makeNode()
@@ -178,7 +174,7 @@ func importChain(args []string) error {
 	}
 
 	ctx := stack.GetNodeConfig()
-	ftsrv, err := ftservice.New(ctx, ftconfig.FtServiceCfg)
+	ftsrv, err := ftservice.New(ctx, ftCfgInstance.FtServiceCfg)
 	if err != nil {
 		return err
 	}

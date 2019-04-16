@@ -1,11 +1,11 @@
 package metrics
 
 type Config struct {
-	MetricsFlag  bool   `mapstructure:"test-metricsflag"`
-	InfluxDBFlag bool   `mapstructure:"test-influxdbflag"`
-	Url          string `mapstructure:"test-influxdburl"`
-	DataBase     string `mapstructure:"test-influxdbname"`
-	UserName     string `mapstructure:"test-influxdbuser"`
-	PassWd       string `mapstructure:"test-influxdbpasswd"`
-	NameSpace    string `mapstructure:"test-influxdbnamespace"`
+	MetricsFlag  bool   `mapstructure:"metrics"`
+	InfluxDBFlag bool   `mapstructure:"influxdb"`
+	URL          string `mapstructure:"influxdburl"`
+	DataBase     string `mapstructure:"influxdbname"`
+	UserName     string `mapstructure:"influxdbuser"`
+	PassWd       string `mapstructure:"influxdbpasswd"`
+	NameSpace    string `mapstructure:"influxdbnamespace"`
 }
