@@ -472,7 +472,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		//
 		if action.CheckValue() != true {
 			return ErrInvalidValue
 		}

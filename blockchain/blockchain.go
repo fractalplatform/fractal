@@ -146,16 +146,20 @@ func (bc *BlockChain) loadLastBlock() error {
 		return bc.Reset()
 	}
 
+	// Make sure the state associated with the block is available
+	if _, err := state.New(currentBlock.Root(), bc.stateCache); err != nil {
+		// Dangling block without a state associated, init from scratch
+		log.Warn("Head state missing, repairing chain", "number", currentBlock.Number(), "hash", currentBlock.Hash())
+		if err := bc.repair(&currentBlock); err != nil {
+			return err
+		}
+	}
+
 	// Everything seems to be fine, set as the head block
 	bc.currentBlock.Store(currentBlock)
 
 	// Restore the last known head header
 	currentHeader := currentBlock.Header()
-	if head := rawdb.ReadHeadHeaderHash(bc.db); head != (common.Hash{}) {
-		if header := bc.GetHeaderByHash(head); header != nil {
-			currentHeader = header
-		}
-	}
 
 	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
 	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
@@ -170,6 +174,22 @@ func (bc *BlockChain) loadLastBlock() error {
 // Reset purges the entire blockchain, restoring it to its genesis state.
 func (bc *BlockChain) Reset() error {
 	return bc.ResetWithGenesisBlock(bc.genesisBlock)
+}
+
+func (bc *BlockChain) repair(head **types.Block) error {
+	for {
+		// Abort if we've rewound to a head block that does have associated state
+		if _, err := state.New((*head).Root(), bc.stateCache); err == nil {
+			log.Info("Rewound blockchain to past state", "number", (*head).Number(), "hash", (*head).Hash())
+			return nil
+		}
+		// Otherwise rewind one block and recheck state availability there
+		block := bc.GetBlock((*head).ParentHash(), (*head).NumberU64()-1)
+		if block == nil {
+			return fmt.Errorf("missing block %d [%x]", (*head).NumberU64()-1, (*head).ParentHash())
+		}
+		*head = block
+	}
 }
 
 // ResetWithGenesisBlock purges the entire blockchain, restoring it to the specified genesis state.

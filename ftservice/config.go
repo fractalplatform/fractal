@@ -30,29 +30,29 @@ type Config struct {
 	Genesis *blockchain.Genesis `toml:",omitempty"`
 
 	// Database options
-	DatabaseHandles int `mapstructure:"ftservice-databasehandles"`
-	DatabaseCache   int `mapstructure:"ftservice-databasecache"`
+	DatabaseHandles int
+	DatabaseCache   int `mapstructure:"databasecache"`
 
 	// Transaction pool options
-	TxPool *txpool.Config
+	TxPool *txpool.Config `mapstructure:"txpool"`
 
 	// Gas Price Oracle options
-	GasPrice gasprice.Config
+	GasPrice gasprice.Config `mapstructure:"gpo"`
 
 	// miner
-	Miner *MinerConfig
+	Miner *MinerConfig `mapstructure:"miner"`
 
-	MetricsConf *metrics.Config
+	MetricsConf *metrics.Config `mapstructure:"metrics"`
 
 	// snapshot
 	Snapshot        bool
-	ContractLogFlag bool `mapstructure:"ftservice-ContractLogFlag"`
+	ContractLogFlag bool `mapstructure:"contractlog"`
 }
 
 // MinerConfig miner config
 type MinerConfig struct {
-	Start       bool     `mapstructure:"miner-start"`
-	Name        string   `mapstructure:"miner-name"`
-	PrivateKeys []string `mapstructure:"miner-private"`
-	ExtraData   string   `mapstructure:"miner-extra"`
+	Start       bool     `mapstructure:"start"`
+	Name        string   `mapstructure:"name"`
+	PrivateKeys []string `mapstructure:"private"`
+	ExtraData   string   `mapstructure:"extra"`
 }
