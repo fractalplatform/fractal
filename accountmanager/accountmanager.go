@@ -505,7 +505,7 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 	return am.SetAccount(acct)
 }
 
-// GetNonce get nonce
+// GetAuthorVersion returns the account author version
 func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -516,40 +516,6 @@ func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, err
 	}
 	return acct.GetAuthorVersion(), nil
 }
-
-//GetBalancesList get Balances return a list
-//func (am *AccountManager) GetBalancesList(accountName common.Name) ([]*AssetBalance, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return acct.GetBalancesList(), nil
-//}
-
-//GetAllAccountBalance return all balance in map.
-//func (am *AccountManager) GetAccountAllBalance(accountName common.Name) (map[uint64]*big.Int, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrAccountNotExist
-//	}
-//
-//	return acct.GetAllBalances()
-//}
-
-//GetAcccountPubkey get account pub key
-//func (am *AccountManager) GetAcccountPubkey(accountName common.Name) ([]byte, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrAccountNotExist
-//	}
-//	return acct.GetPubKey().Bytes(), nil
-//}
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
