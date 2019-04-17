@@ -20,19 +20,19 @@ import "time"
 
 // Config  are the configuration parameters of the transaction pool.
 type Config struct {
-	NoLocals  bool          `mapstructure:"txpool-nolocals"`  // Whether local transaction handling should be disabled
-	Journal   string        `mapstructure:"txpool-journal"`   // Journal of local transactions to survive node restarts
-	Rejournal time.Duration `mapstructure:"txpool-rejournal"` // Time interval to regenerate the local transaction journal
+	NoLocals  bool          `mapstructure:"nolocals"`  // Whether local transaction handling should be disabled
+	Journal   string        `mapstructure:"journal"`   // Journal of local transactions to survive node restarts
+	Rejournal time.Duration `mapstructure:"rejournal"` // Time interval to regenerate the local transaction journal
 
-	PriceLimit uint64 `mapstructure:"txpool-pricelimit"` // Minimum gas price to enforce for acceptance into the pool
-	PriceBump  uint64 `mapstructure:"txpool-pricebump"`  // Minimum price bump percentage to replace an already existing transaction (nonce)
+	PriceLimit uint64 `mapstructure:"pricelimit"` // Minimum gas price to enforce for acceptance into the pool
+	PriceBump  uint64 `mapstructure:"pricebump"`  // Minimum price bump percentage to replace an already existing transaction (nonce)
 
-	AccountSlots uint64 `mapstructure:"txpool-accountslots"` // Minimum number of executable transaction slots guaranteed per account
-	GlobalSlots  uint64 `mapstructure:"txpool-globalslots"`  // Maximum number of executable transaction slots for all accounts
-	AccountQueue uint64 `mapstructure:"txpool-accountqueue"` // Maximum number of non-executable transaction slots permitted per account
-	GlobalQueue  uint64 `mapstructure:"txpool-globalqueue"`  // Maximum number of non-executable transaction slots for all accounts
+	AccountSlots uint64 `mapstructure:"accountslots"` // Minimum number of executable transaction slots guaranteed per account
+	GlobalSlots  uint64 `mapstructure:"globalslots"`  // Maximum number of executable transaction slots for all accounts
+	AccountQueue uint64 `mapstructure:"accountqueue"` // Maximum number of non-executable transaction slots permitted per account
+	GlobalQueue  uint64 `mapstructure:"globalqueue"`  // Maximum number of non-executable transaction slots for all accounts
 
-	Lifetime time.Duration `mapstructure:"txpool-lifetime"` // Maximum amount of time non-executable transaction are queued
+	Lifetime time.Duration `mapstructure:"lifetime"` // Maximum amount of time non-executable transaction are queued
 
 	GasAssetID uint64
 }

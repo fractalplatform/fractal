@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -59,12 +60,23 @@ type Genesis struct {
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
-func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.ChainConfig, dcfg *dpos.Config, hash common.Hash, err error) {
+	chainCfg = params.DefaultChainconfig
+	dcfg = dpos.DefaultConfig
+	hash = common.Hash{}
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.New(e.(string))
+		}
+	}()
+
 	if genesis != nil && genesis.Config == nil {
-		return params.DefaultChainconfig, dpos.DefaultConfig, common.Hash{}, errGenesisNoConfig
+		err = errGenesisNoConfig
+		return
 	}
 	if genesis != nil && genesis.Dpos == nil {
-		return params.DefaultChainconfig, dpos.DefaultConfig, common.Hash{}, errGenesisNoDpos
+		err = errGenesisNoDpos
+		return
 	}
 
 	// Just commit the new block if there is no stored genesis block.
@@ -107,7 +119,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	if height == nil {
 		return newcfg, newdpos, stored, fmt.Errorf("missing block number for head header hash")
 	}
-	err := newdpos.Write(db, append([]byte("ft-dpos-"), stored.Bytes()...))
+	err = newdpos.Write(db, append([]byte("ft-dpos-"), stored.Bytes()...))
 	rawdb.WriteChainConfig(db, stored, newcfg)
 	return newcfg, newdpos, stored, err
 }

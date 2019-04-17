@@ -160,11 +160,6 @@ func (bc *BlockChain) loadLastBlock() error {
 
 	// Restore the last known head header
 	currentHeader := currentBlock.Header()
-	if head := rawdb.ReadHeadHeaderHash(bc.db); head != (common.Hash{}) {
-		if header := bc.GetHeaderByHash(head); header != nil {
-			currentHeader = header
-		}
-	}
 
 	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
 	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
