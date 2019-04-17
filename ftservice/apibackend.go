@@ -196,6 +196,10 @@ func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(comm
 	return txdetails
 }
 
+func (b *APIBackend) GetBadBlocks(ctx context.Context) ([]*types.Block, error) {
+	return b.ftservice.blockchain.BadBlocks(), nil
+}
+
 func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
 	return b.ftservice.blockchain.GetTdByHash(blockHash)
 }

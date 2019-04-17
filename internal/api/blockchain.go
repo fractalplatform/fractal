@@ -231,6 +231,10 @@ func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash comm
 	return detailtxs[index], nil
 }
 
+func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context) ([]*types.Block, error) {
+	return s.b.GetBadBlocks(ctx)
+}
+
 type CallArgs struct {
 	ActionType types.ActionType `json:"actionType"`
 	From       common.Name      `json:"from"`

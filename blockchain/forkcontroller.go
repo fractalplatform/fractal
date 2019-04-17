@@ -104,7 +104,7 @@ func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) err
 
 		info.NextForkIDBlockNum++
 		if info.CurForkIDBlockNum+info.NextForkIDBlockNum >= fc.cfg.ForkBlockNum {
-				info.CurForkIDBlockNum--
+			info.CurForkIDBlockNum--
 		}
 	} else {
 		info.CurForkIDBlockNum++
