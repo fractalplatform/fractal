@@ -301,13 +301,11 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 			if err != am.ErrAccountIsDestroy {
 				log.Error("Failed to pendingAccountManager SetNonce", "err", err)
 				return
-			} else {
-				delete(tp.pending, name)
-				delete(tp.beats, name)
-				delete(tp.queue, name)
-				log.Debug("Remove all destory account ", "name", name)
 			}
-
+			delete(tp.pending, name)
+			delete(tp.beats, name)
+			delete(tp.queue, name)
+			log.Debug("Remove all destory account ", "name", name)
 		}
 	}
 	// Check the queue and move transactions over to the pending if possible
@@ -490,6 +488,12 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
 	if tx.Size() > 32*1024 {
 		return ErrOversizedData
+	}
+
+	// Make sure the transaction is signed properly
+	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
+		log.Error("account Manager reocver faild ", "err", err)
+		return ErrInvalidSender
 	}
 
 	// Transaction action  value can't be negative.
@@ -693,9 +697,11 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 	}
 
 	// Cache senders in transactions before obtaining lock
-	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
-		log.Error("account Manager reocver faild ", "err", err, "hash", tx.Hash())
-		return ErrInvalidSender
+	for _, action := range tx.GetActions() {
+		_, err := types.RecoverMultiKey(tp.signer, action, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	tp.mu.Lock()
@@ -728,10 +734,13 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
 			isErr = true
 			continue
 		}
-		if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
-			log.Error("account Manager reocver faild ", "err", err, "hash", tx.Hash())
-			errs = append(errs, err)
-			isErr = true
+		for _, action := range tx.GetActions() {
+			_, err := types.RecoverMultiKey(tp.signer, action, tx)
+			if err != nil {
+				log.Error("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
+				errs = append(errs, err)
+				isErr = true
+			}
 		}
 	}
 	if isErr {
