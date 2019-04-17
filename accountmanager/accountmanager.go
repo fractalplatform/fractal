@@ -444,7 +444,6 @@ func (am *AccountManager) GetAccountById(id uint64) (*Account, error) {
 	if err := rlp.DecodeBytes(b, &acct); err != nil {
 		return nil, err
 	}
-	fmt.Println("threshold ", acct.Threshold, acct.UpdateAuthorThreshold)
 	return &acct, nil
 }
 
