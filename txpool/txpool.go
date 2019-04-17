@@ -190,7 +190,6 @@ func (tp *TxPool) loop() {
 				}
 			}
 			tp.mu.Unlock()
-
 			// Handle local transaction journal rotation
 		case <-journal.C:
 			if tp.journal != nil {
@@ -472,7 +471,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		//
 		if action.CheckValue() != true {
 			return ErrInvalidValue
 		}
@@ -492,12 +490,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
 	if tx.Size() > 32*1024 {
 		return ErrOversizedData
-	}
-
-	// Make sure the transaction is signed properly
-	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
-		log.Error("account Manager reocver faild ", "err", err)
-		return ErrInvalidSender
 	}
 
 	// Transaction action  value can't be negative.
@@ -646,7 +638,6 @@ func (tp *TxPool) promoteTx(name common.Name, hash common.Hash, tx *types.Transa
 		// An older transaction was better, discard this
 		tp.all.Remove(hash)
 		tp.priced.Removed()
-
 		return false
 	}
 	// Otherwise discard any previous transaction and mark this
@@ -662,7 +653,6 @@ func (tp *TxPool) promoteTx(name common.Name, hash common.Hash, tx *types.Transa
 	}
 	// Set the potentially new pending nonce and notify any subsystems of the new tx
 	tp.beats[name] = time.Now()
-
 	// todo action
 	tp.pendingAccountManager.SetNonce(name, tx.GetActions()[0].Nonce()+1)
 	return true
@@ -698,6 +688,16 @@ func (tp *TxPool) AddRemotes(txs []*types.Transaction) []error {
 
 // addTx enqueues a single transaction into the pool if it is valid.
 func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
+	if len(tx.GetActions()) == 0 {
+		return ErrEmptyActions
+	}
+
+	// Cache senders in transactions before obtaining lock
+	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
+		log.Error("account Manager reocver faild ", "err", err, "hash", tx.Hash())
+		return ErrInvalidSender
+	}
+
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
@@ -717,6 +717,26 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
+	// Cache senders in transactions before obtaining lock
+	var (
+		errs  []error
+		isErr bool
+	)
+	for _, tx := range txs {
+		if len(tx.GetActions()) == 0 {
+			errs = append(errs, fmt.Errorf(ErrEmptyActions.Error()+" hash %v", tx.Hash()))
+			isErr = true
+			continue
+		}
+		if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
+			log.Error("account Manager reocver faild ", "err", err, "hash", tx.Hash())
+			errs = append(errs, err)
+			isErr = true
+		}
+	}
+	if isErr {
+		return errs
+	}
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
