@@ -70,7 +70,6 @@ var RootCmd = &cobra.Command{
 }
 
 func viperUmarshalConfig() {
-	fmt.Println("----viper->", viper.AllSettings())
 	err := viper.Unmarshal(ftCfgInstance)
 	if err != nil {
 		fmt.Println("Unmarshal logConfig err: ", err)
@@ -95,9 +94,6 @@ func makeNode() (*node.Node, error) {
 		}
 		ftCfgInstance.FtServiceCfg.Genesis = genesis
 	}
-
-	ftbytes, _ := json.MarshalIndent(ftCfgInstance, "", "  ")
-	fmt.Println("------>ft config", string(ftbytes))
 
 	return node.New(ftCfgInstance.NodeCfg)
 }
@@ -155,9 +151,6 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Printf("Can't read config: %v, use default configuration.", err)
 	}
-	fmt.Println("----viper->", ConfigFile)
-	fmt.Println("----viper->", viper.AllKeys())
-	fmt.Println("----viper->", viper.AllSettings())
 }
 
 func init() {
