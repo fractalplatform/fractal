@@ -1022,7 +1022,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	value, assetID := stack.pop(), stack.pop()
 	astID := assetID.Uint64()
 
-	action := types.NewAction(types.DestroyAsset, contract.CallerName, evm.chainConfig.SysName, 0, astID, 0, value, nil)
+	action := types.NewAction(types.DestroyAsset, contract.CallerName, common.Name(evm.chainConfig.SysName), 0, astID, 0, value, nil)
 
 	err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {

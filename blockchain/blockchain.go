@@ -21,6 +21,7 @@ import (
 	"io"
 	"math/big"
 	mrand "math/rand"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -114,7 +115,10 @@ func NewBlockChain(db fdb.Database, vmConfig vm.Config, chainConfig *params.Chai
 		futureBlocks: futureBlocks,
 		badBlocks:    badBlocks,
 		senderCacher: senderCacher,
-		fcontroller:  NewForkController(defaultForkConfig, chainConfig),
+		fcontroller: NewForkController(&ForkConfig{
+			ForkBlockNum:   chainConfig.ForkedCfg.ForkBlockNum,
+			Forkpercentage: chainConfig.ForkedCfg.Forkpercentage,
+		}, chainConfig),
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)
@@ -305,7 +309,7 @@ func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	// store cur block
 	// bc.currentBlock.Store(block)
 
-	if block.Coinbase().String() == bc.chainConfig.SysName.String() {
+	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
 		rawdb.WriteIrreversibleNumber(batch, block.NumberU64())
 		bc.irreversibleNumber.Store(block.NumberU64())
 	}
@@ -516,7 +520,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	currentBlock := bc.CurrentBlock()
 	localTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
 
-	reorg := externTd.Cmp(localTd) > 0 || (block.Coinbase().String() == bc.chainConfig.SysName.String())
+	reorg := externTd.Cmp(localTd) > 0 || strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0
 	if !reorg && externTd.Cmp(localTd) == 0 {
 		// Split same-difficulty blocks by number, then at random
 		reorg = block.NumberU64() < currentBlock.NumberU64() || (block.NumberU64() == currentBlock.NumberU64() && mrand.Float64() < 0.5)
@@ -703,7 +707,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 
 func (bc *BlockChain) insertSideChain(block *types.Block) ([]*event.Event, []*types.Log, error) {
 	var systemBlock bool
-	if block.Coinbase().String() == bc.chainConfig.SysName.String() {
+	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
 		systemBlock = true
 	}
 

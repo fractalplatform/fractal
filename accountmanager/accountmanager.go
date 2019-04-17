@@ -1239,9 +1239,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	switch action.Type() {
 	case types.CreateAccount:
 		var acct AccountAction
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
 			return err
@@ -1259,9 +1256,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 	case types.UpdateAccount:
 		var acct AccountAction
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
 			return err
@@ -1273,9 +1267,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 	case types.UpdateAccountAuthor:
 		var acctAuth AccountAuthorAction
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &acctAuth)
 		if err != nil {
 			return err
@@ -1286,9 +1277,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 	case types.IssueAsset:
 		var asset asset.AssetObject
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return err
@@ -1301,9 +1289,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 	case types.IncreaseAsset:
 		var inc IncAsset
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &inc)
 		if err != nil {
 			return err
@@ -1314,9 +1299,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 
 	case types.DestroyAsset:
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		// var asset asset.AssetObject
 		// err := rlp.DecodeBytes(action.Data(), &asset)
 		// if err != nil {
@@ -1332,9 +1314,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 	case types.UpdateAsset:
 		var asset asset.AssetObject
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return err
@@ -1361,9 +1340,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		break
 	case types.SetAssetOwner:
 		var asset asset.AssetObject
-		if action.Recipient() != common.Name(sysName) {
-			return ErrToNameInvalid
-		}
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return err

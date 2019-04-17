@@ -1770,7 +1770,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 	}
 
 	a10 := &AccountAction{
-		AccountName: common.Name("bbbbbbb"),
+		AccountName: common.Name("bbbbbb"),
 		Founder:     common.Name(""),
 		ChargeRatio: 10,
 		PublicKey:   pubkey,

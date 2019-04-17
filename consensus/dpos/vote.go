@@ -21,11 +21,25 @@ import (
 	"math/big"
 	"math/rand"
 	"strings"
+
+	"github.com/fractalplatform/fractal/state"
 )
 
 type System struct {
 	config *Config
 	IDB
+}
+
+func NewSystem(state *state.StateDB, config *Config) *System {
+	return &System{
+		config: config,
+		IDB: &LDB{
+			IDatabase: &stateDB{
+				name:  config.AccountName,
+				state: state,
+			},
+		},
+	}
 }
 
 // RegCadidate  register a cadidate

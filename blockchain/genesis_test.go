@@ -22,8 +22,6 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/params"
@@ -32,10 +30,10 @@ import (
 	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0x5910495ac2ca9ca6eeae09b98001337d4ab86af8993f3ea42b222956cc1e4dbd")
+var defaultgenesisBlockHash = common.HexToHash("0x2a6d0a84e3dcdc1ec4a600313cd6f3e980e2d38ae4bb4b29b8e2875bfeb95ed6")
 
 func TestDefaultGenesisBlock(t *testing.T) {
-	block := DefaultGenesis().ToBlock(nil)
+	block, _ := DefaultGenesis().ToBlock(nil)
 	if block.Hash() != defaultgenesisBlockHash {
 		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash().Hex(), defaultgenesisBlockHash.Hex())
 	}
@@ -43,45 +41,19 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0xf26d153793a925c8a4b09fe3dc86ca9e6bab7c3b05346e35432bb8beb4914e7a")
+		customghash = common.HexToHash("0x74a20ed3ea507d363bb6b601a77ae57d15c07cf7896c97091bd1fa82922448f7")
 		customg     = Genesis{
-			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
-			Dpos:             dpos.DefaultConfig,
-			Coinbase:         "coinbase",
-			AllocAccounts:    DefaultGenesisAccounts(),
-			AllocAssets:      DefaultGenesisAssets(),
-			AccountNameLevel: accountmanager.DefaultAccountNameConf(),
-			AssetNameLevel:   asset.DefaultAssetNameConf(),
+			Config:         params.DefaultChainconfig.Copy(),
+			AllocAccounts:  DefaultGenesisAccounts(),
+			AllocAssets:    DefaultGenesisAssets(),
+			AllocCadidates: DefaultGenesisCadidates(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0xccc4fbf25831629ad31f623ac10ebc7bb35b274e1e1cbfb347a651c4e2ad1df5")
-		dposConfig     = &dpos.Config{
-			MaxURLLen:            512,
-			UnitStake:            big.NewInt(1000),
-			CadidateMinQuantity:  big.NewInt(10),
-			VoterMinQuantity:     big.NewInt(1),
-			ActivatedMinQuantity: big.NewInt(100),
-			BlockInterval:        3000,
-			BlockFrequency:       6,
-			CadidateScheduleSize: 3,
-			DelayEcho:            2,
-			AccountName:          "ftsystemdpos",
-			SystemName:           "ftsystemio",
-			SystemURL:            "www.fractalproject.com",
-			ExtraBlockReward:     big.NewInt(1),
-			BlockReward:          big.NewInt(5),
-			Decimals:             18,
-		}
-
-		chainConfig = &params.ChainConfig{
-			ChainID:             big.NewInt(1),
-			SysName:             "ftsystemio",
-			SysToken:            "ftoken",
-			AssetChargeRatio:    80,
-			ContractChargeRatio: 80,
-		}
+		oldcustomghash = common.HexToHash("2ae537d940f33312cd672662af27213dfab290c2dad79a1bfe1ceb34b4953552")
 	)
-	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
+	customg.Config.ChainID = big.NewInt(5)
+	oldcustomg.Config = customg.Config.Copy()
+	oldcustomg.Config.ChainID = big.NewInt(6)
 
 	tests := []struct {
 		name       string
@@ -98,7 +70,6 @@ func TestSetupGenesis(t *testing.T) {
 			},
 			wantErr:    errGenesisNoConfig,
 			wantConfig: params.DefaultChainconfig,
-			wantDpos:   dpos.DefaultConfig,
 		},
 		{
 			name: "no block in DB, genesis == nil",
@@ -107,7 +78,6 @@ func TestSetupGenesis(t *testing.T) {
 			},
 			wantHash:   defaultgenesisBlockHash,
 			wantConfig: params.DefaultChainconfig,
-			wantDpos:   dpos.DefaultConfig,
 		},
 		{
 			name: "mainnet block in DB, genesis == nil",
@@ -118,8 +88,7 @@ func TestSetupGenesis(t *testing.T) {
 				return SetupGenesisBlock(db, nil)
 			},
 			wantHash:   defaultgenesisBlockHash,
-			wantConfig: chainConfig,
-			wantDpos:   dposConfig,
+			wantConfig: params.DefaultChainconfig,
 		},
 		{
 			name: "compatible config in DB",
@@ -135,14 +104,13 @@ func TestSetupGenesis(t *testing.T) {
 			},
 			wantHash:   customghash,
 			wantConfig: customg.Config,
-			wantDpos:   customg.Dpos,
 		},
 	}
 
 	for _, test := range tests {
 		db := memdb.NewMemDatabase()
 
-		config, dpos, hash, err := test.fn(db)
+		config, _, hash, err := test.fn(db)
 
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
@@ -150,12 +118,10 @@ func TestSetupGenesis(t *testing.T) {
 			t.Errorf("%s: 1 returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
 		}
 
+		test.wantConfig.SysTokenID = config.SysTokenID
+		test.wantConfig.SysTokenDecimals = config.SysTokenDecimals
 		if !reflect.DeepEqual(config, test.wantConfig) {
 			t.Errorf("%s:\n 2 returned %v\nwant     %v", test.name, config, test.wantConfig)
-		}
-
-		if !reflect.DeepEqual(dpos, test.wantDpos) {
-			t.Errorf("%s:\n 3returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 
 		if hash != test.wantHash {

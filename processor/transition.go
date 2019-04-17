@@ -181,7 +181,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
 		assetName := common.Name(assetInfo.GetAssetName())
 
-		assetFounderRatio := st.chainConfig.AssetChargeRatio
+		assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
 		if len(assetName.String()) > 0 {
 			if _, ok := evm.FounderGasMap[assetName]; !ok {
 				dGas := vm.DistributeGas{

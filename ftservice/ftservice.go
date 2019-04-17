@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/log"
-	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/consensus/dpos"
@@ -107,30 +106,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	}
 
 	ftservice.wallet.SetBlockChain(ftservice.blockchain)
-
-	statedb, err := ftservice.blockchain.State()
-	if err != nil {
-		panic(fmt.Sprintf("state db err %v", err))
-	}
-	accountManager, err := am.NewAccountManager(statedb)
-	if err != nil {
-		panic(fmt.Sprintf("genesis accountManager new err: %v", err))
-	}
-	if ok, err := accountManager.AccountIsExist(chainCfg.SysName); !ok {
-		panic(fmt.Sprintf("system account is not exist %v", err))
-	}
-
-	//init sysname
-	if !am.SetSysName(chainCfg.SysName) {
-		panic(fmt.Sprintf("accountmanager set sysname err"))
-	}
-
-	assetInfo, err := accountManager.GetAssetInfoByName(chainCfg.SysToken)
-	if err != nil {
-		panic(fmt.Sprintf("genesis system asset err %v", err))
-	}
-	chainCfg.SysTokenID = assetInfo.AssetId
-	chainCfg.SysTokenDecimals = assetInfo.Decimals
 
 	// txpool
 	if config.TxPool.Journal != "" {

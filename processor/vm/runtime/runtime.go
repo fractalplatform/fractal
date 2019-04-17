@@ -55,10 +55,7 @@ type Config struct {
 // sets defaults on the config
 func setDefaults(cfg *Config) {
 	if cfg.ChainConfig == nil {
-		cfg.ChainConfig = &params.ChainConfig{
-			ContractChargeRatio: 80,
-			AssetChargeRatio:    80,
-		}
+		cfg.ChainConfig = params.DefaultChainconfig
 		//cfg.ChainConfig = &params.ChainConfig{
 		//	ChainID:        big.NewInt(1),
 		//	HomesteadBlock: new(big.Int),

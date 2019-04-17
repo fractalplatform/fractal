@@ -398,7 +398,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 		action := tx.GetActions()[0]
 
-		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName.String()) != 0 {
+		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName) != 0 {
 			switch action.Type() {
 			case types.KickedCadidate:
 				fallthrough
