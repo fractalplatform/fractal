@@ -17,8 +17,11 @@
 package processor
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/processor/vm"
@@ -98,6 +101,11 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	for i, action := range tx.GetActions() {
 		if !action.CheckValue() {
 			return nil, 0, ErrActionInvalidValue
+		}
+		if ast, err := accountDB.GetAssetInfoByID(action.AssetID()); err != nil && err != asset.ErrAssetIdInvalid {
+			return nil, 0, err
+		} else if ast != nil && len(ast.Contract.String()) != 0 && action.Recipient() != ast.Contract {
+			return nil, 0, fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
 		}
 		if needCheckSign(accountDB, action) {
 			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {

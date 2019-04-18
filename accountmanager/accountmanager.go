@@ -1220,10 +1220,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
 
-	if !action.CheckValue() {
-		return ErrAmountValueInvalid
-	}
-
 	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
 		return ErrToNameInvalid
 	}

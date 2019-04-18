@@ -75,12 +75,12 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		},
 	}
 
-	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
-		return fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
+	if action.AssetID() != chainCfg.SysTokenID {
+		return fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
 	}
 
-	if !action.CheckValue() {
-		return fmt.Errorf("no payable, value must be zero ")
+	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
+		return fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
 	}
 
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
