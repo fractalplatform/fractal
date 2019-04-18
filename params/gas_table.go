@@ -38,6 +38,7 @@ type GasTable struct {
 	// not charged.
 	CreateBySuicide uint64
 	SetOwner        uint64
+	GetAccountTime  uint64
 	GetSnapshotTime uint64
 	GetAssetAmount  uint64
 	SnapBalance     uint64
@@ -62,6 +63,7 @@ var (
 
 		CreateBySuicide: 25000,
 		SetOwner:        200,
+		GetAccountTime:  200,
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
 		SnapBalance:     200,
