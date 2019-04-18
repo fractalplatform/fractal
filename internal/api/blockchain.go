@@ -236,8 +236,8 @@ func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]
 	if len(blocks) != 0 {
 		ret_block := make([]map[string]interface{}, len(blocks))
 
-		for _, b := range blocks {
-			ret_block = append(ret_block, s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx))
+		for i, b := range blocks {
+			ret_block[i] = s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx)
 		}
 
 		return ret_block, nil
