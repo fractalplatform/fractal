@@ -231,8 +231,18 @@ func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash comm
 	return detailtxs[index], nil
 }
 
-func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context) ([]*types.Block, error) {
-	return s.b.GetBadBlocks(ctx)
+func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]map[string]interface{}, error) {
+	blocks, err := s.b.GetBadBlocks(ctx)
+	if len(blocks) != 0 {
+		ret_block := make([]map[string]interface{}, len(blocks))
+
+		for _, b := range blocks {
+			ret_block = append(ret_block, s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx))
+		}
+
+		return ret_block, nil
+	}
+	return nil, err
 }
 
 type CallArgs struct {
