@@ -61,8 +61,9 @@ type AuthorAction struct {
 }
 
 type AccountAuthorAction struct {
-	Threshold     uint64          `json:"threshold,omitempty"`
-	AuthorActions []*AuthorAction `json:"authorActions,omitempty"`
+	Threshold             uint64          `json:"threshold,omitempty"`
+	UpdateAuthorThreshold uint64          `json:"updateAuthorThreshold,omitempty"`
+	AuthorActions         []*AuthorAction `json:"authorActions,omitempty"`
 }
 
 type IncAsset struct {
@@ -224,7 +225,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, numer uint64, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
 
 	if accountName.AccountNameLevel() > 1 {
 		if !fromName.IsValidCreator(accountName.String()) {
@@ -232,7 +233,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 		}
 	}
 
-	if err := am.CreateAccount(accountName, founderName, numer, 0, pubkey); err != nil {
+	if err := am.CreateAccount(accountName, founderName, number, 0, pubkey); err != nil {
 		return err
 	}
 
@@ -333,7 +334,10 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *
 		if f == nil {
 			return ErrAccountNotExist
 		}
+	} else {
+		accountAction.Founder.SetString(accountName.String())
 	}
+
 	if accountAction.ChargeRatio > 100 {
 		return ErrChargeRatioInvalid
 	}
@@ -352,6 +356,9 @@ func (am *AccountManager) UpdateAccountAuthor(accountName common.Name, acctAuth 
 	}
 	if acctAuth.Threshold != 0 {
 		acct.SetThreshold(acctAuth.Threshold)
+	}
+	if acctAuth.UpdateAuthorThreshold != 0 {
+		acct.SetUpdateAuthorThreshold(acctAuth.UpdateAuthorThreshold)
 	}
 	for _, authorAct := range acctAuth.AuthorActions {
 		actionTy := authorAct.ActionType
@@ -440,7 +447,6 @@ func (am *AccountManager) GetAccountById(id uint64) (*Account, error) {
 	if err := rlp.DecodeBytes(b, &acct); err != nil {
 		return nil, err
 	}
-
 	return &acct, nil
 }
 
@@ -505,7 +511,7 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 	return am.SetAccount(acct)
 }
 
-// GetNonce get nonce
+// GetAuthorVersion returns the account author version
 func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -516,40 +522,6 @@ func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, err
 	}
 	return acct.GetAuthorVersion(), nil
 }
-
-//GetBalancesList get Balances return a list
-//func (am *AccountManager) GetBalancesList(accountName common.Name) ([]*AssetBalance, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return acct.GetBalancesList(), nil
-//}
-
-//GetAllAccountBalance return all balance in map.
-//func (am *AccountManager) GetAccountAllBalance(accountName common.Name) (map[uint64]*big.Int, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrAccountNotExist
-//	}
-//
-//	return acct.GetAllBalances()
-//}
-
-//GetAcccountPubkey get account pub key
-//func (am *AccountManager) GetAcccountPubkey(accountName common.Name) ([]byte, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrAccountNotExist
-//	}
-//	return acct.GetPubKey().Bytes(), nil
-//}
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
@@ -577,15 +549,21 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 
 		authorVersion := make(map[common.Name]uint64, 0)
 		for name, acctAuthor := range recoverRes.acctAuthors {
+
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
 				count += weight
 			}
-			if count < acctAuthor.threshold {
+			threshold := acctAuthor.threshold
+			if name.String() == action.Sender().String() && action.Type() == types.UpdateAccountAuthor {
+				threshold = acctAuthor.updateAuthorThreshold
+			}
+			if count < threshold {
 				return fmt.Errorf("account %s want threshold %d, but actual is %d", name, acctAuthor.threshold, count)
 			}
 			authorVersion[name] = acctAuthor.version
 		}
+
 		types.StoreAuthorCache(action, authorVersion)
 	}
 	return nil
@@ -648,7 +626,7 @@ func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, 
 				return ErrAccountIsDestroy
 			}
 			if recoverRes.acctAuthors[acct.GetName()] == nil {
-				a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, indexWeight: map[uint64]uint64{idx: acct.Authors[idx].GetWeight()}}
+				a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, updateAuthorThreshold: acct.UpdateAuthorThreshold, indexWeight: map[uint64]uint64{idx: acct.Authors[idx].GetWeight()}}
 				recoverRes.acctAuthors[acct.GetName()] = a
 			} else {
 				recoverRes.acctAuthors[acct.GetName()].indexWeight[idx] = acct.Authors[idx].GetWeight()
@@ -676,7 +654,7 @@ func (am *AccountManager) ValidOneSign(acct *Account, index uint64, pub common.P
 		return fmt.Errorf("wrong sign type")
 	}
 	if recoverRes.acctAuthors[acct.GetName()] == nil {
-		a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, indexWeight: map[uint64]uint64{index: acct.Authors[index].GetWeight()}}
+		a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, updateAuthorThreshold: acct.UpdateAuthorThreshold, indexWeight: map[uint64]uint64{index: acct.Authors[index].GetWeight()}}
 		recoverRes.acctAuthors[acct.GetName()] = a
 		return nil
 	}

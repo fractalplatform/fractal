@@ -69,7 +69,6 @@ func init() {
 		"Network listening address")
 	falgs.StringVar(&nodeConfig.P2PConfig.NodeDatabase, "p2p_nodedb", nodeConfig.P2PConfig.NodeDatabase,
 		"The path to the database containing the previously seen live nodes in the network")
-
 	falgs.UintVar(&nodeConfig.P2PConfig.NetworkID, "p2p_id", nodeConfig.P2PConfig.NetworkID,
 		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.")
 	falgs.StringVar(&nodeConfig.P2PBootNodes, "p2p_bootnodes", nodeConfig.P2PBootNodes,

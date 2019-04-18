@@ -396,6 +396,26 @@ func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 	return nil, nil
 }
 
+func opGetAccountTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	account := stack.pop()
+	userID := account.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	number := acct.GetAccountNumber()
+	head := evm.Context.GetHeaderByNumber(number)
+	if head == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		time := head.Time.Uint64()
+		stack.push(evm.interpreter.intPool.get().SetUint64(time))
+	}
+	return nil, nil
+}
+
 func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	time, num := stack.pop(), stack.pop()
 	index := num.Uint64()
@@ -1058,6 +1078,27 @@ func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	}
 
 	evm.interpreter.intPool.put(account)
+	return nil, nil
+}
+
+// opEciesCalc use ecies to encrypt or decrypt bytes
+func opEciesCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	// offset, size := stack.pop(), stack.pop()
+	// data := memory.Get(offset.Int64(), size.Int64())
+	// offset2, size2 := stack.pop(), stack.pop()
+	// key := memory.Get(offset.Int64(), size.Int64())
+	// retOffset, retSize := stack.pop(), stack.pop()
+	// typeID := stack.pop()
+	// i := typeID.Uint64()
+	// if i == 0 {
+	// 	ret, err := ecies.encrypt(rand.Reader, &prv2.PublicKey, data, nil, nil)
+	// } else if i == 1 {
+	// 	ret, err := prv2.Decrypt(ct, nil, nil)
+	// }
+
+	// memory.Set(retOffset, retSize, ret)
+
+	// evm.interpreter.intPool.put(offset, size, offset2, size2, typeID)
 	return nil, nil
 }
 

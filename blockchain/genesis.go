@@ -18,6 +18,7 @@ package blockchain
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -95,7 +96,16 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
-func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.ChainConfig, dcfg *dpos.Config, hash common.Hash, err error) {
+	chainCfg = params.DefaultChainconfig
+	dcfg = dpos.DefaultConfig
+	hash = common.Hash{}
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.New(e.(string))
+		}
+	}()
+
 	if genesis != nil && genesis.Config == nil {
 		return params.DefaultChainconfig, dposConfig(params.DefaultChainconfig), common.Hash{}, errGenesisNoConfig
 	}

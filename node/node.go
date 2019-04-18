@@ -18,7 +18,6 @@ package node
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -90,15 +89,6 @@ func New(conf *Config) (*Node, error) {
 
 func makeWallet(conf *Config) (*wallet.Wallet, error) {
 	n, p, dir := conf.walletConfig()
-	if dir == "" {
-		var err error
-		// There is no datadir.
-		dir, err = ioutil.TempDir("", "tmpkeystore")
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}

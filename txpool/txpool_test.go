@@ -1900,7 +1900,7 @@ func BenchmarkPoolInsert(b *testing.B) {
 	fkey := generateAccount(nil, fname, manager)
 	generateAccount(nil, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1000000))
+	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000))
 
 	txs := make([]*types.Transaction, b.N)
 	for i := 0; i < b.N; i++ {

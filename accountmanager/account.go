@@ -37,9 +37,10 @@ type recoverActionResult struct {
 }
 
 type accountAuthor struct {
-	threshold   uint64
-	version     uint64
-	indexWeight map[uint64]uint64
+	threshold             uint64
+	updateAuthorThreshold uint64
+	version               uint64
+	indexWeight           map[uint64]uint64
 }
 
 func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
@@ -53,17 +54,18 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 //Account account object
 type Account struct {
 	//LastTime *big.Int
-	AcctName      common.Name `json:"accountName"`
-	Founder       common.Name `json:"founder"`
-	AccountID     uint64      `json:"accountID"`
-	Number        uint64      `json:"number"`
-	ChargeRatio   uint64      `json:"chargeRatio"`
-	Nonce         uint64      `json:"nonce"`
-	Code          []byte      `json:"code"`
-	CodeHash      common.Hash `json:"codeHash"`
-	CodeSize      uint64      `json:"codeSize"`
-	Threshold     uint64      `json:"threshold"`
-	AuthorVersion uint64      `json:"authorVersion"`
+	AcctName              common.Name `json:"accountName"`
+	Founder               common.Name `json:"founder"`
+	AccountID             uint64      `json:"accountID"`
+	Number                uint64      `json:"number"`
+	ChargeRatio           uint64      `json:"chargeRatio"`
+	Nonce                 uint64      `json:"nonce"`
+	Code                  []byte      `json:"code"`
+	CodeHash              common.Hash `json:"codeHash"`
+	CodeSize              uint64      `json:"codeSize"`
+	Threshold             uint64      `json:"threshold"`
+	UpdateAuthorThreshold uint64      `json:"updateAuthorThreshold"`
+	AuthorVersion         uint64      `json:"authorVersion"`
 	//sort by asset id asc
 	Balances []*AssetBalance `json:"balances"`
 	//realated account, pubkey and address
@@ -82,20 +84,21 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 
 	auth := common.NewAuthor(pubkey, 1)
 	acctObject := Account{
-		AcctName:      accountName,
-		Founder:       founderName,
-		AccountID:     0,
-		Number:        0,
-		ChargeRatio:   0,
-		Nonce:         0,
-		Balances:      make([]*AssetBalance, 0),
-		Code:          make([]byte, 0),
-		CodeHash:      crypto.Keccak256Hash(nil),
-		Threshold:     1,
-		AuthorVersion: 1,
-		Authors:       []*common.Author{auth},
-		Suicide:       false,
-		Destroy:       false,
+		AcctName:              accountName,
+		Founder:               founderName,
+		AccountID:             0,
+		Number:                0,
+		ChargeRatio:           0,
+		Nonce:                 0,
+		Balances:              make([]*AssetBalance, 0),
+		Code:                  make([]byte, 0),
+		CodeHash:              crypto.Keccak256Hash(nil),
+		Threshold:             1,
+		UpdateAuthorThreshold: 1,
+		AuthorVersion:         1,
+		Authors:               []*common.Author{auth},
+		Suicide:               false,
+		Destroy:               false,
 	}
 	return &acctObject, nil
 }
@@ -209,6 +212,14 @@ func (a *Account) GetThreshold() uint64 {
 
 func (a *Account) SetThreshold(t uint64) {
 	a.Threshold = t
+}
+
+func (a *Account) SetUpdateAuthorThreshold(t uint64) {
+	a.UpdateAuthorThreshold = t
+}
+
+func (a *Account) GetUpdateAuthorThreshold() uint64 {
+	return a.UpdateAuthorThreshold
 }
 
 func (a *Account) AddAuthor(author *common.Author) error {

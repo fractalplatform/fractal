@@ -35,6 +35,8 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
 	GetDelegatedByTimeFunc func(string, uint64, *state.StateDB) (*big.Int, *big.Int, uint64, error)
+	// GetHeaderByNumberFunc
+	GetHeaderByNumberFunc func(number uint64) *types.Header
 )
 
 // Context provides the EVM with auxiliary information. Once provided
@@ -45,6 +47,9 @@ type Context struct {
 
 	// GetDelegatedByTime returns the delegated balance
 	GetDelegatedByTime GetDelegatedByTimeFunc
+
+	//GetHeaderByNumber
+	GetHeaderByNumber GetHeaderByNumberFunc
 
 	// Message information
 	Origin   common.Name // Provides information for ORIGIN
