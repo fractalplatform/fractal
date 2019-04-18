@@ -396,6 +396,26 @@ func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 	return nil, nil
 }
 
+func opGetAccountTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	account := stack.pop()
+	userID := account.Uint64()
+	acct, err := evm.AccountDB.GetAccountById(userID)
+	if err != nil || acct == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	number := acct.GetAccountNumber()
+	head := evm.Context.GetHeaderByNumber(number)
+	if head == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		time := head.Time.Uint64()
+		stack.push(evm.interpreter.intPool.get().SetUint64(time))
+	}
+	return nil, nil
+}
+
 func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	time, num := stack.pop(), stack.pop()
 	index := num.Uint64()

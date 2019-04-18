@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	privateKey, _ = crypto.HexToECDSA("1d5fb83c87d8e254bc04363f72a1b4f01c49b107d2c07886b7101a91ea5bd5ef")
+	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 	from          = common.Name("ftsystemio")
 	aca           = common.Name("accounta")
 	acb           = common.Name("accountb")
@@ -151,7 +151,7 @@ func addAuthorsForAca() {
 	a_author_3 := common.NewAuthor(a_author_3_pub, 400)
 	a_authorAct_3 := &accountmanager.AuthorAction{0, a_author_3}
 
-	action := &accountmanager.AccountAuthorAction{1000, []*accountmanager.AuthorAction{a_authorAct_0, a_authorAct_1, a_authorAct_2, a_authorAct_3}}
+	action := &accountmanager.AccountAuthorAction{1000, 0, []*accountmanager.AuthorAction{a_authorAct_0, a_authorAct_1, a_authorAct_2, a_authorAct_3}}
 	input, err := rlp.EncodeToBytes(action)
 	if err != nil {
 		jww.INFO.Println("addAuthors for accounta error ... ", err)
@@ -173,7 +173,7 @@ func addAuthorsForAcb() {
 	b_author_2 := common.NewAuthor(b_author_2_addr, 40)
 	b_authorAct_2 := &accountmanager.AuthorAction{0, b_author_2}
 
-	action := &accountmanager.AccountAuthorAction{100, []*accountmanager.AuthorAction{b_authorAct_0, b_authorAct_1, b_authorAct_2}}
+	action := &accountmanager.AccountAuthorAction{100, 0, []*accountmanager.AuthorAction{b_authorAct_0, b_authorAct_1, b_authorAct_2}}
 	input, err := rlp.EncodeToBytes(action)
 	if err != nil {
 		jww.INFO.Println("addAuthors for accountb error ... ", err)
@@ -197,7 +197,7 @@ func addAuthorsForAcc() {
 	c_author_2 := common.NewAuthor(c_author_2_pub, 4)
 	c_authorAct_2 := &accountmanager.AuthorAction{0, c_author_2}
 
-	action := &accountmanager.AccountAuthorAction{10, []*accountmanager.AuthorAction{c_authorAct_0, c_authorAct_1, c_authorAct_2}}
+	action := &accountmanager.AccountAuthorAction{10, 0, []*accountmanager.AuthorAction{c_authorAct_0, c_authorAct_1, c_authorAct_2}}
 	input, err := rlp.EncodeToBytes(action)
 	if err != nil {
 		jww.INFO.Println("addAuthors for accountc error ... ", err)
@@ -220,6 +220,19 @@ func transferFromA2B() {
 	sendTransferTx(types.Transfer, aca, acb, aNonce, assetID, big.NewInt(1), nil, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2})
 }
 
+func modifyAUpdateAUthorThreshold() {
+	key_2 := types.MakeKeyPair(a_author_2_priv, []uint64{2})
+	action := &accountmanager.AccountAuthorAction{0, 2, []*accountmanager.AuthorAction{}}
+	input, err := rlp.EncodeToBytes(action)
+	if err != nil {
+		jww.INFO.Println("addAuthors for accountc error ... ", err)
+		return
+	}
+
+	aNonce++
+	sendTransferTx(types.UpdateAccountAuthor, aca, aca, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_2})
+}
+
 func main() {
 	jww.INFO.Println("test send sundry transaction...")
 
@@ -235,6 +248,7 @@ func main() {
 	time.Sleep(10 * time.Second)
 
 	transferFromA2B()
+	modifyAUpdateAUthorThreshold()
 }
 
 func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair) {
