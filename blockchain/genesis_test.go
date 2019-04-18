@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"errors"
 	"math/big"
 	"reflect"
 	"testing"
@@ -43,9 +44,9 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x1fbc4c2b042454df7a22ef01d8ab700857bd6191c8178717739c9662c1ff8030")
+		customghash = common.HexToHash("0x0245d50f576a2eecc46b816721d011663711f227ed1163c801be3454b67117ad")
 		customg     = Genesis{
-			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "systemio", SysToken: "fractalfoundation"},
+			Config:           &params.ChainConfig{ChainID: big.NewInt(3), SysName: "ftsystemio", SysToken: "fractalfoundation"},
 			Dpos:             dpos.DefaultConfig,
 			Coinbase:         "coinbase",
 			AllocAccounts:    DefaultGenesisAccounts(),
@@ -54,7 +55,7 @@ func TestSetupGenesis(t *testing.T) {
 			AssetNameLevel:   asset.DefaultAssetNameConf(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("0x8a383997f0f7c4b63675ad71340c375d6b80182d052410f5eea072329d71acef")
+		oldcustomghash = common.HexToHash("c38dba7a2eb50b5d79fef7c50a1ea549878564d0e94ab6eaf91dc31effda5b0e")
 		dposConfig     = &dpos.Config{
 			MaxURLLen:            512,
 			UnitStake:            big.NewInt(1000),
@@ -81,7 +82,7 @@ func TestSetupGenesis(t *testing.T) {
 			ContractChargeRatio: 80,
 		}
 	)
-	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystem", SysToken: "ftoken"}
+	oldcustomg.Config = &params.ChainConfig{ChainID: big.NewInt(2), SysName: "ftsystemio", SysToken: "ftoken"}
 
 	tests := []struct {
 		name       string
@@ -136,6 +137,16 @@ func TestSetupGenesis(t *testing.T) {
 			wantHash:   customghash,
 			wantConfig: customg.Config,
 			wantDpos:   customg.Dpos,
+		},
+		{
+			name: "test recover panic",
+			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+				return SetupGenesisBlock(db, &customg)
+			},
+			wantErr:    errors.New("genesis create account ftsystemdpos ,err account is exist"),
+			wantHash:   common.Hash{},
+			wantConfig: params.DefaultChainconfig,
+			wantDpos:   dpos.DefaultConfig,
 		},
 	}
 
