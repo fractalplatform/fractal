@@ -61,8 +61,9 @@ type AuthorAction struct {
 }
 
 type AccountAuthorAction struct {
-	Threshold     uint64          `json:"threshold,omitempty"`
-	AuthorActions []*AuthorAction `json:"authorActions,omitempty"`
+	Threshold             uint64          `json:"threshold,omitempty"`
+	UpdateAuthorThreshold uint64          `json:"updateAuthorThreshold,omitempty"`
+	AuthorActions         []*AuthorAction `json:"authorActions,omitempty"`
 }
 
 type IncAsset struct {
@@ -356,6 +357,9 @@ func (am *AccountManager) UpdateAccountAuthor(accountName common.Name, acctAuth 
 	if acctAuth.Threshold != 0 {
 		acct.SetThreshold(acctAuth.Threshold)
 	}
+	if acctAuth.UpdateAuthorThreshold != 0 {
+		acct.SetUpdateAuthorThreshold(acctAuth.UpdateAuthorThreshold)
+	}
 	for _, authorAct := range acctAuth.AuthorActions {
 		actionTy := authorAct.ActionType
 		switch actionTy {
@@ -443,7 +447,6 @@ func (am *AccountManager) GetAccountById(id uint64) (*Account, error) {
 	if err := rlp.DecodeBytes(b, &acct); err != nil {
 		return nil, err
 	}
-
 	return &acct, nil
 }
 
@@ -580,15 +583,21 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 
 		authorVersion := make(map[common.Name]uint64, 0)
 		for name, acctAuthor := range recoverRes.acctAuthors {
+
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
 				count += weight
 			}
-			if count < acctAuthor.threshold {
+			threshold := acctAuthor.threshold
+			if name.String() == action.Sender().String() && action.Type() == types.UpdateAccountAuthor {
+				threshold = acctAuthor.updateAuthorThreshold
+			}
+			if count < threshold {
 				return fmt.Errorf("account %s want threshold %d, but actual is %d", name, acctAuthor.threshold, count)
 			}
 			authorVersion[name] = acctAuthor.version
 		}
+
 		types.StoreAuthorCache(action, authorVersion)
 	}
 	return nil
@@ -651,7 +660,7 @@ func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, 
 				return ErrAccountIsDestroy
 			}
 			if recoverRes.acctAuthors[acct.GetName()] == nil {
-				a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, indexWeight: map[uint64]uint64{idx: acct.Authors[idx].GetWeight()}}
+				a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, updateAuthorThreshold: acct.UpdateAuthorThreshold, indexWeight: map[uint64]uint64{idx: acct.Authors[idx].GetWeight()}}
 				recoverRes.acctAuthors[acct.GetName()] = a
 			} else {
 				recoverRes.acctAuthors[acct.GetName()].indexWeight[idx] = acct.Authors[idx].GetWeight()
@@ -679,7 +688,7 @@ func (am *AccountManager) ValidOneSign(acct *Account, index uint64, pub common.P
 		return fmt.Errorf("wrong sign type")
 	}
 	if recoverRes.acctAuthors[acct.GetName()] == nil {
-		a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, indexWeight: map[uint64]uint64{index: acct.Authors[index].GetWeight()}}
+		a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, updateAuthorThreshold: acct.UpdateAuthorThreshold, indexWeight: map[uint64]uint64{index: acct.Authors[index].GetWeight()}}
 		recoverRes.acctAuthors[acct.GetName()] = a
 		return nil
 	}
