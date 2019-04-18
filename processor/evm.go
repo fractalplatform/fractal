@@ -100,6 +100,7 @@ func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header
 	return vm.Context{
 		GetHash:            GetHashFn(header, chain),
 		GetDelegatedByTime: chain.GetDelegatedByTime,
+		GetHeaderByNumber:  chain.GetHeaderByNumber,
 		Origin:             sender,
 		AssetID:            assetID,
 		Coinbase:           beneficiary,
