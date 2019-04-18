@@ -107,6 +107,14 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
+	instructionSet[ECIESCALC] = operation{
+		execute:       opEciesCalc,
+		gasCost:       gasEciesCalc,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[GETDELEGATE] = operation{
 		execute:       opGetDelegate,
 		gasCost:       gasGetDelegate,
