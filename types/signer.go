@@ -75,10 +75,7 @@ func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey
 	if sc := a.sender.Load(); sc != nil {
 		sigCache := sc.(sigCache)
 		if sigCache.signer.Equal(signer) {
-			pk := make([]common.PubKey, 0)
-			pk = append(pk, sigCache.pubKeys...)
-			//pk.SetBytes(sigCache.pubKey)
-			return pk, nil
+			return sigCache.pubKeys, nil
 		}
 	}
 

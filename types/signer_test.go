@@ -66,6 +66,18 @@ func TestSigningMultiKey(t *testing.T) {
 			t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, pubs[i])
 		}
 	}
+
+	//test cache
+	pubkeys, err = RecoverMultiKey(signer, testTx.GetActions()[0], testTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, pubkey := range pubkeys {
+		if pubkey.Compare(pubs[i]) != 0 {
+			t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, pubs[i])
+		}
+	}
 }
 
 func TestChainID(t *testing.T) {
