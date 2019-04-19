@@ -17,6 +17,8 @@
 package blockchain
 
 import (
+	"bytes"
+	"encoding/json"
 	"math/big"
 	"reflect"
 	"testing"
@@ -30,7 +32,7 @@ import (
 	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0x55d0efa5d279666fe11faa4115b67d84ff92c4fd16f4ed23969c2d94d137160c")
+var defaultgenesisBlockHash = common.HexToHash("0x7c65665abff5ddcdeed945b7e373e742f0ceac50040bef2d71e2bbaf8e982d91")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block, _ := DefaultGenesis().ToBlock(nil)
@@ -41,7 +43,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x5589268d8d15acf54c7128a45804093fb97c0b635e0ef7209e65642977ea0930")
+		customghash = common.HexToHash("0x1395829e52af8d75022d363a1645467235f3862fd1dbed71de90fb6cf1f8aeff")
 		customg     = Genesis{
 			Config:         params.DefaultChainconfig.Copy(),
 			AllocAccounts:  DefaultGenesisAccounts(),
@@ -49,7 +51,7 @@ func TestSetupGenesis(t *testing.T) {
 			AllocCadidates: DefaultGenesisCadidates(),
 		}
 		oldcustomg     = customg
-		oldcustomghash = common.HexToHash("b79ee97f522ef624733c30b689cb29366084e7126675312bad0668cb9162dfca")
+		oldcustomghash = common.HexToHash("18212fd24fb4a27d4a35731d85615a0a050970e6b0443db6011c46e6258c5e66")
 	)
 	customg.Config.ChainID = big.NewInt(5)
 	oldcustomg.Config = customg.Config.Copy()
@@ -118,9 +120,9 @@ func TestSetupGenesis(t *testing.T) {
 			t.Errorf("%s: 1 returned error %#v, want %#v", test.name, spew.NewFormatter(err), spew.NewFormatter(test.wantErr))
 		}
 
-		test.wantConfig.SysTokenID = config.SysTokenID
-		test.wantConfig.SysTokenDecimals = config.SysTokenDecimals
-		if !reflect.DeepEqual(config, test.wantConfig) {
+		bts, _ := json.Marshal(config)
+		wbts, _ := json.Marshal(test.wantConfig)
+		if bytes.Compare(bts, wbts) != 0 {
 			t.Errorf("%s:\n 2 returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 

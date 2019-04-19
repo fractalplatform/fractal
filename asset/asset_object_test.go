@@ -53,7 +53,7 @@ func Test_newAssetObject(t *testing.T) {
 		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
 	}
 	for _, tt := range tests {
-		got, err := NewAssetObject(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, tt.args.UpperLimit)
+		got, err := NewAssetObject(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, tt.args.UpperLimit, common.Name(""))
 		if (err != nil) != tt.wantErr {
 			t.Errorf("%q. newAssetObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			continue
