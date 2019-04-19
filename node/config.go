@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,15 +30,13 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/wallet/keystore"
 )
 
 const (
-	datadirPrivateKey      = "nodekey"      // Path within the datadir to the node's private key
-	datadirDefaultKeyStore = "keystore"     // Path within the datadir to the keystore
-	datadirBootNodes       = "bootnodes"    // Path within the datadir to the boot node list
-	datadirStaticNodes     = "staticnodes"  // Path within the datadir to the static node list
-	datadirTrustedNodes    = "trustednodes" // Path within the datadir to the trusted node list
+	datadirPrivateKey   = "nodekey"      // Path within the datadir to the node's private key
+	datadirBootNodes    = "bootnodes"    // Path within the datadir to the boot node list
+	datadirStaticNodes  = "staticnodes"  // Path within the datadir to the static node list
+	datadirTrustedNodes = "trustednodes" // Path within the datadir to the trusted node list
 )
 
 // Config represents a small collection of configuration values to fine tune the
@@ -130,27 +127,6 @@ func (c *Config) resolvePath(path string) string {
 		return path
 	}
 	return filepath.Join(filepath.Join(c.DataDir, c.Name), path)
-}
-
-// walletConfig determines the settings for scrypt and keydirectory
-func (c *Config) walletConfig() (int, int, string) {
-	scryptN := keystore.StandardScryptN
-	scryptP := keystore.StandardScryptP
-	if c.UseLightweightKDF {
-		scryptN = keystore.LightScryptN
-		scryptP = keystore.LightScryptP
-	}
-
-	if c.DataDir == "" {
-		// There is no datadir.
-		dir, err := ioutil.TempDir("", "tmpkeystore")
-		if err != nil {
-			log.Crit("create tmp keystore faild", "err", err)
-		}
-		return scryptN, scryptP, dir
-	}
-
-	return scryptN, scryptP, filepath.Join(c.DataDir, datadirDefaultKeyStore)
 }
 
 func (c *Config) NodeKey() *ecdsa.PrivateKey {
