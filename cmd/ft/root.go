@@ -43,11 +43,14 @@ var RootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
 		if viper.ConfigFileUsed() != "" {
-			viperUmarshalConfig()
+			err = viperUmarshalConfig()
 		}
-
 		ftCfgInstance.LogCfg.Setup()
+		if err != nil {
+			log.Error("viper umarshal config file faild", "err", err)
+		}
 
 		node, err := makeNode()
 		if err != nil {
@@ -69,12 +72,12 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-func viperUmarshalConfig() {
+func viperUmarshalConfig() error {
 	err := viper.Unmarshal(ftCfgInstance)
 	if err != nil {
-		fmt.Println("Unmarshal logConfig err: ", err)
-		os.Exit(-1)
+		return err
 	}
+	return nil
 }
 
 func makeNode() (*node.Node, error) {

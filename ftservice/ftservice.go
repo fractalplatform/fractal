@@ -26,7 +26,6 @@ import (
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/consensus/miner"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
-	"github.com/fractalplatform/fractal/internal/api"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
@@ -34,10 +33,10 @@ import (
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/rpcapi"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // FtService implements the fractal service.
@@ -48,7 +47,6 @@ type FtService struct {
 	blockchain   *blockchain.BlockChain
 	txPool       *txpool.TxPool
 	chainDb      fdb.Database // Block chain database
-	wallet       *wallet.Wallet
 	engine       consensus.IEngine
 	miner        *miner.Miner
 	p2pServer    *adaptor.ProtoAdaptor
@@ -76,7 +74,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		config:       config,
 		chainDb:      chainDb,
 		chainConfig:  chainCfg,
-		wallet:       ctx.Wallet,
 		p2pServer:    ctx.P2P,
 		shutdownChan: make(chan bool),
 	}
@@ -94,8 +91,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	if config.Snapshot {
 		ftservice.snapshot.Start()
 	}
-
-	ftservice.wallet.SetBlockChain(ftservice.blockchain)
 
 	// txpool
 	if config.TxPool.Journal != "" {
@@ -144,8 +139,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 // APIs return the collection of RPC services the ftservice package offers.
 func (fs *FtService) APIs() []rpc.API {
-	apis := api.GetAPIs(fs.APIBackend)
-	return apis
+	return rpcapi.GetAPIs(fs.APIBackend)
 }
 
 // Start implements node.Service, starting all internal goroutines.
@@ -190,5 +184,4 @@ func (s *FtService) BlockChain() *blockchain.BlockChain { return s.blockchain }
 func (s *FtService) TxPool() *txpool.TxPool             { return s.txPool }
 func (s *FtService) Engine() consensus.IEngine          { return s.engine }
 func (s *FtService) ChainDb() fdb.Database              { return s.chainDb }
-func (s *FtService) Wallet() *wallet.Wallet             { return s.wallet }
 func (s *FtService) Protocols() []p2p.Protocol          { return nil }
