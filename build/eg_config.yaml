@@ -48,6 +48,10 @@ node:
   trustnodes: "./build/trustnodes.txt"
   # P2P configuration table
   p2p:
+    # The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.
+    networkid: 1
+    # The name sets the p2p node name of this server
+    name: “ft_p2p”
     # Maximum number of network peers
     maxpeers: 20
     # Maximum number of pending connection attempts
@@ -110,9 +114,9 @@ ftservice:
     # flag that open influxdb thad store statistical metrics
     influxdb: false
     # URL that connect influxdb
-     influxdburl: "http://localhost:8086"
+    influxdburl: "http://localhost:8086"
     # Influxdb database name
-     influxdbname: "metrics"
+    influxdbname: "metrics"
     # Indluxdb user name
     influxdbuser: "test"
     # Influxdb user passwd
@@ -120,4 +124,4 @@ ftservice:
     # Influxdb namespace
     influxdbnamespace: "fractal/"
   # flag for db to store contrat internal transaction log
-  contractlog: flase
+  contractlog: false

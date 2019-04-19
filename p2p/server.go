@@ -62,7 +62,7 @@ type Config struct {
 	PrivateKey *ecdsa.PrivateKey
 
 	// NetworkID is ID of network
-	NetworkID uint `mapstructure:"networkID"`
+	NetworkID uint `mapstructure:"networkid"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.

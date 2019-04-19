@@ -389,6 +389,22 @@ func addFlags(flags *flag.FlagSet) {
 	viper.BindPFlag("ftservice.metrics.influxdbnamepace", flags.Lookup("metrics_influxdb_namespace"))
 
 	// p2p
+	flags.UintVar(
+		&ftCfgInstance.NodeCfg.P2PConfig.NetworkID,
+		"p2p_id",
+		ftCfgInstance.NodeCfg.P2PConfig.NetworkID,
+		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.",
+	)
+	viper.BindPFlag("ftservice.p2p.networkid", flags.Lookup("p2p_id"))
+
+	flags.StringVar(
+		&ftCfgInstance.NodeCfg.P2PConfig.Name,
+		"p2p_name",
+		ftCfgInstance.NodeCfg.P2PConfig.Name,
+		"The name sets the p2p node name of this server",
+	)
+	viper.BindPFlag("ftservice.p2p.name", flags.Lookup("p2p_name"))
+
 	flags.IntVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.MaxPeers,
 		"p2p_maxpeers",
