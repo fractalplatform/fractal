@@ -429,7 +429,7 @@ func (sys *System) onblock(height uint64) error {
 		return err
 	}
 	ngstate := &globalState{
-		Height:                          height + 1,
+		Height: height + 1,
 		ActivatedCadidateSchedule:       gstate.ActivatedCadidateSchedule,
 		ActivatedCadidateScheduleUpdate: gstate.ActivatedCadidateScheduleUpdate,
 		ActivatedTotalQuantity:          gstate.ActivatedTotalQuantity,
