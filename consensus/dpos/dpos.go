@@ -70,11 +70,12 @@ func (s *stateDB) Delete(key string) error {
 	return nil
 }
 func (s *stateDB) Delegate(from string, amount *big.Int) error {
-	accountDB, err := accountmanager.NewAccountManager(s.state)
-	if err != nil {
-		return err
-	}
-	return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
+	return nil
+	// accountDB, err := accountmanager.NewAccountManager(s.state)
+	// if err != nil {
+	// 	return err
+	// }
+	// return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
 }
 func (s *stateDB) Undelegate(to string, amount *big.Int) error {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
@@ -264,6 +265,9 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 
 	// update state root at the end
 	blk.Head.Root = state.IntermediateRoot()
+	if strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0 {
+		dpos.bftIrreversibles.Purge()
+	}
 	dpos.bftIrreversibles.Add(header.Coinbase, header.ProposedIrreversible)
 	return blk, nil
 }

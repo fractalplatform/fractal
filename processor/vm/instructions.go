@@ -18,7 +18,6 @@ package vm
 
 import (
 	"bytes"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
@@ -1043,7 +1042,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	value, assetID := stack.pop(), stack.pop()
 	astID := assetID.Uint64()
 
-	action := types.NewAction(types.DestroyAsset, contract.CallerName, evm.chainConfig.SysName, 0, astID, 0, value, nil)
+	action := types.NewAction(types.DestroyAsset, contract.CallerName, common.Name(evm.chainConfig.SysName), 0, astID, 0, value, nil)
 
 	err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
@@ -1084,22 +1083,22 @@ func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 // opEciesCalc use ecies to encrypt or decrypt bytes
 func opEciesCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	offset, size := stack.pop(), stack.pop()
-	data := memory.Get(offset.Int64(), size.Int64())
-	offset2, size2 := stack.pop(), stack.pop()
-	key := memory.Get(offset.Int64(), size.Int64())
-	retOffset, retSize := stack.pop(), stack.pop()
-	typeID := stack.pop()
-	i := typeID.Uint64()
-	if i == 0 {
-		ret, err := ecies.encrypt(rand.Reader, &prv2.PublicKey, data, nil, nil)
-	} else if i == 1 {
-		ret, err := prv2.Decrypt(ct, nil, nil)
-	}
+	// offset, size := stack.pop(), stack.pop()
+	// data := memory.Get(offset.Int64(), size.Int64())
+	// offset2, size2 := stack.pop(), stack.pop()
+	// key := memory.Get(offset.Int64(), size.Int64())
+	// retOffset, retSize := stack.pop(), stack.pop()
+	// typeID := stack.pop()
+	// i := typeID.Uint64()
+	// if i == 0 {
+	// 	ret, err := ecies.encrypt(rand.Reader, &prv2.PublicKey, data, nil, nil)
+	// } else if i == 1 {
+	// 	ret, err := prv2.Decrypt(ct, nil, nil)
+	// }
 
-	memory.Set(retOffset, retSize, ret)
+	// memory.Set(retOffset, retSize, ret)
 
-	evm.interpreter.intPool.put(offset, size, offset2, size2, typeID)
+	// evm.interpreter.intPool.put(offset, size, offset2, size2, typeID)
 	return nil, nil
 }
 

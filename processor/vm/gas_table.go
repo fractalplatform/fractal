@@ -449,7 +449,7 @@ func gasGetSnapshotTime(gt params.GasTable, evm *EVM, contract *Contract, stack 
 }
 
 func gasEciesCalc(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
-	return gt.EciesCalc, nil
+	return 0, nil
 }
 
 func gasGetDelegate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

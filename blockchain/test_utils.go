@@ -72,7 +72,7 @@ func getDefaultGenesisAccounts() (gas []*GenesisAccount) {
 	for i := 0; i < len(getCadidates()); i++ {
 		cadidate := getCadidates()[syscadidatePrefix+strconv.Itoa(i)]
 		gas = append(gas, &GenesisAccount{
-			Name:   common.StrToName(cadidate.name),
+			Name:   cadidate.name,
 			PubKey: common.BytesToPubKey(crypto.FromECDSAPub(&cadidate.prikey.PublicKey)),
 		})
 	}
@@ -89,17 +89,17 @@ func makeSystemCadidatesAndTime(parentTime uint64, genesis *Genesis) ([]string, 
 		baseCadidates = getCadidates()
 	)
 
-	for i := 0; i < int(genesis.Dpos.DelayEcho)+1; i++ {
+	for i := 0; i < int(genesis.Config.DposCfg.DelayEcho)+1; i++ {
 		for j := 0; j < len(baseCadidates); j++ {
-			for k := 0; k < int(genesis.Dpos.BlockFrequency); k++ {
-				cadidates = append(cadidates, genesis.Config.SysName.String())
+			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
+				cadidates = append(cadidates, genesis.Config.SysName)
 			}
 		}
 	}
 	cadidates = cadidates[1:]
 	headerTimes := make([]uint64, len(cadidates))
 	for i := 0; i < len(cadidates); i++ {
-		headerTimes[i] = genesis.Dpos.BlockInterval*1000*uint64(time.Microsecond)*uint64(i+1) + parentTime
+		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*1000*uint64(time.Microsecond)*uint64(i+1) + parentTime
 	}
 	return cadidates, headerTimes
 }
@@ -111,14 +111,14 @@ func makeCadidatesAndTime(parentTime uint64, genesis *Genesis, rounds uint64) ([
 	)
 	for i := 0; uint64(i) < rounds; i++ {
 		for j := 0; j < len(baseCadidates); j++ {
-			for k := 0; k < int(genesis.Dpos.BlockFrequency); k++ {
+			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
 				cadidates = append(cadidates, baseCadidates[syscadidatePrefix+strconv.Itoa(j)].name)
 			}
 		}
 	}
 	headerTimes := make([]uint64, len(cadidates))
 	for i := 0; i < len(cadidates); i++ {
-		headerTimes[i] = genesis.Dpos.BlockInterval*1000*uint64(time.Microsecond)*uint64(i+1) + parentTime
+		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*1000*uint64(time.Microsecond)*uint64(i+1) + parentTime
 	}
 	return cadidates, headerTimes
 }
@@ -144,7 +144,7 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	if err != nil {
 		t.Fatalf("genesis accountManager new err: %v", err)
 	}
-	if ok, err := accountManager.AccountIsExist(chainCfg.SysName); !ok {
+	if ok, err := accountManager.AccountIsExist(common.StrToName(chainCfg.SysName)); !ok {
 		t.Fatalf("system account is not exist %v", err)
 	}
 
@@ -177,14 +177,14 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, cadidates [
 		t.Fatal(err)
 	}
 
-	engine := dpos.New(genesis.Dpos, chain)
+	engine := dpos.New(dposConfig(genesis.Config), chain)
 
 	newblocks, _ := generateChain(genesis.Config, chain.CurrentBlock(), engine, chain, tmpdb,
 		len(headerTimes), func(i int, b *BlockGenerator) {
 
 			baseCadidates := getCadidates()
 
-			baseCadidates[genesis.Config.SysName.String()] = &cadidateInfo{genesis.Config.SysName.String(), systemPrikey}
+			baseCadidates[genesis.Config.SysName] = &cadidateInfo{genesis.Config.SysName, systemPrikey}
 
 			minerInfo := baseCadidates[cadidates[i]]
 
@@ -195,7 +195,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, cadidates [
 			b.OffsetTime(int64(engine.Slot(headerTimes[i])))
 
 			if i == 0 {
-				txs := makeCadidatesTx(t, genesis.Config.SysName.String(), systemPrikey, b.statedb)
+				txs := makeCadidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
 				for _, tx := range txs {
 					b.AddTx(tx)
 				}
@@ -220,13 +220,13 @@ func generateForkBlocks(t *testing.T, genesis *Genesis, cadidates []string, head
 		t.Fatal(err)
 	}
 
-	engine := dpos.New(genesis.Dpos, chain)
+	engine := dpos.New(dposConfig(genesis.Config), chain)
 
 	newblocks, _ := generateChain(genesis.Config, chain.CurrentBlock(), engine, chain, tmpdb,
 		len(headerTimes), func(i int, b *BlockGenerator) {
 			baseCadidates := getCadidates()
 
-			baseCadidates[genesis.Config.SysName.String()] = &cadidateInfo{genesis.Config.SysName.String(), systemPrikey}
+			baseCadidates[genesis.Config.SysName] = &cadidateInfo{genesis.Config.SysName, systemPrikey}
 			minerInfo := baseCadidates[cadidates[i]]
 
 			b.SetCoinbase(common.StrToName(minerInfo.name))
@@ -237,7 +237,7 @@ func generateForkBlocks(t *testing.T, genesis *Genesis, cadidates []string, head
 			b.OffsetTime(int64(engine.Slot(headerTimes[i])))
 
 			if i == 0 {
-				txs := makeCadidatesTx(t, genesis.Config.SysName.String(), systemPrikey, b.statedb)
+				txs := makeCadidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
 				for _, tx := range txs {
 					b.AddTx(tx)
 				}
@@ -285,17 +285,16 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 		to := getCadidates()[syscadidatePrefix+strconv.Itoa(i)]
 		url := "www." + to.name + ".io"
 		arg := &dpos.RegisterCadidate{
-			Url:   url,
-			Stake: delegateValue,
+			Url: url,
 		}
 		payload, _ := rlp.EncodeToBytes(arg)
-		action := types.NewAction(types.RegCadidate, common.StrToName(to.name), common.StrToName(to.name), 0, uint64(1), uint64(210000), big.NewInt(0), payload)
+		action := types.NewAction(types.RegCadidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload)
 		actions1 = append(actions1, action)
 	}
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(2), actions1...)
 	for _, action := range actions1 {
-		keyPair = types.MakeKeyPair(getCadidates()[action.Recipient().String()].prikey, []uint64{0})
+		keyPair = types.MakeKeyPair(getCadidates()[action.Sender().String()].prikey, []uint64{0})
 		err := types.SignActionWithMultiKey(action, tx1, signer, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))

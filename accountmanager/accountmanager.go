@@ -1198,16 +1198,12 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
 
+	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
+		return ErrToNameInvalid
+	}
+
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		if action.Type() == types.CreateAccount || action.Type() == types.DestroyAsset {
-			if action.Recipient() != common.Name(sysName) {
-				return ErrToNameInvalid
-			}
-		} else if action.Type() != types.Transfer {
-			return ErrAmountValueInvalid
-		}
-
 		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
 			return err
 		}

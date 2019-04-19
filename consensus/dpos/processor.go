@@ -30,8 +30,7 @@ import (
 )
 
 type RegisterCadidate struct {
-	Url   string
-	Stake *big.Int
+	Url string
 }
 
 type UpdateCadidate struct {
@@ -41,7 +40,6 @@ type UpdateCadidate struct {
 
 type VoteCadidate struct {
 	Cadidate string
-	Stake    *big.Int
 }
 
 type ChangeCadidate struct {
@@ -77,8 +75,22 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		},
 	}
 
+	if action.AssetID() != chainCfg.SysTokenID {
+		return fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
+	}
+
+	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
+		return fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
+	}
+
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		return fmt.Errorf("invalid action value, must be zero")
+		accountDB, err := accountmanager.NewAccountManager(state)
+		if err != nil {
+			return err
+		}
+		if err := accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+			return err
+		}
 	}
 
 	switch action.Type() {
@@ -87,7 +99,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.RegCadidate(action.Sender().String(), arg.Url, arg.Stake); err != nil {
+		if err := sys.RegCadidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
 			return err
 		}
 	case types.UpdateCadidate:
@@ -95,7 +107,13 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.UpdateCadidate(action.Sender().String(), arg.Url, arg.Stake); err != nil {
+		if arg.Stake.Sign() == 1 {
+			return fmt.Errorf("stake cannot be greater zero")
+		}
+		if action.Value().Sign() == 1 && arg.Stake.Sign() == -1 {
+			return fmt.Errorf("value & stake cannot allowed at the same time")
+		}
+		if err := sys.UpdateCadidate(action.Sender().String(), arg.Url, new(big.Int).Add(action.Value(), arg.Stake)); err != nil {
 			return err
 		}
 	case types.UnregCadidate:
@@ -117,7 +135,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return err
 		}
-		if err := sys.VoteCadidate(action.Sender().String(), arg.Cadidate, arg.Stake); err != nil {
+		if err := sys.VoteCadidate(action.Sender().String(), arg.Cadidate, action.Value()); err != nil {
 			return err
 		}
 	case types.ChangeCadidate:
@@ -153,12 +171,5 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	default:
 		return accountmanager.ErrUnkownTxType
 	}
-	// accountDB, err := accountmanager.NewAccountManager(state)
-	// if err != nil {
-	// 	return err
-	// }
-	// if action.Value().Cmp(big.NewInt(0)) > 0 {
-	// 	accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-	// }
 	return nil
 }

@@ -18,6 +18,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -360,4 +361,28 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 		}
 	}
 	return hexutil.Uint64(hi), nil
+}
+
+// GetChainConfig returns chain config.
+func (s *PublicBlockChainAPI) GetChainConfig() map[string]interface{} {
+	ret := map[string]interface{}{}
+	g, err := s.b.BlockByNumber(context.Background(), 0)
+	if err != nil {
+		return ret
+	}
+	cfg := rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash())
+	bts, _ := json.Marshal(cfg)
+	json.Unmarshal(bts, &ret)
+	return ret
+}
+
+// GetGeneisisJson returns geneisis config.
+func (s *PublicBlockChainAPI) GetGeneisis() map[string]interface{} {
+	ret := map[string]interface{}{}
+	g, err := s.b.BlockByNumber(context.Background(), 0)
+	if err != nil {
+		return ret
+	}
+	json.Unmarshal(g.Head.Extra, &ret)
+	return ret
 }

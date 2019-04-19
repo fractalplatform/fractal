@@ -216,7 +216,7 @@ const (
 
 	GETDELEGATE    = 0xca
 	GETACCOUNTTIME = 0xcb
-  ECIESCALC   = 0xcc
+	ECIESCALC      = 0xcc
 )
 
 const (

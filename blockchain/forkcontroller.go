@@ -62,7 +62,7 @@ func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkContr
 func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) {
 	info := ForkInfo{}
 
-	infoBytes, err := statedb.Get(fc.chainCfg.SysName.String(), forkInfo)
+	infoBytes, err := statedb.Get(fc.chainCfg.ChainName, forkInfo)
 	if err != nil {
 		return info, err
 	}
@@ -84,7 +84,7 @@ func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) err
 		return err
 	}
 
-	statedb.Put(fc.chainCfg.SysName.String(), forkInfo, infoBytes)
+	statedb.Put(fc.chainCfg.ChainName, forkInfo, infoBytes)
 	return nil
 }
 

@@ -32,6 +32,7 @@ type AssetObject struct {
 	Owner      common.Name `json:"owner,omitempty"`
 	AddIssue   *big.Int    `json:"addIssue"`
 	UpperLimit *big.Int    `json:"upperLimit"`
+	Contract   common.Name `json:"contract,omitempty"`
 }
 
 func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) (*AssetObject, error) {

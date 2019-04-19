@@ -18,6 +18,7 @@ package types
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -153,38 +154,27 @@ func (a *Action) GetSign() []*SignData {
 
 //CheckValue check action type and value
 func (a *Action) CheckValue() bool {
+	fmt.Println(a.Type(), a.Value())
 	switch a.Type() {
-	case UpdateAccount:
+	case CreateContract:
 		fallthrough
-	case IssueAsset:
+	case CallContract:
 		fallthrough
-	case IncreaseAsset:
+	case Transfer:
 		fallthrough
-	case SetAssetOwner:
+	case CreateAccount:
 		fallthrough
-	case UpdateAsset:
+	case DestroyAsset:
 		fallthrough
 	case RegCadidate:
 		fallthrough
 	case UpdateCadidate:
 		fallthrough
-	case UnregCadidate:
-		fallthrough
-	case RemoveVoter:
-		fallthrough
 	case VoteCadidate:
-		fallthrough
-	case ChangeCadidate:
-		fallthrough
-	case UnvoteCadidate:
-		fallthrough
-	case KickedCadidate:
-		fallthrough
-	case ExitTakeOver:
-		return a.Value().Cmp(big.NewInt(0)) == 0
+		return true
 	default:
 	}
-	return true
+	return a.Value().Cmp(big.NewInt(0)) == 0
 }
 
 // Type returns action's type.
