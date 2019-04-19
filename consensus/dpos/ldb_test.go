@@ -188,7 +188,7 @@ func TestLDBState(t *testing.T) {
 	db, _ := NewLDB(ldb)
 	defer function()
 	gstate := &globalState{
-		Height: 10,
+		Height:                          10,
 		ActivatedCadidateScheduleUpdate: uint64(time.Now().UnixNano()),
 		ActivatedCadidateSchedule:       []string{},
 		ActivatedTotalQuantity:          big.NewInt(1000),
