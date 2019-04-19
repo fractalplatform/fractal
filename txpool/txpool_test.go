@@ -53,7 +53,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	)
 
 	// issue asset
-	if err := asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal)); err != nil {
+	if err := asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name("")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -239,7 +239,7 @@ func TestTransactionChainFork(t *testing.T) {
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000))
+		asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""))
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -285,7 +285,7 @@ func TestTransactionDoubleNonce(t *testing.T) {
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000))
+		asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""))
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
