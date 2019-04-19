@@ -40,21 +40,23 @@ func TestRunCode(t *testing.T) {
 	//
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
+	//
+	toName := common.Name("fractal.account")
 
 	fmt.Println("in TestRunCode3 ...")
-	if err := account.CreateAccount(senderName, common.Name(""), 0, 0, senderPubkey); err != nil {
-		fmt.Println("create sender account error", err)
+	if err := account.CreateAccount(senderName, "", 0, 0, senderPubkey); err != nil {
+		fmt.Println("create sender account error\n", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, common.Name(""), 0, 0, receiverPubkey); err != nil {
-		fmt.Println("create receiver account error", err)
+	if err := account.CreateAccount(receiverName, "", 0, 0, receiverPubkey); err != nil {
+		fmt.Println("create receiver account error\n", err)
 		return
 	}
 
-	action := issueAssetAction(senderName, receiverName)
+	action := issueAssetAction(senderName, toName)
 	if err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
-		fmt.Println("issue asset error", err)
+		fmt.Println("issue asset error\n", err)
 		return
 	}
 
@@ -72,7 +74,7 @@ func TestRunCode(t *testing.T) {
 
 	var code = common.Hex2Bytes("60806040526004361061004c576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806342d6c33514610051578063f1db54161461007c575b600080fd5b34801561005d57600080fd5b506100666100a7565b6040518082815260200191505060405180910390f35b34801561008857600080fd5b506100916100b2565b6040518082815260200191505060405180910390f35b60006001cb80905090565b600060608060606040805190810160405280600d81526020017f48656c6c6f2c20776f726c642e00000000000000000000000000000000000000815250925060c06040519081016040528060828152602001610177608291399150600a6040519080825280601f01601f1916602001820160405280156101415781602001602082028038833980820191505090505b5090508280519060200183805190602001848051906020016000cc80601f01601f191660405101604052935083935050505090560030343764623232376437303934636532313563336130663537653162636337333235353166653335316639343234393437313933343536376530663564633162663739353936326238636363623837613265623536623239666265333764363134653266346333633435623738396165346631663531663463623231393732666664a165627a7a7230582058439b3945a21edad9fde8f2430422ca01d9a2c5092de618efa65db15f44d60e0029")
 	// myBinfile := "./contract/Ven/VEN.bin"
-	myAbifile := "./contract/encrypt/testencrypt.abi"
+	myAbifile := "./contract/crypto/testcrypto.abi"
 
 	// myContractName := common.Name("mycontract")
 
