@@ -1026,7 +1026,7 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 
 	action := types.NewAction(types.IncreaseAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	err = evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1034,6 +1034,12 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 		}
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "addasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+		if len(internalLogs) > 0 {
+			for _, iLog := range internalLogs {
+				iLog.Depth = uint64(evm.depth)
+			}
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
 	}
 	return err
 }
@@ -1044,7 +1050,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 	action := types.NewAction(types.DestroyAsset, contract.CallerName, common.Name(evm.chainConfig.SysName), 0, astID, 0, value, nil)
 
-	err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1052,6 +1058,12 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		}
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "destroyasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+		if len(internalLogs) > 0 {
+			for _, iLog := range internalLogs {
+				iLog.Depth = uint64(evm.depth)
+			}
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
 	}
 
 	if err != nil {
@@ -1148,7 +1160,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	}
 	action := types.NewAction(types.IssueAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	err = evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if err != nil {
 		return 0, err
 	} else {
@@ -1163,6 +1175,12 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 				}
 				internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "issueasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 				evm.InternalTxs = append(evm.InternalTxs, internalLog)
+				if len(internalLogs) > 0 {
+					for _, iLog := range internalLogs {
+						iLog.Depth = uint64(evm.depth)
+					}
+					evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+				}
 			}
 			return assetInfo.AssetId, nil
 		}
@@ -1199,6 +1217,7 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 	}
 
 	action := types.NewAction(types.SetAssetOwner, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1206,9 +1225,14 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 		}
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "setassetowner", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+		if len(internalLogs) > 0 {
+			for _, iLog := range internalLogs {
+				iLog.Depth = uint64(evm.depth)
+			}
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
 	}
-	return evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
-
+	return err
 }
 
 func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {

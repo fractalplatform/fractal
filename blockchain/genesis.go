@@ -241,7 +241,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	for index, action := range actActions {
-		if err := accountManager.Process(&types.AccountManagerContext{
+		if _, err := accountManager.Process(&types.AccountManagerContext{
 			Action: action,
 			Number: 0,
 		}); err != nil {
@@ -283,7 +283,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	for index, action := range astActions {
-		if err := accountManager.Process(&types.AccountManagerContext{
+		if _, err := accountManager.Process(&types.AccountManagerContext{
 			Action: action,
 			Number: 0,
 		}); err != nil {

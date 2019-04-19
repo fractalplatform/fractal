@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
 
 	"github.com/fractalplatform/fractal/params"
@@ -54,16 +55,16 @@ type KickedCadidate struct {
 	Cadidates []string
 }
 
-func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error {
+func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
 	snap := state.Snapshot()
-	err := dpos.processAction(chainCfg, state, action)
+	internalLogs, err := dpos.processAction(chainCfg, state, action)
 	if err != nil {
 		state.RevertToSnapshot(snap)
 	}
-	return err
+	return internalLogs, err
 }
 
-func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error {
+func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
 	sys := &System{
 		config: dpos.config,
 		IDB: &LDB{
@@ -75,21 +76,27 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		},
 	}
 
+	var internalLogs []*types.InternalLog
+
+	// if action.CheckValue() {
+	// 	return nil, fmt.Errorf("amount value is invalid")
+	// }
+
 	if action.AssetID() != chainCfg.SysTokenID {
-		return fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
+		return nil, fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
 	}
 
 	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
-		return fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
+		return nil, fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
 	}
 
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		accountDB, err := accountmanager.NewAccountManager(state)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := accountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -97,79 +104,91 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	case types.RegCadidate:
 		arg := &RegisterCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return err
+			return nil, err
 		}
 		if err := sys.RegCadidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
-			return err
+			return nil, err
 		}
 	case types.UpdateCadidate:
 		arg := &UpdateCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return err
+			return nil, err
 		}
 		if arg.Stake.Sign() == 1 {
-			return fmt.Errorf("stake cannot be greater zero")
+			return nil, fmt.Errorf("stake cannot be greater zero")
 		}
 		if action.Value().Sign() == 1 && arg.Stake.Sign() == -1 {
-			return fmt.Errorf("value & stake cannot allowed at the same time")
+			return nil, fmt.Errorf("value & stake cannot allowed at the same time")
 		}
 		if err := sys.UpdateCadidate(action.Sender().String(), arg.Url, new(big.Int).Add(action.Value(), arg.Stake)); err != nil {
-			return err
+			return nil, err
 		}
 	case types.UnregCadidate:
-		if err := sys.UnregCadidate(action.Sender().String()); err != nil {
-			return err
+		stake, err := sys.UnregCadidate(action.Sender().String())
+		if err != nil {
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
+		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalLogs = append(internalLogs, internalLog)
 	case types.RemoveVoter:
 		arg := &RemoveVoter{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return err
+			return nil, err
 		}
 		for _, voter := range arg.Voters {
-			if err := sys.UnvoteVoter(action.Sender().String(), voter); err != nil {
-				return err
+			stake, err := sys.UnvoteVoter(action.Sender().String(), voter)
+			if err != nil {
+				return nil, err
 			}
+			actionX := types.NewAction(action.Type(), action.Recipient(), common.Name(voter), 0, 0, action.AssetID(), stake, nil)
+			internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+			internalLogs = append(internalLogs, internalLog)
 		}
 	case types.VoteCadidate:
 		arg := &VoteCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return err
+			return nil, err
 		}
 		if err := sys.VoteCadidate(action.Sender().String(), arg.Cadidate, action.Value()); err != nil {
-			return err
+			return nil, err
 		}
 	case types.ChangeCadidate:
 		arg := &ChangeCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return err
+			return nil, err
 		}
 		if err := sys.ChangeCadidate(action.Sender().String(), arg.Cadidate); err != nil {
-			return err
+			return nil, err
 		}
 	case types.UnvoteCadidate:
-		if err := sys.UnvoteCadidate(action.Sender().String()); err != nil {
-			return err
+		stake, err := sys.UnvoteCadidate(action.Sender().String())
+		if err != nil {
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
+		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalLogs = append(internalLogs, internalLog)
 	case types.KickedCadidate:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
-			return fmt.Errorf("no permission for kicking cadidates")
+			return nil, fmt.Errorf("no permission for kicking cadidates")
 		}
 		arg := &KickedCadidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return err
+			return nil, err
 		}
 		for _, cadicate := range arg.Cadidates {
 			if err := sys.KickedCadidate(cadicate); err != nil {
-				return err
+				return nil, err
 			}
 		}
 	case types.ExitTakeOver:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
-			return fmt.Errorf("no permission for exit take over")
+			return nil, fmt.Errorf("no permission for exit take over")
 		}
 		sys.ExitTakeOver()
 	default:
-		return accountmanager.ErrUnkownTxType
+		return nil, accountmanager.ErrUnkownTxType
 	}
-	return nil
+	return internalLogs, nil
 }
