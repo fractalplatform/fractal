@@ -23,7 +23,7 @@ import (
 
 type AssetObject struct {
 	AssetId    uint64      `json:"assetId"`
-	Number     uint64      `json:"Number"`
+	Number     uint64      `json:"number"`
 	AssetName  string      `json:"assetName,omitempty"`
 	Symbol     string      `json:"symbol,omitempty"`
 	Amount     *big.Int    `json:"amount"`

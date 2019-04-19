@@ -55,7 +55,7 @@ func TestRunCode(t *testing.T) {
 	}
 
 	action := issueAssetAction(senderName, toName)
-	if err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
+	if _, err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
 		fmt.Println("issue asset error\n", err)
 		return
 	}

@@ -48,7 +48,7 @@ func TestVote(t *testing.T) {
 	url := "testurl"
 	stake := big.NewInt(0).Sub(mincadidatestake, big1)
 
-	if err := dpos.UnregCadidate(cadidate); err == nil {
+	if _, err := dpos.UnregCadidate(cadidate); err == nil {
 		t.Errorf("UnregCadidate should failed --- %v", err)
 	}
 
@@ -57,7 +57,7 @@ func TestVote(t *testing.T) {
 		t.Errorf("RegCadidate should failed --- %v", err)
 	}
 
-	if err := dpos.UnregCadidate(cadidate); err == nil {
+	if _, err := dpos.UnregCadidate(cadidate); err == nil {
 		t.Errorf("UnregCadidate should failed --- %v", err)
 	}
 
@@ -145,7 +145,7 @@ func TestVote(t *testing.T) {
 		t.Error("Change stake not work")
 	}
 
-	if err := dpos.UnvoteCadidate(voter); err != nil {
+	if _, err := dpos.UnvoteCadidate(voter); err != nil {
 		t.Errorf("UnvoteCadidate failed --- %v", err)
 	} else if vote, err := dpos.GetVoter(voter); err != nil || vote != nil {
 		t.Errorf("UnvoteCadidate failed --- %v", err)
@@ -157,7 +157,7 @@ func TestVote(t *testing.T) {
 		t.Errorf("UnvoteCadidate failed")
 	}
 
-	if err := dpos.UnregCadidate(cadidate); err != nil {
+	if _, err := dpos.UnregCadidate(cadidate); err != nil {
 		t.Errorf("UnregCadidate failed --- %v", err)
 	} else if prod, err := dpos.GetCadidate(cadidate); err != nil || prod != nil {
 		t.Errorf("UnregCadidate failed --- %v", err)
@@ -187,12 +187,12 @@ func TestVote(t *testing.T) {
 	}
 
 	//t.Log(dpos.isdpos())
-	err = dpos.UnregCadidate(cadidate)
+	_, err = dpos.UnregCadidate(cadidate)
 	if err.Error() != "already has voter" {
 		t.Errorf("wrong err: %v", err)
 	}
 
-	err = dpos.UnvoteCadidate(voter)
+	_, err = dpos.UnvoteCadidate(voter)
 	if err != nil {
 		t.Errorf("wrong err: %v", err)
 	}
