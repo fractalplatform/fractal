@@ -163,6 +163,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		verify = false
 		db = memdb.NewMemDatabase()
 	}
+	detailTx := &types.DetailTx{}
+	var internals []*types.InternalTx
 	am.SetAccountNameConfig(&am.Config{
 		AccountNameLevel:     g.Config.AccountNameCfg.Level,
 		AccountNameLength:    g.Config.AccountNameCfg.Length,
@@ -241,12 +243,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	for index, action := range actActions {
-		if _, err := accountManager.Process(&types.AccountManagerContext{
-			Action: action,
-			Number: 0,
-		}); err != nil {
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		if err != nil {
 			panic(fmt.Sprintf("genesis create account %v,err %v", index, err))
 		}
+		internals = append(internals, &types.InternalTx{InterlnalLogs: internalLogs})
 	}
 
 	astActions := []*types.Action{}
@@ -283,12 +284,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	for index, action := range astActions {
-		if _, err := accountManager.Process(&types.AccountManagerContext{
-			Action: action,
-			Number: 0,
-		}); err != nil {
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		if err != nil {
 			panic(fmt.Sprintf("genesis create asset %v,err %v", index, err))
 		}
+		internals = append(internals, &types.InternalTx{InterlnalLogs: internalLogs})
 	}
 
 	if verify {
@@ -345,6 +345,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			GasUsed: 0,
 		})
 	}
+
+	detailTx.TxHash = receipt.TxHash
+	detailTx.InternalTxs = internals
+	receipt.SetInternalTxsLog(detailTx)
+
 	receipts := []*types.Receipt{receipt}
 	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
 	batch := db.NewBatch()

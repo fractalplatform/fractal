@@ -1200,10 +1200,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 
 	var internalLogs []*types.InternalLog
 
-	if !action.CheckValue() {
-		return nil, ErrAmountValueInvalid
-	}
-
 	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
 		return nil, ErrToNameInvalid
 	}

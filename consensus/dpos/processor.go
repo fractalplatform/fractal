@@ -78,10 +78,6 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 
 	var internalLogs []*types.InternalLog
 
-	// if action.CheckValue() {
-	// 	return nil, fmt.Errorf("amount value is invalid")
-	// }
-
 	if action.AssetID() != chainCfg.SysTokenID {
 		return nil, fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
 	}
