@@ -26,7 +26,6 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // ServiceContext is a collection of service independent options inherited from
@@ -35,7 +34,6 @@ import (
 type ServiceContext struct {
 	config   *Config
 	services map[reflect.Type]Service // Index of the already constructed services
-	Wallet   *wallet.Wallet
 	P2P      *adaptor.ProtoAdaptor
 }
 

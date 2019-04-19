@@ -216,7 +216,7 @@ const (
 
 	GETDELEGATE    = 0xca
 	GETACCOUNTTIME = 0xcb
-	ECIESCALC      = 0xcc
+	CRYPTOCALC     = 0xcc
 )
 
 const (
@@ -390,7 +390,7 @@ var opCodeToString = map[OpCode]string{
 	RETURN:       "RETURN",
 	CALLCODE:     "CALLCODE",
 	DELEGATECALL: "DELEGATECALL",
-	//add new asset for multi-asset
+	//0xc0 range add new asset for multi-asset
 	BALANCEEX:     "BALANCEEX",
 	SETASSETOWNER: "SETASSETOWNER",
 	ADDASSET:      "ADDASSET",
@@ -399,6 +399,7 @@ var opCodeToString = map[OpCode]string{
 	ASSETAMOUNT:   "ASSETAMOUNT",
 	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
+	CRYPTOCALC:    "CRYPTOCALC",
 	//add end
 	STATICCALL:   "STATICCALL",
 	REVERT:       "REVERT",

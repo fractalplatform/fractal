@@ -71,9 +71,9 @@ var (
 
 func init() {
 	RootCmd.AddCommand(importCommnad, exportCommand)
-	importCommnad.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases and keystore")
+	importCommnad.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
 	importCommnad.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "genesis json file")
-	exportCommand.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases and keystore")
+	exportCommand.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
 }
 
 func exportChain(args []string) error {
