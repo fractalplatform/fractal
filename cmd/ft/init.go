@@ -44,7 +44,7 @@ var initCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(initCmd)
 	initCmd.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "Genesis json file")
-	initCmd.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases and keystore")
+	initCmd.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
 }
 
 // initGenesis will initialise the given JSON format genesis file and writes it as

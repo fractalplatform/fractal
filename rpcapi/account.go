@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package api
+package rpcapi
 
 import (
 	"context"
@@ -86,30 +86,6 @@ func (aapi *AccountAPI) GetAccountBalanceByID(ctx context.Context, accountName c
 	}
 	return am.GetAccountBalanceByID(accountName, assetID, typeID)
 }
-
-//func (aapi *AccountAPI) GetAccountBalanceByName(ctx context.Context, accountName common.Name, assetName string) (*big.Int, error) {
-//	acct, err := aapi.b.GetAccountManager()
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrGetAccounManagerErr
-//	}
-//	a, err := acct.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return a.GetBalanceByID(assetID)
-//}
-
-//
-//func (aapi *AccountAPI) GetBalancesList(ctx context.Context,accountName common.Name) ([]*AssetBalance, error){
-//	acct := aapi.b.GetAccountManager()
-//	if acct == nil {
-//		return nil,ErrGetAccounManagerErr
-//	}
-//	return acct.GetBalancesList(accountName)
-//}
 
 //GetCode
 func (aapi *AccountAPI) GetCode(ctx context.Context, accountName common.Name) (hexutil.Bytes, error) {

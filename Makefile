@@ -71,7 +71,7 @@ build_workspace:
 
 # build all targets 
 .PHONY: all
-all:check build_workspace build_ft build_ftkey build_ftfinder
+all:check build_workspace build_ft build_ftfinder
 
 # build ft
 .PHONY: build_ft
@@ -79,11 +79,6 @@ build_ft: commit_hash check build_workspace
 	@echo "Building ft."
 	$(call build,ft)
 
-# build ftkey
-.PHONY: build_ftkey
-build_ftkey: commit_hash check build_workspace
-	@echo "Building ftkey."
-	$(call build,ftkey)
 
 # build ftfinder
 .PHONY: build_ftfinder 
