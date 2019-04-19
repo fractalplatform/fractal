@@ -64,7 +64,7 @@ func init() {
 	RootCmd.AddCommand(utils.VersionCmd)
 	falgs := RootCmd.Flags()
 	// p2p
-	falgs.StringVarP(&nodeConfig.DataDir, "datadir", "d", nodeConfig.DataDir, "Data directory for the databases and keystore")
+	falgs.StringVarP(&nodeConfig.DataDir, "datadir", "d", nodeConfig.DataDir, "Data directory for the databases ")
 	falgs.StringVar(&nodeConfig.P2PConfig.ListenAddr, "p2p_listenaddr", nodeConfig.P2PConfig.ListenAddr,
 		"Network listening address")
 	falgs.StringVar(&nodeConfig.P2PConfig.NodeDatabase, "p2p_nodedb", nodeConfig.P2PConfig.NodeDatabase,

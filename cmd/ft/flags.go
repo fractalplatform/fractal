@@ -82,7 +82,7 @@ func addFlags(flags *flag.FlagSet) {
 		&ftCfgInstance.NodeCfg.DataDir,
 		"datadir", "d",
 		ftCfgInstance.NodeCfg.DataDir,
-		"Data directory for the databases and keystore",
+		"Data directory for the databases ",
 	)
 	viper.BindPFlag("node.datadir", flags.Lookup("datadir"))
 

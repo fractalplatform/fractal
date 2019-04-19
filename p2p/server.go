@@ -62,7 +62,7 @@ type Config struct {
 	PrivateKey *ecdsa.PrivateKey
 
 	// NetworkID is ID of network
-	NetworkID uint
+	NetworkID uint `mapstructure:"networkID"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
@@ -83,8 +83,7 @@ type Config struct {
 	NoDiscovery bool `mapstructure:"nodiscover"`
 
 	// Name sets the node name of this server.
-	// Use common.MakeName to create a name that follows existing conventions.
-	Name string
+	Name string `mapstructure:"name"`
 
 	// BootstrapNodes are used to establish connectivity
 	// with the rest of the network.

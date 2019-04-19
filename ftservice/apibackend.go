@@ -34,7 +34,6 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // APIBackend implements ftserviceapi.Backend for full nodes
@@ -272,10 +271,6 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 func (b *APIBackend) SetGasPrice(gasPrice *big.Int) bool {
 	b.ftservice.SetGasPrice(gasPrice)
 	return true
-}
-
-func (b *APIBackend) Wallet() *wallet.Wallet {
-	return b.ftservice.Wallet()
 }
 
 func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error) {
