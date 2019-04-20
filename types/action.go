@@ -18,7 +18,6 @@ package types
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -154,7 +153,6 @@ func (a *Action) GetSign() []*SignData {
 
 //CheckValue check action type and value
 func (a *Action) CheckValue() bool {
-	fmt.Println(a.Type(), a.Value())
 	switch a.Type() {
 	case CreateContract:
 		fallthrough

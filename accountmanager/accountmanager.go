@@ -37,7 +37,7 @@ var (
 	counterPrefix       = "accountCounter"
 )
 var acctManagerName = "sysAccount"
-var sysName string = ""
+var sysName string = "fractal.account"
 var counterID uint64 = 4096
 
 type AuthorActionType uint64
@@ -1185,27 +1185,29 @@ func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name
 //}
 
 //Process account action
-func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) error {
+func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalLog, error) {
 	snap := am.sdb.Snapshot()
-	err := am.process(accountManagerContext)
+	internalLogs, err := am.process(accountManagerContext)
 	if err != nil {
 		am.sdb.RevertToSnapshot(snap)
 	}
-	return err
+	return internalLogs, err
 }
 
-func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) error {
+func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalLog, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
 
+	var internalLogs []*types.InternalLog
+
 	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
-		return ErrToNameInvalid
+		return nil, ErrToNameInvalid
 	}
 
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -1215,61 +1217,71 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		var acct AccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, 0, acct.PublicKey); err != nil {
-			return err
+			return nil, err
 		}
 
 		if action.Value().Cmp(big.NewInt(0)) > 0 {
 			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
-				return err
+				return nil, err
 			}
+			actionX := types.NewAction(action.Type(), common.Name(sysName), acct.AccountName, 0, 0, action.AssetID(), action.Value(), nil)
+			internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+			internalLogs = append(internalLogs, internalLog)
 		}
 		break
 	case types.UpdateAccount:
 		var acct AccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := am.UpdateAccount(action.Sender(), &acct); err != nil {
-			return err
+			return nil, err
 		}
 		break
 	case types.UpdateAccountAuthor:
 		var acctAuth AccountAuthorAction
 		err := rlp.DecodeBytes(action.Data(), &acctAuth)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := am.UpdateAccountAuthor(action.Sender(), &acctAuth); err != nil {
-			return err
+			return nil, err
 		}
 		break
 	case types.IssueAsset:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		asset.SetAssetNumber(number)
 		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
-			return err
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), common.Name(sysName), asset.GetAssetOwner(), 0, 0, asset.GetAssetId(), asset.GetAssetAmount(), nil)
+		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalLogs = append(internalLogs, internalLog)
 		break
 	case types.IncreaseAsset:
 		var inc IncAsset
+		var accountFrom = common.Name("")
 		err := rlp.DecodeBytes(action.Data(), &inc)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
-			return err
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), common.Name(accountFrom), inc.To, 0, 0, inc.AssetId, inc.Amount, nil)
+		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalLogs = append(internalLogs, internalLog)
 		break
 
 	case types.DestroyAsset:
@@ -1279,54 +1291,57 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		// 	return err
 		// }
 		if err := am.SubAccountBalanceByID(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
-			return err
+			return nil, err
 		}
 
 		if err := am.ast.DestroyAsset(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
-			return err
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), common.Name(sysName), "", 0, 0, action.AssetID(), action.Value(), nil)
+		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalLogs = append(internalLogs, internalLog)
 		break
 	case types.UpdateAsset:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		acct, err := am.GetAccountByName(asset.GetAssetOwner())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if acct == nil {
-			return ErrAccountNotExist
+			return nil, ErrAccountNotExist
 		}
 		if len(asset.GetAssetFounder().String()) > 0 {
 			acct, err := am.GetAccountByName(asset.GetAssetFounder())
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if acct == nil {
-				return ErrAccountNotExist
+				return nil, ErrAccountNotExist
 			}
 		}
 		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder()); err != nil {
-			return err
+			return nil, err
 		}
 		break
 	case types.SetAssetOwner:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		acct, err := am.GetAccountByName(asset.GetAssetOwner())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if acct == nil {
-			return ErrAccountNotExist
+			return nil, ErrAccountNotExist
 		}
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner()); err != nil {
-			return err
+			return nil, err
 		}
 		break
 	// case types.SetAssetFounder:
@@ -1352,8 +1367,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		//return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		break
 	default:
-		return ErrUnkownTxType
+		return nil, ErrUnkownTxType
 	}
 
-	return nil
+	return internalLogs, nil
 }

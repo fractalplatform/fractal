@@ -90,6 +90,7 @@ func NewByzantiumInstructionSet() [256]operation {
 	// instructions that can be executed during the homestead phase.
 	instructionSet := NewHomesteadInstructionSet()
 
+	//multi-asset InstructionSet
 	instructionSet[GETACCOUNTTIME] = operation{
 		execute:       opGetAccountTime,
 		gasCost:       gasGetAccountTime,
@@ -98,7 +99,6 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
-	//multi-asset InstructionSet
 	instructionSet[SNAPSHOTTIME] = operation{
 		execute:       opGetSnapshotTime,
 		gasCost:       gasGetSnapshotTime,
@@ -107,9 +107,9 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
-	instructionSet[ECIESCALC] = operation{
-		execute:       opEciesCalc,
-		gasCost:       gasEciesCalc,
+	instructionSet[CRYPTOCALC] = operation{
+		execute:       opCryptoCalc,
+		gasCost:       gasCryptoCalc,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
 		returns:       true,

@@ -18,6 +18,7 @@ package vm
 
 import (
 	"bytes"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
@@ -30,6 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/crypto/ecies"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -1026,7 +1028,7 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 
 	action := types.NewAction(types.IncreaseAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	err = evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1034,6 +1036,12 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 		}
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "addasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+		if len(internalLogs) > 0 {
+			for _, iLog := range internalLogs {
+				iLog.Depth = uint64(evm.depth)
+			}
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
 	}
 	return err
 }
@@ -1044,7 +1052,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 	action := types.NewAction(types.DestroyAsset, contract.CallerName, common.Name(evm.chainConfig.SysName), 0, astID, 0, value, nil)
 
-	err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1052,6 +1060,12 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		}
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "destroyasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+		if len(internalLogs) > 0 {
+			for _, iLog := range internalLogs {
+				iLog.Depth = uint64(evm.depth)
+			}
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
 	}
 
 	if err != nil {
@@ -1081,24 +1095,59 @@ func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	return nil, nil
 }
 
-// opEciesCalc use ecies to encrypt or decrypt bytes
-func opEciesCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	// offset, size := stack.pop(), stack.pop()
-	// data := memory.Get(offset.Int64(), size.Int64())
-	// offset2, size2 := stack.pop(), stack.pop()
-	// key := memory.Get(offset.Int64(), size.Int64())
-	// retOffset, retSize := stack.pop(), stack.pop()
-	// typeID := stack.pop()
-	// i := typeID.Uint64()
-	// if i == 0 {
-	// 	ret, err := ecies.encrypt(rand.Reader, &prv2.PublicKey, data, nil, nil)
-	// } else if i == 1 {
-	// 	ret, err := prv2.Decrypt(ct, nil, nil)
-	// }
+// opCryptoCalc to encrypt or decrypt bytes
+func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	typeID, retOffset, retSize, offset2, size2, offset, size := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	//
+	data := memory.Get(offset.Int64(), size.Int64())
+	key := memory.Get(offset2.Int64(), size2.Int64())
+	i := typeID.Uint64()
+	//
+	var ret = make([]byte, retSize.Int64()*32)
+	var datalen int
+	var err error
+	if i == 0 {
+		//Encrypt
+		ecdsapubkey, err := crypto.UnmarshalPubkey(key)
+		if err == nil {
+			eciespubkey := ecies.ImportECDSAPublic(ecdsapubkey)
+			ret, err = ecies.Encrypt(rand.Reader, eciespubkey, data, nil, nil)
+			if err == nil {
+				datalen = len(ret)
+				if uint64(datalen) > retSize.Uint64()*32 {
+					err = errors.New("Encrypt error")
+				}
+			}
 
-	// memory.Set(retOffset, retSize, ret)
+		}
 
-	// evm.interpreter.intPool.put(offset, size, offset2, size2, typeID)
+	} else if i == 1 {
+		ecdsaprikey, err := crypto.ToECDSA(key)
+		if err == nil {
+			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
+			//ret, err = prv1.Decrypt(data, nil, nil)
+			ret, err = eciesprikey.Decrypt(data, nil, nil)
+			if err == nil {
+				datalen = len(ret)
+				if uint64(datalen) <= retSize.Uint64()*32 {
+
+				} else {
+					err = errors.New("Decrypt error")
+				}
+			}
+		}
+	}
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		//write datalen data real length
+		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(datalen)))
+		//write data
+		memory.Set(retOffset.Uint64(), uint64(datalen), ret)
+	}
+
+	evm.interpreter.intPool.put(offset, size, offset2, size2, typeID)
 	return nil, nil
 }
 
@@ -1148,7 +1197,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	}
 	action := types.NewAction(types.IssueAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
 
-	err = evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if err != nil {
 		return 0, err
 	} else {
@@ -1163,6 +1212,12 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 				}
 				internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "issueasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 				evm.InternalTxs = append(evm.InternalTxs, internalLog)
+				if len(internalLogs) > 0 {
+					for _, iLog := range internalLogs {
+						iLog.Depth = uint64(evm.depth)
+					}
+					evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+				}
 			}
 			return assetInfo.AssetId, nil
 		}
@@ -1199,6 +1254,7 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 	}
 
 	action := types.NewAction(types.SetAssetOwner, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
+	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1206,9 +1262,14 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 		}
 		internalLog := &types.InternalLog{Action: action.NewRPCAction(0), ActionType: "setassetowner", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalLog)
+		if len(internalLogs) > 0 {
+			for _, iLog := range internalLogs {
+				iLog.Depth = uint64(evm.depth)
+			}
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
 	}
-	return evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
-
+	return err
 }
 
 func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
