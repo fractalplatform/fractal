@@ -17,6 +17,7 @@
 package processor
 
 import (
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
@@ -117,11 +118,16 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			status = types.ReceiptStatusSuccessful
 
 		}
+		vmerrstr := ""
+		if vmerr != nil {
+			vmerrstr = vmerr.Error()
+			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
+		}
 		var gasAllot []*types.GasDistribution
 		for account, gas := range vmenv.FounderGasMap {
 			gasAllot = append(gasAllot, &types.GasDistribution{Account: account.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
-		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerr.Error()})
+		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 		internals = append(internals, &types.InternalTx{InterlnalLogs: vmenv.InternalTxs})
 	}
 	root := statedb.ReceiptRoot()

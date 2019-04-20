@@ -77,6 +77,7 @@ type IncAsset struct {
 type AccountManager struct {
 	sdb SdbIf
 	ast *asset.Asset
+	cfg *params.ChainConfig
 }
 
 func SetAccountNameConfig(config *Config) bool {
@@ -1387,82 +1388,132 @@ var (
 )
 
 func (am *AccountManager) CheckAction(action *types.Action) error {
-	// valide amount
 	if action.Value().Sign() < 0 {
 		return ErrNegativeValue
 	}
+
+	payable := false
+	recipient := ""
+	assetID := uint64(0)
 	switch action.Type() {
 	case types.CallContract:
+		payable = true
 	case types.CreateContract:
+		payable = true
 	case types.CreateAccount:
+		payable = true
+		recipient = am.cfg.AccountName
 	case types.UpdateAccount:
+		recipient = am.cfg.AccountName
 	case types.UpdateAccountAuthor:
+		recipient = am.cfg.AccountName
 	case types.DeleteAccount:
+		recipient = am.cfg.AccountName
 	case types.IncreaseAsset:
+		recipient = am.cfg.AccountName
 	case types.IssueAsset:
+		recipient = am.cfg.AccountName
 	case types.DestroyAsset:
+		payable = true
+		recipient = am.cfg.AccountName
 	case types.SetAssetOwner:
+		recipient = am.cfg.AccountName
 	case types.UpdateAsset:
+		recipient = am.cfg.AccountName
 	case types.Transfer:
+		payable = true
 	case types.RegCadidate:
+		payable = true
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	case types.UpdateCadidate:
+		payable = true
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	case types.UnregCadidate:
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	case types.RemoveVoter:
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	case types.VoteCadidate:
+		payable = true
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	case types.ChangeCadidate:
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	case types.UnvoteCadidate:
+		recipient = am.cfg.DposName
+		assetID = am.cfg.SysTokenID
 	default:
 	}
+
+	if !payable && action.Value().Sign() == 1 {
+		return fmt.Errorf("no payalbe, value must zero")
+	}
+
+	if action.Recipient() != common.Name(recipient) {
+		return fmt.Errorf("wrong recipient, must be %v", recipient)
+	}
+
+	if assetID > 0 && action.AssetID() != assetID {
+		return fmt.Errorf("wrong asset id, must be %v", assetID)
+	}
+
+	if ast, err := am.GetAssetInfoByID(action.AssetID()); err != nil && err != asset.ErrAssetIdInvalid {
+		return err
+	} else if ast != nil && len(ast.Contract.String()) != 0 && action.Recipient() != ast.Contract {
+		return fmt.Errorf("wrong recipient, must be %v abount asset id %v", ast.Contract, ast.AssetId)
+	}
+
 	if exist, err := am.AccountIsExist(action.Sender()); err != nil {
 		return err
 	} else if !exist {
-		return ErrAccountNotExist
+		return fmt.Errorf("not found accout %v", action.Sender())
 	}
 	if exist, err := am.AccountIsExist(action.Recipient()); err != nil {
 		return err
 	} else if !exist {
-		return ErrAccountNotExist
+		return fmt.Errorf("not found accout %v", action.Recipient())
 	}
 
-	// Ensure the transaction adheres to nonce ordering
 	nonce, err := am.GetNonce(action.Sender())
 	if err != nil {
 		return err
 	}
-	// todo change action nonce
+	// if nonce < action.Nonce() {
+	// 	return ErrNonceTooHigh
+	// } else
 	if nonce > action.Nonce() {
 		return ErrNonceTooLow
 	}
 
-	// // Transactor should have enough funds to cover the gas costs
-	// balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
-	// if err != nil {
-	// 	return err
-	// }
+	// // // Transactor should have enough funds to cover the gas costs
+	// // balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
+	// // if err != nil {
+	// // 	return err
+	// // }
 
-	// gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
-	// if balance.Cmp(gascost) < 0 {
-	// 	return ErrInsufficientFundsForGas
-	// }
+	// // gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
+	// // if balance.Cmp(gascost) < 0 {
+	// // 	return ErrInsufficientFundsForGas
+	// // }
 
-	// // Transactor should have enough funds to cover the value costs
-	// balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
-	// if err != nil {
-	// 	return err
-	// }
+	// // // Transactor should have enough funds to cover the value costs
+	// // balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
+	// // if err != nil {
+	// // 	return err
+	// // }
 
-	// value := action.Value()
-	// if tx.GasAssetID() == action.AssetID() {
-	// 	value.Add(value, gascost)
-	// }
+	// // value := action.Value()
+	// // if tx.GasAssetID() == action.AssetID() {
+	// // 	value.Add(value, gascost)
+	// // }
 
-	// if balance.Cmp(value) < 0 {
-	// 	return ErrInsufficientFundsForValue
-	// }
-
-	// if action.CheckValue() != true {
-	// 	return ErrInvalidValue
-	// }
+	// // if balance.Cmp(value) < 0 {
+	// // 	return ErrInsufficientFundsForValue
+	// // }
 
 	// intrGas, err := IntrinsicGas(action)
 	// if err != nil {
@@ -1472,28 +1523,11 @@ func (am *AccountManager) CheckAction(action *types.Action) error {
 	// if action.Gas() < intrGas {
 	// 	return ErrIntrinsicGas
 	// }
-	// if !action.CheckValue() {
-	// 	return nil, 0, ErrActionInvalidValue
-	// }
-	// if ast, err := accountDB.GetAssetInfoByID(action.AssetID()); err != nil && err != asset.ErrAssetIdInvalid {
-	// 	return nil, 0, err
-	// } else if ast != nil && len(ast.Contract.String()) != 0 && action.Recipient() != ast.Contract {
-	// 	return nil, 0, fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
-	// }
+
 	// if needCheckSign(accountDB, action) {
 	// 	if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
 	// 		return nil, 0, err
 	// 	}
-	// }
-
-	// nonce, err := accountDB.GetNonce(action.Sender())
-	// if err != nil {
-	// 	return nil, 0, err
-	// }
-	// if nonce < action.Nonce() {
-	// 	return nil, 0, ErrNonceTooHigh
-	// } else if nonce > action.Nonce() {
-	// 	return nil, 0, ErrNonceTooLow
 	// }
 	return nil
 }
