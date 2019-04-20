@@ -16,7 +16,11 @@
 
 package txpool
 
-import "time"
+import (
+	"time"
+
+	"github.com/ethereum/go-ethereum/log"
+)
 
 // Config  are the configuration parameters of the transaction pool.
 type Config struct {
@@ -37,8 +41,55 @@ type Config struct {
 	GasAssetID uint64
 }
 
-func (c *Config) check() Config {
-	conf := *c
-	//todo check config
+// DefaultTxPoolConfig default txpool config
+var DefaultTxPoolConfig = &Config{
+	Journal:      "transactions.rlp",
+	Rejournal:    time.Hour,
+	PriceLimit:   1,
+	PriceBump:    10,
+	AccountSlots: 128,
+	GlobalSlots:  4096,
+	AccountQueue: 1280,
+	GlobalQueue:  4096,
+	Lifetime:     3 * time.Hour,
+	GasAssetID:   1,
+}
+
+// check checks the provided user configurations and changes anything that's
+// unreasonable or unworkable.
+func (config *Config) check() Config {
+	conf := *config
+	if conf.Rejournal < time.Second {
+		log.Warn("Sanitizing invalid txpool journal time", "provided", conf.Rejournal, "updated", time.Second)
+		conf.Rejournal = time.Second
+	}
+	if conf.PriceLimit < 1 {
+		log.Warn("Sanitizing invalid txpool price limit", "provided", conf.PriceLimit, "updated", DefaultTxPoolConfig.PriceLimit)
+		conf.PriceLimit = DefaultTxPoolConfig.PriceLimit
+	}
+	if conf.PriceBump < 1 {
+		log.Warn("Sanitizing invalid txpool price bump", "provided", conf.PriceBump, "updated", DefaultTxPoolConfig.PriceBump)
+		conf.PriceBump = DefaultTxPoolConfig.PriceBump
+	}
+	if conf.AccountSlots < 1 {
+		log.Warn("Sanitizing invalid txpool account slots", "provided", conf.AccountSlots, "updated", DefaultTxPoolConfig.AccountSlots)
+		conf.AccountSlots = DefaultTxPoolConfig.AccountSlots
+	}
+	if conf.GlobalSlots < 1 {
+		log.Warn("Sanitizing invalid txpool global slots", "provided", conf.GlobalSlots, "updated", DefaultTxPoolConfig.GlobalSlots)
+		conf.GlobalSlots = DefaultTxPoolConfig.GlobalSlots
+	}
+	if conf.AccountQueue < 1 {
+		log.Warn("Sanitizing invalid txpool account queue", "provided", conf.AccountQueue, "updated", DefaultTxPoolConfig.AccountQueue)
+		conf.AccountQueue = DefaultTxPoolConfig.AccountQueue
+	}
+	if conf.GlobalQueue < 1 {
+		log.Warn("Sanitizing invalid txpool global queue", "provided", conf.GlobalQueue, "updated", DefaultTxPoolConfig.GlobalQueue)
+		conf.GlobalQueue = DefaultTxPoolConfig.GlobalQueue
+	}
+	if conf.Lifetime < 1 {
+		log.Warn("Sanitizing invalid txpool lifetime", "provided", conf.Lifetime, "updated", DefaultTxPoolConfig.Lifetime)
+		conf.Lifetime = DefaultTxPoolConfig.Lifetime
+	}
 	return conf
 }

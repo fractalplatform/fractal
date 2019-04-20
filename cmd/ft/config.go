@@ -17,8 +17,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/ftservice"
@@ -82,7 +80,7 @@ func defaultFtServiceConfig() *ftservice.Config {
 	return &ftservice.Config{
 		DatabaseHandles: makeDatabaseHandles(),
 		DatabaseCache:   768,
-		TxPool:          defaultTxPoolConfig(),
+		TxPool:          txpool.DefaultTxPoolConfig,
 		Miner:           defaultMinerConfig(),
 		GasPrice: gasprice.Config{
 			Blocks:     20,
@@ -91,21 +89,6 @@ func defaultFtServiceConfig() *ftservice.Config {
 		MetricsConf:     defaultMetricsConfig(),
 		ContractLogFlag: false,
 		Snapshot:        true,
-	}
-}
-
-func defaultTxPoolConfig() *txpool.Config {
-	return &txpool.Config{
-		Journal:      "transactions.rlp",
-		Rejournal:    time.Hour,
-		PriceLimit:   1,
-		PriceBump:    10,
-		AccountSlots: 128,
-		GlobalSlots:  4096,
-		AccountQueue: 1280,
-		GlobalQueue:  40960,
-		Lifetime:     3 * time.Hour,
-		GasAssetID:   1,
 	}
 }
 
