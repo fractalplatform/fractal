@@ -21,57 +21,53 @@ import (
 	"math/big"
 )
 
-const DefaultPubkeyHex = "047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
-
 // ChainConfig is the core config which determines the blockchain settings.
-// ChainConfig is stored in the database on a per block basis.
 type ChainConfig struct {
-	BootNodes      []string      `json:"bootnodes"` // enode URLs of the P2P bootstrap nodes
-	ChainID        *big.Int      `json:"chainId"`   // chainId identifies the current chain and is used for replay protection
-	ChainName      string        `json:"chainName"` // chain name
-	ChainURL       string        `json:"chainUrl"`  // chain url
-	AccountNameCfg *NameConfig   `json:"accountParams"`
-	AssetNameCfg   *NameConfig   `json:"assetParams"`
-	ChargeCfg      *ChargeConfig `json:"chargeParams"`
-	ForkedCfg      *FrokedConfig `json:"upgradeParams"`
-	DposCfg        *DposConfig   `json:"dposParams"`
-	SysName        string        `json:"systemName"`  // system name
-	AccountName    string        `json:"accountName"` // system name
-	DposName       string        `json:"dposName"`    // system name
-	SysToken       string        `json:"systemToken"` // system token
-
-	SysTokenID       uint64 `json:"-"`
-	SysTokenDecimals uint64 `json:"-"`
+	BootNodes        []string      `json:"bootnodes,omitempty"` // enode URLs of the P2P bootstrap nodes
+	ChainID          *big.Int      `json:"chainId,omitempty"`   // chainId identifies the current chain and is used for replay protection
+	ChainName        string        `json:"chainName,omitempty"` // chain name
+	ChainURL         string        `json:"chainUrl,omitempty"`  // chain url
+	AccountNameCfg   *NameConfig   `json:"accountParams,omitempty"`
+	AssetNameCfg     *NameConfig   `json:"assetParams,omitempty"`
+	ChargeCfg        *ChargeConfig `json:"chargeParams,omitempty"`
+	ForkedCfg        *FrokedConfig `json:"upgradeParams,omitempty"`
+	DposCfg          *DposConfig   `json:"dposParams,omitempty"`
+	SysName          string        `json:"systemName,omitempty"`  // system name
+	AccountName      string        `json:"accountName,omitempty"` // system name
+	DposName         string        `json:"dposName,omitempty"`    // system name
+	SysToken         string        `json:"systemToken,omitempty"` // system token
+	SysTokenID       uint64        `json:"sysTokenID,omitempty"`
+	SysTokenDecimals uint64        `json:"sysTokenDecimal,omitempty"`
 }
 
 type ChargeConfig struct {
-	AssetRatio    uint64 `json:"assetRatio"`
-	ContractRatio uint64 `json:"contractRatio"`
+	AssetRatio    uint64 `json:"assetRatio,omitempty"`
+	ContractRatio uint64 `json:"contractRatio,omitempty"`
 }
 
 type NameConfig struct {
-	Level     uint64 `json:"level"`
-	Length    uint64 `json:"length"`
-	SubLength uint64 `json:"subLength"`
+	Level     uint64 `json:"level,omitempty"`
+	Length    uint64 `json:"length,omitempty"`
+	SubLength uint64 `json:"subLength,omitempty"`
 }
 
 type FrokedConfig struct {
-	ForkBlockNum   uint64 `json:"blockCnt"`
-	Forkpercentage uint64 `json:"upgradeRatio"`
+	ForkBlockNum   uint64 `json:"blockCnt,omitempty"`
+	Forkpercentage uint64 `json:"upgradeRatio,omitempty"`
 }
 
 type DposConfig struct {
-	MaxURLLen            uint64   `json:"maxURLLen"`            // url length
-	UnitStake            *big.Int `json:"unitStake"`            // state unit
-	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity"`  // min quantity
-	VoterMinQuantity     *big.Int `json:"voterMinQuantity"`     // min quantity
-	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity"` // min active quantity
-	BlockInterval        uint64   `json:"blockInterval"`
-	BlockFrequency       uint64   `json:"blockFrequency"`
-	CadidateScheduleSize uint64   `json:"cadidateScheduleSize"`
-	DelayEcho            uint64   `json:"delayEcho"`
-	ExtraBlockReward     *big.Int `json:"extraBlockReward"`
-	BlockReward          *big.Int `json:"blockReward"`
+	MaxURLLen            uint64   `json:"maxURLLen,omitempty"`            // url length
+	UnitStake            *big.Int `json:"unitStake,omitempty"`            // state unit
+	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity,omitempty"`  // min quantity
+	VoterMinQuantity     *big.Int `json:"voterMinQuantity,omitempty"`     // min quantity
+	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity,omitempty"` // min active quantity
+	BlockInterval        uint64   `json:"blockInterval,omitempty"`
+	BlockFrequency       uint64   `json:"blockFrequency,omitempty"`
+	CadidateScheduleSize uint64   `json:"cadidateScheduleSize,omitempty"`
+	DelayEcho            uint64   `json:"delayEcho,omitempty"`
+	ExtraBlockReward     *big.Int `json:"extraBlockReward,omitempty"`
+	BlockReward          *big.Int `json:"blockReward,omitempty"`
 }
 
 var DefaultChainconfig = &ChainConfig{

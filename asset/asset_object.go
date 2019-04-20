@@ -22,20 +22,20 @@ import (
 )
 
 type AssetObject struct {
-	AssetId    uint64      `json:"assetId"`
-	Number     uint64      `json:"number"`
-	AssetName  string      `json:"assetName,omitempty"`
-	Symbol     string      `json:"symbol,omitempty"`
+	AssetId    uint64      `json:"assetId,omitempty"`
+	Number     uint64      `json:"number,omitempty"`
+	AssetName  string      `json:"assetName"`
+	Symbol     string      `json:"symbol"`
 	Amount     *big.Int    `json:"amount"`
 	Decimals   uint64      `json:"decimals"`
-	Founder    common.Name `json:"founder,omitempty"`
-	Owner      common.Name `json:"owner,omitempty"`
+	Founder    common.Name `json:"founder"`
+	Owner      common.Name `json:"owner"`
 	AddIssue   *big.Int    `json:"addIssue"`
 	UpperLimit *big.Int    `json:"upperLimit"`
-	Contract   common.Name `json:"contract,omitempty"`
+	Contract   common.Name `json:"contract"`
 }
 
-func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) (*AssetObject, error) {
+func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name) (*AssetObject, error) {
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}
@@ -71,6 +71,7 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 		Owner:      owner,
 		AddIssue:   amount,
 		UpperLimit: limit,
+		Contract:   contract,
 	}
 	return &ao, nil
 }
@@ -128,6 +129,10 @@ func (ao *AssetObject) GetAssetAddIssue() *big.Int {
 
 func (ao *AssetObject) GetUpperLimit() *big.Int {
 	return ao.UpperLimit
+}
+
+func (ao *AssetObject) GetContract() common.Name {
+	return ao.Contract
 }
 
 func (ao *AssetObject) SetAssetAmount(amount *big.Int) {
