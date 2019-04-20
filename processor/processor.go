@@ -17,11 +17,8 @@
 package processor
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/processor/vm"
@@ -99,35 +96,11 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx := &types.DetailTx{}
 	var internals []*types.InternalTx
 	for i, action := range tx.GetActions() {
-		if !action.CheckValue() {
-			return nil, 0, ErrActionInvalidValue
-		}
-		if ast, err := accountDB.GetAssetInfoByID(action.AssetID()); err != nil && err != asset.ErrAssetIdInvalid {
-			return nil, 0, err
-		} else if ast != nil && len(ast.Contract.String()) != 0 && action.Recipient() != ast.Contract {
-			return nil, 0, fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
-		}
-		if needCheckSign(accountDB, action) {
-			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
-				return nil, 0, err
-			}
-		}
-
-		nonce, err := accountDB.GetNonce(action.Sender())
-		if err != nil {
-			return nil, 0, err
-		}
-		if nonce < action.Nonce() {
-			return nil, 0, ErrNonceTooHigh
-		} else if nonce > action.Nonce() {
-			return nil, 0, ErrNonceTooLow
-		}
-
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
 			EgnineContext: p.engine,
 		}
-		context := NewEVMContext(action.Sender(), assetID, tx.GasPrice(), header, evmcontext, author)
+		context := NewEVMContext(action.Sender(), assetID, gasPrice, header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)
 
 		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, assetID, config, p.engine)
@@ -169,17 +142,4 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx.InternalTxs = internals
 	receipt.SetInternalTxsLog(detailTx)
 	return receipt, totalGas, nil
-}
-
-func needCheckSign(accountDB *accountmanager.AccountManager, action *types.Action) bool {
-	authorVersion := types.GetAuthorCache(action)
-	if len(authorVersion) == 0 {
-		return true
-	}
-	for name, version := range authorVersion {
-		if tmpVersion, err := accountDB.GetAuthorVersion(name); err != nil || version != tmpVersion {
-			return true
-		}
-	}
-	return false
 }

@@ -66,6 +66,7 @@ type blockChain interface {
 type TxPool struct {
 	config                Config
 	gasPrice              *big.Int
+	chainConfig           *params.ChainConfig
 	chain                 blockChain
 	signer                types.Signer
 	chainHeadCh           chan *event.Event
@@ -92,6 +93,7 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 	all := newTxLookup()
 	tp := &TxPool{
 		config:      config.check(),
+		chainConfig: chainconfig,
 		chain:       bc,
 		signer:      signer,
 		locals:      newAccountSet(signer),
@@ -433,56 +435,8 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
 			return ErrUnderpriced
 		}
-		// Ensure the transaction adheres to nonce ordering
-		nonce, err := tp.curAccountManager.GetNonce(from)
-		if err != nil {
-			return err
-		}
-		// todo change action nonce
-		if nonce > action.Nonce() {
-			return ErrNonceTooLow
-		}
 
-		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
-		if err != nil {
-			return err
-		}
-
-		gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
-		if balance.Cmp(gascost) < 0 {
-			return ErrInsufficientFundsForGas
-		}
-
-		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
-		if err != nil {
-			return err
-		}
-
-		value := action.Value()
-		if tx.GasAssetID() == action.AssetID() {
-			value.Add(value, gascost)
-		}
-
-		if balance.Cmp(value) < 0 {
-			return ErrInsufficientFundsForValue
-		}
-
-		if action.CheckValue() != true {
-			return ErrInvalidValue
-		}
-
-		intrGas, err := IntrinsicGas(action)
-		if err != nil {
-			return err
-		}
-
-		if action.Gas() < intrGas {
-			return ErrIntrinsicGas
-		}
-		return nil
-
+		return tp.curAccountManager.CheckAction(action, tx.GasPrice(), tx.GasAssetID(), tp.chainConfig)
 	}
 
 	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
@@ -490,18 +444,9 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrOversizedData
 	}
 
-	// Make sure the transaction is signed properly
-	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
-		log.Error("account Manager reocver faild ", "err", err)
-		return ErrInvalidSender
-	}
-
 	// Transaction action  value can't be negative.
 	var allgas uint64
 	for _, a := range tx.GetActions() {
-		if a.Value().Sign() < 0 {
-			return ErrNegativeValue
-		}
 		if err := validateAction(tx, a); err != nil {
 			return err
 		}

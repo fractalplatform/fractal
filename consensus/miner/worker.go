@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
+	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
@@ -37,7 +37,6 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -143,7 +142,7 @@ func (worker *Worker) mintLoop() {
 		panic("only support dpos engine")
 	}
 	dpos.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
-		accountDB, err := accountmanager.NewAccountManager(state)
+		accountDB, err := am.NewAccountManager(state)
 		if err != nil {
 			return nil, err
 		}
@@ -423,12 +422,12 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			log.Trace("Gas limit exceeded for current block", "sender", from)
 			txs.Pop()
 
-		case processor.ErrNonceTooLow:
+		case am.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and miner, shift
 			log.Trace("Skipping transaction with low nonce", "sender", from, "nonce", action.Nonce())
 			txs.Shift()
 
-		case processor.ErrNonceTooHigh:
+		case am.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
 			log.Trace("Skipping account with hight nonce", "sender", from, "nonce", action.Nonce())
 			txs.Pop()

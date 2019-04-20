@@ -119,8 +119,8 @@ func TestInvalidTransactions(t *testing.T) {
 	tx := transaction(0, fname, tname, 100, fkey)
 
 	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1))
-	if err := pool.AddRemote(tx); err != ErrInsufficientFundsForGas {
-		t.Fatal("expected: ", ErrInsufficientFundsForGas, "actual: ", err)
+	if err := pool.AddRemote(tx); err != am.ErrInsufficientFundsForGas {
+		t.Fatal("expected: ", am.ErrInsufficientFundsForGas, "actual: ", err)
 	}
 
 	value := new(big.Int).Add(tx.Cost(), tx.GetActions()[0].Value())
@@ -129,15 +129,15 @@ func TestInvalidTransactions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := pool.AddRemote(tx); err != ErrIntrinsicGas {
-		t.Fatal("expected", ErrIntrinsicGas, "actual: ", err)
+	if err := pool.AddRemote(tx); err != am.ErrIntrinsicGas {
+		t.Fatal("expected", am.ErrIntrinsicGas, "actual: ", err)
 	}
 
 	pool.curAccountManager.SetNonce(fname, 1)
 	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(0xffffffffffffff))
 	tx = transaction(0, fname, tname, 100000, fkey)
-	if err := pool.AddRemote(tx); err != ErrNonceTooLow {
-		t.Fatal("expected", ErrNonceTooLow, "actual: ", err)
+	if err := pool.AddRemote(tx); err != am.ErrNonceTooLow {
+		t.Fatal("expected", am.ErrNonceTooLow, "actual: ", err)
 	}
 
 	tx = transaction(1, fname, tname, 100000, fkey)

@@ -77,15 +77,6 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	}
 
 	var internalLogs []*types.InternalLog
-
-	if action.AssetID() != chainCfg.SysTokenID {
-		return nil, fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
-	}
-
-	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
-		return nil, fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
-	}
-
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		accountDB, err := accountmanager.NewAccountManager(state)
 		if err != nil {

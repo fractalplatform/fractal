@@ -43,14 +43,6 @@ var (
 	// plus one.
 	ErrInvalidNumber = errors.New("invalid block number")
 
-	// ErrNonceTooHigh is returned if the nonce of a transaction is higher than the
-	// next one expected based on the local chain.
-	ErrNonceTooHigh = errors.New("nonce too high")
-
-	// ErrNonceTooLow is returned if the nonce of a transaction is lower than the
-	// one present in the local chain.
-	ErrNonceTooLow = errors.New("nonce too low")
-
 	errZeroBlockTime = errors.New("timestamp equals parent's")
 
 	errParentBlock = errors.New("parent block not exist")

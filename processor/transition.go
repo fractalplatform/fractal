@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"math/big"
 
+	am "github.com/fractalplatform/fractal/accountmanager"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -70,13 +71,16 @@ func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM, action 
 
 func (st *StateTransition) useGas(amount uint64) error {
 	if st.gas < amount {
-		return vm.ErrOutOfGas
+		return am.ErrOutOfGas
 	}
 	st.gas -= amount
 	return nil
 }
 
 func (st *StateTransition) preCheck() error {
+	if err := st.account.CheckAction(st.action, st.gasPrice, st.assetID, st.chainConfig); err != nil {
+		return err
+	}
 	return st.buyGas()
 }
 
@@ -111,7 +115,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return
 	}
 
-	intrinsicGas, err := txpool.IntrinsicGas(st.action)
+	intrinsicGas, err := am.IntrinsicGas(st.action)
 	if err != nil {
 		return nil, 0, true, err, vmerr
 	}

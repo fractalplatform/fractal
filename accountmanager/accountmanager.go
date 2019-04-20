@@ -17,6 +17,7 @@
 package accountmanager
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -1082,6 +1083,13 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
+
+	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
+		return err
+	} else if len(ast.Contract.String()) != 0 && toAccount != ast.Contract {
+		return fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
+	}
+
 	//check from account balance
 	val, err := fromAcct.GetBalanceByID(assetID)
 	if err != nil {
@@ -1199,11 +1207,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	number := accountManagerContext.Number
 
 	var internalLogs []*types.InternalLog
-
-	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
-		return nil, ErrToNameInvalid
-	}
-
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
@@ -1371,4 +1374,185 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	}
 
 	return internalLogs, nil
+}
+
+var (
+	// ErrNegativeValue is a sanity error to ensure noone is able to specify a
+	// transaction with a negative value.
+	ErrNegativeValue = errors.New("negative value")
+
+	// ErrFeeID is returned if the transaction used an not support asset
+	ErrFeeID = errors.New("not support fee")
+
+	// ErrOutOfGas is returned if the transaction executing out of gas
+	ErrOutOfGas = errors.New("out of gas")
+
+	// ErrNonceTooLow is returned if the nonce of a transaction is lower than the
+	// one present in the local chain.
+	ErrNonceTooLow = errors.New("nonce too low")
+
+	// ErrNonceTooHigh is returned if the nonce of a transaction is higher than the
+	// next one expected based on the local chain.
+	ErrNonceTooHigh = errors.New("nonce too high")
+
+	// ErrInvalidSender is returned if the transaction contains an invalid signature.
+	ErrInvalidSender = errors.New("invalid sender")
+
+	// ErrIntrinsicGas is returned if the transaction is specified to use less gas
+	// than required to start the invocation.
+	ErrIntrinsicGas = errors.New("intrinsic gas too low")
+
+	// ErrInsufficientFundsForGas is returned if the gas cost of executing a transaction
+	// is higher than the balance of the user's account.
+	ErrInsufficientFundsForGas = errors.New("insufficient funds for gas * price")
+
+	// ErrInsufficientFundsForValue is returned if the value cost of executing a transaction
+	// is higher than the balance of the user's account.
+	ErrInsufficientFundsForValue = errors.New("insufficient funds for value")
+)
+
+// CheckAction validate
+func (am *AccountManager) CheckAction(action *types.Action, feeGasPrice *big.Int, feeAssetID uint64, cfg *params.ChainConfig) error {
+	if action.Value().Sign() < 0 {
+		return ErrNegativeValue
+	}
+
+	// if feeAssetID != cfg.SysTokenID {
+	// 	return ErrFeeID
+	// }
+
+	intrGas, err := IntrinsicGas(action)
+	if err != nil {
+		return err
+	}
+
+	if action.Gas() < intrGas {
+		return ErrIntrinsicGas
+	}
+
+	payable := false
+	recipient := ""
+	assetID := uint64(0)
+	switch action.Type() {
+	case types.CallContract:
+		payable = true
+	case types.CreateContract:
+		payable = true
+	case types.CreateAccount:
+		payable = true
+		recipient = cfg.AccountName
+	case types.UpdateAccount:
+		recipient = cfg.AccountName
+	case types.UpdateAccountAuthor:
+		recipient = cfg.AccountName
+	case types.DeleteAccount:
+		recipient = cfg.AccountName
+	case types.IncreaseAsset:
+		recipient = cfg.AccountName
+	case types.IssueAsset:
+		recipient = cfg.AccountName
+	case types.DestroyAsset:
+		payable = true
+		recipient = cfg.AccountName
+	case types.SetAssetOwner:
+		recipient = cfg.AccountName
+	case types.UpdateAsset:
+		recipient = cfg.AccountName
+	case types.Transfer:
+		payable = true
+	case types.RegCadidate:
+		payable = true
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	case types.UpdateCadidate:
+		payable = true
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	case types.UnregCadidate:
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	case types.RemoveVoter:
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	case types.VoteCadidate:
+		payable = true
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	case types.ChangeCadidate:
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	case types.UnvoteCadidate:
+		recipient = cfg.DposName
+		assetID = cfg.SysTokenID
+	default:
+	}
+
+	if !payable && action.Value().Sign() == 1 {
+		return ErrAmountValueInvalid
+	}
+
+	if len(recipient) > 0 && action.Recipient() != common.Name(recipient) {
+		return fmt.Errorf("wrong recipient, must be %v", recipient)
+	}
+
+	if assetID > 0 && action.AssetID() != assetID {
+		return fmt.Errorf("wrong asset id, must be %v", assetID)
+	}
+
+	if exist, err := am.AccountIsExist(action.Sender()); err != nil {
+		return err
+	} else if !exist {
+		return fmt.Errorf("not found accout %v", action.Sender())
+	}
+	if exist, err := am.AccountIsExist(action.Recipient()); err != nil {
+		return err
+	} else if !exist {
+		return fmt.Errorf("not found accout %v", action.Recipient())
+	}
+
+	nonce, err := am.GetNonce(action.Sender())
+	if err != nil {
+		return err
+	}
+	if nonce < action.Nonce() {
+		return ErrNonceTooHigh
+	} else if nonce > action.Nonce() {
+		return ErrNonceTooLow
+	}
+
+	gascost := new(big.Int).Mul(feeGasPrice, new(big.Int).SetUint64(action.Gas()))
+	balance, err := am.GetAccountBalanceByID(action.Sender(), feeAssetID, 0)
+	if err != nil {
+		return err
+	}
+	if balance.Cmp(gascost) < 0 {
+		return ErrInsufficientFundsForGas
+	}
+
+	// Transactor should have enough funds to cover the value costs
+	if action.Value().Sign() == 1 {
+		if ast, err := am.GetAssetInfoByID(action.AssetID()); err != nil {
+			return err
+		} else if len(ast.Contract.String()) != 0 && action.Recipient() != ast.Contract {
+			return fmt.Errorf("wrong recipient, must be %v abount asset id %v", ast.Contract, ast.AssetId)
+		}
+
+		balance, err = am.GetAccountBalanceByID(action.Sender(), action.AssetID(), 0)
+		if err != nil {
+			return err
+		}
+		value := action.Value()
+		if feeAssetID == action.AssetID() {
+			value.Add(value, gascost)
+		}
+
+		if balance.Cmp(value) < 0 {
+			return ErrInsufficientFundsForValue
+		}
+	}
+
+	// if err := am.RecoverAction(types.NewSigner(cfg.ChainID), action); err != nil {
+	// 	return err
+	// }
+	return nil
 }
