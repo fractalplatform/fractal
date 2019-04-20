@@ -88,10 +88,12 @@ type TxPool struct {
 // New creates a new transaction pool to gather, sort and filter inbound
 // transactions from the network.
 func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool {
+	//  check the input to ensure no vulnerable gas prices are set
+	config = (&config).check()
 	signer := types.NewSigner(chainconfig.ChainID)
 	all := newTxLookup()
 	tp := &TxPool{
-		config:      config.check(),
+		config:      config,
 		chain:       bc,
 		signer:      signer,
 		locals:      newAccountSet(signer),

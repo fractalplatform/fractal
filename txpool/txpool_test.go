@@ -1588,10 +1588,9 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 
-	config := testTxPoolConfig
-	config.GlobalSlots = 0
 	event.Reset()
-	pool := New(config, params.DefaultChainconfig, blockchain)
+	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
+	pool.config.GlobalSlots = 0
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
@@ -1616,7 +1615,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	txs := []*types.Transaction{}
 	for i, key := range keys {
-		for j := 0; j < int(config.AccountSlots)*2; j++ {
+		for j := 0; j < int(testTxPoolConfig.AccountSlots)*2; j++ {
 			txs = append(txs, transaction(nonces[accs[i]], accs[i], tname, 100000, key))
 			nonces[accs[i]]++
 		}
@@ -1624,9 +1623,9 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 	// Import the batch and verify that limits have been enforced
 	pool.AddRemotes(txs)
 
-	for addr, list := range pool.pending {
-		if list.Len() != int(config.AccountSlots) {
-			t.Fatalf("addr %x: total pending transactions mismatch: have %d, want %d", addr, list.Len(), config.AccountSlots)
+	for name, list := range pool.pending {
+		if list.Len() != int(testTxPoolConfig.AccountSlots) {
+			t.Fatalf("addr %s: total pending transactions mismatch: have %d, want %d", name, list.Len(), testTxPoolConfig.AccountSlots)
 		}
 	}
 	if err := validateTxPoolInternals(pool); err != nil {
