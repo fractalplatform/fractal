@@ -17,6 +17,7 @@
 package accountmanager
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -1082,6 +1083,13 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
+
+	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
+		return err
+	} else if len(ast.Contract.String()) != 0 && toAccount != ast.Contract {
+		return fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
+	}
+
 	//check from account balance
 	val, err := fromAcct.GetBalanceByID(assetID)
 	if err != nil {
@@ -1199,11 +1207,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	number := accountManagerContext.Number
 
 	var internalLogs []*types.InternalLog
-
-	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
-		return nil, ErrToNameInvalid
-	}
-
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
@@ -1371,4 +1374,126 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	}
 
 	return internalLogs, nil
+}
+
+var (
+	// ErrNegativeValue is a sanity error to ensure noone is able to specify a
+	// transaction with a negative value.
+	ErrNegativeValue = errors.New("negative value")
+
+	// ErrNonceTooLow is returned if the nonce of a transaction is lower than the
+	// one present in the local chain.
+	ErrNonceTooLow = errors.New("nonce too low")
+)
+
+func (am *AccountManager) CheckAction(action *types.Action) error {
+	// valide amount
+	if action.Value().Sign() < 0 {
+		return ErrNegativeValue
+	}
+	switch action.Type() {
+	case types.CallContract:
+	case types.CreateContract:
+	case types.CreateAccount:
+	case types.UpdateAccount:
+	case types.UpdateAccountAuthor:
+	case types.DeleteAccount:
+	case types.IncreaseAsset:
+	case types.IssueAsset:
+	case types.DestroyAsset:
+	case types.SetAssetOwner:
+	case types.UpdateAsset:
+	case types.Transfer:
+	case types.RegCadidate:
+	case types.UpdateCadidate:
+	case types.UnregCadidate:
+	case types.RemoveVoter:
+	case types.VoteCadidate:
+	case types.ChangeCadidate:
+	case types.UnvoteCadidate:
+	default:
+	}
+	if exist, err := am.AccountIsExist(action.Sender()); err != nil {
+		return err
+	} else if !exist {
+		return ErrAccountNotExist
+	}
+	if exist, err := am.AccountIsExist(action.Recipient()); err != nil {
+		return err
+	} else if !exist {
+		return ErrAccountNotExist
+	}
+
+	// Ensure the transaction adheres to nonce ordering
+	nonce, err := am.GetNonce(action.Sender())
+	if err != nil {
+		return err
+	}
+	// todo change action nonce
+	if nonce > action.Nonce() {
+		return ErrNonceTooLow
+	}
+
+	// // Transactor should have enough funds to cover the gas costs
+	// balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
+	// if balance.Cmp(gascost) < 0 {
+	// 	return ErrInsufficientFundsForGas
+	// }
+
+	// // Transactor should have enough funds to cover the value costs
+	// balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// value := action.Value()
+	// if tx.GasAssetID() == action.AssetID() {
+	// 	value.Add(value, gascost)
+	// }
+
+	// if balance.Cmp(value) < 0 {
+	// 	return ErrInsufficientFundsForValue
+	// }
+
+	// if action.CheckValue() != true {
+	// 	return ErrInvalidValue
+	// }
+
+	// intrGas, err := IntrinsicGas(action)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// if action.Gas() < intrGas {
+	// 	return ErrIntrinsicGas
+	// }
+	// if !action.CheckValue() {
+	// 	return nil, 0, ErrActionInvalidValue
+	// }
+	// if ast, err := accountDB.GetAssetInfoByID(action.AssetID()); err != nil && err != asset.ErrAssetIdInvalid {
+	// 	return nil, 0, err
+	// } else if ast != nil && len(ast.Contract.String()) != 0 && action.Recipient() != ast.Contract {
+	// 	return nil, 0, fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
+	// }
+	// if needCheckSign(accountDB, action) {
+	// 	if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
+	// 		return nil, 0, err
+	// 	}
+	// }
+
+	// nonce, err := accountDB.GetNonce(action.Sender())
+	// if err != nil {
+	// 	return nil, 0, err
+	// }
+	// if nonce < action.Nonce() {
+	// 	return nil, 0, ErrNonceTooHigh
+	// } else if nonce > action.Nonce() {
+	// 	return nil, 0, ErrNonceTooLow
+	// }
+	return nil
 }

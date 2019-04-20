@@ -151,30 +151,6 @@ func (a *Action) GetSign() []*SignData {
 	return a.data.Sign
 }
 
-//CheckValue check action type and value
-func (a *Action) CheckValue() bool {
-	switch a.Type() {
-	case CreateContract:
-		fallthrough
-	case CallContract:
-		fallthrough
-	case Transfer:
-		fallthrough
-	case CreateAccount:
-		fallthrough
-	case DestroyAsset:
-		fallthrough
-	case RegCadidate:
-		fallthrough
-	case UpdateCadidate:
-		fallthrough
-	case VoteCadidate:
-		return true
-	default:
-	}
-	return a.Value().Cmp(big.NewInt(0)) == 0
-}
-
 // Type returns action's type.
 func (a *Action) Type() ActionType { return a.data.AType }
 

@@ -77,6 +77,9 @@ func (st *StateTransition) useGas(amount uint64) error {
 }
 
 func (st *StateTransition) preCheck() error {
+	if err := st.account.CheckAction(st.action); err != nil {
+		return err
+	}
 	return st.buyGas()
 }
 
