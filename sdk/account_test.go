@@ -158,28 +158,9 @@ func TestDPOS(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// UnvoteCandidate
-		hash, err = acct2.UnvoteCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
 		// VoteCandidate
 		hash, err = acct2.VoteCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCandidate{
 			Candidate: systemaccount,
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
-		// ChangeCandidate
-		hash, err = acct2.ChangeCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.ChangeCandidate{
-			Candidate: accountName.String(),
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
-		// UnvoteVoter
-		hash, err = acct.UnvoteVoter(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.RemoveVoter{
-			Voters: []string{accountName2.String()},
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)

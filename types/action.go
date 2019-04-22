@@ -75,20 +75,14 @@ const (
 	UpdateCandidate
 	// UnregCandidate repesents unregister candidate action.
 	UnregCandidate
-	// RemoveVoter repesents candidate remove voter action.
-	RemoveVoter
 	// VoteCandidate repesents voter vote candidate action.
 	VoteCandidate
-	// ChangeCandidate repesents voter change candidate action.
-	ChangeCandidate
-	// UnvoteCandidate repesents voter cancel vote some candidate action.
-	UnvoteCandidate
 )
 
 const (
-	// KickedCandidate
+	// KickedCandidate kicked
 	KickedCandidate ActionType = 0x400 + iota
-	// exit
+	// ExitTakeOver exit
 	ExitTakeOver
 )
 

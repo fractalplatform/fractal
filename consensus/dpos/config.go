@@ -17,12 +17,10 @@
 package dpos
 
 import (
-	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
 
-	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -147,28 +145,4 @@ func (cfg *Config) getoffset(timestamp uint64) uint64 {
 
 func (cfg *Config) epoch(timestamp uint64) uint64 {
 	return timestamp / cfg.epochInterval()
-}
-
-// Write writes the dpos config settings to the database.
-func (cfg *Config) Write(db fdb.Database, key []byte) error {
-	data, err := cfg.EncodeRLP()
-	if err != nil {
-		return fmt.Errorf("Failed to rlp encode dpos config --- %v", err)
-	}
-	if err := db.Put(key, data); err != nil {
-		return fmt.Errorf("Failed to store dpos config ---- %v", err)
-	}
-	return nil
-}
-
-// Read retrieves the consensus settings from the database.
-func (cfg *Config) Read(db fdb.Database, key []byte) error {
-	data, err := db.Get(key)
-	if err != nil {
-		return fmt.Errorf("Failed to load dpos config --- %v", err)
-	}
-	if err := cfg.DecodeRLP(data); err != nil {
-		return fmt.Errorf("Failed to rlp decode dpos config --- %v", err)
-	}
-	return nil
 }

@@ -17,41 +17,40 @@
 package dpos
 
 import (
-	"math"
+	"fmt"
 	"math/big"
 	"strings"
 )
 
-var (
-	// LastBlockHeight latest
-	LastBlockHeight = uint64(math.MaxUint64)
-)
-
 // IDB dpos database
 type IDB interface {
-	SetCandidate(*candidateInfo) error
+	SetCandidate(*CandidateInfo) error
 	DelCandidate(string) error
-	GetCandidate(string) (*candidateInfo, error)
-	Candidates() ([]*candidateInfo, error)
+	GetCandidate(string) (*CandidateInfo, error)
+	GetCandidates() ([]string, error)
 	CandidatesSize() (uint64, error)
 
-	SetVoter(*voterInfo) error
-	DelVoter(string, string) error
-	GetVoter(string) (*voterInfo, error)
-	// GetDelegators(string) ([]string, error)
+	SetAvailableQuantity(uint64, string, *big.Int) error
+	GetAvailableQuantity(uint64, string) (*big.Int, error)
 
-	SetState(*globalState) error
-	DelState(uint64) error
-	GetState(uint64) (*globalState, error)
+	SetVoter(*VoterInfo) error
+	DelVoter(*VoterInfo) error
+	DelVoters(uint64, string) error
+	GetVoter(uint64, string, string) (*VoterInfo, error)
+	GetVoters(uint64, string) ([]string, error)
+	GetVoterCandidates(uint64, string) ([]string, error)
 
-	Delegate(string, *big.Int) error
+	SetState(*GlobalState) error
+	GetState(uint64) (*GlobalState, error)
+
 	Undelegate(string, *big.Int) error
 	IncAsset2Acct(string, string, *big.Int) error
 
 	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
 }
 
-type candidateInfo struct {
+// CandidateInfo info
+type CandidateInfo struct {
 	Name          string   `json:"name"`          // candidate name
 	URL           string   `json:"url"`           // candidate url
 	Quantity      *big.Int `json:"quantity"`      // candidate stake quantity
@@ -59,25 +58,42 @@ type candidateInfo struct {
 	Height        uint64   `json:"height"`        // timestamp
 	Counter       uint64   `json:"counter"`
 	InBlackList   bool     `json:"inBlackList"`
+	InJail        bool     `json:"inJail"`
 }
 
-type voterInfo struct {
+// VoterInfo info
+type VoterInfo struct {
+	Epcho     uint64   `json:"epcho"`
 	Name      string   `json:"name"`      // voter name
 	Candidate string   `json:"candidate"` // candidate approved by this voter
 	Quantity  *big.Int `json:"quantity"`  // stake approved by this voter
 	Height    uint64   `json:"height"`    // timestamp
 }
 
-type globalState struct {
-	Height                           uint64   `json:"height"`                           // block height
+func (voter *VoterInfo) key() string {
+	return fmt.Sprintf("0x%x_%s_%s", voter.Epcho, voter.Name, voter.Candidate)
+}
+
+func (voter *VoterInfo) ckey() string {
+	return fmt.Sprintf("0x%x_%s", voter.Epcho, voter.Candidate)
+}
+
+func (voter *VoterInfo) vkey() string {
+	return fmt.Sprintf("0x%x_%s", voter.Epcho, voter.Name)
+}
+
+// GlobalState dpos state
+type GlobalState struct {
+	Epcho                            uint64   `json:"epcho"`                            // epcho
 	ActivatedCandidateScheduleUpdate uint64   `json:"activatedCandidateScheduleUpdate"` // update time
 	ActivatedCandidateSchedule       []string `json:"activatedCandidateSchedule"`       // candidates
 	ActivatedTotalQuantity           *big.Int `json:"activatedTotalQuantity"`           // the sum of activate candidate votes
 	TotalQuantity                    *big.Int `json:"totalQuantity"`                    // the sum of all candidate votes
 	TakeOver                         bool     `json:"takeOver"`                         // systemio take over dpos
+	Dpos                             bool     `json:"dpos"`                             // dpos status
 }
 
-type candidateInfoArray []*candidateInfo
+type candidateInfoArray []*CandidateInfo
 
 func (prods candidateInfoArray) Len() int {
 	return len(prods)

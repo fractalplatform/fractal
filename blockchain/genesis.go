@@ -308,7 +308,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		g.Config.SysTokenID = assetInfo.AssetId
 		g.Config.SysTokenDecimals = assetInfo.Decimals
 	}
-	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
+	sys := dpos.NewSystem(statedb, g.Config, dposConfig(g.Config))
 	for _, candidate := range g.AllocCandidates {
 		_ = candidate
 		_ = sys

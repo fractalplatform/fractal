@@ -17,12 +17,10 @@
 package dpos
 
 import (
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/fractalplatform/fractal/utils/fdb"
 	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
@@ -81,7 +79,7 @@ func newTestLDB() (*levelDB, func()) {
 		os.RemoveAll(dirname)
 	}
 }
-func TestLDBVoter(t *testing.T) {
+func TestLDB(t *testing.T) {
 	// SetVoter(*voterInfo) error
 	// DelVoter(string, string) error
 	// GetVoter(string) (*voterInfo, error)
@@ -89,131 +87,5 @@ func TestLDBVoter(t *testing.T) {
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
-	voter := &voterInfo{
-		Name:      "vos",
-		Candidate: "fos",
-		Quantity:  big.NewInt(1000),
-		Height:    uint64(time.Now().UnixNano()),
-	}
-	if err := db.SetVoter(voter); err != nil {
-		panic(fmt.Errorf("setvoter --- %v", err))
-	}
-
-	nvoter, err := db.GetVoter(voter.Name)
-	if err != nil {
-		panic(fmt.Errorf("getvoter --- %v", err))
-	} else if nvoter == nil {
-		panic(fmt.Errorf("getvoter --- not nil"))
-	}
-
-	// if delegators, err := db.GetDelegators(nvoter.Candidate); err != nil {
-	// 	panic(fmt.Errorf("getdelegators --- %v", err))
-	// } else if len(delegators) != 1 {
-	// 	panic(fmt.Errorf("getdelegators --- not mismatch"))
-	// }
-
-	if err := db.DelVoter(nvoter.Name, nvoter.Candidate); err != nil {
-		panic(fmt.Errorf("delvoter --- %v", err))
-	}
-
-	// if delegators, err := db.GetDelegators(nvoter.Candidate); err != nil {
-	// 	panic(fmt.Errorf("getdelegators after del --- %v", err))
-	// } else if len(delegators) != 0 {
-	// 	t.Log(len(delegators))
-	// 	panic(fmt.Errorf("getdelegators after del --- not mismatch"))
-	// }
-
-	if nvoter, err := db.GetVoter(voter.Name); err != nil {
-		panic(fmt.Errorf("getvoter after del --- %v", err))
-	} else if nvoter != nil {
-		panic(fmt.Errorf("getvoter after del --- should nil"))
-	}
-}
-
-func TestLDBCandidate(t *testing.T) {
-	// SetCandidate(*candidateInfo) error
-	// DelCandidate(string) error
-	// GetCandidate(string) (*candidateInfo, error)
-	// Candidates() ([]*candidateInfo, error)
-	// CandidatesSize() (uint64, error)
-	ldb, function := newTestLDB()
-	db, _ := NewLDB(ldb)
-	defer function()
-	prod := &candidateInfo{
-		Name:          "fos",
-		URL:           "www.fractalproject.com",
-		Quantity:      big.NewInt(1000),
-		TotalQuantity: big.NewInt(1000),
-		Height:        uint64(time.Now().UnixNano()),
-	}
-	if err := db.SetCandidate(prod); err != nil {
-		panic(fmt.Errorf("setprod --- %v", err))
-	}
-
-	nprod, err := db.GetCandidate(prod.Name)
-	if err != nil {
-		panic(fmt.Errorf("getprod --- %v", err))
-	} else if nprod == nil {
-		panic(fmt.Errorf("getprod --- not nil"))
-	}
-
-	if size, err := db.CandidatesSize(); err != nil {
-		panic(fmt.Errorf("prodsize --- %v", err))
-	} else if size != 1 {
-		panic(fmt.Errorf("prodsize --- mismatch"))
-	}
-
-	if err := db.DelCandidate(nprod.Name); err != nil {
-		panic(fmt.Errorf("delprod --- %v", err))
-	}
-
-	if size, err := db.CandidatesSize(); err != nil {
-		panic(fmt.Errorf("prodsize --- %v", err))
-	} else if size != 0 {
-		panic(fmt.Errorf("prodsize --- mismatch"))
-	}
-
-	if nprod, err := db.GetCandidate(nprod.Name); err != nil {
-		panic(fmt.Errorf("getprod --- %v", err))
-	} else if nprod != nil {
-		panic(fmt.Errorf("getprod --- should nil"))
-	}
-}
-
-func TestLDBState(t *testing.T) {
-	// SetState(*globalState) error
-	// DelState(uint64) error
-	// GetState(uint64) (*globalState, error)
-	ldb, function := newTestLDB()
-	db, _ := NewLDB(ldb)
-	defer function()
-	gstate := &globalState{
-		Height:                           10,
-		ActivatedCandidateScheduleUpdate: uint64(time.Now().UnixNano()),
-		ActivatedCandidateSchedule:       []string{},
-		ActivatedTotalQuantity:           big.NewInt(1000),
-		TotalQuantity:                    big.NewInt(100000),
-	}
-
-	if err := db.SetState(gstate); err != nil {
-		panic(fmt.Errorf("setstate --- %v", err))
-	}
-
-	ngstate, err := db.GetState(gstate.Height)
-	if err != nil {
-		panic(fmt.Errorf("getstate --- %v", err))
-	} else if ngstate == nil {
-		panic(fmt.Errorf("getstate --- not nil"))
-	}
-
-	if err := db.DelState(ngstate.Height); err != nil {
-		panic(fmt.Errorf("delstate --- %v", err))
-	}
-
-	if ngstate, err := db.GetState(ngstate.Height); err != nil {
-		panic(fmt.Errorf("getstate --- %v", err))
-	} else if ngstate != nil {
-		panic(fmt.Errorf("getstate --- should nil"))
-	}
 
 }

@@ -139,17 +139,11 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		fallthrough
 	case actionType == types.UnregCandidate:
 		fallthrough
-	case actionType == types.RemoveVoter:
-		fallthrough
 	case actionType == types.VoteCandidate:
-		fallthrough
-	case actionType == types.ChangeCandidate:
 		fallthrough
 	case actionType == types.KickedCandidate:
 		fallthrough
 	case actionType == types.ExitTakeOver:
-		fallthrough
-	case actionType == types.UnvoteCandidate:
 		internalLogs, err := st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
 		vmerr = err
 		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
