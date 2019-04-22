@@ -1106,6 +1106,10 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var ret = make([]byte, retSize.Int64()*32)
 	var datalen int
 	var err error
+
+	//consume gas per byte
+	contract.Gas = contract.Gas + uint64(len(data))*(params.GasTableInstanse.CryptoByte)
+
 	if i == 0 {
 		//Encrypt
 		ecdsapubkey, err := crypto.UnmarshalPubkey(key)
