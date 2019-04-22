@@ -45,10 +45,10 @@ func TestSetupGenesis(t *testing.T) {
 	var (
 		customghash = common.HexToHash("0x1395829e52af8d75022d363a1645467235f3862fd1dbed71de90fb6cf1f8aeff")
 		customg     = Genesis{
-			Config:         params.DefaultChainconfig.Copy(),
-			AllocAccounts:  DefaultGenesisAccounts(),
-			AllocAssets:    DefaultGenesisAssets(),
-			AllocCadidates: DefaultGenesisCadidates(),
+			Config:          params.DefaultChainconfig.Copy(),
+			AllocAccounts:   DefaultGenesisAccounts(),
+			AllocAssets:     DefaultGenesisAssets(),
+			AllocCandidates: DefaultGenesisCandidates(),
 		}
 		oldcustomg     = customg
 		oldcustomghash = common.HexToHash("18212fd24fb4a27d4a35731d85615a0a050970e6b0443db6011c46e6258c5e66")

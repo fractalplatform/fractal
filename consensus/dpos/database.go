@@ -29,11 +29,11 @@ var (
 
 // IDB dpos database
 type IDB interface {
-	SetCadidate(*cadidateInfo) error
-	DelCadidate(string) error
-	GetCadidate(string) (*cadidateInfo, error)
-	Cadidates() ([]*cadidateInfo, error)
-	CadidatesSize() (uint64, error)
+	SetCandidate(*candidateInfo) error
+	DelCandidate(string) error
+	GetCandidate(string) (*candidateInfo, error)
+	Candidates() ([]*candidateInfo, error)
+	CandidatesSize() (uint64, error)
 
 	SetVoter(*voterInfo) error
 	DelVoter(string, string) error
@@ -51,38 +51,38 @@ type IDB interface {
 	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
 }
 
-type cadidateInfo struct {
-	Name          string   `json:"name"`          // cadidate name
-	URL           string   `json:"url"`           // cadidate url
-	Quantity      *big.Int `json:"quantity"`      // cadidate stake quantity
-	TotalQuantity *big.Int `json:"totalQuantity"` // cadidate total stake quantity
+type candidateInfo struct {
+	Name          string   `json:"name"`          // candidate name
+	URL           string   `json:"url"`           // candidate url
+	Quantity      *big.Int `json:"quantity"`      // candidate stake quantity
+	TotalQuantity *big.Int `json:"totalQuantity"` // candidate total stake quantity
 	Height        uint64   `json:"height"`        // timestamp
 	Counter       uint64   `json:"counter"`
 	InBlackList   bool     `json:"inBlackList"`
 }
 
 type voterInfo struct {
-	Name     string   `json:"name"`     // voter name
-	Cadidate string   `json:"cadidate"` // cadidate approved by this voter
-	Quantity *big.Int `json:"quantity"` // stake approved by this voter
-	Height   uint64   `json:"height"`   // timestamp
+	Name      string   `json:"name"`      // voter name
+	Candidate string   `json:"candidate"` // candidate approved by this voter
+	Quantity  *big.Int `json:"quantity"`  // stake approved by this voter
+	Height    uint64   `json:"height"`    // timestamp
 }
 
 type globalState struct {
-	Height                          uint64   `json:"height"`                          // block height
-	ActivatedCadidateScheduleUpdate uint64   `json:"activatedCadidateScheduleUpdate"` // update time
-	ActivatedCadidateSchedule       []string `json:"activatedCadidateSchedule"`       // cadidates
-	ActivatedTotalQuantity          *big.Int `json:"activatedTotalQuantity"`          // the sum of activate cadidate votes
-	TotalQuantity                   *big.Int `json:"totalQuantity"`                   // the sum of all cadidate votes
-	TakeOver                        bool     `json:"takeOver"`                        // systemio take over dpos
+	Height                           uint64   `json:"height"`                           // block height
+	ActivatedCandidateScheduleUpdate uint64   `json:"activatedCandidateScheduleUpdate"` // update time
+	ActivatedCandidateSchedule       []string `json:"activatedCandidateSchedule"`       // candidates
+	ActivatedTotalQuantity           *big.Int `json:"activatedTotalQuantity"`           // the sum of activate candidate votes
+	TotalQuantity                    *big.Int `json:"totalQuantity"`                    // the sum of all candidate votes
+	TakeOver                         bool     `json:"takeOver"`                         // systemio take over dpos
 }
 
-type cadidateInfoArray []*cadidateInfo
+type candidateInfoArray []*candidateInfo
 
-func (prods cadidateInfoArray) Len() int {
+func (prods candidateInfoArray) Len() int {
 	return len(prods)
 }
-func (prods cadidateInfoArray) Less(i, j int) bool {
+func (prods candidateInfoArray) Less(i, j int) bool {
 	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
 	if val == 0 {
 		if prods[i].Height == prods[j].Height {
@@ -92,6 +92,6 @@ func (prods cadidateInfoArray) Less(i, j int) bool {
 	}
 	return val > 0
 }
-func (prods cadidateInfoArray) Swap(i, j int) {
+func (prods candidateInfoArray) Swap(i, j int) {
 	prods[i], prods[j] = prods[j], prods[i]
 }

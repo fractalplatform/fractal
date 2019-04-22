@@ -22,9 +22,9 @@ import (
 )
 
 var (
-	mincadidatestake = big.NewInt(0).Mul(DefaultConfig.unitStake(), DefaultConfig.CadidateMinQuantity)
-	minvoterstake    = big.NewInt(0).Mul(DefaultConfig.unitStake(), DefaultConfig.VoterMinQuantity)
-	big1             = big.NewInt(1)
+	mincandidatestake = big.NewInt(0).Mul(DefaultConfig.unitStake(), DefaultConfig.CandidateMinQuantity)
+	minvoterstake     = big.NewInt(0).Mul(DefaultConfig.unitStake(), DefaultConfig.VoterMinQuantity)
+	big1              = big.NewInt(1)
 )
 
 func TestVote(t *testing.T) {
@@ -43,156 +43,156 @@ func TestVote(t *testing.T) {
 		ActivatedTotalQuantity: big.NewInt(0),
 	})
 
-	// RegCadidate
-	cadidate := "testcadidate"
+	// RegCandidate
+	candidate := "testcandidate"
 	url := "testurl"
-	stake := big.NewInt(0).Sub(mincadidatestake, big1)
+	stake := big.NewInt(0).Sub(mincandidatestake, big1)
 
-	if _, err := dpos.UnregCadidate(cadidate); err == nil {
-		t.Errorf("UnregCadidate should failed --- %v", err)
+	if _, err := dpos.UnregCandidate(candidate); err == nil {
+		t.Errorf("UnregCandidate should failed --- %v", err)
 	}
 
-	err = dpos.RegCadidate(cadidate, url, stake)
+	err = dpos.RegCandidate(candidate, url, stake)
 	if err == nil {
-		t.Errorf("RegCadidate should failed --- %v", err)
+		t.Errorf("RegCandidate should failed --- %v", err)
 	}
 
-	if _, err := dpos.UnregCadidate(cadidate); err == nil {
-		t.Errorf("UnregCadidate should failed --- %v", err)
+	if _, err := dpos.UnregCandidate(candidate); err == nil {
+		t.Errorf("UnregCandidate should failed --- %v", err)
 	}
 
-	err = dpos.RegCadidate(cadidate, url, mincadidatestake)
+	err = dpos.RegCandidate(candidate, url, mincandidatestake)
 	if nil != err {
-		t.Errorf("RegCadidate failed --- %v", err)
+		t.Errorf("RegCandidate failed --- %v", err)
 	}
 
-	if gstate, err := dpos.GetState(LastBlockHeight); err != nil || gstate.TotalQuantity.Cmp(DefaultConfig.CadidateMinQuantity) != 0 {
-		t.Errorf("gstate totalQuantity mismatch --- %v(%v, %v)", err, gstate.TotalQuantity, DefaultConfig.CadidateMinQuantity)
+	if gstate, err := dpos.GetState(LastBlockHeight); err != nil || gstate.TotalQuantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 {
+		t.Errorf("gstate totalQuantity mismatch --- %v(%v, %v)", err, gstate.TotalQuantity, DefaultConfig.CandidateMinQuantity)
 	}
 
-	// GetCadidate
-	if prod, err := dpos.GetCadidate(cadidate); err != nil {
-		t.Errorf("GetCadidate failed --- %v", err)
-	} else if prod.Name != cadidate || prod.URL != url || prod.Quantity.Cmp(DefaultConfig.CadidateMinQuantity) != 0 || prod.Quantity.Cmp(prod.TotalQuantity) != 0 {
-		t.Errorf("cadidate info not match")
+	// GetCandidate
+	if prod, err := dpos.GetCandidate(candidate); err != nil {
+		t.Errorf("GetCandidate failed --- %v", err)
+	} else if prod.Name != candidate || prod.URL != url || prod.Quantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 || prod.Quantity.Cmp(prod.TotalQuantity) != 0 {
+		t.Errorf("candidate info not match")
 	}
 
-	// Cadidates
-	if prods, err := dpos.Cadidates(); err != nil || len(prods) != 1 {
-		t.Errorf("cadidates mismatch")
+	// Candidates
+	if prods, err := dpos.Candidates(); err != nil || len(prods) != 1 {
+		t.Errorf("candidates mismatch")
 	}
 
-	// CadidatesSize
-	if size, err := dpos.CadidatesSize(); err != nil || size != 1 {
-		t.Errorf("cadidates mismatch")
+	// CandidatesSize
+	if size, err := dpos.CandidatesSize(); err != nil || size != 1 {
+		t.Errorf("candidates mismatch")
 	}
 
-	// VoteCadidate
+	// VoteCandidate
 	voter := "testvoter"
 	vstake := big.NewInt(0).Sub(minvoterstake, big1)
-	err = dpos.VoteCadidate(voter, cadidate, vstake)
+	err = dpos.VoteCandidate(voter, candidate, vstake)
 	if err == nil {
-		t.Errorf("VoteCadidate should failed --- %v", err)
+		t.Errorf("VoteCandidate should failed --- %v", err)
 	}
 
-	err = dpos.VoteCadidate(voter, cadidate, minvoterstake)
+	err = dpos.VoteCandidate(voter, candidate, minvoterstake)
 	if nil != err {
-		t.Errorf("VoterCadidate failed --- %v", err)
+		t.Errorf("VoterCandidate failed --- %v", err)
 	}
 
-	prod, _ := dpos.GetCadidate(cadidate)
+	prod, _ := dpos.GetCandidate(candidate)
 	gstate, _ := dpos.GetState(LastBlockHeight)
 	if prod.TotalQuantity.Cmp(gstate.TotalQuantity) != 0 {
 		t.Errorf("gstate totalQuantity mismatch --- %v(%v, %v)", err, gstate.TotalQuantity, prod.TotalQuantity)
 	} else if new(big.Int).Sub(prod.TotalQuantity, prod.Quantity).Cmp(DefaultConfig.VoterMinQuantity) != 0 {
-		t.Errorf("cadidate totalQuantity mismatch --- %v(%v, %v)", err, prod.TotalQuantity, prod.Quantity)
+		t.Errorf("candidate totalQuantity mismatch --- %v(%v, %v)", err, prod.TotalQuantity, prod.Quantity)
 	}
 
 	// GetVoter
 	if vote, err := dpos.GetVoter(voter); err != nil {
 		t.Errorf("GetVoter failed --- %v", err)
-	} else if vote.Name != voter || vote.Cadidate != cadidate || vote.Quantity.Cmp(DefaultConfig.VoterMinQuantity) != 0 {
+	} else if vote.Name != voter || vote.Candidate != candidate || vote.Quantity.Cmp(DefaultConfig.VoterMinQuantity) != 0 {
 		t.Errorf("voter info not match --- %v", err)
 	}
 
-	// voter cant reg cadidate
-	err = dpos.RegCadidate(voter, url, mincadidatestake)
-	if err.Error() != "invalid cadidate testvoter(alreay vote to testcadidate)" {
+	// voter cant reg candidate
+	err = dpos.RegCandidate(voter, url, mincandidatestake)
+	if err.Error() != "invalid candidate testvoter(alreay vote to testcandidate)" {
 		t.Errorf("wrong err type --- %v", err)
 	}
 
 	// test change
-	cadidate2 := "testcadidate2"
+	candidate2 := "testcandidate2"
 	url2 := "testurl2"
-	dpos.RegCadidate(cadidate2, url2, mincadidatestake)
-	// Cadidates
-	if prods, err := dpos.Cadidates(); err != nil || len(prods) != 2 {
-		t.Errorf("cadidates mismatch")
+	dpos.RegCandidate(candidate2, url2, mincandidatestake)
+	// Candidates
+	if prods, err := dpos.Candidates(); err != nil || len(prods) != 2 {
+		t.Errorf("candidates mismatch")
 	}
 
-	if err := dpos.ChangeCadidate(voter, cadidate2); err != nil {
-		t.Errorf("ChangeCadidate failed --- %v", err)
+	if err := dpos.ChangeCandidate(voter, candidate2); err != nil {
+		t.Errorf("ChangeCandidate failed --- %v", err)
 	}
 
 	vote, _ := dpos.GetVoter(voter)
-	prod, _ = dpos.GetCadidate(cadidate)
-	prod2, _ := dpos.GetCadidate(cadidate2)
+	prod, _ = dpos.GetCandidate(candidate)
+	prod2, _ := dpos.GetCandidate(candidate2)
 	gstate, _ = dpos.GetState(LastBlockHeight)
 
-	if vote.Cadidate != prod2.Name || vote.Quantity.Cmp(DefaultConfig.VoterMinQuantity) != 0 ||
+	if vote.Candidate != prod2.Name || vote.Quantity.Cmp(DefaultConfig.VoterMinQuantity) != 0 ||
 		prod.Quantity.Cmp(prod.TotalQuantity) != 0 || new(big.Int).Add(prod.TotalQuantity, prod2.TotalQuantity).Cmp(gstate.TotalQuantity) != 0 {
 		t.Log(prod2.TotalQuantity, gstate.TotalQuantity)
 		t.Error("Change stake not work")
 	}
 
-	if _, err := dpos.UnvoteCadidate(voter); err != nil {
-		t.Errorf("UnvoteCadidate failed --- %v", err)
+	if _, err := dpos.UnvoteCandidate(voter); err != nil {
+		t.Errorf("UnvoteCandidate failed --- %v", err)
 	} else if vote, err := dpos.GetVoter(voter); err != nil || vote != nil {
-		t.Errorf("UnvoteCadidate failed --- %v", err)
+		t.Errorf("UnvoteCandidate failed --- %v", err)
 	}
-	prod2, _ = dpos.GetCadidate(cadidate2)
+	prod2, _ = dpos.GetCandidate(candidate2)
 	gstate, _ = dpos.GetState(LastBlockHeight)
 	if prod.Quantity.Cmp(prod.TotalQuantity) != 0 ||
 		prod2.Quantity.Cmp(prod2.TotalQuantity) != 0 || new(big.Int).Add(prod.TotalQuantity, prod2.TotalQuantity).Cmp(gstate.TotalQuantity) != 0 {
-		t.Errorf("UnvoteCadidate failed")
+		t.Errorf("UnvoteCandidate failed")
 	}
 
-	if _, err := dpos.UnregCadidate(cadidate); err != nil {
-		t.Errorf("UnregCadidate failed --- %v", err)
-	} else if prod, err := dpos.GetCadidate(cadidate); err != nil || prod != nil {
-		t.Errorf("UnregCadidate failed --- %v", err)
+	if _, err := dpos.UnregCandidate(candidate); err != nil {
+		t.Errorf("UnregCandidate failed --- %v", err)
+	} else if prod, err := dpos.GetCandidate(candidate); err != nil || prod != nil {
+		t.Errorf("UnregCandidate failed --- %v", err)
 	} else if gstate, _ = dpos.GetState(LastBlockHeight); prod2.TotalQuantity.Cmp(gstate.TotalQuantity) != 0 {
-		t.Errorf("UnvoteCadidate failed mismatch %v %v", prod2.TotalQuantity, gstate.TotalQuantity)
+		t.Errorf("UnvoteCandidate failed mismatch %v %v", prod2.TotalQuantity, gstate.TotalQuantity)
 	}
 
 	// activate dpos state
 	DefaultConfig.safeSize.Store(uint64(2))
-	pmq2 := big.NewInt(0).Mul(DefaultConfig.CadidateMinQuantity, big.NewInt(2))
+	pmq2 := big.NewInt(0).Mul(DefaultConfig.CandidateMinQuantity, big.NewInt(2))
 	DefaultConfig.ActivatedMinQuantity = big.NewInt(0).Add(pmq2, big1)
 
-	err = dpos.RegCadidate(cadidate, url, mincadidatestake)
+	err = dpos.RegCandidate(candidate, url, mincandidatestake)
 	if err != nil {
-		t.Errorf("RegCadidate err %v", err)
+		t.Errorf("RegCandidate err %v", err)
 	}
 
 	// register again
-	err = dpos.RegCadidate(cadidate, url, mincadidatestake)
-	if err.Error() != "invalid cadidate testcadidate(already exist)" {
+	err = dpos.RegCandidate(candidate, url, mincandidatestake)
+	if err.Error() != "invalid candidate testcandidate(already exist)" {
 		t.Errorf("wrong err: %v", err)
 	}
 
-	err = dpos.VoteCadidate(voter, cadidate, minvoterstake)
+	err = dpos.VoteCandidate(voter, candidate, minvoterstake)
 	if nil != err {
-		t.Errorf("VoterCadidate failed --- %v", err)
+		t.Errorf("VoterCandidate failed --- %v", err)
 	}
 
 	//t.Log(dpos.isdpos())
-	_, err = dpos.UnregCadidate(cadidate)
+	_, err = dpos.UnregCandidate(candidate)
 	if err.Error() != "already has voter" {
 		t.Errorf("wrong err: %v", err)
 	}
 
-	_, err = dpos.UnvoteCadidate(voter)
+	_, err = dpos.UnvoteCandidate(voter)
 	if err != nil {
 		t.Errorf("wrong err: %v", err)
 	}

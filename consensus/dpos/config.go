@@ -28,41 +28,41 @@ import (
 
 // DefaultConfig configures
 var DefaultConfig = &Config{
-	MaxURLLen:            512,
-	UnitStake:            big.NewInt(1000),
-	CadidateMinQuantity:  big.NewInt(10),
-	VoterMinQuantity:     big.NewInt(1),
-	ActivatedMinQuantity: big.NewInt(100),
-	BlockInterval:        3000,
-	BlockFrequency:       6,
-	CadidateScheduleSize: 3,
-	DelayEcho:            2,
-	AccountName:          "ftsystemdpos",
-	SystemName:           "ftsystemio",
-	SystemURL:            "www.fractalproject.com",
-	ExtraBlockReward:     big.NewInt(1),
-	BlockReward:          big.NewInt(5),
-	Decimals:             18,
+	MaxURLLen:             512,
+	UnitStake:             big.NewInt(1000),
+	CandidateMinQuantity:  big.NewInt(10),
+	VoterMinQuantity:      big.NewInt(1),
+	ActivatedMinQuantity:  big.NewInt(100),
+	BlockInterval:         3000,
+	BlockFrequency:        6,
+	CandidateScheduleSize: 3,
+	DelayEcho:             2,
+	AccountName:           "ftsystemdpos",
+	SystemName:            "ftsystemio",
+	SystemURL:             "www.fractalproject.com",
+	ExtraBlockReward:      big.NewInt(1),
+	BlockReward:           big.NewInt(5),
+	Decimals:              18,
 }
 
 // Config dpos configures
 type Config struct {
 	// consensus fileds
-	MaxURLLen            uint64   `json:"maxURLLen"`            // url length
-	UnitStake            *big.Int `json:"unitStake"`            // state unit
-	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity"`  // min quantity
-	VoterMinQuantity     *big.Int `json:"voterMinQuantity"`     // min quantity
-	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity"` // min active quantity
-	BlockInterval        uint64   `json:"blockInterval"`
-	BlockFrequency       uint64   `json:"blockFrequency"`
-	CadidateScheduleSize uint64   `json:"cadidateScheduleSize"`
-	DelayEcho            uint64   `json:"delayEcho"`
-	AccountName          string   `json:"accountName"`
-	SystemName           string   `json:"systemName"`
-	SystemURL            string   `json:"systemURL"`
-	ExtraBlockReward     *big.Int `json:"extraBlockReward"`
-	BlockReward          *big.Int `json:"blockReward"`
-	Decimals             uint64   `json:"decimals"`
+	MaxURLLen             uint64   `json:"maxURLLen"`            // url length
+	UnitStake             *big.Int `json:"unitStake"`            // state unit
+	CandidateMinQuantity  *big.Int `json:"candidateMinQuantity"` // min quantity
+	VoterMinQuantity      *big.Int `json:"voterMinQuantity"`     // min quantity
+	ActivatedMinQuantity  *big.Int `json:"activatedMinQuantity"` // min active quantity
+	BlockInterval         uint64   `json:"blockInterval"`
+	BlockFrequency        uint64   `json:"blockFrequency"`
+	CandidateScheduleSize uint64   `json:"candidateScheduleSize"`
+	DelayEcho             uint64   `json:"delayEcho"`
+	AccountName           string   `json:"accountName"`
+	SystemName            string   `json:"systemName"`
+	SystemURL             string   `json:"systemURL"`
+	ExtraBlockReward      *big.Int `json:"extraBlockReward"`
+	BlockReward           *big.Int `json:"blockReward"`
+	Decimals              uint64   `json:"decimals"`
 
 	// cache files
 	decimal    atomic.Value
@@ -116,7 +116,7 @@ func (cfg *Config) epochInterval() uint64 {
 	if epochInter := cfg.epochInter.Load(); epochInter != nil {
 		return epochInter.(uint64)
 	}
-	epochInter := cfg.blockInterval() * cfg.BlockFrequency * cfg.CadidateScheduleSize
+	epochInter := cfg.blockInterval() * cfg.BlockFrequency * cfg.CandidateScheduleSize
 	cfg.epochInter.Store(epochInter)
 	return epochInter
 }
@@ -126,7 +126,7 @@ func (cfg *Config) consensusSize() uint64 {
 		return safeSize.(uint64)
 	}
 
-	safeSize := cfg.CadidateScheduleSize*2/3 + 1
+	safeSize := cfg.CandidateScheduleSize*2/3 + 1
 	cfg.safeSize.Store(safeSize)
 	return safeSize
 }

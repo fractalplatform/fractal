@@ -69,25 +69,25 @@ const (
 )
 
 const (
-	// RegCadidate repesents register cadidate action.
-	RegCadidate ActionType = 0x300 + iota
-	// UpdateCadidate repesents update cadidate action.
-	UpdateCadidate
-	// UnregCadidate repesents unregister cadidate action.
-	UnregCadidate
-	// RemoveVoter repesents cadidate remove voter action.
+	// RegCandidate repesents register candidate action.
+	RegCandidate ActionType = 0x300 + iota
+	// UpdateCandidate repesents update candidate action.
+	UpdateCandidate
+	// UnregCandidate repesents unregister candidate action.
+	UnregCandidate
+	// RemoveVoter repesents candidate remove voter action.
 	RemoveVoter
-	// VoteCadidate repesents voter vote cadidate action.
-	VoteCadidate
-	// ChangeCadidate repesents voter change cadidate action.
-	ChangeCadidate
-	// UnvoteCadidate repesents voter cancel vote some cadidate action.
-	UnvoteCadidate
+	// VoteCandidate repesents voter vote candidate action.
+	VoteCandidate
+	// ChangeCandidate repesents voter change candidate action.
+	ChangeCandidate
+	// UnvoteCandidate repesents voter cancel vote some candidate action.
+	UnvoteCandidate
 )
 
 const (
-	// KickedCadidate
-	KickedCadidate ActionType = 0x400 + iota
+	// KickedCandidate
+	KickedCandidate ActionType = 0x400 + iota
 	// exit
 	ExitTakeOver
 )
@@ -164,11 +164,11 @@ func (a *Action) CheckValue() bool {
 		fallthrough
 	case DestroyAsset:
 		fallthrough
-	case RegCadidate:
+	case RegCandidate:
 		fallthrough
-	case UpdateCadidate:
+	case UpdateCandidate:
 		fallthrough
-	case VoteCadidate:
+	case VoteCandidate:
 		return true
 	default:
 	}

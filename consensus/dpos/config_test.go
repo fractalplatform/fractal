@@ -51,7 +51,7 @@ func TestRLP(t *testing.T) {
 
 	DefaultConfig.BlockInterval = 500
 	DefaultConfig.blockInter.Store(DefaultConfig.BlockInterval * uint64(time.Millisecond))
-	DefaultConfig.epochInter.Store(DefaultConfig.blockInterval() * DefaultConfig.BlockFrequency * DefaultConfig.CadidateScheduleSize)
+	DefaultConfig.epochInter.Store(DefaultConfig.blockInterval() * DefaultConfig.BlockFrequency * DefaultConfig.CandidateScheduleSize)
 	now = uint64(time.Now().UnixNano())
 	slot = DefaultConfig.slot(now)
 	nslot = DefaultConfig.nextslot(now)

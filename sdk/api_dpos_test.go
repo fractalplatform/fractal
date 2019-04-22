@@ -62,10 +62,10 @@ func TestDposValidateEpcho(t *testing.T) {
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposCadidates(t *testing.T) {
-	Convey("dpos_cadidates", t, func() {
+func TestDposCandidates(t *testing.T) {
+	Convey("dpos_candidates", t, func() {
 		api := NewAPI(rpchost)
-		info, err := api.DposCadidates()
+		info, err := api.DposCandidates()
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})

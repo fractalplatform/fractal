@@ -30,11 +30,11 @@ import (
 func TestDatabase(t *testing.T) {
 	// gstate
 	gstate := &globalState{
-		Height:                          10,
-		ActivatedCadidateScheduleUpdate: uint64(time.Now().UnixNano()),
-		ActivatedCadidateSchedule:       []string{},
-		ActivatedTotalQuantity:          big.NewInt(1000),
-		TotalQuantity:                   big.NewInt(100000),
+		Height:                           10,
+		ActivatedCandidateScheduleUpdate: uint64(time.Now().UnixNano()),
+		ActivatedCandidateSchedule:       []string{},
+		ActivatedTotalQuantity:           big.NewInt(1000),
+		TotalQuantity:                    big.NewInt(100000),
 	}
 	gval, err := rlp.EncodeToBytes(gstate)
 	if err != nil {
@@ -50,9 +50,9 @@ func TestDatabase(t *testing.T) {
 
 	// voter
 	vote := &voterInfo{
-		Name:     "fos",
-		Cadidate: "fos",
-		Quantity: big.NewInt(1000),
+		Name:      "fos",
+		Candidate: "fos",
+		Quantity:  big.NewInt(1000),
 	}
 
 	vval, err := rlp.EncodeToBytes(vote)
@@ -68,8 +68,8 @@ func TestDatabase(t *testing.T) {
 	vjson, _ := json.Marshal(nvote)
 	t.Log("voter     ", string(vjson))
 
-	// cadidate
-	prod := &cadidateInfo{
+	// candidate
+	prod := &candidateInfo{
 		Name:          "fos",
 		URL:           "www.fractalproject.com",
 		Quantity:      big.NewInt(1000),
@@ -81,7 +81,7 @@ func TestDatabase(t *testing.T) {
 		panic(fmt.Sprintf("prod EncodeToBytes--%v", err))
 	}
 
-	nprod := &cadidateInfo{}
+	nprod := &candidateInfo{}
 	if err := rlp.DecodeBytes(pval, nprod); err != nil {
 		panic(fmt.Sprintf("prod DecodeBytes--%v", err))
 	}
@@ -89,21 +89,21 @@ func TestDatabase(t *testing.T) {
 	pjson, _ := json.Marshal(nprod)
 	t.Log("prod     ", string(pjson))
 
-	prod1 := &cadidateInfo{
+	prod1 := &candidateInfo{
 		Name:          "fos1",
 		URL:           "www.fractalproject.com",
 		Quantity:      big.NewInt(1000),
 		TotalQuantity: big.NewInt(2000),
 	}
 
-	prod2 := &cadidateInfo{
+	prod2 := &candidateInfo{
 		Name:          "fos2",
 		URL:           "www.fractalproject.com",
 		Quantity:      big.NewInt(1000),
 		TotalQuantity: big.NewInt(1000),
 	}
 
-	prods := cadidateInfoArray{}
+	prods := candidateInfoArray{}
 	prods = append(prods, prod)
 	prods = append(prods, prod1)
 	prods = append(prods, prod2)

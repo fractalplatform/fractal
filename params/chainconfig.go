@@ -57,17 +57,17 @@ type FrokedConfig struct {
 }
 
 type DposConfig struct {
-	MaxURLLen            uint64   `json:"maxURLLen,omitempty"`            // url length
-	UnitStake            *big.Int `json:"unitStake,omitempty"`            // state unit
-	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity,omitempty"`  // min quantity
-	VoterMinQuantity     *big.Int `json:"voterMinQuantity,omitempty"`     // min quantity
-	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity,omitempty"` // min active quantity
-	BlockInterval        uint64   `json:"blockInterval,omitempty"`
-	BlockFrequency       uint64   `json:"blockFrequency,omitempty"`
-	CadidateScheduleSize uint64   `json:"cadidateScheduleSize,omitempty"`
-	DelayEcho            uint64   `json:"delayEcho,omitempty"`
-	ExtraBlockReward     *big.Int `json:"extraBlockReward,omitempty"`
-	BlockReward          *big.Int `json:"blockReward,omitempty"`
+	MaxURLLen             uint64   `json:"maxURLLen,omitempty"`            // url length
+	UnitStake             *big.Int `json:"unitStake,omitempty"`            // state unit
+	CandidateMinQuantity  *big.Int `json:"candidateMinQuantity,omitempty"` // min quantity
+	VoterMinQuantity      *big.Int `json:"voterMinQuantity,omitempty"`     // min quantity
+	ActivatedMinQuantity  *big.Int `json:"activatedMinQuantity,omitempty"` // min active quantity
+	BlockInterval         uint64   `json:"blockInterval,omitempty"`
+	BlockFrequency        uint64   `json:"blockFrequency,omitempty"`
+	CandidateScheduleSize uint64   `json:"candidateScheduleSize,omitempty"`
+	DelayEcho             uint64   `json:"delayEcho,omitempty"`
+	ExtraBlockReward      *big.Int `json:"extraBlockReward,omitempty"`
+	BlockReward           *big.Int `json:"blockReward,omitempty"`
 }
 
 var DefaultChainconfig = &ChainConfig{
@@ -94,17 +94,17 @@ var DefaultChainconfig = &ChainConfig{
 		Forkpercentage: 80,
 	},
 	DposCfg: &DposConfig{
-		MaxURLLen:            512,
-		UnitStake:            big.NewInt(1000),
-		CadidateMinQuantity:  big.NewInt(10),
-		VoterMinQuantity:     big.NewInt(1),
-		ActivatedMinQuantity: big.NewInt(100),
-		BlockInterval:        3000,
-		BlockFrequency:       6,
-		CadidateScheduleSize: 3,
-		DelayEcho:            2,
-		ExtraBlockReward:     big.NewInt(1),
-		BlockReward:          big.NewInt(5),
+		MaxURLLen:             512,
+		UnitStake:             big.NewInt(1000),
+		CandidateMinQuantity:  big.NewInt(10),
+		VoterMinQuantity:      big.NewInt(1),
+		ActivatedMinQuantity:  big.NewInt(100),
+		BlockInterval:         3000,
+		BlockFrequency:        6,
+		CandidateScheduleSize: 3,
+		DelayEcho:             2,
+		ExtraBlockReward:      big.NewInt(1),
+		BlockReward:           big.NewInt(5),
 	},
 	SysName:     "fractal.admin",
 	AccountName: "fractal.account",

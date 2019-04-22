@@ -142,37 +142,37 @@ func TestDPOS(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// RegCadidate
+		// RegCandidate
 		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
 		acct2 := NewAccount(api, accountName2, priv2, systemassetid, math.MaxUint64, true, chainid)
-		hash, err = acct.RegCadidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.RegisterCadidate{
+		hash, err = acct.RegCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.RegisterCandidate{
 			Url: fmt.Sprintf("www.%s.com", accountName.String()),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// VoteCadidate
-		hash, err = acct2.VoteCadidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCadidate{
-			Cadidate: accountName.String(),
+		// VoteCandidate
+		hash, err = acct2.VoteCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCandidate{
+			Candidate: accountName.String(),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// UnvoteCadidate
-		hash, err = acct2.UnvoteCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
+		// UnvoteCandidate
+		hash, err = acct2.UnvoteCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// VoteCadidate
-		hash, err = acct2.VoteCadidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCadidate{
-			Cadidate: systemaccount,
+		// VoteCandidate
+		hash, err = acct2.VoteCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCandidate{
+			Candidate: systemaccount,
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// ChangeCadidate
-		hash, err = acct2.ChangeCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.ChangeCadidate{
-			Cadidate: accountName.String(),
+		// ChangeCandidate
+		hash, err = acct2.ChangeCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.ChangeCandidate{
+			Candidate: accountName.String(),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
@@ -184,14 +184,14 @@ func TestDPOS(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		hash, err = sysAcct.KickedCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
-			Cadidates: []string{accountName.String()},
+		hash, err = sysAcct.KickedCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCandidate{
+			Candidates: []string{accountName.String()},
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
-		// UnRegCadidate
-		hash, err = acct.UnRegCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
+		// UnRegCandidate
+		hash, err = acct.UnRegCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 	})
@@ -202,8 +202,8 @@ func TestManual(t *testing.T) {
 		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
 		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
 
-		hash, err := sysAcct.KickedCadidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCadidate{
-			Cadidates: []string{"ftcadidate1", "ftcadidate2", "ftcadidate3"},
+		hash, err := sysAcct.KickedCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCandidate{
+			Candidates: []string{"ftcandidate1", "ftcandidate2", "ftcandidate3"},
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)

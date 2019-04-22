@@ -46,8 +46,8 @@ type GenesisAccount struct {
 	PubKey common.PubKey `json:"pubKey,omitempty"`
 }
 
-// GenesisCadidate is an cadicate in the state of the genesis block.
-type GenesisCadidate struct {
+// GenesisCandidate is an cadicate in the state of the genesis block.
+type GenesisCandidate struct {
 	Name  string   `json:"name,omitempty"`
 	URL   string   `json:"url,omitempty"`
 	Stake *big.Int `json:"stake,omitempty"`
@@ -66,32 +66,32 @@ type GenesisAsset struct {
 
 // Genesis specifies the header fields, state of a genesis block.
 type Genesis struct {
-	Config         *params.ChainConfig `json:"config,omitempty"`
-	Timestamp      uint64              `json:"timestamp,omitempty"`
-	GasLimit       uint64              `json:"gasLimit,omitempty" `
-	Difficulty     *big.Int            `json:"difficulty,omitempty" `
-	AllocAccounts  []*GenesisAccount   `json:"allocAccounts,omitempty"`
-	AllocCadidates []*GenesisCadidate  `json:"allocCadidates,omitempty"`
-	AllocAssets    []*GenesisAsset     `json:"allocAssets,omitempty"`
+	Config          *params.ChainConfig `json:"config,omitempty"`
+	Timestamp       uint64              `json:"timestamp,omitempty"`
+	GasLimit        uint64              `json:"gasLimit,omitempty" `
+	Difficulty      *big.Int            `json:"difficulty,omitempty" `
+	AllocAccounts   []*GenesisAccount   `json:"allocAccounts,omitempty"`
+	AllocCandidates []*GenesisCandidate `json:"allocCandidates,omitempty"`
+	AllocAssets     []*GenesisAsset     `json:"allocAssets,omitempty"`
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 	return &dpos.Config{
-		MaxURLLen:            cfg.DposCfg.MaxURLLen,
-		UnitStake:            cfg.DposCfg.UnitStake,
-		CadidateMinQuantity:  cfg.DposCfg.CadidateMinQuantity,
-		VoterMinQuantity:     cfg.DposCfg.VoterMinQuantity,
-		ActivatedMinQuantity: cfg.DposCfg.ActivatedMinQuantity,
-		BlockInterval:        cfg.DposCfg.BlockInterval,
-		BlockFrequency:       cfg.DposCfg.BlockFrequency,
-		CadidateScheduleSize: cfg.DposCfg.CadidateScheduleSize,
-		DelayEcho:            cfg.DposCfg.DelayEcho,
-		AccountName:          cfg.DposName,
-		SystemName:           cfg.SysName,
-		SystemURL:            cfg.ChainURL,
-		ExtraBlockReward:     cfg.DposCfg.ExtraBlockReward,
-		BlockReward:          cfg.DposCfg.BlockReward,
-		Decimals:             cfg.SysTokenDecimals,
+		MaxURLLen:             cfg.DposCfg.MaxURLLen,
+		UnitStake:             cfg.DposCfg.UnitStake,
+		CandidateMinQuantity:  cfg.DposCfg.CandidateMinQuantity,
+		VoterMinQuantity:      cfg.DposCfg.VoterMinQuantity,
+		ActivatedMinQuantity:  cfg.DposCfg.ActivatedMinQuantity,
+		BlockInterval:         cfg.DposCfg.BlockInterval,
+		BlockFrequency:        cfg.DposCfg.BlockFrequency,
+		CandidateScheduleSize: cfg.DposCfg.CandidateScheduleSize,
+		DelayEcho:             cfg.DposCfg.DelayEcho,
+		AccountName:           cfg.DposName,
+		SystemName:            cfg.SysName,
+		SystemURL:             cfg.ChainURL,
+		ExtraBlockReward:      cfg.DposCfg.ExtraBlockReward,
+		BlockReward:           cfg.DposCfg.BlockReward,
+		Decimals:              cfg.SysTokenDecimals,
 	}
 }
 
@@ -309,8 +309,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		g.Config.SysTokenDecimals = assetInfo.Decimals
 	}
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
-	for _, cadidate := range g.AllocCadidates {
-		_ = cadidate
+	for _, candidate := range g.AllocCandidates {
+		_ = candidate
 		_ = sys
 	}
 
@@ -396,13 +396,13 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 func DefaultGenesis() *Genesis {
 	gtime, _ := time.Parse("2006-01-02 15:04:05.999999999", "2019-01-16 00:00:00")
 	return &Genesis{
-		Config:         params.DefaultChainconfig,
-		Timestamp:      uint64(gtime.UnixNano()),
-		GasLimit:       params.GenesisGasLimit,
-		Difficulty:     params.GenesisDifficulty,
-		AllocAccounts:  DefaultGenesisAccounts(),
-		AllocCadidates: DefaultGenesisCadidates(),
-		AllocAssets:    DefaultGenesisAssets(),
+		Config:          params.DefaultChainconfig,
+		Timestamp:       uint64(gtime.UnixNano()),
+		GasLimit:        params.GenesisGasLimit,
+		Difficulty:      params.GenesisDifficulty,
+		AllocAccounts:   DefaultGenesisAccounts(),
+		AllocCandidates: DefaultGenesisCandidates(),
+		AllocAssets:     DefaultGenesisAssets(),
 	}
 }
 
@@ -424,9 +424,9 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 	}
 }
 
-// DefaultGenesisCadidates returns the ft net genesis cadidates.
-func DefaultGenesisCadidates() []*GenesisCadidate {
-	return []*GenesisCadidate{}
+// DefaultGenesisCandidates returns the ft net genesis candidates.
+func DefaultGenesisCandidates() []*GenesisCandidate {
+	return []*GenesisCandidate{}
 }
 
 // DefaultGenesisAssets returns the ft net genesis assets.

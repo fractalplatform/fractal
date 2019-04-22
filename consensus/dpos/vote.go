@@ -42,8 +42,8 @@ func NewSystem(state *state.StateDB, config *Config) *System {
 	}
 }
 
-// RegCadidate  register a cadidate
-func (sys *System) RegCadidate(cadidate string, url string, stake *big.Int) error {
+// RegCandidate  register a candidate
+func (sys *System) RegCandidate(candidate string, url string, stake *big.Int) error {
 	// parameter validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
@@ -53,24 +53,24 @@ func (sys *System) RegCadidate(cadidate string, url string, stake *big.Int) erro
 	if m.Sign() != 0 {
 		return fmt.Errorf("invalid stake %v(non divisibility, unit %v)", stake, sys.config.unitStake())
 	}
-	if q.Cmp(sys.config.CadidateMinQuantity) < 0 {
-		return fmt.Errorf("invalid stake %v(insufficient, cadidate min %v)", stake, new(big.Int).Mul(sys.config.CadidateMinQuantity, sys.config.unitStake()))
+	if q.Cmp(sys.config.CandidateMinQuantity) < 0 {
+		return fmt.Errorf("invalid stake %v(insufficient, candidate min %v)", stake, new(big.Int).Mul(sys.config.CandidateMinQuantity, sys.config.unitStake()))
 	}
 
-	if voter, err := sys.GetVoter(cadidate); err != nil {
+	if voter, err := sys.GetVoter(candidate); err != nil {
 		return err
 	} else if voter != nil {
-		return fmt.Errorf("invalid cadidate %v(alreay vote to %v)", cadidate, voter.Cadidate)
+		return fmt.Errorf("invalid candidate %v(alreay vote to %v)", candidate, voter.Candidate)
 	}
-	prod, err := sys.GetCadidate(cadidate)
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return err
 	}
 	if prod != nil {
-		return fmt.Errorf("invalid cadidate %v(already exist)", cadidate)
+		return fmt.Errorf("invalid candidate %v(already exist)", candidate)
 	}
-	prod = &cadidateInfo{
-		Name:          cadidate,
+	prod = &candidateInfo{
+		Name:          candidate,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
 	}
@@ -80,7 +80,7 @@ func (sys *System) RegCadidate(cadidate string, url string, stake *big.Int) erro
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
 
-	if err := sys.Delegate(cadidate, stake); err != nil {
+	if err := sys.Delegate(candidate, stake); err != nil {
 		return fmt.Errorf("delegate (%v) failed(%v)", stake, err)
 	}
 
@@ -88,7 +88,7 @@ func (sys *System) RegCadidate(cadidate string, url string, stake *big.Int) erro
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
 	prod.Height = gstate.Height
-	if err := sys.SetCadidate(prod); err != nil {
+	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
@@ -97,8 +97,8 @@ func (sys *System) RegCadidate(cadidate string, url string, stake *big.Int) erro
 	return nil
 }
 
-// UpdateCadidate  update a cadidate
-func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) error {
+// UpdateCandidate  update a candidate
+func (sys *System) UpdateCandidate(candidate string, url string, stake *big.Int) error {
 	// parameter validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
@@ -108,16 +108,16 @@ func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) e
 	if m.Sign() != 0 {
 		return fmt.Errorf("invalid stake %v(non divisibility, unit %v)", stake, sys.config.unitStake())
 	}
-	if q.Cmp(sys.config.CadidateMinQuantity) < 0 {
-		return fmt.Errorf("invalid stake %v(insufficient, cadidate min %v)", stake, new(big.Int).Mul(sys.config.CadidateMinQuantity, sys.config.unitStake()))
+	if q.Cmp(sys.config.CandidateMinQuantity) < 0 {
+		return fmt.Errorf("invalid stake %v(insufficient, candidate min %v)", stake, new(big.Int).Mul(sys.config.CandidateMinQuantity, sys.config.unitStake()))
 	}
 
-	prod, err := sys.GetCadidate(cadidate)
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalid cadidate %v(not exist)", cadidate)
+		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
 	}
 
 	q = new(big.Int).Sub(q, prod.Quantity)
@@ -134,11 +134,11 @@ func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) e
 	tstake := new(big.Int).Mul(q, sys.config.unitStake())
 	if q.Sign() < 0 {
 		tstake = new(big.Int).Abs(tstake)
-		if err := sys.Undelegate(cadidate, tstake); err != nil {
+		if err := sys.Undelegate(candidate, tstake); err != nil {
 			return fmt.Errorf("undelegate %v failed(%v)", q, err)
 		}
 	} else {
-		if err := sys.Delegate(cadidate, tstake); err != nil {
+		if err := sys.Delegate(candidate, tstake); err != nil {
 			return fmt.Errorf("delegate (%v) failed(%v)", q, err)
 		}
 	}
@@ -148,7 +148,7 @@ func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) e
 	}
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
-	if err := sys.SetCadidate(prod); err != nil {
+	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
@@ -157,12 +157,12 @@ func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) e
 	return nil
 }
 
-// UnregCadidate  unregister a cadidate
-func (sys *System) UnregCadidate(cadidate string) (*big.Int, error) {
+// UnregCandidate  unregister a candidate
+func (sys *System) UnregCandidate(candidate string) (*big.Int, error) {
 	// parameter validity
 	// modify or update
 	var stake *big.Int
-	prod, err := sys.GetCadidate(cadidate)
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return nil, err
 	}
@@ -173,22 +173,22 @@ func (sys *System) UnregCadidate(cadidate string) (*big.Int, error) {
 			return nil, err
 		}
 		if sys.isdpos(gstate) {
-			if cnt, err := sys.CadidatesSize(); err != nil {
+			if cnt, err := sys.CandidatesSize(); err != nil {
 				return nil, err
 			} else if uint64(cnt) <= sys.config.consensusSize() {
-				return nil, fmt.Errorf("insufficient actived cadidates")
+				return nil, fmt.Errorf("insufficient actived candidates")
 			}
 			if new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
 				return nil, fmt.Errorf("insufficient actived stake")
 			}
 		}
 
-		// voters, err := sys.GetDelegators(cadidate)
+		// voters, err := sys.GetDelegators(candidate)
 		// if err != nil {
 		// 	return err
 		// }
 		// for _, voter := range voters {
-		// 	if err := sys.unvoteCadidate(voter); err != nil {
+		// 	if err := sys.unvoteCandidate(voter); err != nil {
 		// 		return err
 		// 	}
 		// }
@@ -198,15 +198,15 @@ func (sys *System) UnregCadidate(cadidate string) (*big.Int, error) {
 		}
 
 		stake = new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
-		if err := sys.Undelegate(cadidate, stake); err != nil {
+		if err := sys.Undelegate(candidate, stake); err != nil {
 			return nil, fmt.Errorf("undelegate %v failed(%v)", stake, err)
 		}
 		if prod.InBlackList {
-			if err := sys.SetCadidate(prod); err != nil {
+			if err := sys.SetCandidate(prod); err != nil {
 				return nil, err
 			}
 		} else {
-			if err := sys.DelCadidate(prod.Name); err != nil {
+			if err := sys.DelCandidate(prod.Name); err != nil {
 				return nil, err
 			}
 		}
@@ -216,13 +216,13 @@ func (sys *System) UnregCadidate(cadidate string) (*big.Int, error) {
 			return nil, err
 		}
 	} else {
-		return nil, fmt.Errorf("invalide cadidate %v", cadidate)
+		return nil, fmt.Errorf("invalide candidate %v", candidate)
 	}
 	return stake, nil
 }
 
-// VoteCadidate vote a cadidate
-func (sys *System) VoteCadidate(voter string, cadidate string, stake *big.Int) error {
+// VoteCandidate vote a candidate
+func (sys *System) VoteCandidate(voter string, candidate string, stake *big.Int) error {
 	// parameter validity
 	m := big.NewInt(0)
 	q, _ := new(big.Int).DivMod(stake, sys.config.unitStake(), m)
@@ -233,22 +233,22 @@ func (sys *System) VoteCadidate(voter string, cadidate string, stake *big.Int) e
 		return fmt.Errorf("invalid stake %v(insufficient, voter min %v)", stake, new(big.Int).Mul(sys.config.VoterMinQuantity, sys.config.unitStake()))
 	}
 
-	if prod, err := sys.GetCadidate(voter); err != nil {
+	if prod, err := sys.GetCandidate(voter); err != nil {
 		return err
 	} else if prod != nil {
-		return fmt.Errorf("invalid vote(alreay is cadidate)")
+		return fmt.Errorf("invalid vote(alreay is candidate)")
 	}
 	if vote, err := sys.GetVoter(voter); err != nil {
 		return err
 	} else if vote != nil {
-		return fmt.Errorf("invalid vote(already voted to cadidate %v)", vote.Cadidate)
+		return fmt.Errorf("invalid vote(already voted to candidate %v)", vote.Candidate)
 	}
-	prod, err := sys.GetCadidate(cadidate)
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalid vote(invalid cadidates %v)", cadidate)
+		return fmt.Errorf("invalid vote(invalid candidates %v)", candidate)
 	}
 
 	// modify or update
@@ -263,15 +263,15 @@ func (sys *System) VoteCadidate(voter string, cadidate string, stake *big.Int) e
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
 	vote := &voterInfo{
-		Name:     voter,
-		Cadidate: cadidate,
-		Quantity: q,
-		Height:   gstate.Height,
+		Name:      voter,
+		Candidate: candidate,
+		Quantity:  q,
+		Height:    gstate.Height,
 	}
 	if err := sys.SetVoter(vote); err != nil {
 		return err
 	}
-	if err := sys.SetCadidate(prod); err != nil {
+	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
@@ -280,8 +280,8 @@ func (sys *System) VoteCadidate(voter string, cadidate string, stake *big.Int) e
 	return nil
 }
 
-// ChangeCadidate change a cadidate
-func (sys *System) ChangeCadidate(voter string, cadidate string) error {
+// ChangeCandidate change a candidate
+func (sys *System) ChangeCandidate(voter string, candidate string) error {
 	// parameter validity
 	vote, err := sys.GetVoter(voter)
 	if err != nil {
@@ -290,49 +290,49 @@ func (sys *System) ChangeCadidate(voter string, cadidate string) error {
 	if vote == nil {
 		return fmt.Errorf("invalid voter %v", voter)
 	}
-	if strings.Compare(vote.Cadidate, cadidate) == 0 {
-		return fmt.Errorf("same cadidate")
+	if strings.Compare(vote.Candidate, candidate) == 0 {
+		return fmt.Errorf("same candidate")
 	}
-	prod, err := sys.GetCadidate(cadidate)
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalid cadidate %v", cadidate)
+		return fmt.Errorf("invalid candidate %v", candidate)
 	}
 
 	// modify or update
-	oprod, err := sys.GetCadidate(vote.Cadidate)
+	oprod, err := sys.GetCandidate(vote.Candidate)
 	if err != nil {
 		return err
 	}
 	oprod.TotalQuantity = new(big.Int).Sub(oprod.TotalQuantity, vote.Quantity)
-	if err := sys.SetCadidate(oprod); err != nil {
+	if err := sys.SetCandidate(oprod); err != nil {
 		return err
 	}
-	if err := sys.DelVoter(vote.Name, vote.Cadidate); err != nil {
+	if err := sys.DelVoter(vote.Name, vote.Candidate); err != nil {
 		return err
 	}
 
-	vote.Cadidate = prod.Name
+	vote.Candidate = prod.Name
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, vote.Quantity)
 	if err := sys.SetVoter(vote); err != nil {
 		return err
 	}
-	if err := sys.SetCadidate(prod); err != nil {
+	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
 	return nil
 }
 
-// UnvoteCadidate cancel vote
-func (sys *System) UnvoteCadidate(voter string) (*big.Int, error) {
+// UnvoteCandidate cancel vote
+func (sys *System) UnvoteCandidate(voter string) (*big.Int, error) {
 	// parameter validity
-	return sys.unvoteCadidate(voter)
+	return sys.unvoteCandidate(voter)
 }
 
 // UnvoteVoter cancel voter
-func (sys *System) UnvoteVoter(cadidate string, voter string) (*big.Int, error) {
+func (sys *System) UnvoteVoter(candidate string, voter string) (*big.Int, error) {
 	// parameter validity
 	vote, err := sys.GetVoter(voter)
 	if err != nil {
@@ -341,10 +341,10 @@ func (sys *System) UnvoteVoter(cadidate string, voter string) (*big.Int, error) 
 	if vote == nil {
 		return nil, fmt.Errorf("invalid voter %v", voter)
 	}
-	if strings.Compare(cadidate, vote.Cadidate) != 0 {
-		return nil, fmt.Errorf("invalid cadidate %v", cadidate)
+	if strings.Compare(candidate, vote.Candidate) != 0 {
+		return nil, fmt.Errorf("invalid candidate %v", candidate)
 	}
-	return sys.unvoteCadidate(voter)
+	return sys.unvoteCandidate(voter)
 }
 
 func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
@@ -355,8 +355,8 @@ func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, 
 	return new(big.Int).Mul(q, sys.config.unitStake()), new(big.Int).Mul(tq, sys.config.unitStake()), c, nil
 }
 
-func (sys *System) KickedCadidate(cadidate string) error {
-	prod, err := sys.GetCadidate(cadidate)
+func (sys *System) KickedCandidate(candidate string) error {
+	prod, err := sys.GetCandidate(candidate)
 	if prod != nil {
 		if err := sys.Undelegate(sys.config.SystemName, new(big.Int).Mul(prod.Quantity, sys.config.unitStake())); err != nil {
 			return err
@@ -372,7 +372,7 @@ func (sys *System) KickedCadidate(cadidate string) error {
 		if err := sys.SetState(state); err != nil {
 			return err
 		}
-		return sys.SetCadidate(prod)
+		return sys.SetCandidate(prod)
 	}
 	return err
 }
@@ -386,7 +386,7 @@ func (sys *System) ExitTakeOver() error {
 	return err
 }
 
-func (sys *System) unvoteCadidate(voter string) (*big.Int, error) {
+func (sys *System) unvoteCandidate(voter string) (*big.Int, error) {
 	// modify or update
 	var stake *big.Int
 	vote, err := sys.GetVoter(voter)
@@ -408,15 +408,15 @@ func (sys *System) unvoteCadidate(voter string) (*big.Int, error) {
 		return nil, fmt.Errorf("undelegate %v failed(%v)", stake, err)
 	}
 	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity)
-	prod, err := sys.GetCadidate(vote.Cadidate)
+	prod, err := sys.GetCandidate(vote.Candidate)
 	if err != nil {
 		return nil, err
 	}
 	prod.TotalQuantity = new(big.Int).Sub(prod.TotalQuantity, vote.Quantity)
-	if err := sys.SetCadidate(prod); err != nil {
+	if err := sys.SetCandidate(prod); err != nil {
 		return nil, err
 	}
-	if err := sys.DelVoter(vote.Name, vote.Cadidate); err != nil {
+	if err := sys.DelVoter(vote.Name, vote.Candidate); err != nil {
 		return nil, err
 	}
 	if err := sys.SetState(gstate); err != nil {
@@ -431,71 +431,71 @@ func (sys *System) onblock(height uint64) error {
 		return err
 	}
 	ngstate := &globalState{
-		Height:                          height + 1,
-		ActivatedCadidateSchedule:       gstate.ActivatedCadidateSchedule,
-		ActivatedCadidateScheduleUpdate: gstate.ActivatedCadidateScheduleUpdate,
-		ActivatedTotalQuantity:          gstate.ActivatedTotalQuantity,
-		TotalQuantity:                   new(big.Int).SetBytes(gstate.TotalQuantity.Bytes()),
-		TakeOver:                        gstate.TakeOver,
+		Height:                           height + 1,
+		ActivatedCandidateSchedule:       gstate.ActivatedCandidateSchedule,
+		ActivatedCandidateScheduleUpdate: gstate.ActivatedCandidateScheduleUpdate,
+		ActivatedTotalQuantity:           gstate.ActivatedTotalQuantity,
+		TotalQuantity:                    new(big.Int).SetBytes(gstate.TotalQuantity.Bytes()),
+		TakeOver:                         gstate.TakeOver,
 	}
 	sys.SetState(ngstate)
 	return nil
 }
 
-func (sys *System) updateElectedCadidates(timestamp uint64) error {
+func (sys *System) updateElectedCandidates(timestamp uint64) error {
 	gstate, err := sys.GetState(LastBlockHeight)
 	if err != nil {
 		return err
 	}
 
-	size, _ := sys.CadidatesSize()
+	size, _ := sys.CandidatesSize()
 	if gstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) < 0 || uint64(size) < sys.config.consensusSize() {
-		activatedCadidateSchedule := []string{}
+		activatedCandidateSchedule := []string{}
 		activeTotalQuantity := big.NewInt(0)
-		cadidate, _ := sys.GetCadidate(sys.config.SystemName)
-		for i := uint64(0); i < sys.config.CadidateScheduleSize; i++ {
-			activatedCadidateSchedule = append(activatedCadidateSchedule, sys.config.SystemName)
-			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, cadidate.TotalQuantity)
+		candidate, _ := sys.GetCandidate(sys.config.SystemName)
+		for i := uint64(0); i < sys.config.CandidateScheduleSize; i++ {
+			activatedCandidateSchedule = append(activatedCandidateSchedule, sys.config.SystemName)
+			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidate.TotalQuantity)
 		}
-		gstate.ActivatedCadidateSchedule = activatedCadidateSchedule
-		gstate.ActivatedCadidateScheduleUpdate = timestamp
+		gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+		gstate.ActivatedCandidateScheduleUpdate = timestamp
 		gstate.ActivatedTotalQuantity = activeTotalQuantity
 		return sys.SetState(gstate)
 	}
 
-	cadidates, err := sys.Cadidates()
+	candidates, err := sys.Candidates()
 	if err != nil {
 		return err
 	}
-	activatedCadidateSchedule := []string{}
+	activatedCandidateSchedule := []string{}
 	activeTotalQuantity := big.NewInt(0)
-	for _, cadidate := range cadidates {
-		if cadidate.InBlackList || strings.Compare(cadidate.Name, sys.config.SystemName) == 0 {
+	for _, candidate := range candidates {
+		if candidate.InBlackList || strings.Compare(candidate.Name, sys.config.SystemName) == 0 {
 			continue
 		}
-		activatedCadidateSchedule = append(activatedCadidateSchedule, cadidate.Name)
-		activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, cadidate.TotalQuantity)
-		if uint64(len(activatedCadidateSchedule)) == sys.config.CadidateScheduleSize {
+		activatedCandidateSchedule = append(activatedCandidateSchedule, candidate.Name)
+		activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidate.TotalQuantity)
+		if uint64(len(activatedCandidateSchedule)) == sys.config.CandidateScheduleSize {
 			break
 		}
 	}
 
 	seed := int64(timestamp)
 	r := rand.New(rand.NewSource(seed))
-	for i := len(activatedCadidateSchedule) - 1; i > 0; i-- {
+	for i := len(activatedCandidateSchedule) - 1; i > 0; i-- {
 		j := int(r.Int31n(int32(i + 1)))
-		activatedCadidateSchedule[i], activatedCadidateSchedule[j] = activatedCadidateSchedule[j], activatedCadidateSchedule[i]
+		activatedCandidateSchedule[i], activatedCandidateSchedule[j] = activatedCandidateSchedule[j], activatedCandidateSchedule[i]
 	}
 
-	gstate.ActivatedCadidateSchedule = activatedCadidateSchedule
-	gstate.ActivatedCadidateScheduleUpdate = timestamp
+	gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+	gstate.ActivatedCandidateScheduleUpdate = timestamp
 	gstate.ActivatedTotalQuantity = activeTotalQuantity
 	return sys.SetState(gstate)
 }
 
 func (sys *System) isdpos(gstate *globalState) bool {
-	for _, cadidate := range gstate.ActivatedCadidateSchedule {
-		if strings.Compare(cadidate, sys.config.SystemName) != 0 {
+	for _, candidate := range gstate.ActivatedCandidateSchedule {
+		if strings.Compare(candidate, sys.config.SystemName) != 0 {
 			return true
 		}
 	}

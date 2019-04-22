@@ -90,10 +90,10 @@ func TestLDBVoter(t *testing.T) {
 	db, _ := NewLDB(ldb)
 	defer function()
 	voter := &voterInfo{
-		Name:     "vos",
-		Cadidate: "fos",
-		Quantity: big.NewInt(1000),
-		Height:   uint64(time.Now().UnixNano()),
+		Name:      "vos",
+		Candidate: "fos",
+		Quantity:  big.NewInt(1000),
+		Height:    uint64(time.Now().UnixNano()),
 	}
 	if err := db.SetVoter(voter); err != nil {
 		panic(fmt.Errorf("setvoter --- %v", err))
@@ -106,17 +106,17 @@ func TestLDBVoter(t *testing.T) {
 		panic(fmt.Errorf("getvoter --- not nil"))
 	}
 
-	// if delegators, err := db.GetDelegators(nvoter.Cadidate); err != nil {
+	// if delegators, err := db.GetDelegators(nvoter.Candidate); err != nil {
 	// 	panic(fmt.Errorf("getdelegators --- %v", err))
 	// } else if len(delegators) != 1 {
 	// 	panic(fmt.Errorf("getdelegators --- not mismatch"))
 	// }
 
-	if err := db.DelVoter(nvoter.Name, nvoter.Cadidate); err != nil {
+	if err := db.DelVoter(nvoter.Name, nvoter.Candidate); err != nil {
 		panic(fmt.Errorf("delvoter --- %v", err))
 	}
 
-	// if delegators, err := db.GetDelegators(nvoter.Cadidate); err != nil {
+	// if delegators, err := db.GetDelegators(nvoter.Candidate); err != nil {
 	// 	panic(fmt.Errorf("getdelegators after del --- %v", err))
 	// } else if len(delegators) != 0 {
 	// 	t.Log(len(delegators))
@@ -130,50 +130,50 @@ func TestLDBVoter(t *testing.T) {
 	}
 }
 
-func TestLDBCadidate(t *testing.T) {
-	// SetCadidate(*cadidateInfo) error
-	// DelCadidate(string) error
-	// GetCadidate(string) (*cadidateInfo, error)
-	// Cadidates() ([]*cadidateInfo, error)
-	// CadidatesSize() (uint64, error)
+func TestLDBCandidate(t *testing.T) {
+	// SetCandidate(*candidateInfo) error
+	// DelCandidate(string) error
+	// GetCandidate(string) (*candidateInfo, error)
+	// Candidates() ([]*candidateInfo, error)
+	// CandidatesSize() (uint64, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
-	prod := &cadidateInfo{
+	prod := &candidateInfo{
 		Name:          "fos",
 		URL:           "www.fractalproject.com",
 		Quantity:      big.NewInt(1000),
 		TotalQuantity: big.NewInt(1000),
 		Height:        uint64(time.Now().UnixNano()),
 	}
-	if err := db.SetCadidate(prod); err != nil {
+	if err := db.SetCandidate(prod); err != nil {
 		panic(fmt.Errorf("setprod --- %v", err))
 	}
 
-	nprod, err := db.GetCadidate(prod.Name)
+	nprod, err := db.GetCandidate(prod.Name)
 	if err != nil {
 		panic(fmt.Errorf("getprod --- %v", err))
 	} else if nprod == nil {
 		panic(fmt.Errorf("getprod --- not nil"))
 	}
 
-	if size, err := db.CadidatesSize(); err != nil {
+	if size, err := db.CandidatesSize(); err != nil {
 		panic(fmt.Errorf("prodsize --- %v", err))
 	} else if size != 1 {
 		panic(fmt.Errorf("prodsize --- mismatch"))
 	}
 
-	if err := db.DelCadidate(nprod.Name); err != nil {
+	if err := db.DelCandidate(nprod.Name); err != nil {
 		panic(fmt.Errorf("delprod --- %v", err))
 	}
 
-	if size, err := db.CadidatesSize(); err != nil {
+	if size, err := db.CandidatesSize(); err != nil {
 		panic(fmt.Errorf("prodsize --- %v", err))
 	} else if size != 0 {
 		panic(fmt.Errorf("prodsize --- mismatch"))
 	}
 
-	if nprod, err := db.GetCadidate(nprod.Name); err != nil {
+	if nprod, err := db.GetCandidate(nprod.Name); err != nil {
 		panic(fmt.Errorf("getprod --- %v", err))
 	} else if nprod != nil {
 		panic(fmt.Errorf("getprod --- should nil"))
@@ -188,11 +188,11 @@ func TestLDBState(t *testing.T) {
 	db, _ := NewLDB(ldb)
 	defer function()
 	gstate := &globalState{
-		Height:                          10,
-		ActivatedCadidateScheduleUpdate: uint64(time.Now().UnixNano()),
-		ActivatedCadidateSchedule:       []string{},
-		ActivatedTotalQuantity:          big.NewInt(1000),
-		TotalQuantity:                   big.NewInt(100000),
+		Height:                           10,
+		ActivatedCandidateScheduleUpdate: uint64(time.Now().UnixNano()),
+		ActivatedCandidateSchedule:       []string{},
+		ActivatedTotalQuantity:           big.NewInt(1000),
+		TotalQuantity:                    big.NewInt(100000),
 	}
 
 	if err := db.SetState(gstate); err != nil {
