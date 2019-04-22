@@ -1086,7 +1086,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 
 	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
 		return err
-	} else if len(ast.Contract.String()) != 0 && toAccount != ast.Contract {
+	} else if len(ast.Contract.String()) != 0 && fromAccount != ast.Contract && toAccount != ast.Contract {
 		return fmt.Errorf("receipt only can be %v abount asset id %v", ast.Contract, ast.AssetId)
 	}
 
