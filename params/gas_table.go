@@ -48,6 +48,7 @@ type GasTable struct {
 	GetAccountID    uint64
 	GetDelegate     uint64
 	CryptoCalc      uint64
+	CryptoByte      uint64
 }
 
 // Variables containing gas prices for different phases.
@@ -74,6 +75,7 @@ var (
 		GetAccountID:    200,
 		GetDelegate:     200,
 		CryptoCalc:      20000,
+		CryptoByte:      1000,
 	}
 )
 
