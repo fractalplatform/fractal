@@ -51,10 +51,10 @@ func (api *API) DposValidateEpcho() (map[string]interface{}, error) {
 	return info, err
 }
 
-// DposCadidates dpos cadidate info
-func (api *API) DposCadidates() ([]map[string]interface{}, error) {
+// DposCandidates dpos candidate info
+func (api *API) DposCandidates() ([]map[string]interface{}, error) {
 	info := []map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_cadidates")
+	err := api.client.Call(&info, "dpos_candidates")
 	return info, err
 }
 

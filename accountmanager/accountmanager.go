@@ -1074,7 +1074,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 
 	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
 		return err
-	} else if len(ast.Contract.String()) != 0 && !(fromAccount == ast.Contract || toAccount == ast.Contract) {
+	} else if len(ast.Contract.String()) != 0 && toAccount != ast.Contract {
 		return ErrInvalidReceiptAsset
 	}
 

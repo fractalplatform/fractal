@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
 
 	"github.com/fractalplatform/fractal/params"
@@ -30,29 +29,20 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type RegisterCadidate struct {
+type RegisterCandidate struct {
 	Url string
 }
 
-type UpdateCadidate struct {
-	Url   string
-	Stake *big.Int
+type UpdateCandidate struct {
+	Url string
 }
 
-type VoteCadidate struct {
-	Cadidate string
+type VoteCandidate struct {
+	Candidate string
 }
 
-type ChangeCadidate struct {
-	Cadidate string
-}
-
-type RemoveVoter struct {
-	Voters []string
-}
-
-type KickedCadidate struct {
-	Cadidates []string
+type KickedCandidate struct {
+	Candidates []string
 }
 
 func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
@@ -65,19 +55,7 @@ func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.State
 }
 
 func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:    dpos.config.AccountName,
-				assetid: chainCfg.SysTokenID,
-				state:   state,
-			},
-		},
-	}
-
-	var internalLogs []*types.InternalLog
-
+	sys := NewSystem(state, dpos.config)
 	if !action.CheckValue() {
 		return nil, accountmanager.ErrAmountValueInvalid
 	}
@@ -101,84 +79,45 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	}
 
 	switch action.Type() {
-	case types.RegCadidate:
-		arg := &RegisterCadidate{}
+	case types.RegCandidate:
+		arg := &RegisterCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCadidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
+		if err := sys.RegCandidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
 			return nil, err
 		}
-	case types.UpdateCadidate:
-		arg := &UpdateCadidate{}
+	case types.UpdateCandidate:
+		arg := &UpdateCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if arg.Stake.Sign() == 1 {
-			return nil, fmt.Errorf("stake cannot be greater zero")
-		}
-		if action.Value().Sign() == 1 && arg.Stake.Sign() == -1 {
-			return nil, fmt.Errorf("value & stake cannot allowed at the same time")
-		}
-		if err := sys.UpdateCadidate(action.Sender().String(), arg.Url, new(big.Int).Add(action.Value(), arg.Stake)); err != nil {
+		if err := sys.UpdateCandidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
 			return nil, err
 		}
-	case types.UnregCadidate:
-		stake, err := sys.UnregCadidate(action.Sender().String())
+	case types.UnregCandidate:
+		err := sys.UnregCandidate(action.Sender().String())
 		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
-		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalLogs = append(internalLogs, internalLog)
-	case types.RemoveVoter:
-		arg := &RemoveVoter{}
+	case types.VoteCandidate:
+		arg := &VoteCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		for _, voter := range arg.Voters {
-			stake, err := sys.UnvoteVoter(action.Sender().String(), voter)
-			if err != nil {
-				return nil, err
-			}
-			actionX := types.NewAction(action.Type(), action.Recipient(), common.Name(voter), 0, 0, action.AssetID(), stake, nil)
-			internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-			internalLogs = append(internalLogs, internalLog)
-		}
-	case types.VoteCadidate:
-		arg := &VoteCadidate{}
-		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
+		if err := sys.VoteCandidate(action.Sender().String(), arg.Candidate, action.Value()); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCadidate(action.Sender().String(), arg.Cadidate, action.Value()); err != nil {
-			return nil, err
-		}
-	case types.ChangeCadidate:
-		arg := &ChangeCadidate{}
-		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return nil, err
-		}
-		if err := sys.ChangeCadidate(action.Sender().String(), arg.Cadidate); err != nil {
-			return nil, err
-		}
-	case types.UnvoteCadidate:
-		stake, err := sys.UnvoteCadidate(action.Sender().String())
-		if err != nil {
-			return nil, err
-		}
-		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
-		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalLogs = append(internalLogs, internalLog)
-	case types.KickedCadidate:
+	case types.KickedCandidate:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
-			return nil, fmt.Errorf("no permission for kicking cadidates")
+			return nil, fmt.Errorf("no permission for kicking candidates")
 		}
-		arg := &KickedCadidate{}
+		arg := &KickedCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		for _, cadicate := range arg.Cadidates {
-			if err := sys.KickedCadidate(cadicate); err != nil {
+		for _, cadicate := range arg.Candidates {
+			if err := sys.KickedCandidate(cadicate); err != nil {
 				return nil, err
 			}
 		}
@@ -186,9 +125,11 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
-		sys.ExitTakeOver()
+		if err := sys.ExitTakeOver(); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, accountmanager.ErrUnkownTxType
 	}
-	return internalLogs, nil
+	return sys.internalLogs, nil
 }

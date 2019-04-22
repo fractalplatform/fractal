@@ -806,7 +806,7 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 	// Ensure the user sees large reorgs
 	if len(oldChain) > 0 && len(newChain) > 0 {
 		if oldChain[len(oldChain)-1].NumberU64() <= bc.IrreversibleNumber() {
-			log.Warn("Do not accept other cadidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
+			log.Warn("Do not accept other candidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
 			return errReorgSystemBlock
 		}
 

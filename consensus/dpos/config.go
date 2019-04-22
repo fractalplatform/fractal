@@ -17,52 +17,56 @@
 package dpos
 
 import (
-	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
 
-	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // DefaultConfig configures
 var DefaultConfig = &Config{
-	MaxURLLen:            512,
-	UnitStake:            big.NewInt(1000),
-	CadidateMinQuantity:  big.NewInt(10),
-	VoterMinQuantity:     big.NewInt(1),
-	ActivatedMinQuantity: big.NewInt(100),
-	BlockInterval:        3000,
-	BlockFrequency:       6,
-	CadidateScheduleSize: 3,
-	DelayEcho:            2,
-	AccountName:          "ftsystemdpos",
-	SystemName:           "ftsystemio",
-	SystemURL:            "www.fractalproject.com",
-	ExtraBlockReward:     big.NewInt(1),
-	BlockReward:          big.NewInt(5),
-	Decimals:             18,
+	MaxURLLen:             512,
+	UnitStake:             big.NewInt(1000),
+	CandidateMinQuantity:  big.NewInt(10),
+	VoterMinQuantity:      big.NewInt(1),
+	ActivatedMinQuantity:  big.NewInt(100),
+	BlockInterval:         3000,
+	BlockFrequency:        6,
+	CandidateScheduleSize: 3,
+	BackupScheduleSize:    3,
+	EpchoInterval:         540000,
+	DelayEpcho:            2,
+	AccountName:           "ftsystemdpos",
+	SystemName:            "ftsystemio",
+	SystemURL:             "www.fractalproject.com",
+	ExtraBlockReward:      big.NewInt(1),
+	BlockReward:           big.NewInt(5),
+	Decimals:              18,
 }
 
 // Config dpos configures
 type Config struct {
 	// consensus fileds
-	MaxURLLen            uint64   `json:"maxURLLen"`            // url length
-	UnitStake            *big.Int `json:"unitStake"`            // state unit
-	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity"`  // min quantity
-	VoterMinQuantity     *big.Int `json:"voterMinQuantity"`     // min quantity
-	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity"` // min active quantity
-	BlockInterval        uint64   `json:"blockInterval"`
-	BlockFrequency       uint64   `json:"blockFrequency"`
-	CadidateScheduleSize uint64   `json:"cadidateScheduleSize"`
-	DelayEcho            uint64   `json:"delayEcho"`
-	AccountName          string   `json:"accountName"`
-	SystemName           string   `json:"systemName"`
-	SystemURL            string   `json:"systemURL"`
-	ExtraBlockReward     *big.Int `json:"extraBlockReward"`
-	BlockReward          *big.Int `json:"blockReward"`
-	Decimals             uint64   `json:"decimals"`
+	MaxURLLen             uint64   `json:"maxURLLen"`            // url length
+	UnitStake             *big.Int `json:"unitStake"`            // state unit
+	CandidateMinQuantity  *big.Int `json:"candidateMinQuantity"` // min quantity
+	VoterMinQuantity      *big.Int `json:"voterMinQuantity"`     // min quantity
+	ActivatedMinQuantity  *big.Int `json:"activatedMinQuantity"` // min active quantity
+	BlockInterval         uint64   `json:"blockInterval"`
+	BlockFrequency        uint64   `json:"blockFrequency"`
+	CandidateScheduleSize uint64   `json:"candidateScheduleSize"`
+	BackupScheduleSize    uint64   `json:"backupScheduleSize"`
+	EpchoInterval         uint64   `json:"epchoInterval"`
+	DelayEpcho            uint64   `json:"delayEpcho"`
+	AccountName           string   `json:"accountName"`
+	SystemName            string   `json:"systemName"`
+	SystemURL             string   `json:"systemURL"`
+	ExtraBlockReward      *big.Int `json:"extraBlockReward"`
+	BlockReward           *big.Int `json:"blockReward"`
+	InitCandidateSchedule []string `json:"initCandidateSchedule"`
+	Decimals              uint64   `json:"decimals"`
+	AssetID               uint64   `json:"assetID"`
 
 	// cache files
 	decimal    atomic.Value
@@ -116,7 +120,7 @@ func (cfg *Config) epochInterval() uint64 {
 	if epochInter := cfg.epochInter.Load(); epochInter != nil {
 		return epochInter.(uint64)
 	}
-	epochInter := cfg.blockInterval() * cfg.BlockFrequency * cfg.CadidateScheduleSize
+	epochInter := cfg.EpchoInterval * uint64(time.Millisecond)
 	cfg.epochInter.Store(epochInter)
 	return epochInter
 }
@@ -126,7 +130,7 @@ func (cfg *Config) consensusSize() uint64 {
 		return safeSize.(uint64)
 	}
 
-	safeSize := cfg.CadidateScheduleSize*2/3 + 1
+	safeSize := cfg.CandidateScheduleSize*2/3 + 1
 	cfg.safeSize.Store(safeSize)
 	return safeSize
 }
@@ -147,28 +151,4 @@ func (cfg *Config) getoffset(timestamp uint64) uint64 {
 
 func (cfg *Config) epoch(timestamp uint64) uint64 {
 	return timestamp / cfg.epochInterval()
-}
-
-// Write writes the dpos config settings to the database.
-func (cfg *Config) Write(db fdb.Database, key []byte) error {
-	data, err := cfg.EncodeRLP()
-	if err != nil {
-		return fmt.Errorf("Failed to rlp encode dpos config --- %v", err)
-	}
-	if err := db.Put(key, data); err != nil {
-		return fmt.Errorf("Failed to store dpos config ---- %v", err)
-	}
-	return nil
-}
-
-// Read retrieves the consensus settings from the database.
-func (cfg *Config) Read(db fdb.Database, key []byte) error {
-	data, err := db.Get(key)
-	if err != nil {
-		return fmt.Errorf("Failed to load dpos config --- %v", err)
-	}
-	if err := cfg.DecodeRLP(data); err != nil {
-		return fmt.Errorf("Failed to rlp decode dpos config --- %v", err)
-	}
-	return nil
 }

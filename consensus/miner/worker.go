@@ -193,15 +193,15 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
 	}
-	if err := cdpos.IsValidateCadidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
+	if err := cdpos.IsValidateCandidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
 		switch err {
 		case dpos.ErrSystemTakeOver:
 			fallthrough
 		case dpos.ErrTooMuchRreversible:
 			fallthrough
-		case dpos.ErrIllegalCadidateName:
+		case dpos.ErrIllegalCandidateName:
 			fallthrough
-		case dpos.ErrIllegalCadidatePubKey:
+		case dpos.ErrIllegalCandidatePubKey:
 			log.Error("failed to mint the block", "timestamp", timestamp, "err", err)
 		default:
 			log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
@@ -220,7 +220,7 @@ outer:
 		}
 		block, err := worker.commitNewWork(timestamp, quit)
 		if err == nil {
-			log.Info("Mined new block", "cadidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
+			log.Info("Mined new block", "candidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 			break outer
 		}
 		if strings.Contains(err.Error(), "mint") {
@@ -404,7 +404,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName) != 0 {
 			switch action.Type() {
-			case types.KickedCadidate:
+			case types.KickedCandidate:
 				fallthrough
 			case types.ExitTakeOver:
 				continue
