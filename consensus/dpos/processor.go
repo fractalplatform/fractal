@@ -70,6 +70,10 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		return nil, accountmanager.ErrAmountValueInvalid
 	}
 
+	if !action.CheckValue() {
+		return nil, accountmanager.ErrAmountValueInvalid
+	}
+
 	if action.AssetID() != chainCfg.SysTokenID {
 		return nil, accountmanager.ErrAssetIDInvalid
 	}

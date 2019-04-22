@@ -1026,7 +1026,7 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 		return err
 	}
 
-	action := types.NewAction(types.IncreaseAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
+	action := types.NewAction(types.IncreaseAsset, contract.CallerName, common.Name(evm.chainConfig.AccountName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b)
 
 	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
@@ -1050,7 +1050,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	value, assetID := stack.pop(), stack.pop()
 	astID := assetID.Uint64()
 
-	action := types.NewAction(types.DestroyAsset, contract.CallerName, common.Name(evm.chainConfig.SysName), 0, astID, 0, value, nil)
+	action := types.NewAction(types.DestroyAsset, contract.CallerName, common.Name(evm.chainConfig.AccountName), 0, astID, 0, value, nil)
 
 	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
@@ -1108,7 +1108,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	contract.Gas = contract.Gas + uint64(len(data))*(params.GasTableInstanse.CryptoByte)
+	contract.Gas = contract.Gas - uint64(size.Int64())*params.GasTableInstanse.CryptoByte
 
 	if i == 0 {
 		//Encrypt
@@ -1127,15 +1127,15 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 	} else if i == 1 {
 		ecdsaprikey, err := crypto.ToECDSA(key)
+		//
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)
 			ret, err = eciesprikey.Decrypt(data, nil, nil)
+			//pintg
 			if err == nil {
 				datalen = len(ret)
-				if uint64(datalen) <= retSize.Uint64()*32 {
-
-				} else {
+				if uint64(datalen) > retSize.Uint64()*32 {
 					err = errors.New("Decrypt error")
 				}
 			}
@@ -1199,7 +1199,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	if err != nil {
 		return 0, err
 	}
-	action := types.NewAction(types.IssueAsset, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
+	action := types.NewAction(types.IssueAsset, contract.CallerName, common.Name(evm.chainConfig.AccountName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b)
 
 	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if err != nil {
@@ -1257,7 +1257,7 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 		return err
 	}
 
-	action := types.NewAction(types.SetAssetOwner, contract.CallerName, "", 0, 0, 0, big.NewInt(0), b)
+	action := types.NewAction(types.SetAssetOwner, contract.CallerName, common.Name(evm.chainConfig.AccountName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b)
 	internalLogs, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""

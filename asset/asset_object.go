@@ -154,3 +154,11 @@ func (ao *AssetObject) GetAssetOwner() common.Name {
 func (ao *AssetObject) SetAssetOwner(owner common.Name) {
 	ao.Owner = owner
 }
+
+func (ao *AssetObject) GetAssetContract() common.Name {
+	return ao.Contract
+}
+
+func (ao *AssetObject) SetAssetContract(contract common.Name) {
+	ao.Contract = contract
+}
