@@ -1108,7 +1108,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	contract.Gas = contract.Gas + uint64(len(data))*(params.GasTableInstanse.CryptoByte)
+	contract.Gas = contract.Gas + uint64(size.Int64())*params.GasTableInstanse.CryptoByte
 
 	if i == 0 {
 		//Encrypt
