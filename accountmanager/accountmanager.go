@@ -1074,7 +1074,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 
 	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
 		return err
-	} else if len(ast.Contract.String()) != 0 && toAccount != ast.Contract {
+	} else if len(ast.Contract.String()) != 0 && !(fromAccount == ast.Contract || toAccount == ast.Contract) {
 		return ErrInvalidReceiptAsset
 	}
 
@@ -1337,7 +1337,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 				return nil, ErrAccountNotExist
 			}
 		}
-		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder()); err != nil {
+		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder(), asset.GetAssetContract()); err != nil {
 			return nil, err
 		}
 		break

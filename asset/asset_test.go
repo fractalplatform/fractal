@@ -515,7 +515,7 @@ func TestAsset_UpdateAsset(t *testing.T) {
 		a := &Asset{
 			sdb: tt.fields.sdb,
 		}
-		if err := a.UpdateAsset(tt.args.accountName, tt.args.assetId, tt.args.Owner, tt.args.founder); (err != nil) != tt.wantErr {
+		if err := a.UpdateAsset(tt.args.accountName, tt.args.assetId, tt.args.Owner, tt.args.founder, common.Name("")); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Asset.updateAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
