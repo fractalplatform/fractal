@@ -93,12 +93,13 @@ type GlobalState struct {
 	Dpos                             bool     `json:"dpos"`                             // dpos status
 }
 
-type candidateInfoArray []*CandidateInfo
+// CandidateInfoArray array of candidate
+type CandidateInfoArray []*CandidateInfo
 
-func (prods candidateInfoArray) Len() int {
+func (prods CandidateInfoArray) Len() int {
 	return len(prods)
 }
-func (prods candidateInfoArray) Less(i, j int) bool {
+func (prods CandidateInfoArray) Less(i, j int) bool {
 	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
 	if val == 0 {
 		if prods[i].Height == prods[j].Height {
@@ -108,6 +109,6 @@ func (prods candidateInfoArray) Less(i, j int) bool {
 	}
 	return val > 0
 }
-func (prods candidateInfoArray) Swap(i, j int) {
+func (prods CandidateInfoArray) Swap(i, j int) {
 	prods[i], prods[j] = prods[j], prods[i]
 }

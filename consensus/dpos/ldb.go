@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"sort"
 	"strings"
 
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -48,6 +47,8 @@ var (
 	// CandidatesSizeKey len of candidate
 	CandidatesSizeKey = "sl"
 
+	// VoterQuantityPrefix quantity
+	VoterQuantityPrefix = "q"
 	// VoterKeyPrefix voterInfo
 	VoterKeyPrefix = "v"
 	// DelegatorsKeyPrfix voters of candidate
@@ -169,28 +170,18 @@ func (db *LDB) GetCandidate(name string) (*CandidateInfo, error) {
 }
 
 // GetCandidates get all candidate info & sort
-func (db *LDB) GetCandidates() ([]*CandidateInfo, error) {
+func (db *LDB) GetCandidates() ([]string, error) {
 	// candidates
 	pkey := strings.Join([]string{CandidateKeyPrefix, CandidatesKey}, Separator)
 	candidates := []string{}
 	if pval, err := db.Get(pkey); err != nil {
 		return nil, err
 	} else if pval == nil {
-		return nil, nil
+
 	} else if err := rlp.DecodeBytes(pval, &candidates); err != nil {
 		return nil, err
 	}
-
-	prods := candidateInfoArray{}
-	for _, candidate := range candidates {
-		prod, err := db.GetCandidate(candidate)
-		if err != nil {
-			return nil, err
-		}
-		prods = append(prods, prod)
-	}
-	sort.Sort(prods)
-	return prods, nil
+	return candidates, nil
 }
 
 // CandidatesSize candidate len
@@ -223,7 +214,6 @@ func (db *LDB) GetAvailableQuantity(epcho uint64, voter string) (*big.Int, error
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, nil
 	} else if err := rlp.DecodeBytes(val, quantity); err != nil {
 		return nil, err
 	}
@@ -314,7 +304,7 @@ func (db *LDB) DelVoter(voter *VoterInfo) error {
 		}
 	}
 	if len(delegators) == 0 {
-		if err := db.Delete(dkey); err != nil {
+		if err := db.Delete(ckey); err != nil {
 			return err
 		}
 	} else {
@@ -322,7 +312,38 @@ func (db *LDB) DelVoter(voter *VoterInfo) error {
 		if err != nil {
 			return err
 		}
-		if err := db.Put(dkey, ncval); err != nil {
+		if err := db.Put(ckey, ncval); err != nil {
+			return err
+		}
+	}
+
+	// candidates
+	candidates := []string{}
+	vkey := strings.Join([]string{VotersKeyPrefix, voter.vkey()}, Separator)
+
+	if vval, err := db.Get(vkey); err != nil {
+		return err
+	} else if vval == nil {
+
+	} else if err := rlp.DecodeBytes(vval, &candidates); err != nil {
+		return err
+	}
+	for index, name := range candidates {
+		if strings.Compare(name, voter.Candidate) == 0 {
+			candidates = append(candidates[:index], candidates[index+1:]...)
+			break
+		}
+	}
+	if len(candidates) == 0 {
+		if err := db.Delete(vkey); err != nil {
+			return err
+		}
+	} else {
+		nvval, err := rlp.EncodeToBytes(candidates)
+		if err != nil {
+			return err
+		}
+		if err := db.Put(vkey, nvval); err != nil {
 			return err
 		}
 	}
@@ -434,8 +455,8 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 }
 
 // GetDelegatedByTime candidate delegate
-func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
-	key := strings.Join([]string{CandidateKeyPrefix, name}, Separator)
+func (db *LDB) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
+	key := strings.Join([]string{CandidateKeyPrefix, candidate}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
 	if val == nil || err != nil {
 		return big.NewInt(0), big.NewInt(0), 0, err
