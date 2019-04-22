@@ -78,12 +78,16 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 
 	var internalLogs []*types.InternalLog
 
+	if !action.CheckValue() {
+		return nil, accountmanager.ErrAmountValueInvalid
+	}
+
 	if action.AssetID() != chainCfg.SysTokenID {
-		return nil, fmt.Errorf("dpos only support system token id %v", chainCfg.SysTokenID)
+		return nil, accountmanager.ErrAssetIDInvalid
 	}
 
 	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
-		return nil, fmt.Errorf("recipient must be %v abount dpos contract", dpos.config.AccountName)
+		return nil, accountmanager.ErrInvalidReceiptAsset
 	}
 
 	if action.Value().Cmp(big.NewInt(0)) > 0 {

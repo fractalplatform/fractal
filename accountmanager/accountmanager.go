@@ -1068,6 +1068,16 @@ func (am *AccountManager) CanTransfer(accountName common.Name, assetID uint64, v
 
 //TransferAsset transfer asset
 func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount common.Name, assetID uint64, value *big.Int) error {
+	if value.Sign() == -1 {
+		return ErrNegativeValue
+	}
+
+	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
+		return err
+	} else if len(ast.Contract.String()) != 0 && toAccount != ast.Contract {
+		return ErrInvalidReceiptAsset
+	}
+
 	//check from account
 	fromAcct, err := am.GetAccountByName(fromAccount)
 	if err != nil {
@@ -1200,8 +1210,12 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 
 	var internalLogs []*types.InternalLog
 
+	if !action.CheckValue() {
+		return nil, ErrAmountValueInvalid
+	}
+
 	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
-		return nil, ErrToNameInvalid
+		return nil, ErrInvalidReceipt
 	}
 
 	//transfer
