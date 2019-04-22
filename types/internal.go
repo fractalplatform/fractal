@@ -19,25 +19,25 @@ package types
 import "github.com/fractalplatform/fractal/common"
 
 type DetailTx struct {
-	TxHash      common.Hash
-	Actions []*DetailAction
+	TxHash  common.Hash     `json:"txhash"`
+	Actions []*DetailAction `json:"actions"`
 }
 
 type DetailAction struct {
-	InterlnalActions []*InterlnalAction
+	InternalActions []*InterlnalAction `json:"internalActions"`
 }
 
 type InterlnalAction struct {
-	Action     *RPCAction
-	ActionType string
-	GasUsed    uint64
-	GasLimit   uint64
-	Depth      uint64
-	Error      string
+	Action     *RPCAction `json:"action"`
+	ActionType string     `json:"actionType"`
+	GasUsed    uint64     `json:"gasUsed"`
+	GasLimit   uint64     `json:"gasLimit"`
+	Depth      uint64     `json:"depth"`
+	Error      string     `json:"error"`
 }
 
 type BlockAndResult struct {
-	Block     map[string]interface{}
-	Receipts  []*Receipt
-	DetailTxs []*DetailTx
+	Block     map[string]interface{} `json:"block"`
+	Receipts  []*Receipt             `json:"receipts"`
+	DetailTxs []*DetailTx            `json:"detailTxs"`
 }
