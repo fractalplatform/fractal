@@ -46,4 +46,7 @@ var (
 	ErrToNameInvalid          = errors.New("action to name(Recipient) invalid")
 	ErrCounterNotExist        = errors.New("account global counter not exist")
 	ErrAccountIdInvalid       = errors.New("account id invalid")
+	ErrInvalidReceiptAsset    = errors.New("invalid receipt of asset")
+	ErrInvalidReceipt         = errors.New("invalid receipt")
+	ErrNegativeValue          = errors.New("negative value")
 )

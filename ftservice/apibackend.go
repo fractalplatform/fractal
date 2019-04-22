@@ -34,7 +34,6 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // APIBackend implements ftserviceapi.Backend for full nodes
@@ -180,20 +179,30 @@ func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(comm
 		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
 		for _, txd := range batch_txdetails {
 
-		txloop:
+			new_intxs := make([]*types.InternalTx, 0)
 			for _, intx := range txd.InternalTxs {
+				new_inlogs := make([]*types.InternalLog, 0)
 				for _, inlog := range intx.InterlnalLogs {
 					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
-						txdetails = append(txdetails, txd)
-						break txloop
+						new_inlogs = append(new_inlogs, inlog)
 					}
+				}
+				if len(new_inlogs) > 0 {
+					new_intxs = append(new_intxs, &types.InternalTx{InterlnalLogs: new_inlogs})
 				}
 			}
 
+			if len(new_intxs) > 0 {
+				txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, InternalTxs: new_intxs})
+			}
 		}
 	}
 
 	return txdetails
+}
+
+func (b *APIBackend) GetBadBlocks(ctx context.Context) ([]*types.Block, error) {
+	return b.ftservice.blockchain.BadBlocks(), nil
 }
 
 func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
@@ -262,10 +271,6 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 func (b *APIBackend) SetGasPrice(gasPrice *big.Int) bool {
 	b.ftservice.SetGasPrice(gasPrice)
 	return true
-}
-
-func (b *APIBackend) Wallet() *wallet.Wallet {
-	return b.ftservice.Wallet()
 }
 
 func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error) {

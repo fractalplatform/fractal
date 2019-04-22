@@ -49,7 +49,7 @@ func TestSystemForkChain(t *testing.T) {
 
 	allCadidates1 = append(allCadidates1, allCadidates...)
 	allCadidates1 = append(allCadidates1, "syscadidate0")
-	allCadidates1 = append(allCadidates1, params.DefaultChainconfig.SysName.String())
+	allCadidates1 = append(allCadidates1, params.DefaultChainconfig.SysName)
 
 	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes...)
 	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes[len(allHeaderTimes)-1]+1000*uint64(time.Millisecond)*3*7)

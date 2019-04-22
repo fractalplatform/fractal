@@ -38,6 +38,7 @@ type GasTable struct {
 	// not charged.
 	CreateBySuicide uint64
 	SetOwner        uint64
+	GetAccountTime  uint64
 	GetSnapshotTime uint64
 	GetAssetAmount  uint64
 	SnapBalance     uint64
@@ -46,6 +47,8 @@ type GasTable struct {
 	AddAsset        uint64
 	GetAccountID    uint64
 	GetDelegate     uint64
+	CryptoCalc      uint64
+	CryptoByte      uint64
 }
 
 // Variables containing gas prices for different phases.
@@ -62,6 +65,7 @@ var (
 
 		CreateBySuicide: 25000,
 		SetOwner:        200,
+		GetAccountTime:  200,
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
 		SnapBalance:     200,
@@ -70,6 +74,8 @@ var (
 		AddAsset:        200,
 		GetAccountID:    200,
 		GetDelegate:     200,
+		CryptoCalc:      20000,
+		CryptoByte:      1000,
 	}
 )
 

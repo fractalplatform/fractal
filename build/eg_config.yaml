@@ -1,0 +1,127 @@
+# Genesis json file
+genesis: "./build/genesis.json"
+
+# log configuration table
+log:
+  # Prepends log messages with call-site location (file and line number)
+  printorigins: false
+  # Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail
+  level: 4
+  # Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. ft/*=5,p2p=4)
+  vmodule: ""
+  # Request a stack trace at a specific logging statement (e.g. \"block.go:271\")
+  backtraceat: ""
+
+# node the fractal node configuration table
+node:
+  # the node datadir
+  datadir: "./build/testdatadir"
+  # Reduce key-derivation RAM & CPU usage at some expense of KDF strength
+  lightkdf: false
+  # RPC:ipc file name
+  ipcpath: "ft.ipc"
+  # RPC:http host address
+  httphost: "localhost"
+  # RPC:http host port
+  httpport: 8888
+  # RPC:http api's offered over the HTTP-RPC interface
+  httpmodules: ["ft"]
+  # RPC:Which to accept cross origin
+  httpcors: ["localhost"]
+  # RPC:http virtual hostnames from which to accept requests
+  httpvirtualhosts: ["*"]
+  # RPC:websocket host address
+  wshost: "localhost"
+  # RPC:websocket host port
+  wsport: 8889
+  # RPC:ws api's offered over the WS-RPC interface
+  wsmodules: ["ft"]
+  # RPC:ws origins from which to accept websockets requests
+  wsorigins: []
+  # RPC:ws exposes all API modules via the WebSocket RPC interface rather than just the public ones.
+  wsexposall: true
+  # Node list file. BootstrapNodes are used to establish connectivity with the rest of the network
+  bootnodes: "./build/bootnodes.txt"
+  # Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects
+  staticnodes: "./build/staticnodes.txt"
+  # Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit
+  trustnodes: "./build/trustnodes.txt"
+  # P2P configuration table
+  p2p:
+    # The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.
+    networkid: 1
+    # The name sets the p2p node name of this server
+    name: “ft_p2p”
+    # Maximum number of network peers
+    maxpeers: 20
+    # Maximum number of pending connection attempts
+    maxpendpeers: 10
+    # DialRatio controls the ratio of inbound to dialed connections
+    dialratio: 10
+    # Disables the peer discovery mechanism (manual peer addition)
+    nodiscover: true
+    # The path to the database containing the previously seen live nodes in the network
+    nodedb: "./build/nodedb"
+    # Network listening address
+    listenaddr: ":8000"
+    # The server will not dial any peers.
+    nodial: false
+
+# ftservice the fractal service configuration table
+ftservice:
+  # Megabytes of memory allocated to internal database caching
+  databasecache: 1024
+  # txpool configuration table
+  txpool:
+    # Disables price exemptions for locally submitted transactions
+    nolocals: false
+    # Disk journal for local transaction to survive node restarts
+    journal: "transactions.rlp"
+    # Time interval to regenerate the local transaction journal
+    rejournal: 1h
+    # Minimum gas price limit to enforce for acceptance into the pool
+    pricelimit: 2
+    # Price bump percentage to replace an already existing transaction
+    pricebump: 20
+    # Number of executable transaction slots guaranteed per account
+    accountslots: 256
+    # Maximum number of executable transaction slots for all accounts
+    globalslots: 1024
+    # Maximum number of non-executable transaction slots permitted per account
+    accountqueue: 1024
+    # Maximum number of non-executable transaction slots for all accounts
+    globalqueue: 2048
+    # Maximum amount of time non-executable transaction are queued
+    lifetime: 1h
+  # gas price oracle
+  gpo:
+    # Number of recent blocks to check for gas prices
+    blocks: 30
+    # Suggested gas price is the given percentile of a set of recent transaction gas prices
+    percentile: 50
+  miner:
+    # Start miner generate block and process transaction
+    start: false
+    # Name for block mining rewards
+    name: "testminername"
+    # Hex of private key for block mining rewards
+    private: []
+    # Block extra data set by the miner
+    extra: "system"
+  metrics:
+    # flag that open statistical metrics
+    metrics: false
+    # flag that open influxdb thad store statistical metrics
+    influxdb: false
+    # URL that connect influxdb
+    influxdburl: "http://localhost:8086"
+    # Influxdb database name
+    influxdbname: "metrics"
+    # Indluxdb user name
+    influxdbuser: "test"
+    # Influxdb user passwd
+    influxdbpasswd: "test"
+    # Influxdb namespace
+    influxdbnamespace: "fractal/"
+  # flag for db to store contrat internal transaction log
+  contractlog: false

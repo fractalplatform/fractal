@@ -205,7 +205,7 @@ func (a *Asset) GetAllAssetObject() ([]*AssetObject, error) {
 		if err != nil {
 			return nil, err
 		}
-		assets[i] = asset
+		assets[i-1] = asset
 	}
 	return assets, nil
 }
@@ -286,7 +286,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //IssueAsset issue asset
-func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) error {
+func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name) error {
 	if !common.IsValidAssetName(assetName) {
 		return fmt.Errorf("%s is invalid", assetName)
 	}
@@ -299,7 +299,7 @@ func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amoun
 		return ErrAssetIsExist
 	}
 
-	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit)
+	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract)
 	if err != nil {
 		return err
 	}
@@ -392,7 +392,7 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 }
 
 //UpdateAsset change asset info
-func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner common.Name, founderName common.Name) error {
+func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner common.Name, founderName common.Name, contractName common.Name) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
@@ -411,6 +411,7 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner commo
 	}
 	asset.SetAssetOwner(Owner)
 	asset.SetAssetFounder(founderName)
+	asset.SetAssetContract(contractName)
 	return a.SetAssetObject(asset)
 }
 

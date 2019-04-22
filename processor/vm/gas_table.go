@@ -440,8 +440,16 @@ func gasSnapBalance(gt params.GasTable, evm *EVM, contract *Contract, stack *Sta
 	return gt.SnapBalance, nil
 }
 
+func gasGetAccountTime(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetAccountTime, nil
+}
+
 func gasGetSnapshotTime(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.GetSnapshotTime, nil
+}
+
+func gasCryptoCalc(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.CryptoCalc, nil
 }
 
 func gasGetDelegate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

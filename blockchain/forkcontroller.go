@@ -62,7 +62,7 @@ func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkContr
 func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) {
 	info := ForkInfo{}
 
-	infoBytes, err := statedb.Get(fc.chainCfg.SysName.String(), forkInfo)
+	infoBytes, err := statedb.Get(fc.chainCfg.ChainName, forkInfo)
 	if err != nil {
 		return info, err
 	}
@@ -84,7 +84,7 @@ func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) err
 		return err
 	}
 
-	statedb.Put(fc.chainCfg.SysName.String(), forkInfo, infoBytes)
+	statedb.Put(fc.chainCfg.ChainName, forkInfo, infoBytes)
 	return nil
 }
 
@@ -94,7 +94,8 @@ func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) err
 		return err
 	}
 
-	if block.CurForkID() != block.NextForkID() {
+	// treat older version as oldest version
+	if block.CurForkID() != block.NextForkID() && info.NextForkID <= block.NextForkID() {
 		if info.NextForkID < block.NextForkID() {
 			// update next forkID
 			info.NextForkID = block.NextForkID()
@@ -103,11 +104,7 @@ func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) err
 
 		info.NextForkIDBlockNum++
 		if info.CurForkIDBlockNum+info.NextForkIDBlockNum >= fc.cfg.ForkBlockNum {
-			if info.CurForkIDBlockNum != 0 {
-				info.CurForkIDBlockNum--
-			} else {
-				info.NextForkIDBlockNum--
-			}
+			info.CurForkIDBlockNum--
 		}
 	} else {
 		info.CurForkIDBlockNum++

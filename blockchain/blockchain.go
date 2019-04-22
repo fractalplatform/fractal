@@ -21,6 +21,7 @@ import (
 	"io"
 	"math/big"
 	mrand "math/rand"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -114,7 +115,10 @@ func NewBlockChain(db fdb.Database, vmConfig vm.Config, chainConfig *params.Chai
 		futureBlocks: futureBlocks,
 		badBlocks:    badBlocks,
 		senderCacher: senderCacher,
-		fcontroller:  NewForkController(defaultForkConfig, chainConfig),
+		fcontroller: NewForkController(&ForkConfig{
+			ForkBlockNum:   chainConfig.ForkedCfg.ForkBlockNum,
+			Forkpercentage: chainConfig.ForkedCfg.Forkpercentage,
+		}, chainConfig),
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)
@@ -146,16 +150,20 @@ func (bc *BlockChain) loadLastBlock() error {
 		return bc.Reset()
 	}
 
+	// Make sure the state associated with the block is available
+	if _, err := state.New(currentBlock.Root(), bc.stateCache); err != nil {
+		// Dangling block without a state associated, init from scratch
+		log.Warn("Head state missing, repairing chain", "number", currentBlock.Number(), "hash", currentBlock.Hash())
+		if err := bc.repair(&currentBlock); err != nil {
+			return err
+		}
+	}
+
 	// Everything seems to be fine, set as the head block
 	bc.currentBlock.Store(currentBlock)
 
 	// Restore the last known head header
 	currentHeader := currentBlock.Header()
-	if head := rawdb.ReadHeadHeaderHash(bc.db); head != (common.Hash{}) {
-		if header := bc.GetHeaderByHash(head); header != nil {
-			currentHeader = header
-		}
-	}
 
 	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
 	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
@@ -170,6 +178,22 @@ func (bc *BlockChain) loadLastBlock() error {
 // Reset purges the entire blockchain, restoring it to its genesis state.
 func (bc *BlockChain) Reset() error {
 	return bc.ResetWithGenesisBlock(bc.genesisBlock)
+}
+
+func (bc *BlockChain) repair(head **types.Block) error {
+	for {
+		// Abort if we've rewound to a head block that does have associated state
+		if _, err := state.New((*head).Root(), bc.stateCache); err == nil {
+			log.Info("Rewound blockchain to past state", "number", (*head).Number(), "hash", (*head).Hash())
+			return nil
+		}
+		// Otherwise rewind one block and recheck state availability there
+		block := bc.GetBlock((*head).ParentHash(), (*head).NumberU64()-1)
+		if block == nil {
+			return fmt.Errorf("missing block %d [%x]", (*head).NumberU64()-1, (*head).ParentHash())
+		}
+		*head = block
+	}
 }
 
 // ResetWithGenesisBlock purges the entire blockchain, restoring it to the specified genesis state.
@@ -305,7 +329,7 @@ func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	// store cur block
 	// bc.currentBlock.Store(block)
 
-	if block.Coinbase().String() == bc.chainConfig.SysName.String() {
+	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
 		rawdb.WriteIrreversibleNumber(batch, block.NumberU64())
 		bc.irreversibleNumber.Store(block.NumberU64())
 	}
@@ -516,7 +540,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	currentBlock := bc.CurrentBlock()
 	localTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
 
-	reorg := externTd.Cmp(localTd) > 0 || (block.Coinbase().String() == bc.chainConfig.SysName.String())
+	reorg := externTd.Cmp(localTd) > 0 || strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0
 	if !reorg && externTd.Cmp(localTd) == 0 {
 		// Split same-difficulty blocks by number, then at random
 		reorg = block.NumberU64() < currentBlock.NumberU64() || (block.NumberU64() == currentBlock.NumberU64() && mrand.Float64() < 0.5)
@@ -560,8 +584,7 @@ Target:
 
 // InsertChain attempts to insert the given batch of blocks in to the canonical chain or, otherwise, create a fork.
 func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
-	n, events, _, err := bc.insertChain(chain)
-	event.SendEvents(events)
+	n, _, err := bc.insertChain(chain)
 	return n, err
 }
 
@@ -579,13 +602,13 @@ func (bc *BlockChain) sanityCheck(chain types.Blocks) error {
 }
 
 // insertChain will execute the actual chain insertion and event aggregation.
-func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*types.Log, error) {
+func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error) {
 	if len(chain) == 0 {
-		return 0, nil, nil, nil
+		return 0, nil, nil
 	}
 
 	if err := bc.sanityCheck(chain); err != nil {
-		return 0, nil, nil, err
+		return 0, nil, err
 	}
 
 	bc.wg.Add(1)
@@ -596,8 +619,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 
 	var (
 		stats         = insertStats{startTime: time.Now()}
-		events        = make([]*event.Event, 0, len(chain))
-		lastCanon     *types.Block
 		coalescedLogs []*types.Log
 	)
 
@@ -624,7 +645,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 		case err == processor.ErrFutureBlock:
 			max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
 			if block.Time().Cmp(max) > 0 {
-				return i, events, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
+				return i, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
 			bc.futureBlocks.Add(block.Hash(), block)
 			stats.ignored++
@@ -636,14 +657,14 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 			stats.queued++
 			continue
 		case err == processor.ErrPrunedAncestor:
-			events, coalescedLogs, err := bc.insertSideChain(block)
+			coalescedLogs, err := bc.insertSideChain(block)
 			if err != nil {
-				return i, events, coalescedLogs, err
+				return i, coalescedLogs, err
 			}
 			continue
 		case err != nil:
 			bc.reportBlock(block, nil, err)
-			return i, events, coalescedLogs, err
+			return i, coalescedLogs, err
 		}
 
 		var parent *types.Block
@@ -656,32 +677,31 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 
 		state, err := state.New(parent.Root(), bc.stateCache)
 		if err != nil {
-			return i, events, coalescedLogs, err
+			return i, coalescedLogs, err
 		}
 
 		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
-			return i, events, coalescedLogs, err
+			return i, coalescedLogs, err
 		}
 
 		err = bc.validator.ValidateState(block, parent, state, receipts, usedGas)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
-			return i, events, coalescedLogs, err
+			return i, coalescedLogs, err
 		}
 
 		isCanon, err := bc.WriteBlockWithState(block, receipts, state)
 		if err != nil {
-			return i, events, coalescedLogs, err
+			return i, coalescedLogs, err
 		}
 
 		if isCanon {
 			log.Debug("Inserted new block", "number", block.Number(), "hash", block.Hash(),
 				"txs", len(block.Transactions()), "gas", block.GasUsed())
 			coalescedLogs = append(coalescedLogs, logs...)
-			lastCanon = block
-
+			event.SendEvent(&event.Event{Typecode: event.ChainHeadEv, Data: block})
 		} else {
 			log.Debug("Inserted forked block", "number", block.Number(), "hash", block.Hash(), "diff", block.Difficulty(),
 				"txs", len(block.Transactions()), "gas", block.GasUsed())
@@ -694,16 +714,12 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*event.Event, []*t
 
 	}
 
-	if lastCanon != nil && bc.CurrentBlock().Hash() == lastCanon.Hash() {
-		events = append(events, &event.Event{Typecode: event.ChainHeadEv, Data: lastCanon})
-	}
-
-	return 0, events, coalescedLogs, nil
+	return 0, coalescedLogs, nil
 }
 
-func (bc *BlockChain) insertSideChain(block *types.Block) ([]*event.Event, []*types.Log, error) {
+func (bc *BlockChain) insertSideChain(block *types.Block) ([]*types.Log, error) {
 	var systemBlock bool
-	if block.Coinbase().String() == bc.chainConfig.SysName.String() {
+	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
 		systemBlock = true
 	}
 
@@ -713,7 +729,7 @@ func (bc *BlockChain) insertSideChain(block *types.Block) ([]*event.Event, []*ty
 	if localTd.Cmp(externTd) >= 0 && !systemBlock {
 		start := time.Now()
 		if err := bc.WriteBlockWithoutState(block, externTd); err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 
 		log.Debug("Injected sidechain block", "number", block.Number(), "hash", block.Hash(),
@@ -734,13 +750,13 @@ func (bc *BlockChain) insertSideChain(block *types.Block) ([]*event.Event, []*ty
 
 		bc.chainmu.Unlock()
 		log.Info("Importing sidechain segment", "start", blocks[0].NumberU64(), "end", blocks[len(blocks)-1].NumberU64())
-		_, evs, logs, err := bc.insertChain(blocks)
+		_, logs, err := bc.insertChain(blocks)
 		bc.chainmu.Lock()
 		if err != nil {
-			return evs, logs, err
+			return logs, err
 		}
 	}
-	return nil, nil, nil
+	return nil, nil
 
 }
 

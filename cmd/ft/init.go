@@ -17,10 +17,12 @@
 package main
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/fractalplatform/fractal/blockchain"
+	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/spf13/cobra"
 )
 
@@ -28,12 +30,12 @@ var dataDir string
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
-	Use:   "init <genesisPath>",
+	Use:   "init -g <genesis> -d <datadir>",
 	Short: "Bootstrap and initialize a new genesis block",
 	Long:  `Bootstrap and initialize a new genesis block`,
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if err := initGenesis(args); err != nil {
+		ftCfgInstance.LogCfg.Setup()
+		if err := initGenesis(); err != nil {
 			fmt.Println(err)
 		}
 	},
@@ -41,23 +43,35 @@ var initCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringVarP(&ftconfig.NodeCfg.DataDir, "datadir", "d", defaultDataDir(), "Data directory for the databases and keystore")
+	initCmd.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "Genesis json file")
+	initCmd.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
 }
 
 // initGenesis will initialise the given JSON format genesis file and writes it as
 // the zero'd block (i.e. genesis) or will fail hard if it can't succeed.
-func initGenesis(args []string) error {
+func initGenesis() error {
 	// Make sure we have a valid genesis JSON
-	genesisPath := args[0]
-	if len(genesisPath) == 0 {
-		return errors.New("Must supply path to genesis JSON file")
-	}
-	file, err := os.Open(genesisPath)
-	if err != nil {
-		return fmt.Errorf("Failed to read genesis file: %v", err)
-	}
-	defer file.Close()
+	genesis := new(blockchain.Genesis)
+	if len(ftCfgInstance.GenesisFile) != 0 {
+		file, err := os.Open(ftCfgInstance.GenesisFile)
+		if err != nil {
+			return fmt.Errorf("Failed to read genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
+		}
+		defer file.Close()
 
-	// todo init genesis
+		if err := json.NewDecoder(file).Decode(genesis); err != nil {
+			return fmt.Errorf("invalid genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
+		}
+	}
+
+	stack, err := makeNode()
+	if err != nil {
+		return err
+	}
+
+	_, err = ftservice.New(stack.GetNodeConfig(), ftCfgInstance.FtServiceCfg)
+	if err != nil {
+		return err
+	}
 	return nil
 }

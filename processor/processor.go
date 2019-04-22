@@ -96,9 +96,6 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx := &types.DetailTx{}
 	var internals []*types.InternalTx
 	for i, action := range tx.GetActions() {
-		if !action.CheckValue() {
-			return nil, 0, ErrActionInvalidValue
-		}
 		if needCheckSign(accountDB, action) {
 			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
 				return nil, 0, err

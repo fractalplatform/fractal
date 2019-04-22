@@ -17,33 +17,106 @@
 package params
 
 import (
+	"encoding/json"
 	"math/big"
-
-	"github.com/fractalplatform/fractal/common"
 )
 
-const DefaultPubkeyHex = "047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
-
 // ChainConfig is the core config which determines the blockchain settings.
-// ChainConfig is stored in the database on a per block basis.
 type ChainConfig struct {
-	ChainID             *big.Int    `json:"chainId"`   // chainId identifies the current chain and is used for replay protection
-	BootNodes           []string    `json:"bootnodes"` // enode URLs of the P2P bootstrap nodes
-	SysName             common.Name `json:"sysName"`   // system name
-	SysToken            string      `json:"sysToken"`  // system token
-	AssetChargeRatio    uint64      `json:"assetChargeRatio"`
-	ContractChargeRatio uint64      `json:"contractChargeRatio"`
-	SysTokenID          uint64      `json:"-"`
-	SysTokenDecimals    uint64      `json:"-"`
-	UpperLimit          *big.Int    `json:"upperlimit"`
+	BootNodes        []string      `json:"bootnodes,omitempty"` // enode URLs of the P2P bootstrap nodes
+	ChainID          *big.Int      `json:"chainId,omitempty"`   // chainId identifies the current chain and is used for replay protection
+	ChainName        string        `json:"chainName,omitempty"` // chain name
+	ChainURL         string        `json:"chainUrl,omitempty"`  // chain url
+	AccountNameCfg   *NameConfig   `json:"accountParams,omitempty"`
+	AssetNameCfg     *NameConfig   `json:"assetParams,omitempty"`
+	ChargeCfg        *ChargeConfig `json:"chargeParams,omitempty"`
+	ForkedCfg        *FrokedConfig `json:"upgradeParams,omitempty"`
+	DposCfg          *DposConfig   `json:"dposParams,omitempty"`
+	SysName          string        `json:"systemName,omitempty"`  // system name
+	AccountName      string        `json:"accountName,omitempty"` // system name
+	DposName         string        `json:"dposName,omitempty"`    // system name
+	SysToken         string        `json:"systemToken,omitempty"` // system token
+	SysTokenID       uint64        `json:"sysTokenID,omitempty"`
+	SysTokenDecimals uint64        `json:"sysTokenDecimal,omitempty"`
+}
+
+type ChargeConfig struct {
+	AssetRatio    uint64 `json:"assetRatio,omitempty"`
+	ContractRatio uint64 `json:"contractRatio,omitempty"`
+}
+
+type NameConfig struct {
+	Level     uint64 `json:"level,omitempty"`
+	Length    uint64 `json:"length,omitempty"`
+	SubLength uint64 `json:"subLength,omitempty"`
+}
+
+type FrokedConfig struct {
+	ForkBlockNum   uint64 `json:"blockCnt,omitempty"`
+	Forkpercentage uint64 `json:"upgradeRatio,omitempty"`
+}
+
+type DposConfig struct {
+	MaxURLLen            uint64   `json:"maxURLLen,omitempty"`            // url length
+	UnitStake            *big.Int `json:"unitStake,omitempty"`            // state unit
+	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity,omitempty"`  // min quantity
+	VoterMinQuantity     *big.Int `json:"voterMinQuantity,omitempty"`     // min quantity
+	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity,omitempty"` // min active quantity
+	BlockInterval        uint64   `json:"blockInterval,omitempty"`
+	BlockFrequency       uint64   `json:"blockFrequency,omitempty"`
+	CadidateScheduleSize uint64   `json:"cadidateScheduleSize,omitempty"`
+	DelayEcho            uint64   `json:"delayEcho,omitempty"`
+	ExtraBlockReward     *big.Int `json:"extraBlockReward,omitempty"`
+	BlockReward          *big.Int `json:"blockReward,omitempty"`
 }
 
 var DefaultChainconfig = &ChainConfig{
-	ChainID:             big.NewInt(1),
-	SysName:             "ftsystemio",
-	SysToken:            "ftoken",
-	AssetChargeRatio:    80,
-	ContractChargeRatio: 80,
+	BootNodes: []string{},
+	ChainID:   big.NewInt(1),
+	ChainName: "fractal",
+	ChainURL:  "https://fractalproject.com",
+	AccountNameCfg: &NameConfig{
+		Level:     1,
+		Length:    16,
+		SubLength: 8,
+	},
+	AssetNameCfg: &NameConfig{
+		Level:     1,
+		Length:    16,
+		SubLength: 8,
+	},
+	ChargeCfg: &ChargeConfig{
+		AssetRatio:    80,
+		ContractRatio: 80,
+	},
+	ForkedCfg: &FrokedConfig{
+		ForkBlockNum:   10000,
+		Forkpercentage: 80,
+	},
+	DposCfg: &DposConfig{
+		MaxURLLen:            512,
+		UnitStake:            big.NewInt(1000),
+		CadidateMinQuantity:  big.NewInt(10),
+		VoterMinQuantity:     big.NewInt(1),
+		ActivatedMinQuantity: big.NewInt(100),
+		BlockInterval:        3000,
+		BlockFrequency:       6,
+		CadidateScheduleSize: 3,
+		DelayEcho:            2,
+		ExtraBlockReward:     big.NewInt(1),
+		BlockReward:          big.NewInt(5),
+	},
+	SysName:     "fractal.admin",
+	AccountName: "fractal.account",
+	DposName:    "fractal.dpos",
+	SysToken:    "ftoken",
+}
+
+func (cfg *ChainConfig) Copy() *ChainConfig {
+	bts, _ := json.Marshal(cfg)
+	c := &ChainConfig{}
+	json.Unmarshal(bts, c)
+	return c
 }
 
 const (

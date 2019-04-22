@@ -78,7 +78,7 @@ type EgnineContext interface {
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
 
-	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error
+	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error)
 
 	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error)
 }
@@ -100,6 +100,7 @@ func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header
 	return vm.Context{
 		GetHash:            GetHashFn(header, chain),
 		GetDelegatedByTime: chain.GetDelegatedByTime,
+		GetHeaderByNumber:  chain.GetHeaderByNumber,
 		Origin:             sender,
 		AssetID:            assetID,
 		Coinbase:           beneficiary,

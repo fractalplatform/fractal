@@ -214,7 +214,9 @@ const (
 	DESTROYASSET = 0xc8
 	GETACCOUNTID = 0xc9
 
-	GETDELEGATE = 0xca
+	GETDELEGATE    = 0xca
+	GETACCOUNTTIME = 0xcb
+	CRYPTOCALC     = 0xcc
 )
 
 const (
@@ -388,7 +390,7 @@ var opCodeToString = map[OpCode]string{
 	RETURN:       "RETURN",
 	CALLCODE:     "CALLCODE",
 	DELEGATECALL: "DELEGATECALL",
-	//add new asset for multi-asset
+	//0xc0 range add new asset for multi-asset
 	BALANCEEX:     "BALANCEEX",
 	SETASSETOWNER: "SETASSETOWNER",
 	ADDASSET:      "ADDASSET",
@@ -397,6 +399,7 @@ var opCodeToString = map[OpCode]string{
 	ASSETAMOUNT:   "ASSETAMOUNT",
 	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
+	CRYPTOCALC:    "CRYPTOCALC",
 	//add end
 	STATICCALL:   "STATICCALL",
 	REVERT:       "REVERT",

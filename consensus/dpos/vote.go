@@ -21,11 +21,25 @@ import (
 	"math/big"
 	"math/rand"
 	"strings"
+
+	"github.com/fractalplatform/fractal/state"
 )
 
 type System struct {
 	config *Config
 	IDB
+}
+
+func NewSystem(state *state.StateDB, config *Config) *System {
+	return &System{
+		config: config,
+		IDB: &LDB{
+			IDatabase: &stateDB{
+				name:  config.AccountName,
+				state: state,
+			},
+		},
+	}
 }
 
 // RegCadidate  register a cadidate
@@ -144,27 +158,28 @@ func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) e
 }
 
 // UnregCadidate  unregister a cadidate
-func (sys *System) UnregCadidate(cadidate string) error {
+func (sys *System) UnregCadidate(cadidate string) (*big.Int, error) {
 	// parameter validity
 	// modify or update
+	var stake *big.Int
 	prod, err := sys.GetCadidate(cadidate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if prod != nil {
 
 		gstate, err := sys.GetState(LastBlockHeight)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if sys.isdpos(gstate) {
 			if cnt, err := sys.CadidatesSize(); err != nil {
-				return err
+				return nil, err
 			} else if uint64(cnt) <= sys.config.consensusSize() {
-				return fmt.Errorf("insufficient actived cadidates")
+				return nil, fmt.Errorf("insufficient actived cadidates")
 			}
 			if new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
-				return fmt.Errorf("insufficient actived stake")
+				return nil, fmt.Errorf("insufficient actived stake")
 			}
 		}
 
@@ -179,31 +194,31 @@ func (sys *System) UnregCadidate(cadidate string) error {
 		// }
 
 		if prod.TotalQuantity.Cmp(prod.Quantity) > 0 {
-			return fmt.Errorf("already has voter")
+			return nil, fmt.Errorf("already has voter")
 		}
 
-		stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+		stake = new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
 		if err := sys.Undelegate(cadidate, stake); err != nil {
-			return fmt.Errorf("undelegate %v failed(%v)", stake, err)
+			return nil, fmt.Errorf("undelegate %v failed(%v)", stake, err)
 		}
 		if prod.InBlackList {
 			if err := sys.SetCadidate(prod); err != nil {
-				return err
+				return nil, err
 			}
 		} else {
 			if err := sys.DelCadidate(prod.Name); err != nil {
-				return err
+				return nil, err
 			}
 		}
 
 		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.Quantity)
 		if err := sys.SetState(gstate); err != nil {
-			return err
+			return nil, err
 		}
 	} else {
-		return fmt.Errorf("invalide cadidate %v", cadidate)
+		return nil, fmt.Errorf("invalide cadidate %v", cadidate)
 	}
-	return nil
+	return stake, nil
 }
 
 // VoteCadidate vote a cadidate
@@ -311,23 +326,23 @@ func (sys *System) ChangeCadidate(voter string, cadidate string) error {
 }
 
 // UnvoteCadidate cancel vote
-func (sys *System) UnvoteCadidate(voter string) error {
+func (sys *System) UnvoteCadidate(voter string) (*big.Int, error) {
 	// parameter validity
 	return sys.unvoteCadidate(voter)
 }
 
 // UnvoteVoter cancel voter
-func (sys *System) UnvoteVoter(cadidate string, voter string) error {
+func (sys *System) UnvoteVoter(cadidate string, voter string) (*big.Int, error) {
 	// parameter validity
 	vote, err := sys.GetVoter(voter)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if vote == nil {
-		return fmt.Errorf("invalid voter %v", voter)
+		return nil, fmt.Errorf("invalid voter %v", voter)
 	}
 	if strings.Compare(cadidate, vote.Cadidate) != 0 {
-		return fmt.Errorf("invalid cadidate %v", cadidate)
+		return nil, fmt.Errorf("invalid cadidate %v", cadidate)
 	}
 	return sys.unvoteCadidate(voter)
 }
@@ -371,42 +386,43 @@ func (sys *System) ExitTakeOver() error {
 	return err
 }
 
-func (sys *System) unvoteCadidate(voter string) error {
+func (sys *System) unvoteCadidate(voter string) (*big.Int, error) {
 	// modify or update
+	var stake *big.Int
 	vote, err := sys.GetVoter(voter)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if vote == nil {
-		return fmt.Errorf("invalid voter %v", voter)
+		return nil, fmt.Errorf("invalid voter %v", voter)
 	}
 	gstate, err := sys.GetState(LastBlockHeight)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if sys.isdpos(gstate) && new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
-		return fmt.Errorf("insufficient actived stake")
+		return nil, fmt.Errorf("insufficient actived stake")
 	}
-	stake := new(big.Int).Mul(vote.Quantity, sys.config.unitStake())
+	stake = new(big.Int).Mul(vote.Quantity, sys.config.unitStake())
 	if err := sys.Undelegate(voter, stake); err != nil {
-		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
+		return nil, fmt.Errorf("undelegate %v failed(%v)", stake, err)
 	}
 	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity)
 	prod, err := sys.GetCadidate(vote.Cadidate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	prod.TotalQuantity = new(big.Int).Sub(prod.TotalQuantity, vote.Quantity)
 	if err := sys.SetCadidate(prod); err != nil {
-		return err
+		return nil, err
 	}
 	if err := sys.DelVoter(vote.Name, vote.Cadidate); err != nil {
-		return err
+		return nil, err
 	}
 	if err := sys.SetState(gstate); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return stake, nil
 }
 
 func (sys *System) onblock(height uint64) error {

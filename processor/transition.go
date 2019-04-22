@@ -150,12 +150,16 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.ExitTakeOver:
 		fallthrough
 	case actionType == types.UnvoteCadidate:
-		vmerr = st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
+		internalLogs, err := st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
+		vmerr = err
+		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	default:
-		vmerr = st.account.Process(&types.AccountManagerContext{
+		internalLogs, err := st.account.Process(&types.AccountManagerContext{
 			Action: st.action,
 			Number: st.evm.Context.BlockNumber.Uint64(),
 		})
+		vmerr = err
+		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	}
 	if vmerr != nil {
 		log.Debug("VM returned with error", "err", vmerr)
@@ -181,7 +185,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
 		assetName := common.Name(assetInfo.GetAssetName())
 
-		assetFounderRatio := st.chainConfig.AssetChargeRatio
+		assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
 		if len(assetName.String()) > 0 {
 			if _, ok := evm.FounderGasMap[assetName]; !ok {
 				dGas := vm.DistributeGas{

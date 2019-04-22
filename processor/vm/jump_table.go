@@ -91,9 +91,25 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet := NewHomesteadInstructionSet()
 
 	//multi-asset InstructionSet
+	instructionSet[GETACCOUNTTIME] = operation{
+		execute:       opGetAccountTime,
+		gasCost:       gasGetAccountTime,
+		validateStack: makeStackFunc(1, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[SNAPSHOTTIME] = operation{
 		execute:       opGetSnapshotTime,
 		gasCost:       gasGetSnapshotTime,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[CRYPTOCALC] = operation{
+		execute:       opCryptoCalc,
+		gasCost:       gasCryptoCalc,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
 		returns:       true,

@@ -30,45 +30,40 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/wallet/keystore"
 )
 
 const (
-	datadirPrivateKey      = "nodekey"      // Path within the datadir to the node's private key
-	datadirDefaultKeyStore = "keystore"     // Path within the datadir to the keystore
-	datadirBootNodes       = "bootnodes"    // Path within the datadir to the boot node list
-	datadirStaticNodes     = "staticnodes"  // Path within the datadir to the static node list
-	datadirTrustedNodes    = "trustednodes" // Path within the datadir to the trusted node list
+	datadirPrivateKey   = "nodekey"      // Path within the datadir to the node's private key
+	datadirBootNodes    = "bootnodes"    // Path within the datadir to the boot node list
+	datadirStaticNodes  = "staticnodes"  // Path within the datadir to the static node list
+	datadirTrustedNodes = "trustednodes" // Path within the datadir to the trusted node list
 )
 
 // Config represents a small collection of configuration values to fine tune the
 // P2P network layer of a protocol stack.
 type Config struct {
-	Name    string `mapstructure:"node-name"`
-	DataDir string `mapstructure:"node-datadir"`
+	Name              string
+	DataDir           string `mapstructure:"datadir"`
+	UseLightweightKDF bool   `mapstructure:"lightkdf"`
+	IPCPath           string `mapstructure:"ipcpath"`
 
-	KeyStoreDir       string `mapstructure:"node-keystore"`
-	UseLightweightKDF bool   `mapstructure:"node-lightkdf"`
+	HTTPHost         string   `mapstructure:"httphost"`
+	HTTPPort         int      `mapstructure:"httpport"`
+	HTTPModules      []string `mapstructure:"httpmodules"`
+	HTTPCors         []string `mapstructure:"httpcors"`
+	HTTPVirtualHosts []string `mapstructure:"httpvirtualhosts"`
 
-	IPCPath string `mapstructure:"node-ipcpath"`
-
-	HTTPHost         string   `mapstructure:"node-httphost"`
-	HTTPPort         int      `mapstructure:"node-httpport"`
-	HTTPModules      []string `mapstructure:"node-httpmodules"`
-	HTTPCors         []string `mapstructure:"node-httpcors"`
-	HTTPVirtualHosts []string `mapstructure:"node-httpvirtualhosts"`
-
-	WSHost      string   `mapstructure:"node-wshost"`
-	WSPort      int      `mapstructure:"node-wsport"`
-	WSModules   []string `mapstructure:"node-wsmodules"`
-	WSOrigins   []string `mapstructure:"node-wsorigins"`
-	WSExposeAll bool     `mapstructure:"node-wsexposall"`
+	WSHost      string   `mapstructure:"wshost"`
+	WSPort      int      `mapstructure:"wsport"`
+	WSModules   []string `mapstructure:"wsmodules"`
+	WSOrigins   []string `mapstructure:"wsorigins"`
+	WSExposeAll bool     `mapstructure:"wsexposall"`
 
 	// p2p
-	P2PBootNodes   string
-	P2PStaticNodes string
-	P2PTrustNodes  string
-	P2PConfig      *p2p.Config
+	P2PBootNodes   string      `mapstructure:"bootnodes"`
+	P2PStaticNodes string      `mapstructure:"staticnodes"`
+	P2PTrustNodes  string      `mapstructure:"trustnodes"`
+	P2PConfig      *p2p.Config `mapstructure:"p2p"`
 
 	// Logger is a custom logger to use with the p2p.Server.
 	Logger log.Logger `toml:",omitempty"`
@@ -132,18 +127,6 @@ func (c *Config) resolvePath(path string) string {
 		return path
 	}
 	return filepath.Join(filepath.Join(c.DataDir, c.Name), path)
-}
-
-// walletConfig determines the settings for scrypt and keydirectory
-func (c *Config) walletConfig() (int, int, string) {
-	scryptN := keystore.StandardScryptN
-	scryptP := keystore.StandardScryptP
-	if c.UseLightweightKDF {
-		scryptN = keystore.LightScryptN
-		scryptP = keystore.LightScryptP
-	}
-
-	return scryptN, scryptP, filepath.Join(c.DataDir, datadirDefaultKeyStore)
 }
 
 func (c *Config) NodeKey() *ecdsa.PrivateKey {

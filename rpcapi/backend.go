@@ -14,24 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package api implements the general API functions.
-package api
+// package rpcapi implements the general API functions.
+
+package rpcapi
 
 import (
 	"context"
 	"math/big"
 
-	"github.com/fractalplatform/fractal/consensus"
-
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // Backend interface provides the common API services (that are provided by
@@ -55,6 +54,7 @@ type Backend interface {
 	GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error)
 	GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
 	GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash
+	GetBadBlocks(ctx context.Context) ([]*types.Block, error)
 
 	// TxPool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
@@ -68,9 +68,6 @@ type Backend interface {
 
 	SetGasPrice(gasPrice *big.Int) bool
 
-	//Wallet
-	Wallet() *wallet.Wallet
-
 	// P2P
 	AddPeer(url string) error
 	RemovePeer(url string) error
@@ -79,9 +76,7 @@ type Backend interface {
 	PeerCount() int
 	Peers() []string
 	SelfNode() string
-
 	Engine() consensus.IEngine
-
 	APIs() []rpc.API
 }
 
@@ -101,11 +96,6 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Namespace: "ft",
 			Version:   "1.0",
 			Service:   NewPublicFractalAPI(apiBackend),
-			Public:    true,
-		}, {
-			Namespace: "keystore",
-			Version:   "1.0",
-			Service:   NewPrivateKeyStoreAPI(apiBackend),
 			Public:    true,
 		},
 		{

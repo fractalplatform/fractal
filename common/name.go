@@ -50,9 +50,9 @@ func init() {
 func SetAccountNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	var nameCheck string
 	if nameLevel == 0 {
-		nameCheck = fmt.Sprintf("^[a-z0-9]{8,%d}$", nameLen)
+		nameCheck = fmt.Sprintf("^[a-z0-9]{7,%d}$", nameLen)
 	} else {
-		nameCheck = fmt.Sprintf("^[a-z0-9]{8,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
+		nameCheck = fmt.Sprintf("^[a-z0-9]{7,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
 	}
 	log.Info("Account name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
 	accountNameCheck = regexp.MustCompile(nameCheck)

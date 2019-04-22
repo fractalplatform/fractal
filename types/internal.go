@@ -20,14 +20,14 @@ import "github.com/fractalplatform/fractal/common"
 
 type DetailTx struct {
 	TxHash      common.Hash
-	InternalTxs []*InternalTx
+	Actions []*DetailAction
 }
 
-type InternalTx struct {
-	InterlnalLogs []*InternalLog
+type DetailAction struct {
+	InterlnalActions []*InterlnalAction
 }
 
-type InternalLog struct {
+type InterlnalAction struct {
 	Action     *RPCAction
 	ActionType string
 	GasUsed    uint64

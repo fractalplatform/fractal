@@ -62,6 +62,7 @@ type Worker struct {
 
 	currentWork *Work
 
+	wg         sync.WaitGroup
 	mining     int32
 	quitWork   chan struct{}
 	quitWorkRW sync.RWMutex
@@ -107,6 +108,7 @@ out:
 		case ev := <-txsCh:
 			// Apply transactions to the pending state if we're not mining.
 			if atomic.LoadInt32(&worker.mining) == 0 {
+				worker.wg.Wait()
 				txs := make(map[common.Name][]*types.Transaction)
 				for _, tx := range ev.Data.([]*types.Transaction) {
 					action := tx.GetActions()[0]
@@ -134,6 +136,8 @@ func (worker *Worker) start(force bool) {
 }
 
 func (worker *Worker) mintLoop() {
+	worker.wg.Add(1)
+	defer worker.wg.Done()
 	dpos, ok := worker.Engine().(*dpos.Dpos)
 	if !ok {
 		panic("only support dpos engine")
@@ -398,7 +402,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 		action := tx.GetActions()[0]
 
-		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName.String()) != 0 {
+		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName) != 0 {
 			switch action.Type() {
 			case types.KickedCadidate:
 				fallthrough

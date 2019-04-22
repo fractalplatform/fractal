@@ -71,7 +71,7 @@ build_workspace:
 
 # build all targets 
 .PHONY: all
-all:check build_workspace build_ft build_ftkey build_ftfinder
+all:check build_workspace build_ft build_ftfinder
 
 # build ft
 .PHONY: build_ft
@@ -79,11 +79,6 @@ build_ft: commit_hash check build_workspace
 	@echo "Building ft."
 	$(call build,ft)
 
-# build ftkey
-.PHONY: build_ftkey
-build_ftkey: commit_hash check build_workspace
-	@echo "Building ftkey."
-	$(call build,ftkey)
 
 # build ftfinder
 .PHONY: build_ftfinder 
@@ -128,13 +123,15 @@ docs: CHANGELOG NOTES
 
 # Tag the current HEAD commit with the current release defined in
 .PHONY: tag_release
-tag_release: test check docs all
+tag_release: test check docs 
 	@scripts/tag_release.sh
 
 .PHONY: release
-release: test check docs all
+release: test check docs 
 	@scripts/is_checkout_dirty.sh || (echo "checkout is dirty so not releasing!" && exit 1)
 	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
 
-
-
+.PHONY: tmp_release
+tmp_release: test check 
+	@echo "Building and releasing"
+	@export GOPATH=${TEMP_GOPATH} && goreleaser --snapshot --rm-dist 

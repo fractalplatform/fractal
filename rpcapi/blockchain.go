@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package api
+package rpcapi
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -82,54 +83,6 @@ func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.
 		return response, err
 	}
 	return nil, err
-}
-func (s *PublicBlockChainAPI) GetTxNumByBlockHash(ctx context.Context, blockHash common.Hash) (int, error) {
-	block, err := s.b.GetBlock(ctx, blockHash)
-	if block != nil {
-		return len(block.Transactions()), nil
-	}
-	return 0, err
-}
-
-func (s *PublicBlockChainAPI) GetTxNumByBlockNum(ctx context.Context, blockNr rpc.BlockNumber) (int, error) {
-	block, err := s.b.BlockByNumber(ctx, blockNr)
-	if block != nil {
-		return len(block.Transactions()), nil
-	}
-	return 0, err
-}
-
-func (s *PublicBlockChainAPI) GetTotalTxNumByBlockHash(ctx context.Context, blockHash common.Hash, lookbackNum uint64) (*big.Int, error) {
-	block, err := s.b.GetBlock(ctx, blockHash)
-	if block != nil {
-		txNum := len(block.Transactions())
-		totalTxNum := big.NewInt(int64(txNum))
-		height := block.Number().Uint64()
-		for i := height - 1; i >= 0 && i > height-lookbackNum; i-- {
-			block, err := s.b.BlockByNumber(ctx, rpc.BlockNumber(i))
-			if block != nil {
-				totalTxNum = totalTxNum.Add(totalTxNum, big.NewInt(int64(len(block.Transactions()))))
-			} else {
-				return nil, err
-			}
-		}
-		return totalTxNum, nil
-	}
-
-	return nil, err
-}
-
-func (s *PublicBlockChainAPI) GetTotalTxNumByBlockNum(ctx context.Context, blockNr rpc.BlockNumber, lookbackNum uint64) (*big.Int, error) {
-	totalTxNum := big.NewInt(0)
-	for i := blockNr; i >= 0 && i > blockNr-rpc.BlockNumber(lookbackNum); i-- {
-		block, err := s.b.BlockByNumber(ctx, i)
-		if block != nil {
-			totalTxNum = totalTxNum.Add(totalTxNum, big.NewInt(int64(len(block.Transactions()))))
-		} else {
-			return nil, err
-		}
-	}
-	return totalTxNum, nil
 }
 
 // rpcOutputBlock uses the generalized output filler, then adds the total difficulty field, which requires
@@ -229,6 +182,20 @@ func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash comm
 	}
 
 	return detailtxs[index], nil
+}
+
+func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]map[string]interface{}, error) {
+	blocks, err := s.b.GetBadBlocks(ctx)
+	if len(blocks) != 0 {
+		ret_block := make([]map[string]interface{}, len(blocks))
+
+		for i, b := range blocks {
+			ret_block[i] = s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx)
+		}
+
+		return ret_block, nil
+	}
+	return nil, err
 }
 
 type CallArgs struct {
@@ -346,4 +313,28 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 		}
 	}
 	return hexutil.Uint64(hi), nil
+}
+
+// GetChainConfig returns chain config.
+func (s *PublicBlockChainAPI) GetChainConfig() map[string]interface{} {
+	ret := map[string]interface{}{}
+	g, err := s.b.BlockByNumber(context.Background(), 0)
+	if err != nil {
+		return ret
+	}
+	cfg := rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash())
+	bts, _ := json.Marshal(cfg)
+	json.Unmarshal(bts, &ret)
+	return ret
+}
+
+// GetGeneisisJson returns geneisis config.
+func (s *PublicBlockChainAPI) GetGeneisis() map[string]interface{} {
+	ret := map[string]interface{}{}
+	g, err := s.b.BlockByNumber(context.Background(), 0)
+	if err != nil {
+		return ret
+	}
+	json.Unmarshal(g.Head.Extra, &ret)
+	return ret
 }
