@@ -1108,7 +1108,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	contract.Gas = contract.Gas + uint64(size.Int64())*params.GasTableInstanse.CryptoByte
+	contract.Gas = contract.Gas - uint64(size.Int64())*params.GasTableInstanse.CryptoByte
 
 	if i == 0 {
 		//Encrypt
@@ -1127,15 +1127,15 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 	} else if i == 1 {
 		ecdsaprikey, err := crypto.ToECDSA(key)
+		//
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)
 			ret, err = eciesprikey.Decrypt(data, nil, nil)
+			//pintg
 			if err == nil {
 				datalen = len(ret)
-				if uint64(datalen) <= retSize.Uint64()*32 {
-
-				} else {
+				if uint64(datalen) > retSize.Uint64()*32 {
 					err = errors.New("Decrypt error")
 				}
 			}
