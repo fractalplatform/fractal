@@ -24,10 +24,10 @@ type DetailTx struct {
 }
 
 type DetailAction struct {
-	InternalActions []*InterlnalAction `json:"internalActions"`
+	InternalActions []*InternalAction `json:"internalActions"`
 }
 
-type InterlnalAction struct {
+type InternalAction struct {
 	Action     *RPCAction `json:"action"`
 	ActionType string     `json:"actionType"`
 	GasUsed    uint64     `json:"gasUsed"`

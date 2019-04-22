@@ -164,7 +164,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		db = memdb.NewMemDatabase()
 	}
 	detailTx := &types.DetailTx{}
-	var internals []*types.InternalTx
+	var internals []*types.DetailAction
 	am.SetAccountNameConfig(&am.Config{
 		AccountNameLevel:     g.Config.AccountNameCfg.Level,
 		AccountNameLength:    g.Config.AccountNameCfg.Length,
@@ -247,7 +247,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		if err != nil {
 			panic(fmt.Sprintf("genesis create account %v,err %v", index, err))
 		}
-		internals = append(internals, &types.InternalTx{InterlnalLogs: internalLogs})
+		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
 
 	astActions := []*types.Action{}
@@ -288,7 +288,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		if err != nil {
 			panic(fmt.Sprintf("genesis create asset %v,err %v", index, err))
 		}
-		internals = append(internals, &types.InternalTx{InterlnalLogs: internalLogs})
+		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
 
 	if verify {
@@ -347,7 +347,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	detailTx.TxHash = receipt.TxHash
-	detailTx.InternalTxs = internals
+	detailTx.Actions = internals
 	receipt.SetInternalTxsLog(detailTx)
 
 	receipts := []*types.Receipt{receipt}

@@ -100,7 +100,7 @@ type EVM struct {
 
 	FounderGasMap map[common.Name]DistributeGas
 
-	InternalTxs []*types.InternalLog
+	InternalTxs []*types.InternalAction
 }
 
 type DistributeGas struct {

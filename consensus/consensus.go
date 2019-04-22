@@ -98,7 +98,7 @@ type IEngine interface {
 
 	Engine() IEngine
 
-	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error)
+	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
 
 	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error)
 
