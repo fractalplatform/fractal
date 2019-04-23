@@ -62,7 +62,7 @@ func (api *API) Account(name string) (interface{}, error) {
 		return vote, err
 	}
 
-	if prod, err := sys.GetCadidate(name); err != nil {
+	if prod, err := sys.GetCandidate(name); err != nil {
 		return nil, err
 	} else if prod != nil {
 		return prod, err
@@ -71,20 +71,20 @@ func (api *API) Account(name string) (interface{}, error) {
 	return nil, nil
 }
 
-func (api *API) Cadidates() ([]map[string]interface{}, error) {
+func (api *API) Candidates() ([]map[string]interface{}, error) {
 	pfileds := []map[string]interface{}{}
 
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	cadidates, err := sys.Cadidates()
-	if err != nil || len(cadidates) == 0 {
+	candidates, err := sys.Candidates()
+	if err != nil || len(candidates) == 0 {
 		return pfileds, err
 	}
 
-	prods := cadidateInfoArray{}
-	for _, prod := range cadidates {
+	prods := candidateInfoArray{}
+	for _, prod := range candidates {
 		prods = append(prods, prod)
 	}
 	sort.Sort(prods)

@@ -19,10 +19,11 @@ package dpos
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"math/big"
-	"sort"
 	"strings"
 
+	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -32,33 +33,34 @@ type IDatabase interface {
 	Put(key string, value []byte) error
 	Delete(key string) error
 
-	Delegate(string, *big.Int) error
-	Undelegate(string, *big.Int) error
-	IncAsset2Acct(string, string, *big.Int) error
+	Undelegate(string, *big.Int) (*types.Action, error)
+	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
+	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
 
 	GetSnapshot(key string, timestamp uint64) ([]byte, error)
 }
 
 var (
-	// CadidateKeyPrefix cadidate name --> cadidateInfo
-	CadidateKeyPrefix = "prod"
-	// VoterKeyPrefix voter name ---> voterInfo
-	VoterKeyPrefix = "vote"
-	// // DelegatorKeyPrfix cadidate name ----> voter names
-	// DelegatorKeyPrfix = "dele"
-	// CadidatesKeyPrefix produces ----> cadidate names
-	CadidatesKeyPrefix = "prods"
-	// StateKeyPrefix height --> globalState
-	StateKeyPrefix = "state"
+	// CandidateKeyPrefix candidateInfo
+	CandidateKeyPrefix = "p"
+	// CandidatesKey all candidate key
+	CandidatesKey = "s"
+	// CandidatesSizeKey len of candidate
+	CandidatesSizeKey = "sl"
+
+	// VoterQuantityPrefix quantity
+	VoterQuantityPrefix = "q"
+	// VoterKeyPrefix voterInfo
+	VoterKeyPrefix = "v"
+	// DelegatorsKeyPrfix voters of candidate
+	DelegatorsKeyPrfix = "vs"
+	// VotersKeyPrefix candidates of voter
+	VotersKeyPrefix = "ps"
+
+	// StateKeyPrefix globalState
+	StateKeyPrefix = "s"
 	// Separator Split characters
 	Separator = "_"
-
-	// CadidatesKey cadidates
-	CadidatesKey = "prods"
-	// CadidatesSizeKey cadidates size
-	CadidatesSizeKey = "prodsize"
-	// LastestStateKey lastest
-	LastestStateKey = "lastest"
 )
 
 // LDB dpos level db
@@ -68,6 +70,7 @@ type LDB struct {
 
 var _ IDB = &LDB{}
 
+// NewLDB new object
 func NewLDB(db IDatabase) (*LDB, error) {
 	ldb := &LDB{
 		IDatabase: db,
@@ -75,22 +78,306 @@ func NewLDB(db IDatabase) (*LDB, error) {
 	return ldb, nil
 }
 
-func (db *LDB) GetCadidate(name string) (*cadidateInfo, error) {
-	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
-	cadidateInfo := &cadidateInfo{}
+// SetCandidate update candidate info
+func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
+	key := strings.Join([]string{CandidateKeyPrefix, candidate.Name}, Separator)
+	if val, err := rlp.EncodeToBytes(candidate); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
+
+	// candidates
+	candidates := []string{}
+	pkey := strings.Join([]string{CandidateKeyPrefix, CandidatesKey}, Separator)
+	if pval, err := db.Get(pkey); err != nil {
+		return err
+	} else if pval == nil {
+
+	} else if err := rlp.DecodeBytes(pval, &candidates); err != nil {
+		return err
+	}
+
+	for _, name := range candidates {
+		if strings.Compare(name, candidate.Name) == 0 {
+			return nil
+		}
+	}
+
+	candidates = append(candidates, candidate.Name)
+	npval, err := rlp.EncodeToBytes(candidates)
+	if err != nil {
+		return err
+	}
+	if err := db.Put(pkey, npval); err != nil {
+		return err
+	}
+
+	skey := strings.Join([]string{CandidateKeyPrefix, CandidatesSizeKey}, Separator)
+	return db.Put(skey, uint64tobytes(uint64(len(candidates))))
+}
+
+// DelCandidate del candidate info
+func (db *LDB) DelCandidate(name string) error {
+	key := strings.Join([]string{CandidateKeyPrefix, name}, Separator)
+	if err := db.Delete(key); err != nil {
+		return err
+	}
+
+	// candidates
+	candidates := []string{}
+	pkey := strings.Join([]string{CandidateKeyPrefix, CandidatesKey}, Separator)
+	if pval, err := db.Get(pkey); err != nil {
+		return err
+	} else if pval == nil {
+
+	} else if err := rlp.DecodeBytes(pval, &candidates); err != nil {
+		return err
+	}
+	for index, prod := range candidates {
+		if strings.Compare(prod, name) == 0 {
+			candidates = append(candidates[:index], candidates[index+1:]...)
+			break
+		}
+	}
+
+	skey := strings.Join([]string{CandidateKeyPrefix, CandidatesSizeKey}, Separator)
+	if err := db.Put(skey, uint64tobytes(uint64(len(candidates)))); err != nil {
+		return err
+	}
+
+	if len(candidates) == 0 {
+		return db.Delete(pkey)
+	}
+	npval, err := rlp.EncodeToBytes(candidates)
+	if err != nil {
+		return err
+	}
+	return db.Put(pkey, npval)
+}
+
+// GetCandidate get candidate info by name
+func (db *LDB) GetCandidate(name string) (*CandidateInfo, error) {
+	key := strings.Join([]string{CandidateKeyPrefix, name}, Separator)
+	candidateInfo := &CandidateInfo{}
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
 		return nil, nil
-	} else if err := rlp.DecodeBytes(val, cadidateInfo); err != nil {
+	} else if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
 		return nil, err
 	}
-	return cadidateInfo, nil
+	return candidateInfo, nil
 }
 
-func (db *LDB) GetVoter(name string) (*voterInfo, error) {
-	key := strings.Join([]string{VoterKeyPrefix, name}, Separator)
-	voterInfo := &voterInfo{}
+// GetCandidates get all candidate info & sort
+func (db *LDB) GetCandidates() ([]string, error) {
+	// candidates
+	pkey := strings.Join([]string{CandidateKeyPrefix, CandidatesKey}, Separator)
+	candidates := []string{}
+	if pval, err := db.Get(pkey); err != nil {
+		return nil, err
+	} else if pval == nil {
+
+	} else if err := rlp.DecodeBytes(pval, &candidates); err != nil {
+		return nil, err
+	}
+	return candidates, nil
+}
+
+// CandidatesSize candidate len
+func (db *LDB) CandidatesSize() (uint64, error) {
+	size := uint64(0)
+	skey := strings.Join([]string{CandidateKeyPrefix, CandidatesSizeKey}, Separator)
+	if sval, err := db.Get(skey); err != nil {
+		return 0, err
+	} else if sval != nil {
+		size = bytestouint64(sval)
+	}
+	return size, nil
+}
+
+// SetAvailableQuantity set quantity
+func (db *LDB) SetAvailableQuantity(epcho uint64, voter string, quantity *big.Int) error {
+	key := strings.Join([]string{VoterQuantityPrefix, fmt.Sprintf("0x%x_%s", epcho, voter)}, Separator)
+	if val, err := rlp.EncodeToBytes(quantity); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetAvailableQuantity get quantity
+func (db *LDB) GetAvailableQuantity(epcho uint64, voter string) (*big.Int, error) {
+	key := strings.Join([]string{VoterQuantityPrefix, fmt.Sprintf("0x%x_%s", epcho, voter)}, Separator)
+	quantity := big.NewInt(0)
+	if val, err := db.Get(key); err != nil {
+		return nil, err
+	} else if val == nil {
+		return nil, nil
+	} else if err := rlp.DecodeBytes(val, quantity); err != nil {
+		return nil, err
+	}
+	return quantity, nil
+}
+
+// SetVoter update voter info
+func (db *LDB) SetVoter(voter *VoterInfo) error {
+	key := strings.Join([]string{VoterKeyPrefix, voter.key()}, Separator)
+	if val, err := rlp.EncodeToBytes(voter); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
+
+	// delegators
+	delegators := []string{}
+	ckey := strings.Join([]string{DelegatorsKeyPrfix, voter.ckey()}, Separator)
+
+	if cval, err := db.Get(ckey); err != nil {
+		return err
+	} else if cval == nil {
+
+	} else if err := rlp.DecodeBytes(cval, &delegators); err != nil {
+		return err
+	}
+	hasc := false
+	for _, name := range delegators {
+		if strings.Compare(name, voter.Name) == 0 {
+			hasc = true
+			break
+		}
+	}
+	if !hasc {
+		ncval, err := rlp.EncodeToBytes(append(delegators, voter.Name))
+		if err != nil {
+			return err
+		}
+		if err := db.Put(ckey, ncval); err != nil {
+			return err
+		}
+	}
+
+	// candidates
+	candidates := []string{}
+	vkey := strings.Join([]string{VotersKeyPrefix, voter.vkey()}, Separator)
+
+	if vval, err := db.Get(vkey); err != nil {
+		return err
+	} else if vval == nil {
+
+	} else if err := rlp.DecodeBytes(vval, &candidates); err != nil {
+		return err
+	}
+	for _, name := range candidates {
+		if strings.Compare(name, voter.Candidate) == 0 {
+			return nil
+		}
+	}
+	nvval, err := rlp.EncodeToBytes(append(candidates, voter.Candidate))
+	if err != nil {
+		return err
+	}
+	return db.Put(vkey, nvval)
+}
+
+// DelVoter delete voter info
+func (db *LDB) DelVoter(voter *VoterInfo) error {
+	key := strings.Join([]string{VoterKeyPrefix, voter.key()}, Separator)
+	if err := db.Delete(key); err != nil {
+		return err
+	}
+
+	// delegators
+	delegators := []string{}
+	ckey := strings.Join([]string{DelegatorsKeyPrfix, voter.ckey()}, Separator)
+	if cval, err := db.Get(ckey); err != nil {
+		return err
+	} else if cval == nil {
+
+	} else if err := rlp.DecodeBytes(cval, &delegators); err != nil {
+		return err
+	}
+	for index, delegator := range delegators {
+		if strings.Compare(delegator, voter.Name) == 0 {
+			delegators = append(delegators[:index], delegators[index+1:]...)
+			break
+		}
+	}
+	if len(delegators) == 0 {
+		if err := db.Delete(ckey); err != nil {
+			return err
+		}
+	} else {
+		ncval, err := rlp.EncodeToBytes(delegators)
+		if err != nil {
+			return err
+		}
+		if err := db.Put(ckey, ncval); err != nil {
+			return err
+		}
+	}
+
+	// candidates
+	candidates := []string{}
+	vkey := strings.Join([]string{VotersKeyPrefix, voter.vkey()}, Separator)
+
+	if vval, err := db.Get(vkey); err != nil {
+		return err
+	} else if vval == nil {
+
+	} else if err := rlp.DecodeBytes(vval, &candidates); err != nil {
+		return err
+	}
+	for index, name := range candidates {
+		if strings.Compare(name, voter.Candidate) == 0 {
+			candidates = append(candidates[:index], candidates[index+1:]...)
+			break
+		}
+	}
+	if len(candidates) == 0 {
+		if err := db.Delete(vkey); err != nil {
+			return err
+		}
+	} else {
+		nvval, err := rlp.EncodeToBytes(candidates)
+		if err != nil {
+			return err
+		}
+		if err := db.Put(vkey, nvval); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DelVoters delete voters info by candidate
+func (db *LDB) DelVoters(epcho uint64, candidate string) error {
+	voters, err := db.GetVoters(epcho, candidate)
+	if err != nil {
+		return err
+	}
+	for _, voter := range voters {
+		if voterInfo, err := db.GetVoter(epcho, voter, candidate); err != nil {
+			return err
+		} else if err := db.DelVoter(voterInfo); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// GetVoter voter info by name
+func (db *LDB) GetVoter(epcho uint64, voter string, candidate string) (*VoterInfo, error) {
+	vf := &VoterInfo{
+		Epcho:     epcho,
+		Name:      voter,
+		Candidate: candidate,
+	}
+	key := strings.Join([]string{VoterKeyPrefix, vf.key()}, Separator)
+	voterInfo := &VoterInfo{}
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
@@ -101,205 +388,63 @@ func (db *LDB) GetVoter(name string) (*voterInfo, error) {
 	return voterInfo, nil
 }
 
-// func (db *LDB) GetDelegators(cadidate string) ([]string, error) {
-// 	key := strings.Join([]string{DelegatorKeyPrfix, cadidate}, Separator)
-// 	delegators := []string{}
-// 	if val, err := db.Get(key); err != nil {
-// 		return nil, err
-// 	} else if val == nil {
-// 		return nil, nil
-// 	} else if err := rlp.DecodeBytes(val, &delegators); err != nil {
-// 		return nil, err
-// 	}
-// 	return delegators, nil
-// }
-
-func (db *LDB) SetCadidate(cadidate *cadidateInfo) error {
-	key := strings.Join([]string{CadidateKeyPrefix, cadidate.Name}, Separator)
-	if val, err := rlp.EncodeToBytes(cadidate); err != nil {
-		return err
-	} else if err := db.Put(key, val); err != nil {
-		return err
-	}
-
-	// cadidates
-	cadidates := []string{}
-	pkey := strings.Join([]string{CadidatesKeyPrefix, CadidatesKey}, Separator)
-	if pval, err := db.Get(pkey); err != nil {
-		return err
-	} else if pval == nil {
-
-	} else if err := rlp.DecodeBytes(pval, &cadidates); err != nil {
-		return err
-	}
-
-	for _, name := range cadidates {
-		if strings.Compare(name, cadidate.Name) == 0 {
-			return nil
-		}
-	}
-
-	cadidates = append(cadidates, cadidate.Name)
-	npval, err := rlp.EncodeToBytes(cadidates)
-	if err != nil {
-		return err
-	}
-	if err := db.Put(pkey, npval); err != nil {
-		return err
-	}
-
-	skey := strings.Join([]string{CadidatesKeyPrefix, CadidatesSizeKey}, Separator)
-	return db.Put(skey, uint64tobytes(uint64(len(cadidates))))
-}
-
-func (db *LDB) SetVoter(voter *voterInfo) error {
-	key := strings.Join([]string{VoterKeyPrefix, voter.Name}, Separator)
-	if val, err := rlp.EncodeToBytes(voter); err != nil {
-		return err
-	} else if err := db.Put(key, val); err != nil {
-		return err
-	}
-
-	// 	// delegators
-	// 	delegators := []string{}
-	// 	dkey := strings.Join([]string{DelegatorKeyPrfix, voter.Cadidate}, Separator)
-
-	// 	if dval, err := db.Get(dkey); err != nil {
-	// 		return err
-	// 	} else if dval == nil {
-
-	// 	} else if err := rlp.DecodeBytes(dval, &delegators); err != nil {
-	// 		return err
-	// 	}
-	// 	for _, name := range delegators {
-	// 		if strings.Compare(name, voter.Name) == 0 {
-	// 			return nil
-	// 		}
-	// 	}
-	// 	ndval, err := rlp.EncodeToBytes(append(delegators, voter.Name))
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	return db.Put(dkey, ndval)
-	return nil
-}
-
-func (db *LDB) DelCadidate(name string) error {
-	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
-	if err := db.Delete(key); err != nil {
-		return err
-	}
-
-	// cadidates
-	cadidates := []string{}
-	pkey := strings.Join([]string{CadidatesKeyPrefix, CadidatesKey}, Separator)
-	if pval, err := db.Get(pkey); err != nil {
-		return err
-	} else if pval == nil {
-
-	} else if err := rlp.DecodeBytes(pval, &cadidates); err != nil {
-		return err
-	}
-	for index, prod := range cadidates {
-		if strings.Compare(prod, name) == 0 {
-			cadidates = append(cadidates[:index], cadidates[index+1:]...)
-			break
-		}
-	}
-
-	skey := strings.Join([]string{CadidatesKeyPrefix, CadidatesSizeKey}, Separator)
-	if err := db.Put(skey, uint64tobytes(uint64(len(cadidates)))); err != nil {
-		return err
-	}
-
-	if len(cadidates) == 0 {
-		return db.Delete(pkey)
-	}
-	npval, err := rlp.EncodeToBytes(cadidates)
-	if err != nil {
-		return err
-	}
-	return db.Put(pkey, npval)
-}
-
-func (db *LDB) DelVoter(name string, cadidate string) error {
-	key := strings.Join([]string{VoterKeyPrefix, name}, Separator)
-	if err := db.Delete(key); err != nil {
-		return err
-	}
-
+// GetVoters voters info
+func (db *LDB) GetVoters(epcho uint64, candidate string) ([]string, error) {
 	// delegators
-	// delegators := []string{}
-	// dkey := strings.Join([]string{DelegatorKeyPrfix, cadidate}, Separator)
-	// if dval, err := db.Get(dkey); err != nil {
-	// 	return err
-	// } else if dval == nil {
+	vf := &VoterInfo{
+		Epcho:     epcho,
+		Candidate: candidate,
+	}
+	delegators := []string{}
+	ckey := strings.Join([]string{DelegatorsKeyPrfix, vf.ckey()}, Separator)
 
-	// } else if err := rlp.DecodeBytes(dval, &delegators); err != nil {
-	// 	return err
-	// }
-	// for index, voter := range delegators {
-	// 	if strings.Compare(voter, name) == 0 {
-	// 		delegators = append(delegators[:index], delegators[index+1:]...)
-	// 		break
-	// 	}
-	// }
-	// if len(delegators) == 0 {
-	// 	return db.Delete(dkey)
-	// }
-	// ndval, err := rlp.EncodeToBytes(delegators)
-	// if err != nil {
-	// 	return err
-	// }
-	// return db.Put(dkey, ndval)
+	if cval, err := db.Get(ckey); err != nil {
+		return nil, err
+	} else if cval == nil {
+
+	} else if err := rlp.DecodeBytes(cval, &delegators); err != nil {
+		return nil, err
+	}
+
+	return delegators, nil
+}
+
+// GetVoterCandidates candidates info
+func (db *LDB) GetVoterCandidates(epcho uint64, voter string) ([]string, error) {
+	// candidates
+	vf := &VoterInfo{
+		Epcho: epcho,
+		Name:  voter,
+	}
+	candidates := []string{}
+	vkey := strings.Join([]string{VotersKeyPrefix, vf.vkey()}, Separator)
+
+	if vval, err := db.Get(vkey); err != nil {
+		return nil, err
+	} else if vval == nil {
+
+	} else if err := rlp.DecodeBytes(vval, &candidates); err != nil {
+		return nil, err
+	}
+
+	return candidates, nil
+}
+
+// SetState set global state info
+func (db *LDB) SetState(gstate *GlobalState) error {
+	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(gstate.Epcho))}, Separator)
+	if val, err := rlp.EncodeToBytes(gstate); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
 	return nil
 }
 
-func (db *LDB) Cadidates() ([]*cadidateInfo, error) {
-	// cadidates
-	pkey := strings.Join([]string{CadidatesKeyPrefix, CadidatesKey}, Separator)
-	cadidates := []string{}
-	if pval, err := db.Get(pkey); err != nil {
-		return nil, err
-	} else if pval == nil {
-		return nil, nil
-	} else if err := rlp.DecodeBytes(pval, &cadidates); err != nil {
-		return nil, err
-	}
-
-	prods := cadidateInfoArray{}
-	for _, cadidate := range cadidates {
-		prod, err := db.GetCadidate(cadidate)
-		if err != nil {
-			return nil, err
-		}
-		prods = append(prods, prod)
-	}
-	sort.Sort(prods)
-	return prods, nil
-}
-
-func (db *LDB) CadidatesSize() (uint64, error) {
-	size := uint64(0)
-	skey := strings.Join([]string{CadidatesKeyPrefix, CadidatesSizeKey}, Separator)
-	if sval, err := db.Get(skey); err != nil {
-		return 0, err
-	} else if sval != nil {
-		size = bytestouint64(sval)
-	}
-	return size, nil
-}
-
-func (db *LDB) GetState(height uint64) (*globalState, error) {
-	if height == LastBlockHeight {
-		var err error
-		height, err = db.lastestHeight()
-		if err != nil {
-			return nil, err
-		}
-	}
-	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(height))}, Separator)
-	gstate := &globalState{}
+// GetState get state info
+func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
+	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(epcho))}, Separator)
+	gstate := &GlobalState{}
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
@@ -310,76 +455,18 @@ func (db *LDB) GetState(height uint64) (*globalState, error) {
 	return gstate, nil
 }
 
-func (db *LDB) SetState(gstate *globalState) error {
-	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(gstate.Height))}, Separator)
-	if val, err := rlp.EncodeToBytes(gstate); err != nil {
-		return err
-	} else if err := db.Put(key, val); err != nil {
-		return err
-	}
-
-	// if height, err := db.lastestHeight(); err != nil {
-	// 	return err
-	// } else if height > gstate.Height {
-	// 	panic("not reached")
-	// }
-
-	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
-	if err := db.Put(lkey, uint64tobytes(gstate.Height)); err != nil {
-		return err
-	}
-	return nil
-}
-func (db *LDB) DelState(height uint64) error {
-	if height == LastBlockHeight {
-		var err error
-		height, err = db.lastestHeight()
-		if err != nil {
-			return err
-		}
-	}
-	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(height))}, Separator)
-	return db.Delete(key)
-}
-
-func (db *LDB) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
-	key := strings.Join([]string{CadidateKeyPrefix, name}, Separator)
+// GetDelegatedByTime candidate delegate
+func (db *LDB) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
+	key := strings.Join([]string{CandidateKeyPrefix, candidate}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
-	if err != nil {
+	if val == nil || err != nil {
 		return big.NewInt(0), big.NewInt(0), 0, err
 	}
-	if val != nil {
-		cadidateInfo := &cadidateInfo{}
-		if err := rlp.DecodeBytes(val, cadidateInfo); err != nil {
-			return big.NewInt(0), big.NewInt(0), 0, err
-		}
-		return cadidateInfo.Quantity, cadidateInfo.TotalQuantity, cadidateInfo.Counter, nil
-	}
-
-	key = strings.Join([]string{VoterKeyPrefix, name}, Separator)
-	val, err = db.GetSnapshot(key, timestamp)
-	if err != nil {
+	candidateInfo := &CandidateInfo{}
+	if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
 		return big.NewInt(0), big.NewInt(0), 0, err
 	}
-	if val != nil {
-		voterInfo := &voterInfo{}
-		if err := rlp.DecodeBytes(val, voterInfo); err != nil {
-			return big.NewInt(0), big.NewInt(0), 0, err
-		}
-		return voterInfo.Quantity, big.NewInt(0), 0, nil
-	}
-	return big.NewInt(0), big.NewInt(0), 0, nil
-}
-
-func (db *LDB) lastestHeight() (uint64, error) {
-	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
-	if val, err := db.Get(lkey); err != nil {
-		return 0, err
-	} else if val == nil {
-		return 0, nil
-	} else {
-		return bytestouint64(val), nil
-	}
+	return candidateInfo.Quantity, candidateInfo.TotalQuantity, candidateInfo.Counter, nil
 }
 
 func uint64tobytes(i uint64) []byte {

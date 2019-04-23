@@ -35,12 +35,12 @@ import (
 
 var (
 	errMissingSignature           = errors.New("extra-data 65 byte suffix signature missing")
-	errMismatchSignerAndValidator = errors.New("mismatch block signer and cadidate")
+	errMismatchSignerAndValidator = errors.New("mismatch block signer and candidate")
 	errInvalidMintBlockTime       = errors.New("invalid time to mint the block")
-	errInvalidBlockCadidate       = errors.New("invalid block cadidate")
+	errInvalidBlockCandidate      = errors.New("invalid block candidate")
 	errInvalidTimestamp           = errors.New("invalid timestamp")
-	ErrIllegalCadidateName        = errors.New("illegal cadidate name")
-	ErrIllegalCadidatePubKey      = errors.New("illegal cadidate pubkey")
+	ErrIllegalCandidateName       = errors.New("illegal candidate name")
+	ErrIllegalCandidatePubKey     = errors.New("illegal candidate pubkey")
 	ErrTooMuchRreversible         = errors.New("too much rreversible blocks")
 	ErrSystemTakeOver             = errors.New("system account take over")
 	errUnknownBlock               = errors.New("unknown block")
@@ -69,27 +69,21 @@ func (s *stateDB) Delete(key string) error {
 	s.state.Delete(s.name, key)
 	return nil
 }
-func (s *stateDB) Delegate(from string, amount *big.Int) error {
-	return nil
-	// accountDB, err := accountmanager.NewAccountManager(s.state)
-	// if err != nil {
-	// 	return err
-	// }
-	// return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
-}
-func (s *stateDB) Undelegate(to string, amount *big.Int) error {
+func (s *stateDB) Undelegate(to string, amount *big.Int) (*types.Action, error) {
+	action := types.NewAction(types.Transfer, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil)
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
-		return err
+		return action, err
 	}
-	return accountDB.TransferAsset(common.StrToName(s.name), common.StrToName(to), s.assetid, amount)
+	return action, accountDB.TransferAsset(common.StrToName(s.name), common.StrToName(to), s.assetid, amount)
 }
-func (s *stateDB) IncAsset2Acct(from string, to string, amount *big.Int) error {
+func (s *stateDB) IncAsset2Acct(from string, to string, amount *big.Int) (*types.Action, error) {
+	action := types.NewAction(types.IncreaseAsset, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil)
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
-		return err
+		return action, err
 	}
-	return accountDB.IncAsset2Acct(common.StrToName(from), common.StrToName(to), s.assetid, amount)
+	return action, accountDB.IncAsset2Acct(common.StrToName(from), common.StrToName(to), s.assetid, amount)
 }
 func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
@@ -97,6 +91,13 @@ func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 		return false
 	}
 	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)) == nil
+}
+func (s *stateDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, error) {
+	accountDB, err := accountmanager.NewAccountManager(s.state)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	return accountDB.GetBalanceByTime(common.StrToName(name), s.assetid, 1, timestamp)
 }
 
 // Genesis dpos genesis store
@@ -107,7 +108,7 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 			state: state,
 		},
 	}
-	if err := db.SetCadidate(&cadidateInfo{
+	if err := db.SetCandidate(&candidateInfo{
 		Name:          cfg.SystemName,
 		URL:           cfg.SystemURL,
 		Quantity:      big.NewInt(0),
@@ -117,21 +118,21 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 		return err
 	}
 
-	activatedCadidateSchedule := []string{}
-	for i := uint64(0); i < cfg.CadidateScheduleSize; i++ {
-		activatedCadidateSchedule = append(activatedCadidateSchedule, cfg.SystemName)
+	activatedCandidateSchedule := []string{}
+	for i := uint64(0); i < cfg.CandidateScheduleSize; i++ {
+		activatedCandidateSchedule = append(activatedCandidateSchedule, cfg.SystemName)
 	}
 	if err := db.SetState(&globalState{
-		Height:                    height,
-		ActivatedTotalQuantity:    big.NewInt(0),
-		ActivatedCadidateSchedule: activatedCadidateSchedule,
+		Height:                     height,
+		ActivatedTotalQuantity:     big.NewInt(0),
+		ActivatedCandidateSchedule: activatedCandidateSchedule,
 	}); err != nil {
 		return err
 	}
 	if err := db.SetState(&globalState{
-		Height:                    height + 1,
-		ActivatedTotalQuantity:    big.NewInt(0),
-		ActivatedCadidateSchedule: activatedCadidateSchedule,
+		Height:                     height + 1,
+		ActivatedTotalQuantity:     big.NewInt(0),
+		ActivatedCandidateSchedule: activatedCandidateSchedule,
 	}); err != nil {
 		return err
 	}
@@ -158,7 +159,7 @@ func New(config *Config, chain consensus.IChainReader) *Dpos {
 	dpos := &Dpos{
 		config: config,
 	}
-	dpos.bftIrreversibles, _ = lru.New(int(config.CadidateScheduleSize))
+	dpos.bftIrreversibles, _ = lru.New(int(config.CandidateScheduleSize))
 	return dpos
 }
 
@@ -223,7 +224,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			tparent = chain.GetHeaderByHash(tparent.ParentHash)
 		}
 		// next epoch
-		sys.updateElectedCadidates(header.Time.Uint64())
+		sys.updateElectedCandidates(header.Time.Uint64())
 	}
 
 	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
@@ -239,12 +240,12 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		}
 	}
 
-	cadidate, err := sys.GetCadidate(header.Coinbase.String())
+	candidate, err := sys.GetCandidate(header.Coinbase.String())
 	if err != nil {
 		return nil, err
-	} else if cadidate != nil {
-		cadidate.Counter++
-		if err := sys.SetCadidate(cadidate); err != nil {
+	} else if candidate != nil {
+		candidate.Counter++
+		if err := sys.SetCandidate(candidate); err != nil {
 			return nil, err
 		}
 	}
@@ -315,7 +316,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return err
 	}
 
-	if err := dpos.IsValidateCadidate(chain, parent, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state, true); err != nil {
+	if err := dpos.IsValidateCandidate(chain, parent, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state, true); err != nil {
 		return err
 	}
 
@@ -334,8 +335,8 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 	return big.NewInt((int64(time)-timeOfGenesisBlock)/int64(dpos.config.blockInterval()) + 1)
 }
 
-//IsValidateCadidate current cadidate
-func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types.Header, timestamp uint64, cadidate string, pubkeys [][]byte, state *state.StateDB, force bool) error {
+//IsValidateCandidate current candidate
+func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *types.Header, timestamp uint64, candidate string, pubkeys [][]byte, state *state.StateDB, force bool) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
 	}
@@ -345,18 +346,18 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 		state: state,
 	}
 
-	if !common.IsValidAccountName(cadidate) {
-		return ErrIllegalCadidateName
+	if !common.IsValidAccountName(candidate) {
+		return ErrIllegalCandidateName
 	}
 
 	has := false
 	for _, pubkey := range pubkeys {
-		if db.IsValidSign(cadidate, pubkey) {
+		if db.IsValidSign(candidate, pubkey) {
 			has = true
 		}
 	}
 	if !has {
-		return ErrIllegalCadidatePubKey
+		return ErrIllegalCandidatePubKey
 	}
 
 	sys := &System{
@@ -371,7 +372,7 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 		return err
 	}
 
-	systemio := strings.Compare(cadidate, dpos.config.SystemName) == 0
+	systemio := strings.Compare(candidate, dpos.config.SystemName) == 0
 	if latest.TakeOver {
 		if force && systemio {
 			return nil
@@ -399,8 +400,8 @@ func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types
 		return err
 	}
 	offset := dpos.config.getoffset(timestamp)
-	if gstate == nil || offset >= uint64(len(gstate.ActivatedCadidateSchedule)) || strings.Compare(gstate.ActivatedCadidateSchedule[offset], cadidate) != 0 {
-		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCadidate, cadidate, gstate.ActivatedCadidateSchedule, offset, timestamp/dpos.config.epochInterval())
+	if gstate == nil || offset >= uint64(len(gstate.ActivatedCandidateSchedule)) || strings.Compare(gstate.ActivatedCandidateSchedule[offset], candidate) != 0 {
+		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCandidate, candidate, gstate.ActivatedCandidateSchedule, offset, timestamp/dpos.config.epochInterval())
 	}
 	return nil
 }
@@ -415,7 +416,7 @@ func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 	return dpos.config.slot(timestamp)
 }
 
-// IsFirst the first of cadidate
+// IsFirst the first of candidate
 func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
 }
@@ -462,7 +463,7 @@ func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, parent 
 	if parent != nil {
 		curHeader = chain.GetHeaderByHash(parent.Hash())
 	}
-	cadidateMap := make(map[string]uint64)
+	candidateMap := make(map[string]uint64)
 	timestamp := curHeader.Time.Uint64()
 	for curHeader.Number.Uint64() > 0 {
 		if strings.Compare(curHeader.Coinbase.String(), dpos.config.SystemName) == 0 {
@@ -471,8 +472,8 @@ func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, parent 
 		if strict && timestamp-curHeader.Time.Uint64() >= 2*dpos.config.epochInterval() {
 			break
 		}
-		cadidateMap[curHeader.Coinbase.String()]++
-		if uint64(len(cadidateMap)) >= dpos.config.consensusSize() {
+		candidateMap[curHeader.Coinbase.String()]++
+		if uint64(len(candidateMap)) >= dpos.config.consensusSize() {
 			return curHeader.Number.Uint64()
 		}
 		curHeader = chain.GetHeaderByHash(curHeader.ParentHash)

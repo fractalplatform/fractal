@@ -25,12 +25,12 @@
 		"dposParams": {
 			"maxURLLen": 512,
 			"unitStake": 1000,
-			"cadidateMinQuantity": 10,
+			"candidateMinQuantity": 10,
 			"voterMinQuantity": 1,
 			"activatedMinQuantity": 100,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
-			"cadidateScheduleSize": 3,
+			"candidateScheduleSize": 3,
 			"delayEcho": 2,
 			"extraBlockReward": 1,
 			"blockReward": 5
@@ -53,7 +53,7 @@
 		"name": "fractal.dpos",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}],
-	"allocCadidates": [],
+	"allocCandidates": [],
 	"allocAssets": [{
 		"name": "ftoken",
 		"symbol": "ft",
