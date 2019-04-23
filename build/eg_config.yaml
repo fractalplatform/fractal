@@ -6,7 +6,7 @@ log:
   # Prepends log messages with call-site location (file and line number)
   printorigins: false
   # Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail
-  level: 4
+  level: 3
   # Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. ft/*=5,p2p=4)
   vmodule: ""
   # Request a stack trace at a specific logging statement (e.g. \"block.go:271\")
@@ -23,7 +23,7 @@ node:
   # RPC:http host address
   httphost: "localhost"
   # RPC:http host port
-  httpport: 8888
+  httpport: 8545
   # RPC:http api's offered over the HTTP-RPC interface
   httpmodules: ["ft"]
   # RPC:Which to accept cross origin
@@ -33,13 +33,13 @@ node:
   # RPC:websocket host address
   wshost: "localhost"
   # RPC:websocket host port
-  wsport: 8889
+  wsport: 8546
   # RPC:ws api's offered over the WS-RPC interface
   wsmodules: ["ft"]
   # RPC:ws origins from which to accept websockets requests
   wsorigins: []
   # RPC:ws exposes all API modules via the WebSocket RPC interface rather than just the public ones.
-  wsexposall: true
+  wsexposall: false
   # Node list file. BootstrapNodes are used to establish connectivity with the rest of the network
   bootnodes: "./build/bootnodes.txt"
   # Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects
@@ -51,9 +51,9 @@ node:
     # The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.
     networkid: 1
     # The name sets the p2p node name of this server
-    name: “ft_p2p”
+    name: “Fractal-P2P”
     # Maximum number of network peers
-    maxpeers: 20
+    maxpeers: 10
     # Maximum number of pending connection attempts
     maxpendpeers: 10
     # DialRatio controls the ratio of inbound to dialed connections
@@ -103,9 +103,9 @@ ftservice:
     # Start miner generate block and process transaction
     start: false
     # Name for block mining rewards
-    name: "testminername"
+    name: "fractal.admin"
     # Hex of private key for block mining rewards
-    private: []
+    private: ["289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"]
     # Block extra data set by the miner
     extra: "system"
   metrics:
