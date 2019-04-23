@@ -1195,20 +1195,20 @@ func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name
 //}
 
 //Process account action
-func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalLog, error) {
+func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	snap := am.sdb.Snapshot()
-	internalLogs, err := am.process(accountManagerContext)
+	internalActions, err := am.process(accountManagerContext)
 	if err != nil {
 		am.sdb.RevertToSnapshot(snap)
 	}
-	return internalLogs, err
+	return internalActions, err
 }
 
-func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalLog, error) {
+func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
 
-	var internalLogs []*types.InternalLog
+	var internalActions []*types.InternalAction
 
 	if !action.CheckValue() {
 		return nil, ErrAmountValueInvalid
@@ -1242,9 +1242,11 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
 				return nil, err
 			}
+
 			actionX := types.NewAction(action.Type(), common.Name(sysName), acct.AccountName, 0, action.AssetID(), 0, action.Value(), nil)
 			internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 			internalLogs = append(internalLogs, internalLog)
+
 		}
 		break
 	case types.UpdateAccount:
@@ -1279,9 +1281,11 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return nil, err
 		}
+    
 		actionX := types.NewAction(action.Type(), common.Name(sysName), asset.GetAssetOwner(), 0, asset.GetAssetId(), 0, asset.GetAssetAmount(), nil)
 		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalLogs = append(internalLogs, internalLog)
+
 		break
 	case types.IncreaseAsset:
 		var inc IncAsset
@@ -1294,8 +1298,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 		actionX := types.NewAction(action.Type(), common.Name(accountFrom), inc.To, 0, 0, inc.AssetId, inc.Amount, nil)
-		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalLogs = append(internalLogs, internalLog)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 		break
 
 	case types.DestroyAsset:
@@ -1311,9 +1315,11 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.DestroyAsset(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
+
 		actionX := types.NewAction(action.Type(), common.Name(sysName), "", 0, action.AssetID(), 0, action.Value(), nil)
 		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalLogs = append(internalLogs, internalLog)
+
 		break
 	case types.UpdateAsset:
 		var asset asset.AssetObject
@@ -1384,5 +1390,5 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		return nil, ErrUnkownTxType
 	}
 
-	return internalLogs, nil
+	return internalActions, nil
 }

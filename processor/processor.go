@@ -94,7 +94,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	var totalGas uint64
 	var ios []*types.ActionResult
 	detailTx := &types.DetailTx{}
-	var internals []*types.InternalTx
+	var detailActions []*types.DetailAction
 	for i, action := range tx.GetActions() {
 		if needCheckSign(accountDB, action) {
 			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
@@ -144,7 +144,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			gasAllot = append(gasAllot, &types.GasDistribution{Account: account.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
-		internals = append(internals, &types.InternalTx{InterlnalLogs: vmenv.InternalTxs})
+		detailActions = append(detailActions, &types.DetailAction{InternalActions: vmenv.InternalTxs})
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
@@ -155,7 +155,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	receipt.Bloom = types.CreateBloom([]*types.Receipt{receipt})
 
 	detailTx.TxHash = receipt.TxHash
-	detailTx.InternalTxs = internals
+	detailTx.Actions = detailActions
 	receipt.SetInternalTxsLog(detailTx)
 	return receipt, totalGas, nil
 }
