@@ -55,7 +55,7 @@ type KickedCadidate struct {
 	Cadidates []string
 }
 
-func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
+func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
 	internalLogs, err := dpos.processAction(chainCfg, state, action)
 	if err != nil {
@@ -64,7 +64,7 @@ func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.State
 	return internalLogs, err
 }
 
-func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
+func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	sys := &System{
 		config: dpos.config,
 		IDB: &LDB{
@@ -76,7 +76,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		},
 	}
 
-	var internalLogs []*types.InternalLog
+	var internalActions []*types.InternalAction
 
 	if !action.CheckValue() {
 		return nil, accountmanager.ErrAmountValueInvalid
@@ -129,8 +129,8 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 			return nil, err
 		}
 		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
-		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalLogs = append(internalLogs, internalLog)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 	case types.RemoveVoter:
 		arg := &RemoveVoter{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
@@ -142,8 +142,8 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 				return nil, err
 			}
 			actionX := types.NewAction(action.Type(), action.Recipient(), common.Name(voter), 0, 0, action.AssetID(), stake, nil)
-			internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-			internalLogs = append(internalLogs, internalLog)
+			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+			internalActions = append(internalActions, internalAction)
 		}
 	case types.VoteCadidate:
 		arg := &VoteCadidate{}
@@ -167,8 +167,8 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 			return nil, err
 		}
 		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
-		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalLogs = append(internalLogs, internalLog)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 	case types.KickedCadidate:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for kicking cadidates")
@@ -190,5 +190,5 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	default:
 		return nil, accountmanager.ErrUnkownTxType
 	}
-	return internalLogs, nil
+	return internalActions, nil
 }
