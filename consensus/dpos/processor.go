@@ -128,7 +128,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
+		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, action.AssetID(), 0, stake, nil)
 		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalLogs = append(internalLogs, internalLog)
 	case types.RemoveVoter:
@@ -141,7 +141,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 			if err != nil {
 				return nil, err
 			}
-			actionX := types.NewAction(action.Type(), action.Recipient(), common.Name(voter), 0, 0, action.AssetID(), stake, nil)
+			actionX := types.NewAction(action.Type(), action.Recipient(), common.Name(voter), 0, action.AssetID(), 0, stake, nil)
 			internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 			internalLogs = append(internalLogs, internalLog)
 		}
@@ -166,7 +166,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, 0, action.AssetID(), stake, nil)
+		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, action.AssetID(), 0, stake, nil)
 		internalLog := &types.InternalLog{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalLogs = append(internalLogs, internalLog)
 	case types.KickedCadidate:
