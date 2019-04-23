@@ -41,6 +41,18 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.7 - 2019-04-23",
+		`### Removed
+- [WALLET] removed wallet module，the local node not support store private key
+### Added
+- [VM] add opt for opSnapBalance and destroyasset for contract
+- [BLOCKCHAIN] support import/export block
+- [RPC] add get the contract internal transaction
+### Fixed
+- [VM] add opt for opSnapBalance
+- [TYPES] fixs the base types
+- [ALL] fixs some bugs
+`,
 		"0.0.6 - 2019-04-04",
 		`### Added
 - [CRYPTO] add btcd secp256k1 crypto
