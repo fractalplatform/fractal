@@ -17,7 +17,7 @@
 package dpos
 
 import (
-	"encoding/json"
+	"fmt"
 	"math/big"
 	"sort"
 
@@ -31,106 +31,186 @@ type API struct {
 	chain consensus.IChainReader
 }
 
-type Irreversible_Ret struct {
+// Info get dpos info
+func (api *API) Info() (interface{}, error) {
+	return api.dpos.config, nil
+}
+
+// IrreversibleRet result
+type IrreversibleRet struct {
 	ProposedIrreversible uint64 `json:"proposedIrreversible"`
 	BftIrreversible      uint64 `json:"bftIrreversible"`
 	Reversible           uint64 `json:"reversible"`
 }
 
-func (api *API) Info() (interface{}, error) {
-	return api.dpos.config, nil
-}
-
+// Irreversible get irreversible info
 func (api *API) Irreversible() (interface{}, error) {
-	ret := &Irreversible_Ret{}
+	ret := &IrreversibleRet{}
 	ret.Reversible = api.chain.CurrentHeader().Number.Uint64()
 	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
 	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
-
 	return ret, nil
 }
 
-func (api *API) Account(name string) (interface{}, error) {
-
+// Candidate get candidate info of dpos
+func (api *API) Candidate(name string) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	if vote, err := sys.GetVoter(name); err != nil {
-		return nil, err
-	} else if vote != nil {
-		return vote, err
-	}
-
 	if prod, err := sys.GetCandidate(name); err != nil {
 		return nil, err
 	} else if prod != nil {
 		return prod, err
 	}
-
 	return nil, nil
 }
 
-func (api *API) Candidates() ([]map[string]interface{}, error) {
-	pfileds := []map[string]interface{}{}
-
+// Candidates all candidates info
+func (api *API) Candidates(detail bool) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	candidates, err := sys.Candidates()
+	candidates, err := sys.GetCandidates()
 	if err != nil || len(candidates) == 0 {
-		return pfileds, err
+		return nil, err
+	}
+	if !detail {
+		return candidates, nil
 	}
 
-	prods := candidateInfoArray{}
-	for _, prod := range candidates {
-		prods = append(prods, prod)
+	prods := CandidateInfoArray{}
+	for _, candidate := range candidates {
+		candidateInfo, err := sys.GetCandidate(candidate)
+		if err != nil {
+			return nil, err
+		}
+		prods = append(prods, candidateInfo)
 	}
 	sort.Sort(prods)
-	for _, prod := range prods {
-		fields := map[string]interface{}{}
-		cjson, err := json.Marshal(prod)
-		if err != nil {
-			return pfileds, err
-		}
-		if err := json.Unmarshal(cjson, &fields); err != nil {
-			return pfileds, err
-		}
-		pfileds = append(pfileds, fields)
-	}
-
-	return pfileds, nil
+	return prods, nil
 }
 
-func (api *API) Epcho(height uint64) (interface{}, error) {
+// VotersByCandidate get voters info of candidate
+func (api *API) VotersByCandidate(candidate string, detail bool) (interface{}, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	if gstate, err := sys.GetState(height); err != nil {
+	epcho, err := api.epcho(height)
+	if err != nil {
 		return nil, err
-	} else if gstate != nil {
-		return gstate, err
+	}
+	voters, err := sys.GetVoters(epcho, candidate)
+	if err != nil {
+		return nil, err
+	}
+	if !detail {
+		return voters, nil
 	}
 
-	return nil, nil
-}
-
-func (api *API) LatestEpcho() (interface{}, error) {
-	return api.Epcho(api.chain.CurrentHeader().Number.Uint64())
-}
-
-func (api *API) ValidateEpcho() (interface{}, error) {
-	curHeader := api.chain.CurrentHeader()
-	targetTS := big.NewInt(curHeader.Time.Int64() - int64(api.dpos.config.DelayEcho*api.dpos.config.epochInterval()))
-	for curHeader.Number.Uint64() > 0 {
-		if curHeader.Time.Cmp(targetTS) == -1 {
-			break
+	voterInfos := []*VoterInfo{}
+	for _, voter := range voters {
+		voterInfo, err := sys.GetVoter(epcho, voter, candidate)
+		if err != nil {
+			return nil, err
 		}
-		curHeader = api.chain.GetHeaderByHash(curHeader.ParentHash)
+		voterInfos = append(voterInfos, voterInfo)
 	}
-	return api.Epcho(curHeader.Number.Uint64() + 1)
+	return voterInfos, nil
+}
+
+// CandidatesByVoter get candidates info of voter
+func (api *API) CandidatesByVoter(voter string, detail bool) (interface{}, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	candidates, err := sys.GetVoterCandidates(epcho, voter)
+	if err != nil {
+		return nil, err
+	}
+	if !detail {
+		return candidates, nil
+	}
+
+	candidateInfos := []*CandidateInfo{}
+	for _, candidate := range candidates {
+		candidateInfo, err := sys.GetCandidate(candidate)
+		if err != nil {
+			return nil, err
+		}
+		candidateInfos = append(candidateInfos, candidateInfo)
+	}
+	return candidateInfos, nil
+}
+
+// GetAvailableStake get available stake
+func (api *API) GetAvailableStake(voter string) (*big.Int, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	candidates, err := sys.GetVoterCandidates(epcho, voter)
+	if err != nil {
+		return nil, err
+	}
+	if len(candidates) == 0 {
+		gstate, err := sys.GetState(epcho)
+		if err != nil {
+			return nil, err
+		}
+		pstate, err := sys.GetState(gstate.PreEpcho)
+		if err != nil {
+			return nil, err
+		}
+		return sys.GetBalanceByTime(voter, pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime)
+	}
+	return sys.GetAvailableQuantity(epcho, voter)
+}
+
+// ValidCandidates current valid candidates
+func (api *API) ValidCandidates() (interface{}, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.ValidCandidatesByHeight(height)
+}
+
+// ValidCandidatesByHeight valid candidates
+func (api *API) ValidCandidatesByHeight(height uint64) (interface{}, error) {
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	return api.validCandidates(epcho)
+}
+
+func (api *API) validCandidates(epcho uint64) (interface{}, error) {
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	return sys.GetState(epcho)
+}
+
+func (api *API) epcho(height uint64) (uint64, error) {
+	header := api.chain.GetHeaderByNumber(height)
+	if header == nil {
+		return 0, fmt.Errorf("not found height %v", height)
+	}
+	timestamp := api.chain.CurrentHeader().Time.Uint64()
+	return api.dpos.config.epoch(timestamp), nil
 }
 
 func (api *API) system() (*System, error) {
@@ -138,15 +218,7 @@ func (api *API) system() (*System, error) {
 	if err != nil {
 		return nil, err
 	}
-	sys := &System{
-		config: api.dpos.config,
-		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:  api.dpos.config.AccountName,
-				state: state,
-			},
-		},
-	}
+	sys := NewSystem(state, api.dpos.config)
 	return sys, nil
 }
 

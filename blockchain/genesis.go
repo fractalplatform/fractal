@@ -313,9 +313,17 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 	sys := dpos.NewSystem(statedb, g.Config, dposConfig(g.Config))
 	for _, candidate := range g.AllocCandidates {
-		_ = candidate
-		_ = sys
+		if err := db.SetCandidate(&CandidateInfo{
+			Name:          candidate.Name,
+			URL:           candidate.URL,
+			Quantity:      big.NewInt(0),
+			TotalQuantity: big.NewInt(0),
+			Height:        number.Uint64(),
+		}); err != nil {
+			return nil, err
+		}
 	}
+	sys.UpdateElectedCandidates(dpos.LastEpcho)
 
 	root := statedb.IntermediateRoot()
 	gjson, err := json.Marshal(g)

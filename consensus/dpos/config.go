@@ -20,8 +20,6 @@ import (
 	"math/big"
 	"sync/atomic"
 	"time"
-
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // DefaultConfig configures
@@ -43,6 +41,8 @@ var DefaultConfig = &Config{
 	ExtraBlockReward:      big.NewInt(1),
 	BlockReward:           big.NewInt(5),
 	Decimals:              18,
+	AssetID:               1,
+	ReferenceTime:         1555776000000, // 2019-04-21 00:00:00
 }
 
 // Config dpos configures
@@ -67,22 +67,13 @@ type Config struct {
 	InitCandidateSchedule []string `json:"initCandidateSchedule"`
 	Decimals              uint64   `json:"decimals"`
 	AssetID               uint64   `json:"assetID"`
+	ReferenceTime         uint64   `json:"referenceTime"`
 
 	// cache files
 	decimal    atomic.Value
 	blockInter atomic.Value
 	epochInter atomic.Value
 	safeSize   atomic.Value
-}
-
-// EncodeRLP  encoding the consensus fileds.
-func (cfg *Config) EncodeRLP() ([]byte, error) {
-	return rlp.EncodeToBytes(cfg)
-}
-
-// DecodeRLP decoding the consensus fields.
-func (cfg *Config) DecodeRLP(data []byte) error {
-	return rlp.DecodeBytes(data, &cfg)
 }
 
 func (cfg *Config) decimals() *big.Int {

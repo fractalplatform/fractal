@@ -108,31 +108,21 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 			state: state,
 		},
 	}
-	if err := db.SetCandidate(&candidateInfo{
+	if err := db.SetCandidate(&CandidateInfo{
 		Name:          cfg.SystemName,
 		URL:           cfg.SystemURL,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
-		Height:        0,
+		Height:        height,
 	}); err != nil {
 		return err
 	}
 
-	activatedCandidateSchedule := []string{}
-	for i := uint64(0); i < cfg.CandidateScheduleSize; i++ {
-		activatedCandidateSchedule = append(activatedCandidateSchedule, cfg.SystemName)
-	}
-	if err := db.SetState(&globalState{
-		Height:                     height,
-		ActivatedTotalQuantity:     big.NewInt(0),
-		ActivatedCandidateSchedule: activatedCandidateSchedule,
-	}); err != nil {
-		return err
-	}
-	if err := db.SetState(&globalState{
-		Height:                     height + 1,
-		ActivatedTotalQuantity:     big.NewInt(0),
-		ActivatedCandidateSchedule: activatedCandidateSchedule,
+	if err := db.SetState(&GlobalState{
+		Epcho:                  cfg.epoch(cfg.ReferenceTime),
+		ActivatedTotalQuantity: big.NewInt(0),
+		TotalQuantity:          big.NewInt(0),
+		Height:                 height,
 	}); err != nil {
 		return err
 	}
@@ -224,7 +214,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			tparent = chain.GetHeaderByHash(tparent.ParentHash)
 		}
 		// next epoch
-		sys.updateElectedCandidates(header.Time.Uint64())
+		//sys.updateElectedCandidates(header.Time.Uint64())
 	}
 
 	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
@@ -253,7 +243,8 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
-	sys.onblock(header.Number.Uint64())
+	//epcho := dpos.config.epoch(header.Time.Uint64())
+	//sys.onblock()
 
 	blk := types.NewBlock(header, txs, receipts)
 
@@ -386,14 +377,14 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return ErrTooMuchRreversible
 	}
 
-	targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
-	// find target block
-	for parent.Number.Uint64() > 0 {
-		if parent.Time.Cmp(targetTime) == -1 {
-			break
-		}
-		parent = chain.GetHeaderByHash(parent.ParentHash)
-	}
+	// targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
+	// // find target block
+	// for parent.Number.Uint64() > 0 {
+	// 	if parent.Time.Cmp(targetTime) == -1 {
+	// 		break
+	// 	}
+	// 	parent = chain.GetHeaderByHash(parent.ParentHash)
+	// }
 
 	gstate, err := sys.GetState(parent.Number.Uint64() + 1)
 	if err != nil {

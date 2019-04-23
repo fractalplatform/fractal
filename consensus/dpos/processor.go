@@ -45,16 +45,16 @@ type KickedCandidate struct {
 	Candidates []string
 }
 
-func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
+func (dpos *Dpos) ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
-	internalLogs, err := dpos.processAction(chainCfg, state, action)
+	internalLogs, err := dpos.processAction(height, chainCfg, state, action)
 	if err != nil {
 		state.RevertToSnapshot(snap)
 	}
 	return internalLogs, err
 }
 
-func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalLog, error) {
+func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	sys := NewSystem(state, dpos.config)
 	if !action.CheckValue() {
 		return nil, accountmanager.ErrAmountValueInvalid
@@ -84,7 +84,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
+		if err := sys.RegCandidate(LastEpcho, action.Sender().String(), arg.Url, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
@@ -92,11 +92,11 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
+		if err := sys.UpdateCandidate(LastEpcho, action.Sender().String(), arg.Url, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:
-		err := sys.UnregCandidate(action.Sender().String())
+		err := sys.UnregCandidate(LastEpcho, action.Sender().String())
 		if err != nil {
 			return nil, err
 		}
@@ -105,7 +105,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCandidate(action.Sender().String(), arg.Candidate, action.Value()); err != nil {
+		if err := sys.VoteCandidate(LastEpcho, action.Sender().String(), arg.Candidate, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.KickedCandidate:
@@ -117,7 +117,7 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 			return nil, err
 		}
 		for _, cadicate := range arg.Candidates {
-			if err := sys.KickedCandidate(cadicate); err != nil {
+			if err := sys.KickedCandidate(LastEpcho, cadicate); err != nil {
 				return nil, err
 			}
 		}
@@ -125,12 +125,11 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
-		if err := sys.ExitTakeOver(); err != nil {
+		if err := sys.ExitTakeOver(LastEpcho); err != nil {
 			return nil, err
 		}
-		sys.ExitTakeOver()
 	default:
 		return nil, accountmanager.ErrUnkownTxType
 	}
-	return sys.internalLogs, nil
+	return sys.internalActions, nil
 }

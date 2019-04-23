@@ -59,6 +59,8 @@ var (
 
 	// StateKeyPrefix globalState
 	StateKeyPrefix = "s"
+	// LastestStateKey lastest
+	LastestStateKey = "lastest"
 	// Separator Split characters
 	Separator = "_"
 )
@@ -438,11 +440,24 @@ func (db *LDB) SetState(gstate *GlobalState) error {
 	} else if err := db.Put(key, val); err != nil {
 		return err
 	}
+
+	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
+	if err := db.Put(lkey, uint64tobytes(gstate.Epcho)); err != nil {
+		return err
+	}
 	return nil
 }
 
 // GetState get state info
 func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
+	if epcho == LastEpcho {
+		var err error
+		epcho, err = db.lastestEpcho()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(epcho))}, Separator)
 	gstate := &GlobalState{}
 	if val, err := db.Get(key); err != nil {
@@ -467,6 +482,17 @@ func (db *LDB) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int,
 		return big.NewInt(0), big.NewInt(0), 0, err
 	}
 	return candidateInfo.Quantity, candidateInfo.TotalQuantity, candidateInfo.Counter, nil
+}
+
+func (db *LDB) lastestEpcho() (uint64, error) {
+	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
+	if val, err := db.Get(lkey); err != nil {
+		return 0, err
+	} else if val == nil {
+		return 0, nil
+	} else {
+		return bytestouint64(val), nil
+	}
 }
 
 func uint64tobytes(i uint64) []byte {

@@ -28,8 +28,8 @@ import (
 
 // System dpos internal contract
 type System struct {
-	config       *Config
-	internalLogs []*types.DetailTx
+	config          *Config
+	internalActions []*types.InternalAction
 	IDB
 }
 
@@ -129,7 +129,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	if action, err := sys.Undelegate(candidate, stake); err != nil {
 		return fmt.Errorf("undelegate %v failed(%v)", q, err)
 	} else {
-		sys.internalLogs = append(sys.internalLogs, &types.InternalLog{
+		sys.internalActions = append(sys.internalActions, &types.InternalAction{
 			Action: action.NewRPCAction(0),
 		})
 	}
@@ -147,13 +147,13 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 
 	gstate, err := sys.GetState(epcho)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
 	if err := sys.SetState(gstate); err != nil {
 		return err
 	}
-	return stake, nil
+	return nil
 }
 
 // UnregCandidate  unregister a candidate
@@ -176,7 +176,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string) error {
 	if action, err := sys.Undelegate(candidate, stake); err != nil {
 		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
 	} else {
-		sys.internalLogs = append(sys.internalLogs, &types.InternalLog{
+		sys.internalActions = append(sys.internalActions, &types.InternalAction{
 			Action: action.NewRPCAction(0),
 		})
 	}
@@ -212,7 +212,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string) error {
 }
 
 // VoteCandidate vote a candidate
-func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int) error {
+func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, height uint64) error {
 	// candidate validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -231,6 +231,10 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return fmt.Errorf("invalid stake %v(insufficient, voter min %v)", stake, new(big.Int).Mul(sys.config.VoterMinQuantity, sys.config.unitStake()))
 	}
 
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
 	// db
 	voterInfo, err := sys.GetVoter(epcho, voter, candidate)
 	if err != nil {
@@ -243,23 +247,25 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 			Candidate: candidate,
 			Quantity:  big.NewInt(0),
 		}
+		pstate, err := sys.GetState(gstate.PreEpcho)
+		if err != nil {
+			return err
+		}
+		bquantity, err := sys.GetBalanceByTime(voter, pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime)
+		if err != nil {
+			return err
+		}
+		m := new(big.Int)
+		quantity, _ := new(big.Int).DivMod(bquantity, sys.config.unitStake(), m)
+		if err := sys.SetAvailableQuantity(epcho, voter, quantity); err != nil {
+			return err
+		}
 	}
 
 	//db
 	quantity, err := sys.GetAvailableQuantity(epcho, voter)
 	if err != nil {
 		return err
-	} else if quantity == nil {
-		// TODO
-		bquantity, err := sys.GetBalanceByTime(voter, 0)
-		if err != nil {
-			return err
-		}
-		m := new(big.Int)
-		quantity, _ = new(big.Int).DivMod(bquantity, sys.config.unitStake(), m)
-		if err := sys.SetAvailableQuantity(epcho, voter, quantity); err != nil {
-			return err
-		}
 	}
 	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
 		return fmt.Errorf("invalid stake %v(insufficient) %v > %v", new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
@@ -267,6 +273,7 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return err
 	}
 
+	voterInfo.Height = height
 	voterInfo.Quantity = new(big.Int).Add(voterInfo.Quantity, q)
 	if err := sys.SetVoter(voterInfo); err != nil {
 		return err
@@ -277,10 +284,6 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return err
 	}
 
-	gstate, err := sys.GetState(epcho)
-	if err != nil {
-		return nil, err
-	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
 	if err := sys.SetState(gstate); err != nil {
 		return err
@@ -310,14 +313,14 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string) error {
 	if action, err := sys.Undelegate(sys.config.SystemName, stake); err != nil {
 		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
 	} else {
-		sys.internalLogs = append(sys.internalLogs, &types.InternalLog{
+		sys.internalActions = append(sys.internalActions, &types.InternalAction{
 			Action: action.NewRPCAction(0),
 		})
 	}
 
 	voters, err := sys.GetVoters(epcho, prod.Name)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, voter := range voters {
 		if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
@@ -337,7 +340,7 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string) error {
 	}
 	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
 	if err := sys.SetState(gstate); err != nil {
-		return nil, err
+		return err
 	}
 
 	prod.TotalQuantity = big.NewInt(0)
@@ -356,24 +359,33 @@ func (sys *System) ExitTakeOver(epcho uint64) error {
 	return sys.SetState(gstate)
 }
 
-func (sys *System) updateElectedCandidates(epcho uint64, preEpcho uint64, timestamp uint64, height uint64) error {
+func (sys *System) onblock(epcho uint64, preEpcho uint64, height uint64) error {
 	gstate, err := sys.GetState(epcho)
 	if err != nil || gstate != nil {
 		return err
 	}
+
 	pState, err := sys.GetState(preEpcho)
 	if err != nil {
 		return err
 	}
 	gstate = &GlobalState{
-		Epcho:                            epcho,
-		ActivatedTotalQuantity:           new(big.Int).SetBytes(pState.ActivatedTotalQuantity.Bytes()),
-		ActivatedCandidateSchedule:       pState.ActivatedCandidateSchedule,
-		ActivatedCandidateScheduleUpdate: timestamp,
-		TotalQuantity:                    new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
-		TakeOver:                         pState.TakeOver,
-		Dpos:                             pState.Dpos,
-		Height:                           height,
+		Epcho:                  epcho,
+		PreEpcho:               preEpcho,
+		ActivatedTotalQuantity: new(big.Int).SetBytes(pState.ActivatedTotalQuantity.Bytes()),
+		TotalQuantity:          new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
+		TakeOver:               pState.TakeOver,
+		Dpos:                   pState.Dpos,
+		Height:                 height,
+	}
+	return sys.SetState(gstate)
+}
+
+// UpdateElectedCandidates update
+func (sys *System) UpdateElectedCandidates(epcho uint64) error {
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
 	}
 
 	candidates, err := sys.GetCandidates()
@@ -386,31 +398,46 @@ func (sys *System) updateElectedCandidates(epcho uint64, preEpcho uint64, timest
 		gstate.Dpos = true
 	}
 
-	candidateInfoArray := CandidateInfoArray{}
-	for _, candidate := range candidates {
-		candidateInfo, err := sys.GetCandidate(candidate)
-		if err != nil {
-			return err
+	if !gstate.Dpos {
+		activeTotalQuantity := big.NewInt(0)
+		for index, candidate := range gstate.ActivatedCandidateSchedule {
+			candidateInfo, err := sys.GetCandidate(candidate)
+			if err != nil {
+				return err
+			}
+			if uint64(index) < sys.config.CandidateScheduleSize {
+				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
+			}
+			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
 		}
-		candidateInfoArray = append(candidateInfoArray, candidateInfo)
-	}
-	sort.Sort(candidateInfoArray)
+		gstate.ActivatedTotalQuantity = activeTotalQuantity
+	} else {
+		candidateInfoArray := CandidateInfoArray{}
+		for _, candidate := range candidates {
+			candidateInfo, err := sys.GetCandidate(candidate)
+			if err != nil {
+				return err
+			}
+			candidateInfoArray = append(candidateInfoArray, candidateInfo)
+		}
+		sort.Sort(candidateInfoArray)
 
-	activatedCandidateSchedule := []string{}
-	activeTotalQuantity := big.NewInt(0)
-	for _, candidateInfo := range candidateInfoArray {
-		if candidateInfo.InBlackList || candidateInfo.InJail || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-			continue
+		activatedCandidateSchedule := []string{}
+		activeTotalQuantity := big.NewInt(0)
+		for _, candidateInfo := range candidateInfoArray {
+			if candidateInfo.InBlackList || candidateInfo.InJail || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+				continue
+			}
+			activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+			if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
+				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
+			}
+			if uint64(len(activatedCandidateSchedule)) == n {
+				break
+			}
 		}
-		activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-		activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
-		if uint64(len(activatedCandidateSchedule)) == n {
-			break
-		}
+		gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+		gstate.ActivatedTotalQuantity = activeTotalQuantity
 	}
-	gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
-	gstate.ActivatedTotalQuantity = activeTotalQuantity
-	gstate.ActivatedCandidateScheduleUpdate = timestamp
-	gstate.Height = height
 	return sys.SetState(gstate)
 }

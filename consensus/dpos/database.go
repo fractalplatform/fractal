@@ -18,11 +18,15 @@ package dpos
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 
 	"github.com/fractalplatform/fractal/types"
 )
+
+// LastEpcho latest
+var LastEpcho = uint64(math.MaxUint64)
 
 // IDB dpos database
 type IDB interface {
@@ -87,14 +91,14 @@ func (voter *VoterInfo) vkey() string {
 
 // GlobalState dpos state
 type GlobalState struct {
-	Epcho                            uint64   `json:"epcho"`                            // epcho
-	ActivatedCandidateScheduleUpdate uint64   `json:"activatedCandidateScheduleUpdate"` // update time
-	ActivatedCandidateSchedule       []string `json:"activatedCandidateSchedule"`       // candidates
-	ActivatedTotalQuantity           *big.Int `json:"activatedTotalQuantity"`           // the sum of activate candidate votes
-	TotalQuantity                    *big.Int `json:"totalQuantity"`                    // the sum of all candidate votes
-	TakeOver                         bool     `json:"takeOver"`                         // systemio take over dpos
-	Dpos                             bool     `json:"dpos"`                             // dpos status
-	Height                           uint64   `json:"height"`                           // timestamp
+	Epcho                      uint64   `json:"epcho"`                      // epcho
+	PreEpcho                   uint64   `json:"preEpcho"`                   // epcho
+	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
+	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
+	TotalQuantity              *big.Int `json:"totalQuantity"`              // the sum of all candidate votes
+	TakeOver                   bool     `json:"takeOver"`                   // systemio take over dpos
+	Dpos                       bool     `json:"dpos"`                       // dpos status
+	Height                     uint64   `json:"height"`                     // timestamp
 }
 
 // CandidateInfoArray array of candidate
