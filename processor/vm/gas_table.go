@@ -319,14 +319,6 @@ func gasCall(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem
 		gas            = gt.Calls
 		transfersValue = stack.Back(2).Sign() != 0
 	)
-	name, err := common.BigToName(stack.Back(1))
-	if err != nil {
-		return 0, err
-	}
-	accountExist, _ := evm.AccountDB.AccountIsExist(name)
-	if transfersValue && accountExist {
-		gas += params.CallNewAccountGas
-	}
 	if transfersValue {
 		gas += params.CallValueTransferGas
 	}
@@ -381,6 +373,10 @@ func gasRevert(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, m
 	return memoryGasCost(mem, memorySize)
 }
 
+func gasInvalid(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return 0, nil
+}
+
 func gasSuicide(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	var gas uint64
 	//todo
@@ -428,6 +424,10 @@ func gasDelegateCall(gt params.GasTable, evm *EVM, contract *Contract, stack *St
 	return gas, nil
 }
 
+func gasIssueAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.IssueAsset, nil
+}
+
 func gasBalanceex(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.Balance, nil
 }
@@ -437,16 +437,37 @@ func gasGetAssetAmount(gt params.GasTable, evm *EVM, contract *Contract, stack *
 }
 
 func gasSnapBalance(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
-	return gt.GetAssetAmount, nil
+	return gt.SnapBalance, nil
+}
+
+func gasGetAccountTime(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetAccountTime, nil
 }
 
 func gasGetSnapshotTime(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.GetSnapshotTime, nil
 }
 
+func gasCryptoCalc(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.CryptoCalc, nil
+}
+
+func gasGetDelegate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetDelegate, nil
+}
 func gasAddAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 
-	return params.CallValueTransferGas + gt.Calls, nil
+	return gt.AddAsset, nil
+}
+
+func gasGetAccountID(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+
+	return gt.GetAccountID, nil
+}
+
+func gasDestroyAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+
+	return gt.DestroyAsset, nil
 }
 
 func gasSetAssetOwner(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

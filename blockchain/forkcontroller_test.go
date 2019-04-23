@@ -36,7 +36,7 @@ func TestForkController(t *testing.T) {
 	)
 
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
-	var height = int64(params.TheForkNum)
+	var height int64
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 8; i++ {
 
@@ -71,7 +71,7 @@ func TestUpdateDifferentForkBlock(t *testing.T) {
 	)
 
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
-	var height = int64(params.TheForkNum)
+	var height int64
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 7; i++ {
 			block := &types.Block{Head: &types.Header{Number: big.NewInt(height)}}
@@ -99,7 +99,7 @@ func TestFillForkID(t *testing.T) {
 
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
 
-	header := &types.Header{Number: big.NewInt(int64(params.TheForkNum))}
+	header := &types.Header{Number: big.NewInt(0)}
 
 	assert.NoError(t, fc.fillForkID(header, statedb))
 

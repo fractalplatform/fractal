@@ -32,9 +32,9 @@ type API struct {
 }
 
 type Irreversible_Ret struct {
-	ProposedIrreversible uint64
-	LastIrreversible     uint64
-	BftIrreversible      uint64
+	ProposedIrreversible uint64 `json:"proposedIrreversible"`
+	BftIrreversible      uint64 `json:"bftIrreversible"`
+	Reversible           uint64 `json:"reversible"`
 }
 
 func (api *API) Info() (interface{}, error) {
@@ -43,10 +43,9 @@ func (api *API) Info() (interface{}, error) {
 
 func (api *API) Irreversible() (interface{}, error) {
 	ret := &Irreversible_Ret{}
-
-	ret.ProposedIrreversible = api.dpos.proposedIrreversibleNum
-	ret.LastIrreversible = api.dpos.calcLastIrreversible()
-	ret.BftIrreversible = api.dpos.bftIrreversibleNum
+	ret.Reversible = api.chain.CurrentHeader().Number.Uint64()
+	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
+	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
 
 	return ret, nil
 }
@@ -63,7 +62,7 @@ func (api *API) Account(name string) (interface{}, error) {
 		return vote, err
 	}
 
-	if prod, err := sys.GetProducer(name); err != nil {
+	if prod, err := sys.GetCadidate(name); err != nil {
 		return nil, err
 	} else if prod != nil {
 		return prod, err
@@ -72,20 +71,20 @@ func (api *API) Account(name string) (interface{}, error) {
 	return nil, nil
 }
 
-func (api *API) Producers() ([]map[string]interface{}, error) {
+func (api *API) Cadidates() ([]map[string]interface{}, error) {
 	pfileds := []map[string]interface{}{}
 
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	producers, err := sys.Producers()
-	if err != nil || len(producers) == 0 {
+	cadidates, err := sys.Cadidates()
+	if err != nil || len(cadidates) == 0 {
 		return pfileds, err
 	}
 
-	prods := producerInfoArray{}
-	for _, prod := range producers {
+	prods := cadidateInfoArray{}
+	for _, prod := range cadidates {
 		prods = append(prods, prod)
 	}
 	sort.Sort(prods)
@@ -123,22 +122,15 @@ func (api *API) LatestEpcho() (interface{}, error) {
 }
 
 func (api *API) ValidateEpcho() (interface{}, error) {
-
-	cur_header := api.chain.CurrentHeader()
-	height := cur_header.Number.Uint64() - 1
-
-	target_ts := big.NewInt(cur_header.Time.Int64() - int64(api.dpos.config.DelayEcho*api.dpos.config.epochInterval()))
-
-	for height > 0 {
-		pheader := api.chain.GetHeaderByNumber(height)
-		if pheader.Time.Cmp(target_ts) != 1 {
+	curHeader := api.chain.CurrentHeader()
+	targetTS := big.NewInt(curHeader.Time.Int64() - int64(api.dpos.config.DelayEcho*api.dpos.config.epochInterval()))
+	for curHeader.Number.Uint64() > 0 {
+		if curHeader.Time.Cmp(targetTS) == -1 {
 			break
-		} else {
-			height -= 1
 		}
+		curHeader = api.chain.GetHeaderByHash(curHeader.ParentHash)
 	}
-
-	return api.Epcho(height)
+	return api.Epcho(curHeader.Number.Uint64() + 1)
 }
 
 func (api *API) system() (*System, error) {

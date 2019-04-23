@@ -17,8 +17,9 @@
 package asset
 
 import (
-	"github.com/fractalplatform/fractal/common"
 	"math/big"
+
+	"github.com/fractalplatform/fractal/common"
 )
 
 //export

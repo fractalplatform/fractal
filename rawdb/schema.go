@@ -25,17 +25,13 @@ import (
 
 // The fields below define the low level database schema prefixing.
 var (
-	// databaseVerisionKey tracks the current database version.
-	databaseVerisionKey = []byte("DatabaseVersion")
-
+	//irreversibleNumberKey tracks the blcokchain irreversible number
+	irreversibleNumberKey = []byte("irreversibleNumber")
 	// headHeaderKey tracks the latest know header's hash.
 	headHeaderKey = []byte("LastHeader")
 
 	// headBlockKey tracks the latest know full block's hash.
 	headBlockKey = []byte("LastBlock")
-
-	// headFastBlockKey tracks the latest known incomplete block's hash duirng fast sync.
-	headFastBlockKey = []byte("LastFast")
 
 	// Data item prefixes (use single byte to avoid mixing data types, avoid `i`, used for indexes).
 	headerPrefix       = []byte("h") // headerPrefix + num (uint64 big endian) + hash -> header
@@ -43,8 +39,9 @@ var (
 	headerHashSuffix   = []byte("n") // headerPrefix + num (uint64 big endian) + headerHashSuffix -> hash
 	headerNumberPrefix = []byte("H") // headerNumberPrefix + hash -> num (uint64 big endian)
 
-	blockBodyPrefix     = []byte("b") // blockBodyPrefix + num (uint64 big endian) + hash -> block body
-	blockReceiptsPrefix = []byte("r") // blockReceiptsPrefix + num (uint64 big endian) + hash -> block receipts
+	blockBodyPrefix      = []byte("b") // blockBodyPrefix + num (uint64 big endian) + hash -> block body
+	blockReceiptsPrefix  = []byte("r") // blockReceiptsPrefix + num (uint64 big endian) + hash -> block receipts
+	blockDetailTxsPrefix = []byte("d")
 
 	txLookupPrefix  = []byte("l") // txLookupPrefix + hash -> transaction/receipt lookup metadata
 	bloomBitsPrefix = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
@@ -78,6 +75,11 @@ func encodeBlockNumber(number uint64) []byte {
 	return enc
 }
 
+// decodeBlockNumber decodes bytes as uint64
+func decodeBlockNumber(dec []byte) uint64 {
+	return binary.BigEndian.Uint64(dec)
+}
+
 // headerKey = headerPrefix + num (uint64 big endian) + hash
 func headerKey(number uint64, hash common.Hash) []byte {
 	return append(append(headerPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
@@ -105,6 +107,11 @@ func blockBodyKey(number uint64, hash common.Hash) []byte {
 // blockReceiptsKey = blockReceiptsPrefix + num (uint64 big endian) + hash
 func blockReceiptsKey(number uint64, hash common.Hash) []byte {
 	return append(append(blockReceiptsPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
+}
+
+// blockDetailTxsKey = blockDetailTxsPrefix + num (uint64 big endian) + hash
+func blockDetailTxsKey(number uint64, hash common.Hash) []byte {
+	return append(append(blockDetailTxsPrefix, encodeBlockNumber(number)...), hash.Bytes()...)
 }
 
 // blockStatePrefix + num (uint64 big endian) + hash -> block revert info

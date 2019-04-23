@@ -20,7 +20,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// GasTable organizes gas prices for different ethereum phases.
+// GasTable organizes gas prices for different phases.
 type GasTable struct {
 	ExtcodeSize uint64
 	ExtcodeCopy uint64
@@ -38,14 +38,21 @@ type GasTable struct {
 	// not charged.
 	CreateBySuicide uint64
 	SetOwner        uint64
+	GetAccountTime  uint64
 	GetSnapshotTime uint64
 	GetAssetAmount  uint64
 	SnapBalance     uint64
+	IssueAsset      uint64
+	DestroyAsset    uint64
+	AddAsset        uint64
+	GetAccountID    uint64
+	GetDelegate     uint64
+	CryptoCalc      uint64
+	CryptoByte      uint64
 }
 
-// Variables containing gas prices for different ethereum phases.
+// Variables containing gas prices for different phases.
 var (
-
 	// GasTable contain the gas re-prices
 	GasTableInstanse = GasTable{
 		ExtcodeSize: 700,
@@ -58,9 +65,17 @@ var (
 
 		CreateBySuicide: 25000,
 		SetOwner:        200,
+		GetAccountTime:  200,
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
 		SnapBalance:     200,
+		IssueAsset:      200,
+		DestroyAsset:    200,
+		AddAsset:        200,
+		GetAccountID:    200,
+		GetDelegate:     200,
+		CryptoCalc:      20000,
+		CryptoByte:      1000,
 	}
 )
 

@@ -55,10 +55,7 @@ type Config struct {
 // sets defaults on the config
 func setDefaults(cfg *Config) {
 	if cfg.ChainConfig == nil {
-		cfg.ChainConfig = &params.ChainConfig{
-			ContractChargeRatio: 80,
-			AssetChargeRatio:    80,
-		}
+		cfg.ChainConfig = params.DefaultChainconfig
 		//cfg.ChainConfig = &params.ChainConfig{
 		//	ChainID:        big.NewInt(1),
 		//	HomesteadBlock: new(big.Int),
@@ -102,10 +99,12 @@ func NewEnv(cfg *Config) *vm.EVM {
 	context := vm.Context{
 		//CanTransfer: vm.CanTransfer,
 		//Transfer:    vm.Transfer,
-		GetHash:     func(uint64) common.Hash { return common.Hash{} },
+		GetHash: func(uint64) common.Hash { return common.Hash{} },
+		GetDelegatedByTime: func(string, uint64, *state.StateDB) (*big.Int, *big.Int, uint64, error) {
+			return big.NewInt(0), big.NewInt(0), 0, nil
+		},
 		Origin:      cfg.Origin,
 		From:        cfg.Origin,
-		FromPubkey:  cfg.FromPubkey,
 		Coinbase:    cfg.Coinbase,
 		BlockNumber: cfg.BlockNumber,
 		Time:        cfg.Time,

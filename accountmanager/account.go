@@ -17,8 +17,10 @@
 package accountmanager
 
 import (
+	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -28,6 +30,17 @@ import (
 type AssetBalance struct {
 	AssetID uint64   `json:"assetID"`
 	Balance *big.Int `json:"balance"`
+}
+
+type recoverActionResult struct {
+	acctAuthors map[common.Name]*accountAuthor
+}
+
+type accountAuthor struct {
+	threshold             uint64
+	updateAuthorThreshold uint64
+	version               uint64
+	indexWeight           map[uint64]uint64
 }
 
 func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
@@ -41,16 +54,22 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 //Account account object
 type Account struct {
 	//LastTime *big.Int
-	AcctName    common.Name   `json:"accountName"`
-	Founder     common.Name   `json:"founder"`
-	ChargeRatio uint64        `json:"chargeRatio"`
-	Nonce       uint64        `json:"nonce"`
-	PublicKey   common.PubKey `json:"publicKey"`
-	Code        []byte        `json:"code"`
-	CodeHash    common.Hash   `json:"codeHash"`
-	CodeSize    uint64        `json:"codeSize"`
+	AcctName              common.Name `json:"accountName"`
+	Founder               common.Name `json:"founder"`
+	AccountID             uint64      `json:"accountID"`
+	Number                uint64      `json:"number"`
+	ChargeRatio           uint64      `json:"chargeRatio"`
+	Nonce                 uint64      `json:"nonce"`
+	Code                  []byte      `json:"code"`
+	CodeHash              common.Hash `json:"codeHash"`
+	CodeSize              uint64      `json:"codeSize"`
+	Threshold             uint64      `json:"threshold"`
+	UpdateAuthorThreshold uint64      `json:"updateAuthorThreshold"`
+	AuthorVersion         uint64      `json:"authorVersion"`
 	//sort by asset id asc
 	Balances []*AssetBalance `json:"balances"`
+	//realated account, pubkey and address
+	Authors []*common.Author `json:"authors"`
 	//code Suicide
 	Suicide bool `json:"suicide"`
 	//account destroy
@@ -59,25 +78,40 @@ type Account struct {
 
 // NewAccount create a new account object.
 func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey) (*Account, error) {
-	if !common.IsValidName(accountName.String()) {
+	if !common.IsValidAccountName(accountName.String()) {
 		return nil, ErrAccountNameInvalid
 	}
 
+	auth := common.NewAuthor(pubkey, 1)
 	acctObject := Account{
-		AcctName:    accountName,
-		Founder:     founderName,
-		ChargeRatio: 0,
-		PublicKey:   pubkey,
-		Nonce:       0,
-		Balances:    make([]*AssetBalance, 0),
-		Code:        make([]byte, 0),
-		CodeHash:    crypto.Keccak256Hash(nil),
-		Suicide:     false,
-		Destroy:     false,
+		AcctName:              accountName,
+		Founder:               founderName,
+		AccountID:             0,
+		Number:                0,
+		ChargeRatio:           0,
+		Nonce:                 0,
+		Balances:              make([]*AssetBalance, 0),
+		Code:                  make([]byte, 0),
+		CodeHash:              crypto.Keccak256Hash(nil),
+		Threshold:             1,
+		UpdateAuthorThreshold: 1,
+		AuthorVersion:         1,
+		Authors:               []*common.Author{auth},
+		Suicide:               false,
+		Destroy:               false,
 	}
 	return &acctObject, nil
 }
 
+//HaveCode check account have code
+func (a *Account) HaveCode() bool {
+	if a.GetCodeSize() == 0 {
+		return false
+	}
+	return true
+}
+
+// IsEmpty check account empty
 func (a *Account) IsEmpty() bool {
 	if a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0 {
 		return true
@@ -90,18 +124,42 @@ func (a *Account) GetName() common.Name {
 	return a.AcctName
 }
 
+//GetFounder return account object founder
 func (a *Account) GetFounder() common.Name {
 	return a.Founder
 }
 
+//SetFounder set account object founder
 func (a *Account) SetFounder(f common.Name) {
 	a.Founder = f
 }
 
+//GetAccountID return account object id
+func (a *Account) GetAccountID() uint64 {
+	return a.AccountID
+}
+
+//SetAccountID set account object id
+func (a *Account) SetAccountID(id uint64) {
+	a.AccountID = id
+}
+
+//GetAccountNumber return account object number
+func (a *Account) GetAccountNumber() uint64 {
+	return a.Number
+}
+
+//SetAccountNumber set account object number
+func (a *Account) SetAccountNumber(number uint64) {
+	a.Number = number
+}
+
+//GetChargeRatio return account charge ratio
 func (a *Account) GetChargeRatio() uint64 {
 	return a.ChargeRatio
 }
 
+//SetChargeRatio set account object charge ratio
 func (a *Account) SetChargeRatio(ra uint64) {
 	a.ChargeRatio = ra
 }
@@ -116,14 +174,12 @@ func (a *Account) SetNonce(nonce uint64) {
 	a.Nonce = nonce
 }
 
-//GetPubKey get bugkey
-func (a *Account) GetPubKey() common.PubKey {
-	return a.PublicKey
+func (a *Account) GetAuthorVersion() uint64 {
+	return a.AuthorVersion
 }
 
-//SetPubKey set pub key
-func (a *Account) SetPubKey(pubkey common.PubKey) {
-	a.PublicKey.SetBytes(pubkey.Bytes())
+func (a *Account) SetAuthorVersion() {
+	a.AuthorVersion++
 }
 
 //GetCode get code
@@ -150,6 +206,52 @@ func (a *Account) SetCode(code []byte) error {
 	return nil
 }
 
+func (a *Account) GetThreshold() uint64 {
+	return a.Threshold
+}
+
+func (a *Account) SetThreshold(t uint64) {
+	a.Threshold = t
+}
+
+func (a *Account) SetUpdateAuthorThreshold(t uint64) {
+	a.UpdateAuthorThreshold = t
+}
+
+func (a *Account) GetUpdateAuthorThreshold() uint64 {
+	return a.UpdateAuthorThreshold
+}
+
+func (a *Account) AddAuthor(author *common.Author) error {
+	for _, auth := range a.Authors {
+		if author.Owner.String() == auth.Owner.String() {
+			return fmt.Errorf("%s already exist", auth.Owner.String())
+		}
+	}
+	a.Authors = append(a.Authors, author)
+	return nil
+}
+
+func (a *Account) UpdateAuthor(author *common.Author) error {
+	for _, auth := range a.Authors {
+		if author.Owner.String() == auth.Owner.String() {
+			auth.Weight = author.Weight
+			break
+		}
+	}
+	return nil
+}
+
+func (a *Account) DeleteAuthor(author *common.Author) error {
+	for i, auth := range a.Authors {
+		if author.Owner.String() == auth.Owner.String() {
+			a.Authors = append(a.Authors[:i], a.Authors[i+1:]...)
+			break
+		}
+	}
+	return nil
+}
+
 // GetCodeHash get code hash
 func (a *Account) GetCodeHash() (common.Hash, error) {
 	if len(a.CodeHash) == 0 {
@@ -166,6 +268,7 @@ func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	if p, find := a.binarySearch(assetID); find == true {
 		return a.Balances[p].Balance, nil
 	}
+	log.Debug("get balance by ID", "err", ErrAccountAssetNotExist, "account", a.AcctName, "asset", assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
 
@@ -310,13 +413,13 @@ func (a *Account) SetSuicide() {
 	a.Suicide = true
 }
 
-//IsDestoryed is destoryed
-func (a *Account) IsDestoryed() bool {
+//IsDestroyed is destroyed
+func (a *Account) IsDestroyed() bool {
 	return a.Destroy
 }
 
-//SetDestory set destory
-func (a *Account) SetDestory() {
+//SetDestroy set destroy
+func (a *Account) SetDestroy() {
 	//just make a sign now
 	a.Destroy = true
 }

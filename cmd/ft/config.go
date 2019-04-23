@@ -13,59 +13,101 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package main
 
 import (
-	"io"
-	"os"
-
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/fractalplatform/fractal/ftservice/gasprice"
+	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/node"
-	colorable "github.com/mattn/go-colorable"
-	"github.com/mattn/go-isatty"
+	"github.com/fractalplatform/fractal/p2p"
+	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/txpool"
 )
 
-var glogger *log.GlogHandler
+var (
+	//ft config instance
+	ftCfgInstance = defaultFtConfig()
+)
 
 type ftConfig struct {
-	ConfigFileFlag  string
-	GenesisFileFlag string
-	NodeCfg         *node.Config
-	FtServiceCfg    *ftservice.Config
+	GenesisFile  string            `mapstructure:"genesis"`
+	LogCfg       *utils.LogConfig  `mapstructure:"log"`
+	NodeCfg      *node.Config      `mapstructure:"node"`
+	FtServiceCfg *ftservice.Config `mapstructure:"ftservice"`
 }
 
-// LogConfig log config
-type LogConfig struct {
-	PrintOrigins bool   `mapstructure:"log-printorigins"`
-	Level        int    `mapstructure:"log-level"`
-	Vmodule      string `mapstructure:"log-vmodule"`
-	BacktraceAt  string `mapstructure:"log-backtraceat"`
-}
-
-func defaultLogConfig() *LogConfig {
-	return &LogConfig{
-		PrintOrigins: false,
-		Level:        3,
+func defaultFtConfig() *ftConfig {
+	return &ftConfig{
+		LogCfg:       utils.DefaultLogConfig(),
+		NodeCfg:      defaultNodeConfig(),
+		FtServiceCfg: defaultFtServiceConfig(),
 	}
 }
 
-func init() {
-	usecolor := (isatty.IsTerminal(os.Stderr.Fd()) || isatty.IsCygwinTerminal(os.Stderr.Fd())) && os.Getenv("TERM") != "dumb"
-	output := io.Writer(os.Stderr)
-	if usecolor {
-		output = colorable.NewColorableStderr()
+func defaultNodeConfig() *node.Config {
+	return &node.Config{
+		Name:              params.ClientIdentifier,
+		DataDir:           defaultDataDir(),
+		UseLightweightKDF: false,
+		IPCPath:           params.ClientIdentifier + ".ipc",
+		HTTPHost:          "localhost",
+		HTTPPort:          8545,
+		HTTPModules:       []string{"ft", "miner", "dpos", "account", "txpool"},
+		HTTPVirtualHosts:  []string{"localhost"},
+		HTTPCors:          []string{"*"},
+		WSHost:            "localhost",
+		WSPort:            8546,
+		WSModules:         []string{"ft"},
+		Logger:            log.New(),
+		P2PConfig:         defaultP2pConfig(),
 	}
-
-	glogger = log.NewGlogHandler(log.StreamHandler(output, log.TerminalFormat(usecolor)))
 }
 
-//Setup initializes logging based on the LogConfig
-func (lc *LogConfig) Setup() {
-	// logging
-	log.PrintOrigins(lc.PrintOrigins)
-	glogger.Verbosity(log.Lvl(lc.Level))
-	glogger.Vmodule(lc.Vmodule)
-	glogger.BacktraceAt(lc.BacktraceAt)
-	log.Root().SetHandler(glogger)
+func defaultP2pConfig() *p2p.Config {
+	cfg := &p2p.Config{
+		MaxPeers:   10,
+		Name:       "Fractal-P2P",
+		ListenAddr: ":2018",
+	}
+	return cfg
+}
+
+func defaultFtServiceConfig() *ftservice.Config {
+	return &ftservice.Config{
+		DatabaseHandles: makeDatabaseHandles(),
+		DatabaseCache:   768,
+		TxPool:          txpool.DefaultTxPoolConfig,
+		Miner:           defaultMinerConfig(),
+		GasPrice: gasprice.Config{
+			Blocks:     20,
+			Percentile: 60,
+		},
+		MetricsConf:     defaultMetricsConfig(),
+		ContractLogFlag: false,
+		Snapshot:        true,
+	}
+}
+
+func defaultMinerConfig() *ftservice.MinerConfig {
+	return &ftservice.MinerConfig{
+		Name:        params.DefaultChainconfig.SysName,
+		PrivateKeys: []string{"289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"},
+		ExtraData:   "system",
+	}
+}
+
+func defaultMetricsConfig() *metrics.Config {
+	return &metrics.Config{
+		MetricsFlag:  false,
+		InfluxDBFlag: false,
+		URL:          "http://localhost:8086",
+		DataBase:     "metrics",
+		UserName:     "",
+		PassWd:       "",
+		NameSpace:    "fractal/",
+	}
 }

@@ -25,4 +25,6 @@ var (
 	ErrTraceLimitReached        = errors.New("the number of logs reached the specified limit")
 	ErrInsufficientBalance      = errors.New("insufficient balance for transfer")
 	ErrContractAddressCollision = errors.New("contract name collision")
+	ErrContractCodeCollision    = errors.New("contract code collision")
+	ErrAccountNotExist          = errors.New("account not exist")
 )

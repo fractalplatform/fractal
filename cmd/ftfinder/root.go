@@ -35,9 +35,9 @@ var nodeConfig = node.Config{
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	//	Use:   "ftfinder",
-	//	Short: "ftfinder is a fractal node discoverer",
-	//	Long:  `ftfinder is a fractal node discoverer`,
+	Use:   "ftfinder",
+	Short: "ftfinder is a fractal node discoverer",
+	Long:  `ftfinder is a fractal node discoverer`,
 
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -62,18 +62,42 @@ var RootCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(utils.VersionCmd)
-	falgs := RootCmd.Flags()
+	flags := RootCmd.Flags()
 	// p2p
-	falgs.StringVarP(&nodeConfig.DataDir, "datadir", "d", nodeConfig.DataDir, "Data directory for the databases and keystore")
-	falgs.StringVar(&nodeConfig.P2PConfig.ListenAddr, "p2p_listenaddr", nodeConfig.P2PConfig.ListenAddr,
-		"Network listening address")
-	falgs.StringVar(&nodeConfig.P2PConfig.NodeDatabase, "p2p_nodedb", nodeConfig.P2PConfig.NodeDatabase,
-		"The path to the database containing the previously seen live nodes in the network")
+	flags.StringVarP(
+		&nodeConfig.DataDir,
+		"datadir", "d",
+		nodeConfig.DataDir,
+		"Data directory for the databases ",
+	)
 
-	falgs.UintVar(&nodeConfig.P2PConfig.NetworkID, "p2p_id", nodeConfig.P2PConfig.NetworkID,
-		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.")
-	falgs.StringVar(&nodeConfig.P2PBootNodes, "p2p_bootnodes", nodeConfig.P2PBootNodes,
-		"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network")
+	flags.StringVar(
+		&nodeConfig.P2PConfig.ListenAddr,
+		"p2p_listenaddr",
+		nodeConfig.P2PConfig.ListenAddr,
+		"Network listening address",
+	)
+
+	flags.StringVar(
+		&nodeConfig.P2PConfig.NodeDatabase,
+		"p2p_nodedb",
+		nodeConfig.P2PConfig.NodeDatabase,
+		"The path to the database containing the previously seen live nodes in the network",
+	)
+
+	flags.UintVar(
+		&nodeConfig.P2PConfig.NetworkID,
+		"p2p_id",
+		nodeConfig.P2PConfig.NetworkID,
+		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.",
+	)
+
+	flags.StringVar(
+		&nodeConfig.P2PBootNodes,
+		"p2p_bootnodes",
+		nodeConfig.P2PBootNodes,
+		"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network",
+	)
 	defaultLogConfig().Setup()
 }
 

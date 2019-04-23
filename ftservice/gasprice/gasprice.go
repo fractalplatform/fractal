@@ -23,23 +23,23 @@ import (
 	"sync"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/internal/api"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/rpcapi"
 	"github.com/fractalplatform/fractal/types"
 )
 
 var maxPrice = big.NewInt(500 * 1e9)
 
 type Config struct {
-	Blocks     int `mapstructure:"gpo-blocks"`
-	Percentile int `mapstructure:"gpo-percentile"`
+	Blocks     int `mapstructure:"blocks"`
+	Percentile int `mapstructure:"percentile"`
 	Default    *big.Int
 }
 
 // Oracle recommends gas prices based on the content of recent
 // blocks. Suitable for both light and full clients.
 type Oracle struct {
-	backend   api.Backend
+	backend   rpcapi.Backend
 	lastHead  common.Hash
 	lastPrice *big.Int
 	cacheLock sync.RWMutex
@@ -50,7 +50,7 @@ type Oracle struct {
 }
 
 // NewOracle returns a new oracle.
-func NewOracle(backend api.Backend, params Config) *Oracle {
+func NewOracle(backend rpcapi.Backend, params Config) *Oracle {
 	blocks := params.Blocks
 	if blocks < 1 {
 		blocks = 1

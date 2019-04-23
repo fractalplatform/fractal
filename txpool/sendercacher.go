@@ -63,7 +63,7 @@ func (cacher *txSenderCacher) cache() {
 	for task := range cacher.tasks {
 		for i := 0; i < len(task.txs); i += task.inc {
 			for _, a := range task.txs[i].GetActions() {
-				types.Recover(task.signer, a, task.txs[i])
+				types.RecoverMultiKey(task.signer, a, task.txs[i])
 			}
 		}
 	}

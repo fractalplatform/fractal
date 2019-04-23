@@ -62,10 +62,12 @@ type Worker struct {
 
 	currentWork *Work
 
+	wg         sync.WaitGroup
 	mining     int32
 	quitWork   chan struct{}
 	quitWorkRW sync.RWMutex
 	quit       chan struct{}
+	force      bool
 }
 
 func newWorker(consensus consensus.IConsensus) *Worker {
@@ -106,6 +108,7 @@ out:
 		case ev := <-txsCh:
 			// Apply transactions to the pending state if we're not mining.
 			if atomic.LoadInt32(&worker.mining) == 0 {
+				worker.wg.Wait()
 				txs := make(map[common.Name][]*types.Transaction)
 				for _, tx := range ev.Data.([]*types.Transaction) {
 					action := tx.GetActions()[0]
@@ -123,15 +126,18 @@ out:
 	}
 }
 
-func (worker *Worker) start() {
+func (worker *Worker) start(force bool) {
 	if !atomic.CompareAndSwapInt32(&worker.mining, 0, 1) {
 		log.Warn("worker already started")
 		return
 	}
+	worker.force = force
 	go worker.mintLoop()
 }
 
 func (worker *Worker) mintLoop() {
+	worker.wg.Add(1)
+	defer worker.wg.Done()
 	dpos, ok := worker.Engine().(*dpos.Dpos)
 	if !ok {
 		panic("only support dpos engine")
@@ -142,7 +148,7 @@ func (worker *Worker) mintLoop() {
 			return nil, err
 		}
 		for index, privKey := range worker.privKeys {
-			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), types.ActionType(0), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
+			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
 				return crypto.Sign(content, privKey)
 			}
 		}
@@ -187,17 +193,22 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 		return
 	}
-	if err := cdpos.IsValidateProducer(worker, header.Number.Uint64(), uint64(timestamp), worker.coinbase, worker.pubKeys, state); err != nil {
+	if err := cdpos.IsValidateCadidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
 		switch err {
-		case dpos.ErrIllegalProducerName:
+		case dpos.ErrSystemTakeOver:
 			fallthrough
-		case dpos.ErrIllegalProducerPubKey:
+		case dpos.ErrTooMuchRreversible:
+			fallthrough
+		case dpos.ErrIllegalCadidateName:
+			fallthrough
+		case dpos.ErrIllegalCadidatePubKey:
 			log.Error("failed to mint the block", "timestamp", timestamp, "err", err)
 		default:
 			log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
 		}
 		return
 	}
+
 	bstart := time.Now()
 outer:
 
@@ -209,7 +220,7 @@ outer:
 		}
 		block, err := worker.commitNewWork(timestamp, quit)
 		if err == nil {
-			log.Info("Mined new block", "producer", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
+			log.Info("Mined new block", "cadidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 			break outer
 		}
 		if strings.Contains(err.Error(), "mint") {
@@ -282,8 +293,9 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		Time:       big.NewInt(timestamp),
 		Difficulty: worker.CalcDifficulty(worker.IConsensus, uint64(timestamp), parent),
 	}
-	if common.IsValidName(worker.coinbase) {
+	if common.IsValidAccountName(worker.coinbase) {
 		header.Coinbase = common.StrToName(worker.coinbase)
+		header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, parent, false)
 	}
 	state, err := worker.StateAt(parent.Root)
 	if err != nil {
@@ -348,7 +360,7 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		if bytes.Compare(block.ParentHash().Bytes(), worker.CurrentHeader().Hash().Bytes()) != 0 {
 			return nil, fmt.Errorf("old parent hash")
 		}
-		if err := worker.WriteBlockWithState(block, work.currentReceipts, work.currentState); err != nil {
+		if _, err := worker.WriteBlockWithState(block, work.currentReceipts, work.currentState); err != nil {
 			return nil, fmt.Errorf("writing block to chain, err: %v", err)
 		}
 
@@ -389,6 +401,16 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 		}
 
 		action := tx.GetActions()[0]
+
+		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName) != 0 {
+			switch action.Type() {
+			case types.KickedCadidate:
+				fallthrough
+			case types.ExitTakeOver:
+				continue
+			default:
+			}
+		}
 
 		from := action.Sender()
 		// Start executing the transaction
@@ -432,7 +454,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 func (worker *Worker) commitTransaction(work *Work, tx *types.Transaction) ([]*types.Log, error) {
 	snap := work.currentState.Snapshot()
 	var name *common.Name
-	if common.IsValidName(work.currentHeader.Coinbase.String()) {
+	if common.IsValidAccountName(work.currentHeader.Coinbase.String()) {
 		name = new(common.Name)
 		*name = common.StrToName(work.currentHeader.Coinbase.String())
 	}

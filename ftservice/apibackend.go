@@ -34,7 +34,6 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // APIBackend implements ftserviceapi.Backend for full nodes
@@ -114,6 +113,98 @@ func (b *APIBackend) GetReceipts(ctx context.Context, hash common.Hash) ([]*type
 	return nil, nil
 }
 
+func (b *APIBackend) GetDetailTxsLog(ctx context.Context, hash common.Hash) ([]*types.DetailTx, error) {
+	if number := rawdb.ReadHeaderNumber(b.ftservice.chainDb, hash); number != nil {
+		return rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, *number), nil
+	}
+	return nil, nil
+}
+
+func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
+	hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(blockNr))
+	if hash == (common.Hash{}) {
+		return nil
+	}
+	receipts := rawdb.ReadReceipts(b.ftservice.chainDb, hash, uint64(blockNr))
+	txDetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, uint64(blockNr))
+	return &types.BlockAndResult{
+		Receipts:  receipts,
+		DetailTxs: txDetails,
+	}
+}
+
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
+	lastnum := uint64(blockNr) - lookbackNum
+
+	txHashs := make([]common.Hash, 0)
+
+	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+
+		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
+		if hash == (common.Hash{}) {
+			continue
+		}
+
+		blockBody := rawdb.ReadBody(b.ftservice.chainDb, hash, ublocknum)
+		if blockBody == nil {
+			continue
+		}
+		batch_txs := blockBody.Transactions
+
+		for _, tx := range batch_txs {
+			for _, act := range tx.GetActions() {
+				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
+					txHashs = append(txHashs, tx.Hash())
+					break
+				}
+			}
+		}
+	}
+
+	return txHashs
+}
+
+func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
+	lastnum := uint64(blockNr) - lookbackNum
+
+	txdetails := make([]*types.DetailTx, 0)
+
+	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+
+		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
+		if hash == (common.Hash{}) {
+			continue
+		}
+
+		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
+		for _, txd := range batch_txdetails {
+
+			new_intxs := make([]*types.DetailAction, 0)
+			for _, intx := range txd.Actions {
+				new_inactions := make([]*types.InternalAction, 0)
+				for _, inlog := range intx.InternalActions {
+					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
+						new_inactions = append(new_inactions, inlog)
+					}
+				}
+				if len(new_inactions) > 0 {
+					new_intxs = append(new_intxs, &types.DetailAction{InternalActions: new_inactions})
+				}
+			}
+
+			if len(new_intxs) > 0 {
+				txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, Actions: new_intxs})
+			}
+		}
+	}
+
+	return txdetails
+}
+
+func (b *APIBackend) GetBadBlocks(ctx context.Context) ([]*types.Block, error) {
+	return b.ftservice.blockchain.BadBlocks(), nil
+}
+
 func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
 	return b.ftservice.blockchain.GetTdByHash(blockHash)
 }
@@ -173,18 +264,13 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 		EgnineContext: b.ftservice.Engine(),
 	}
 
-	fromPubkey := common.PubKey{}
-	context := processor.NewEVMContext(from, fromPubkey, assetID, gasPrice, header, evmcontext, nil)
+	context := processor.NewEVMContext(from, assetID, gasPrice, header, evmcontext, nil)
 	return vm.NewEVM(context, account, state, b.ChainConfig(), vmCfg), vmError, nil
 }
 
 func (b *APIBackend) SetGasPrice(gasPrice *big.Int) bool {
 	b.ftservice.SetGasPrice(gasPrice)
 	return true
-}
-
-func (b *APIBackend) Wallet() *wallet.Wallet {
-	return b.ftservice.Wallet()
 }
 
 func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error) {

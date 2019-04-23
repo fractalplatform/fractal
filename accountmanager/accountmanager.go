@@ -19,39 +19,100 @@ package accountmanager
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-var acctInfoPrefix = "AcctInfo"
+var (
+	acctInfoPrefix      = "acctInfo"
+	accountNameIDPrefix = "accountNameId"
+	counterPrefix       = "accountCounter"
+)
+var acctManagerName = "sysAccount"
+var sysName string = "fractal.account"
+var counterID uint64 = 4096
+
+type AuthorActionType uint64
 
 const (
-	//Account Type
-	NormalAccount uint64 = iota
-	ContractAccount
-	AssetAccount
+	AddAuthor AuthorActionType = iota
+	UpdateAuthor
+	DeleteAuthor
 )
 
 type AccountAction struct {
-	Founder     common.Name
-	ChargeRatio uint64
-	PublicKey   common.PubKey
+	AccountName common.Name   `json:"accountName,omitempty"`
+	Founder     common.Name   `json:"founder,omitempty"`
+	ChargeRatio uint64        `json:"chargeRatio,omitempty"`
+	PublicKey   common.PubKey `json:"publicKey,omitempty"`
+}
+
+type AuthorAction struct {
+	ActionType AuthorActionType
+	Author     *common.Author
+}
+
+type AccountAuthorAction struct {
+	Threshold             uint64          `json:"threshold,omitempty"`
+	UpdateAuthorThreshold uint64          `json:"updateAuthorThreshold,omitempty"`
+	AuthorActions         []*AuthorAction `json:"authorActions,omitempty"`
 }
 
 type IncAsset struct {
-	AssetId uint64      `json:"assetid,omitempty"`
+	AssetId uint64      `json:"assetId,omitempty"`
 	Amount  *big.Int    `json:"amount,omitempty"`
 	To      common.Name `json:"account,omitempty"`
 }
 
-// AccountManager represents account management model.
+//AccountManager represents account management model.
 type AccountManager struct {
 	sdb SdbIf
 	ast *asset.Asset
+}
+
+func SetAccountNameConfig(config *Config) bool {
+	if config == nil {
+		return false
+	}
+
+	if config.AccountNameLevel < 0 || config.AccountNameLength <= 8 {
+		return false
+	}
+
+	if config.AccountNameLevel > 0 {
+		if config.SubAccountNameLength < 1 {
+			return false
+		}
+	}
+
+	common.SetAccountNameCheckRule(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
+	return true
+}
+
+//SetSysName set the global sys name
+func SetSysName(name common.Name) bool {
+	if common.IsValidAccountName(name.String()) {
+		sysName = name.String()
+		return true
+	}
+	return false
+}
+
+//SetAcctMangerName  set the global account manager name
+func SetAcctMangerName(name common.Name) bool {
+	if common.IsValidAccountName(name.String()) {
+		acctManagerName = name.String()
+		return true
+	}
+	return false
 }
 
 //NewAccountManager create new account manager
@@ -59,23 +120,92 @@ func NewAccountManager(db *state.StateDB) (*AccountManager, error) {
 	if db == nil {
 		return nil, ErrNewAccountErr
 	}
-	return &AccountManager{
+	if len(acctManagerName) == 0 {
+		log.Error("NewAccountManager error", "name", ErrAccountManagerNotExist, acctManagerName)
+		return nil, ErrAccountManagerNotExist
+	}
+	am := &AccountManager{
 		sdb: db,
 		ast: asset.NewAsset(db),
-	}, nil
+	}
+
+	am.InitAccountCounter()
+	return am, nil
+}
+
+//InitAccountCounter init account manage counter
+func (am *AccountManager) InitAccountCounter() {
+	_, err := am.getAccountCounter()
+	if err == ErrCounterNotExist {
+		//var counterID uint64
+		//counterID = 0
+		//store assetCount
+		b, err := rlp.EncodeToBytes(&counterID)
+		if err != nil {
+			panic(err)
+		}
+		am.sdb.Put(acctManagerName, counterPrefix, b)
+	}
+	return
+}
+
+//getAccountCounter get account counter cur value
+func (am *AccountManager) getAccountCounter() (uint64, error) {
+	b, err := am.sdb.Get(acctManagerName, counterPrefix)
+	if err != nil {
+		return 0, err
+	}
+	if len(b) == 0 {
+		return 0, ErrCounterNotExist
+	}
+	var accountCounter uint64
+	err = rlp.DecodeBytes(b, &accountCounter)
+	if err != nil {
+		return 0, err
+	}
+	return accountCounter, nil
 }
 
 // AccountIsExist check account is exist.
 func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) {
 	//check is exist
+	accountID, err := am.GetAccountIDByName(accountName)
+	if err != nil {
+		return false, err
+	}
+	if accountID > 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
+// AccountIDIsExist check account is exist by ID.
+func (am *AccountManager) AccountIDIsExist(accountID uint64) (bool, error) {
+	//check is exist
+	account, err := am.GetAccountById(accountID)
+	if err != nil {
+		return false, err
+	}
+	if account != nil {
+		return true, nil
+	} else {
+		return false, nil
+	}
+}
+
+//AccountHaveCode check account have code
+func (am *AccountManager) AccountHaveCode(accountName common.Name) (bool, error) {
+	//check is exist
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
 		return false, err
 	}
-	if acct != nil {
-		return true, nil
+	if acct == nil {
+		return false, ErrAccountNotExist
 	}
-	return false, nil
+
+	return acct.HaveCode(), nil
 }
 
 //AccountIsEmpty check account is empty
@@ -95,17 +225,43 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
+
+	if accountName.AccountNameLevel() > 1 {
+		if !fromName.IsValidCreator(accountName.String()) {
+			return ErrAccountInvaid
+		}
+	}
+
+	if err := am.CreateAccount(accountName, founderName, number, 0, pubkey); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //CreateAccount contract account
-func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
+	if !common.IsValidAccountName(accountName.String()) {
+		return fmt.Errorf("account %s is invalid", accountName.String())
+	}
+
 	//check is exist
-	acct, err := am.GetAccountByName(accountName)
+	accountID, err := am.GetAccountIDByName(accountName)
 	if err != nil {
 		return err
 	}
-	if acct != nil {
+	if accountID > 0 {
 		return ErrAccountIsExist
 	}
-	if len(founderName.String()) > 0 {
+
+	assetID, _ := am.ast.GetAssetIdByName(accountName.String())
+	if assetID > 0 {
+		return ErrNameIsExist
+	}
+
+	var fname common.Name
+	if len(founderName.String()) > 0 && founderName != accountName {
 		f, err := am.GetAccountByName(founderName)
 		if err != nil {
 			return err
@@ -113,9 +269,12 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		if f == nil {
 			return ErrAccountNotExist
 		}
+		fname.SetString(founderName.String())
+	} else {
+		fname.SetString(accountName.String())
 	}
 
-	acctObj, err := NewAccount(accountName, founderName, pubkey)
+	acctObj, err := NewAccount(accountName, fname, pubkey)
 	if err != nil {
 		return err
 	}
@@ -123,8 +282,25 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrCreateAccountError
 	}
 
+	//get accountCounter
+	accountCounter, err := am.getAccountCounter()
+	if err != nil {
+		return err
+	}
+	accountCounter = accountCounter + 1
+	//set account id
+	acctObj.SetAccountID(accountCounter)
+
+	//store account name with account id
+	aid, err := rlp.EncodeToBytes(&accountCounter)
+	if err != nil {
+		return err
+	}
+	acctObj.SetAccountNumber(number)
 	acctObj.SetChargeRatio(0)
 	am.SetAccount(acctObj)
+	am.sdb.Put(acctManagerName, accountNameIDPrefix+accountName.String(), aid)
+	am.sdb.Put(acctManagerName, counterPrefix, aid)
 	return nil
 }
 
@@ -141,8 +317,8 @@ func (am *AccountManager) SetChargeRatio(accountName common.Name, ra uint64) err
 	return am.SetAccount(acct)
 }
 
-//UpdateAccount update the pubkey of the accunt
-func (am *AccountManager) UpdateAccount(accountName common.Name, founderName common.Name, chargeRatio uint64, pubkey common.PubKey) error {
+//UpdateAccount update the pubkey of the account
+func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *AccountAction) error {
 	acct, err := am.GetAccountByName(accountName)
 	if acct == nil {
 		return ErrAccountNotExist
@@ -150,27 +326,65 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, founderName com
 	if err != nil {
 		return err
 	}
-	if len(founderName.String()) > 0 {
-		f, err := am.GetAccountByName(founderName)
+	if len(accountAction.Founder.String()) > 0 {
+		f, err := am.GetAccountByName(accountAction.Founder)
 		if err != nil {
 			return err
 		}
 		if f == nil {
 			return ErrAccountNotExist
 		}
+	} else {
+		accountAction.Founder.SetString(accountName.String())
 	}
-	if chargeRatio > 100 {
+
+	if accountAction.ChargeRatio > 100 {
 		return ErrChargeRatioInvalid
 	}
-	acct.SetFounder(founderName)
-	acct.SetChargeRatio(chargeRatio)
-	acct.SetPubKey(pubkey)
+	acct.SetFounder(accountAction.Founder)
+	acct.SetChargeRatio(accountAction.ChargeRatio)
+	return am.SetAccount(acct)
+}
+
+func (am *AccountManager) UpdateAccountAuthor(accountName common.Name, acctAuth *AccountAuthorAction) error {
+	acct, err := am.GetAccountByName(accountName)
+	if acct == nil {
+		return ErrAccountNotExist
+	}
+	if err != nil {
+		return err
+	}
+	if acctAuth.Threshold != 0 {
+		acct.SetThreshold(acctAuth.Threshold)
+	}
+	if acctAuth.UpdateAuthorThreshold != 0 {
+		acct.SetUpdateAuthorThreshold(acctAuth.UpdateAuthorThreshold)
+	}
+	for _, authorAct := range acctAuth.AuthorActions {
+		actionTy := authorAct.ActionType
+		switch actionTy {
+		case AddAuthor:
+			acct.AddAuthor(authorAct.Author)
+		case UpdateAuthor:
+			acct.UpdateAuthor(authorAct.Author)
+		case DeleteAuthor:
+			acct.DeleteAuthor(authorAct.Author)
+		default:
+			return fmt.Errorf("invalid account author operation type %d", actionTy)
+		}
+	}
+	acct.SetAuthorVersion()
 	return am.SetAccount(acct)
 }
 
 //GetAccountByTime get account by name and time
 func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64) (*Account, error) {
-	b, err := am.sdb.GetSnapshot(accountName.String(), acctInfoPrefix, time)
+	accountID, err := am.GetAccountIDByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := am.sdb.GetSnapshot(acctManagerName, acctInfoPrefix+strconv.FormatUint(accountID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -188,40 +402,68 @@ func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64)
 
 //GetAccountByName get account by name
 func (am *AccountManager) GetAccountByName(accountName common.Name) (*Account, error) {
-	b, err := am.sdb.Get(accountName.String(), acctInfoPrefix)
+	accountID, err := am.GetAccountIDByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+	return am.GetAccountById(accountID)
+}
+
+//GetAccountIDByName get account id by account name
+func (am *AccountManager) GetAccountIDByName(accountName common.Name) (uint64, error) {
+	if accountName == "" {
+		return 0, nil
+	}
+	b, err := am.sdb.Get(acctManagerName, accountNameIDPrefix+accountName.String())
+	if err != nil {
+		return 0, err
+	}
+	if len(b) == 0 {
+		return 0, nil
+	}
+	var accountID uint64
+	if err := rlp.DecodeBytes(b, &accountID); err != nil {
+		return 0, err
+	}
+	return accountID, nil
+}
+
+//GetAccountById get account by account id
+func (am *AccountManager) GetAccountById(id uint64) (*Account, error) {
+	if id == 0 {
+		return nil, nil
+	}
+
+	b, err := am.sdb.Get(acctManagerName, acctInfoPrefix+strconv.FormatUint(id, 10))
+
 	if err != nil {
 		return nil, err
 	}
 	if len(b) == 0 {
+		log.Debug("account not exist", "id", ErrAccountNotExist, id)
 		return nil, nil
 	}
-
 	var acct Account
 	if err := rlp.DecodeBytes(b, &acct); err != nil {
 		return nil, err
 	}
-
-	//user can find destroyed account
-	//if acct.IsDestoryed() == true {
-	//	return nil, ErrAccountNotExist
-	//}
-
 	return &acct, nil
 }
 
-//store account object to db
+//SetAccount store account object to db
 func (am *AccountManager) SetAccount(acct *Account) error {
 	if acct == nil {
 		return ErrAccountIsNil
 	}
-	if acct.IsDestoryed() == true {
+	if acct.IsDestroyed() == true {
 		return ErrAccountIsDestroy
 	}
 	b, err := rlp.EncodeToBytes(acct)
 	if err != nil {
 		return err
 	}
-	am.sdb.Put(acct.GetName().String(), acctInfoPrefix, b)
+	//am.sdb.Put(acctManagerName, acctInfoPrefix+acct.GetName().String(), b)
+	am.sdb.Put(acctManagerName, acctInfoPrefix+strconv.FormatUint(acct.GetAccountID(), 10), b)
 	return nil
 }
 
@@ -235,7 +477,7 @@ func (am *AccountManager) DeleteAccountByName(accountName common.Name) error {
 		return ErrAccountNotExist
 	}
 
-	acct.SetDestory()
+	acct.SetDestroy()
 	b, err := rlp.EncodeToBytes(acct)
 	if err != nil {
 		return err
@@ -269,57 +511,66 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 	return am.SetAccount(acct)
 }
 
-//GetBalancesList get Balances return a list
-//func (am *AccountManager) GetBalancesList(accountName common.Name) ([]*AssetBalance, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return acct.GetBalancesList(), nil
-//}
-
-//GetAllAccountBalance return all balance in map.
-//func (am *AccountManager) GetAccountAllBalance(accountName common.Name) (map[uint64]*big.Int, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrAccountNotExist
-//	}
-//
-//	return acct.GetAllBalances()
-//}
-
-//GetAcccountPubkey get account pub key
-//func (am *AccountManager) GetAcccountPubkey(accountName common.Name) ([]byte, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return nil, err
-//	}
-//	if acct == nil {
-//		return nil, ErrAccountNotExist
-//	}
-//	return acct.GetPubKey().Bytes(), nil
-//}
+// GetAuthorVersion returns the account author version
+func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return 0, err
+	}
+	if acct == nil {
+		return 0, ErrAccountNotExist
+	}
+	return acct.GetAuthorVersion(), nil
+}
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
-		pub, err := types.Recover(signer, action, tx)
+		pubs, err := types.RecoverMultiKey(signer, action, tx)
 		if err != nil {
 			return err
 		}
 
-		if err := am.IsValidSign(action.Sender(), action.Type(), pub); err != nil {
-			return err
+		if uint64(len(pubs)) > params.MaxSignLength {
+			return fmt.Errorf("exceed max sign length, want most %d, actual is %d", params.MaxSignLength, len(pubs))
 		}
+
+		recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor, 0)}
+		for i, pub := range pubs {
+			index := action.GetSignIndex(uint64(i))
+			if uint64(len(index)) > params.MaxSignDepth {
+				return fmt.Errorf("exceed max sign depth, want most %d, actual is %d", params.MaxSignDepth, len(index))
+			}
+
+			if err := am.ValidSign(action.Sender(), pub, index, recoverRes); err != nil {
+				return err
+			}
+		}
+
+		authorVersion := make(map[common.Name]uint64, 0)
+		for name, acctAuthor := range recoverRes.acctAuthors {
+
+			var count uint64
+			for _, weight := range acctAuthor.indexWeight {
+				count += weight
+			}
+			threshold := acctAuthor.threshold
+			if name.String() == action.Sender().String() && action.Type() == types.UpdateAccountAuthor {
+				threshold = acctAuthor.updateAuthorThreshold
+			}
+			if count < threshold {
+				return fmt.Errorf("account %s want threshold %d, but actual is %d", name, acctAuthor.threshold, count)
+			}
+			authorVersion[name] = acctAuthor.version
+		}
+
+		types.StoreAuthorCache(action, authorVersion)
 	}
 	return nil
 }
 
 // IsValidSign
-func (am *AccountManager) IsValidSign(accountName common.Name, aType types.ActionType, pub common.PubKey) error {
+func (am *AccountManager) IsValidSign(accountName common.Name, pub common.PubKey) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
 		return err
@@ -327,16 +578,88 @@ func (am *AccountManager) IsValidSign(accountName common.Name, aType types.Actio
 	if acct == nil {
 		return ErrAccountNotExist
 	}
-	if acct.IsDestoryed() {
+	if acct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
 	//TODO action type verify
 
-	if acct.GetPubKey().Compare(pub) != 0 {
-		return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, acct.GetPubKey().String(), pub.String())
+	for _, author := range acct.Authors {
+		if author.String() == pub.String() && author.GetWeight() >= acct.GetThreshold() {
+			return nil
+		}
 	}
-	return nil
+	return fmt.Errorf("%v %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String())
+}
 
+//IsValidSign check the sign
+func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, index []uint64, recoverRes *recoverActionResult) error {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return err
+	}
+	if acct == nil {
+		return ErrAccountNotExist
+	}
+	if acct.IsDestroyed() {
+		return ErrAccountIsDestroy
+	}
+
+	var i int
+	var idx uint64
+	for i, idx = range index {
+		if idx >= uint64(len(acct.Authors)) {
+			return fmt.Errorf("acct authors modified")
+		}
+		if i == len(index)-1 {
+			break
+		}
+		switch ownerTy := acct.Authors[idx].Owner.(type) {
+		case common.Name:
+			nextacct, err := am.GetAccountByName(ownerTy)
+			if err != nil {
+				return err
+			}
+			if nextacct == nil {
+				return ErrAccountNotExist
+			}
+			if nextacct.IsDestroyed() {
+				return ErrAccountIsDestroy
+			}
+			if recoverRes.acctAuthors[acct.GetName()] == nil {
+				a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, updateAuthorThreshold: acct.UpdateAuthorThreshold, indexWeight: map[uint64]uint64{idx: acct.Authors[idx].GetWeight()}}
+				recoverRes.acctAuthors[acct.GetName()] = a
+			} else {
+				recoverRes.acctAuthors[acct.GetName()].indexWeight[idx] = acct.Authors[idx].GetWeight()
+			}
+			acct = nextacct
+		default:
+			return ErrAccountNotExist
+		}
+	}
+	return am.ValidOneSign(acct, idx, pub, recoverRes)
+}
+
+func (am *AccountManager) ValidOneSign(acct *Account, index uint64, pub common.PubKey, recoverRes *recoverActionResult) error {
+	switch ownerTy := acct.Authors[index].Owner.(type) {
+	case common.PubKey:
+		if pub.Compare(ownerTy) != 0 {
+			return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String(), ownerTy.String())
+		}
+	case common.Address:
+		addr := common.BytesToAddress(crypto.Keccak256(pub.Bytes()[1:])[12:])
+		if addr.Compare(ownerTy) != 0 {
+			return fmt.Errorf("%v %v have %v excepted %v", acct.AcctName, ErrkeyNotSame, addr.String(), ownerTy.String())
+		}
+	default:
+		return fmt.Errorf("wrong sign type")
+	}
+	if recoverRes.acctAuthors[acct.GetName()] == nil {
+		a := &accountAuthor{version: acct.AuthorVersion, threshold: acct.Threshold, updateAuthorThreshold: acct.UpdateAuthorThreshold, indexWeight: map[uint64]uint64{index: acct.Authors[index].GetWeight()}}
+		recoverRes.acctAuthors[acct.GetName()] = a
+		return nil
+	}
+	recoverRes.acctAuthors[acct.GetName()].indexWeight[index] = acct.Authors[index].GetWeight()
+	return nil
 }
 
 //GetAssetInfoByName get asset info by asset name.
@@ -353,8 +676,95 @@ func (am *AccountManager) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, 
 	return am.ast.GetAssetObjectById(assetID)
 }
 
+// GetAllAssetbyAssetId get accout asset and subAsset Info
+func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
+	var ba = make(map[uint64]*big.Int, 0)
+
+	b, err := acct.GetBalanceByID(assetId)
+	if err != nil {
+		return nil, err
+	}
+	ba[assetId] = b
+
+	assetObj, err := am.ast.GetAssetObjectById(assetId)
+	if err != nil {
+		return nil, err
+	}
+
+	assetName := assetObj.GetAssetName()
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return nil, err
+	}
+
+	for id, balance := range balances {
+		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		if err != nil {
+			return nil, err
+		}
+
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+			ba[id] = balance
+		}
+	}
+
+	return ba, nil
+}
+
+// GetAllBalancebyAssetID get account balance, balance(asset) = asset + subAsset
+func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) (*big.Int, error) {
+	var ba *big.Int
+	ba = big.NewInt(0)
+
+	b, _ := acct.GetBalanceByID(assetID)
+	ba = ba.Add(ba, b)
+
+	assetObj, err := am.ast.GetAssetObjectById(assetID)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	assetName := assetObj.GetAssetName()
+	balances, err := acct.GetAllBalances()
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	for id, balance := range balances {
+		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		if err != nil {
+			return big.NewInt(0), err
+		}
+
+		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+			ba = ba.Add(ba, balance)
+		}
+	}
+
+	return ba, nil
+}
+
+//GetBalanceByTime get account balance by Time
+func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
+	acct, err := am.GetAccountByTime(accountName, time)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	if acct == nil {
+		return big.NewInt(0), ErrAccountNotExist
+	}
+
+	if typeID == 0 {
+		return acct.GetBalanceByID(assetID)
+	} else if typeID == 1 {
+		return am.GetAllBalancebyAssetID(acct, assetID)
+	} else {
+		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
+	}
+}
+
 //GetAccountBalanceByID get account balance by ID
-func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID uint64) (*big.Int, error) {
+func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
 		return big.NewInt(0), err
@@ -362,7 +772,13 @@ func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID
 	if acct == nil {
 		return big.NewInt(0), ErrAccountNotExist
 	}
-	return acct.GetBalanceByID(assetID)
+	if typeID == 0 {
+		return acct.GetBalanceByID(assetID)
+	} else if typeID == 1 {
+		return am.GetAllBalancebyAssetID(acct, assetID)
+	} else {
+		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
+	}
 }
 
 //GetAssetAmountByTime get asset amount by time
@@ -406,30 +822,7 @@ func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, erro
 	return 0, ErrTimeTypeInvalid
 }
 
-//GetBalanceByTime get account balance by Time
-func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint64, time uint64) (*big.Int, error) {
-	acct, err := am.GetAccountByTime(accountName, time)
-	if err != nil {
-		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrAccountNotExist
-	}
-	return acct.GetBalanceByID(assetID)
-	//if time == 0 {
-	//	//current
-	//	return acct.GetBalanceByID(assetID)
-	//}else {
-	//	//spec time balance
-	//	if acct, err = am.GetAccountByTime(accountName,time);err!= nil{
-	//		return nil,err
-	//	}
-	//	return acct.GetBalanceByID(assetID)
-	//}
-
-}
-
-//Get Account Founder
+//GetFounder Get Account Founder
 func (am *AccountManager) GetFounder(accountName common.Name) (common.Name, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -441,12 +834,12 @@ func (am *AccountManager) GetFounder(accountName common.Name) (common.Name, erro
 	return acct.GetFounder(), nil
 }
 
-//Get Asset Founder
+//GetAssetFounder Get Asset Founder
 func (am *AccountManager) GetAssetFounder(assetID uint64) (common.Name, error) {
 	return am.ast.GetAssetFounderById(assetID)
 }
 
-//Get Account ChargeRatio
+//GetChargeRatio Get Account ChargeRatio
 func (am *AccountManager) GetChargeRatio(accountName common.Name) (uint64, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -458,7 +851,7 @@ func (am *AccountManager) GetChargeRatio(accountName common.Name) (uint64, error
 	return acct.GetChargeRatio(), nil
 }
 
-//Get Asset ChargeRatio
+//GetAssetChargeRatio Get Asset ChargeRatio
 func (am *AccountManager) GetAssetChargeRatio(assetID uint64) (uint64, error) {
 	acctName, err := am.ast.GetAssetFounderById(assetID)
 	if err != nil {
@@ -510,15 +903,12 @@ func (am *AccountManager) SubAccountBalanceByID(accountName common.Name, assetID
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	//
-	val, err := acct.GetBalanceByID(assetID)
+
+	err = acct.SubBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
-	if val.Cmp(big.NewInt(0)) < 0 || val.Cmp(value) < 0 {
-		return ErrInsufficientBalance
-	}
-	acct.SetBalance(assetID, new(big.Int).Sub(val, value))
+
 	return am.SetAccount(acct)
 }
 
@@ -536,15 +926,15 @@ func (am *AccountManager) AddAccountBalanceByID(accountName common.Name, assetID
 		return ErrAmountValueInvalid
 	}
 
-	val, err := acct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		acct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		acct.SetBalance(assetID, new(big.Int).Add(val, value))
+	err = acct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
+
 	return am.SetAccount(acct)
 }
 
+//AddAccountBalanceByName  add balance by name
 func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, assetName string, value *big.Int) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -553,6 +943,7 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 	if acct == nil {
 		return ErrAccountNotExist
 	}
+
 	assetID, err := am.ast.GetAssetIdByName(assetName)
 	if err != nil {
 		return err
@@ -565,12 +956,11 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return ErrAmountValueInvalid
 	}
 
-	val, err := acct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		acct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		acct.SetBalance(assetID, new(big.Int).Add(val, value))
+	err = acct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
+
 	return am.SetAccount(acct)
 }
 
@@ -676,8 +1066,19 @@ func (am *AccountManager) CanTransfer(accountName common.Name, assetID uint64, v
 	return false, err
 }
 
-//TransferAsset
+//TransferAsset transfer asset
 func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount common.Name, assetID uint64, value *big.Int) error {
+	if value.Sign() == -1 {
+		return ErrNegativeValue
+	}
+
+	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
+		return err
+	} else if len(ast.Contract.String()) != 0 && !(fromAccount == ast.Contract || toAccount == ast.Contract) {
+		return ErrInvalidReceiptAsset
+	}
+
+	//check from account
 	fromAcct, err := am.GetAccountByName(fromAccount)
 	if err != nil {
 		return err
@@ -688,9 +1089,10 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	if fromAccount == toAccount {
+	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
+	//check from account balance
 	val, err := fromAcct.GetBalanceByID(assetID)
 	if err != nil {
 		return err
@@ -699,7 +1101,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 		return ErrInsufficientBalance
 	}
 	fromAcct.SetBalance(assetID, new(big.Int).Sub(val, value))
-
+	//check to account
 	toAcct, err := am.GetAccountByName(toAccount)
 	if err != nil {
 		return err
@@ -707,7 +1109,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if toAcct == nil {
 		return ErrAccountNotExist
 	}
-	if toAcct.IsDestoryed() {
+	if toAcct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
 	val, err = toAcct.GetBalanceByID(assetID)
@@ -722,11 +1124,20 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
-//IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit()); err != nil {
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) error {
+	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
+		return fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
+	}
+
+	if err := am.IssueAsset(asset); err != nil {
 		return err
 	}
+	return nil
+}
+
+//IssueAsset issue asset
+func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
+	//check owner
 	acct, err := am.GetAccountByName(asset.GetAssetOwner())
 	if err != nil {
 		return err
@@ -734,17 +1145,35 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	if acct == nil {
 		return ErrAccountNotExist
 	}
-	f, err := am.GetAccountByName(asset.GetAssetFounder())
-	if err != nil {
+	//check founder
+	if len(asset.GetAssetFounder()) > 0 {
+		f, err := am.GetAccountByName(asset.GetAssetFounder())
+		if err != nil {
+			return err
+		}
+		if f == nil {
+			return ErrAccountNotExist
+		}
+	} else {
+		asset.SetAssetFounder(asset.GetAssetOwner())
+	}
+
+	if name, err := common.StringToName(asset.GetAssetName()); err == nil {
+		accountID, _ := am.GetAccountIDByName(name)
+		if accountID > 0 {
+			return ErrNameIsExist
+		}
+	}
+
+	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract()); err != nil {
 		return err
 	}
-	if f == nil {
-		return ErrAccountNotExist
-	}
+
+	//add the asset to owner
 	return am.AddAccountBalanceByName(asset.GetAssetOwner(), asset.GetAssetName(), asset.GetAssetAmount())
 }
 
-//increase asset and add amount to accout balance
+//IncAsset2Acct increase asset and add amount to accout balance
 func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int) error {
 	if err := am.ast.IncreaseAsset(fromName, assetID, amount); err != nil {
 		return err
@@ -765,118 +1194,195 @@ func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name
 //	rerturn
 //}
 
-// Process account action
-
-func (am *AccountManager) Process(action *types.Action) error {
+//Process account action
+func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	snap := am.sdb.Snapshot()
-	err := am.process(action)
+	internalActions, err := am.process(accountManagerContext)
 	if err != nil {
 		am.sdb.RevertToSnapshot(snap)
 	}
-	return err
+	return internalActions, err
 }
 
-func (am *AccountManager) process(action *types.Action) error {
+func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
+	action := accountManagerContext.Action
+	number := accountManagerContext.Number
+
+	var internalActions []*types.InternalAction
+
+	if !action.CheckValue() {
+		return nil, ErrAmountValueInvalid
+	}
+
+	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
+		return nil, ErrInvalidReceipt
+	}
+
+	//transfer
+	if action.Value().Cmp(big.NewInt(0)) > 0 {
+		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+			return nil, err
+		}
+	}
+
+	//transaction
 	switch action.Type() {
 	case types.CreateAccount:
-		key := common.BytesToPubKey(action.Data())
-		if err := am.CreateAccount(action.Recipient(), common.Name(""), 0, key); err != nil {
-			return err
+		var acct AccountAction
+		err := rlp.DecodeBytes(action.Data(), &acct)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, 0, acct.PublicKey); err != nil {
+			return nil, err
+		}
+
+		if action.Value().Cmp(big.NewInt(0)) > 0 {
+			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
+				return nil, err
+			}
+			actionX := types.NewAction(action.Type(), common.Name(sysName), acct.AccountName, 0, 0, action.AssetID(), action.Value(), nil)
+			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+			internalActions = append(internalActions, internalAction)
 		}
 		break
 	case types.UpdateAccount:
 		var acct AccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if err := am.UpdateAccount(action.Sender(), acct.Founder, 0, acct.PublicKey); err != nil {
-			return err
+
+		if err := am.UpdateAccount(action.Sender(), &acct); err != nil {
+			return nil, err
 		}
 		break
-		//case types.DeleteAccount:
-		//	if err := am.DeleteAccountByName(action.Sender()); err != nil {
-		//		return err
-		//	}
-		//	break
+	case types.UpdateAccountAuthor:
+		var acctAuth AccountAuthorAction
+		err := rlp.DecodeBytes(action.Data(), &acctAuth)
+		if err != nil {
+			return nil, err
+		}
+		if err := am.UpdateAccountAuthor(action.Sender(), &acctAuth); err != nil {
+			return nil, err
+		}
+		break
 	case types.IssueAsset:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if err := am.IssueAsset(&asset); err != nil {
-			return err
+
+		asset.SetAssetNumber(number)
+		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), common.Name(sysName), asset.GetAssetOwner(), 0, 0, asset.GetAssetId(), asset.GetAssetAmount(), nil)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 		break
 	case types.IncreaseAsset:
 		var inc IncAsset
+		var accountFrom = common.Name("")
 		err := rlp.DecodeBytes(action.Data(), &inc)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
-			return err
+			return nil, err
 		}
+		actionX := types.NewAction(action.Type(), common.Name(accountFrom), inc.To, 0, 0, inc.AssetId, inc.Amount, nil)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 		break
 
-	case types.DestoryAsset:
+	case types.DestroyAsset:
+		// var asset asset.AssetObject
+		// err := rlp.DecodeBytes(action.Data(), &asset)
+		// if err != nil {
+		// 	return err
+		// }
+		if err := am.SubAccountBalanceByID(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
+			return nil, err
+		}
+
+		if err := am.ast.DestroyAsset(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
+			return nil, err
+		}
+		actionX := types.NewAction(action.Type(), common.Name(sysName), "", 0, 0, action.AssetID(), action.Value(), nil)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
+		break
+	case types.UpdateAsset:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		if err = am.SubAccountBalanceByID(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
-			return err
+		acct, err := am.GetAccountByName(asset.GetAssetOwner())
+		if err != nil {
+			return nil, err
 		}
-		if err = am.ast.DestoryAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetAmount()); err != nil {
-			return err
+		if acct == nil {
+			return nil, ErrAccountNotExist
+		}
+		if len(asset.GetAssetFounder().String()) > 0 {
+			acct, err := am.GetAccountByName(asset.GetAssetFounder())
+			if err != nil {
+				return nil, err
+			}
+			if acct == nil {
+				return nil, ErrAccountNotExist
+			}
+		}
+		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder(), asset.GetAssetContract()); err != nil {
+			return nil, err
 		}
 		break
 	case types.SetAssetOwner:
 		var asset asset.AssetObject
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		acct, err := am.GetAccountByName(asset.GetAssetOwner())
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if acct == nil {
-			return ErrAccountNotExist
+			return nil, ErrAccountNotExist
 		}
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner()); err != nil {
-			return err
+			return nil, err
 		}
 		break
-	case types.SetAssetFounder:
-		var asset asset.AssetObject
-		err := rlp.DecodeBytes(action.Data(), &asset)
-		if err != nil {
-			return err
-		}
-		if len(asset.GetAssetFounder().String()) > 0 {
-			acct, err := am.GetAccountByName(asset.GetAssetFounder())
-			if err != nil {
-				return err
-			}
-			if acct == nil {
-				return ErrAccountNotExist
-			}
-		}
-		if err = am.ast.SetAssetFounder(action.Sender(), asset.GetAssetId(), asset.GetAssetFounder()); err != nil {
-			return err
-		}
+	// case types.SetAssetFounder:
+	// 	var asset asset.AssetObject
+	// 	err := rlp.DecodeBytes(action.Data(), &asset)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if len(asset.GetAssetFounder().String()) > 0 {
+	// 		acct, err := am.GetAccountByName(asset.GetAssetFounder())
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		if acct == nil {
+	// 			return ErrAccountNotExist
+	// 		}
+	// 	}
+	// 	if err = am.ast.SetAssetFounder(action.Sender(), asset.GetAssetId(), asset.GetAssetFounder()); err != nil {
+	// 		return err
+	// 	}
+	// 	break
+	case types.Transfer:
+		//return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		break
-	//case types.Transfer:
-	//	return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 	default:
-		return ErrUnkownTxType
+		return nil, ErrUnkownTxType
 	}
 
-	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-	}
-	return nil
+	return internalActions, nil
 }

@@ -49,3 +49,9 @@ type SnapshotMsg struct {
 	Number uint64
 	Root   common.Hash
 }
+
+type AccountInfo struct {
+	Name  string
+	Key   string
+	Value []byte
+}

@@ -20,6 +20,7 @@ package types
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"math/big"
 	"sort"
 	"sync/atomic"
@@ -37,24 +38,20 @@ type ForkID struct {
 
 // Header represents a block header in the blockchain.
 type Header struct {
-	ParentHash   common.Hash `json:"parentHash"`
-	Coinbase     common.Name `json:"miner"`
-	Root         common.Hash `json:"stateRoot"`
-	TxsRoot      common.Hash `json:"transactionsRoot"`
-	ReceiptsRoot common.Hash `json:"receiptsRoot"`
-	Bloom        Bloom       `json:"logsBloom"`
-	Difficulty   *big.Int    `json:"difficulty"`
-	Number       *big.Int    `json:"number"`
-	GasLimit     uint64      `json:"gasLimit"`
-	GasUsed      uint64      `json:"gasUsed"`
-	Time         *big.Int    `json:"timestamp"`
-	Extra        []byte      `json:"extraData"`
-
-	// cache
-	forkID atomic.Value
-
-	// additional fields (for forward compatibility).
-	AdditionalFields []rlp.RawValue `rlp:"tail"`
+	ParentHash           common.Hash `json:"parentHash"`
+	Coinbase             common.Name `json:"miner"`
+	ProposedIrreversible uint64      `json:"proposedIrreversible"`
+	Root                 common.Hash `json:"stateRoot"`
+	TxsRoot              common.Hash `json:"transactionsRoot"`
+	ReceiptsRoot         common.Hash `json:"receiptsRoot"`
+	Bloom                Bloom       `json:"logsBloom"`
+	Difficulty           *big.Int    `json:"difficulty"`
+	Number               *big.Int    `json:"number"`
+	GasLimit             uint64      `json:"gasLimit"`
+	GasUsed              uint64      `json:"gasUsed"`
+	Time                 *big.Int    `json:"timestamp"`
+	Extra                []byte      `json:"extraData"`
+	ForkID               ForkID      `json:"forkID"`
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
@@ -63,29 +60,14 @@ func (h *Header) Hash() common.Hash { return rlpHash(h) }
 
 // WithForkID store fork id
 func (h *Header) WithForkID(cur, next uint64) {
-	forkID := ForkID{Cur: cur, Next: next}
-	bytes, _ := rlp.EncodeToBytes(forkID)
-	h.AdditionalFields = append(h.AdditionalFields, rlp.RawValue(bytes))
-	h.forkID.Store(forkID)
+	h.ForkID = ForkID{Cur: cur, Next: next}
 }
 
 // CurForkID returns the header's current fork ID.
-func (h *Header) CurForkID() uint64 { return h.getForkID().Cur }
+func (h *Header) CurForkID() uint64 { return h.ForkID.Cur }
 
 // NextForkID returns the header's next fork ID.
-func (h *Header) NextForkID() uint64 { return h.getForkID().Next }
-
-func (h *Header) getForkID() ForkID {
-	if forkID := h.forkID.Load(); forkID != nil {
-		return forkID.(ForkID)
-	}
-	forkID := ForkID{}
-	if len(h.AdditionalFields) > 0 {
-		rlp.DecodeBytes(h.AdditionalFields[0], &forkID)
-		h.forkID.Store(forkID)
-	}
-	return forkID
-}
+func (h *Header) NextForkID() uint64 { return h.ForkID.Next }
 
 // Block represents an entire block in the blockchain.
 type Block struct {
@@ -95,6 +77,12 @@ type Block struct {
 	// caches
 	hash atomic.Value
 	size atomic.Value
+}
+
+// "external" block encoding. used protocol, etc.
+type extblock struct {
+	Header *Header
+	Txs    []*Transaction
 }
 
 // NewBlock creates a new block. The input data is copied,
@@ -189,6 +177,14 @@ func (b *Block) Size() common.StorageSize {
 // EncodeRLP serializes b into the RLP block format.
 func (b *Block) EncodeRLP() ([]byte, error) {
 	return rlp.EncodeToBytes(b)
+}
+
+// EncodeRLP serializes b into RLP block format.
+func (b *Block) ExtEncodeRLP(w io.Writer) error {
+	return rlp.Encode(w, extblock{
+		Header: b.Head,
+		Txs:    b.Txs,
+	})
 }
 
 // DecodeRLP decodes the block
@@ -303,7 +299,10 @@ func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 
 func rlpHash(x interface{}) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
-	rlp.Encode(hw, x)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		panic(fmt.Sprintf("rlp hash encode err: %v", err))
+	}
 	hw.Sum(h[:0])
 	return h
 }

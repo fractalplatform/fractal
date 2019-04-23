@@ -17,28 +17,66 @@
 package types
 
 import (
-	"bytes"
 	"math/big"
 	"testing"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 )
 
-func TestSigning(t *testing.T) {
-	key, _ := crypto.GenerateKey()
-	exp := crypto.FromECDSAPub(&key.PublicKey)
-	signer := NewSigner(big.NewInt(18))
-	if err := SignAction(testTx.GetActions()[0], testTx, signer, key); err != nil {
+// func TestSigning(t *testing.T) {
+// 	key, _ := crypto.GenerateKey()
+// 	exp := crypto.FromECDSAPub(&key.PublicKey)
+// 	signer := NewSigner(big.NewInt(18))
+// 	if err := SignAction(testTx.GetActions()[0], testTx, signer, key); err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	pubkey, err := Recover(signer, testTx.GetActions()[0], testTx)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	if bytes.Compare(pubkey.Bytes(), exp) != 0 {
+// 		t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, exp)
+// 	}
+// }
+
+func TestSigningMultiKey(t *testing.T) {
+	keys := make([]*KeyPair, 0)
+	pubs := make([]common.PubKey, 0)
+	for i := 0; i < 4; i++ {
+		key, _ := crypto.GenerateKey()
+		exp := crypto.FromECDSAPub(&key.PublicKey)
+		keys = append(keys, &KeyPair{priv: key, index: []uint64{uint64(i)}})
+		pubs = append(pubs, common.BytesToPubKey(exp))
+	}
+	signer := NewSigner(big.NewInt(1))
+	if err := SignActionWithMultiKey(testTx.GetActions()[0], testTx, signer, keys); err != nil {
 		t.Fatal(err)
 	}
 
-	pubkey, err := Recover(signer, testTx.GetActions()[0], testTx)
+	pubkeys, err := RecoverMultiKey(signer, testTx.GetActions()[0], testTx)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if bytes.Compare(pubkey.Bytes(), exp) != 0 {
-		t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, exp)
+	for i, pubkey := range pubkeys {
+		if pubkey.Compare(pubs[i]) != 0 {
+			t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, pubs[i])
+		}
+	}
+
+	//test cache
+	pubkeys, err = RecoverMultiKey(signer, testTx.GetActions()[0], testTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, pubkey := range pubkeys {
+		if pubkey.Compare(pubs[i]) != 0 {
+			t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, pubs[i])
+		}
 	}
 }
 
@@ -46,11 +84,26 @@ func TestChainID(t *testing.T) {
 	key, _ := crypto.GenerateKey()
 
 	signer := NewSigner(big.NewInt(1))
-	if err := SignAction(testAction, testTx, signer, key); err != nil {
+	keyPair := MakeKeyPair(key, []uint64{0})
+	if err := SignActionWithMultiKey(testAction, testTx, signer, []*KeyPair{keyPair}); err != nil {
 		t.Fatal(err)
 	}
 
 	if testTx.GetActions()[0].ChainID().Cmp(signer.chainID) != 0 {
 		t.Error("expected chainId to be", signer.chainID, "got", testTx.GetActions()[0].ChainID())
+	}
+}
+
+func TestAuthorCache(t *testing.T) {
+	authorVersion := make(map[common.Name]uint64, 0)
+	authorVersion[common.Name("fromname")] = 1
+	authorVersion[common.Name("toname")] = 10
+	StoreAuthorCache(testAction, authorVersion)
+
+	loadAuthorVeriosn := GetAuthorCache(testAction)
+	for name, version := range loadAuthorVeriosn {
+		if authorVersion[name] != version {
+			t.Error("expected version to be", authorVersion[name], "got", version)
+		}
 	}
 }

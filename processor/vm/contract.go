@@ -39,7 +39,7 @@ type AccountRef common.Name
 // Name casts AccountRef to a Name
 func (ar AccountRef) Name() common.Name { return (common.Name)(ar) }
 
-// Contract represents an ethereum contract in the state database. It contains
+// Contract represents an contract in the state database. It contains
 // the the contract code, calling arguments. Contract implements ContractRef
 type Contract struct {
 	// CallerName is the result of the caller which initialised this

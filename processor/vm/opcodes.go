@@ -97,6 +97,7 @@ const (
 	NUMBER
 	DIFFICULTY
 	GASLIMIT
+	CALLASSETID
 )
 
 const (
@@ -209,6 +210,13 @@ const (
 	//snapshot num
 	SNAPSHOTTIME = 0xc6
 	SNAPBALANCE  = 0xc7
+	//
+	DESTROYASSET = 0xc8
+	GETACCOUNTID = 0xc9
+
+	GETDELEGATE    = 0xca
+	GETACCOUNTTIME = 0xcb
+	CRYPTOCALC     = 0xcc
 )
 
 const (
@@ -220,7 +228,9 @@ const (
 	DELEGATECALL
 	STATICCALL = 0xfa
 
-	REVERT       = 0xfd
+	REVERT = 0xfd
+	///< invalid instruction for expressing runtime errors (e.g., division-by-zero)
+	INVALID      = 0xfe
 	SELFDESTRUCT = 0xff
 )
 
@@ -277,12 +287,13 @@ var opCodeToString = map[OpCode]string{
 	RETURNDATACOPY: "RETURNDATACOPY",
 
 	// 0x40 range - block operations
-	BLOCKHASH:  "BLOCKHASH",
-	COINBASE:   "COINBASE",
-	TIMESTAMP:  "TIMESTAMP",
-	NUMBER:     "NUMBER",
-	DIFFICULTY: "DIFFICULTY",
-	GASLIMIT:   "GASLIMIT",
+	BLOCKHASH:   "BLOCKHASH",
+	COINBASE:    "COINBASE",
+	TIMESTAMP:   "TIMESTAMP",
+	NUMBER:      "NUMBER",
+	DIFFICULTY:  "DIFFICULTY",
+	GASLIMIT:    "GASLIMIT",
+	CALLASSETID: "CALLASSETID",
 
 	// 0x50 range - 'storage' and execution
 	POP: "POP",
@@ -379,7 +390,7 @@ var opCodeToString = map[OpCode]string{
 	RETURN:       "RETURN",
 	CALLCODE:     "CALLCODE",
 	DELEGATECALL: "DELEGATECALL",
-	//add new asset for multi-asset
+	//0xc0 range add new asset for multi-asset
 	BALANCEEX:     "BALANCEEX",
 	SETASSETOWNER: "SETASSETOWNER",
 	ADDASSET:      "ADDASSET",
@@ -388,6 +399,7 @@ var opCodeToString = map[OpCode]string{
 	ASSETAMOUNT:   "ASSETAMOUNT",
 	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
+	CRYPTOCALC:    "CRYPTOCALC",
 	//add end
 	STATICCALL:   "STATICCALL",
 	REVERT:       "REVERT",
@@ -459,6 +471,7 @@ var stringToOp = map[string]OpCode{
 	"NUMBER":         NUMBER,
 	"DIFFICULTY":     DIFFICULTY,
 	"GASLIMIT":       GASLIMIT,
+	"CALLASSETID":    CALLASSETID,
 	"POP":            POP,
 	"MLOAD":          MLOAD,
 	"MSTORE":         MSTORE,

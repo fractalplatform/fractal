@@ -63,7 +63,9 @@ func (ldb *levelDB) Undelegate(string, *big.Int) error {
 func (ldb *levelDB) IncAsset2Acct(string, string, *big.Int) error {
 	return nil
 }
-
+func (ldb *levelDB) GetSnapshot(string, uint64) ([]byte, error) {
+	return nil, nil
+}
 func newTestLDB() (*levelDB, func()) {
 	dirname, err := ioutil.TempDir(os.TempDir(), "dpos_test_")
 	if err != nil {
@@ -89,7 +91,7 @@ func TestLDBVoter(t *testing.T) {
 	defer function()
 	voter := &voterInfo{
 		Name:     "vos",
-		Producer: "fos",
+		Cadidate: "fos",
 		Quantity: big.NewInt(1000),
 		Height:   uint64(time.Now().UnixNano()),
 	}
@@ -104,17 +106,17 @@ func TestLDBVoter(t *testing.T) {
 		panic(fmt.Errorf("getvoter --- not nil"))
 	}
 
-	// if delegators, err := db.GetDelegators(nvoter.Producer); err != nil {
+	// if delegators, err := db.GetDelegators(nvoter.Cadidate); err != nil {
 	// 	panic(fmt.Errorf("getdelegators --- %v", err))
 	// } else if len(delegators) != 1 {
 	// 	panic(fmt.Errorf("getdelegators --- not mismatch"))
 	// }
 
-	if err := db.DelVoter(nvoter.Name, nvoter.Producer); err != nil {
+	if err := db.DelVoter(nvoter.Name, nvoter.Cadidate); err != nil {
 		panic(fmt.Errorf("delvoter --- %v", err))
 	}
 
-	// if delegators, err := db.GetDelegators(nvoter.Producer); err != nil {
+	// if delegators, err := db.GetDelegators(nvoter.Cadidate); err != nil {
 	// 	panic(fmt.Errorf("getdelegators after del --- %v", err))
 	// } else if len(delegators) != 0 {
 	// 	t.Log(len(delegators))
@@ -128,50 +130,50 @@ func TestLDBVoter(t *testing.T) {
 	}
 }
 
-func TestLDBProducer(t *testing.T) {
-	// SetProducer(*producerInfo) error
-	// DelProducer(string) error
-	// GetProducer(string) (*producerInfo, error)
-	// Producers() ([]*producerInfo, error)
-	// ProducersSize() (uint64, error)
+func TestLDBCadidate(t *testing.T) {
+	// SetCadidate(*cadidateInfo) error
+	// DelCadidate(string) error
+	// GetCadidate(string) (*cadidateInfo, error)
+	// Cadidates() ([]*cadidateInfo, error)
+	// CadidatesSize() (uint64, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
-	prod := &producerInfo{
+	prod := &cadidateInfo{
 		Name:          "fos",
 		URL:           "www.fractalproject.com",
 		Quantity:      big.NewInt(1000),
 		TotalQuantity: big.NewInt(1000),
 		Height:        uint64(time.Now().UnixNano()),
 	}
-	if err := db.SetProducer(prod); err != nil {
+	if err := db.SetCadidate(prod); err != nil {
 		panic(fmt.Errorf("setprod --- %v", err))
 	}
 
-	nprod, err := db.GetProducer(prod.Name)
+	nprod, err := db.GetCadidate(prod.Name)
 	if err != nil {
 		panic(fmt.Errorf("getprod --- %v", err))
 	} else if nprod == nil {
 		panic(fmt.Errorf("getprod --- not nil"))
 	}
 
-	if size, err := db.ProducersSize(); err != nil {
+	if size, err := db.CadidatesSize(); err != nil {
 		panic(fmt.Errorf("prodsize --- %v", err))
 	} else if size != 1 {
 		panic(fmt.Errorf("prodsize --- mismatch"))
 	}
 
-	if err := db.DelProducer(nprod.Name); err != nil {
+	if err := db.DelCadidate(nprod.Name); err != nil {
 		panic(fmt.Errorf("delprod --- %v", err))
 	}
 
-	if size, err := db.ProducersSize(); err != nil {
+	if size, err := db.CadidatesSize(); err != nil {
 		panic(fmt.Errorf("prodsize --- %v", err))
 	} else if size != 0 {
 		panic(fmt.Errorf("prodsize --- mismatch"))
 	}
 
-	if nprod, err := db.GetProducer(nprod.Name); err != nil {
+	if nprod, err := db.GetCadidate(nprod.Name); err != nil {
 		panic(fmt.Errorf("getprod --- %v", err))
 	} else if nprod != nil {
 		panic(fmt.Errorf("getprod --- should nil"))
@@ -187,8 +189,8 @@ func TestLDBState(t *testing.T) {
 	defer function()
 	gstate := &globalState{
 		Height:                          10,
-		ActivatedProducerScheduleUpdate: uint64(time.Now().UnixNano()),
-		ActivatedProducerSchedule:       []string{},
+		ActivatedCadidateScheduleUpdate: uint64(time.Now().UnixNano()),
+		ActivatedCadidateSchedule:       []string{},
 		ActivatedTotalQuantity:          big.NewInt(1000),
 		TotalQuantity:                   big.NewInt(100000),
 	}

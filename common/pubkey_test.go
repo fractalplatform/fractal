@@ -18,7 +18,6 @@ package common
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 	"testing"
 )
@@ -48,9 +47,6 @@ func TestIsHexPubkey(t *testing.T) {
 	p1 := HexToPubKey("0x0462ad0e026eb91232feec4f333108b7f658ea34bc2715e0f4d575930398853942c9a09e638d19f9a18d47085e7b8ae59e257bd97e85acf9107947b5acbd8f969e")
 
 	p.SetBytes(p1.Bytes())
-
-	fmt.Println("====>", p.String())
-
 }
 
 func TestPubKeyUnmarshalJSON(t *testing.T) {

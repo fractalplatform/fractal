@@ -31,12 +31,23 @@ var (
 	ErrInvalidchainID = errors.New("invalid chain id for signer")
 	//ErrSigUnprotected signature is considered unprotected
 	ErrSigUnprotected = errors.New("signature is considered unprotected")
+	//ErrSignEmpty signature is considered unprotected
+	ErrSignEmpty = errors.New("signature is nil")
 )
 
 // sigCache is used to cache the derived sender and contains the signer used to derive it.
 type sigCache struct {
-	signer Signer
-	pubKey []byte
+	signer  Signer
+	pubKeys []common.PubKey
+}
+
+type KeyPair struct {
+	priv  *ecdsa.PrivateKey
+	index []uint64
+}
+
+func MakeKeyPair(priv *ecdsa.PrivateKey, index []uint64) *KeyPair {
+	return &KeyPair{priv, index}
 }
 
 // MakeSigner returns a Signer based on the given chainID .
@@ -44,35 +55,51 @@ func MakeSigner(chainID *big.Int) Signer {
 	return NewSigner(chainID)
 }
 
-// SignAction signs the action using the given signer and private key
-func SignAction(a *Action, tx *Transaction, s Signer, prv *ecdsa.PrivateKey) error {
+func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, keys []*KeyPair) error {
 	h := s.Hash(tx)
-	sig, err := crypto.Sign(h[:], prv)
-	if err != nil {
-		return err
+	for _, key := range keys {
+		sig, err := crypto.Sign(h[:], key.priv)
+		if err != nil {
+			return err
+		}
+
+		err = a.WithSignature(s, sig, key.index)
+		if err != nil {
+			return err
+		}
 	}
-	return a.WithSignature(s, sig)
+	return nil
 }
 
-// Recover returns the pubkey derived from the signature (V, R, S) using secp256k1
-// elliptic curve and an error if it failed deriving or upon an incorrect
-// signature.
-func Recover(signer Signer, a *Action, tx *Transaction) (common.PubKey, error) {
+func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
 	if sc := a.sender.Load(); sc != nil {
 		sigCache := sc.(sigCache)
 		if sigCache.signer.Equal(signer) {
-			pk := new(common.PubKey)
-			pk.SetBytes(sigCache.pubKey)
-			return *pk, nil
+			return sigCache.pubKeys, nil
 		}
 	}
 
-	pubKey, err := signer.PubKey(a, tx)
+	pubKeys, err := signer.PubKeys(a, tx)
 	if err != nil {
-		return common.PubKey{}, err
+		return []common.PubKey{}, err
 	}
-	a.sender.Store(sigCache{signer: signer, pubKey: pubKey})
-	return common.BytesToPubKey(pubKey), nil
+	a.sender.Store(sigCache{signer: signer, pubKeys: pubKeys})
+	return pubKeys, nil
+}
+
+func StoreAuthorCache(a *Action, authorVersion map[common.Name]uint64) {
+	a.author.Store(authorVersion)
+}
+
+func GetAuthorCache(a *Action) map[common.Name]uint64 {
+	authorVersion := make(map[common.Name]uint64, 0)
+	if ac := a.author.Load(); ac != nil {
+		aCache := ac.(map[common.Name]uint64)
+		for name, version := range aCache {
+			authorVersion[name] = version
+		}
+	}
+	return authorVersion
 }
 
 // Signer implements Signer .
@@ -98,14 +125,25 @@ func (s Signer) Equal(s2 Signer) bool {
 
 var big8 = big.NewInt(8)
 
-// PubKey return Action sender
-func (s Signer) PubKey(a *Action, tx *Transaction) ([]byte, error) {
+func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if len(a.GetSign()) == 0 {
+		return nil, ErrSignEmpty
+	}
 	if a.ChainID().Cmp(s.chainID) != 0 {
 		return nil, ErrInvalidchainID
 	}
-	V := new(big.Int).Sub(a.data.V, s.chainIDMul)
-	V.Sub(V, big8)
-	return recoverPlain(s.Hash(tx), a.data.R, a.data.S, V, true)
+	var pubKeys []common.PubKey
+	for _, sign := range a.data.Sign {
+		V := new(big.Int).Sub(sign.V, s.chainIDMul)
+		V.Sub(V, big8)
+		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V, true)
+		if err != nil {
+			return nil, err
+		}
+		pubKey := common.BytesToPubKey(data)
+		pubKeys = append(pubKeys, pubKey)
+	}
+	return pubKeys, nil
 }
 
 // SignatureValues returns a new transaction with the given signature. This signature
@@ -128,7 +166,7 @@ func (s Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 // Hash returns the hash to be signed by the sender.
 func (s Signer) Hash(tx *Transaction) common.Hash {
 	actionHashs := make([]common.Hash, len(tx.GetActions()))
-	for _, a := range tx.GetActions() {
+	for i, a := range tx.GetActions() {
 		hash := rlpHash([]interface{}{
 			a.data.From,
 			a.data.AType,
@@ -139,7 +177,7 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 			a.data.Payload,
 			s.chainID, uint(0), uint(0),
 		})
-		actionHashs = append(actionHashs, hash)
+		actionHashs[i] = hash
 	}
 
 	return rlpHash([]interface{}{

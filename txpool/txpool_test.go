@@ -41,7 +41,6 @@ import (
 // state reset and tests whether the pending state is in sync with the
 // block head event that initiated the resetState().
 func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
-
 	var (
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 		manager, _ = am.NewAccountManager(statedb)
@@ -54,7 +53,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	)
 
 	// issue asset
-	if err := asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal)); err != nil {
+	if err := asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name("")); err != nil {
 		t.Fatal(err)
 	}
 
@@ -216,27 +215,6 @@ func TestTransactionQueue(t *testing.T) {
 	}
 }
 
-func TestTransactionNegativeValue(t *testing.T) {
-
-	var (
-		fname = common.Name("fromname")
-		tname = common.Name("totestname")
-	)
-	pool, manager := setupTxPool(fname)
-	defer pool.Stop()
-	fkey := generateAccount(t, fname, manager)
-	generateAccount(t, tname, manager)
-
-	tx := newTx(big.NewInt(1), newAction(0, fname, tname, big.NewInt(-1), 100, nil))
-	if err := types.SignAction(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), fkey); err != nil {
-		panic(err)
-	}
-
-	if err := pool.AddRemote(tx); err != ErrNegativeValue {
-		t.Fatal("expected", ErrNegativeValue, "got", err)
-	}
-}
-
 func TestTransactionChainFork(t *testing.T) {
 
 	var (
@@ -253,15 +231,15 @@ func TestTransactionChainFork(t *testing.T) {
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 		newmanager, _ := am.NewAccountManager(statedb)
 
-		if err := newmanager.CreateAccount(fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(fname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(tname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000))
+		asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""))
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -299,15 +277,15 @@ func TestTransactionDoubleNonce(t *testing.T) {
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 		newmanager, _ := am.NewAccountManager(statedb)
 
-		if err := newmanager.CreateAccount(fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(fname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
+		if err := newmanager.CreateAccount(tname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))); err != nil {
 			t.Fatal(err)
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000))
+		asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""))
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -316,18 +294,19 @@ func TestTransactionDoubleNonce(t *testing.T) {
 	}
 	resetAsset()
 
+	keyPair := types.MakeKeyPair(fkey, []uint64{0})
 	tx1 := newTx(big.NewInt(1), newAction(0, fname, tname, big.NewInt(100), 100000, nil))
-	if err := types.SignAction(tx1.GetActions()[0], tx1, types.NewSigner(params.DefaultChainconfig.ChainID), fkey); err != nil {
+	if err := types.SignActionWithMultiKey(tx1.GetActions()[0], tx1, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 
 	tx2 := newTx(big.NewInt(2), newAction(0, fname, tname, big.NewInt(100), 1000000, nil))
-	if err := types.SignAction(tx2.GetActions()[0], tx2, types.NewSigner(params.DefaultChainconfig.ChainID), fkey); err != nil {
+	if err := types.SignActionWithMultiKey(tx2.GetActions()[0], tx2, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 
 	tx3 := newTx(big.NewInt(1), newAction(0, fname, tname, big.NewInt(100), 1000000, nil))
-	if err := types.SignAction(tx3.GetActions()[0], tx3, types.NewSigner(params.DefaultChainconfig.ChainID), fkey); err != nil {
+	if err := types.SignActionWithMultiKey(tx3.GetActions()[0], tx3, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 
@@ -1449,12 +1428,12 @@ func TestTransactionQueueLimitingEquivalency(t *testing.T)   { testTransactionLi
 func TestTransactionPendingLimitingEquivalency(t *testing.T) { testTransactionLimitingEquivalency(t, 0) }
 
 func testTransactionLimitingEquivalency(t *testing.T, origin uint64) {
-
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
 		assetID = uint64(1)
 	)
+	event.Reset()
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
@@ -1609,10 +1588,9 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 
-	config := testTxPoolConfig
-	config.GlobalSlots = 0
-
-	pool := New(config, params.DefaultChainconfig, blockchain)
+	event.Reset()
+	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
+	pool.config.GlobalSlots = 0
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
@@ -1637,7 +1615,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	txs := []*types.Transaction{}
 	for i, key := range keys {
-		for j := 0; j < int(config.AccountSlots)*2; j++ {
+		for j := 0; j < int(testTxPoolConfig.AccountSlots)*2; j++ {
 			txs = append(txs, transaction(nonces[accs[i]], accs[i], tname, 100000, key))
 			nonces[accs[i]]++
 		}
@@ -1645,9 +1623,9 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 	// Import the batch and verify that limits have been enforced
 	pool.AddRemotes(txs)
 
-	for addr, list := range pool.pending {
-		if list.Len() != int(config.AccountSlots) {
-			t.Fatalf("addr %x: total pending transactions mismatch: have %d, want %d", addr, list.Len(), config.AccountSlots)
+	for name, list := range pool.pending {
+		if list.Len() != int(testTxPoolConfig.AccountSlots) {
+			t.Fatalf("addr %s: total pending transactions mismatch: have %d, want %d", name, list.Len(), testTxPoolConfig.AccountSlots)
 		}
 	}
 	if err := validateTxPoolInternals(pool); err != nil {
@@ -1661,7 +1639,6 @@ func TestTransactionJournaling(t *testing.T)         { testTransactionJournaling
 func TestTransactionJournalingNoLocals(t *testing.T) { testTransactionJournaling(t, true) }
 
 func testTransactionJournaling(t *testing.T, nolocals bool) {
-	event.Reset()
 	// Create a temporary file for the journal
 	file, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -1683,6 +1660,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	config.Journal = journal
 	config.Rejournal = time.Second
 
+	event.Reset()
 	pool := New(config, params.DefaultChainconfig, blockchain)
 
 	var (
@@ -1757,6 +1735,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 
 	manager.SetNonce(localName, 1)
 	blockchain = &testBlockChain{statedb, 1000000, new(event.Feed)}
+	event.Reset()
 	pool = New(config, params.DefaultChainconfig, blockchain)
 
 	pending, queued = pool.Stats()
@@ -1785,7 +1764,7 @@ func TestTransactionStatusCheck(t *testing.T) {
 	// Create the pool to test the status retrievals with
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
-
+	event.Reset()
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
@@ -1920,7 +1899,7 @@ func BenchmarkPoolInsert(b *testing.B) {
 	fkey := generateAccount(nil, fname, manager)
 	generateAccount(nil, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1000000))
+	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000))
 
 	txs := make([]*types.Transaction, b.N)
 	for i := 0; i < b.N; i++ {

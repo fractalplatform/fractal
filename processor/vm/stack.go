@@ -90,3 +90,15 @@ func (st *Stack) Print() {
 	}
 	fmt.Println("#############")
 }
+
+func (st *Stack) DebugPrint() {
+	fmt.Println("### stack ###")
+	if len(st.data) > 0 {
+		for i, val := range st.data {
+			fmt.Printf("%-3d  %x\n", i, val)
+		}
+	} else {
+		fmt.Println("-- empty --")
+	}
+	fmt.Println("#############")
+}

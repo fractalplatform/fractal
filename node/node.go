@@ -18,7 +18,6 @@ package node
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -31,13 +30,11 @@ import (
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/utils/filelock"
-	"github.com/fractalplatform/fractal/wallet"
 )
 
 // Node is a container on which services can be registered.
 type Node struct {
 	config          *Config
-	wallet          *wallet.Wallet
 	running         bool
 	instanceDirLock filelock.Releaser        // prevents concurrent use of instance directory
 	serviceFuncs    []ServiceConstructor     // Service constructors (in dependency order)
@@ -70,14 +67,9 @@ func New(conf *Config) (*Node, error) {
 	if conf.Logger == nil {
 		conf.Logger = log.New()
 	}
-	w, err := makeWallet(conf)
-	if err != nil {
-		return nil, err
-	}
 
 	return &Node{
 		config:       conf,
-		wallet:       w,
 		running:      false,
 		serviceFuncs: []ServiceConstructor{},
 		services:     make(map[reflect.Type]Service),
@@ -86,23 +78,6 @@ func New(conf *Config) (*Node, error) {
 		wsEndpoint:   conf.WSEndpoint(),
 		ipcEndpoint:  conf.IPCEndpoint(),
 	}, nil
-}
-
-func makeWallet(conf *Config) (*wallet.Wallet, error) {
-	n, p, dir := conf.walletConfig()
-	if dir == "" {
-		var err error
-		// There is no datadir.
-		dir, err = ioutil.TempDir("", "tmpkeystore")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return nil, err
-	}
-	return wallet.NewWallet(dir, n, p), nil
 }
 
 // Register injects a new service into the node's stack. The service created by
@@ -147,7 +122,6 @@ func (n *Node) Start() error {
 		ctx := &ServiceContext{
 			config:   n.config,
 			services: make(map[reflect.Type]Service),
-			Wallet:   n.wallet,
 			P2P:      n.p2pServer,
 		}
 		for kind, s := range services { // copy needed for threaded access
@@ -429,4 +403,13 @@ func (n *Node) stopWS() {
 		n.wsHandler.Stop()
 		n.wsHandler = nil
 	}
+}
+
+func (n *Node) GetNodeConfig() *ServiceContext {
+	ctx := &ServiceContext{
+		config:   n.config,
+		services: make(map[reflect.Type]Service),
+		P2P:      n.p2pServer,
+	}
+	return ctx
 }

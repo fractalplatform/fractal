@@ -85,29 +85,31 @@ func (miner *Miner) update() {
 }
 
 // Start start worker
-func (miner *Miner) Start() {
+func (miner *Miner) Start(force bool) bool {
 	atomic.StoreInt32(&miner.shouldStart, 1)
 	if atomic.LoadInt32(&miner.canStart) == 0 {
 		log.Error("Network syncing, will start miner afterwards")
-		return
+		return false
 	}
 	if !atomic.CompareAndSwapInt32(&miner.mining, 0, 1) {
 		log.Error("miner already started")
-		return
+		return false
 	}
 	log.Info("Starting mining operation")
-	miner.worker.start()
+	miner.worker.start(force)
+	return true
 }
 
 // Stop stop worker
-func (miner *Miner) Stop() {
+func (miner *Miner) Stop() bool {
 	if !atomic.CompareAndSwapInt32(&miner.mining, 1, 0) {
 		log.Error("miner already stopped")
-		return
+		return false
 	}
 	log.Info("Stopping mining operation")
 	atomic.StoreInt32(&miner.shouldStart, 0)
 	miner.worker.stop()
+	return true
 }
 
 // Mining wroker is wroking
@@ -135,7 +137,7 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 		privs = append(privs, priv)
 	}
 
-	if !common.IsValidName(name) {
+	if !common.IsValidAccountName(name) {
 		return fmt.Errorf("invalid name %v", name)
 	}
 
@@ -146,7 +148,7 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 // SetExtra extra data
 func (miner *Miner) SetExtra(extra []byte) error {
 	if uint64(len(extra)) > params.MaximumExtraDataSize-65 {
-		err := fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize)
+		err := fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize-65)
 		log.Warn("SetExtra", "error", err)
 		return err
 	}

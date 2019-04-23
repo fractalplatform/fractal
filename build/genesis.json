@@ -1,48 +1,66 @@
 {
 	"config": {
-		"chainId": 1,
 		"bootnodes": [],
-		"sysName": "ftsystemio",
-		"sysToken": "ftoken",
-		"assetChargeRatio": 80,
-		"contractChargeRatio": 80
+		"chainId": 1,
+		"chainName": "fractal",
+		"chainUrl": "https://fractalproject.com",
+		"accountParams": {
+			"level": 1,
+			"length": 16,
+			"subLength": 8
+		},
+		"assetParams": {
+			"level": 1,
+			"length": 16,
+			"subLength": 8
+		},
+		"chargeParams": {
+			"assetRatio": 80,
+			"contractRatio": 80
+		},
+		"upgradeParams": {
+			"blockCnt": 10000,
+			"upgradeRatio": 80
+		},
+		"dposParams": {
+			"maxURLLen": 512,
+			"unitStake": 1000,
+			"cadidateMinQuantity": 10,
+			"voterMinQuantity": 1,
+			"activatedMinQuantity": 100,
+			"blockInterval": 3000,
+			"blockFrequency": 6,
+			"cadidateScheduleSize": 3,
+			"delayEcho": 2,
+			"extraBlockReward": 1,
+			"blockReward": 5
+		},
+		"systemName": "fractal.admin",
+		"accountName": "fractal.account",
+		"dposName": "fractal.dpos",
+		"systemToken": "ftoken"
 	},
-	"dpos": {
-		"MaxURLLen": 512,
-		"UnitStake": 1000,
-		"ProducerMinQuantity": 10,
-		"VoterMinQuantity": 1,
-		"ActivatedMinQuantity": 1000,
-		"BlockInterval": 3000,
-		"BlockFrequency": 6,
-		"ProducerScheduleSize": 3,
-		"DelayEcho": 2,
-		"AccountName": "ftsystemdpos",
-		"SystemName": "ftsystemio",
-		"SystemURL": "www.fractalproject.com",
-		"ExtraBlockReward": 1,
-		"BlockReward": 5,
-		"Decimals": 18
-	},
-	"timestamp": "0x0",
-	"gasLimit": "0x5f5e100",
-	"difficulty": "0x20000",
-	"coinbase": "ftsystemio",
-	"allocAccounts": [
-		{
-			"name": "ftsystemio",
-			"pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
-		}
-	],
-	"allocAssets": [
-		{
-			"assetname": "ftoken",
-			"symbol": "ft",
-			"amount": 10000000000000000000000000000,
-			"decimals": 18,
-			"owner": "ftsystemio",
-			"founder": "ftsystemio",
-			"UpperLimit":10000000000000000000000000000
-		}
-	]
+	"timestamp": 1547596800000000000,
+	"gasLimit": 100000000,
+	"difficulty": 131072,
+	"allocAccounts": [{
+		"name": "fractal.admin",
+		"pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
+	}, {
+		"name": "fractal.account",
+		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+	}, {
+		"name": "fractal.dpos",
+		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+	}],
+	"allocCadidates": [],
+	"allocAssets": [{
+		"name": "ftoken",
+		"symbol": "ft",
+		"amount": 100000000000000000000000000000,
+		"decimals": 18,
+		"founder": "fractal.admin",
+		"owner": "fractal.admin",
+		"upperLimit": 100000000000000000000000000000
+	}]
 }

@@ -30,12 +30,12 @@ import (
 var DefaultConfig = &Config{
 	MaxURLLen:            512,
 	UnitStake:            big.NewInt(1000),
-	ProducerMinQuantity:  big.NewInt(10),
+	CadidateMinQuantity:  big.NewInt(10),
 	VoterMinQuantity:     big.NewInt(1),
 	ActivatedMinQuantity: big.NewInt(100),
 	BlockInterval:        3000,
 	BlockFrequency:       6,
-	ProducerScheduleSize: 3,
+	CadidateScheduleSize: 3,
 	DelayEcho:            2,
 	AccountName:          "ftsystemdpos",
 	SystemName:           "ftsystemio",
@@ -48,21 +48,21 @@ var DefaultConfig = &Config{
 // Config dpos configures
 type Config struct {
 	// consensus fileds
-	MaxURLLen            uint64   // url length
-	UnitStake            *big.Int // state unit
-	ProducerMinQuantity  *big.Int // min quantity
-	VoterMinQuantity     *big.Int // min quantity
-	ActivatedMinQuantity *big.Int // min active quantity
-	BlockInterval        uint64
-	BlockFrequency       uint64
-	ProducerScheduleSize uint64
-	DelayEcho            uint64
-	AccountName          string
-	SystemName           string
-	SystemURL            string
-	ExtraBlockReward     *big.Int
-	BlockReward          *big.Int
-	Decimals             uint64
+	MaxURLLen            uint64   `json:"maxURLLen"`            // url length
+	UnitStake            *big.Int `json:"unitStake"`            // state unit
+	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity"`  // min quantity
+	VoterMinQuantity     *big.Int `json:"voterMinQuantity"`     // min quantity
+	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity"` // min active quantity
+	BlockInterval        uint64   `json:"blockInterval"`
+	BlockFrequency       uint64   `json:"blockFrequency"`
+	CadidateScheduleSize uint64   `json:"cadidateScheduleSize"`
+	DelayEcho            uint64   `json:"delayEcho"`
+	AccountName          string   `json:"accountName"`
+	SystemName           string   `json:"systemName"`
+	SystemURL            string   `json:"systemURL"`
+	ExtraBlockReward     *big.Int `json:"extraBlockReward"`
+	BlockReward          *big.Int `json:"blockReward"`
+	Decimals             uint64   `json:"decimals"`
 
 	// cache files
 	decimal    atomic.Value
@@ -116,7 +116,7 @@ func (cfg *Config) epochInterval() uint64 {
 	if epochInter := cfg.epochInter.Load(); epochInter != nil {
 		return epochInter.(uint64)
 	}
-	epochInter := cfg.blockInterval() * cfg.BlockFrequency * cfg.ProducerScheduleSize
+	epochInter := cfg.blockInterval() * cfg.BlockFrequency * cfg.CadidateScheduleSize
 	cfg.epochInter.Store(epochInter)
 	return epochInter
 }
@@ -126,7 +126,7 @@ func (cfg *Config) consensusSize() uint64 {
 		return safeSize.(uint64)
 	}
 
-	safeSize := cfg.ProducerScheduleSize*2/3 + 1
+	safeSize := cfg.CadidateScheduleSize*2/3 + 1
 	cfg.safeSize.Store(safeSize)
 	return safeSize
 }

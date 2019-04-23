@@ -17,16 +17,19 @@
 package blockchain
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/consensus/dpos"
+
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
+	at "github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
@@ -34,34 +37,77 @@ import (
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // GenesisAccount is an account in the state of the genesis block.
 type GenesisAccount struct {
-	Name   common.Name   `json:"name,omitempty"`
+	Name   string        `json:"name,omitempty"`
 	PubKey common.PubKey `json:"pubKey,omitempty"`
+}
+
+// GenesisCadidate is an cadicate in the state of the genesis block.
+type GenesisCadidate struct {
+	Name  string   `json:"name,omitempty"`
+	URL   string   `json:"url,omitempty"`
+	Stake *big.Int `json:"stake,omitempty"`
+}
+
+// GenesisAsset is an asset in the state of the genesis block.
+type GenesisAsset struct {
+	Name       string   `json:"name,omitempty"`
+	Symbol     string   `json:"symbol,omitempty"`
+	Amount     *big.Int `json:"amount,omitempty"`
+	Decimals   uint64   `json:"decimals,omitempty"`
+	Founder    string   `json:"founder,omitempty"`
+	Owner      string   `json:"owner,omitempty"`
+	UpperLimit *big.Int `json:"upperLimit,omitempty"`
 }
 
 // Genesis specifies the header fields, state of a genesis block.
 type Genesis struct {
-	Config        *params.ChainConfig  `json:"config"`
-	Dpos          *dpos.Config         `json:"dpos"`
-	Timestamp     uint64               `json:"timestamp"`
-	ExtraData     []byte               `json:"extraData"`
-	GasLimit      uint64               `json:"gasLimit" `
-	Difficulty    *big.Int             `json:"difficulty" `
-	Coinbase      common.Name          `json:"coinbase"`
-	AllocAccounts []*GenesisAccount    `json:"allocAccounts"`
-	AllocAssets   []*asset.AssetObject `json:"allocAssets"`
+	Config         *params.ChainConfig `json:"config,omitempty"`
+	Timestamp      uint64              `json:"timestamp,omitempty"`
+	GasLimit       uint64              `json:"gasLimit,omitempty" `
+	Difficulty     *big.Int            `json:"difficulty,omitempty" `
+	AllocAccounts  []*GenesisAccount   `json:"allocAccounts,omitempty"`
+	AllocCadidates []*GenesisCadidate  `json:"allocCadidates,omitempty"`
+	AllocAssets    []*GenesisAsset     `json:"allocAssets,omitempty"`
+}
+
+func dposConfig(cfg *params.ChainConfig) *dpos.Config {
+	return &dpos.Config{
+		MaxURLLen:            cfg.DposCfg.MaxURLLen,
+		UnitStake:            cfg.DposCfg.UnitStake,
+		CadidateMinQuantity:  cfg.DposCfg.CadidateMinQuantity,
+		VoterMinQuantity:     cfg.DposCfg.VoterMinQuantity,
+		ActivatedMinQuantity: cfg.DposCfg.ActivatedMinQuantity,
+		BlockInterval:        cfg.DposCfg.BlockInterval,
+		BlockFrequency:       cfg.DposCfg.BlockFrequency,
+		CadidateScheduleSize: cfg.DposCfg.CadidateScheduleSize,
+		DelayEcho:            cfg.DposCfg.DelayEcho,
+		AccountName:          cfg.DposName,
+		SystemName:           cfg.SysName,
+		SystemURL:            cfg.ChainURL,
+		ExtraBlockReward:     cfg.DposCfg.ExtraBlockReward,
+		BlockReward:          cfg.DposCfg.BlockReward,
+		Decimals:             cfg.SysTokenDecimals,
+	}
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
-func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.ChainConfig, dcfg *dpos.Config, hash common.Hash, err error) {
+	chainCfg = params.DefaultChainconfig
+	dcfg = dpos.DefaultConfig
+	hash = common.Hash{}
+	defer func() {
+		if e := recover(); e != nil {
+			err = errors.New(e.(string))
+		}
+	}()
+
 	if genesis != nil && genesis.Config == nil {
-		return params.DefaultChainconfig, dpos.DefaultConfig, common.Hash{}, errGenesisNoConfig
-	}
-	if genesis != nil && genesis.Dpos == nil {
-		return params.DefaultChainconfig, dpos.DefaultConfig, common.Hash{}, errGenesisNoDpos
+		return params.DefaultChainconfig, dposConfig(params.DefaultChainconfig), common.Hash{}, errGenesisNoConfig
 	}
 
 	// Just commit the new block if there is no stored genesis block.
@@ -72,37 +118,64 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		}
 		block, err := genesis.Commit(db)
 		log.Info("Writing genesis block", "hash", block.Hash().Hex())
-		return genesis.Config, genesis.Dpos, block.Hash(), err
+
+		return genesis.Config, dposConfig(genesis.Config), block.Hash(), err
 	}
 
 	// Check whether the genesis block is already written.
 	if genesis != nil {
-		hash := genesis.ToBlock(nil).Hash()
+		blk, _ := genesis.ToBlock(nil)
+		hash := blk.Hash()
 		if hash != stored {
-			return genesis.Config, genesis.Dpos, hash, &GenesisMismatchError{stored, hash}
+			return genesis.Config, dposConfig(genesis.Config), hash, &GenesisMismatchError{stored, hash}
 		}
 	}
-	// Get the existing dpos configuration.
-	newdpos := genesis.dposOrDefault(stored)
-
-	// Get the existing chain configuration.
 	newcfg := genesis.configOrDefault(stored)
 
 	height := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
 	if height == nil {
-		return newcfg, newdpos, stored, fmt.Errorf("missing block number for head header hash")
+		return newcfg, dposConfig(newcfg), common.Hash{}, fmt.Errorf("missing block number for head header hash")
 	}
-	err := newdpos.Write(db, append([]byte("ft-dpos-"), stored.Bytes()...))
-	rawdb.WriteChainConfig(db, stored, newcfg)
-	return newcfg, newdpos, stored, err
+
+	storedcfg := rawdb.ReadChainConfig(db, stored)
+	if storedcfg == nil {
+		return newcfg, dposConfig(newcfg), common.Hash{}, fmt.Errorf("Found genesis block without chain config")
+	}
+	am.SetAccountNameConfig(&am.Config{
+		AccountNameLevel:     storedcfg.AccountNameCfg.Level,
+		AccountNameLength:    storedcfg.AccountNameCfg.Length,
+		SubAccountNameLength: storedcfg.AccountNameCfg.SubLength,
+	})
+	at.SetAssetNameConfig(&at.Config{
+		AssetNameLength:    storedcfg.AssetNameCfg.Length,
+		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
+		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
+	})
+	am.SetSysName(common.StrToName(storedcfg.AccountName))
+	return storedcfg, dposConfig(storedcfg), stored, nil
 }
 
 // ToBlock creates the genesis block and writes state of a genesis specification
 // to the given database (or discards it if nil).
-func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
+func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
+	verify := true
 	if db == nil {
+		verify = false
 		db = memdb.NewMemDatabase()
 	}
+	detailTx := &types.DetailTx{}
+	var internals []*types.DetailAction
+	am.SetAccountNameConfig(&am.Config{
+		AccountNameLevel:     g.Config.AccountNameCfg.Level,
+		AccountNameLength:    g.Config.AccountNameCfg.Length,
+		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+	})
+	at.SetAssetNameConfig(&at.Config{
+		AssetNameLength:    g.Config.AssetNameCfg.Length,
+		AssetNameLevel:     g.Config.AssetNameCfg.Level,
+		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+	})
+	am.SetSysName(common.StrToName(g.Config.AccountName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
@@ -114,37 +187,139 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	}
 	//p2p
 	for _, node := range g.Config.BootNodes {
+		if len(node) == 0 {
+			continue
+		}
 		if _, err := enode.ParseV4(node); err != nil {
 			panic(fmt.Sprintf("genesis bootnodes err: %v in %v", err, node))
 		}
 	}
 
-	// dpos
-	if !common.IsValidName(g.Dpos.SystemName) {
-		panic(fmt.Sprintf("genesis invalid dpos account name %v", g.Dpos.SystemName))
+	actActions := []*types.Action{}
+	if err := dpos.Genesis(dposConfig(g.Config), statedb, number.Uint64()); err != nil {
+		panic(fmt.Sprintf("genesis dpos err %v", err))
 	}
-	g.AllocAccounts = append(g.AllocAccounts, &GenesisAccount{
-		Name:   common.StrToName(g.Dpos.AccountName),
-		PubKey: common.PubKey{},
-	})
-	if err := dpos.Genesis(g.Dpos, statedb, number.Uint64()); err != nil {
-		panic(fmt.Sprintf("genesis dpos err %v", g.Dpos.SystemName))
+
+	chainName := common.Name(g.Config.ChainName)
+	accoutName := common.Name(g.Config.AccountName)
+	// chain name
+	act := &am.AccountAction{
+		AccountName: chainName,
+		PublicKey:   common.PubKey{},
 	}
+	payload, _ := rlp.EncodeToBytes(act)
+	actActions = append(actActions, types.NewAction(
+		types.CreateAccount,
+		common.Name(""),
+		accoutName,
+		0,
+		0,
+		0,
+		big.NewInt(0),
+		payload,
+	))
 
 	for _, account := range g.AllocAccounts {
-		if err := accountManager.CreateAccount(account.Name, common.Name(""), 0, account.PubKey); err != nil {
-			panic(fmt.Sprintf("genesis create account err %v", err))
+		pname := common.Name("")
+		slt := strings.Split(account.Name, ".")
+		if len(slt) > 1 {
+			pname = common.Name(slt[0])
 		}
+		act := &am.AccountAction{
+			AccountName: common.StrToName(account.Name),
+			PublicKey:   account.PubKey,
+		}
+		payload, _ := rlp.EncodeToBytes(act)
+		actActions = append(actActions, types.NewAction(
+			types.CreateAccount,
+			pname,
+			accoutName,
+			0,
+			0,
+			0,
+			big.NewInt(0),
+			payload,
+		))
 	}
 
-	for _, asset := range g.AllocAssets {
-		if err := accountManager.IssueAsset(asset); err != nil {
-			panic(fmt.Sprintf("genesis issue asset err %v", err))
+	for index, action := range actActions {
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		if err != nil {
+			panic(fmt.Sprintf("genesis create account %v,err %v", index, err))
 		}
+		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
+	}
+
+	astActions := []*types.Action{}
+	for _, asset := range g.AllocAssets {
+		pname := common.Name("")
+		slt := strings.Split(asset.Name, ".")
+		if len(slt) > 1 {
+			if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
+				panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
+			} else {
+				pname = ast.Owner
+			}
+		}
+		ast := &at.AssetObject{
+			AssetName:  asset.Name,
+			Symbol:     asset.Symbol,
+			Amount:     asset.Amount,
+			Decimals:   asset.Decimals,
+			Founder:    common.StrToName(asset.Founder),
+			Owner:      common.StrToName(asset.Owner),
+			UpperLimit: asset.UpperLimit,
+		}
+		payload, _ := rlp.EncodeToBytes(ast)
+		astActions = append(astActions, types.NewAction(
+			types.IssueAsset,
+			pname,
+			accoutName,
+			0,
+			0,
+			0,
+			big.NewInt(0),
+			payload,
+		))
+	}
+
+	for index, action := range astActions {
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		if err != nil {
+			panic(fmt.Sprintf("genesis create asset %v,err %v", index, err))
+		}
+		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
+	}
+
+	if verify {
+		if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
+			panic(fmt.Sprintf("system is not exist %v", err))
+		}
+		if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
+			panic(fmt.Sprintf("account is not exist %v", err))
+		}
+		if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
+			panic(fmt.Sprintf("dpos is not exist %v", err))
+		}
+		assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
+		if err != nil {
+			panic(fmt.Sprintf("genesis system asset err %v", err))
+		}
+		g.Config.SysTokenID = assetInfo.AssetId
+		g.Config.SysTokenDecimals = assetInfo.Decimals
+	}
+	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
+	for _, cadidate := range g.AllocCadidates {
+		_ = cadidate
+		_ = sys
 	}
 
 	root := statedb.IntermediateRoot()
-	gjson, _ := g.MarshalJSON()
+	gjson, err := json.Marshal(g)
+	if err != nil {
+		panic(fmt.Sprintf("genesis json marshal json err %v", err))
+	}
+
 	head := &types.Header{
 		Number:     number,
 		Time:       new(big.Int).SetUint64(g.Timestamp),
@@ -153,11 +328,30 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Difficulty: g.Difficulty,
-		Coinbase:   g.Coinbase,
+		Coinbase:   common.StrToName(g.Config.SysName),
 		Root:       root,
 	}
 
-	block := types.NewBlock(head, nil, nil)
+	actions := []*types.Action{}
+	actions = append(actions, actActions...)
+	actions = append(actions, astActions...)
+	tx := types.NewTransaction(0, big.NewInt(0), actions...)
+	receipt := types.NewReceipt(root[:], 0, 0)
+	receipt.TxHash = tx.Hash()
+	for index := range actions {
+		receipt.ActionResults = append(receipt.ActionResults, &types.ActionResult{
+			Status:  1,
+			Index:   uint64(index),
+			GasUsed: 0,
+		})
+	}
+
+	detailTx.TxHash = receipt.TxHash
+	detailTx.Actions = internals
+	receipt.SetInternalTxsLog(detailTx)
+
+	receipts := []*types.Receipt{receipt}
+	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
 	batch := db.NewBatch()
 	roothash, err := statedb.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
@@ -167,41 +361,28 @@ func (g *Genesis) ToBlock(db fdb.Database) *types.Block {
 	if err := batch.Write(); err != nil {
 		panic(fmt.Sprintf("genesis batch write err: %v", err))
 	}
-	return block
+	return block, receipts
 }
 
 // Commit writes the block and state of a genesis specification to the database.
 // The block is committed as the canonical head block.
 func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
-	block := g.ToBlock(db)
+	block, receipts := g.ToBlock(db)
 	if block.Number().Sign() != 0 {
 		return nil, fmt.Errorf("can't commit genesis block with number > 0")
 	}
 	rawdb.WriteTd(db, block.Hash(), block.NumberU64(), g.Difficulty)
 	rawdb.WriteBlock(db, block)
-	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
+	rawdb.WriteTxLookupEntries(db, block)
+	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), receipts)
 	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(db, block.Hash())
 	rawdb.WriteHeadHeaderHash(db, block.Hash())
 
-	config := g.Config
-	if config == nil {
-		config = params.DefaultChainconfig
-	}
-	dposConfig := g.Dpos
-	if dposConfig == nil {
-		dposConfig = dpos.DefaultConfig
-	}
+	rawdb.WriteChainConfig(db, block.Hash(), g.Config)
+	rawdb.WriteIrreversibleNumber(db, uint64(0))
 
-	rawdb.WriteChainConfig(db, block.Hash(), config)
 	return block, nil
-}
-
-func (g *Genesis) dposOrDefault(ghash common.Hash) *dpos.Config {
-	if g != nil {
-		return g.Dpos
-	}
-	return dpos.DefaultConfig
 }
 
 func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
@@ -215,36 +396,46 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 func DefaultGenesis() *Genesis {
 	gtime, _ := time.Parse("2006-01-02 15:04:05.999999999", "2019-01-16 00:00:00")
 	return &Genesis{
-		Config:        params.DefaultChainconfig,
-		Dpos:          dpos.DefaultConfig,
-		Timestamp:     uint64(gtime.UnixNano()),
-		ExtraData:     hexutil.MustDecode(hexutil.Encode([]byte("ft Genesis Block"))),
-		GasLimit:      params.GenesisGasLimit,
-		Difficulty:    params.GenesisDifficulty,
-		Coinbase:      params.DefaultChainconfig.SysName,
-		AllocAccounts: DefaultGenesisAccounts(),
-		AllocAssets:   DefaultGenesisAssets(),
+		Config:         params.DefaultChainconfig,
+		Timestamp:      uint64(gtime.UnixNano()),
+		GasLimit:       params.GenesisGasLimit,
+		Difficulty:     params.GenesisDifficulty,
+		AllocAccounts:  DefaultGenesisAccounts(),
+		AllocCadidates: DefaultGenesisCadidates(),
+		AllocAssets:    DefaultGenesisAssets(),
 	}
 }
 
 // DefaultGenesisAccounts returns the ft net genesis accounts.
 func DefaultGenesisAccounts() []*GenesisAccount {
-	pubKey := common.HexToPubKey(params.DefaultPubkeyHex)
 	return []*GenesisAccount{
 		&GenesisAccount{
 			Name:   params.DefaultChainconfig.SysName,
-			PubKey: pubKey,
+			PubKey: common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
+		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.AccountName,
+			PubKey: common.HexToPubKey(""),
+		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.DposName,
+			PubKey: common.HexToPubKey(""),
 		},
 	}
 }
 
+// DefaultGenesisCadidates returns the ft net genesis cadidates.
+func DefaultGenesisCadidates() []*GenesisCadidate {
+	return []*GenesisCadidate{}
+}
+
 // DefaultGenesisAssets returns the ft net genesis assets.
-func DefaultGenesisAssets() []*asset.AssetObject {
+func DefaultGenesisAssets() []*GenesisAsset {
 	supply := new(big.Int)
 	supply.SetString("100000000000000000000000000000", 10)
-	return []*asset.AssetObject{
-		&asset.AssetObject{
-			AssetName:  params.DefaultChainconfig.SysToken,
+	return []*GenesisAsset{
+		&GenesisAsset{
+			Name:       params.DefaultChainconfig.SysToken,
 			Symbol:     "ft",
 			Amount:     supply,
 			Decimals:   18,

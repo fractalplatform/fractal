@@ -7,19 +7,22 @@ contract Asset {
         totalSupply = 10;
     }
 
-    function reg(string desc) public {
-        issueasset(desc);
+    function reg(string desc) public returns(uint256){
+        return issueasset(desc);
     }
-    function add(address assetId, uint256 value) public {
-        addasset(assetId,value);
+    function add(uint assetId, address to, uint256 value) public {
+        addasset(assetId,to,value);
     }
-    function transAsset(address to, address assetId, uint256 value) public payable {
+    function getAssetId() public returns (uint256) {
+        return msg.assetid;
+    }
+    function transAsset(address to, uint assetId, uint256 value) public payable {
         to.transferex(assetId, value);
     }
-    function setname(address newOwner, address assetId) public {
+    function setname(address newOwner, uint assetId) public {
         setassetowner(assetId, newOwner);
     }
-    function getbalance(address to, address assetId) public returns(uint) {
+    function getbalance(address to, uint assetId) public returns(uint256) {
         return to.balanceex(assetId);
     }
     function getAssetAmount(uint256 assetId, uint256 t) public returns (uint256){

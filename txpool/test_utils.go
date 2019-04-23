@@ -79,7 +79,8 @@ func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa
 
 func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
 	tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
-	if err := types.SignAction(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), key); err != nil {
+	keyPair := types.MakeKeyPair(key, []uint64{0})
+	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 	return tx
@@ -92,7 +93,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if err := m.CreateAccount(name, common.Name(""), 80, common.BytesToPubKey(pubkeyBytes)); err != nil {
+		if err := m.CreateAccount(name, common.Name(""), 0, 80, common.BytesToPubKey(pubkeyBytes)); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -103,7 +104,7 @@ func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
 
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
 	asset := asset.NewAsset(statedb)
-	asset.IssueAsset("ft", "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000))
+	asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000), common.Name(""))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 	manager, _ := am.NewAccountManager(statedb)
 	return New(testTxPoolConfig, params.DefaultChainconfig, blockchain), manager
@@ -171,18 +172,6 @@ func validateEvents(events chan *event.Event, count int) error {
 		// really nothing gets injected.
 	}
 	return nil
-}
-
-func deriveSender(tx *types.Transaction) ([]common.PubKey, error) {
-	var pubkeys []common.PubKey
-	for _, a := range tx.GetActions() {
-		pubkey, err := types.Recover(types.NewSigner(params.DefaultChainconfig.ChainID), a, tx)
-		if err != nil {
-			return nil, err
-		}
-		pubkeys = append(pubkeys, pubkey)
-	}
-	return pubkeys, nil
 }
 
 type testChain struct {

@@ -62,7 +62,7 @@ func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkContr
 func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) {
 	info := ForkInfo{}
 
-	infoBytes, err := statedb.Get(fc.chainCfg.SysName.String(), forkInfo)
+	infoBytes, err := statedb.Get(fc.chainCfg.ChainName, forkInfo)
 	if err != nil {
 		return info, err
 	}
@@ -84,22 +84,18 @@ func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) err
 		return err
 	}
 
-	statedb.Put(fc.chainCfg.SysName.String(), forkInfo, infoBytes)
+	statedb.Put(fc.chainCfg.ChainName, forkInfo, infoBytes)
 	return nil
 }
 
 func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) error {
-	// first hard fork at a specific height
-	if block.NumberU64() < params.TheForkNum {
-		return nil
-	}
-
 	info, err := fc.getForkInfo(statedb)
 	if err != nil {
 		return err
 	}
 
-	if block.CurForkID() != block.NextForkID() {
+	// treat older version as oldest version
+	if block.CurForkID() != block.NextForkID() && info.NextForkID <= block.NextForkID() {
 		if info.NextForkID < block.NextForkID() {
 			// update next forkID
 			info.NextForkID = block.NextForkID()
@@ -108,11 +104,7 @@ func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) err
 
 		info.NextForkIDBlockNum++
 		if info.CurForkIDBlockNum+info.NextForkIDBlockNum >= fc.cfg.ForkBlockNum {
-			if info.CurForkIDBlockNum != 0 {
-				info.CurForkIDBlockNum--
-			} else {
-				info.NextForkIDBlockNum--
-			}
+			info.CurForkIDBlockNum--
 		}
 	} else {
 		info.CurForkIDBlockNum++
@@ -143,28 +135,22 @@ func (fc *ForkController) currentForkID(statedb *state.StateDB) (uint64, uint64,
 }
 
 func (fc *ForkController) checkForkID(header *types.Header, state *state.StateDB) error {
-	// first hard fork at a specific height
-	if header.Number.Uint64() >= params.TheForkNum {
-		// check current fork id and next fork id
-		if curForkID, _, err := fc.currentForkID(state); err != nil {
-			return err
-		} else if header.CurForkID() != curForkID || header.NextForkID() < curForkID {
-			return fmt.Errorf("invild header curForkID: %v, header nextForkID: %v,actual curForkID %v, header hash: %v, header number: %v",
-				header.CurForkID(), header.NextForkID(), curForkID, header.Hash().Hex(), header.Number.Uint64())
-		}
+	// check current fork id and next fork id
+	if curForkID, _, err := fc.currentForkID(state); err != nil {
+		return err
+	} else if header.CurForkID() != curForkID || header.NextForkID() < curForkID {
+		return fmt.Errorf("invild header curForkID: %v, header nextForkID: %v,actual curForkID %v, header hash: %v, header number: %v",
+			header.CurForkID(), header.NextForkID(), curForkID, header.Hash().Hex(), header.Number.Uint64())
 	}
 	return nil
 }
 
 func (fc *ForkController) fillForkID(header *types.Header, state *state.StateDB) error {
-	// first hard fork at a specific height
-	if header.Number.Uint64() >= params.TheForkNum {
-		// check current fork id and next fork id
-		curForkID, nextForkID, err := fc.currentForkID(state)
-		if err != nil {
-			return err
-		}
-		header.WithForkID(curForkID, nextForkID)
+	// check current fork id and next fork id
+	curForkID, nextForkID, err := fc.currentForkID(state)
+	if err != nil {
+		return err
 	}
+	header.WithForkID(curForkID, nextForkID)
 	return nil
 }

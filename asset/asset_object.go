@@ -17,43 +17,52 @@ package asset
 
 import (
 	"math/big"
-	"regexp"
 
 	"github.com/fractalplatform/fractal/common"
 )
 
 type AssetObject struct {
-	AssetId    uint64      `json:"assetid,omitempty"`
-	AssetName  string      `json:"assetname,omitempty"`
-	Symbol     string      `json:"symbol,omitempty"`
-	Amount     *big.Int    `json:"amount,omitempty"`
-	Decimals   uint64      `json:"decimals,omitempty"`
-	Founder    common.Name `json:"founder,omitempty"`
-	Owner      common.Name `json:"owner,omitempty"`
-	AddIssue   *big.Int    `json:"AddIssue,omitempty"`
-	UpperLimit *big.Int    `json:"UpperLimit,omitempty"`
+	AssetId    uint64      `json:"assetId,omitempty"`
+	Number     uint64      `json:"number,omitempty"`
+	AssetName  string      `json:"assetName"`
+	Symbol     string      `json:"symbol"`
+	Amount     *big.Int    `json:"amount"`
+	Decimals   uint64      `json:"decimals"`
+	Founder    common.Name `json:"founder"`
+	Owner      common.Name `json:"owner"`
+	AddIssue   *big.Int    `json:"addIssue"`
+	UpperLimit *big.Int    `json:"upperLimit"`
+	Contract   common.Name `json:"contract"`
 }
 
-func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int) (*AssetObject, error) {
+func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name) (*AssetObject, error) {
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}
 
-	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(limit) > 0 {
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 {
 		return nil, ErrNewAssetObject
 	}
 
-	reg := regexp.MustCompile("^[a-z0-9]{2,16}$")
-	if reg.MatchString(assetName) == false {
+	if limit.Cmp(big.NewInt(0)) > 0 {
+		if amount.Cmp(limit) > 0 {
+			return nil, ErrNewAssetObject
+		}
+	}
+
+	// reg := regexp.MustCompile("^[a-z0-9]{2,16}$")
+
+	if common.IsValidAssetName(assetName) == false {
 		return nil, ErrNewAssetObject
 	}
 
-	if reg.MatchString(symbol) == false {
+	if common.IsValidAssetName(symbol) == false {
 		return nil, ErrNewAssetObject
 	}
 
 	ao := AssetObject{
 		AssetId:    0,
+		Number:     number,
 		AssetName:  assetName,
 		Symbol:     symbol,
 		Amount:     amount,
@@ -62,6 +71,7 @@ func NewAssetObject(assetName string, symbol string, amount *big.Int, dec uint64
 		Owner:      owner,
 		AddIssue:   amount,
 		UpperLimit: limit,
+		Contract:   contract,
 	}
 	return &ao, nil
 }
@@ -72,6 +82,14 @@ func (ao *AssetObject) GetAssetId() uint64 {
 
 func (ao *AssetObject) SetAssetId(assetId uint64) {
 	ao.AssetId = assetId
+}
+
+func (ao *AssetObject) GetAssetNumber() uint64 {
+	return ao.Number
+}
+
+func (ao *AssetObject) SetAssetNumber(number uint64) {
+	ao.Number = number
 }
 
 func (ao *AssetObject) GetSymbol() string {
@@ -92,6 +110,7 @@ func (ao *AssetObject) SetDecimals(dec uint64) {
 func (ao *AssetObject) GetAssetName() string {
 	return ao.AssetName
 }
+
 func (ao *AssetObject) SetAssetName(assetName string) {
 	ao.AssetName = assetName
 }
@@ -112,6 +131,10 @@ func (ao *AssetObject) GetUpperLimit() *big.Int {
 	return ao.UpperLimit
 }
 
+func (ao *AssetObject) GetContract() common.Name {
+	return ao.Contract
+}
+
 func (ao *AssetObject) SetAssetAmount(amount *big.Int) {
 	ao.Amount = amount
 }
@@ -130,4 +153,12 @@ func (ao *AssetObject) GetAssetOwner() common.Name {
 
 func (ao *AssetObject) SetAssetOwner(owner common.Name) {
 	ao.Owner = owner
+}
+
+func (ao *AssetObject) GetAssetContract() common.Name {
+	return ao.Contract
+}
+
+func (ao *AssetObject) SetAssetContract(contract common.Name) {
+	ao.Contract = contract
 }

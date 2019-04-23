@@ -60,7 +60,7 @@ type ChainContext interface {
 	StateAt(hash common.Hash) (*state.StateDB, error)
 
 	// WriteBlockWithState writes the block and all associated state to the database.
-	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) error
+	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (bool, error)
 
 	// CheckForkID checks the validity of forkID
 	CheckForkID(header *types.Header) error
@@ -73,12 +73,14 @@ type ChainContext interface {
 }
 
 type EgnineContext interface {
-	// Author retrieves the Ethereum address of the account that minted the given
+	// Author retrieves the address of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
 
-	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) error
+	ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
+
+	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error)
 }
 
 type EvmContext struct {
@@ -87,7 +89,7 @@ type EvmContext struct {
 }
 
 // NewEVMContext creates a new context for use in the EVM.
-func NewEVMContext(sender common.Name, fromPubkey common.PubKey, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *common.Name) vm.Context {
+func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *common.Name) vm.Context {
 	// If we don't have an explicit author (i.e. not mining), extract from the header
 	var beneficiary common.Name
 	if author == nil {
@@ -96,16 +98,17 @@ func NewEVMContext(sender common.Name, fromPubkey common.PubKey, assetID uint64,
 		beneficiary = *author
 	}
 	return vm.Context{
-		GetHash:     GetHashFn(header, chain),
-		Origin:      sender,
-		FromPubkey:  fromPubkey,
-		AssetID:     assetID,
-		Coinbase:    beneficiary,
-		BlockNumber: new(big.Int).Set(header.Number),
-		Time:        new(big.Int).Set(header.Time),
-		Difficulty:  new(big.Int).Set(header.Difficulty),
-		GasLimit:    header.GasLimit,
-		GasPrice:    new(big.Int).Set(gasPrice),
+		GetHash:            GetHashFn(header, chain),
+		GetDelegatedByTime: chain.GetDelegatedByTime,
+		GetHeaderByNumber:  chain.GetHeaderByNumber,
+		Origin:             sender,
+		AssetID:            assetID,
+		Coinbase:           beneficiary,
+		BlockNumber:        new(big.Int).Set(header.Number),
+		Time:               new(big.Int).Set(header.Time),
+		Difficulty:         new(big.Int).Set(header.Difficulty),
+		GasLimit:           header.GasLimit,
+		GasPrice:           new(big.Int).Set(gasPrice),
 	}
 }
 

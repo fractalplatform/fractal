@@ -93,7 +93,7 @@ func (l *txList) Forward(threshold uint64) []*types.Transaction {
 // than the provided thresholds. Every removed transaction is returned for any
 // post-removal maintenance. Strict-mode invalidated transactions are also
 // returned.
-func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, getBalance func(name common.Name, assetID uint64) (*big.Int, error)) ([]*types.Transaction, []*types.Transaction) {
+func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, getBalance func(name common.Name, assetID uint64, typeID uint64) (*big.Int, error)) ([]*types.Transaction, []*types.Transaction) {
 	// If all transactions are below the threshold, short circuit
 	if l.gascostcap.Cmp(costLimit) > 0 {
 		l.gascostcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
@@ -105,7 +105,7 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, getBalance func(nam
 	// Filter out all the transactions above the account's funds
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
 		act := tx.GetActions()[0]
-		balance, _ := getBalance(act.Sender(), act.AssetID())
+		balance, _ := getBalance(act.Sender(), act.AssetID(), 0)
 		// todo change action
 		return act.Value().Cmp(balance) > 0 || tx.Cost().Cmp(costLimit) > 0 || act.Gas() > gasLimit
 	})

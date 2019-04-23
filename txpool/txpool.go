@@ -88,10 +88,12 @@ type TxPool struct {
 // New creates a new transaction pool to gather, sort and filter inbound
 // transactions from the network.
 func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool {
+	//  check the input to ensure no vulnerable gas prices are set
+	config = (&config).check()
 	signer := types.NewSigner(chainconfig.ChainID)
 	all := newTxLookup()
 	tp := &TxPool{
-		config:      config.check(),
+		config:      config,
 		chain:       bc,
 		signer:      signer,
 		locals:      newAccountSet(signer),
@@ -190,7 +192,6 @@ func (tp *TxPool) loop() {
 				}
 			}
 			tp.mu.Unlock()
-
 			// Handle local transaction journal rotation
 		case <-journal.C:
 			if tp.journal != nil {
@@ -302,13 +303,11 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 			if err != am.ErrAccountIsDestroy {
 				log.Error("Failed to pendingAccountManager SetNonce", "err", err)
 				return
-			} else {
-				delete(tp.pending, name)
-				delete(tp.beats, name)
-				delete(tp.queue, name)
-				log.Debug("Remove all destory account ", "name", name)
 			}
-
+			delete(tp.pending, name)
+			delete(tp.beats, name)
+			delete(tp.queue, name)
+			log.Debug("Remove all destory account ", "name", name)
 		}
 	}
 	// Check the queue and move transactions over to the pending if possible
@@ -447,7 +446,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID())
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
 		if err != nil {
 			return err
 		}
@@ -458,7 +457,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID())
+		balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
 		if err != nil {
 			return err
 		}
@@ -470,6 +469,10 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 		if balance.Cmp(value) < 0 {
 			return ErrInsufficientFundsForValue
+		}
+
+		if action.CheckValue() != true {
+			return ErrInvalidValue
 		}
 
 		intrGas, err := IntrinsicGas(action)
@@ -641,7 +644,6 @@ func (tp *TxPool) promoteTx(name common.Name, hash common.Hash, tx *types.Transa
 		// An older transaction was better, discard this
 		tp.all.Remove(hash)
 		tp.priced.Removed()
-
 		return false
 	}
 	// Otherwise discard any previous transaction and mark this
@@ -657,7 +659,6 @@ func (tp *TxPool) promoteTx(name common.Name, hash common.Hash, tx *types.Transa
 	}
 	// Set the potentially new pending nonce and notify any subsystems of the new tx
 	tp.beats[name] = time.Now()
-
 	// todo action
 	tp.pendingAccountManager.SetNonce(name, tx.GetActions()[0].Nonce()+1)
 	return true
@@ -693,6 +694,18 @@ func (tp *TxPool) AddRemotes(txs []*types.Transaction) []error {
 
 // addTx enqueues a single transaction into the pool if it is valid.
 func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
+	if len(tx.GetActions()) == 0 {
+		return ErrEmptyActions
+	}
+
+	// Cache senders in transactions before obtaining lock
+	for _, action := range tx.GetActions() {
+		_, err := types.RecoverMultiKey(tp.signer, action, tx)
+		if err != nil {
+			return err
+		}
+	}
+
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
@@ -712,6 +725,29 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
+	// Cache senders in transactions before obtaining lock
+	var (
+		errs  []error
+		isErr bool
+	)
+	for _, tx := range txs {
+		if len(tx.GetActions()) == 0 {
+			errs = append(errs, fmt.Errorf(ErrEmptyActions.Error()+" hash %v", tx.Hash()))
+			isErr = true
+			continue
+		}
+		for _, action := range tx.GetActions() {
+			_, err := types.RecoverMultiKey(tp.signer, action, tx)
+			if err != nil {
+				log.Error("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
+				errs = append(errs, err)
+				isErr = true
+			}
+		}
+	}
+	if isErr {
+		return errs
+	}
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
@@ -855,7 +891,7 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
 		// todo assetID
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID)
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
 		if err != nil {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
@@ -1042,7 +1078,7 @@ func (tp *TxPool) demoteUnexecutables() {
 		}
 
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID)
+		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
 		if err != nil && err != am.ErrAccountNotExist {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}

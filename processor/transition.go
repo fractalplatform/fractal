@@ -82,10 +82,10 @@ func (st *StateTransition) preCheck() error {
 
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
-	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID)
+	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
 	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID)
 	if err != nil {
-		return errInsufficientBalanceForGas
+		return err
 	}
 	if balance.Cmp(mgval) < 0 {
 		return errInsufficientBalanceForGas
@@ -131,24 +131,35 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	switch {
 	case actionType == types.CreateContract:
 		ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
-	case actionType == types.Transfer:
+	case actionType == types.CallContract:
 		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
-	case actionType == types.RegProducer:
+	case actionType == types.RegCadidate:
 		fallthrough
-	case actionType == types.UpdateProducer:
+	case actionType == types.UpdateCadidate:
 		fallthrough
-	case actionType == types.UnregProducer:
+	case actionType == types.UnregCadidate:
 		fallthrough
 	case actionType == types.RemoveVoter:
 		fallthrough
-	case actionType == types.VoteProducer:
+	case actionType == types.VoteCadidate:
 		fallthrough
-	case actionType == types.ChangeProducer:
+	case actionType == types.ChangeCadidate:
 		fallthrough
-	case actionType == types.UnvoteProducer:
-		vmerr = st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
+	case actionType == types.KickedCadidate:
+		fallthrough
+	case actionType == types.ExitTakeOver:
+		fallthrough
+	case actionType == types.UnvoteCadidate:
+		internalLogs, err := st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
+		vmerr = err
+		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	default:
-		vmerr = st.account.Process(st.action)
+		internalLogs, err := st.account.Process(&types.AccountManagerContext{
+			Action: st.action,
+			Number: st.evm.Context.BlockNumber.Uint64(),
+		})
+		vmerr = err
+		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	}
 	if vmerr != nil {
 		log.Debug("VM returned with error", "err", vmerr)
@@ -170,13 +181,23 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	st.refundGas()
 
 	if st.action.Value().Sign() != 0 {
-		assetFounder, _ := st.account.GetAssetFounder(st.action.AssetID())
-		assetFounderRatio := st.chainConfig.AssetChargeRatio
-		if len(assetFounder.String()) > 0 {
-			if _, ok := evm.FounderGasMap[assetFounder]; !ok {
-				evm.FounderGasMap[assetFounder] = int64(params.ActionGas * assetFounderRatio / 100)
+
+		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
+		assetName := common.Name(assetInfo.GetAssetName())
+
+		assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
+		if len(assetName.String()) > 0 {
+			if _, ok := evm.FounderGasMap[assetName]; !ok {
+				dGas := vm.DistributeGas{
+					Value:  int64(params.ActionGas * assetFounderRatio / 100),
+					TypeID: vm.AssetGas}
+				evm.FounderGasMap[assetName] = dGas
 			} else {
-				evm.FounderGasMap[assetFounder] += int64(params.ActionGas * assetFounderRatio / 100)
+				dGas := vm.DistributeGas{
+					Value:  int64(params.ActionGas * assetFounderRatio / 100),
+					TypeID: vm.AssetGas}
+				dGas.Value = evm.FounderGasMap[assetName].Value + dGas.Value
+				evm.FounderGasMap[assetName] = dGas
 			}
 		}
 	}
@@ -188,12 +209,35 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 func (st *StateTransition) distributeGas() error {
 	var totalGas int64
-	for founder, gas := range st.evm.FounderGasMap {
-		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas)))
-		totalGas += gas
+	for name, gas := range st.evm.FounderGasMap {
+		var founder common.Name
+		if vm.AssetGas == gas.TypeID {
+			assetInfo, _ := st.account.GetAssetInfoByName(name.String())
+			if assetInfo != nil {
+				founder = assetInfo.GetAssetFounder()
+			}
+		} else if vm.ContractGas == gas.TypeID {
+			founder, _ = st.account.GetFounder(name)
+		} else if vm.CoinbaseGas == gas.TypeID {
+			founder = name
+		}
+
+		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value)))
+		totalGas += gas.Value
 	}
 	if totalGas > int64(st.gasUsed()) {
 		return fmt.Errorf("calc wrong gas used")
+	}
+	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
+		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{
+			Value:  int64(st.gasUsed()) - totalGas,
+			TypeID: vm.CoinbaseGas}
+	} else {
+		dGas := vm.DistributeGas{
+			Value:  int64(st.gasUsed()) - totalGas,
+			TypeID: vm.CoinbaseGas}
+		dGas.Value = st.evm.FounderGasMap[st.evm.Coinbase].Value + dGas.Value
+		st.evm.FounderGasMap[st.evm.Coinbase] = dGas
 	}
 	st.account.AddAccountBalanceByID(st.evm.Coinbase, st.assetID, new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas))))
 	return nil

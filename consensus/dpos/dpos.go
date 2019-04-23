@@ -30,18 +30,19 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 var (
 	errMissingSignature           = errors.New("extra-data 65 byte suffix signature missing")
-	errMismatchSignerAndValidator = errors.New("mismatch block signer and producer")
+	errMismatchSignerAndValidator = errors.New("mismatch block signer and cadidate")
 	errInvalidMintBlockTime       = errors.New("invalid time to mint the block")
-	errInvalidBlockProducer       = errors.New("invalid block producer")
+	errInvalidBlockCadidate       = errors.New("invalid block cadidate")
 	errInvalidTimestamp           = errors.New("invalid timestamp")
-	ErrIllegalProducerName        = errors.New("illegal producer name")
-	ErrIllegalProducerPubKey      = errors.New("illegal producer pubkey")
+	ErrIllegalCadidateName        = errors.New("illegal cadidate name")
+	ErrIllegalCadidatePubKey      = errors.New("illegal cadidate pubkey")
+	ErrTooMuchRreversible         = errors.New("too much rreversible blocks")
+	ErrSystemTakeOver             = errors.New("system account take over")
 	errUnknownBlock               = errors.New("unknown block")
 	extraSeal                     = 65
 	timeOfGenesisBlock            int64
@@ -51,6 +52,10 @@ type stateDB struct {
 	name    string
 	assetid uint64
 	state   *state.StateDB
+}
+
+func (s *stateDB) GetSnapshot(key string, timestamp uint64) ([]byte, error) {
+	return s.state.GetSnapshot(s.name, key, timestamp)
 }
 
 func (s *stateDB) Get(key string) ([]byte, error) {
@@ -65,11 +70,12 @@ func (s *stateDB) Delete(key string) error {
 	return nil
 }
 func (s *stateDB) Delegate(from string, amount *big.Int) error {
-	accountDB, err := accountmanager.NewAccountManager(s.state)
-	if err != nil {
-		return err
-	}
-	return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
+	return nil
+	// accountDB, err := accountmanager.NewAccountManager(s.state)
+	// if err != nil {
+	// 	return err
+	// }
+	// return accountDB.TransferAsset(common.StrToName(from), common.StrToName(s.name), s.assetid, amount)
 }
 func (s *stateDB) Undelegate(to string, amount *big.Int) error {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
@@ -90,9 +96,10 @@ func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
 	if err != nil {
 		return false
 	}
-	return accountDB.IsValidSign(common.StrToName(name), types.ActionType(0), common.BytesToPubKey(pubkey)) == nil
+	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)) == nil
 }
 
+// Genesis dpos genesis store
 func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 	db := &LDB{
 		IDatabase: &stateDB{
@@ -100,7 +107,7 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 			state: state,
 		},
 	}
-	if err := db.SetProducer(&producerInfo{
+	if err := db.SetCadidate(&cadidateInfo{
 		Name:          cfg.SystemName,
 		URL:           cfg.SystemURL,
 		Quantity:      big.NewInt(0),
@@ -110,21 +117,21 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 		return err
 	}
 
-	activatedProducerSchedule := []string{}
-	for i := uint64(0); i < cfg.ProducerScheduleSize; i++ {
-		activatedProducerSchedule = append(activatedProducerSchedule, cfg.SystemName)
+	activatedCadidateSchedule := []string{}
+	for i := uint64(0); i < cfg.CadidateScheduleSize; i++ {
+		activatedCadidateSchedule = append(activatedCadidateSchedule, cfg.SystemName)
 	}
 	if err := db.SetState(&globalState{
 		Height:                    height,
 		ActivatedTotalQuantity:    big.NewInt(0),
-		ActivatedProducerSchedule: activatedProducerSchedule,
+		ActivatedCadidateSchedule: activatedCadidateSchedule,
 	}); err != nil {
 		return err
 	}
 	if err := db.SetState(&globalState{
 		Height:                    height + 1,
 		ActivatedTotalQuantity:    big.NewInt(0),
-		ActivatedProducerSchedule: activatedProducerSchedule,
+		ActivatedCadidateSchedule: activatedCadidateSchedule,
 	}); err != nil {
 		return err
 	}
@@ -143,11 +150,7 @@ type Dpos struct {
 	config *Config
 
 	// cache
-	proposedIrreversibleNum uint64
-	bftIrreversibleNum      uint64
-	producerIrreversibleNum map[string]uint64
-
-	firtEpcho uint64
+	bftIrreversibles *lru.Cache
 }
 
 // New creates a DPOS consensus engine
@@ -155,19 +158,8 @@ func New(config *Config, chain consensus.IChainReader) *Dpos {
 	dpos := &Dpos{
 		config: config,
 	}
-	if chain != nil {
-		dpos.init(chain)
-	}
+	dpos.bftIrreversibles, _ = lru.New(int(config.CadidateScheduleSize))
 	return dpos
-}
-
-func (dpos *Dpos) init(chain consensus.IChainReader) {
-	fheader := chain.GetHeaderByNumber(1)
-	if fheader == nil {
-		return
-	}
-	dpos.firtEpcho = dpos.config.epoch(fheader.Time.Uint64())
-	dpos.calcProposedIrreversible(chain)
 }
 
 // SetConfig set dpos config
@@ -221,27 +213,40 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		},
 	}
 
-	if dpos.firtEpcho == 0 {
-		if fheader := chain.GetHeaderByNumber(1); fheader != nil {
-			dpos.firtEpcho = dpos.config.epoch(fheader.Time.Uint64())
-		}
-	}
-
 	counter := int64(0)
-	if dpos.IsFirst(header.Time.Uint64()) {
-		timestamp := header.Time.Uint64() - dpos.config.blockInterval()*dpos.config.BlockFrequency
+	parentEpoch := dpos.config.epoch(parent.Time.Uint64())
+	currentEpoch := dpos.config.epoch(header.Time.Uint64())
+	if parentEpoch != currentEpoch {
 		tparent := parent
-		for tparent.Number.Uint64() > 0 && tparent.Time.Uint64() >= timestamp {
+		for tparent.Number.Uint64() > 1 && dpos.config.epoch(tparent.Number.Uint64()) == dpos.config.epoch(parent.Time.Uint64()) {
 			counter++
 			tparent = chain.GetHeaderByHash(tparent.ParentHash)
 		}
+		// next epoch
+		sys.updateElectedCadidates(header.Time.Uint64())
 	}
 
-	parent_epoch := dpos.config.epoch(parent.Time.Uint64())
-	current_epoch := dpos.config.epoch(header.Time.Uint64())
-	if parent_epoch != current_epoch {
-		// next epoch
-		sys.updateElectedProducers(header.Time.Uint64())
+	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
+		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
+			latest, err := sys.GetState(header.Number.Uint64())
+			if err != nil {
+				return nil, err
+			}
+			latest.TakeOver = true
+			if err := sys.SetState(latest); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	cadidate, err := sys.GetCadidate(header.Coinbase.String())
+	if err != nil {
+		return nil, err
+	} else if cadidate != nil {
+		cadidate.Counter++
+		if err := sys.SetCadidate(cadidate); err != nil {
+			return nil, err
+		}
 	}
 
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
@@ -260,7 +265,10 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 
 	// update state root at the end
 	blk.Head.Root = state.IntermediateRoot()
-
+	if strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0 {
+		dpos.bftIrreversibles.Purge()
+	}
+	dpos.bftIrreversibles.Add(header.Coinbase, header.ProposedIrreversible)
 	return blk, nil
 }
 
@@ -281,8 +289,8 @@ func (dpos *Dpos) Seal(chain consensus.IChainReader, block *types.Block, stop <-
 	if err != nil {
 		return nil, err
 	}
+
 	copy(header.Extra[len(header.Extra)-extraSeal:], sighash)
-	dpos.calcProposedIrreversible(chain)
 	return block.WithSeal(header), nil
 }
 
@@ -307,11 +315,11 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 		return err
 	}
 
-	if err := dpos.IsValidateProducer(chain, header.Number.Uint64()-1, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state); err != nil {
+	if err := dpos.IsValidateCadidate(chain, parent, header.Time.Uint64(), proudcer, [][]byte{pubkey}, state, true); err != nil {
 		return err
 	}
 
-	return dpos.calcProposedIrreversible(chain)
+	return nil
 }
 
 // CalcDifficulty is the difficulty adjustment algorithm.
@@ -326,8 +334,8 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 	return big.NewInt((int64(time)-timeOfGenesisBlock)/int64(dpos.config.blockInterval()) + 1)
 }
 
-//IsValidateProducer current producer
-func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64, timestamp uint64, producer string, pubkeys [][]byte, state *state.StateDB) error {
+//IsValidateCadidate current cadidate
+func (dpos *Dpos) IsValidateCadidate(chain consensus.IChainReader, parent *types.Header, timestamp uint64, cadidate string, pubkeys [][]byte, state *state.StateDB, force bool) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
 	}
@@ -337,37 +345,19 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 		state: state,
 	}
 
-	if !common.IsValidName(producer) {
-		return ErrIllegalProducerName
+	if !common.IsValidAccountName(cadidate) {
+		return ErrIllegalCadidateName
 	}
 
 	has := false
 	for _, pubkey := range pubkeys {
-		if db.IsValidSign(producer, pubkey) {
+		if db.IsValidSign(cadidate, pubkey) {
 			has = true
 		}
 	}
 	if !has {
-		return ErrIllegalProducerPubKey
+		return ErrIllegalCadidatePubKey
 	}
-
-	target_ts := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
-	// find target block
-	var pheader *types.Header
-	for height > 0 {
-		pheader = chain.GetHeaderByNumber(height)
-		if pheader.Time.Cmp(target_ts) != 1 {
-			break
-		} else {
-			height -= 1
-		}
-	}
-
-	// if height > dpos.config.DelayEcho {
-	// 	height = height - dpos.config.DelayEcho
-	// } else {
-	// 	height = uint64(0)
-	// }
 
 	sys := &System{
 		config: dpos.config,
@@ -376,13 +366,41 @@ func (dpos *Dpos) IsValidateProducer(chain consensus.IChainReader, height uint64
 		},
 	}
 
-	gstate, err := sys.GetState(height)
+	latest, err := sys.GetState(parent.Number.Uint64())
+	if err != nil {
+		return err
+	}
+
+	systemio := strings.Compare(cadidate, dpos.config.SystemName) == 0
+	if latest.TakeOver {
+		if force && systemio {
+			return nil
+		}
+		return ErrSystemTakeOver
+	} else if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || timestamp-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
+		if force && systemio {
+			// first take over
+			return nil
+		}
+		return ErrTooMuchRreversible
+	}
+
+	targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
+	// find target block
+	for parent.Number.Uint64() > 0 {
+		if parent.Time.Cmp(targetTime) == -1 {
+			break
+		}
+		parent = chain.GetHeaderByHash(parent.ParentHash)
+	}
+
+	gstate, err := sys.GetState(parent.Number.Uint64() + 1)
 	if err != nil {
 		return err
 	}
 	offset := dpos.config.getoffset(timestamp)
-	if gstate == nil || offset >= uint64(len(gstate.ActivatedProducerSchedule)) || strings.Compare(gstate.ActivatedProducerSchedule[offset], producer) != 0 {
-		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockProducer, producer, gstate.ActivatedProducerSchedule, offset, timestamp/dpos.config.epochInterval())
+	if gstate == nil || offset >= uint64(len(gstate.ActivatedCadidateSchedule)) || strings.Compare(gstate.ActivatedCadidateSchedule[offset], cadidate) != 0 {
+		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCadidate, cadidate, gstate.ActivatedCadidateSchedule, offset, timestamp/dpos.config.epochInterval())
 	}
 	return nil
 }
@@ -392,12 +410,27 @@ func (dpos *Dpos) BlockInterval() uint64 {
 	return dpos.config.blockInterval()
 }
 
+// Slot
 func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 	return dpos.config.slot(timestamp)
 }
 
+// IsFirst the first of cadidate
 func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
+}
+
+func (dpos *Dpos) GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error) {
+	sys := &System{
+		config: dpos.config,
+		IDB: &LDB{
+			IDatabase: &stateDB{
+				name:  dpos.config.AccountName,
+				state: state,
+			},
+		},
+	}
+	return sys.GetDelegatedByTime(name, timestamp)
 }
 
 // Engine an engine
@@ -405,10 +438,13 @@ func (dpos *Dpos) Engine() consensus.IEngine {
 	return dpos
 }
 
-func (dpos *Dpos) calcLastIrreversible() uint64 {
+func (dpos *Dpos) CalcBFTIrreversible() uint64 {
 	irreversibles := UInt64Slice{}
-	for _, irreversible := range dpos.producerIrreversibleNum {
-		irreversibles = append(irreversibles, irreversible)
+	keys := dpos.bftIrreversibles.Keys()
+	for _, key := range keys {
+		if irreversible, ok := dpos.bftIrreversibles.Get(key); ok {
+			irreversibles = append(irreversibles, irreversible.(uint64))
+		}
 	}
 
 	if len(irreversibles) == 0 {
@@ -421,30 +457,27 @@ func (dpos *Dpos) calcLastIrreversible() uint64 {
 	return irreversibles[(len(irreversibles)-1)/3]
 }
 
-func (dpos *Dpos) calcProposedIrreversible(chain consensus.IChainReader) error {
+func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, parent *types.Header, strict bool) uint64 {
 	curHeader := chain.CurrentHeader()
-
-	producerMap := make(map[string]uint64)
-	for curHeader.Number.Uint64() > dpos.proposedIrreversibleNum {
-		if curHeader.Number.Uint64()-dpos.proposedIrreversibleNum+uint64(len(producerMap)) < dpos.config.consensusSize() {
-			return nil
+	if parent != nil {
+		curHeader = chain.GetHeaderByHash(parent.Hash())
+	}
+	cadidateMap := make(map[string]uint64)
+	timestamp := curHeader.Time.Uint64()
+	for curHeader.Number.Uint64() > 0 {
+		if strings.Compare(curHeader.Coinbase.String(), dpos.config.SystemName) == 0 {
+			return curHeader.Number.Uint64()
 		}
-		epoch := dpos.config.epoch(curHeader.Time.Uint64())
-		if e, ok := producerMap[curHeader.Coinbase.String()]; e != epoch && ok {
-			return nil
+		if strict && timestamp-curHeader.Time.Uint64() >= 2*dpos.config.epochInterval() {
+			break
 		}
-		producerMap[curHeader.Coinbase.String()] = epoch
-
-		if uint64(len(producerMap)) >= dpos.config.consensusSize() {
-			dpos.proposedIrreversibleNum = curHeader.Number.Uint64()
-			return nil
+		cadidateMap[curHeader.Coinbase.String()]++
+		if uint64(len(cadidateMap)) >= dpos.config.consensusSize() {
+			return curHeader.Number.Uint64()
 		}
 		curHeader = chain.GetHeaderByHash(curHeader.ParentHash)
-		if curHeader == nil {
-			return nil
-		}
 	}
-	return nil
+	return 0
 }
 
 func ecrecover(header *types.Header, extra []byte) ([]byte, error) {
@@ -461,24 +494,9 @@ func ecrecover(header *types.Header, extra []byte) ([]byte, error) {
 }
 
 func signHash(header *types.Header, extra []byte) (hash common.Hash) {
-	hasher := sha3.NewLegacyKeccak256()
-	rlp.Encode(hasher, []interface{}{
-		header.ParentHash,
-		header.Coinbase,
-		header.Root,
-		header.TxsRoot,
-		header.ReceiptsRoot,
-		header.Bloom,
-		header.Difficulty,
-		header.Number,
-		header.GasLimit,
-		header.GasUsed,
-		header.Time,
-		header.Extra[:len(header.Extra)-extraSeal],
-		extra,
-	})
-	hasher.Sum(hash[:0])
-	return hash
+	theader := types.CopyHeader(header)
+	theader.Extra = theader.Extra[:len(theader.Extra)-extraSeal]
+	return theader.Hash()
 }
 
 // UInt64Slice attaches the methods of sort.Interface to []uint64, sorting in increasing order.

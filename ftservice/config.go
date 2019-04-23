@@ -18,7 +18,6 @@ package ftservice
 
 import (
 	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/txpool"
@@ -31,30 +30,29 @@ type Config struct {
 	Genesis *blockchain.Genesis `toml:",omitempty"`
 
 	// Database options
-	SkipBcVersionCheck bool `mapstructure:"ftservice-skipvcversioncheck"`
-	DatabaseHandles    int  `mapstructure:"ftservice-databasehandles"`
-	DatabaseCache      int  `mapstructure:"ftservice-databasecache"`
+	DatabaseHandles int
+	DatabaseCache   int `mapstructure:"databasecache"`
 
 	// Transaction pool options
-	TxPool *txpool.Config
+	TxPool *txpool.Config `mapstructure:"txpool"`
 
 	// Gas Price Oracle options
-	GasPrice gasprice.Config
+	GasPrice gasprice.Config `mapstructure:"gpo"`
 
 	// miner
-	Miner *MinerConfig
+	Miner *MinerConfig `mapstructure:"miner"`
 
-	CoinBase    common.Address
-	MetricsConf *metrics.Config
+	MetricsConf *metrics.Config `mapstructure:"metrics"`
 
 	// snapshot
-	Snapshot bool
+	Snapshot        bool
+	ContractLogFlag bool `mapstructure:"contractlog"`
 }
 
 // MinerConfig miner config
 type MinerConfig struct {
-	Start       bool     `mapstructure:"miner-start"`
-	Name        string   `mapstructure:"miner-name"`
-	PrivateKeys []string `mapstructure:"miner-private"`
-	ExtraData   string   `mapstructure:"miner-extra"`
+	Start       bool     `mapstructure:"start"`
+	Name        string   `mapstructure:"name"`
+	PrivateKeys []string `mapstructure:"private"`
+	ExtraData   string   `mapstructure:"extra"`
 }

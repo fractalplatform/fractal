@@ -31,7 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/p2p/enr"
 )
 
-var incompleteNodeURL = regexp.MustCompile("(?i)^(?:enode://)?([0-9a-f]+)$")
+var incompleteNodeURL = regexp.MustCompile("(?i)^(?:fnode://)?([0-9a-f]+)$")
 
 // MustParseV4 parses a node URL. It panics if the URL is not valid.
 func MustParseV4(rawurl string) *Node {
@@ -108,8 +108,8 @@ func parseComplete(rawurl string) (*Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	if u.Scheme != "enode" {
-		return nil, errors.New("invalid URL scheme, want \"enode\"")
+	if u.Scheme != "fnode" {
+		return nil, errors.New("invalid URL scheme, want \"fnode\"")
 	}
 	// Parse the Node ID from the user portion.
 	if u.User == nil {
@@ -171,7 +171,7 @@ func (n *Node) v4URL() string {
 	default:
 		nodeid = fmt.Sprintf("%s.%x", scheme, n.id[:])
 	}
-	u := url.URL{Scheme: "enode"}
+	u := url.URL{Scheme: "fnode"}
 	if n.Incomplete() {
 		u.Host = nodeid
 	} else {

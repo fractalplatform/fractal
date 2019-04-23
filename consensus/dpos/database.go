@@ -29,11 +29,11 @@ var (
 
 // IDB dpos database
 type IDB interface {
-	SetProducer(*producerInfo) error
-	DelProducer(string) error
-	GetProducer(string) (*producerInfo, error)
-	Producers() ([]*producerInfo, error)
-	ProducersSize() (uint64, error)
+	SetCadidate(*cadidateInfo) error
+	DelCadidate(string) error
+	GetCadidate(string) (*cadidateInfo, error)
+	Cadidates() ([]*cadidateInfo, error)
+	CadidatesSize() (uint64, error)
 
 	SetVoter(*voterInfo) error
 	DelVoter(string, string) error
@@ -47,37 +47,42 @@ type IDB interface {
 	Delegate(string, *big.Int) error
 	Undelegate(string, *big.Int) error
 	IncAsset2Acct(string, string, *big.Int) error
+
+	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
 }
 
-type producerInfo struct {
-	Name          string   // producer name
-	URL           string   // producer url
-	Quantity      *big.Int // producer stake quantity
-	TotalQuantity *big.Int // producer total stake quantity
-	Height        uint64   // timestamp
+type cadidateInfo struct {
+	Name          string   `json:"name"`          // cadidate name
+	URL           string   `json:"url"`           // cadidate url
+	Quantity      *big.Int `json:"quantity"`      // cadidate stake quantity
+	TotalQuantity *big.Int `json:"totalQuantity"` // cadidate total stake quantity
+	Height        uint64   `json:"height"`        // timestamp
+	Counter       uint64   `json:"counter"`
+	InBlackList   bool     `json:"inBlackList"`
 }
 
 type voterInfo struct {
-	Name     string   // voter name
-	Producer string   // producer approved by this voter
-	Quantity *big.Int // stake approved by this voter
-	Height   uint64   // timestamp
+	Name     string   `json:"name"`     // voter name
+	Cadidate string   `json:"cadidate"` // cadidate approved by this voter
+	Quantity *big.Int `json:"quantity"` // stake approved by this voter
+	Height   uint64   `json:"height"`   // timestamp
 }
 
 type globalState struct {
-	Height                          uint64   // block height
-	ActivatedProducerScheduleUpdate uint64   // update time
-	ActivatedProducerSchedule       []string // producers
-	ActivatedTotalQuantity          *big.Int // the sum of activate producer votes
-	TotalQuantity                   *big.Int // the sum of all producer votes
+	Height                          uint64   `json:"height"`                          // block height
+	ActivatedCadidateScheduleUpdate uint64   `json:"activatedCadidateScheduleUpdate"` // update time
+	ActivatedCadidateSchedule       []string `json:"activatedCadidateSchedule"`       // cadidates
+	ActivatedTotalQuantity          *big.Int `json:"activatedTotalQuantity"`          // the sum of activate cadidate votes
+	TotalQuantity                   *big.Int `json:"totalQuantity"`                   // the sum of all cadidate votes
+	TakeOver                        bool     `json:"takeOver"`                        // systemio take over dpos
 }
 
-type producerInfoArray []*producerInfo
+type cadidateInfoArray []*cadidateInfo
 
-func (prods producerInfoArray) Len() int {
+func (prods cadidateInfoArray) Len() int {
 	return len(prods)
 }
-func (prods producerInfoArray) Less(i, j int) bool {
+func (prods cadidateInfoArray) Less(i, j int) bool {
 	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
 	if val == 0 {
 		if prods[i].Height == prods[j].Height {
@@ -87,6 +92,6 @@ func (prods producerInfoArray) Less(i, j int) bool {
 	}
 	return val > 0
 }
-func (prods producerInfoArray) Swap(i, j int) {
+func (prods cadidateInfoArray) Swap(i, j int) {
 	prods[i], prods[j] = prods[j], prods[i]
 }

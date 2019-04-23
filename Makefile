@@ -17,7 +17,7 @@
 SHELL:=/bin/bash
 REPO := $(shell pwd)
 GOFILES_NOVENDOR := $(shell go list -f "{{.Dir}}" ./...)
-PACKAGES_NOVENDOR := $(shell go list ./...)
+PACKAGES_NOVENDOR := $(shell go list ./... | grep -v test)
 WORK_SPACE := ${REPO}/build/_workspace
 FT_DIR :=${WORK_SPACE}/src/github.com/fractalplatform
 TEMP_GOPATH := $(GOPATH)
@@ -50,6 +50,13 @@ fmt:
 	@echo "Correcting any formatting style corrections."
 	@gofmt -l -w ${GOFILES_NOVENDOR}
 
+# vet runs extended compilation checks to find recommendations for
+# suspicious code constructs.
+.PHONY: vet
+vet:
+	@echo "Running go vet."
+	@go vet ${PACKAGES_NOVENDOR}
+
 ### Building project
 
 # Output commit_hash but only if we have the git repo (e.g. not in docker build
@@ -64,7 +71,7 @@ build_workspace:
 
 # build all targets 
 .PHONY: all
-all:check build_workspace build_ft build_ftkey build_ftfinder
+all:check build_workspace build_ft build_ftfinder
 
 # build ft
 .PHONY: build_ft
@@ -72,11 +79,6 @@ build_ft: commit_hash check build_workspace
 	@echo "Building ft."
 	$(call build,ft)
 
-# build ftkey
-.PHONY: build_ftkey
-build_ftkey: commit_hash check build_workspace
-	@echo "Building ftkey."
-	$(call build,ftkey)
 
 # build ftfinder
 .PHONY: build_ftfinder 
@@ -87,7 +89,7 @@ build_ftfinder: commit_hash check build_workspace
 ### Test
 
 .PHONY: test 
-test: build_workspace
+test: all
 	@cd ${FT_DIR}/fractal  && scripts/test.sh
 
 .PHONY: test_win 
@@ -121,13 +123,15 @@ docs: CHANGELOG NOTES
 
 # Tag the current HEAD commit with the current release defined in
 .PHONY: tag_release
-tag_release: test check docs all
+tag_release: test check docs 
 	@scripts/tag_release.sh
 
 .PHONY: release
-release: test check docs all
+release: test check docs 
 	@scripts/is_checkout_dirty.sh || (echo "checkout is dirty so not releasing!" && exit 1)
 	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
 
-
-
+.PHONY: tmp_release
+tmp_release: test check 
+	@echo "Building and releasing"
+	@export GOPATH=${TEMP_GOPATH} && goreleaser --snapshot --rm-dist 

@@ -31,6 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/types"
 	jww "github.com/spf13/jwalterweatherman"
 )
 
@@ -86,7 +87,7 @@ func GetNonce(accountname common.Name) (uint64, error) {
 // GetAccountBalanceByID get balance by address ,assetID and number.
 func GetAccountBalanceByID(accountName common.Name, assetID uint64) (*big.Int, error) {
 	balance := big.NewInt(0)
-	err := ClientCall("account_getAccountBalanceByID", balance, accountName, assetID)
+	err := ClientCall("account_getAccountBalanceByID", balance, accountName, assetID, 1)
 	return balance, err
 }
 
@@ -128,6 +129,12 @@ func GetDposAccount(name common.Name) (map[string]interface{}, error) {
 	fields := map[string]interface{}{}
 	err := ClientCall("dpos_account", fields, name.String())
 	return fields, err
+}
+
+func GetBlockAndResult(blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
+	result := &types.BlockAndResult{}
+	err := ClientCall("ft_getBlockAndResultByNumber", result, blockNr)
+	return result, err
 }
 
 // defaultDataDir is the default data directory to use for the databases and other
