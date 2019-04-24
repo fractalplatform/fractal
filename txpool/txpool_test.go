@@ -152,7 +152,6 @@ func TestInvalidTransactions(t *testing.T) {
 }
 
 func TestTransactionQueue(t *testing.T) {
-
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
@@ -192,7 +191,7 @@ func TestTransactionQueue(t *testing.T) {
 	pool, manager = setupTxPool(fname)
 	defer pool.Stop()
 	fkey = generateAccount(t, fname, manager)
-	generateAccount(t, tname, manager)
+	tkey := generateAccount(t, tname, manager)
 
 	tx1 := transaction(0, fname, tname, 100, fkey)
 	tx2 := transaction(10, fname, tname, 100, fkey)
@@ -212,6 +211,36 @@ func TestTransactionQueue(t *testing.T) {
 	}
 	if pool.queue[fname].Len() != 2 {
 		t.Fatal("expected len(queue) == 2, got", pool.queue[fname].Len())
+	}
+
+	// test change permissions
+
+	// add account author tpubkey
+	tpubkey := common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))
+	auther := common.NewAuthor(tpubkey, 1)
+	authorAction := &am.AuthorAction{ActionType: am.AddAuthor, Author: auther}
+	acctAuth := &am.AccountAuthorAction{AuthorActions: []*am.AuthorAction{authorAction}}
+	if err := pool.curAccountManager.UpdateAccountAuthor(fname, acctAuth); err != nil {
+		t.Fatal(err)
+	}
+
+	// delete account author fpubkey
+	fpubkey := common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))
+	auther = common.NewAuthor(fpubkey, 1)
+	authorAction = &am.AuthorAction{ActionType: am.DeleteAuthor, Author: auther}
+	acctAuth = &am.AccountAuthorAction{AuthorActions: []*am.AuthorAction{authorAction}}
+	if err := pool.curAccountManager.UpdateAccountAuthor(fname, acctAuth); err != nil {
+		t.Fatal(err)
+	}
+
+	pool.promoteExecutables(nil)
+	if len(pool.queue) != 0 {
+		t.Fatal("expected len(queue) == 0, got", pool.queue[fname].Len())
+	}
+
+	pool.demoteUnexecutables()
+	if len(pool.pending) != 0 {
+		t.Fatal("expected tx pool to be 0, got", len(pool.pending))
 	}
 }
 
