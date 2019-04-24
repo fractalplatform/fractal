@@ -85,6 +85,7 @@ func makeNode() (*node.Node, error) {
 	SetupMetrics()
 	// Make sure we have a valid genesis JSON
 	if len(ftCfgInstance.GenesisFile) != 0 {
+		log.Info("Reading read genesis file", "path", ftCfgInstance.GenesisFile)
 		file, err := os.Open(ftCfgInstance.GenesisFile)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
