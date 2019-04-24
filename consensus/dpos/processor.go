@@ -105,6 +105,11 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err != nil {
 			return nil, err
 		}
+	case types.RefundCandidate:
+		err := sys.RefundCandidate(LastEpcho, action.Sender().String())
+		if err != nil {
+			return nil, err
+		}
 	case types.VoteCandidate:
 		arg := &VoteCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {

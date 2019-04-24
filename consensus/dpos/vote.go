@@ -211,6 +211,61 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string) error {
 	return nil
 }
 
+// RefundCandidate  refund a candidate
+func (sys *System) RefundCandidate(epcho uint64, candidate string) error {
+	// name validity
+	var stake *big.Int
+	prod, err := sys.GetCandidate(candidate)
+	if err != nil {
+		return err
+	}
+	if prod == nil {
+		return fmt.Errorf("invalide candidate %v", candidate)
+	}
+	if prod.Type == Black {
+		return fmt.Errorf("in backlist %v", candidate)
+	}
+
+	// db
+	stake = new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+	action, err := sys.Undelegate(candidate, stake)
+	if err != nil {
+		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
+	}
+	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+		Action: action.NewRPCAction(0),
+	})
+
+	voters, err := sys.GetVoters(epcho, prod.Name)
+	if err != nil {
+		return err
+	}
+	for _, voter := range voters {
+		if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+			return err
+		} else if err := sys.DelVoter(voterInfo); err != nil {
+			return err
+		} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+			return err
+		} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+			return err
+		}
+	}
+	if err := sys.DelCandidate(prod.Name); err != nil {
+		return err
+	}
+
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
+	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	if err := sys.SetState(gstate); err != nil {
+		return err
+	}
+	return nil
+}
+
 // VoteCandidate vote a candidate
 func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, height uint64) error {
 	// candidate validity

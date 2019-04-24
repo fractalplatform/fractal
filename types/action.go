@@ -75,6 +75,8 @@ const (
 	UpdateCandidate
 	// UnregCandidate repesents unregister candidate action.
 	UnregCandidate
+	// RefundCandidate repesents unregister candidate action.
+	RefundCandidate
 	// VoteCandidate repesents voter vote candidate action.
 	VoteCandidate
 )
