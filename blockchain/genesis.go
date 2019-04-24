@@ -322,7 +322,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	sys.UpdateElectedCandidates(dpos.LastEpcho)
+	if err := sys.UpdateElectedCandidates(dpos.LastEpcho); err != nil {
+		panic(fmt.Sprintf("genesis create candidate err %v", err))
+	}
 
 	root := statedb.IntermediateRoot()
 	gjson, err := json.Marshal(g)

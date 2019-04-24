@@ -373,7 +373,7 @@ func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 
 // IsFirst the first of candidate
 func (dpos *Dpos) IsFirst(timestamp uint64) bool {
-	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
+	return timestamp%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
 }
 
 // GetDelegatedByTime get delegate of candidate
