@@ -87,14 +87,13 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		CandidateScheduleSize: cfg.DposCfg.CandidateScheduleSize,
 		BackupScheduleSize:    cfg.DposCfg.BackupScheduleSize,
 		EpchoInterval:         cfg.DposCfg.EpchoInterval,
-		DelayEpcho:            cfg.DposCfg.DelayEpcho,
 		AccountName:           cfg.DposName,
 		SystemName:            cfg.SysName,
 		SystemURL:             cfg.ChainURL,
 		ExtraBlockReward:      cfg.DposCfg.ExtraBlockReward,
 		BlockReward:           cfg.DposCfg.BlockReward,
 		Decimals:              cfg.SysTokenDecimals,
-		AssetId:               cfg.SysTokenID,
+		AssetID:               cfg.SysTokenID,
 	}
 }
 
@@ -311,16 +310,16 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		g.Config.SysTokenID = assetInfo.AssetId
 		g.Config.SysTokenDecimals = assetInfo.Decimals
 	}
-	sys := dpos.NewSystem(statedb, g.Config, dposConfig(g.Config))
+	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
 	for _, candidate := range g.AllocCandidates {
-		if err := db.SetCandidate(&CandidateInfo{
+		if err := sys.SetCandidate(&dpos.CandidateInfo{
 			Name:          candidate.Name,
 			URL:           candidate.URL,
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 			Height:        number.Uint64(),
 		}); err != nil {
-			return nil, err
+			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
 	sys.UpdateElectedCandidates(dpos.LastEpcho)

@@ -201,7 +201,11 @@ func (api *API) validCandidates(epcho uint64) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return sys.GetState(epcho)
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return nil, err
+	}
+	return sys.GetState(gstate.PreEpcho)
 }
 
 func (api *API) epcho(height uint64) (uint64, error) {

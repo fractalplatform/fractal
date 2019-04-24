@@ -34,7 +34,6 @@ var DefaultConfig = &Config{
 	CandidateScheduleSize: 3,
 	BackupScheduleSize:    3,
 	EpchoInterval:         540000,
-	DelayEpcho:            2,
 	AccountName:           "ftsystemdpos",
 	SystemName:            "ftsystemio",
 	SystemURL:             "www.fractalproject.com",
@@ -58,7 +57,6 @@ type Config struct {
 	CandidateScheduleSize uint64   `json:"candidateScheduleSize"`
 	BackupScheduleSize    uint64   `json:"backupScheduleSize"`
 	EpchoInterval         uint64   `json:"epchoInterval"`
-	DelayEpcho            uint64   `json:"delayEpcho"`
 	AccountName           string   `json:"accountName"`
 	SystemName            string   `json:"systemName"`
 	SystemURL             string   `json:"systemURL"`
@@ -95,9 +93,11 @@ func (cfg *Config) unitStake() *big.Int {
 func (cfg *Config) extraBlockReward() *big.Int {
 	return new(big.Int).Mul(cfg.ExtraBlockReward, cfg.decimals())
 }
+
 func (cfg *Config) blockReward() *big.Int {
 	return new(big.Int).Mul(cfg.BlockReward, cfg.decimals())
 }
+
 func (cfg *Config) blockInterval() uint64 {
 	if blockInter := cfg.blockInter.Load(); blockInter != nil {
 		return blockInter.(uint64)
@@ -141,5 +141,5 @@ func (cfg *Config) getoffset(timestamp uint64) uint64 {
 }
 
 func (cfg *Config) epoch(timestamp uint64) uint64 {
-	return timestamp / cfg.epochInterval()
+	return timestamp/cfg.epochInterval() + 1
 }

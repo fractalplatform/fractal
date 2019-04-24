@@ -126,13 +126,13 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 
 	// db
 	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
-	if action, err := sys.Undelegate(candidate, stake); err != nil {
+	action, err := sys.Undelegate(candidate, stake)
+	if err != nil {
 		return fmt.Errorf("undelegate %v failed(%v)", q, err)
-	} else {
-		sys.internalActions = append(sys.internalActions, &types.InternalAction{
-			Action: action.NewRPCAction(0),
-		})
 	}
+	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+		Action: action.NewRPCAction(0),
+	})
 
 	q = new(big.Int).Sub(q, prod.Quantity)
 	if len(url) > 0 {
@@ -173,13 +173,13 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string) error {
 
 	// db
 	stake = new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
-	if action, err := sys.Undelegate(candidate, stake); err != nil {
+	action, err := sys.Undelegate(candidate, stake)
+	if err != nil {
 		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
-	} else {
-		sys.internalActions = append(sys.internalActions, &types.InternalAction{
-			Action: action.NewRPCAction(0),
-		})
 	}
+	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+		Action: action.NewRPCAction(0),
+	})
 
 	voters, err := sys.GetVoters(epcho, prod.Name)
 	if err != nil {
@@ -310,13 +310,13 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string) error {
 
 	// db
 	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
-	if action, err := sys.Undelegate(sys.config.SystemName, stake); err != nil {
+	action, err := sys.Undelegate(sys.config.SystemName, stake)
+	if err != nil {
 		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
-	} else {
-		sys.internalActions = append(sys.internalActions, &types.InternalAction{
-			Action: action.NewRPCAction(0),
-		})
 	}
+	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+		Action: action.NewRPCAction(0),
+	})
 
 	voters, err := sys.GetVoters(epcho, prod.Name)
 	if err != nil {
@@ -359,19 +359,26 @@ func (sys *System) ExitTakeOver(epcho uint64) error {
 	return sys.SetState(gstate)
 }
 
-func (sys *System) onblock(epcho uint64, preEpcho uint64, height uint64) error {
-	gstate, err := sys.GetState(epcho)
-	if err != nil || gstate != nil {
-		return err
-	}
-
-	pState, err := sys.GetState(preEpcho)
+func (sys *System) onblock(epcho uint64, height uint64) error {
+	pepcho, err := sys.GetLastestEpcho()
 	if err != nil {
 		return err
 	}
-	gstate = &GlobalState{
+	if pepcho == epcho {
+		return nil
+	}
+
+	if pepcho > epcho {
+		panic(err)
+	}
+
+	pState, err := sys.GetState(pepcho)
+	if err != nil {
+		return err
+	}
+	gstate := &GlobalState{
 		Epcho:                  epcho,
-		PreEpcho:               preEpcho,
+		PreEpcho:               pepcho,
 		ActivatedTotalQuantity: new(big.Int).SetBytes(pState.ActivatedTotalQuantity.Bytes()),
 		TotalQuantity:          new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
 		TakeOver:               pState.TakeOver,

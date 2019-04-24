@@ -193,29 +193,10 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	}
 	parent := chain.GetHeaderByHash(header.ParentHash)
 
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:    dpos.config.AccountName,
-				assetid: chain.Config().SysTokenID,
-				state:   state,
-			},
-		},
-	}
+	sys := NewSystem(state, dpos.config)
+	sys.UpdateElectedCandidates(LastEpcho)
 
 	counter := int64(0)
-	parentEpoch := dpos.config.epoch(parent.Time.Uint64())
-	currentEpoch := dpos.config.epoch(header.Time.Uint64())
-	if parentEpoch != currentEpoch {
-		tparent := parent
-		for tparent.Number.Uint64() > 1 && dpos.config.epoch(tparent.Number.Uint64()) == dpos.config.epoch(parent.Time.Uint64()) {
-			counter++
-			tparent = chain.GetHeaderByHash(tparent.ParentHash)
-		}
-		// next epoch
-		//sys.updateElectedCandidates(header.Time.Uint64())
-	}
 
 	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
 		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
@@ -243,8 +224,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
-	//epcho := dpos.config.epoch(header.Time.Uint64())
-	//sys.onblock()
+	sys.onblock(dpos.config.epoch(header.Time.Uint64()), header.Number.Uint64())
 
 	blk := types.NewBlock(header, txs, receipts)
 
@@ -332,15 +312,14 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return errInvalidMintBlockTime
 	}
 
-	db := &stateDB{
-		name:  dpos.config.AccountName,
-		state: state,
-	}
-
 	if !common.IsValidAccountName(candidate) {
 		return ErrIllegalCandidateName
 	}
 
+	db := &stateDB{
+		name:  dpos.config.AccountName,
+		state: state,
+	}
 	has := false
 	for _, pubkey := range pubkeys {
 		if db.IsValidSign(candidate, pubkey) {
@@ -351,20 +330,14 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return ErrIllegalCandidatePubKey
 	}
 
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: db,
-		},
-	}
-
-	latest, err := sys.GetState(parent.Number.Uint64())
+	sys := NewSystem(state, dpos.config)
+	gstate, err := sys.GetState(LastEpcho)
 	if err != nil {
 		return err
 	}
 
 	systemio := strings.Compare(candidate, dpos.config.SystemName) == 0
-	if latest.TakeOver {
+	if gstate.TakeOver {
 		if force && systemio {
 			return nil
 		}
@@ -377,21 +350,12 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return ErrTooMuchRreversible
 	}
 
-	// targetTime := big.NewInt(int64(timestamp - dpos.config.DelayEcho*dpos.config.epochInterval()))
-	// // find target block
-	// for parent.Number.Uint64() > 0 {
-	// 	if parent.Time.Cmp(targetTime) == -1 {
-	// 		break
-	// 	}
-	// 	parent = chain.GetHeaderByHash(parent.ParentHash)
-	// }
-
-	gstate, err := sys.GetState(parent.Number.Uint64() + 1)
+	pstate, err := sys.GetState(gstate.PreEpcho)
 	if err != nil {
 		return err
 	}
 	offset := dpos.config.getoffset(timestamp)
-	if gstate == nil || offset >= uint64(len(gstate.ActivatedCandidateSchedule)) || strings.Compare(gstate.ActivatedCandidateSchedule[offset], candidate) != 0 {
+	if gstate == nil || offset >= uint64(len(pstate.ActivatedCandidateSchedule)) || strings.Compare(gstate.ActivatedCandidateSchedule[offset], candidate) != 0 {
 		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCandidate, candidate, gstate.ActivatedCandidateSchedule, offset, timestamp/dpos.config.epochInterval())
 	}
 	return nil
@@ -402,7 +366,7 @@ func (dpos *Dpos) BlockInterval() uint64 {
 	return dpos.config.blockInterval()
 }
 
-// Slot
+// Slot slot
 func (dpos *Dpos) Slot(timestamp uint64) uint64 {
 	return dpos.config.slot(timestamp)
 }
@@ -412,17 +376,10 @@ func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 	return timestamp%dpos.config.epochInterval()%(dpos.config.blockInterval()*dpos.config.BlockFrequency) == 0
 }
 
-func (dpos *Dpos) GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error) {
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:  dpos.config.AccountName,
-				state: state,
-			},
-		},
-	}
-	return sys.GetDelegatedByTime(name, timestamp)
+// GetDelegatedByTime get delegate of candidate
+func (dpos *Dpos) GetDelegatedByTime(candidate string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error) {
+	sys := NewSystem(state, dpos.config)
+	return sys.GetDelegatedByTime(candidate, timestamp)
 }
 
 // Engine an engine
@@ -430,6 +387,7 @@ func (dpos *Dpos) Engine() consensus.IEngine {
 	return dpos
 }
 
+// CalcBFTIrreversible calc irreversible
 func (dpos *Dpos) CalcBFTIrreversible() uint64 {
 	irreversibles := UInt64Slice{}
 	keys := dpos.bftIrreversibles.Keys()
@@ -449,6 +407,7 @@ func (dpos *Dpos) CalcBFTIrreversible() uint64 {
 	return irreversibles[(len(irreversibles)-1)/3]
 }
 
+// CalcProposedIrreversible calc irreversible
 func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, parent *types.Header, strict bool) uint64 {
 	curHeader := chain.CurrentHeader()
 	if parent != nil {

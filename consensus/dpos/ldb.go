@@ -452,7 +452,7 @@ func (db *LDB) SetState(gstate *GlobalState) error {
 func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 	if epcho == LastEpcho {
 		var err error
-		epcho, err = db.lastestEpcho()
+		epcho, err = db.GetLastestEpcho()
 		if err != nil {
 			return nil, err
 		}
@@ -484,7 +484,8 @@ func (db *LDB) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int,
 	return candidateInfo.Quantity, candidateInfo.TotalQuantity, candidateInfo.Counter, nil
 }
 
-func (db *LDB) lastestEpcho() (uint64, error) {
+// GetLastestEpcho get latest epcho
+func (db *LDB) GetLastestEpcho() (uint64, error) {
 	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
 	if val, err := db.Get(lkey); err != nil {
 		return 0, err

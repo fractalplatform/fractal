@@ -29,22 +29,27 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
+// RegisterCandidate candidate info
 type RegisterCandidate struct {
-	Url string
+	URL string
 }
 
+// UpdateCandidate candidate info
 type UpdateCandidate struct {
-	Url string
+	URL string
 }
 
+// VoteCandidate vote info
 type VoteCandidate struct {
 	Candidate string
 }
 
+// KickedCandidate kicked info
 type KickedCandidate struct {
 	Candidates []string
 }
 
+// ProcessAction exec action
 func (dpos *Dpos) ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
 	internalLogs, err := dpos.processAction(height, chainCfg, state, action)
@@ -84,7 +89,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(LastEpcho, action.Sender().String(), arg.Url, action.Value(), height); err != nil {
+		if err := sys.RegCandidate(LastEpcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
@@ -92,7 +97,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(LastEpcho, action.Sender().String(), arg.Url, action.Value(), height); err != nil {
+		if err := sys.UpdateCandidate(LastEpcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:

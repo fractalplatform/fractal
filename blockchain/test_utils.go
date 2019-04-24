@@ -89,13 +89,12 @@ func makeSystemCandidatesAndTime(parentTime uint64, genesis *Genesis) ([]string,
 		baseCandidates = getCandidates()
 	)
 
-	for i := 0; i < int(genesis.Config.DposCfg.DelayEcho)+1; i++ {
-		for j := 0; j < len(baseCandidates); j++ {
-			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
-				candidates = append(candidates, genesis.Config.SysName)
-			}
+	for j := 0; j < len(baseCandidates); j++ {
+		for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
+			candidates = append(candidates, genesis.Config.SysName)
 		}
 	}
+
 	candidates = candidates[1:]
 	headerTimes := make([]uint64, len(candidates))
 	for i := 0; i < len(candidates); i++ {
@@ -285,7 +284,7 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 		to := getCandidates()[syscandidatePrefix+strconv.Itoa(i)]
 		url := "www." + to.name + ".io"
 		arg := &dpos.RegisterCandidate{
-			Url: url,
+			URL: url,
 		}
 		payload, _ := rlp.EncodeToBytes(arg)
 		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload)
