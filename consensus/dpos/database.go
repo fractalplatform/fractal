@@ -17,6 +17,7 @@
 package dpos
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -57,20 +58,77 @@ type IDB interface {
 	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
 }
 
+type CandidateType uint64
+
+const (
+	Normal CandidateType = iota
+	Freeze
+	Black
+	Jail
+	Unkown
+)
+
+// MarshalText returns the hex representation of a.
+func (t CandidateType) MarshalText() ([]byte, error) {
+	return t.MarshalJSON()
+}
+
+// MarshalJSON returns the hex representation of a.
+func (t CandidateType) MarshalJSON() ([]byte, error) {
+	str := "unkown"
+	switch t {
+	case Normal:
+		str = "normal"
+	case Freeze:
+		str = "freeze"
+	case Black:
+		str = "black"
+	case Jail:
+		str = "jail"
+
+	}
+	return json.Marshal(str)
+}
+
+// UnmarshalText parses a hash in syntax.
+func (t *CandidateType) UnmarshalText(input []byte) error {
+	return t.UnmarshalJSON(input)
+}
+
+// UnmarshalJSON parses a type in syntax.
+func (t *CandidateType) UnmarshalJSON(data []byte) error {
+	var val string
+	if err := json.Unmarshal(data, &val); err != nil {
+		return err
+	}
+	switch strings.ToLower(val) {
+	case "normal":
+		*t = Normal
+	case "freeze":
+		*t = Freeze
+	case "black":
+		*t = Black
+	case "jail":
+		*t = Jail
+	default:
+		*t = Unkown
+	}
+	return nil
+}
+
 // CandidateInfo info
 type CandidateInfo struct {
-	Name          string   `json:"name"`          // candidate name
-	URL           string   `json:"url"`           // candidate url
-	Quantity      *big.Int `json:"quantity"`      // candidate stake quantity
-	TotalQuantity *big.Int `json:"totalQuantity"` // candidate total stake quantity
-	Height        uint64   `json:"height"`        // timestamp
-	Counter       uint64   `json:"counter"`
-	InBlackList   bool     `json:"inBlackList"`
-	InJail        bool     `json:"inJail"`
+	Name          string        `json:"name"`          // candidate name
+	URL           string        `json:"url"`           // candidate url
+	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
+	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
+	Height        uint64        `json:"height"`        // timestamp
+	Counter       uint64        `json:"counter"`
+	Type          CandidateType `json:"type"`
 }
 
 func (candidateInfo *CandidateInfo) invalid() bool {
-	return candidateInfo.InBlackList || candidateInfo.InJail
+	return candidateInfo.Type != Normal
 }
 
 // VoterInfo info

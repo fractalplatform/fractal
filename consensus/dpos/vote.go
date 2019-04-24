@@ -167,7 +167,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string) error {
 	if prod == nil {
 		return fmt.Errorf("invalide candidate %v", candidate)
 	}
-	if prod.InBlackList {
+	if prod.Type == Black {
 		return fmt.Errorf("in backlist %v", candidate)
 	}
 
@@ -345,7 +345,7 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string) error {
 
 	prod.TotalQuantity = big.NewInt(0)
 	prod.Quantity = big.NewInt(0)
-	prod.InBlackList = true
+	prod.Type = Black
 	return sys.SetCandidate(prod)
 }
 
@@ -431,11 +431,12 @@ func (sys *System) UpdateElectedCandidates(epcho uint64) error {
 	}
 
 	if !gstate.Dpos {
-		init := len(activatedCandidateSchedule)
-		index := 0
-		for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
-			activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
-			index++
+		if init := len(activatedCandidateSchedule); init > 0 {
+			index := 0
+			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
+				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
+				index++
+			}
 		}
 	}
 	gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
