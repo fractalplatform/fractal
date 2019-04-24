@@ -194,7 +194,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(types.IssueAsset, ownerName, toName, 0, 0, 0, big.NewInt(0), b)
+	action := types.NewAction(types.IssueAsset, ownerName, "fractal.account", 0, 0, 0, big.NewInt(0), b)
 	return action
 }
 
@@ -250,7 +250,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	issuseAssetInput, err := input(abifile, "reg", "ethnewfromname2,ethereum,10000000000,10,jacobwolf,20000000000,jacobwolf")
+	issuseAssetInput, err := input(abifile, "reg", "ethnewfromname2,ethereum,10000000000,10,assetcontract,20000000000,jacobwolf")
 	if err != nil {
 		fmt.Println("issuseAssetInput error ", err)
 		return
@@ -282,7 +282,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset result ", b)
 	}
 
-	addAssetInput, err := input(abifile, "add", big.NewInt(2), common.BytesToAddress([]byte(senderName.String())), big.NewInt(210000))
+	addAssetInput, err := input(abifile, "add", big.NewInt(2), common.BigToAddress(big.NewInt(4097)), big.NewInt(210000))
 	if err != nil {
 		fmt.Println("addAssetInput error ", err)
 		return
@@ -306,7 +306,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset result ", b)
 	}
 
-	transferExAssetInput, err := input(abifile, "transAsset", common.BytesToAddress([]byte(receiverName.String())), big.NewInt(2), big.NewInt(10000))
+	transferExAssetInput, err := input(abifile, "transAsset", common.BigToAddress(big.NewInt(4098)), big.NewInt(2), big.NewInt(10000))
 	if err != nil {
 		fmt.Println("transferExAssetInput error ", err)
 		return
@@ -343,7 +343,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("asset receiver result ", b)
 	}
 
-	setOwnerInput, err := input(abifile, "setname", common.BytesToAddress([]byte(receiverName.String())), big.NewInt(2))
+	setOwnerInput, err := input(abifile, "setname", common.BigToAddress(big.NewInt(4098)), big.NewInt(2))
 	if err != nil {
 		fmt.Println("setOwnerInput error ", err)
 		return
@@ -357,7 +357,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	getBalanceInput, err := input(abifile, "getbalance", common.BytesToAddress([]byte(receiverName.String())), big.NewInt(2))
+	getBalanceInput, err := input(abifile, "getbalance", common.BigToAddress(big.NewInt(4098)), big.NewInt(2))
 	if err != nil {
 		fmt.Println("getBalanceInput error ", err)
 		return
@@ -490,7 +490,7 @@ func TestBNB(t *testing.T) {
 		return
 	}
 
-	initializeVenSaleInput, err := input(VenSaleAbifile, "initialize", common.BytesToAddress([]byte(venContractName.String())), common.BytesToAddress([]byte(ethvaultName.String())), common.BytesToAddress([]byte(venvaultName.String())))
+	initializeVenSaleInput, err := input(VenSaleAbifile, "initialize", common.BigToAddress(big.NewInt(4099)), common.BigToAddress(big.NewInt(4101)), common.BigToAddress(big.NewInt(4102)))
 	if err != nil {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
@@ -504,6 +504,7 @@ func TestBNB(t *testing.T) {
 	}
 
 	runtimeConfig.Value = big.NewInt(100000000000000000)
+	runtimeConfig.Time = big.NewInt(1503057700)
 	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil)
 
 	_, _, err = Call(action, &runtimeConfig)

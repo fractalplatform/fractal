@@ -374,7 +374,7 @@ contract VENSale is Owned{
     uint256 constant venPerEthEarlyStage = venPerEth + venPerEth * 15 / 100;  // early stage has 15% reward
 
     uint constant minBuyInterval = 30 minutes; // each account can buy once in 30 minutes
-    uint constant maxBuyEthAmount = 30 ether;
+    uint constant maxBuyEthAmount = 30 ft;
    
     VEN ven; // VEN token contract follows ERC20 standard
 
@@ -463,7 +463,7 @@ contract VENSale is Owned{
     function buy() payable {
         // reject contract buyer to avoid breaking interval limit
         require(!isContract(msg.sender));
-        require(msg.value >= 0.01 ether);
+        require(msg.value >= 0.01 ft);
 
         uint256 rate = exchangeRate();
         // here don't need to check stage. rate is only valid when in sale
