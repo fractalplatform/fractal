@@ -87,6 +87,7 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		CandidateScheduleSize: cfg.DposCfg.CandidateScheduleSize,
 		BackupScheduleSize:    cfg.DposCfg.BackupScheduleSize,
 		EpchoInterval:         cfg.DposCfg.EpchoInterval,
+		FreezeEpchoSize:       cfg.DposCfg.FreezeEpchoSize,
 		AccountName:           cfg.DposName,
 		SystemName:            cfg.SysName,
 		SystemURL:             cfg.ChainURL,
@@ -94,6 +95,7 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		BlockReward:           cfg.DposCfg.BlockReward,
 		Decimals:              cfg.SysTokenDecimals,
 		AssetID:               cfg.SysTokenID,
+		ReferenceTime:         cfg.ReferenceTime,
 	}
 }
 
@@ -160,9 +162,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 // ToBlock creates the genesis block and writes state of a genesis specification
 // to the given database (or discards it if nil).
 func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
-	verify := true
 	if db == nil {
-		verify = false
 		db = memdb.NewMemDatabase()
 	}
 	detailTx := &types.DetailTx{}
@@ -198,7 +198,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	actActions := []*types.Action{}
-	if err := dpos.Genesis(dposConfig(g.Config), statedb, number.Uint64()); err != nil {
+	g.Config.ReferenceTime = g.Timestamp
+	if err := dpos.Genesis(dposConfig(g.Config), statedb, g.Timestamp, number.Uint64()); err != nil {
 		panic(fmt.Sprintf("genesis dpos err %v", err))
 	}
 
@@ -293,23 +294,21 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
 
-	if verify {
-		if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
-			panic(fmt.Sprintf("system is not exist %v", err))
-		}
-		if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
-			panic(fmt.Sprintf("account is not exist %v", err))
-		}
-		if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
-			panic(fmt.Sprintf("dpos is not exist %v", err))
-		}
-		assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
-		if err != nil {
-			panic(fmt.Sprintf("genesis system asset err %v", err))
-		}
-		g.Config.SysTokenID = assetInfo.AssetId
-		g.Config.SysTokenDecimals = assetInfo.Decimals
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
+		panic(fmt.Sprintf("system is not exist %v", err))
 	}
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
+		panic(fmt.Sprintf("account is not exist %v", err))
+	}
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
+		panic(fmt.Sprintf("dpos is not exist %v", err))
+	}
+	assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
+	if err != nil {
+		panic(fmt.Sprintf("genesis system asset err %v", err))
+	}
+	g.Config.SysTokenID = assetInfo.AssetId
+	g.Config.SysTokenDecimals = assetInfo.Decimals
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
 	for _, candidate := range g.AllocCandidates {
 		if err := sys.SetCandidate(&dpos.CandidateInfo{

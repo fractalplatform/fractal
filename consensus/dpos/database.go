@@ -69,6 +69,10 @@ type CandidateInfo struct {
 	InJail        bool     `json:"inJail"`
 }
 
+func (candidateInfo *CandidateInfo) invalid() bool {
+	return candidateInfo.InBlackList || candidateInfo.InJail
+}
+
 // VoterInfo info
 type VoterInfo struct {
 	Epcho     uint64   `json:"epcho"`

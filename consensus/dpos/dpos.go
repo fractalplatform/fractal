@@ -101,14 +101,9 @@ func (s *stateDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, err
 }
 
 // Genesis dpos genesis store
-func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
-	db := &LDB{
-		IDatabase: &stateDB{
-			name:  cfg.AccountName,
-			state: state,
-		},
-	}
-	if err := db.SetCandidate(&CandidateInfo{
+func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, height uint64) error {
+	sys := NewSystem(state, cfg)
+	if err := sys.SetCandidate(&CandidateInfo{
 		Name:          cfg.SystemName,
 		URL:           cfg.SystemURL,
 		Quantity:      big.NewInt(0),
@@ -118,8 +113,10 @@ func Genesis(cfg *Config, state *state.StateDB, height uint64) error {
 		return err
 	}
 
-	if err := db.SetState(&GlobalState{
-		Epcho:                  cfg.epoch(cfg.ReferenceTime),
+	epcho := cfg.epoch(timestamp)
+	if err := sys.SetState(&GlobalState{
+		Epcho:                  epcho,
+		PreEpcho:               epcho,
 		ActivatedTotalQuantity: big.NewInt(0),
 		TotalQuantity:          big.NewInt(0),
 		Height:                 height,
@@ -191,16 +188,14 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		header.Root = state.IntermediateRoot()
 		return types.NewBlock(header, txs, receipts), nil
 	}
-	parent := chain.GetHeaderByHash(header.ParentHash)
-
 	sys := NewSystem(state, dpos.config)
 	sys.UpdateElectedCandidates(LastEpcho)
 
+	parent := chain.GetHeaderByHash(header.ParentHash)
 	counter := int64(0)
-
 	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.epochInterval()) {
 		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
-			latest, err := sys.GetState(header.Number.Uint64())
+			latest, err := sys.GetState(LastEpcho)
 			if err != nil {
 				return nil, err
 			}
@@ -355,8 +350,8 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return err
 	}
 	offset := dpos.config.getoffset(timestamp)
-	if gstate == nil || offset >= uint64(len(pstate.ActivatedCandidateSchedule)) || strings.Compare(gstate.ActivatedCandidateSchedule[offset], candidate) != 0 {
-		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCandidate, candidate, gstate.ActivatedCandidateSchedule, offset, timestamp/dpos.config.epochInterval())
+	if pstate == nil || offset >= uint64(len(pstate.ActivatedCandidateSchedule)) || strings.Compare(pstate.ActivatedCandidateSchedule[offset], candidate) != 0 {
+		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCandidate, candidate, pstate.ActivatedCandidateSchedule, offset, timestamp/dpos.config.epochInterval())
 	}
 	return nil
 }

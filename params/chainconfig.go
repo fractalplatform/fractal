@@ -38,6 +38,7 @@ type ChainConfig struct {
 	SysToken         string        `json:"systemToken,omitempty"` // system token
 	SysTokenID       uint64        `json:"sysTokenID,omitempty"`
 	SysTokenDecimals uint64        `json:"sysTokenDecimal,omitempty"`
+	ReferenceTime    uint64        `json:"referenceTime,omitempty"`
 }
 
 type ChargeConfig struct {
@@ -67,6 +68,7 @@ type DposConfig struct {
 	CandidateScheduleSize uint64   `json:"candidateScheduleSize,omitempty"`
 	BackupScheduleSize    uint64   `json:"backupScheduleSize,omitempty"`
 	EpchoInterval         uint64   `json:"epchoInterval,omitempty"`
+	FreezeEpchoSize       uint64   `json:"freezeEpchoSize,omitempty"`
 	ExtraBlockReward      *big.Int `json:"extraBlockReward,omitempty"`
 	BlockReward           *big.Int `json:"blockReward,omitempty"`
 }
@@ -105,6 +107,7 @@ var DefaultChainconfig = &ChainConfig{
 		CandidateScheduleSize: 3,
 		BackupScheduleSize:    10,
 		EpchoInterval:         54000,
+		FreezeEpchoSize:       3,
 		ExtraBlockReward:      big.NewInt(1),
 		BlockReward:           big.NewInt(5),
 	},

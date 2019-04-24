@@ -34,6 +34,7 @@ var DefaultConfig = &Config{
 	CandidateScheduleSize: 3,
 	BackupScheduleSize:    3,
 	EpchoInterval:         540000,
+	FreezeEpchoSize:       3,
 	AccountName:           "ftsystemdpos",
 	SystemName:            "ftsystemio",
 	SystemURL:             "www.fractalproject.com",
@@ -57,6 +58,7 @@ type Config struct {
 	CandidateScheduleSize uint64   `json:"candidateScheduleSize"`
 	BackupScheduleSize    uint64   `json:"backupScheduleSize"`
 	EpchoInterval         uint64   `json:"epchoInterval"`
+	FreezeEpchoSize       uint64   `json:"freezeEpchoSize"`
 	AccountName           string   `json:"accountName"`
 	SystemName            string   `json:"systemName"`
 	SystemURL             string   `json:"systemURL"`
@@ -141,5 +143,5 @@ func (cfg *Config) getoffset(timestamp uint64) uint64 {
 }
 
 func (cfg *Config) epoch(timestamp uint64) uint64 {
-	return timestamp/cfg.epochInterval() + 1
+	return (timestamp-cfg.ReferenceTime)/cfg.epochInterval() + 1
 }

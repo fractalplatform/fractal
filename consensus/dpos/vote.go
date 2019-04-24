@@ -405,46 +405,40 @@ func (sys *System) UpdateElectedCandidates(epcho uint64) error {
 		gstate.Dpos = true
 	}
 
-	if !gstate.Dpos {
-		activeTotalQuantity := big.NewInt(0)
-		for index, candidate := range gstate.ActivatedCandidateSchedule {
-			candidateInfo, err := sys.GetCandidate(candidate)
-			if err != nil {
-				return err
-			}
-			if uint64(index) < sys.config.CandidateScheduleSize {
-				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
-			}
+	candidateInfoArray := CandidateInfoArray{}
+	for _, candidate := range candidates {
+		candidateInfo, err := sys.GetCandidate(candidate)
+		if err != nil {
+			return err
+		}
+		candidateInfoArray = append(candidateInfoArray, candidateInfo)
+	}
+	sort.Sort(candidateInfoArray)
+
+	activatedCandidateSchedule := []string{}
+	activeTotalQuantity := big.NewInt(0)
+	for _, candidateInfo := range candidateInfoArray {
+		if candidateInfo.invalid() || gstate.Dpos && strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+			continue
+		}
+		activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+		if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
 			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
 		}
-		gstate.ActivatedTotalQuantity = activeTotalQuantity
-	} else {
-		candidateInfoArray := CandidateInfoArray{}
-		for _, candidate := range candidates {
-			candidateInfo, err := sys.GetCandidate(candidate)
-			if err != nil {
-				return err
-			}
-			candidateInfoArray = append(candidateInfoArray, candidateInfo)
+		if uint64(len(activatedCandidateSchedule)) == n {
+			break
 		}
-		sort.Sort(candidateInfoArray)
-
-		activatedCandidateSchedule := []string{}
-		activeTotalQuantity := big.NewInt(0)
-		for _, candidateInfo := range candidateInfoArray {
-			if candidateInfo.InBlackList || candidateInfo.InJail || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-				continue
-			}
-			activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-			if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
-				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
-			}
-			if uint64(len(activatedCandidateSchedule)) == n {
-				break
-			}
-		}
-		gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
-		gstate.ActivatedTotalQuantity = activeTotalQuantity
 	}
+
+	if !gstate.Dpos {
+		init := len(activatedCandidateSchedule)
+		index := 0
+		for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
+			activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
+			index++
+		}
+	}
+	gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+	gstate.ActivatedTotalQuantity = activeTotalQuantity
 	return sys.SetState(gstate)
 }
