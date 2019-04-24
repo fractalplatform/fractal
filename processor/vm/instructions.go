@@ -1077,6 +1077,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	return nil, nil
 }
 
+// opGetAccountID get account ID by name
 func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	account := stack.pop()
 	name, _ := common.BigToName(account)
@@ -1095,6 +1096,24 @@ func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	return nil, nil
 }
 
+// opDeductGas use to deduct gas
+func opDeductGas(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	gasAmount := stack.pop()
+	amount := gasAmount.Uint64()
+
+	if contract.Gas >= amount {
+		contract.Gas = contract.Gas - amount
+		stack.push(evm.interpreter.intPool.get().SetUint64(contract.Gas))
+	} else {
+		//errors.New("gas insufficient")
+		contract.Gas = 0
+		stack.push(evm.interpreter.intPool.getZero())
+	}
+
+	evm.interpreter.intPool.put(gasAmount)
+	return nil, nil
+}
+
 // opCryptoCalc to encrypt or decrypt bytes
 func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	typeID, retOffset, retSize, offset2, size2, offset, size := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
@@ -1108,7 +1127,14 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	contract.Gas = contract.Gas - uint64(size.Int64())*params.GasTableInstanse.CryptoByte
+	if contract.Gas >= uint64(size.Int64())*params.GasTableInstanse.CryptoByte {
+		contract.Gas = contract.Gas - uint64(size.Int64())*params.GasTableInstanse.CryptoByte
+	} else {
+		//errors.New("gas insufficient")
+		contract.Gas = 0
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 
 	if i == 0 {
 		//Encrypt

@@ -115,6 +115,14 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
+	instructionSet[DEDUCTGAS] = operation{
+		execute:       opDeductGas,
+		gasCost:       gasDeductGas,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[GETDELEGATE] = operation{
 		execute:       opGetDelegate,
 		gasCost:       gasGetDelegate,
