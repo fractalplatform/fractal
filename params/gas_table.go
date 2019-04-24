@@ -49,6 +49,7 @@ type GasTable struct {
 	GetDelegate     uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
+	DeductGas       uint64
 }
 
 // Variables containing gas prices for different phases.
@@ -76,6 +77,7 @@ var (
 		GetDelegate:     200,
 		CryptoCalc:      20000,
 		CryptoByte:      1000,
+		DeductGas:       200,
 	}
 )
 
