@@ -255,6 +255,27 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 		return fmt.Errorf("not in freezelist %v", candidate)
 	}
 
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
+
+	freeze := uint64(0)
+	pstate := gstate
+	for i := uint64(0); i < sys.config.FreezeEpchoSize; i++ {
+		if pstate.Height < height {
+			freeze++
+		}
+		tstate, err := sys.GetState(pstate.PreEpcho)
+		if err != nil {
+			return err
+		}
+		pstate = tstate
+	}
+	if freeze >= sys.config.FreezeEpchoSize {
+		return fmt.Errorf("freeze period has not arrived %v", candidate)
+	}
+
 	// db
 	stake = new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
 	action, err := sys.Undelegate(candidate, stake)
@@ -284,10 +305,6 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 		return err
 	}
 
-	gstate, err := sys.GetState(epcho)
-	if err != nil {
-		return err
-	}
 	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
 	if err := sys.SetState(gstate); err != nil {
 		return err
