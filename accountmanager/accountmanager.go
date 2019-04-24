@@ -1242,7 +1242,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
 				return nil, err
 			}
-			actionX := types.NewAction(action.Type(), common.Name(sysName), acct.AccountName, 0, 0, action.AssetID(), action.Value(), nil)
+			actionX := types.NewAction(action.Type(), common.Name(sysName), acct.AccountName, 0, action.AssetID(), 0, action.Value(), nil)
 			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 			internalActions = append(internalActions, internalAction)
 		}
@@ -1279,7 +1279,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), common.Name(sysName), asset.GetAssetOwner(), 0, 0, asset.GetAssetId(), asset.GetAssetAmount(), nil)
+		actionX := types.NewAction(action.Type(), common.Name(sysName), asset.GetAssetOwner(), 0, asset.GetAssetId(), 0, asset.GetAssetAmount(), nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1293,7 +1293,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), common.Name(accountFrom), inc.To, 0, 0, inc.AssetId, inc.Amount, nil)
+		actionX := types.NewAction(action.Type(), common.Name(accountFrom), inc.To, 0, inc.AssetId, 0, inc.Amount, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1311,7 +1311,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.DestroyAsset(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), common.Name(sysName), "", 0, 0, action.AssetID(), action.Value(), nil)
+		actionX := types.NewAction(action.Type(), common.Name(sysName), "", 0, action.AssetID(), 0, action.Value(), nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
