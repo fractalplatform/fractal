@@ -101,12 +101,12 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 	case types.UnregCandidate:
-		err := sys.UnregCandidate(LastEpcho, action.Sender().String())
+		err := sys.UnregCandidate(LastEpcho, action.Sender().String(), height)
 		if err != nil {
 			return nil, err
 		}
 	case types.RefundCandidate:
-		err := sys.RefundCandidate(LastEpcho, action.Sender().String())
+		err := sys.RefundCandidate(LastEpcho, action.Sender().String(), height)
 		if err != nil {
 			return nil, err
 		}
@@ -127,7 +127,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 		for _, cadicate := range arg.Candidates {
-			if err := sys.KickedCandidate(LastEpcho, cadicate); err != nil {
+			if err := sys.KickedCandidate(LastEpcho, cadicate, height); err != nil {
 				return nil, err
 			}
 		}
