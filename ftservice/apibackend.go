@@ -347,6 +347,11 @@ func (b *APIBackend) Engine() consensus.IEngine {
 	return b.ftservice.engine
 }
 
+//SetStatePruning set state pruning
+func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
+	return b.ftservice.blockchain.StatePruning(enable)
+}
+
 // APIs returns apis
 func (b *APIBackend) APIs() []rpc.API {
 	return b.ftservice.miner.APIs(b.ftservice.blockchain)
