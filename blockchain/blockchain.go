@@ -55,6 +55,9 @@ const (
 	BlockChainVersion = 0
 )
 
+type CacheConfig struct {
+}
+
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 type BlockChain struct {
@@ -114,8 +117,8 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		chainConfig:       chainConfig,
 		statePruning:      statePruning,
 		statePruningClean: true,
-		snapshotInterval:  chainConfig.SnapshotInterval * 1000000,
-		triesInMemory:     ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CadidateScheduleSize) * 2) + 2,
+		snapshotInterval:  chainConfig.SnapshotInterval * uint64(time.Millisecond),
+		triesInMemory:     ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
 		preSnapshotTime:   0,
 		dereferenceNumber: 0,
 		triegc:            prque.New(nil),
@@ -911,7 +914,7 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 	// Ensure the user sees large reorgs
 	if len(oldChain) > 0 && len(newChain) > 0 {
 		if oldChain[len(oldChain)-1].NumberU64() <= bc.IrreversibleNumber() {
-			log.Warn("Do not accept other cadidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
+			log.Warn("Do not accept other candidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
 			return errReorgSystemBlock
 		}
 

@@ -17,72 +17,162 @@
 package dpos
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"math/big"
 	"strings"
+
+	"github.com/fractalplatform/fractal/types"
 )
 
-var (
-	// LastBlockHeight latest
-	LastBlockHeight = uint64(math.MaxUint64)
-)
+// LastEpcho latest
+var LastEpcho = uint64(math.MaxUint64)
 
 // IDB dpos database
 type IDB interface {
-	SetCadidate(*cadidateInfo) error
-	DelCadidate(string) error
-	GetCadidate(string) (*cadidateInfo, error)
-	Cadidates() ([]*cadidateInfo, error)
-	CadidatesSize() (uint64, error)
+	SetCandidate(*CandidateInfo) error
+	DelCandidate(string) error
+	GetCandidate(string) (*CandidateInfo, error)
+	GetCandidates() ([]*CandidateInfo, error)
+	CandidatesSize() (uint64, error)
 
-	SetVoter(*voterInfo) error
-	DelVoter(string, string) error
-	GetVoter(string) (*voterInfo, error)
-	// GetDelegators(string) ([]string, error)
+	SetAvailableQuantity(uint64, string, *big.Int) error
+	GetAvailableQuantity(uint64, string) (*big.Int, error)
 
-	SetState(*globalState) error
-	DelState(uint64) error
-	GetState(uint64) (*globalState, error)
+	SetVoter(*VoterInfo) error
+	GetVoter(uint64, string, string) (*VoterInfo, error)
+	GetVotersByVoter(uint64, string) ([]*VoterInfo, error)
+	GetVotersByCandidate(uint64, string) ([]*VoterInfo, error)
 
-	Delegate(string, *big.Int) error
-	Undelegate(string, *big.Int) error
-	IncAsset2Acct(string, string, *big.Int) error
+	SetState(*GlobalState) error
+	GetState(uint64) (*GlobalState, error)
+	GetLastestEpcho() (uint64, error)
+
+	Undelegate(string, *big.Int) (*types.Action, error)
+	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
+	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
 
 	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
 }
 
-type cadidateInfo struct {
-	Name          string   `json:"name"`          // cadidate name
-	URL           string   `json:"url"`           // cadidate url
-	Quantity      *big.Int `json:"quantity"`      // cadidate stake quantity
-	TotalQuantity *big.Int `json:"totalQuantity"` // cadidate total stake quantity
-	Height        uint64   `json:"height"`        // timestamp
-	Counter       uint64   `json:"counter"`
-	InBlackList   bool     `json:"inBlackList"`
+type CandidateType uint64
+
+const (
+	Normal CandidateType = iota
+	Freeze
+	Black
+	Jail
+	Unkown
+)
+
+// MarshalText returns the hex representation of a.
+func (t CandidateType) MarshalText() ([]byte, error) {
+	return t.MarshalJSON()
 }
 
-type voterInfo struct {
-	Name     string   `json:"name"`     // voter name
-	Cadidate string   `json:"cadidate"` // cadidate approved by this voter
-	Quantity *big.Int `json:"quantity"` // stake approved by this voter
-	Height   uint64   `json:"height"`   // timestamp
+// MarshalJSON returns the hex representation of a.
+func (t CandidateType) MarshalJSON() ([]byte, error) {
+	str := "unkown"
+	switch t {
+	case Normal:
+		str = "normal"
+	case Freeze:
+		str = "freeze"
+	case Black:
+		str = "black"
+	case Jail:
+		str = "jail"
+
+	}
+	return json.Marshal(str)
 }
 
-type globalState struct {
-	Height                          uint64   `json:"height"`                          // block height
-	ActivatedCadidateScheduleUpdate uint64   `json:"activatedCadidateScheduleUpdate"` // update time
-	ActivatedCadidateSchedule       []string `json:"activatedCadidateSchedule"`       // cadidates
-	ActivatedTotalQuantity          *big.Int `json:"activatedTotalQuantity"`          // the sum of activate cadidate votes
-	TotalQuantity                   *big.Int `json:"totalQuantity"`                   // the sum of all cadidate votes
-	TakeOver                        bool     `json:"takeOver"`                        // systemio take over dpos
+// UnmarshalText parses a hash in syntax.
+func (t *CandidateType) UnmarshalText(input []byte) error {
+	return t.UnmarshalJSON(input)
 }
 
-type cadidateInfoArray []*cadidateInfo
+// UnmarshalJSON parses a type in syntax.
+func (t *CandidateType) UnmarshalJSON(data []byte) error {
+	var val string
+	if err := json.Unmarshal(data, &val); err != nil {
+		return err
+	}
+	switch strings.ToLower(val) {
+	case "normal":
+		*t = Normal
+	case "freeze":
+		*t = Freeze
+	case "black":
+		*t = Black
+	case "jail":
+		*t = Jail
+	default:
+		*t = Unkown
+	}
+	return nil
+}
 
-func (prods cadidateInfoArray) Len() int {
+// CandidateInfo info
+type CandidateInfo struct {
+	Name          string        `json:"name"`          // candidate name
+	URL           string        `json:"url"`           // candidate url
+	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
+	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
+	Height        uint64        `json:"height"`        // timestamp
+	Counter       uint64        `json:"counter"`
+	Type          CandidateType `json:"type"`
+	PrevKey       string        `json:"-"`
+	NextKey       string        `json:"-"`
+}
+
+func (candidateInfo *CandidateInfo) invalid() bool {
+	return candidateInfo.Type != Normal
+}
+
+// VoterInfo info
+type VoterInfo struct {
+	Epcho               uint64   `json:"epcho"`
+	Name                string   `json:"name"`      // voter name
+	Candidate           string   `json:"candidate"` // candidate approved by this voter
+	Quantity            *big.Int `json:"quantity"`  // stake approved by this voter
+	Height              uint64   `json:"height"`    // timestamp
+	NextKeyForVoter     string   `json:"-"`
+	NextKeyForCandidate string   `json:"-"`
+}
+
+func (voter *VoterInfo) key() string {
+	return fmt.Sprintf("0x%x_%s_%s", voter.Epcho, voter.Name, voter.Candidate)
+}
+
+func (voter *VoterInfo) ckey() string {
+	return fmt.Sprintf("0x%x_%s", voter.Epcho, voter.Candidate)
+}
+
+func (voter *VoterInfo) vkey() string {
+	return fmt.Sprintf("0x%x_%s", voter.Epcho, voter.Name)
+}
+
+// GlobalState dpos state
+type GlobalState struct {
+	Epcho                      uint64   `json:"epcho"`                      // epcho
+	PreEpcho                   uint64   `json:"preEpcho"`                   // epcho
+	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
+	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
+	TotalQuantity              *big.Int `json:"totalQuantity"`              // the sum of all candidate votes
+	TakeOver                   bool     `json:"takeOver"`                   // systemio take over dpos
+	Dpos                       bool     `json:"dpos"`                       // dpos status
+	Height                     uint64   `json:"height"`                     // timestamp
+}
+
+// CandidateInfoArray array of candidate
+type CandidateInfoArray []*CandidateInfo
+
+func (prods CandidateInfoArray) Len() int {
 	return len(prods)
 }
-func (prods cadidateInfoArray) Less(i, j int) bool {
+func (prods CandidateInfoArray) Less(i, j int) bool {
 	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
 	if val == 0 {
 		if prods[i].Height == prods[j].Height {
@@ -92,6 +182,6 @@ func (prods cadidateInfoArray) Less(i, j int) bool {
 	}
 	return val > 0
 }
-func (prods cadidateInfoArray) Swap(i, j int) {
+func (prods CandidateInfoArray) Swap(i, j int) {
 	prods[i], prods[j] = prods[j], prods[i]
 }
