@@ -45,7 +45,9 @@ type Config struct {
 	MetricsConf *metrics.Config `mapstructure:"metrics"`
 
 	// snapshot
-	Snapshot        bool
+	Snapshot bool `mapstructure:"snapshot"`
+
+	StatePruning    bool `mapstructure:"statepruning"`
 	ContractLogFlag bool `mapstructure:"contractlog"`
 }
 

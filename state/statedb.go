@@ -492,7 +492,7 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 	return stateDb, nil
 }
 
-const second = 1000000000
+const second = 1000000
 
 type SnapshotSt struct {
 	db           fdb.Database

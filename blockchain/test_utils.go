@@ -131,7 +131,7 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 		t.Fatal(err)
 	}
 
-	blockchain, err := NewBlockChain(chainDb, vm.Config{}, chainCfg, txpool.SenderCacher)
+	blockchain, err := NewBlockChain(chainDb, false, vm.Config{}, chainCfg, txpool.SenderCacher)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -35,6 +35,7 @@ type ChainConfig struct {
 	SysName          string        `json:"systemName,omitempty"`  // system name
 	AccountName      string        `json:"accountName,omitempty"` // system name
 	DposName         string        `json:"dposName,omitempty"`    // system name
+	SnapshotInterval uint64        `json:"snapshotInterval,omitempty"`
 	SysToken         string        `json:"systemToken,omitempty"` // system token
 	SysTokenID       uint64        `json:"sysTokenID,omitempty"`
 	SysTokenDecimals uint64        `json:"sysTokenDecimal,omitempty"`
@@ -106,10 +107,11 @@ var DefaultChainconfig = &ChainConfig{
 		ExtraBlockReward:     big.NewInt(1),
 		BlockReward:          big.NewInt(5),
 	},
-	SysName:     "fractal.admin",
-	AccountName: "fractal.account",
-	DposName:    "fractal.dpos",
-	SysToken:    "ftoken",
+	SnapshotInterval: 3600000,
+	SysName:          "fractal.admin",
+	AccountName:      "fractal.account",
+	DposName:         "fractal.dpos",
+	SysToken:         "ftoken",
 }
 
 func (cfg *ChainConfig) Copy() *ChainConfig {

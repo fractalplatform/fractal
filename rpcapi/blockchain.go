@@ -338,3 +338,8 @@ func (s *PublicBlockChainAPI) GetGeneisis() map[string]interface{} {
 	json.Unmarshal(g.Head.Extra, &ret)
 	return ret
 }
+
+func (s *PublicBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
+	prestatus, number := s.b.SetStatePruning(enable)
+	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
+}

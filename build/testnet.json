@@ -35,6 +35,7 @@
 			"extraBlockReward": 1,
 			"blockReward": 5
 		},
+		"snapshotInterval": 3600000,
 		"systemName": "fractal.admin",
 		"accountName": "fractal.account",
 		"dposName": "fractal.dpos",
