@@ -55,16 +55,13 @@ const (
 	BlockChainVersion = 0
 )
 
-type CacheConfig struct {
-}
-
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
 
 	statePruning      bool
-	StatePruningClean bool
+	statePruningClean bool
 	snapshotInterval  uint64
 	triesInMemory     uint64
 	preSnapshotTime   uint64
@@ -116,7 +113,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	bc := &BlockChain{
 		chainConfig:       chainConfig,
 		statePruning:      statePruning,
-		StatePruningClean: true,
+		statePruningClean: true,
 		snapshotInterval:  chainConfig.SnapshotInterval * 1000000,
 		triesInMemory:     ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CadidateScheduleSize) * 2) + 2,
 		preSnapshotTime:   0,
@@ -593,7 +590,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				root, number := bc.triegc.Pop()
 				log.Debug("Memory trie", "number", uint64(-number), "chosen", chosen)
 
-				if uint64(-number) <= chosen && bc.StatePruningClean {
+				if uint64(-number) <= chosen && bc.statePruningClean {
 					header := bc.GetHeaderByNumber(uint64(-number))
 					snapshotTime := (header.Time.Uint64() / bc.snapshotInterval) * bc.snapshotInterval
 					if header.Root == root.(common.Hash) && snapshotTime != bc.preSnapshotTime {
@@ -605,7 +602,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 					triedb.Dereference(root.(common.Hash))
 					bc.dereferenceNumber = uint64(-number)
 				} else {
-					if bc.StatePruningClean == false {
+					if bc.statePruningClean == false {
 						log.Debug("Tiredb commit", "root", root.(common.Hash).String(), "number", uint64(-number))
 						triedb.Commit(root.(common.Hash), true)
 						triedb.Dereference(root.(common.Hash))
@@ -616,7 +613,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				}
 			}
 
-			if bc.StatePruningClean == false {
+			if bc.statePruningClean == false {
 				bc.statePruning = false
 				bc.dereferenceNumber = 0
 			}
@@ -682,10 +679,10 @@ func (bc *BlockChain) StatePruning(enable bool) (bool, uint64) {
 	log.Debug("Set State Pruning", "pruning", enable, "number", bc.CurrentBlock().NumberU64())
 	tmp := bc.statePruning
 	if enable {
-		bc.StatePruningClean = true
+		bc.statePruningClean = true
 		bc.statePruning = true
 	} else {
-		bc.StatePruningClean = false
+		bc.statePruningClean = false
 	}
 	return tmp, bc.CurrentBlock().NumberU64()
 }

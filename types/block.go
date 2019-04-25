@@ -308,6 +308,6 @@ func rlpHash(x interface{}) (h common.Hash) {
 }
 
 type BlockState struct {
-	PreStatePruning bool
-	CurrentNumber   uint64
+	PreStatePruning bool   `json:"preStatePruning"`
+	CurrentNumber   uint64 `json:"currentNumber"`
 }
