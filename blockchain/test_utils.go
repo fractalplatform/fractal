@@ -58,13 +58,13 @@ type candidateInfo struct {
 
 func getCandidates() map[string]*candidateInfo {
 	candidates := make(map[string]*candidateInfo)
-	pri0, _ := crypto.HexToECDSA("189c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	pri1, _ := crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
-	pri2, _ := crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
+	// pri0, _ := crypto.HexToECDSA("189c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	// pri1, _ := crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
+	// pri2, _ := crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
 
-	candidates["syscandidate0"] = &candidateInfo{"syscandidate0", pri0}
-	candidates["syscandidate1"] = &candidateInfo{"syscandidate1", pri1}
-	candidates["syscandidate2"] = &candidateInfo{"syscandidate2", pri2}
+	// candidates["syscandidate0"] = &candidateInfo{"syscandidate0", pri0}
+	// candidates["syscandidate1"] = &candidateInfo{"syscandidate1", pri1}
+	// candidates["syscandidate2"] = &candidateInfo{"syscandidate2", pri2}
 	return candidates
 }
 
@@ -96,7 +96,7 @@ func makeSystemCandidatesAndTime(parentTime uint64, genesis *Genesis) ([]string,
 			}
 		}
 	}
-	candidates = candidates[1:]
+	candidates = candidates[0:]
 	headerTimes := make([]uint64, len(candidates))
 	for i := 0; i < len(candidates); i++ {
 		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*uint64(time.Millisecond)*uint64(i+1) + parentTime
