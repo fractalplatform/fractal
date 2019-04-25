@@ -133,24 +133,18 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
 	case actionType == types.CallContract:
 		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
-	case actionType == types.RegCadidate:
+	case actionType == types.RegCandidate:
 		fallthrough
-	case actionType == types.UpdateCadidate:
+	case actionType == types.UpdateCandidate:
 		fallthrough
-	case actionType == types.UnregCadidate:
+	case actionType == types.UnregCandidate:
 		fallthrough
-	case actionType == types.RemoveVoter:
+	case actionType == types.VoteCandidate:
 		fallthrough
-	case actionType == types.VoteCadidate:
-		fallthrough
-	case actionType == types.ChangeCadidate:
-		fallthrough
-	case actionType == types.KickedCadidate:
+	case actionType == types.KickedCandidate:
 		fallthrough
 	case actionType == types.ExitTakeOver:
-		fallthrough
-	case actionType == types.UnvoteCadidate:
-		internalLogs, err := st.engine.ProcessAction(st.evm.ChainConfig(), st.evm.StateDB, st.action)
+		internalLogs, err := st.engine.ProcessAction(st.evm.Context.BlockNumber.Uint64(), st.evm.ChainConfig(), st.evm.StateDB, st.action)
 		vmerr = err
 		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	default:

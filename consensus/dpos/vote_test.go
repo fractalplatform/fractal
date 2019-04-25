@@ -17,183 +17,158 @@
 package dpos
 
 import (
+	"fmt"
 	"math/big"
+	"strings"
 	"testing"
 )
 
 var (
-	mincadidatestake = big.NewInt(0).Mul(DefaultConfig.unitStake(), DefaultConfig.CadidateMinQuantity)
-	minvoterstake    = big.NewInt(0).Mul(DefaultConfig.unitStake(), DefaultConfig.VoterMinQuantity)
-	big1             = big.NewInt(1)
+	big0              = big.NewInt(0)
+	big1              = big.NewInt(1)
+	big2              = big.NewInt(2)
+	big10             = big.NewInt(10)
+	minStakeCandidate = new(big.Int).Mul(DefaultConfig.CandidateMinQuantity, DefaultConfig.unitStake())
+	minStakeVote      = new(big.Int).Mul(DefaultConfig.VoterMinQuantity, DefaultConfig.unitStake())
 )
+
+func TestCandiate(t *testing.T) {
+	ldb, function := newTestLDB()
+	db, err := NewLDB(ldb)
+	defer function()
+	if err != nil {
+		panic(fmt.Errorf("create db failed --- %v", err))
+	}
+	sys := &System{
+		config: DefaultConfig,
+		IDB:    db,
+	}
+	_ = sys
+	for index, candidate := range candidates {
+		if err := db.SetState(&GlobalState{
+			Epcho:         uint64(index),
+			PreEpcho:      uint64(index),
+			TotalQuantity: big.NewInt(0),
+		}); err != nil {
+			panic(fmt.Errorf("SetState --- %v", err))
+		}
+		if err := sys.IDB.SetAvailableQuantity(uint64(index), candidate, new(big.Int).Mul(big10, minStakeCandidate)); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if err := sys.RegCandidate(uint64(index), candidate, strings.Repeat(fmt.Sprintf("www.%v.com", candidate), int(DefaultConfig.MaxURLLen)), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); !strings.Contains(err.Error(), "invalid url") {
+			panic(fmt.Sprintf("RegCandidate invalid url %v mismatch", err))
+		}
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), big1, uint64(index)); !strings.Contains(err.Error(), "non divisibility") {
+			panic(fmt.Sprintf("RegCandidate invalid stake %v mismatch", err))
+		}
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big0, minStakeCandidate), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+			panic(fmt.Sprintf("RegCandidate invalid stake %v mismatch", err))
+		}
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); err != nil {
+			panic(fmt.Sprintf("RegCandidate %v", err))
+		}
+
+		if ncandidates, _ := sys.GetCandidates(); len(ncandidates) != index+1 {
+			panic(fmt.Sprintf("GetCandidates mismatch"))
+		}
+
+		if candidateInfo, _ := sys.GetCandidate(candidate); candidateInfo.Quantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 || candidateInfo.TotalQuantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 {
+			panic(fmt.Sprintf("GetCandidate mismatch"))
+		}
+
+		if gstate, _ := sys.GetState(uint64(index)); gstate.TotalQuantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 {
+			panic(fmt.Sprintf("GetState mismatch"))
+		}
+
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); !strings.Contains(err.Error(), "invalid candidate") {
+			panic(fmt.Sprintf("RegCandidate invalid name %v mismatch", err))
+		}
+
+		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big2, minStakeCandidate), uint64(index)); err != nil {
+			panic(fmt.Sprintf("UpdateCandidate %v", err))
+		}
+
+		if ncandidates, _ := sys.GetCandidates(); len(ncandidates) != index+1 {
+			panic(fmt.Sprintf("GetCandidates num mismatch"))
+		}
+
+		if candidateInfo, _ := sys.GetCandidate(candidate); candidateInfo.Quantity.Cmp(new(big.Int).Mul(big2, DefaultConfig.CandidateMinQuantity)) != 0 || candidateInfo.TotalQuantity.Cmp(new(big.Int).Mul(big2, DefaultConfig.CandidateMinQuantity)) != 0 {
+			panic(fmt.Sprintf("GetCandidate quantity mismatch"))
+		}
+
+		if gstate, _ := sys.GetState(uint64(index)); gstate.TotalQuantity.Cmp(new(big.Int).Mul(big2, DefaultConfig.CandidateMinQuantity)) != 0 {
+			panic(fmt.Sprintf("GetState mismatch"))
+		}
+
+		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index)); err != nil {
+			panic(fmt.Sprintf("UnregCandidate %v", err))
+		}
+
+		if ncandidates, _ := sys.GetCandidates(); len(ncandidates) == 0 {
+			panic(fmt.Sprintf("UnregCandidate %v mismatch", err))
+		}
+	}
+}
 
 func TestVote(t *testing.T) {
 	ldb, function := newTestLDB()
 	db, err := NewLDB(ldb)
 	defer function()
 	if err != nil {
-		t.Errorf("create db failed --- %v", err)
+		panic(fmt.Errorf("create db failed --- %v", err))
 	}
-	dpos := &System{
+	sys := &System{
 		config: DefaultConfig,
 		IDB:    db,
 	}
-	dpos.SetState(&globalState{
-		Height:                 0,
-		ActivatedTotalQuantity: big.NewInt(0),
-	})
+	_ = sys
 
-	// RegCadidate
-	cadidate := "testcadidate"
-	url := "testurl"
-	stake := big.NewInt(0).Sub(mincadidatestake, big1)
-
-	if _, err := dpos.UnregCadidate(cadidate); err == nil {
-		t.Errorf("UnregCadidate should failed --- %v", err)
+	for index, candidate := range candidates {
+		if err := db.SetState(&GlobalState{
+			Epcho:         uint64(index),
+			PreEpcho:      uint64(index),
+			TotalQuantity: big.NewInt(0),
+		}); err != nil {
+			panic(fmt.Errorf("SetState --- %v", err))
+		}
+		if err := sys.IDB.SetAvailableQuantity(uint64(index), candidate, new(big.Int).Mul(big10, minStakeCandidate)); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); err != nil {
+			panic(fmt.Sprintf("RegCandidate %v", err))
+		}
 	}
 
-	err = dpos.RegCadidate(cadidate, url, stake)
-	if err == nil {
-		t.Errorf("RegCadidate should failed --- %v", err)
-	}
+	for index, voter := range voters {
+		if err := sys.IDB.SetAvailableQuantity(uint64(index), voter, new(big.Int).Mul(big10, minStakeVote)); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if err := sys.VoteCandidate(uint64(index), voter, "test", new(big.Int).Mul(big1, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "invalid candidate") {
+			panic(fmt.Sprintf("VoteCandidate invalid candidate %v mismatch", err))
+		}
 
-	if _, err := dpos.UnregCadidate(cadidate); err == nil {
-		t.Errorf("UnregCadidate should failed --- %v", err)
-	}
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index)); !strings.Contains(err.Error(), "non divisibility") {
+			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
+		}
 
-	err = dpos.RegCadidate(cadidate, url, mincadidatestake)
-	if nil != err {
-		t.Errorf("RegCadidate failed --- %v", err)
-	}
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big0, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
+		}
 
-	if gstate, err := dpos.GetState(LastBlockHeight); err != nil || gstate.TotalQuantity.Cmp(DefaultConfig.CadidateMinQuantity) != 0 {
-		t.Errorf("gstate totalQuantity mismatch --- %v(%v, %v)", err, gstate.TotalQuantity, DefaultConfig.CadidateMinQuantity)
-	}
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+			panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		}
 
-	// GetCadidate
-	if prod, err := dpos.GetCadidate(cadidate); err != nil {
-		t.Errorf("GetCadidate failed --- %v", err)
-	} else if prod.Name != cadidate || prod.URL != url || prod.Quantity.Cmp(DefaultConfig.CadidateMinQuantity) != 0 || prod.Quantity.Cmp(prod.TotalQuantity) != 0 {
-		t.Errorf("cadidate info not match")
-	}
+		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big1, DefaultConfig.VoterMinQuantity)) != 0 {
+			panic(fmt.Sprintf("GetCandidate mismatch"))
+		}
 
-	// Cadidates
-	if prods, err := dpos.Cadidates(); err != nil || len(prods) != 1 {
-		t.Errorf("cadidates mismatch")
-	}
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+			panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		}
 
-	// CadidatesSize
-	if size, err := dpos.CadidatesSize(); err != nil || size != 1 {
-		t.Errorf("cadidates mismatch")
-	}
-
-	// VoteCadidate
-	voter := "testvoter"
-	vstake := big.NewInt(0).Sub(minvoterstake, big1)
-	err = dpos.VoteCadidate(voter, cadidate, vstake)
-	if err == nil {
-		t.Errorf("VoteCadidate should failed --- %v", err)
-	}
-
-	err = dpos.VoteCadidate(voter, cadidate, minvoterstake)
-	if nil != err {
-		t.Errorf("VoterCadidate failed --- %v", err)
-	}
-
-	prod, _ := dpos.GetCadidate(cadidate)
-	gstate, _ := dpos.GetState(LastBlockHeight)
-	if prod.TotalQuantity.Cmp(gstate.TotalQuantity) != 0 {
-		t.Errorf("gstate totalQuantity mismatch --- %v(%v, %v)", err, gstate.TotalQuantity, prod.TotalQuantity)
-	} else if new(big.Int).Sub(prod.TotalQuantity, prod.Quantity).Cmp(DefaultConfig.VoterMinQuantity) != 0 {
-		t.Errorf("cadidate totalQuantity mismatch --- %v(%v, %v)", err, prod.TotalQuantity, prod.Quantity)
-	}
-
-	// GetVoter
-	if vote, err := dpos.GetVoter(voter); err != nil {
-		t.Errorf("GetVoter failed --- %v", err)
-	} else if vote.Name != voter || vote.Cadidate != cadidate || vote.Quantity.Cmp(DefaultConfig.VoterMinQuantity) != 0 {
-		t.Errorf("voter info not match --- %v", err)
-	}
-
-	// voter cant reg cadidate
-	err = dpos.RegCadidate(voter, url, mincadidatestake)
-	if err.Error() != "invalid cadidate testvoter(alreay vote to testcadidate)" {
-		t.Errorf("wrong err type --- %v", err)
-	}
-
-	// test change
-	cadidate2 := "testcadidate2"
-	url2 := "testurl2"
-	dpos.RegCadidate(cadidate2, url2, mincadidatestake)
-	// Cadidates
-	if prods, err := dpos.Cadidates(); err != nil || len(prods) != 2 {
-		t.Errorf("cadidates mismatch")
-	}
-
-	if err := dpos.ChangeCadidate(voter, cadidate2); err != nil {
-		t.Errorf("ChangeCadidate failed --- %v", err)
-	}
-
-	vote, _ := dpos.GetVoter(voter)
-	prod, _ = dpos.GetCadidate(cadidate)
-	prod2, _ := dpos.GetCadidate(cadidate2)
-	gstate, _ = dpos.GetState(LastBlockHeight)
-
-	if vote.Cadidate != prod2.Name || vote.Quantity.Cmp(DefaultConfig.VoterMinQuantity) != 0 ||
-		prod.Quantity.Cmp(prod.TotalQuantity) != 0 || new(big.Int).Add(prod.TotalQuantity, prod2.TotalQuantity).Cmp(gstate.TotalQuantity) != 0 {
-		t.Log(prod2.TotalQuantity, gstate.TotalQuantity)
-		t.Error("Change stake not work")
-	}
-
-	if _, err := dpos.UnvoteCadidate(voter); err != nil {
-		t.Errorf("UnvoteCadidate failed --- %v", err)
-	} else if vote, err := dpos.GetVoter(voter); err != nil || vote != nil {
-		t.Errorf("UnvoteCadidate failed --- %v", err)
-	}
-	prod2, _ = dpos.GetCadidate(cadidate2)
-	gstate, _ = dpos.GetState(LastBlockHeight)
-	if prod.Quantity.Cmp(prod.TotalQuantity) != 0 ||
-		prod2.Quantity.Cmp(prod2.TotalQuantity) != 0 || new(big.Int).Add(prod.TotalQuantity, prod2.TotalQuantity).Cmp(gstate.TotalQuantity) != 0 {
-		t.Errorf("UnvoteCadidate failed")
-	}
-
-	if _, err := dpos.UnregCadidate(cadidate); err != nil {
-		t.Errorf("UnregCadidate failed --- %v", err)
-	} else if prod, err := dpos.GetCadidate(cadidate); err != nil || prod != nil {
-		t.Errorf("UnregCadidate failed --- %v", err)
-	} else if gstate, _ = dpos.GetState(LastBlockHeight); prod2.TotalQuantity.Cmp(gstate.TotalQuantity) != 0 {
-		t.Errorf("UnvoteCadidate failed mismatch %v %v", prod2.TotalQuantity, gstate.TotalQuantity)
-	}
-
-	// activate dpos state
-	DefaultConfig.safeSize.Store(uint64(2))
-	pmq2 := big.NewInt(0).Mul(DefaultConfig.CadidateMinQuantity, big.NewInt(2))
-	DefaultConfig.ActivatedMinQuantity = big.NewInt(0).Add(pmq2, big1)
-
-	err = dpos.RegCadidate(cadidate, url, mincadidatestake)
-	if err != nil {
-		t.Errorf("RegCadidate err %v", err)
-	}
-
-	// register again
-	err = dpos.RegCadidate(cadidate, url, mincadidatestake)
-	if err.Error() != "invalid cadidate testcadidate(already exist)" {
-		t.Errorf("wrong err: %v", err)
-	}
-
-	err = dpos.VoteCadidate(voter, cadidate, minvoterstake)
-	if nil != err {
-		t.Errorf("VoterCadidate failed --- %v", err)
-	}
-
-	//t.Log(dpos.isdpos())
-	_, err = dpos.UnregCadidate(cadidate)
-	if err.Error() != "already has voter" {
-		t.Errorf("wrong err: %v", err)
-	}
-
-	_, err = dpos.UnvoteCadidate(voter)
-	if err != nil {
-		t.Errorf("wrong err: %v", err)
+		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big2, DefaultConfig.VoterMinQuantity)) != 0 {
+			panic(fmt.Sprintf("GetCandidate mismatch"))
+		}
 	}
 }

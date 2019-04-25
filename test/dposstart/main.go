@@ -27,19 +27,19 @@ func main() {
 	chainID := flag.Int64("chainid", 1, "chain id")
 	flag.Parse()
 
-	cadidates := flag.Args()
-	if len(cadidates) == 0 {
-		cadidates = append(cadidates, "ftcadidate1:289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-		cadidates = append(cadidates, "ftcadidate2:9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
-		cadidates = append(cadidates, "ftcadidate3:8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
+	candidates := flag.Args()
+	if len(candidates) == 0 {
+		candidates = append(candidates, "ftcandidate1:289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+		candidates = append(candidates, "ftcandidate2:9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
+		candidates = append(candidates, "ftcandidate3:8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
 	}
 
 	fmt.Println("RPC:", rpcHost)
 	fmt.Println("系统账户:", *issueHex)
 	fmt.Println("系统代币:", *systoken)
 	fmt.Println("质押数量:", *value)
-	fmt.Println("生成者数量:", len(cadidates))
-	fmt.Println("生成者列表:", cadidates)
+	fmt.Println("生成者数量:", len(candidates))
+	fmt.Println("生成者列表:", candidates)
 	api := sdk.NewAPI(*rpcHost)
 
 	sysasset, err := api.AssetInfoByName(*systoken)
@@ -69,14 +69,14 @@ func main() {
 		return
 	}
 
-	if len(cadidates) < 3 {
-		println("生产者个数不能小于3~~~", len(cadidates))
+	if len(candidates) < 3 {
+		println("生产者个数不能小于3~~~", len(candidates))
 		return
 	}
 	issuerAcct := sdk.NewAccount(api, issuerName, issuerPriv, systokenid, math.MaxUint64, true, big.NewInt(*chainID))
 
 	prods := map[common.Name]*sdk.Account{}
-	for _, privHex := range cadidates {
+	for _, privHex := range candidates {
 		splits := strings.Split(privHex, ":")
 		if len(splits) != 2 {
 			println("生产者账户出错啦~~~", privHex)
@@ -115,10 +115,10 @@ func main() {
 		}
 	}
 
-	// reg cadidates
+	// reg candidates
 	for name, acct := range prods {
 		value := big.NewInt(1e5)
-		hash, err := acct.RegCadidate(name, big.NewInt(0), systokenid, gasLimit, &args.RegisterCadidate{
+		hash, err := acct.RegCandidate(name, big.NewInt(0), systokenid, gasLimit, &args.RegisterCandidate{
 			Url:   "www." + name.String() + ".io",
 			Stake: delegateValue,
 		})

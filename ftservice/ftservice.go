@@ -19,6 +19,7 @@ package ftservice
 import (
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
@@ -82,12 +83,12 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	vmconfig := vm.Config{
 		ContractLogFlag: config.ContractLogFlag,
 	}
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
+	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
 	}
 
-	ftservice.snapshot = state.NewSnapshot(chainDb, 3600)
+	ftservice.snapshot = state.NewSnapshot(chainDb, ftservice.chainConfig.SnapshotInterval*uint64(time.Millisecond)/uint64(time.Second))
 	if config.Snapshot {
 		ftservice.snapshot.Start()
 	}

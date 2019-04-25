@@ -21,9 +21,10 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"reflect"
 	"testing"
-	"time"
 
+	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 )
@@ -57,14 +58,17 @@ func (ldb *levelDB) Delete(key string) error {
 func (ldb *levelDB) Delegate(string, *big.Int) error {
 	return nil
 }
-func (ldb *levelDB) Undelegate(string, *big.Int) error {
-	return nil
+func (ldb *levelDB) Undelegate(string, *big.Int) (*types.Action, error) {
+	return nil, nil
 }
-func (ldb *levelDB) IncAsset2Acct(string, string, *big.Int) error {
-	return nil
+func (ldb *levelDB) IncAsset2Acct(string, string, *big.Int) (*types.Action, error) {
+	return nil, nil
 }
 func (ldb *levelDB) GetSnapshot(string, uint64) ([]byte, error) {
 	return nil, nil
+}
+func (ldb *levelDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, error) {
+	return new(big.Int).Mul(big.NewInt(1000000000), DefaultConfig.decimals()), nil
 }
 func newTestLDB() (*levelDB, func()) {
 	dirname, err := ioutil.TempDir(os.TempDir(), "dpos_test_")
@@ -81,139 +85,305 @@ func newTestLDB() (*levelDB, func()) {
 		os.RemoveAll(dirname)
 	}
 }
+
+var (
+	candidates = []string{
+		"candidate1",
+		"candidate2",
+		"candidate3",
+	}
+	voters = []string{
+		"voter1",
+		"voter2",
+		"voter3",
+	}
+)
+
+func TestLDBCandidate(t *testing.T) {
+	// SetCandidate(*CandidateInfo) error
+	// DelCandidate(string) error
+	// GetCandidate(string) (*CandidateInfo, error)
+	// GetCandidates() ([]string, error)
+	// CandidatesSize() (uint64, error)
+	ldb, function := newTestLDB()
+	db, _ := NewLDB(ldb)
+	defer function()
+
+	for index, candidate := range candidates {
+		candidateInfo := &CandidateInfo{
+			Name:          candidate,
+			URL:           fmt.Sprintf("www.%v.com", candidate),
+			Quantity:      big.NewInt(0),
+			TotalQuantity: big.NewInt(0),
+		}
+		if err := db.SetCandidate(candidateInfo); err != nil {
+			panic(fmt.Errorf("SetCandidate --- %v", err))
+		}
+		if nCandidateInfo, err := db.GetCandidate(candidate); err != nil {
+			panic(fmt.Errorf("GetCandidate --- %v", err))
+		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
+			panic(fmt.Errorf("GetCandidate mismatch"))
+		}
+		if nCandidates, err := db.GetCandidates(); err != nil {
+			panic(fmt.Errorf("GetCandidates --- %v", err))
+		} else if len(nCandidates) != index+1 {
+			panic(fmt.Errorf("GetCandidates mismatch"))
+		}
+		if size, err := db.CandidatesSize(); err != nil {
+			panic(fmt.Errorf("CandidatesSize --- %v", err))
+		} else if size != uint64(index+1) {
+			panic(fmt.Errorf("CandidatesSize mismatch"))
+		}
+	}
+
+	for _, candidate := range candidates {
+		candidateInfo, _ := db.GetCandidate(candidate)
+		if err := db.SetCandidate(candidateInfo); err != nil {
+			panic(fmt.Errorf("Redo SetCandidate --- %v", err))
+		}
+		if nCandidateInfo, err := db.GetCandidate(candidate); err != nil {
+			panic(fmt.Errorf("Redo GetCandidate --- %v", err))
+		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
+			panic(fmt.Errorf("Redo GetCandidate mismatch"))
+		}
+		if nCandidates, err := db.GetCandidates(); err != nil {
+			panic(fmt.Errorf("Redo GetCandidates --- %v", err))
+		} else if len(nCandidates) != len(candidates) {
+			panic(fmt.Errorf("Redo GetCandidates mismatch"))
+		}
+		if size, err := db.CandidatesSize(); err != nil {
+			panic(fmt.Errorf("Redo CandidatesSize --- %v", err))
+		} else if size != uint64(len(candidates)) {
+			panic(fmt.Errorf("Redo CandidatesSize mismatch"))
+		}
+	}
+
+	for index, candidate := range candidates {
+		if err := db.DelCandidate(candidate); err != nil {
+			panic(fmt.Errorf("DelCandidate --- %v", err))
+		}
+		if nCandidateInfo, err := db.GetCandidate(candidate); err != nil {
+			panic(fmt.Errorf("Del GetCandidate --- %v", err))
+		} else if nCandidateInfo != nil {
+			panic(fmt.Errorf("Del GetCandidate mismatch"))
+		}
+
+		if nCandidates, err := db.GetCandidates(); err != nil {
+			panic(fmt.Errorf("Del GetCandidates --- %v", err))
+		} else if len(nCandidates) != len(candidates)-index-1 {
+			panic(fmt.Errorf("Del GetCandidates mismatch"))
+		}
+		if size, err := db.CandidatesSize(); err != nil {
+			panic(fmt.Errorf("Del CandidatesSize --- %v", err))
+		} else if size != uint64(len(candidates)-index-1) {
+			panic(fmt.Errorf("Del CandidatesSize mismatch"))
+		}
+	}
+}
+
+func TestLDBAvailableQuantity(t *testing.T) {
+	// SetAvailableQuantity(uint64, string, *big.Int) error
+	// GetAvailableQuantity(uint64, string) (*big.Int, error)
+	ldb, function := newTestLDB()
+	db, _ := NewLDB(ldb)
+	defer function()
+
+	for index, voter := range voters {
+		if err := db.SetAvailableQuantity(uint64(index), voter, big.NewInt(int64(index))); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+
+		if quantity, err := db.GetAvailableQuantity(uint64(index), voter); err != nil {
+			panic(fmt.Errorf("GetAvailableQuantity --- %v", err))
+		} else if quantity.Cmp(big.NewInt(int64(index))) != 0 {
+			panic(fmt.Errorf("GetAvailableQuantity mismatch"))
+		}
+	}
+
+	for index, voter := range voters {
+		if err := db.SetAvailableQuantity(uint64(index), voter, big.NewInt(int64(index+1))); err != nil {
+			panic(fmt.Errorf("Redo SetAvailableQuantity --- %v", err))
+		}
+
+		if quantity, err := db.GetAvailableQuantity(uint64(index), voter); err != nil {
+			panic(fmt.Errorf("Redo GetAvailableQuantity --- %v", err))
+		} else if quantity.Cmp(big.NewInt(int64(index+1))) != 0 {
+			panic(fmt.Errorf("Redo GetAvailableQuantity mismatch"))
+		}
+	}
+}
+
 func TestLDBVoter(t *testing.T) {
-	// SetVoter(*voterInfo) error
-	// DelVoter(string, string) error
-	// GetVoter(string) (*voterInfo, error)
-	// GetDelegators(string) ([]string, error)
+	// SetVoter(*VoterInfo) error
+	// DelVoter(*VoterInfo) error
+	// DelVoters(uint64, string) error
+	// GetVoter(uint64, string, string) (*VoterInfo, error)
+	// GetVoters(uint64, string) ([]string, error)
+	// GetVoterCandidates(uint64, string) ([]string, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
-	voter := &voterInfo{
-		Name:     "vos",
-		Cadidate: "fos",
-		Quantity: big.NewInt(1000),
-		Height:   uint64(time.Now().UnixNano()),
-	}
-	if err := db.SetVoter(voter); err != nil {
-		panic(fmt.Errorf("setvoter --- %v", err))
-	}
 
-	nvoter, err := db.GetVoter(voter.Name)
-	if err != nil {
-		panic(fmt.Errorf("getvoter --- %v", err))
-	} else if nvoter == nil {
-		panic(fmt.Errorf("getvoter --- not nil"))
+	for _, candidate := range candidates {
+		candidateInfo := &CandidateInfo{
+			Name:          candidate,
+			URL:           fmt.Sprintf("www.%v.com", candidate),
+			Quantity:      big.NewInt(0),
+			TotalQuantity: big.NewInt(0),
+		}
+		if err := db.SetCandidate(candidateInfo); err != nil {
+			panic(fmt.Errorf("SetCandidate --- %v", err))
+		}
 	}
 
-	// if delegators, err := db.GetDelegators(nvoter.Cadidate); err != nil {
-	// 	panic(fmt.Errorf("getdelegators --- %v", err))
-	// } else if len(delegators) != 1 {
-	// 	panic(fmt.Errorf("getdelegators --- not mismatch"))
-	// }
-
-	if err := db.DelVoter(nvoter.Name, nvoter.Cadidate); err != nil {
-		panic(fmt.Errorf("delvoter --- %v", err))
+	epcho := uint64(0)
+	for index, voter := range voters {
+		voterInfo := &VoterInfo{
+			Epcho:     epcho,
+			Name:      voter,
+			Candidate: candidates[0],
+			Quantity:  big.NewInt(int64(index)),
+			Height:    uint64(index),
+		}
+		if err := db.SetAvailableQuantity(epcho, voter, big.NewInt(int64(index))); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if err := db.SetVoter(voterInfo); err != nil {
+			panic(fmt.Errorf("SetVoter --- %v", err))
+		}
+		if nvoterInfo, err := db.GetVoter(epcho, voter, candidates[0]); err != nil {
+			panic(fmt.Errorf("GetVoter --- %v", err))
+		} else if !reflect.DeepEqual(voterInfo, nvoterInfo) {
+			panic(fmt.Errorf("GetVoter mismatch"))
+		}
+		if nCandidates, err := db.GetVotersByVoter(epcho, voter); err != nil {
+			panic(fmt.Errorf("GetVotersByVoter --- %v", err))
+		} else if len(nCandidates) != 1 {
+			panic(fmt.Errorf("GetVotersByVoter mismatch %v %v", len(nCandidates), index+1))
+		}
+		if nVoters, err := db.GetVotersByCandidate(epcho, candidates[0]); err != nil {
+			panic(fmt.Errorf("GetVotersByCandidate --- %v", err))
+		} else if len(nVoters) != index+1 {
+			panic(fmt.Errorf("GetVotersByCandidate mismatch"))
+		}
 	}
 
-	// if delegators, err := db.GetDelegators(nvoter.Cadidate); err != nil {
-	// 	panic(fmt.Errorf("getdelegators after del --- %v", err))
-	// } else if len(delegators) != 0 {
-	// 	t.Log(len(delegators))
-	// 	panic(fmt.Errorf("getdelegators after del --- not mismatch"))
-	// }
-
-	if nvoter, err := db.GetVoter(voter.Name); err != nil {
-		panic(fmt.Errorf("getvoter after del --- %v", err))
-	} else if nvoter != nil {
-		panic(fmt.Errorf("getvoter after del --- should nil"))
+	epcho++
+	for index, candidate := range candidates {
+		voterInfo := &VoterInfo{
+			Epcho:     epcho,
+			Name:      voters[0],
+			Candidate: candidate,
+			Quantity:  big.NewInt(int64(index)),
+			Height:    uint64(index),
+		}
+		if err := db.SetAvailableQuantity(epcho, voters[0], big.NewInt(int64(index))); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if err := db.SetVoter(voterInfo); err != nil {
+			panic(fmt.Errorf("SetVoter --- %v", err))
+		}
+		if nvoterInfo, err := db.GetVoter(epcho, voters[0], candidate); err != nil {
+			panic(fmt.Errorf("GetVoter --- %v", err))
+		} else if !reflect.DeepEqual(voterInfo, nvoterInfo) {
+			panic(fmt.Errorf("GetVoter mismatch"))
+		}
+		if nCandidates, err := db.GetVotersByVoter(epcho, voters[0]); err != nil {
+			panic(fmt.Errorf("GetVotersByVoter --- %v", err))
+		} else if len(nCandidates) != index+1 {
+			panic(fmt.Errorf("GetVotersByVoter mismatch %v %v", len(nCandidates), index+1))
+		}
+		if nVoters, err := db.GetVotersByCandidate(epcho, candidate); err != nil {
+			panic(fmt.Errorf("GetVotersByCandidate --- %v", err))
+		} else if len(nVoters) != 1 {
+			panic(fmt.Errorf("GetVotersByCandidate mismatch"))
+		}
 	}
+
+	epcho++
+	for index, candidate := range candidates {
+		voterInfo := &VoterInfo{
+			Epcho:     epcho,
+			Name:      voters[index],
+			Candidate: candidate,
+			Quantity:  big.NewInt(int64(index)),
+			Height:    uint64(index),
+		}
+		if err := db.SetAvailableQuantity(epcho, voters[index], big.NewInt(int64(index))); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if err := db.SetVoter(voterInfo); err != nil {
+			panic(fmt.Errorf("SetVoter --- %v", err))
+		}
+		if nvoterInfo, err := db.GetVoter(epcho, voters[index], candidate); err != nil {
+			panic(fmt.Errorf("GetVoter --- %v", err))
+		} else if !reflect.DeepEqual(voterInfo, nvoterInfo) {
+			panic(fmt.Errorf("GetVoter mismatch"))
+		}
+		if nCandidates, err := db.GetVotersByVoter(epcho, voters[index]); err != nil {
+			panic(fmt.Errorf("GetVotersByVoter --- %v", err))
+		} else if len(nCandidates) != 1 {
+			panic(fmt.Errorf("GetVotersByVoter mismatch"))
+		}
+		if nVoters, err := db.GetVotersByCandidate(epcho, candidate); err != nil {
+			panic(fmt.Errorf("GetVotersByCandidate --- %v", err))
+		} else if len(nVoters) != 1 {
+			panic(fmt.Errorf("GetVotersByCandidate mismatch"))
+		}
+	}
+
 }
 
-func TestLDBCadidate(t *testing.T) {
-	// SetCadidate(*cadidateInfo) error
-	// DelCadidate(string) error
-	// GetCadidate(string) (*cadidateInfo, error)
-	// Cadidates() ([]*cadidateInfo, error)
-	// CadidatesSize() (uint64, error)
+func TestLDBGlobalState(t *testing.T) {
+	// SetState(*GlobalState) error
+	// GetState(uint64) (*GlobalState, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
-	prod := &cadidateInfo{
-		Name:          "fos",
-		URL:           "www.fractalproject.com",
-		Quantity:      big.NewInt(1000),
-		TotalQuantity: big.NewInt(1000),
-		Height:        uint64(time.Now().UnixNano()),
-	}
-	if err := db.SetCadidate(prod); err != nil {
-		panic(fmt.Errorf("setprod --- %v", err))
+
+	for index := range candidates {
+		gstate := &GlobalState{
+			Epcho:                      uint64(index + 1),
+			PreEpcho:                   uint64(index),
+			ActivatedTotalQuantity:     big.NewInt(0),
+			ActivatedCandidateSchedule: candidates[index:],
+			TotalQuantity:              big.NewInt(0),
+		}
+		if err := db.SetState(gstate); err != nil {
+			panic(fmt.Errorf("SetState --- %v", err))
+		}
+		if ngstate, err := db.GetState(uint64(index + 1)); err != nil {
+			panic(fmt.Errorf("GetState --- %v", err))
+		} else if !reflect.DeepEqual(gstate, ngstate) {
+			panic(fmt.Errorf("GetState mismatch"))
+		}
+		if epcho, err := db.GetLastestEpcho(); err != nil {
+			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
+		} else if epcho != uint64(index+1) {
+			panic(fmt.Errorf("GetLastestEpcho mismatch"))
+		}
 	}
 
-	nprod, err := db.GetCadidate(prod.Name)
-	if err != nil {
-		panic(fmt.Errorf("getprod --- %v", err))
-	} else if nprod == nil {
-		panic(fmt.Errorf("getprod --- not nil"))
+	for index := range candidates {
+		gstate := &GlobalState{
+			Epcho:                      uint64(index + 1),
+			PreEpcho:                   uint64(index),
+			ActivatedTotalQuantity:     big.NewInt(0),
+			ActivatedCandidateSchedule: candidates[index:],
+			TotalQuantity:              big.NewInt(0),
+		}
+		if err := db.SetState(gstate); err != nil {
+			panic(fmt.Errorf("Redo SetState --- %v", err))
+		}
+		if ngstate, err := db.GetState(uint64(index + 1)); err != nil {
+			panic(fmt.Errorf("Redo GetState --- %v", err))
+		} else if !reflect.DeepEqual(gstate, ngstate) {
+			panic(fmt.Errorf("Redo GetState mismatch"))
+		}
+		if epcho, err := db.GetLastestEpcho(); err != nil {
+			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
+		} else if epcho != uint64(index+1) {
+			panic(fmt.Errorf("GetLastestEpcho mismatch"))
+		}
 	}
-
-	if size, err := db.CadidatesSize(); err != nil {
-		panic(fmt.Errorf("prodsize --- %v", err))
-	} else if size != 1 {
-		panic(fmt.Errorf("prodsize --- mismatch"))
-	}
-
-	if err := db.DelCadidate(nprod.Name); err != nil {
-		panic(fmt.Errorf("delprod --- %v", err))
-	}
-
-	if size, err := db.CadidatesSize(); err != nil {
-		panic(fmt.Errorf("prodsize --- %v", err))
-	} else if size != 0 {
-		panic(fmt.Errorf("prodsize --- mismatch"))
-	}
-
-	if nprod, err := db.GetCadidate(nprod.Name); err != nil {
-		panic(fmt.Errorf("getprod --- %v", err))
-	} else if nprod != nil {
-		panic(fmt.Errorf("getprod --- should nil"))
-	}
-}
-
-func TestLDBState(t *testing.T) {
-	// SetState(*globalState) error
-	// DelState(uint64) error
-	// GetState(uint64) (*globalState, error)
-	ldb, function := newTestLDB()
-	db, _ := NewLDB(ldb)
-	defer function()
-	gstate := &globalState{
-		Height:                          10,
-		ActivatedCadidateScheduleUpdate: uint64(time.Now().UnixNano()),
-		ActivatedCadidateSchedule:       []string{},
-		ActivatedTotalQuantity:          big.NewInt(1000),
-		TotalQuantity:                   big.NewInt(100000),
-	}
-
-	if err := db.SetState(gstate); err != nil {
-		panic(fmt.Errorf("setstate --- %v", err))
-	}
-
-	ngstate, err := db.GetState(gstate.Height)
-	if err != nil {
-		panic(fmt.Errorf("getstate --- %v", err))
-	} else if ngstate == nil {
-		panic(fmt.Errorf("getstate --- not nil"))
-	}
-
-	if err := db.DelState(ngstate.Height); err != nil {
-		panic(fmt.Errorf("delstate --- %v", err))
-	}
-
-	if ngstate, err := db.GetState(ngstate.Height); err != nil {
-		panic(fmt.Errorf("getstate --- %v", err))
-	} else if ngstate != nil {
-		panic(fmt.Errorf("getstate --- should nil"))
-	}
-
 }

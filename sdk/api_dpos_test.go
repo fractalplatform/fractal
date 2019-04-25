@@ -38,42 +38,53 @@ func TestDposIrreversible(t *testing.T) {
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposEpcho(t *testing.T) {
-	Convey("dpos_epcho", t, func() {
+func TestDposCandidate(t *testing.T) {
+	Convey("dpos_candidate", t, func() {
 		api := NewAPI(rpchost)
-		info, err := api.DposEpcho(0)
+		info, err := api.DposCandidate(systemaccount)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposLatestEpcho(t *testing.T) {
-	Convey("dpos_latestEpcho", t, func() {
+func TestDposCandidates(t *testing.T) {
+	Convey("dpos_candidates", t, func() {
 		api := NewAPI(rpchost)
-		info, err := api.DposLatestEpcho()
+		info, err := api.DposCandidates(true)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposValidateEpcho(t *testing.T) {
-	Convey("dpos_validateEpcho", t, func() {
+func TestDposVotersByVoter(t *testing.T) {
+	Convey("dpos_votersByVoter", t, func() {
 		api := NewAPI(rpchost)
-		info, err := api.DposValidateEpcho()
+		info, err := api.DposVotersByVoter(systemaccount, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposVotersByCandidate(t *testing.T) {
+	Convey("dpos_votersByCandidate", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposVotersByCandidate(systemaccount, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposAvailableStake(t *testing.T) {
+	SkipConvey("dpos_availableStake", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposAvailableStake(systemaccount)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposCadidates(t *testing.T) {
-	Convey("dpos_cadidates", t, func() {
+
+func TestDposValidCandidates(t *testing.T) {
+	Convey("dpos_validCandidates", t, func() {
 		api := NewAPI(rpchost)
-		info, err := api.DposCadidates()
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposAccount(t *testing.T) {
-	Convey("dpos_account", t, func() {
-		api := NewAPI(rpchost)
-		info, err := api.DposAccount(systemaccount)
+		info, err := api.DposValidCandidates()
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})

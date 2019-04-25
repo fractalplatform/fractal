@@ -278,12 +278,12 @@ func TestSnapshot(t *testing.T) {
 	pretime, _ := state.GetSnapshotPrev(time)
 
 	value1, _ := state.GetSnapshot(addr, key, time)
-	if bytes.Equal(value1, []byte(strconv.Itoa(100*6))) == false {
+	if bytes.Equal(value1, []byte(strconv.Itoa(100*8))) == false {
 		t.Error("Test snapshot failed")
 	}
 
 	value2, _ := state.GetSnapshot(addr, key, pretime)
-	if bytes.Equal(value2, []byte(strconv.Itoa(100*4))) == false {
+	if bytes.Equal(value2, []byte(strconv.Itoa(100*7))) == false {
 		t.Error("Test snapshot failed")
 	}
 
@@ -299,7 +299,7 @@ func TestSnapshot(t *testing.T) {
 		accountInfo, flag = state.LookupAccountInfo()
 	}
 
-	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*6))) == false {
+	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*8))) == false {
 		t.Error("Test snapshot get account failed")
 	}
 
@@ -325,7 +325,7 @@ func TestSnapshot(t *testing.T) {
 		accountInfo, flag = state.LookupAccountInfo()
 	}
 
-	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*4))) == false {
+	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*7))) == false {
 		t.Error("Test snapshot get account failed")
 	}
 

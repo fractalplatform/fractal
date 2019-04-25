@@ -19,8 +19,6 @@ package blockchain
 import (
 	"testing"
 	"time"
-
-	"github.com/fractalplatform/fractal/params"
 )
 
 func TestTheLastBlock(t *testing.T) {
@@ -30,8 +28,8 @@ func TestTheLastBlock(t *testing.T) {
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCadidates, allHeaderTimes := genCanonicalCadidatesAndTimes(genesis)
-	_, blocks := makeNewChain(t, genesis, chain, allCadidates, allHeaderTimes)
+	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
+	_, blocks := makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
 
 	// check chain block hash
 	checkBlocksInsert(t, chain, blocks)
@@ -39,61 +37,61 @@ func TestTheLastBlock(t *testing.T) {
 
 func TestSystemForkChain(t *testing.T) {
 	var (
-		allCadidates, allCadidates1     []string
+		allCandidates, allCandidates1   []string
 		allHeaderTimes, allHeaderTimes1 []uint64
 	)
 	// printLog(log.LvlTrace)
 	genesis := DefaultGenesis()
 
-	allCadidates, allHeaderTimes = genCanonicalCadidatesAndTimes(genesis)
+	allCandidates, allHeaderTimes = genCanonicalCandidatesAndTimes(genesis)
 
-	allCadidates1 = append(allCadidates1, allCadidates...)
-	allCadidates1 = append(allCadidates1, "syscadidate0")
-	allCadidates1 = append(allCadidates1, params.DefaultChainconfig.SysName)
+	allCandidates1 = append(allCandidates1, allCandidates...)
+	//allCandidates1 = append(allCandidates1, "syscandidate0")
+	//allCandidates1 = append(allCandidates1, params.DefaultChainconfig.SysName)
 
 	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes...)
-	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes[len(allHeaderTimes)-1]+1000*uint64(time.Millisecond)*3*7)
-	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes1[len(allHeaderTimes1)-1]+1000*uint64(time.Millisecond)*3)
+	//allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes[len(allHeaderTimes)-1]+1000*uint64(time.Millisecond)*3*7)
+	//allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes1[len(allHeaderTimes1)-1]+1000*uint64(time.Millisecond)*3)
 
-	testFork(t, allCadidates, allCadidates1, allHeaderTimes, allHeaderTimes1)
+	testFork(t, allCandidates, allCandidates1, allHeaderTimes, allHeaderTimes1)
 }
 
-func genCanonicalCadidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
+func genCanonicalCandidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
 	var (
-		dposEpochNum   uint64 = 1
-		allCadidates   []string
+		//dposEpochNum   uint64 = 1
+		allCandidates  []string
 		allHeaderTimes []uint64
 	)
 
-	// geaerate block's cadidates and block header time
-	// system's cadidates headertimes
-	sysCadidates, sysHeaderTimes := makeSystemCadidatesAndTime(genesis.Timestamp, genesis)
-	allCadidates = append(allCadidates, sysCadidates...)
+	// geaerate block's candidates and block header time
+	// system's candidates headertimes
+	sysCandidates, sysHeaderTimes := makeSystemCandidatesAndTime(genesis.Timestamp*uint64(time.Millisecond), genesis)
+	allCandidates = append(allCandidates, sysCandidates...)
 	allHeaderTimes = append(allHeaderTimes, sysHeaderTimes...)
 
-	// elected cadidates headertimes
-	cadidates, headerTimes := makeCadidatesAndTime(sysHeaderTimes[len(sysHeaderTimes)-1], genesis, dposEpochNum)
-	allCadidates = append(allCadidates, cadidates[:12]...)
-	allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
+	// elected candidates headertimes
+	// candidates, headerTimes := makeCandidatesAndTime(sysHeaderTimes[len(sysHeaderTimes)-1], genesis, dposEpochNum)
+	// allCandidates = append(allCandidates, candidates[:12]...)
+	// allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
 
-	// elected cadidates headertimes
-	cadidates, headerTimes = makeCadidatesAndTime(headerTimes[len(headerTimes)-1], genesis, dposEpochNum)
-	allCadidates = append(allCadidates, cadidates[:12]...)
-	allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
+	// // elected candidates headertimes
+	// candidates, headerTimes = makeCandidatesAndTime(headerTimes[len(headerTimes)-1], genesis, dposEpochNum)
+	// allCandidates = append(allCandidates, candidates[:12]...)
+	// allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
 
-	return allCadidates, allHeaderTimes
+	return allCandidates, allHeaderTimes
 }
 
-func testFork(t *testing.T, cadidates, forkCadidates []string, headerTimes, forkHeaderTimes []uint64) {
+func testFork(t *testing.T, candidates, forkCandidates []string, headerTimes, forkHeaderTimes []uint64) {
 	genesis := DefaultGenesis()
 	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	chain, _ = makeNewChain(t, genesis, chain, cadidates, headerTimes)
+	chain, _ = makeNewChain(t, genesis, chain, candidates, headerTimes)
 
 	// generate fork blocks
-	blocks := generateForkBlocks(t, DefaultGenesis(), forkCadidates, forkHeaderTimes)
+	blocks := generateForkBlocks(t, DefaultGenesis(), forkCandidates, forkHeaderTimes)
 
 	_, err := chain.InsertChain(blocks)
 	if err != nil {

@@ -306,3 +306,8 @@ func rlpHash(x interface{}) (h common.Hash) {
 	hw.Sum(h[:0])
 	return h
 }
+
+type BlockState struct {
+	PreStatePruning bool   `json:"preStatePruning"`
+	CurrentNumber   uint64 `json:"currentNumber"`
+}
