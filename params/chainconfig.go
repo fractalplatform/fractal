@@ -35,9 +35,11 @@ type ChainConfig struct {
 	SysName          string        `json:"systemName,omitempty"`  // system name
 	AccountName      string        `json:"accountName,omitempty"` // system name
 	DposName         string        `json:"dposName,omitempty"`    // system name
+	SnapshotInterval uint64        `json:"snapshotInterval,omitempty"`
 	SysToken         string        `json:"systemToken,omitempty"` // system token
 	SysTokenID       uint64        `json:"sysTokenID,omitempty"`
 	SysTokenDecimals uint64        `json:"sysTokenDecimal,omitempty"`
+	ReferenceTime    uint64        `json:"referenceTime,omitempty"`
 }
 
 type ChargeConfig struct {
@@ -57,17 +59,19 @@ type FrokedConfig struct {
 }
 
 type DposConfig struct {
-	MaxURLLen            uint64   `json:"maxURLLen,omitempty"`            // url length
-	UnitStake            *big.Int `json:"unitStake,omitempty"`            // state unit
-	CadidateMinQuantity  *big.Int `json:"cadidateMinQuantity,omitempty"`  // min quantity
-	VoterMinQuantity     *big.Int `json:"voterMinQuantity,omitempty"`     // min quantity
-	ActivatedMinQuantity *big.Int `json:"activatedMinQuantity,omitempty"` // min active quantity
-	BlockInterval        uint64   `json:"blockInterval,omitempty"`
-	BlockFrequency       uint64   `json:"blockFrequency,omitempty"`
-	CadidateScheduleSize uint64   `json:"cadidateScheduleSize,omitempty"`
-	DelayEcho            uint64   `json:"delayEcho,omitempty"`
-	ExtraBlockReward     *big.Int `json:"extraBlockReward,omitempty"`
-	BlockReward          *big.Int `json:"blockReward,omitempty"`
+	MaxURLLen             uint64   `json:"maxURLLen,omitempty"`            // url length
+	UnitStake             *big.Int `json:"unitStake,omitempty"`            // state unit
+	CandidateMinQuantity  *big.Int `json:"candidateMinQuantity,omitempty"` // min quantity
+	VoterMinQuantity      *big.Int `json:"voterMinQuantity,omitempty"`     // min quantity
+	ActivatedMinQuantity  *big.Int `json:"activatedMinQuantity,omitempty"` // min active quantity
+	BlockInterval         uint64   `json:"blockInterval,omitempty"`
+	BlockFrequency        uint64   `json:"blockFrequency,omitempty"`
+	CandidateScheduleSize uint64   `json:"candidateScheduleSize,omitempty"`
+	BackupScheduleSize    uint64   `json:"backupScheduleSize,omitempty"`
+	EpchoInterval         uint64   `json:"epchoInterval,omitempty"`
+	FreezeEpchoSize       uint64   `json:"freezeEpchoSize,omitempty"`
+	ExtraBlockReward      *big.Int `json:"extraBlockReward,omitempty"`
+	BlockReward           *big.Int `json:"blockReward,omitempty"`
 }
 
 var DefaultChainconfig = &ChainConfig{
@@ -94,22 +98,25 @@ var DefaultChainconfig = &ChainConfig{
 		Forkpercentage: 80,
 	},
 	DposCfg: &DposConfig{
-		MaxURLLen:            512,
-		UnitStake:            big.NewInt(1000),
-		CadidateMinQuantity:  big.NewInt(10),
-		VoterMinQuantity:     big.NewInt(1),
-		ActivatedMinQuantity: big.NewInt(100),
-		BlockInterval:        3000,
-		BlockFrequency:       6,
-		CadidateScheduleSize: 3,
-		DelayEcho:            2,
-		ExtraBlockReward:     big.NewInt(1),
-		BlockReward:          big.NewInt(5),
+		MaxURLLen:             512,
+		UnitStake:             big.NewInt(1000),
+		CandidateMinQuantity:  big.NewInt(10),
+		VoterMinQuantity:      big.NewInt(1),
+		ActivatedMinQuantity:  big.NewInt(100),
+		BlockInterval:         3000,
+		BlockFrequency:        6,
+		CandidateScheduleSize: 3,
+		BackupScheduleSize:    0,
+		EpchoInterval:         540000,
+		FreezeEpchoSize:       3,
+		ExtraBlockReward:      big.NewInt(1),
+		BlockReward:           big.NewInt(5),
 	},
-	SysName:     "fractal.admin",
-	AccountName: "fractal.account",
-	DposName:    "fractal.dpos",
-	SysToken:    "ftoken",
+	SnapshotInterval: 180000,
+	SysName:          "fractal.admin",
+	AccountName:      "fractal.account",
+	DposName:         "fractal.dpos",
+	SysToken:         "ftoken",
 }
 
 func (cfg *ChainConfig) Copy() *ChainConfig {
