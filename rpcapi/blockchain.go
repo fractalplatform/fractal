@@ -339,6 +339,7 @@ func (s *PublicBlockChainAPI) GetGenesis() map[string]interface{} {
 	return ret
 }
 
-func (s *PublicBlockChainAPI) SetStatePruning(enable bool) (bool, uint64) {
-	return s.b.SetStatePruning(enable)
+func (s *PublicBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
+	prestatus, number := s.b.SetStatePruning(enable)
+	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
 }
