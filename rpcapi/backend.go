@@ -55,6 +55,7 @@ type Backend interface {
 	GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
 	GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash
 	GetBadBlocks(ctx context.Context) ([]*types.Block, error)
+	SetStatePruning(enable bool) (bool, uint64)
 
 	// TxPool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error

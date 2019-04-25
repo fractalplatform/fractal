@@ -46,81 +46,81 @@ import (
 )
 
 var (
-	issurevalue       = "10000000000000000000000000000"
-	syscadidatePrefix = "syscadidate"
-	systemPrikey, _   = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	issurevalue        = "10000000000000000000000000000"
+	syscandidatePrefix = "syscandidate"
+	systemPrikey, _    = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 )
 
-type cadidateInfo struct {
+type candidateInfo struct {
 	name   string
 	prikey *ecdsa.PrivateKey
 }
 
-func getCadidates() map[string]*cadidateInfo {
-	cadidates := make(map[string]*cadidateInfo)
-	pri0, _ := crypto.HexToECDSA("189c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	pri1, _ := crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
-	pri2, _ := crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
+func getCandidates() map[string]*candidateInfo {
+	candidates := make(map[string]*candidateInfo)
+	// pri0, _ := crypto.HexToECDSA("189c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	// pri1, _ := crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
+	// pri2, _ := crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
 
-	cadidates["syscadidate0"] = &cadidateInfo{"syscadidate0", pri0}
-	cadidates["syscadidate1"] = &cadidateInfo{"syscadidate1", pri1}
-	cadidates["syscadidate2"] = &cadidateInfo{"syscadidate2", pri2}
-	return cadidates
+	// candidates["syscandidate0"] = &candidateInfo{"syscandidate0", pri0}
+	// candidates["syscandidate1"] = &candidateInfo{"syscandidate1", pri1}
+	// candidates["syscandidate2"] = &candidateInfo{"syscandidate2", pri2}
+	return candidates
 }
 
 func getDefaultGenesisAccounts() (gas []*GenesisAccount) {
-	for i := 0; i < len(getCadidates()); i++ {
-		cadidate := getCadidates()[syscadidatePrefix+strconv.Itoa(i)]
+	for i := 0; i < len(getCandidates()); i++ {
+		candidate := getCandidates()[syscandidatePrefix+strconv.Itoa(i)]
 		gas = append(gas, &GenesisAccount{
-			Name:   cadidate.name,
-			PubKey: common.BytesToPubKey(crypto.FromECDSAPub(&cadidate.prikey.PublicKey)),
+			Name:   candidate.name,
+			PubKey: common.BytesToPubKey(crypto.FromECDSAPub(&candidate.prikey.PublicKey)),
 		})
 	}
 	return
 }
 
 func calculateEpochInterval(dposCfg *dpos.Config) uint64 {
-	return dposCfg.CadidateScheduleSize * dposCfg.BlockFrequency * dposCfg.BlockInterval * uint64(time.Millisecond)
+	return dposCfg.CandidateScheduleSize * dposCfg.BlockFrequency * dposCfg.BlockInterval * uint64(time.Millisecond)
 }
 
-func makeSystemCadidatesAndTime(parentTime uint64, genesis *Genesis) ([]string, []uint64) {
+func makeSystemCandidatesAndTime(parentTime uint64, genesis *Genesis) ([]string, []uint64) {
 	var (
-		cadidates     []string
-		baseCadidates = getCadidates()
+		candidates     []string
+		baseCandidates = getCandidates()
 	)
-
-	for i := 0; i < int(genesis.Config.DposCfg.DelayEcho)+1; i++ {
-		for j := 0; j < len(baseCadidates); j++ {
+	dcfg := dposConfig(genesis.Config)
+	for i := uint64(0); i < (dcfg.EpchoInterval/dcfg.BlockInterval*dcfg.BlockFrequency)+1; i++ {
+		for j := 0; j < len(baseCandidates); j++ {
 			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
-				cadidates = append(cadidates, genesis.Config.SysName)
+				candidates = append(candidates, genesis.Config.SysName)
 			}
 		}
 	}
-	cadidates = cadidates[1:]
-	headerTimes := make([]uint64, len(cadidates))
-	for i := 0; i < len(cadidates); i++ {
-		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*1000*uint64(time.Microsecond)*uint64(i+1) + parentTime
+	candidates = candidates[0:]
+	headerTimes := make([]uint64, len(candidates))
+	for i := 0; i < len(candidates); i++ {
+		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*uint64(time.Millisecond)*uint64(i+1) + parentTime
 	}
-	return cadidates, headerTimes
+	return candidates, headerTimes
 }
 
-func makeCadidatesAndTime(parentTime uint64, genesis *Genesis, rounds uint64) ([]string, []uint64) {
+func makeCandidatesAndTime(parentTime uint64, genesis *Genesis, rounds uint64) ([]string, []uint64) {
 	var (
-		cadidates     []string
-		baseCadidates = getCadidates()
+		candidates     []string
+		baseCandidates = getCandidates()
 	)
 	for i := 0; uint64(i) < rounds; i++ {
-		for j := 0; j < len(baseCadidates); j++ {
+		for j := 0; j < len(baseCandidates); j++ {
 			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
-				cadidates = append(cadidates, baseCadidates[syscadidatePrefix+strconv.Itoa(j)].name)
+				candidates = append(candidates, baseCandidates[syscandidatePrefix+strconv.Itoa(j)].name)
 			}
 		}
 	}
-	headerTimes := make([]uint64, len(cadidates))
-	for i := 0; i < len(cadidates); i++ {
-		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*1000*uint64(time.Microsecond)*uint64(i+1) + parentTime
+	headerTimes := make([]uint64, len(candidates))
+	for i := 0; i < len(candidates); i++ {
+		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*uint64(time.Millisecond)*uint64(i+1) + parentTime
 	}
-	return cadidates, headerTimes
+	return candidates, headerTimes
 }
 
 func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
@@ -131,7 +131,7 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 		t.Fatal(err)
 	}
 
-	blockchain, err := NewBlockChain(chainDb, vm.Config{}, chainCfg, txpool.SenderCacher)
+	blockchain, err := NewBlockChain(chainDb, false, vm.Config{}, chainCfg, txpool.SenderCacher)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	return blockchain
 }
 
-func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, cadidates []string, headerTimes []uint64) (*BlockChain, []*types.Block) {
+func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, candidates []string, headerTimes []uint64) (*BlockChain, []*types.Block) {
 
 	tmpdb, err := deepCopyDB(chain.db)
 	if err != nil {
@@ -182,11 +182,11 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, cadidates [
 	newblocks, _ := generateChain(genesis.Config, chain.CurrentBlock(), engine, chain, tmpdb,
 		len(headerTimes), func(i int, b *BlockGenerator) {
 
-			baseCadidates := getCadidates()
+			baseCandidates := getCandidates()
 
-			baseCadidates[genesis.Config.SysName] = &cadidateInfo{genesis.Config.SysName, systemPrikey}
+			baseCandidates[genesis.Config.SysName] = &candidateInfo{genesis.Config.SysName, systemPrikey}
 
-			minerInfo := baseCadidates[cadidates[i]]
+			minerInfo := baseCandidates[candidates[i]]
 
 			b.SetCoinbase(common.StrToName(minerInfo.name))
 			engine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
@@ -195,7 +195,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, cadidates [
 			b.OffsetTime(int64(engine.Slot(headerTimes[i])))
 
 			if i == 0 {
-				txs := makeCadidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
+				txs := makeCandidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
 				for _, tx := range txs {
 					b.AddTx(tx)
 				}
@@ -211,7 +211,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, cadidates [
 	return chain, newblocks
 }
 
-func generateForkBlocks(t *testing.T, genesis *Genesis, cadidates []string, headerTimes []uint64) []*types.Block {
+func generateForkBlocks(t *testing.T, genesis *Genesis, candidates []string, headerTimes []uint64) []*types.Block {
 	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
 	chain := newCanonical(t, genesis)
 
@@ -224,10 +224,10 @@ func generateForkBlocks(t *testing.T, genesis *Genesis, cadidates []string, head
 
 	newblocks, _ := generateChain(genesis.Config, chain.CurrentBlock(), engine, chain, tmpdb,
 		len(headerTimes), func(i int, b *BlockGenerator) {
-			baseCadidates := getCadidates()
+			baseCandidates := getCandidates()
 
-			baseCadidates[genesis.Config.SysName] = &cadidateInfo{genesis.Config.SysName, systemPrikey}
-			minerInfo := baseCadidates[cadidates[i]]
+			baseCandidates[genesis.Config.SysName] = &candidateInfo{genesis.Config.SysName, systemPrikey}
+			minerInfo := baseCandidates[candidates[i]]
 
 			b.SetCoinbase(common.StrToName(minerInfo.name))
 			engine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
@@ -237,7 +237,7 @@ func generateForkBlocks(t *testing.T, genesis *Genesis, cadidates []string, head
 			b.OffsetTime(int64(engine.Slot(headerTimes[i])))
 
 			if i == 0 {
-				txs := makeCadidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
+				txs := makeCandidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
 				for _, tx := range txs {
 					b.AddTx(tx)
 				}
@@ -247,7 +247,7 @@ func generateForkBlocks(t *testing.T, genesis *Genesis, cadidates []string, head
 	return newblocks
 }
 
-func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, state *state.StateDB) []*types.Transaction {
+func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, state *state.StateDB) []*types.Transaction {
 	var txs []*types.Transaction
 	signer := types.NewSigner(params.DefaultChainconfig.ChainID)
 	am, err := accountmanager.NewAccountManager(state)
@@ -263,9 +263,9 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 	delegateValue.SetString(issurevalue, 10)
 
 	var actions []*types.Action
-	for i := 0; i < len(getCadidates()); i++ {
+	for i := 0; i < len(getCandidates()); i++ {
 		amount := new(big.Int).Mul(delegateValue, big.NewInt(2))
-		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCadidates()[syscadidatePrefix+strconv.Itoa(i)].name), nonce, uint64(1), uint64(210000), amount, nil)
+		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCandidates()[syscandidatePrefix+strconv.Itoa(i)].name), nonce, uint64(1), uint64(210000), amount, nil)
 		actions = append(actions, action)
 		nonce++
 	}
@@ -281,20 +281,20 @@ func makeCadidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, st
 	txs = append(txs, tx)
 
 	var actions1 []*types.Action
-	for i := 0; i < len(getCadidates()); i++ {
-		to := getCadidates()[syscadidatePrefix+strconv.Itoa(i)]
+	for i := 0; i < len(getCandidates()); i++ {
+		to := getCandidates()[syscandidatePrefix+strconv.Itoa(i)]
 		url := "www." + to.name + ".io"
-		arg := &dpos.RegisterCadidate{
-			Url: url,
+		arg := &dpos.RegisterCandidate{
+			URL: url,
 		}
 		payload, _ := rlp.EncodeToBytes(arg)
-		action := types.NewAction(types.RegCadidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload)
+		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload)
 		actions1 = append(actions1, action)
 	}
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(2), actions1...)
 	for _, action := range actions1 {
-		keyPair = types.MakeKeyPair(getCadidates()[action.Sender().String()].prikey, []uint64{0})
+		keyPair = types.MakeKeyPair(getCandidates()[action.Sender().String()].prikey, []uint64{0})
 		err := types.SignActionWithMultiKey(action, tx1, signer, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
@@ -333,7 +333,7 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		if b.engine != nil {
 			// Finalize and seal the block
-			if err := b.engine.Prepare(b, b.header, b.txs, nil, nil); err != nil {
+			if err := b.engine.Prepare(b, b.header, b.txs, nil, b.statedb); err != nil {
 				panic(fmt.Sprintf("engine prepare error: %v", err))
 			}
 
