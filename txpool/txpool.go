@@ -896,7 +896,6 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
 		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
-		fmt.Println("--->", len(drops))
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable queued or no permissions transaction", "hash", hash)
