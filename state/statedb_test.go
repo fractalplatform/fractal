@@ -234,7 +234,7 @@ func TestSnapshot(t *testing.T) {
 	// rawdb.WriteBlock(batch, block)
 	batch.Write()
 
-	snapshot := NewSnapshot(db, 10)
+	snapshot := NewSnapshot(db, 10000)
 
 	snapshot.snapshotRecord(block)
 
@@ -278,12 +278,12 @@ func TestSnapshot(t *testing.T) {
 	pretime, _ := state.GetSnapshotPrev(time)
 
 	value1, _ := state.GetSnapshot(addr, key, time)
-	if bytes.Equal(value1, []byte(strconv.Itoa(100*8))) == false {
+	if bytes.Equal(value1, []byte(strconv.Itoa(100*6))) == false {
 		t.Error("Test snapshot failed")
 	}
 
 	value2, _ := state.GetSnapshot(addr, key, pretime)
-	if bytes.Equal(value2, []byte(strconv.Itoa(100*7))) == false {
+	if bytes.Equal(value2, []byte(strconv.Itoa(100*4))) == false {
 		t.Error("Test snapshot failed")
 	}
 
@@ -299,7 +299,7 @@ func TestSnapshot(t *testing.T) {
 		accountInfo, flag = state.LookupAccountInfo()
 	}
 
-	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*8))) == false {
+	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*6))) == false {
 		t.Error("Test snapshot get account failed")
 	}
 
@@ -325,7 +325,7 @@ func TestSnapshot(t *testing.T) {
 		accountInfo, flag = state.LookupAccountInfo()
 	}
 
-	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*7))) == false {
+	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*4))) == false {
 		t.Error("Test snapshot get account failed")
 	}
 
