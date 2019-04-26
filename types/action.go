@@ -92,6 +92,11 @@ const (
 	ExitTakeOver
 )
 
+const (
+	// WithdrawFee
+	WithdrawFee ActionType = 0x500 + iota
+)
+
 type SignData struct {
 	V     *big.Int
 	R     *big.Int

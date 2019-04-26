@@ -49,6 +49,7 @@ type GasTable struct {
 	GetDelegate     uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
+	WithdrawFee     uint64
 }
 
 // Variables containing gas prices for different phases.
@@ -65,6 +66,7 @@ var (
 
 		CreateBySuicide: 25000,
 		SetOwner:        200,
+		WithdrawFee:     700,
 		GetAccountTime:  200,
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,

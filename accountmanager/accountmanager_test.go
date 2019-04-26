@@ -617,6 +617,10 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 	}
 }
 
+func addAsset() {
+
+}
+
 func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 	type fields struct {
 		sdb SdbIf
