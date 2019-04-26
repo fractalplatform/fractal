@@ -41,7 +41,7 @@ func Test_newAssetObject(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(999999)}, &AssetObject{0, 0, "ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(2), big.NewInt(999999), common.Name("")}, false},
+		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(999999)}, &AssetObject{0, 0, "ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(2), big.NewInt(999999), common.Name(""), ""}, false},
 		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
 		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
 		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
@@ -53,7 +53,7 @@ func Test_newAssetObject(t *testing.T) {
 		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
 	}
 	for _, tt := range tests {
-		got, err := NewAssetObject(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, tt.args.UpperLimit, common.Name(""))
+		got, err := NewAssetObject(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, tt.args.UpperLimit, common.Name(""), "")
 		if (err != nil) != tt.wantErr {
 			t.Errorf("%q. newAssetObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			continue
@@ -154,8 +154,8 @@ func TestAssetObject_GetSymbol(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
-		//	{"getexist",fields{}}
+	// TODO: Add test cases.
+	//	{"getexist",fields{}}
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -189,7 +189,7 @@ func TestAssetObject_SetSymbol(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -218,7 +218,7 @@ func TestAssetObject_GetDecimals(t *testing.T) {
 		fields fields
 		want   uint64
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -252,7 +252,7 @@ func TestAssetObject_SetDecimals(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -281,7 +281,7 @@ func TestAssetObject_GetAssetName(t *testing.T) {
 		fields fields
 		want   string
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -315,7 +315,7 @@ func TestAssetObject_SetAssetName(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -344,7 +344,7 @@ func TestAssetObject_GetAssetAmount(t *testing.T) {
 		fields fields
 		want   *big.Int
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -378,7 +378,7 @@ func TestAssetObject_SetAssetAmount(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -407,7 +407,7 @@ func TestAssetObject_GetAssetOwner(t *testing.T) {
 		fields fields
 		want   common.Name
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -441,7 +441,7 @@ func TestAssetObject_SetAssetOwner(t *testing.T) {
 		fields fields
 		args   args
 	}{
-		// TODO: Add test cases.
+	// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{

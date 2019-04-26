@@ -250,7 +250,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	issuseAssetInput, err := input(abifile, "reg", "ethnewfromname2,ethereum,10000000000,10,assetcontract,20000000000,jacobwolf")
+	issuseAssetInput, err := input(abifile, "reg", "ethnewfromname2,ethereum,10000000000,10,assetcontract,20000000000,jacobwolf,assetcontract,this is contracgt asset")
 	if err != nil {
 		fmt.Println("issuseAssetInput error ", err)
 		return

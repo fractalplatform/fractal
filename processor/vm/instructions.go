@@ -1200,7 +1200,7 @@ func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, error) {
 	input := strings.Split(desc, ",")
-	if !(len(input) == 7 || len(input) == 8) {
+	if len(input) != 9 {
 		return 0, fmt.Errorf("invalid desc string")
 	}
 	name := input[0]
@@ -1219,12 +1219,10 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 		return 0, fmt.Errorf("amount not correct")
 	}
 	founder := common.Name(input[6])
+	contractName := common.Name(input[7])
+	detail := input[8]
 
-	var contractName common.Name
-	if len(input) == 8 {
-		contractName = common.Name(input[7])
-	}
-	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName}
+	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Detail: detail}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
