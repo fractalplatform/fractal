@@ -87,14 +87,14 @@ func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey
 	return pubKeys, nil
 }
 
-func StoreAuthorCache(a *Action, authorVersion map[common.Name]uint64) {
+func StoreAuthorCache(a *Action, authorVersion map[common.Name]common.Hash) {
 	a.author.Store(authorVersion)
 }
 
-func GetAuthorCache(a *Action) map[common.Name]uint64 {
-	authorVersion := make(map[common.Name]uint64, 0)
+func GetAuthorCache(a *Action) map[common.Name]common.Hash {
+	authorVersion := make(map[common.Name]common.Hash, 0)
 	if ac := a.author.Load(); ac != nil {
-		aCache := ac.(map[common.Name]uint64)
+		aCache := ac.(map[common.Name]common.Hash)
 		for name, version := range aCache {
 			authorVersion[name] = version
 		}
@@ -167,7 +167,7 @@ func (s Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 func (s Signer) Hash(tx *Transaction) common.Hash {
 	actionHashs := make([]common.Hash, len(tx.GetActions()))
 	for i, a := range tx.GetActions() {
-		hash := rlpHash([]interface{}{
+		hash := RlpHash([]interface{}{
 			a.data.From,
 			a.data.AType,
 			a.data.Nonce,
@@ -180,7 +180,7 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 		actionHashs[i] = hash
 	}
 
-	return rlpHash([]interface{}{
+	return RlpHash([]interface{}{
 		common.MerkleRoot(actionHashs),
 		tx.gasAssetID,
 		tx.gasPrice,

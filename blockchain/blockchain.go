@@ -409,8 +409,7 @@ func (bc *BlockChain) HasBlock(hash common.Hash, number uint64) bool {
 
 // HasState checks if state trie is fully present in the database or not.
 func (bc *BlockChain) HasState(hash common.Hash) bool {
-	stateOut := rawdb.ReadBlockStateOut(bc.db, hash)
-	return stateOut != nil
+	return rawdb.ReadBlockStateOut(bc.db, hash) != nil
 }
 
 // HasBlockAndState checks if a block and  state  is fully present  in the database or not.

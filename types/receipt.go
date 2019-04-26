@@ -92,7 +92,7 @@ func (r *Receipt) Size() common.StorageSize {
 
 // Hash hashes the RLP encoding of Receipt.
 func (r *Receipt) Hash() common.Hash {
-	return rlpHash(r)
+	return RlpHash(r)
 }
 
 // RPCReceipt that will serialize to the RPC representation of a Receipt.

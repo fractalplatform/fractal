@@ -512,13 +512,13 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 }
 
 // GetAuthorVersion returns the account author version
-func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
+func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
-		return 0, err
+		return common.Hash{}, err
 	}
 	if acct == nil {
-		return 0, ErrAccountNotExist
+		return common.Hash{}, ErrAccountNotExist
 	}
 	return acct.GetAuthorVersion(), nil
 }
@@ -547,9 +547,8 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			}
 		}
 
-		authorVersion := make(map[common.Name]uint64, 0)
+		authorVersion := make(map[common.Name]common.Hash, 0)
 		for name, acctAuthor := range recoverRes.acctAuthors {
-
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
 				count += weight
@@ -591,7 +590,7 @@ func (am *AccountManager) IsValidSign(accountName common.Name, pub common.PubKey
 	return fmt.Errorf("%v %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String())
 }
 
-//IsValidSign check the sign
+//ValidSign check the sign
 func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, index []uint64, recoverRes *recoverActionResult) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
