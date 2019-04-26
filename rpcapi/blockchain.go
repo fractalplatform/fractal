@@ -328,8 +328,8 @@ func (s *PublicBlockChainAPI) GetChainConfig() map[string]interface{} {
 	return ret
 }
 
-// GetGeneisisJson returns geneisis config.
-func (s *PublicBlockChainAPI) GetGeneisis() map[string]interface{} {
+// GetGenesis returns genesis config.
+func (s *PublicBlockChainAPI) GetGenesis() map[string]interface{} {
 	ret := map[string]interface{}{}
 	g, err := s.b.BlockByNumber(context.Background(), 0)
 	if err != nil {

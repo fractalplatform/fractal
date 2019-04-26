@@ -475,8 +475,8 @@ func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas
 	return
 }
 
-// RegCadidate new cadidate
-func (acc *Account) RegCadidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.RegisterCadidate) (hash common.Hash, err error) {
+// RegCandidate new candidate
+func (acc *Account) RegCandidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.RegisterCandidate) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -486,7 +486,7 @@ func (acc *Account) RegCadidate(to common.Name, value *big.Int, id uint64, gas u
 	}
 
 	payload, _ := rlp.EncodeToBytes(arg)
-	action := types.NewAction(types.RegCadidate, acc.name, to, nonce, id, gas, value, payload)
+	action := types.NewAction(types.RegCandidate, acc.name, to, nonce, id, gas, value, payload)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
@@ -526,8 +526,8 @@ func (acc *Account) RegCadidate(to common.Name, value *big.Int, id uint64, gas u
 	return
 }
 
-// UpdateCadidate update cadidate
-func (acc *Account) UpdateCadidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.UpdateCadidate) (hash common.Hash, err error) {
+// UpdateCandidate update candidate
+func (acc *Account) UpdateCandidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.UpdateCandidate) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -537,7 +537,7 @@ func (acc *Account) UpdateCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 
 	payload, _ := rlp.EncodeToBytes(arg)
-	action := types.NewAction(types.UpdateCadidate, acc.name, to, nonce, id, gas, value, payload)
+	action := types.NewAction(types.UpdateCandidate, acc.name, to, nonce, id, gas, value, payload)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
@@ -577,8 +577,8 @@ func (acc *Account) UpdateCadidate(to common.Name, value *big.Int, id uint64, ga
 	return
 }
 
-// UnRegCadidate remove cadiate
-func (acc *Account) UnRegCadidate(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
+// UnRegCandidate remove cadiate
+func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -587,7 +587,7 @@ func (acc *Account) UnRegCadidate(to common.Name, value *big.Int, id uint64, gas
 		}
 	}
 
-	action := types.NewAction(types.UnregCadidate, acc.name, to, nonce, id, gas, value, nil)
+	action := types.NewAction(types.UnregCandidate, acc.name, to, nonce, id, gas, value, nil)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
@@ -627,8 +627,8 @@ func (acc *Account) UnRegCadidate(to common.Name, value *big.Int, id uint64, gas
 	return
 }
 
-// VoteCadidate vote cadiate
-func (acc *Account) VoteCadidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.VoteCadidate) (hash common.Hash, err error) {
+// VoteCandidate vote cadiate
+func (acc *Account) VoteCandidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.VoteCandidate) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -638,7 +638,7 @@ func (acc *Account) VoteCadidate(to common.Name, value *big.Int, id uint64, gas 
 	}
 
 	payload, _ := rlp.EncodeToBytes(arg)
-	action := types.NewAction(types.VoteCadidate, acc.name, to, nonce, id, gas, value, payload)
+	action := types.NewAction(types.VoteCandidate, acc.name, to, nonce, id, gas, value, payload)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
@@ -678,8 +678,8 @@ func (acc *Account) VoteCadidate(to common.Name, value *big.Int, id uint64, gas 
 	return
 }
 
-// ChangeCadidate change cadidate
-func (acc *Account) ChangeCadidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.ChangeCadidate) (hash common.Hash, err error) {
+// KickedCandidate kicked candidates
+func (acc *Account) KickedCandidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.KickedCandidate) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -689,7 +689,7 @@ func (acc *Account) ChangeCadidate(to common.Name, value *big.Int, id uint64, ga
 	}
 
 	payload, _ := rlp.EncodeToBytes(arg)
-	action := types.NewAction(types.ChangeCadidate, acc.name, to, nonce, id, gas, value, payload)
+	action := types.NewAction(types.KickedCandidate, acc.name, to, nonce, id, gas, value, payload)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
@@ -702,159 +702,7 @@ func (acc *Account) ChangeCadidate(to common.Name, value *big.Int, id uint64, ga
 	var checkedfunc func() error
 	if checked {
 		// before
-		checkedfunc, err = acc.chekChangeProdoucer(action)
-		if err != nil {
-			return
-		}
-	}
-	hash, err = acc.api.SendRawTransaction(rawtx)
-	if err != nil {
-		return
-	}
-	if checked {
-		// after
-		err = acc.utilReceipt(hash, timeout)
-		if err != nil {
-			return
-		}
-		err = checkedfunc()
-		if err != nil {
-			return
-		}
-	}
-
-	if acc.nonce != math.MaxUint64 {
-		acc.nonce++
-	}
-	return
-}
-
-// UnvoteCadidate unvote cadidate
-func (acc *Account) UnvoteCadidate(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
-	nonce := acc.nonce
-	if nonce == math.MaxUint64 {
-		nonce, err = acc.api.AccountNonce(acc.name.String())
-		if err != nil {
-			return
-		}
-	}
-
-	action := types.NewAction(types.UnvoteCadidate, acc.name, to, nonce, id, gas, value, nil)
-	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	key := types.MakeKeyPair(acc.priv, []uint64{0})
-
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
-	if err != nil {
-		return
-	}
-	rawtx, _ := rlp.EncodeToBytes(tx)
-	checked := acc.checked || acc.nonce == math.MaxUint64
-	var checkedfunc func() error
-	if checked {
-		// before
-		checkedfunc, err = acc.chekUnvoteProdoucer(action)
-		if err != nil {
-			return
-		}
-	}
-	hash, err = acc.api.SendRawTransaction(rawtx)
-	if err != nil {
-		return
-	}
-	if checked {
-		// after
-		err = acc.utilReceipt(hash, timeout)
-		if err != nil {
-			return
-		}
-		err = checkedfunc()
-		if err != nil {
-			return
-		}
-	}
-
-	if acc.nonce != math.MaxUint64 {
-		acc.nonce++
-	}
-	return
-}
-
-// UnvoteVoter remove voter
-func (acc *Account) UnvoteVoter(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.RemoveVoter) (hash common.Hash, err error) {
-	nonce := acc.nonce
-	if nonce == math.MaxUint64 {
-		nonce, err = acc.api.AccountNonce(acc.name.String())
-		if err != nil {
-			return
-		}
-	}
-
-	payload, _ := rlp.EncodeToBytes(arg)
-	action := types.NewAction(types.RemoveVoter, acc.name, to, nonce, id, gas, value, payload)
-	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	key := types.MakeKeyPair(acc.priv, []uint64{0})
-
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
-	if err != nil {
-		return
-	}
-	rawtx, _ := rlp.EncodeToBytes(tx)
-	checked := acc.checked || acc.nonce == math.MaxUint64
-	var checkedfunc func() error
-	if checked {
-		// before
-		checkedfunc, err = acc.chekRemoveVoter(action)
-		if err != nil {
-			return
-		}
-	}
-	hash, err = acc.api.SendRawTransaction(rawtx)
-	if err != nil {
-		return
-	}
-	if checked {
-		// after
-		err = acc.utilReceipt(hash, timeout)
-		if err != nil {
-			return
-		}
-		err = checkedfunc()
-		if err != nil {
-			return
-		}
-	}
-
-	if acc.nonce != math.MaxUint64 {
-		acc.nonce++
-	}
-	return
-}
-
-// KickedCadidate kicked cadidates
-func (acc *Account) KickedCadidate(to common.Name, value *big.Int, id uint64, gas uint64, arg *dpos.KickedCadidate) (hash common.Hash, err error) {
-	nonce := acc.nonce
-	if nonce == math.MaxUint64 {
-		nonce, err = acc.api.AccountNonce(acc.name.String())
-		if err != nil {
-			return
-		}
-	}
-
-	payload, _ := rlp.EncodeToBytes(arg)
-	action := types.NewAction(types.KickedCadidate, acc.name, to, nonce, id, gas, value, payload)
-	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
-	key := types.MakeKeyPair(acc.priv, []uint64{0})
-
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
-	if err != nil {
-		return
-	}
-	rawtx, _ := rlp.EncodeToBytes(tx)
-	checked := acc.checked || acc.nonce == math.MaxUint64
-	var checkedfunc func() error
-	if checked {
-		// before
-		checkedfunc, err = acc.chekKickedCadidate(action)
+		checkedfunc, err = acc.chekKickedCandidate(action)
 		if err != nil {
 			return
 		}
@@ -903,7 +751,7 @@ func (acc *Account) ExitTakeOver(to common.Name, value *big.Int, id uint64, gas 
 	var checkedfunc func() error
 	if checked {
 		// before
-		checkedfunc, err = acc.chekKickedCadidate(action)
+		checkedfunc, err = acc.chekKickedCandidate(action)
 		if err != nil {
 			return
 		}

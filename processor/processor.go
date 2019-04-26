@@ -59,6 +59,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		gp       = new(common.GasPool).AddGas(block.GasLimit())
 	)
 
+	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
+	p.engine.Prepare(p.bc, header, block.Transactions(), receipts, statedb)
+
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)

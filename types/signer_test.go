@@ -95,9 +95,9 @@ func TestChainID(t *testing.T) {
 }
 
 func TestAuthorCache(t *testing.T) {
-	authorVersion := make(map[common.Name]uint64, 0)
-	authorVersion[common.Name("fromname")] = 1
-	authorVersion[common.Name("toname")] = 10
+	authorVersion := make(map[common.Name]common.Hash, 0)
+	authorVersion[common.Name("fromname")] = common.BytesToHash([]byte("1"))
+	authorVersion[common.Name("toname")] = common.BytesToHash([]byte("10"))
 	StoreAuthorCache(testAction, authorVersion)
 
 	loadAuthorVeriosn := GetAuthorCache(testAction)

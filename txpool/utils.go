@@ -18,7 +18,9 @@ package txpool
 
 import (
 	"math"
+	"os"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -70,4 +72,10 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 	}
 
 	return gas, nil
+}
+
+func printLog(level log.Lvl) {
+	glogger := log.NewGlogHandler(log.StreamHandler(os.Stdout, log.TerminalFormat(false)))
+	glogger.Verbosity(level)
+	log.Root().SetHandler(log.Handler(glogger))
 }
