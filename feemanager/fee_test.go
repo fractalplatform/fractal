@@ -147,7 +147,7 @@ func addAssetAndAccount() error {
 	}
 
 	for _, tt := range tests {
-		err := ast.IssueAsset(tt.assetName, 0, tt.symbol, tt.amount, tt.dec, tt.founder, tt.owner, big.NewInt(9999999999), common.Name(""))
+		err := ast.IssueAsset(tt.assetName, 0, tt.symbol, tt.amount, tt.dec, tt.founder, tt.owner, big.NewInt(9999999999), common.Name(""), "desv")
 		if err != nil {
 			return err
 		}

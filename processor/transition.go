@@ -234,6 +234,18 @@ func (st *StateTransition) distributeFee() error {
 		return fmt.Errorf("calc wrong gas used")
 	}
 
+	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
+		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{
+			Value:  int64(st.gasUsed()) - totalGas,
+			TypeID: vm.CoinbaseGas}
+	} else {
+		dGas := vm.DistributeGas{
+			Value:  int64(st.gasUsed()) - totalGas,
+			TypeID: vm.CoinbaseGas}
+		dGas.Value = st.evm.FounderGasMap[st.evm.Coinbase].Value + dGas.Value
+		st.evm.FounderGasMap[st.evm.Coinbase] = dGas
+	}
+
 	value := new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas)))
 	gasType := st.evm.FounderGasMap[st.evm.Coinbase].TypeID
 	objectType := transToObjectType(gasType)
