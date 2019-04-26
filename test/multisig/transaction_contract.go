@@ -120,6 +120,14 @@ func generateAccount() {
 		aexist, _ := testcommon.CheckAccountIsExist(aca)
 		bexist, _ := testcommon.CheckAccountIsExist(acb)
 		cexist, _ := testcommon.CheckAccountIsExist(acc)
+
+		acaAccount, _ := testcommon.GetAccountByName(aca)
+		acbAccount, _ := testcommon.GetAccountByName(acb)
+		accAccount, _ := testcommon.GetAccountByName(acc)
+		fmt.Println("acaAccount version hash", acaAccount.AuthorVersion.Hex())
+		fmt.Println("acbAccount version hash", acbAccount.AuthorVersion.Hex())
+		fmt.Println("accAccount version hash", accAccount.AuthorVersion.Hex())
+
 		if aexist && bexist && cexist {
 			break
 		}
@@ -247,6 +255,13 @@ func main() {
 	addAuthorsForAcb()
 	addAuthorsForAcc()
 	time.Sleep(10 * time.Second)
+
+	acaAccount, _ := testcommon.GetAccountByName(aca)
+	acbAccount, _ := testcommon.GetAccountByName(acb)
+	accAccount, _ := testcommon.GetAccountByName(acc)
+	fmt.Println("update acaAccount version hash", acaAccount.AuthorVersion.Hex())
+	fmt.Println("update acbAccount version hash", acbAccount.AuthorVersion.Hex())
+	fmt.Println("update accAccount version hash", accAccount.AuthorVersion.Hex())
 
 	transferFromA2B()
 	modifyAUpdateAUthorThreshold()
