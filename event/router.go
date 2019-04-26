@@ -88,9 +88,10 @@ const (
 	DelPeerNotify                                  // 1026 emit when remote peer disconnected
 	DisconectCtrl                                  // 1027 emit if needed to let remote peer disconnect
 	NewPeerPassedNotify                            // 1028 emit when remote peer had same chain ID and genesis block
-	TxEv                                           // 1029
-	NewMinedEv                                     // 1030 emit when new block was mined
-	NewTxs                                         // 1031 emit when new transactions needed to broadcast
+	AddPeerToBlacklist                             // 1029 add peer to blacklist
+	TxEv                                           // 1030
+	NewMinedEv                                     // 1031 emit when new block was mined
+	NewTxs                                         // 1032 emit when new transactions needed to broadcast
 	EndSize
 )
 

@@ -94,15 +94,13 @@ func (bs *BlockchainStation) handshake(e *router.Event) {
 	defer router.StationUnregister(station)
 
 	router.SendTo(station, e.From, router.P2PGetStatus, "")
-	disconnect := func() {
-		router.SendTo(nil, nil, router.DisconectCtrl, e.From)
-	}
+
 	timer := time.After(5 * time.Second)
 	select {
 	case e := <-ch:
 		remote := e.Data.(*statusData)
 		if err := checkChainStatus(bs.chainStatus(), remote); err != nil {
-			disconnect()
+			router.SendTo(nil, nil, router.AddPeerToBlacklist, e.From) // disconnect and put into blacklist
 			log.Warn("Handshake failure", "error", err, "station", fmt.Sprintf("%x", e.From.Name()))
 			return
 		}
@@ -111,7 +109,7 @@ func (bs *BlockchainStation) handshake(e *router.Event) {
 		router.SendTo(e.From, nil, router.NewPeerPassedNotify, e.Data)
 	case <-timer:
 		log.Warn("Handshake timeout", "station", fmt.Sprintf("%x", e.From.Name()))
-		disconnect()
+		router.SendTo(nil, nil, router.DisconectCtrl, e.From)
 	}
 }
 

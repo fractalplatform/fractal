@@ -161,11 +161,15 @@ type Server struct {
 	peerOp     chan peerOpFunc
 	peerOpDone chan struct{}
 
+	badNodeOp     chan badOpFunc
+	badNodeOpDone chan struct{}
+
 	quit          chan struct{}
 	addstatic     chan *enode.Node
 	removestatic  chan *enode.Node
 	addtrusted    chan *enode.Node
 	removetrusted chan *enode.Node
+	addBad        chan *enode.Node
 	posthandshake chan *conn
 	addpeer       chan *conn
 	delpeer       chan peerDrop
@@ -175,6 +179,7 @@ type Server struct {
 }
 
 type peerOpFunc func(map[enode.ID]*Peer)
+type badOpFunc func(map[enode.ID]*enode.Node)
 
 type peerDrop struct {
 	*Peer
@@ -189,6 +194,7 @@ const (
 	staticDialedConn
 	inboundConn
 	trustedConn
+	badNodeConn
 )
 
 // conn wraps a network connection with information gathered
@@ -295,12 +301,50 @@ func (srv *Server) PeerCount() int {
 	return count
 }
 
+// BadNodes returns all bad nodes.
+func (srv *Server) BadNodes() []*enode.Node {
+	var ns []*enode.Node
+	select {
+	// Note: We'd love to put this function into a variable but
+	// that seems to cause a weird compiler error in some
+	// environments.
+	case srv.badNodeOp <- func(nodes map[enode.ID]*enode.Node) {
+		ns = make([]*enode.Node, 0, len(nodes))
+		for _, n := range nodes {
+			ns = append(ns, n)
+		}
+	}:
+		<-srv.badNodeOpDone
+	case <-srv.quit:
+	}
+	return ns
+}
+
+// BadNodesCount returns the number of bad nodes.
+func (srv *Server) BadNodesCount() int {
+	var count int
+	select {
+	case srv.badNodeOp <- func(nodes map[enode.ID]*enode.Node) { count = len(nodes) }:
+		<-srv.badNodeOpDone
+	case <-srv.quit:
+	}
+	return count
+}
+
 // AddPeer connects to the given node and maintains the connection until the
 // server is shut down. If the connection fails for any reason, the server will
 // attempt to reconnect the peer.
 func (srv *Server) AddPeer(node *enode.Node) {
 	select {
 	case srv.addstatic <- node:
+	case <-srv.quit:
+	}
+}
+
+// AddBadNode add the node to the blacklist
+func (srv *Server) AddBadNode(node *enode.Node) {
+	select {
+	case srv.addBad <- node:
 	case <-srv.quit:
 	}
 }
@@ -330,7 +374,7 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 	}
 }
 
-// SubscribePeers subscribes the given channel to peer events
+// SubscribeEvents subscribes the given channel to peer events
 func (srv *Server) SubscribeEvents(ch chan *PeerEvent) event.Subscription {
 	return srv.peerFeed.Subscribe(ch)
 }
@@ -500,6 +544,10 @@ func (srv *Server) Start() (err error) {
 	srv.peerOp = make(chan peerOpFunc)
 	srv.peerOpDone = make(chan struct{})
 
+	srv.addBad = make(chan *enode.Node)
+	srv.badNodeOp = make(chan badOpFunc)
+	srv.badNodeOpDone = make(chan struct{})
+
 	if !srv.NoDiscovery {
 		addr, err := net.ResolveUDPAddr("udp", srv.ListenAddr)
 		if err != nil {
@@ -576,6 +624,7 @@ func (srv *Server) run(dialstate dialer) {
 	defer srv.loopWG.Done()
 	var (
 		peers        = make(map[enode.ID]*Peer)
+		badNodes     = make(map[enode.ID]*enode.Node)
 		inboundCount = 0
 		trusted      = make(map[enode.ID]bool, len(srv.TrustedNodes))
 		taskdone     = make(chan task, maxActiveDialTasks)
@@ -679,12 +728,24 @@ running:
 				// Ensure that the trusted flag is set before checking against MaxPeers.
 				c.flags |= trustedConn
 			}
+			if badNodes[c.node.ID()] != nil {
+				c.flags |= badNodeConn
+			}
 			// TODO: track in-progress inbound node IDs (pre-Peer) to avoid dialing them.
 			select {
 			case c.cont <- srv.encHandshakeChecks(peers, inboundCount, c):
 			case <-srv.quit:
 				break running
 			}
+		case n := <-srv.addBad:
+			badNodes[n.ID()] = n
+			srv.log.Trace("Add bad node", "node", n)
+			if p, ok := peers[n.ID()]; ok {
+				p.Disconnect(DiscBadNode)
+			}
+		case op := <-srv.badNodeOp:
+			op(badNodes)
+			srv.badNodeOpDone <- struct{}{}
 		case c := <-srv.addpeer:
 			// At this point the connection is past the protocol handshake.
 			// Its capabilities are known and the remote identity is verified.
@@ -761,6 +822,8 @@ func (srv *Server) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount i
 
 func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
+	case !c.is(trustedConn) && c.is(badNodeConn):
+		return DiscBadNode
 	case !c.is(trustedConn|staticDialedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
 	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
