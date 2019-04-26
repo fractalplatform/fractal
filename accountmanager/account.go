@@ -96,11 +96,11 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		CodeHash:              crypto.Keccak256Hash(nil),
 		Threshold:             1,
 		UpdateAuthorThreshold: 1,
-		AuthorVersion:         common.Hash{},
 		Authors:               []*common.Author{auth},
 		Suicide:               false,
 		Destroy:               false,
 	}
+	acctObject.SetAuthorVersion()
 	return &acctObject, nil
 }
 
