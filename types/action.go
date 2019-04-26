@@ -163,8 +163,6 @@ func (a *Action) CheckValue() bool {
 	case RegCandidate:
 		fallthrough
 	case UpdateCandidate:
-		fallthrough
-	case VoteCandidate:
 		return true
 	default:
 	}

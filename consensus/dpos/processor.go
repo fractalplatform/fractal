@@ -42,6 +42,7 @@ type UpdateCandidate struct {
 // VoteCandidate vote info
 type VoteCandidate struct {
 	Candidate string
+	Stake     *big.Int
 }
 
 // KickedCandidate kicked info
@@ -115,7 +116,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCandidate(LastEpcho, action.Sender().String(), arg.Candidate, action.Value(), height); err != nil {
+		if err := sys.VoteCandidate(LastEpcho, action.Sender().String(), arg.Candidate, arg.Stake, height); err != nil {
 			return nil, err
 		}
 	case types.KickedCandidate:

@@ -89,6 +89,11 @@ func (api *API) Candidates(detail bool) (interface{}, error) {
 // VotersByCandidate get voters info of candidate
 func (api *API) VotersByCandidate(candidate string, detail bool) (interface{}, error) {
 	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.VotersByCandidateByHeight(height, candidate, detail)
+}
+
+// VotersByCandidateByHeight get voters info of candidate
+func (api *API) VotersByCandidateByHeight(height uint64, candidate string, detail bool) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
@@ -115,6 +120,11 @@ func (api *API) VotersByCandidate(candidate string, detail bool) (interface{}, e
 // VotersByVoter get voters info of voter
 func (api *API) VotersByVoter(voter string, detail bool) (interface{}, error) {
 	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.VotersByVoterByHeight(height, voter, detail)
+}
+
+// VotersByVoterByHeight get voters info of voter
+func (api *API) VotersByVoterByHeight(height uint64, voter string, detail bool) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
