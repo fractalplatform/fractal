@@ -17,6 +17,7 @@
 package txpool
 
 import (
+	"encoding/binary"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -55,6 +56,23 @@ type bloomPath struct {
 	bloom *types.Bloom
 }
 
+// return count of bits that set
+func (p *bloomPath) getBloomSetBits() int {
+	getBits := func(num uint64) int {
+		ret := 0
+		for num > 0 {
+			ret++
+			num &= num - 1
+		}
+		return ret
+	}
+	ret := getBits(binary.BigEndian.Uint64((*p.bloom)[0:8]))
+	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[8:16]))
+	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[16:24]))
+	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[24:32]))
+	return ret
+}
+
 // add path to bloom
 func (p *bloomPath) addPath(path string) {
 	p.bloom.Add(new(big.Int).SetBytes([]byte(path)))
@@ -90,6 +108,17 @@ type txsCache struct {
 func (c *txsCache) getTarget(hash common.Hash) *bloomPath {
 	index := (int(hash[0]) | (int(hash[1]) << 8)) & cacheMask
 	return &c.cache[index]
+}
+
+func (c *txsCache) ttlCheck(tx *types.Transaction) {
+	hash := tx.Hash()
+	target := c.getTarget(hash)
+	if target.hash != hash {
+		return
+	}
+	if target.getBloomSetBits() > len(*target.bloom)/2 {
+		target.reset(hash, &types.Bloom{})
+	}
 }
 
 // add a transaction in to the cache
@@ -180,6 +209,7 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 		txSend := 0
 		retransmit := true // retransmit = true, if the tx don't send because of all peers were busy
 		tx := txObj.Tx
+		s.cache.ttlCheck(tx)
 		for name, peerInfo := range s.peers {
 			if txSend > 3 {
 				break
