@@ -31,3 +31,5 @@ func DefaultAssetNameConf() *Config {
 		SubAssetNameLength: 0,
 	}
 }
+
+const MaxDetailLength uint64 = 255
