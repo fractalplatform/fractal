@@ -478,6 +478,10 @@ func gasSetAssetOwner(gt params.GasTable, evm *EVM, contract *Contract, stack *S
 	return gt.SetOwner, nil
 }
 
+func gasWithdrawFee(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.WithdrawFee, nil
+}
+
 func gasCallEx(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return params.CallValueTransferGas + gt.Calls, nil
 }
