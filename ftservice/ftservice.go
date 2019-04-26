@@ -19,7 +19,6 @@ package ftservice
 import (
 	"math/big"
 	"sync"
-	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
@@ -88,7 +87,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
-	ftservice.snapshot = state.NewSnapshot(chainDb, ftservice.chainConfig.SnapshotInterval*uint64(time.Millisecond)/uint64(time.Second))
+	ftservice.snapshot = state.NewSnapshot(chainDb, ftservice.chainConfig.SnapshotInterval)
 	if config.Snapshot {
 		ftservice.snapshot.Start()
 	}
