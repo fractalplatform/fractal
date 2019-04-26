@@ -36,7 +36,7 @@ If opened in a browser, the import path itself leads to the API documentation:
 API stability
 -------------
 
-The package rpcapi for yaml v2 will remain stable as described in [gopkg.in](https://gopkg.in).
+The package API for yaml v2 will remain stable as described in [gopkg.in](https://gopkg.in).
 
 
 License
