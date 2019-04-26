@@ -154,8 +154,8 @@ func TestAssetObject_GetSymbol(t *testing.T) {
 		fields fields
 		want   string
 	}{
-	// TODO: Add test cases.
-	//	{"getexist",fields{}}
+		// TODO: Add test cases.
+		//	{"getexist",fields{}}
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -189,7 +189,7 @@ func TestAssetObject_SetSymbol(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -218,7 +218,7 @@ func TestAssetObject_GetDecimals(t *testing.T) {
 		fields fields
 		want   uint64
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -252,7 +252,7 @@ func TestAssetObject_SetDecimals(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -281,7 +281,7 @@ func TestAssetObject_GetAssetName(t *testing.T) {
 		fields fields
 		want   string
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -315,7 +315,7 @@ func TestAssetObject_SetAssetName(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -344,7 +344,7 @@ func TestAssetObject_GetAssetAmount(t *testing.T) {
 		fields fields
 		want   *big.Int
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -378,7 +378,7 @@ func TestAssetObject_SetAssetAmount(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -407,7 +407,7 @@ func TestAssetObject_GetAssetOwner(t *testing.T) {
 		fields fields
 		want   common.Name
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -441,7 +441,7 @@ func TestAssetObject_SetAssetOwner(t *testing.T) {
 		fields fields
 		args   args
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{

@@ -304,8 +304,8 @@ func TestAsset_GetAllAssetObject(t *testing.T) {
 		want    []*AssetObject
 		wantErr bool
 	}{
-	//
-	//{"getall", fields{astdb}, aslice, false},
+		//
+		//{"getall", fields{astdb}, aslice, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{

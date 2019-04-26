@@ -749,7 +749,7 @@ func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -782,7 +782,7 @@ func TestAccountManager_GetAccountLastChange(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -816,7 +816,7 @@ func TestAccountManager_GetSnapshotTime(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -851,7 +851,7 @@ func TestAccountManager_GetBalanceByTime(t *testing.T) {
 		want    *big.Int
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -884,7 +884,7 @@ func TestAccountManager_GetAssetFounder(t *testing.T) {
 		want    common.Name
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -917,7 +917,7 @@ func TestAccountManager_GetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -950,7 +950,7 @@ func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 		want    uint64
 		wantErr bool
 	}{
-	// TODO: Add test cases.
+		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
