@@ -505,16 +505,15 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 
 	activatedCandidateSchedule := []string{}
 	activeTotalQuantity := big.NewInt(0)
+	totalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
+		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
 		if candidateInfo.invalid() || pstate.Dpos && strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 			continue
 		}
 		activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
 		if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
 			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
-		}
-		if uint64(len(activatedCandidateSchedule)) == n {
-			break
 		}
 	}
 
@@ -539,7 +538,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			Epcho:                  epcho,
 			PreEpcho:               pstate.Epcho,
 			ActivatedTotalQuantity: big.NewInt(0),
-			TotalQuantity:          new(big.Int).SetBytes(pstate.TotalQuantity.Bytes()),
+			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,
 		}
