@@ -30,6 +30,7 @@ import (
 	am "github.com/fractalplatform/fractal/accountmanager"
 	at "github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	fm "github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
@@ -156,6 +157,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
 	am.SetSysName(common.StrToName(storedcfg.AccountName))
+	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }
 
@@ -178,6 +180,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
 	})
 	am.SetSysName(common.StrToName(g.Config.AccountName))
+	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
@@ -303,6 +306,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
 		panic(fmt.Sprintf("dpos is not exist %v", err))
+	}
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.FeeName)); !ok {
+		panic(fmt.Sprintf("fee is not exist %v", err))
 	}
 	assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
 	if err != nil {
@@ -432,6 +438,10 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 		},
 		&GenesisAccount{
 			Name:   params.DefaultChainconfig.DposName,
+			PubKey: common.HexToPubKey(""),
+		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.FeeName,
 			PubKey: common.HexToPubKey(""),
 		},
 	}

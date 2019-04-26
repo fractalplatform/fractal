@@ -196,6 +196,14 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
+	instructionSet[WITHDRAWFEE] = operation{
+		execute:       opWithdrawFee,
+		gasCost:       gasWithdrawFee,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[CALLEX] = operation{
 		execute:       opCallEx,
 		gasCost:       gasCallEx,
