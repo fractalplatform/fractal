@@ -66,6 +66,7 @@ const (
 	// This is shorter than the usual timeout because we don't want
 	// to wait if the connection is known to be bad anyway.
 	discWriteTimeout = 1 * time.Second
+	rlpxVersion      = 5
 )
 
 // errPlainMessageTooLarge is returned if a decompressed message length exceeds
@@ -83,9 +84,9 @@ type rlpx struct {
 	rw       *rlpxFrameRW
 }
 
-func newRLPX(fd net.Conn, netid, version uint) transport {
+func newRLPX(fd net.Conn, netid uint) transport {
 	fd.SetDeadline(time.Now().Add(handshakeTimeout))
-	return &rlpx{fd: fd, netID: netid, version: version}
+	return &rlpx{fd: fd, netID: netid, version: rlpxVersion}
 }
 
 func (t *rlpx) ReadMsg() (Msg, error) {
@@ -221,44 +222,6 @@ type authMsgV4 struct {
 	Rest []rlp.RawValue `rlp:"tail"`
 }
 
-func (msg authMsgV4) EncodeRLP(w io.Writer) error {
-	return rlp.Encode(w, []interface{}{msg.Signature, msg.InitiatorPubkey, msg.Nonce, msg.Version}) // version 4.5
-	//return rlp.Encode(w, []interface{}{msg.Signature, msg.InitiatorPubkey, msg.Nonce, msg.Version, msg.NetID}) // version 5
-}
-
-func (msg *authMsgV4) DecodeRLP(s *rlp.Stream) error {
-	if _, err := s.List(); err != nil {
-		return err
-	}
-	msg.Rest = []rlp.RawValue{}
-	if err := s.Decode(&msg.Signature); err != nil {
-		return err
-	}
-	if err := s.Decode(&msg.InitiatorPubkey); err != nil {
-		return err
-	}
-	if err := s.Decode(&msg.Nonce); err != nil {
-		return err
-	}
-	if err := s.Decode(&msg.Version); err != nil {
-		return err
-	}
-	if msg.Version < 5 {
-		return s.ListEnd()
-	}
-	if err := s.Decode(&msg.NetID); err != nil {
-		return nil
-	}
-	for {
-		var temp rlp.RawValue
-		if err := s.Decode(&temp); err != nil {
-			break
-		}
-		msg.Rest = append(msg.Rest, temp)
-	}
-	return s.ListEnd()
-}
-
 // RLPx v4 handshake response (defined in EIP-8).
 type authRespV4 struct {
 	RandomPubkey [pubLen]byte
@@ -267,43 +230,6 @@ type authRespV4 struct {
 	NetID        uint
 	// Ignore additional fields (for forward compatibility).
 	Rest []rlp.RawValue `rlp:"tail"`
-}
-
-func (msg authRespV4) EncodeRLP(w io.Writer) error {
-	if msg.Version < 5 {
-		return rlp.Encode(w, []interface{}{msg.RandomPubkey, msg.Nonce, msg.Version})
-	}
-	return rlp.Encode(w, []interface{}{msg.RandomPubkey, msg.Nonce, msg.Version, msg.NetID})
-}
-
-func (msg *authRespV4) DecodeRLP(s *rlp.Stream) error {
-	if _, err := s.List(); err != nil {
-		return err
-	}
-	msg.Rest = []rlp.RawValue{}
-	if err := s.Decode(&msg.RandomPubkey); err != nil {
-		return err
-	}
-	if err := s.Decode(&msg.Nonce); err != nil {
-		return err
-	}
-	if err := s.Decode(&msg.Version); err != nil {
-		return err
-	}
-	if msg.Version < 5 {
-		return s.ListEnd()
-	}
-	if err := s.Decode(&msg.NetID); err != nil {
-		return err
-	}
-	for {
-		var temp rlp.RawValue
-		if err := s.Decode(&temp); err != nil {
-			break
-		}
-		msg.Rest = append(msg.Rest, temp)
-	}
-	return s.ListEnd()
 }
 
 // secrets is called after the handshake is completed.
@@ -365,7 +291,7 @@ func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ec
 	if err != nil {
 		return s, err
 	}
-	if authRespMsg.NetID != netid && authRespMsg.Version > 4 {
+	if authRespMsg.NetID != netid {
 		return s, fmt.Errorf("handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authRespMsg.NetID)
 	}
 	if err := h.handleAuthResp(authRespMsg); err != nil {
@@ -439,7 +365,7 @@ func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, netid, veri
 	if err != nil {
 		return s, err
 	}
-	if authMsg.NetID != netid && authMsg.NetID > 0 && authMsg.Version > 4 {
+	if authMsg.NetID != netid {
 		return s, fmt.Errorf("handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authMsg.NetID)
 	}
 	return h.secrets(authPacket, authRespPacket)

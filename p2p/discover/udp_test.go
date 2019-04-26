@@ -48,9 +48,9 @@ func init() {
 var (
 	futureExp          = uint64(time.Now().Add(10 * time.Hour).Unix())
 	testTarget         = encPubkey{0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1}
-	testRemote         = rpcEndpoint{IP: net.ParseIP("1.1.1.1").To4(), UDP: 1, TCP: 2}
-	testLocalAnnounced = rpcEndpoint{IP: net.ParseIP("2.2.2.2").To4(), UDP: 3, TCP: 4}
-	testLocal          = rpcEndpoint{IP: net.ParseIP("3.3.3.3").To4(), UDP: 5, TCP: 6}
+	testRemote         = rpcEndpoint{IP: net.ParseIP("1.1.1.1").To4(), UDP: 1, TCP: 2, Rest: []rlp.RawValue{}}
+	testLocalAnnounced = rpcEndpoint{IP: net.ParseIP("2.2.2.2").To4(), UDP: 3, TCP: 4, Rest: []rlp.RawValue{}}
+	testLocal          = rpcEndpoint{IP: net.ParseIP("3.3.3.3").To4(), UDP: 5, TCP: 6, Rest: []rlp.RawValue{}}
 )
 
 type udpTest struct {
@@ -346,7 +346,8 @@ func TestUDP_successfulPing(t *testing.T) {
 			// The mirrored UDP address is the UDP packet sender
 			IP: test.remoteaddr.IP, UDP: uint16(test.remoteaddr.Port),
 			// The mirrored TCP port is the one from the ping packet
-			TCP: testRemote.TCP,
+			TCP:  testRemote.TCP,
+			Rest: []rlp.RawValue{},
 		}
 		if !reflect.DeepEqual(p.To, wantTo) {
 			t.Errorf("got pong.To %v, want %v", p.To, wantTo)
@@ -361,7 +362,8 @@ func TestUDP_successfulPing(t *testing.T) {
 		wantTo := rpcEndpoint{
 			// The mirrored UDP address is the UDP packet sender.
 			IP: test.remoteaddr.IP, UDP: uint16(test.remoteaddr.Port),
-			TCP: 0,
+			TCP:  0,
+			Rest: []rlp.RawValue{},
 		}
 		if !reflect.DeepEqual(p.To, wantTo) {
 			t.Errorf("got ping.To %v, want %v", p.To, wantTo)
@@ -397,42 +399,42 @@ var testPackets = []struct {
 	wantPacket interface{}
 }{
 	{
-		input: "362fb35d7d8d955489ce5d6031fe618c007c23f31b2b899fc055f4b995a2b3fb10443fcc2d7d39c73c472c144dc02a8c8feb7bd42e7d7e52a3c78e1af7309c711b9b99fff2224a5c7593fe154900d7d027fdaa92b284ff6d118174993829eaec0001ed05cb847f000001820cfa8215a8d790000000000000000000000000000000018208ae820d058443b9a355821234",
+		input: "baf808fb1d4ca95a2d12cef63b9eb2e04fcfd27a15b2680bbc48f8aeb2f32f58b338974f34a6780c8d9600372dc9d154f03132f025f9c3b9e4b1400f83a2da8e0703001066c5eae5755ce322fe154ce9af6d1ad7eb18ab8d04b5eb77c0c3124b0101ed05821234cb847f000001820cfa8215a8d790000000000000000000000000000000018208ae820d058443b9a355",
 		wantPacket: &ping{
 			Version:    udpVersion,
-			From:       rpcEndpoint{net.ParseIP("127.0.0.1").To4(), 3322, 5544},
-			To:         rpcEndpoint{net.ParseIP("::1"), 2222, 3333},
+			From:       rpcEndpoint{net.ParseIP("127.0.0.1").To4(), 3322, 5544, []rlp.RawValue{}},
+			To:         rpcEndpoint{net.ParseIP("::1"), 2222, 3333, []rlp.RawValue{}},
 			Expiration: 1136239445,
 			NetID:      0x1234,
 			Rest:       []rlp.RawValue{},
 		},
 	},
 	{
-		input: "845c444b282dd6d1373e9e2ea96da216efd0aef66469283273facc79a63b67df661af92b7b420892f81a388876af2480c7faede456083b1daa519e78fe69f25d5a0eb98b8f4a22e758e9689742197c19cc34db86b6ec3fefdb6644043fc51e450001ef05cb847f000001820cfa8215a8d790000000000000000000000000000000018208ae820d058443b9a3558212340102",
+		input: "ddcc57b5a22cf69ce74ed7895616b9aac61c3ef64595019df4369d9d34714470b1744f51b7ce182e44397aaaa18bb16d162ae7243db583562d2873829cc9d47226c4822a7a141a0d2832d5b6f97195d690212934f7c18ae3f7be7342e0d99f690001ef05821234cb847f000001820cfa8215a8d790000000000000000000000000000000018208ae820d058443b9a3550102",
 		wantPacket: &ping{
 			Version:    udpVersion,
-			From:       rpcEndpoint{net.ParseIP("127.0.0.1").To4(), 3322, 5544},
-			To:         rpcEndpoint{net.ParseIP("::1"), 2222, 3333},
+			From:       rpcEndpoint{net.ParseIP("127.0.0.1").To4(), 3322, 5544, []rlp.RawValue{}},
+			To:         rpcEndpoint{net.ParseIP("::1"), 2222, 3333, []rlp.RawValue{}},
 			Expiration: 1136239445,
 			NetID:      0x1234,
 			Rest:       []rlp.RawValue{{0x01}, {0x02}},
 		},
 	},
 	{
-		input: "2245a1070244e7f087f35ac817563b3da8c1ea1aa5155d10447a43b8270da6a5805e6077f409aa4371649ff90181c159c66727fb744e4c7e93d2d93b2ad0705f2e070bec0b31d54df12f8a15682c8080c3f4a5e331f4f94f38bc07c8fb5d5c550001f83f05d79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355821234c50102030405",
+		input: "fd933778909b6e5b8ad01e6e8aaf08d5a6ddb913c252537c7f953e72c5c57bad076ee54a658bd4d45bf83a0e1b0b035712d3082b207d5674ce4279dee804b5f44c867648edefbe7c22278ce7e949073d1b1faf89a9e200711d10db0c1ab58d8d0001f83f05821234d79020010db83c4d001500000000abcdef12820cfa8215a8d79020010db885a308d313198a2e037073488208ae82823a8443b9a355c50102030405",
 		wantPacket: &ping{
 			Version:    udpVersion,
-			From:       rpcEndpoint{net.ParseIP("2001:db8:3c4d:15::abcd:ef12"), 3322, 5544},
-			To:         rpcEndpoint{net.ParseIP("2001:db8:85a3:8d3:1319:8a2e:370:7348"), 2222, 33338},
+			From:       rpcEndpoint{net.ParseIP("2001:db8:3c4d:15::abcd:ef12"), 3322, 5544, []rlp.RawValue{}},
+			To:         rpcEndpoint{net.ParseIP("2001:db8:85a3:8d3:1319:8a2e:370:7348"), 2222, 33338, []rlp.RawValue{}},
 			Expiration: 1136239445,
 			NetID:      0x1234,
 			Rest:       []rlp.RawValue{{0xC5, 0x01, 0x02, 0x03, 0x04, 0x05}},
 		},
 	},
 	{
-		input: "8b4e9f12a4b4f0f840361aec1555d6782f742a1cbcc1fad71470a20fbc7094f2337ec90773f44030405745e8ed8841d0d390b5e7ff12b7f502eb78a8e8485ab746a1b64f282379b024547507b0771589a9771ced8ff0d659557ea0aa255bc6340002f84ad79020010db885a308d313198a2e037073488208ae82823aa0fbc914b16819237dcd8801d7e53f69e9719adecb3cc0e790c57e91ca4461c9548443b9a35582123405c6010203c2040506",
+		input: "a4d9a8e8a9f3ebac80e6b3f0307b9669718c9c1cd806b8ea9cd8c91173f200928c0be2bf3a590ba8e75906702e862d875807f5aa5095b36f2e8c822cbbf41f801b3679d1449f88f51be132c36f297970c67403094e08ac722464daa0932c8b520002f84a05821234d79020010db885a308d313198a2e037073488208ae82823aa0fbc914b16819237dcd8801d7e53f69e9719adecb3cc0e790c57e91ca4461c9548443b9a355c6010203c2040506",
 		wantPacket: &pong{
-			To:         rpcEndpoint{net.ParseIP("2001:db8:85a3:8d3:1319:8a2e:370:7348"), 2222, 33338},
+			To:         rpcEndpoint{net.ParseIP("2001:db8:85a3:8d3:1319:8a2e:370:7348"), 2222, 33338, []rlp.RawValue{}},
 			ReplyTok:   common.Hex2Bytes("fbc914b16819237dcd8801d7e53f69e9719adecb3cc0e790c57e91ca4461c954"),
 			Expiration: 1136239445,
 			NetID:      0x1234,
@@ -441,7 +443,7 @@ var testPackets = []struct {
 		},
 	},
 	{
-		input: "4f8650d7a49e18911c2b846dc9a10019561522929688f5c2fe0142b6115422474672a3f11c2e773ab843cb31ad755848b2fb2a21d39e6fa184dec819c02696263caf3b141a0dad788e28170d33035c860fb77b97663fc4c1f89294b636f003e50003f852b840ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd31387574077f301b421bc84df7266c44e9e6d569fc56be00812904767bf5ccd1fc7f8443b9a3558212340582999983999999",
+		input: "49c89e22264bb616863224e25d694eae4ad9a9ba0ab1a48eff7ef5d4eb5f5177bd80393a17e89648371af4ef188a3d60113fae8de7af8a3222e1f4ee7c4637150dd1ee4512e6273e18b9174bc6a802066d416aa23ebafcc66267c87cdf13845e0003f85205821234b840ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd31387574077f301b421bc84df7266c44e9e6d569fc56be00812904767bf5ccd1fc7f8443b9a35582999983999999",
 		wantPacket: &findnode{
 			Target:     hexEncPubkey("ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd31387574077f301b421bc84df7266c44e9e6d569fc56be00812904767bf5ccd1fc7f"),
 			Expiration: 1136239445,
@@ -451,32 +453,36 @@ var testPackets = []struct {
 		},
 	},
 	{
-		input: "6354cb90390d1be515b145b483f0fe9c946ba83577e1911a5cb124604796a4f03acedc1f10427f8e3e2c548c0b9c68475aa910d4ad4cb338f6483d1974b25d722a89365eac69ac678eb07db31043f428103f1c780a1ff6f847648091974dd57e0104f9015ff90150f84d846321163782115c82115db8403155e1427f85f10a5c9a7755877748041af1bcd8d474ec065eb33df57a97babf54bfd2103575fa829115d224c523596b401065a97f74010610fce76382c0bf32f84984010203040101b840312c55512422cf9b8a4097e9a6ad79402e87a15ae909a4bfefa22398f03d20951933beea1e4dfa6f968212385e829f04c2d314fc2d4e255e0d3bc08792b069dbf8599020010db83c4d001500000000abcdef12820d05820d05b84038643200b172dcfef857492156971f0e6aa2c538d8b74010f8e140811d53b98c765dd2d96126051913f44582e8c199ad7c6d6819e9a56483f637feaac9448aacf8599020010db885a308d313198a2e037073488203e78203e8b8408dcab8618c3253b558d459da53bd8fa68935a719aff8b811197101a4b2b47dd2d47295286fc00cc081bb542d760717d1bdd6bec2c37cd72eca367d6dd3b9df738443b9a35582123405010203",
+		input: "1e46b2c49dfb74739a69a24c468d4d88832b92644ca0e0f242ab0d4479220cfb83aceecfd17c95819496716eb119c396daf0bc21a417a0d1807442c5698bb1b5726a321b8a868e52c7540afe16f9cc1a315ce609e171826f060ea49947fc7fa50104f9015f05821234f90150f84d846321163782115c82115db8403155e1427f85f10a5c9a7755877748041af1bcd8d474ec065eb33df57a97babf54bfd2103575fa829115d224c523596b401065a97f74010610fce76382c0bf32f84984010203040101b840312c55512422cf9b8a4097e9a6ad79402e87a15ae909a4bfefa22398f03d20951933beea1e4dfa6f968212385e829f04c2d314fc2d4e255e0d3bc08792b069dbf8599020010db83c4d001500000000abcdef12820d05820d05b84038643200b172dcfef857492156971f0e6aa2c538d8b74010f8e140811d53b98c765dd2d96126051913f44582e8c199ad7c6d6819e9a56483f637feaac9448aacf8599020010db885a308d313198a2e037073488203e78203e8b8408dcab8618c3253b558d459da53bd8fa68935a719aff8b811197101a4b2b47dd2d47295286fc00cc081bb542d760717d1bdd6bec2c37cd72eca367d6dd3b9df738443b9a355010203",
 		wantPacket: &neighbors{
 			Nodes: []rpcNode{
 				{
-					ID:  hexEncPubkey("3155e1427f85f10a5c9a7755877748041af1bcd8d474ec065eb33df57a97babf54bfd2103575fa829115d224c523596b401065a97f74010610fce76382c0bf32"),
-					IP:  net.ParseIP("99.33.22.55").To4(),
-					UDP: 4444,
-					TCP: 4445,
+					ID:   hexEncPubkey("3155e1427f85f10a5c9a7755877748041af1bcd8d474ec065eb33df57a97babf54bfd2103575fa829115d224c523596b401065a97f74010610fce76382c0bf32"),
+					IP:   net.ParseIP("99.33.22.55").To4(),
+					UDP:  4444,
+					TCP:  4445,
+					Rest: []rlp.RawValue{},
 				},
 				{
-					ID:  hexEncPubkey("312c55512422cf9b8a4097e9a6ad79402e87a15ae909a4bfefa22398f03d20951933beea1e4dfa6f968212385e829f04c2d314fc2d4e255e0d3bc08792b069db"),
-					IP:  net.ParseIP("1.2.3.4").To4(),
-					UDP: 1,
-					TCP: 1,
+					ID:   hexEncPubkey("312c55512422cf9b8a4097e9a6ad79402e87a15ae909a4bfefa22398f03d20951933beea1e4dfa6f968212385e829f04c2d314fc2d4e255e0d3bc08792b069db"),
+					IP:   net.ParseIP("1.2.3.4").To4(),
+					UDP:  1,
+					TCP:  1,
+					Rest: []rlp.RawValue{},
 				},
 				{
-					ID:  hexEncPubkey("38643200b172dcfef857492156971f0e6aa2c538d8b74010f8e140811d53b98c765dd2d96126051913f44582e8c199ad7c6d6819e9a56483f637feaac9448aac"),
-					IP:  net.ParseIP("2001:db8:3c4d:15::abcd:ef12"),
-					UDP: 3333,
-					TCP: 3333,
+					ID:   hexEncPubkey("38643200b172dcfef857492156971f0e6aa2c538d8b74010f8e140811d53b98c765dd2d96126051913f44582e8c199ad7c6d6819e9a56483f637feaac9448aac"),
+					IP:   net.ParseIP("2001:db8:3c4d:15::abcd:ef12"),
+					UDP:  3333,
+					TCP:  3333,
+					Rest: []rlp.RawValue{},
 				},
 				{
-					ID:  hexEncPubkey("8dcab8618c3253b558d459da53bd8fa68935a719aff8b811197101a4b2b47dd2d47295286fc00cc081bb542d760717d1bdd6bec2c37cd72eca367d6dd3b9df73"),
-					IP:  net.ParseIP("2001:db8:85a3:8d3:1319:8a2e:370:7348"),
-					UDP: 999,
-					TCP: 1000,
+					ID:   hexEncPubkey("8dcab8618c3253b558d459da53bd8fa68935a719aff8b811197101a4b2b47dd2d47295286fc00cc081bb542d760717d1bdd6bec2c37cd72eca367d6dd3b9df73"),
+					IP:   net.ParseIP("2001:db8:85a3:8d3:1319:8a2e:370:7348"),
+					UDP:  999,
+					TCP:  1000,
+					Rest: []rlp.RawValue{},
 				},
 			},
 			Expiration: 1136239445,

@@ -83,6 +83,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		router.StationUnregister(station)
 		url := remote.peer.Node().String()
 		router.SendTo(station, nil, router.DelPeerNotify, &url)
+		time.Sleep(10 * time.Second) // delay to prevent the reconnection
 	}()
 
 	monitor := make(map[int][]int64)
@@ -102,7 +103,6 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 
 		ret := checkDDOS(monitor, e)
 		if ret {
-			time.Sleep(10 * time.Second) // delay to prevent the reconnection
 			router.SendTo(nil, nil, router.DisconectCtrl, e.From)
 			//ToDo blacklist
 			return fmt.Errorf("DDos %x", e.From.Name())
@@ -173,6 +173,7 @@ func (adaptor *ProtoAdaptor) msgSend(e *router.Event) error {
 func (adaptor *ProtoAdaptor) msgBroadcast(e *router.Event) {
 	te := *e
 	te.To = nil
+	te.From = nil
 	pack, err := event2pack(&te)
 	if err != nil {
 		return

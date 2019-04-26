@@ -57,45 +57,20 @@ func TestSharedSecret(t *testing.T) {
 
 func TestCompatibility(t *testing.T) {
 	tests := []struct {
-		netid1   uint
-		version1 uint
-		netid2   uint
-		version2 uint
-		err      error
+		netid1 uint
+		netid2 uint
+		err    error
 	}{
 		{
-			netid1:   0x100,
-			netid2:   0x100,
-			version1: 4,
-			version2: 4,
-			err:      nil,
-		},
-		{
-			netid1:   0x100,
-			netid2:   0x200,
-			version1: 4,
-			version2: 4,
-			err:      nil,
-		},
-		{
-			netid1:   0x100,
-			netid2:   0x100,
-			version1: 4,
-			version2: 5,
-			err:      nil,
-		},
-		{
-			netid1:   0x100,
-			netid2:   0x200,
-			version1: 4,
-			version2: 5,
-			err:      nil,
+			netid1: 0x100,
+			netid2: 0x100,
+			err:    nil,
 		},
 	}
-	for i, test := range tests {
-		err := testEncHandshake(nil, test.netid1, test.version1, test.netid2, test.version2)
+	for _, test := range tests {
+		err := testEncHandshake(nil, test.netid1, test.netid2)
 		if !reflect.DeepEqual(err, test.err) {
-			t.Errorf("test-1 %d: 0x%x-%d:0x%x-%d error mismatch: got %q, want %q", i, test.netid1, test.version1, test.netid2, test.version2, err, test.err)
+			t.Errorf("TestCompatibility error mismatch: got %q, want %q", err, test.err)
 		}
 	}
 }
@@ -103,7 +78,7 @@ func TestCompatibility(t *testing.T) {
 func TestEncHandshake(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		start := time.Now()
-		if err := testEncHandshake(nil, 1<<uint(i), rlpxVersion, 1<<uint(i), rlpxVersion); err != nil {
+		if err := testEncHandshake(nil, 1<<uint(i), 1<<uint(i)); err != nil {
 			t.Fatalf("i=%d %v", i, err)
 		}
 		t.Logf("(without token) %d %v\n", i+1, time.Since(start))
@@ -112,7 +87,7 @@ func TestEncHandshake(t *testing.T) {
 		tok := make([]byte, shaLen)
 		rand.Reader.Read(tok)
 		start := time.Now()
-		if err := testEncHandshake(tok, 1<<uint(i), rlpxVersion, 1<<uint(i), rlpxVersion); err != nil {
+		if err := testEncHandshake(tok, 1<<uint(i), 1<<uint(i)); err != nil {
 			t.Fatalf("i=%d %v", i, err)
 		}
 		t.Logf("(with token) %d %v\n", i+1, time.Since(start))
@@ -121,27 +96,21 @@ func TestEncHandshake(t *testing.T) {
 
 func TestEncHandshakeErrors(t *testing.T) {
 	tests := []struct {
-		netid1   uint
-		version1 uint
-		netid2   uint
-		version2 uint
-		err      [2]error
+		netid1 uint
+		netid2 uint
+		err    [2]error
 	}{
 		{
-			netid1:   0x0,
-			netid2:   0x100,
-			version1: 5,
-			version2: 5,
+			netid1: 0x0,
+			netid2: 0x100,
 			err: [2]error{
 				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
 				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
 			},
 		},
 		{
-			netid1:   0x100,
-			netid2:   0x0,
-			version1: 5,
-			version2: 5,
+			netid1: 0x100,
+			netid2: 0x0,
 			err: [2]error{
 				fmt.Errorf("receiver side error: handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", 0x0, 0x100),
 				fmt.Errorf("initiator side error: handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", 0x100, 0x0),
@@ -150,14 +119,14 @@ func TestEncHandshakeErrors(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		err := testEncHandshake(nil, test.netid1, test.version1, test.netid2, test.version2)
+		err := testEncHandshake(nil, test.netid1, test.netid2)
 		if !(reflect.DeepEqual(err, test.err[0]) || reflect.DeepEqual(err, test.err[1])) {
 			t.Errorf("test %d: error mismatch: got %q, want %q or %q", i, err, test.err[0], test.err[1])
 		}
 	}
 }
 
-func testEncHandshake(token []byte, netid1, version1, netid2, version2 uint) error {
+func testEncHandshake(token []byte, netid1, netid2 uint) error {
 	type result struct {
 		side   string
 		pubkey *ecdsa.PublicKey
@@ -167,7 +136,7 @@ func testEncHandshake(token []byte, netid1, version1, netid2, version2 uint) err
 		prv0, _  = crypto.GenerateKey()
 		prv1, _  = crypto.GenerateKey()
 		fd0, fd1 = net.Pipe()
-		c0, c1   = newRLPX(fd0, netid1, version1).(*rlpx), newRLPX(fd1, netid2, version2).(*rlpx)
+		c0, c1   = newRLPX(fd0, netid1).(*rlpx), newRLPX(fd1, netid2).(*rlpx)
 		output   = make(chan result)
 	)
 

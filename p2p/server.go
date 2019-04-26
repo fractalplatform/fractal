@@ -50,8 +50,6 @@ const (
 
 	// Maximum amount of time allowed for writing a complete message.
 	frameWriteTimeout = 20 * time.Second
-
-	rlpxVersion = 5
 )
 
 var errServerStopped = errors.New("server stopped")
@@ -62,28 +60,29 @@ type Config struct {
 	PrivateKey *ecdsa.PrivateKey
 
 	// NetworkID is ID of network
-	NetworkID uint `mapstructure:"networkid"`
+	NetworkID uint `mapstructure:"p2p-networkdID"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
-	MaxPeers int `mapstructure:"maxpeers"`
+	MaxPeers int `mapstructure:"p2p-maxpeers"`
 
 	// MaxPendingPeers is the maximum number of peers that can be pending in the
 	// handshake phase, counted separately for inbound and outbound connections.
 	// Zero defaults to preset values.
-	MaxPendingPeers int `mapstructure:"maxpendpeers"`
+	MaxPendingPeers int `mapstructure:"p2p-maxpendpeers"`
 
 	// DialRatio controls the ratio of inbound to dialed connections.
 	// Example: a DialRatio of 2 allows 1/2 of connections to be dialed.
 	// Setting DialRatio to zero defaults it to 3.
-	DialRatio int `mapstructure:"dialratio"`
+	DialRatio int `mapstructure:"p2p-dialratio"`
 
 	// NoDiscovery can be used to disable the peer discovery mechanism.
 	// Disabling is useful for protocol debugging (manual topology).
-	NoDiscovery bool `mapstructure:"nodiscover"`
+	NoDiscovery bool `mapstructure:"p2p-nodiscover"`
 
 	// Name sets the node name of this server.
-	Name string `mapstructure:"name"`
+	// Use common.MakeName to create a name that follows existing conventions.
+	Name string `mapstructure:"p2p-nodename"`
 
 	// BootstrapNodes are used to establish connectivity
 	// with the rest of the network.
@@ -100,11 +99,11 @@ type Config struct {
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
 	// IP networks contained in the list are considered.
-	NetRestrict *netutil.Netlist
+	NetRestrict *netutil.Netlist `mapstructure:"p2p-badIP"`
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
-	NodeDatabase string `mapstructure:"nodedb"`
+	NodeDatabase string `mapstructure:"p2p-nodedb"`
 
 	// Protocols should contain the protocols supported
 	// by the server. Matching protocols are launched for
@@ -117,7 +116,7 @@ type Config struct {
 	// If the port is zero, the operating system will pick a port. The
 	// ListenAddr field will be updated with the actual address when
 	// the server is started.
-	ListenAddr string `mapstructure:"listenaddr"`
+	ListenAddr string `mapstructure:"p2p-listenaddr"`
 
 	// If set to a non-nil value, the given NAT port mapper
 	// is used to make the listening port available to the
@@ -129,7 +128,7 @@ type Config struct {
 	Dialer NodeDialer
 
 	// If NoDial is true, the server will not dial any peers.
-	NoDial bool `mapstructure:"nodial"`
+	NoDial bool `mapstructure:"p2p-nodial"`
 
 	// If EnableMsgEvents is set then the server will emit PeerEvents
 	// whenever a message is sent to or received from a peer
@@ -146,7 +145,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn, uint, uint) transport
+	newTransport func(net.Conn, uint) transport
 	newPeerHook  func(*Peer)
 
 	lock    sync.Mutex // protects running
@@ -855,7 +854,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	if self == nil {
 		return errors.New("shutdown")
 	}
-	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID, rlpxVersion), flags: flags, cont: make(chan error)}
+	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
 		c.close(err)
