@@ -215,7 +215,7 @@ func (a *Action) Hash() common.Hash {
 	if hash := a.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := rlpHash(a)
+	v := RlpHash(a)
 	a.hash.Store(v)
 	return v
 }

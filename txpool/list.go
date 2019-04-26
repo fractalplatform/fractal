@@ -20,6 +20,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -89,11 +90,13 @@ func (l *txList) Forward(threshold uint64) []*types.Transaction {
 	return l.txs.Forward(threshold)
 }
 
-// Filter removes all transactions from the list with a cost or gas limit higher
+// Filter removes all transactions from the list with a cost or gas limit or no permissions higher
 // than the provided thresholds. Every removed transaction is returned for any
 // post-removal maintenance. Strict-mode invalidated transactions are also
 // returned.
-func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, getBalance func(name common.Name, assetID uint64, typeID uint64) (*big.Int, error)) ([]*types.Transaction, []*types.Transaction) {
+func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, signer types.Signer,
+	getBalance func(name common.Name, assetID uint64, typeID uint64) (*big.Int, error),
+	recoverTx func(signer types.Signer, tx *types.Transaction) error) ([]*types.Transaction, []*types.Transaction) {
 	// If all transactions are below the threshold, short circuit
 	if l.gascostcap.Cmp(costLimit) > 0 {
 		l.gascostcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
@@ -105,7 +108,17 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, getBalance func(nam
 	// Filter out all the transactions above the account's funds
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
 		act := tx.GetActions()[0]
-		balance, _ := getBalance(act.Sender(), act.AssetID(), 0)
+		balance, err := getBalance(act.Sender(), act.AssetID(), 0)
+		if err != nil {
+			log.Warn("txpool filter get balance failed", "err", err)
+			return true
+		}
+
+		if err := recoverTx(signer, tx); err != nil {
+			log.Warn("txpool filter recover transaction failed", "err", err)
+			return true
+		}
+
 		// todo change action
 		return act.Value().Cmp(balance) > 0 || tx.Cost().Cmp(costLimit) > 0 || act.Gas() > gasLimit
 	})

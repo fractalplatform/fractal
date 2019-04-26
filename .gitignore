@@ -6,6 +6,7 @@
 build/bin
 build/_workspace
 build/test_sdk
+build/testdatadir
 
 *.bak
 

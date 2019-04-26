@@ -101,10 +101,7 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 
 // RegCandidate
 func (acc *Account) RegCandidate(to common.Name, value *big.Int, id uint64, gas uint64, url string, state *big.Int) []byte {
-	arg := &args.RegisterCandidate{
-		Url:   url,
-		Stake: state,
-	}
+	arg := &args.RegisterCandidate{URL: url}
 	payload, err := rlp.EncodeToBytes(arg)
 	if err != nil {
 		panic(err)
@@ -131,10 +128,7 @@ func (acc *Account) RegCandidate(to common.Name, value *big.Int, id uint64, gas 
 
 // UpdateCandidate
 func (acc *Account) UpdateCandidate(to common.Name, value *big.Int, id uint64, gas uint64, url string, state *big.Int) []byte {
-	arg := &args.UpdateCandidate{
-		Url:   url,
-		Stake: state,
-	}
+	arg := &args.UpdateCandidate{URL: url}
 	payload, err := rlp.EncodeToBytes(arg)
 	if err != nil {
 		panic(err)
@@ -186,7 +180,6 @@ func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, ga
 func (acc *Account) VoteCandidate(to common.Name, value *big.Int, id uint64, gas uint64, candidate string, state *big.Int) []byte {
 	arg := &args.VoteCandidate{
 		Candidate: candidate,
-		Stake:     state,
 	}
 	payload, err := rlp.EncodeToBytes(arg)
 	if err != nil {
