@@ -570,7 +570,7 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 		assetID     uint64
 	}
 	//asset ID = 1
-	acctm.ast.IssueAsset("ziz", 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""))
+	acctm.ast.IssueAsset("ziz", 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
 	id, _ := acctm.ast.GetAssetIdByName("ziz")
 	t.Logf("GetAccountBalanceByID id=%v", id)
 	if err := acctm.AddAccountBalanceByID(common.Name("a123456789aeee"), id, big.NewInt(800)); err != nil {
@@ -625,7 +625,7 @@ func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 	type args struct {
 		name string
 	}
-	ast1, err := asset.NewAssetObject("ziz", 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""))
+	ast1, err := asset.NewAssetObject("ziz", 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
 	if err != nil {
 		t.Errorf("new asset object err")
 	}
@@ -666,7 +666,7 @@ func TestAccountManager_GetAssetInfoByID(t *testing.T) {
 		assetID uint64
 	}
 
-	ast1, err := asset.NewAssetObject("ziz", 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""))
+	ast1, err := asset.NewAssetObject("ziz", 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
 	if err != nil {
 		t.Errorf("new asset object err")
 	}
@@ -1342,18 +1342,33 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 	//	t.Fatal("IssueAsset err", err)
 	//}
 
-	ast1, err := asset.NewAssetObject("ziz0123456789ziz", 0, "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a0123456789ziz"), big.NewInt(100000), common.Name(""))
+	ast1, err := asset.NewAssetObject("ziz0123456789ziz", 0, "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a0123456789ziz"), big.NewInt(100000), common.Name(""), "")
 	if err != nil {
 		t.Fatal("IssueAsset err", err)
 	}
 
-	ast3, err := asset.NewAssetObject("ziz0123456789", 0, "ziz", big.NewInt(2), 18, common.Name("a123456777777"), common.Name("a123456789aeee"), big.NewInt(2), common.Name(""))
+	ast3, err := asset.NewAssetObject("ziz0123456789", 0, "ziz", big.NewInt(2), 18, common.Name("a123456777777"), common.Name("a123456789aeee"), big.NewInt(2), common.Name(""), "")
 	if err != nil {
 		t.Fatal("IssueAsset err", err)
 	}
 	//asset id =2
-	ast2, err := asset.NewAssetObject("ziz0123456789zi", 0, "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(12000), common.Name(""))
+	ast2, err := asset.NewAssetObject("ziz0123456789zi", 0, "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(12000), common.Name(""), "")
 	if err != nil {
+		t.Fatal("IssueAsset err", err)
+	}
+
+	ast4, err := asset.NewAssetObject("ziz0123456789zi", 0, "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(12000), common.Name(""), "this")
+	if err != nil {
+		t.Fatal("IssueAsset err", err)
+	}
+
+	detail := "aaa"
+	for i := 0; i < 200; i++ {
+		detail += "aaa"
+	}
+
+	_, err = asset.NewAssetObject("ziz0123456789zi", 0, "ziz", big.NewInt(2), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(12000), common.Name(""), detail)
+	if err != asset.ErrDetailTooLong {
 		t.Fatal("IssueAsset err", err)
 	}
 
@@ -1372,6 +1387,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 		{"ownernotexist", fields{sdb, ast}, args{ast1}, true},
 		{"foundernotexist", fields{sdb, ast}, args{ast3}, true},
 		{"ownerexist", fields{sdb, ast}, args{ast2}, false},
+		{"detaillegal", fields{sdb, ast}, args{ast4}, true},
 	}
 
 	for _, tt := range tests {

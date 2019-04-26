@@ -1164,7 +1164,7 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 		}
 	}
 
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract()); err != nil {
+	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail()); err != nil {
 		return err
 	}
 
