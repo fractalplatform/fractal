@@ -1,3 +1,19 @@
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package feemanager
 
 import (
@@ -62,12 +78,12 @@ func TestRecordFeeInSystem(t *testing.T) {
 	}
 
 	testFeeInfo := []*testFee{
-		{1, "test.tt", uint64(common.ContractName), uint64(2), big.NewInt(200), big.NewInt(700)},
-		{0, "test.tt", uint64(common.ContractName), uint64(1), big.NewInt(100), big.NewInt(100)},
-		{3, "test.tt", uint64(common.ContractName), uint64(4), big.NewInt(400), big.NewInt(400)},
-		{2, "test.tt", uint64(common.ContractName), uint64(3), big.NewInt(300), big.NewInt(300)},
-		{1, "test.tt", uint64(common.ContractName), uint64(2), big.NewInt(500), big.NewInt(700)},
-		{0, "test.tt1", uint64(common.AssetName), uint64(1), big.NewInt(600), big.NewInt(600)},
+		{1, "testtest.tt", uint64(common.ContractName), uint64(2), big.NewInt(200), big.NewInt(700)},
+		{0, "testtest.tt", uint64(common.ContractName), uint64(1), big.NewInt(100), big.NewInt(100)},
+		{3, "testtest.tt", uint64(common.ContractName), uint64(4), big.NewInt(400), big.NewInt(400)},
+		{2, "testtest.tt", uint64(common.ContractName), uint64(3), big.NewInt(300), big.NewInt(300)},
+		{1, "testtest.tt", uint64(common.ContractName), uint64(2), big.NewInt(500), big.NewInt(700)},
+		{0, "testtest.tt1", uint64(common.AssetName), uint64(1), big.NewInt(600), big.NewInt(600)},
 	}
 
 	for _, tf := range testFeeInfo {
@@ -130,16 +146,16 @@ func addAssetAndAccount() error {
 	}
 
 	var (
-		tname  = common.Name("testact1")
+		tname  = common.Name("testtest.testact1")
 		pubKey = new(common.PubKey)
 	)
 
 	tests := []args{
 		// TODO: Add test cases.
-		{"asset1", "s1", big.NewInt(0), 2, tname, tname},
-		{"asset2", "s2", big.NewInt(0), 2, tname, tname},
-		{"asset3", "s3", big.NewInt(0), 2, tname, tname},
-		{"asset4", "s4", big.NewInt(0), 2, tname, tname},
+		{"assettest.asset1", "s1", big.NewInt(0), 2, tname, tname},
+		{"assettest.asset2", "s2", big.NewInt(0), 2, tname, tname},
+		{"assettest.asset3", "s3", big.NewInt(0), 2, tname, tname},
+		{"assettest.asset4", "s4", big.NewInt(0), 2, tname, tname},
 	}
 
 	if err := acctm.CreateAccount(tname, tname, 0, 0, *pubKey); err != nil {
@@ -166,12 +182,12 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 	}
 
 	testFeeInfo := []*testFee{
-		{1, "asset1", uint64(common.AssetName), uint64(2), big.NewInt(200), big.NewInt(700)},
-		{0, "asset1", uint64(common.AssetName), uint64(1), big.NewInt(100), big.NewInt(100)},
-		{3, "asset1", uint64(common.AssetName), uint64(4), big.NewInt(400), big.NewInt(400)},
-		{2, "asset1", uint64(common.AssetName), uint64(3), big.NewInt(300), big.NewInt(300)},
-		{1, "asset1", uint64(common.AssetName), uint64(2), big.NewInt(500), big.NewInt(700)},
-		{0, "testact1", uint64(common.CoinbaseName), uint64(1), big.NewInt(600), big.NewInt(600)},
+		{1, "assettest.asset1", uint64(common.AssetName), uint64(2), big.NewInt(200), big.NewInt(700)},
+		{0, "assettest.asset1", uint64(common.AssetName), uint64(1), big.NewInt(100), big.NewInt(100)},
+		{3, "assettest.asset1", uint64(common.AssetName), uint64(4), big.NewInt(400), big.NewInt(400)},
+		{2, "assettest.asset1", uint64(common.AssetName), uint64(3), big.NewInt(300), big.NewInt(300)},
+		{1, "assettest.asset1", uint64(common.AssetName), uint64(2), big.NewInt(500), big.NewInt(700)},
+		{0, "testtest.testact1", uint64(common.CoinbaseName), uint64(1), big.NewInt(600), big.NewInt(600)},
 	}
 
 	for _, tf := range testFeeInfo {
@@ -202,21 +218,13 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 	}
 
 	//check
-	objectFee, err := fm.getObjectFeeByName(common.Name(testFeeInfo[0].objectName))
+	objectFee, err := fm.GetObjectFeeByName(common.Name(testFeeInfo[0].objectName))
 
-	if err != nil || len(objectFee.AssetFees) != 0 {
+	if err != nil || objectFee == nil {
 		t.Errorf("check withdraw fee from system failed, err:%v", err)
 	}
 
 	for _, tf := range testFeeInfo {
-		if tf.objectName == testFeeInfo[0].objectName {
-			//check account balance
-			value, err := fm.accountDB.GetAccountBalanceByID(common.Name("testact1"), tf.assetID, 0)
-			if err != nil || value.Cmp(tf.totalValue) != 0 {
-				t.Errorf("check account balances failed, name:%v, value:%v, err:%v", tf.objectName, value, err)
-			}
-			continue
-		}
 
 		index := tf.assetIndex
 		objectName := common.Name(tf.objectName)
@@ -237,15 +245,32 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 			return
 		}
 
+		if tf.objectName == testFeeInfo[0].objectName {
+			//check withdraw account balance
+			value, err := fm.accountDB.GetAccountBalanceByID(common.Name("testtest.testact1"), tf.assetID, 0)
+			if err != nil || value.Cmp(tf.totalValue) != 0 {
+				t.Errorf("check account balances failed, name:%v, value:%v, err:%v", tf.objectName, value, err)
+			}
+		}
+
 		if objectFee.ObjectFeeID != objectID || objectFee.ObjectType != objectType {
 			t.Errorf("check object id and type failed")
 		}
 
 		/*test asset info*/
 		assetFee := objectFee.AssetFees[index]
-		if assetFee.AssetID != assetID || assetFee.TotalFee.Cmp(totalValue) != 0 ||
-			assetFee.RemainFee.Cmp(totalValue) != 0 {
+		if assetFee.AssetID != assetID || assetFee.TotalFee.Cmp(totalValue) != 0 {
 			t.Errorf("check asset fee failed, objectName:%v, assetId:%d", objectName, assetID)
+		}
+
+		if tf.objectName == testFeeInfo[0].objectName {
+			if assetFee.RemainFee.Cmp(big.NewInt(0)) != 0 {
+				t.Errorf("check asset remain failed, objectName:%v, assetId:%d", objectName, assetID)
+			}
+		} else {
+			if assetFee.RemainFee.Cmp(totalValue) != 0 {
+				t.Errorf("check asset remain failed, objectName:%v, assetId:%d", objectName, assetID)
+			}
 		}
 	}
 }

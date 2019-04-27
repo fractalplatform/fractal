@@ -1,3 +1,19 @@
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package feemanager
 
 import (
@@ -40,6 +56,7 @@ type AssetFee struct {
 type ObjectFee struct {
 	ObjectFeeID uint64      `json:"objectFeeID"`
 	ObjectType  uint64      `json:"objectType"`
+	ObjectName  string      `json:"objectName"`
 	AssetFees   []*AssetFee `json:"assetFee"`
 }
 
@@ -97,7 +114,8 @@ func (fm *FeeManager) getFeeCounter() (uint64, error) {
 	return objectFeeCounter, nil
 }
 
-func (fm *FeeManager) getObjectFeeByName(objectName common.Name) (*ObjectFee, error) {
+//GetObjectFeeByName get object fee by name
+func (fm *FeeManager) GetObjectFeeByName(objectName common.Name) (*ObjectFee, error) {
 	objectFeeID, err := fm.getObjectFeeIDByName(objectName)
 
 	if err != nil || objectFeeID == 0 {
@@ -156,6 +174,7 @@ func (fm *FeeManager) createObjectFee(objectName common.Name, objectType uint64)
 
 	feeCounter = feeCounter + 1
 	objectFee := &ObjectFee{ObjectFeeID: feeCounter,
+		ObjectName: objectName.String(),
 		ObjectType: objectType,
 		AssetFees:  make([]*AssetFee, 0)}
 
@@ -218,14 +237,10 @@ func (of *ObjectFee) addAssetFee(assetID uint64, value *big.Int) {
 	of.AssetFees = append(of.AssetFees, tmp...)
 }
 
-func (of *ObjectFee) clearAllAssetFee() {
-	of.AssetFees = make([]*AssetFee, 0)
-}
-
 //RecordFeeInSystem record object fee in system
 func (fm *FeeManager) RecordFeeInSystem(objectName common.Name, objectType uint64, assetID uint64, value *big.Int) error {
 	//get object fee in system
-	objectFee, err := fm.getObjectFeeByName(objectName)
+	objectFee, err := fm.GetObjectFeeByName(objectName)
 
 	if err != nil {
 		return err
@@ -275,7 +290,7 @@ func (fm *FeeManager) WithdrawFeeFromSystem(objectName common.Name) ([]*Withdraw
 	var withdrawInfos []*WithdrawInfo
 
 	//get fee info from system
-	objectFee, err := fm.getObjectFeeByName(objectName)
+	objectFee, err := fm.GetObjectFeeByName(objectName)
 
 	if err != nil || objectFee == nil {
 		return withdrawInfos, fmt.Errorf("object(%s) fee not exsit, err:%v", objectName, err)
@@ -300,11 +315,13 @@ func (fm *FeeManager) WithdrawFeeFromSystem(objectName common.Name) ([]*Withdraw
 				AssetID:    assetFee.AssetID,
 				Amount:     new(big.Int).Set(assetFee.RemainFee)}
 			withdrawInfos = append(withdrawInfos, withdraw)
+
+			//clear remain fee
+			assetFee.RemainFee = big.NewInt(0)
 		}
 	}
 
 	//save fee modify info to db
-	objectFee.clearAllAssetFee()
 	err = fm.setObjectFee(objectFee)
 	return withdrawInfos, err
 }
