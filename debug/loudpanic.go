@@ -14,22 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package accountmanager
+package debug
 
-// Config Account Level
-type Config struct {
-	AccountNameLevel     uint64 `json:"accountNameLevel"`
-	AccountNameLength    uint64 `json:"accountNameLength"`
-	SubAccountNameLength uint64 `json:"subAccountNameLength"`
+import "runtime/debug"
+
+// LoudPanic panics in a way that gets all goroutine stacks printed on stderr.
+func LoudPanic(x interface{}) {
+	debug.SetTraceback("all")
+	panic(x)
 }
-
-// DefaultAccountNameConf return account config
-func DefaultAccountNameConf() *Config {
-	return &Config{
-		AccountNameLevel:     0,
-		AccountNameLength:    16,
-		SubAccountNameLength: 0,
-	}
-}
-
-const MaxDetailLength uint64 = 255

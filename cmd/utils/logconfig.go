@@ -25,10 +25,14 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-var glogger *log.GlogHandler
+var (
+	glogger *log.GlogHandler
+	ostream log.Handler
+)
 
 // LogConfig represents a log config
 type LogConfig struct {
+	Logdir       string `mapstructure:"dir"`
 	PrintOrigins bool   `mapstructure:"printorigins"`
 	Level        int    `mapstructure:"level"`
 	Vmodule      string `mapstructure:"vmodule"`
@@ -49,15 +53,28 @@ func init() {
 	if usecolor {
 		output = colorable.NewColorableStderr()
 	}
-	glogger = log.NewGlogHandler(log.StreamHandler(output, log.TerminalFormat(usecolor)))
+	ostream = log.StreamHandler(output, log.TerminalFormat(usecolor))
+	glogger = log.NewGlogHandler(ostream)
 }
 
 //Setup initializes logging based on the LogConfig
-func (lc *LogConfig) Setup() {
+func (lc *LogConfig) Setup() error {
 	// logging
 	log.PrintOrigins(lc.PrintOrigins)
+	if lc.Logdir != "" {
+		rfh, err := log.RotatingFileHandler(
+			lc.Logdir,
+			262144,
+			log.JSONFormatOrderedEx(false, true),
+		)
+		if err != nil {
+			return err
+		}
+		glogger.SetHandler(log.MultiHandler(ostream, rfh))
+	}
 	glogger.Verbosity(log.Lvl(lc.Level))
 	glogger.Vmodule(lc.Vmodule)
 	glogger.BacktraceAt(lc.BacktraceAt)
 	log.Root().SetHandler(glogger)
+	return nil
 }

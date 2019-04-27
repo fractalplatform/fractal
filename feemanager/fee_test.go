@@ -58,7 +58,7 @@ func getAccountManager() *accountmanager.AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, 0, *pubkey)
+	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
 	return am
 }
 
@@ -158,7 +158,7 @@ func addAssetAndAccount() error {
 		{"assettest.asset4", "s4", big.NewInt(0), 2, tname, tname},
 	}
 
-	if err := acctm.CreateAccount(tname, tname, 0, 0, *pubKey); err != nil {
+	if err := acctm.CreateAccount(tname, tname, 0, 0, *pubKey, ""); err != nil {
 		return err
 	}
 
