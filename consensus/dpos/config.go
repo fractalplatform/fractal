@@ -33,7 +33,7 @@ var DefaultConfig = &Config{
 	BlockFrequency:        6,
 	CandidateScheduleSize: 3,
 	BackupScheduleSize:    0,
-	EpchoInterval:         54000,
+	EpchoInterval:         540000,
 	FreezeEpchoSize:       3,
 	AccountName:           "ftsystemdpos",
 	SystemName:            "ftsystemio",

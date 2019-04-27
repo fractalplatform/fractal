@@ -195,6 +195,25 @@ func (api *API) ValidCandidatesByHeight(height uint64) (interface{}, error) {
 	return sys.GetState(gstate.PreEpcho)
 }
 
+// NextValidCandidates current valid candidates
+func (api *API) NextValidCandidates() (interface{}, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.ValidCandidatesByHeight(height)
+}
+
+// NextValidCandidatesByHeight current valid candidates
+func (api *API) NextValidCandidatesByHeight(height uint64) (interface{}, error) {
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	return sys.GetState(epcho)
+}
+
 // SnapShotTime get snapshort
 func (api *API) SnapShotTime() (interface{}, error) {
 	height := api.chain.CurrentHeader().Number.Uint64()

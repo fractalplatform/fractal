@@ -534,6 +534,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 
 	if pepcho != epcho {
+		log.Debug("Need Sanpshot", "epcho", pstate.Epcho, "time", sys.config.epochTimeStamp(pstate.Epcho), "height", pstate.Height)
 		gstate := &GlobalState{
 			Epcho:                  epcho,
 			PreEpcho:               pstate.Epcho,
