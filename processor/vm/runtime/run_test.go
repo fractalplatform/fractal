@@ -44,12 +44,12 @@ func TestRunCode(t *testing.T) {
 	toName := common.Name("fractal.account")
 
 	fmt.Println("in TestRunCode3 ...")
-	if err := account.CreateAccount(senderName, "", 0, 0, senderPubkey); err != nil {
+	if err := account.CreateAccount(senderName, "", 0, 0, senderPubkey, ""); err != nil {
 		fmt.Println("create sender account error\n", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, "", 0, 0, receiverPubkey); err != nil {
+	if err := account.CreateAccount(receiverName, "", 0, 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create receiver account error\n", err)
 		return
 	}

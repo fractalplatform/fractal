@@ -31,3 +31,5 @@ func DefaultAccountNameConf() *Config {
 		SubAccountNameLength: 0,
 	}
 }
+
+const MaxDetailLength uint64 = 255
