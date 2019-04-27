@@ -19,6 +19,7 @@ package main
 import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/cmd/utils"
+	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/metrics"
@@ -35,6 +36,7 @@ var (
 
 type ftConfig struct {
 	GenesisFile  string            `mapstructure:"genesis"`
+	DebugCfg     *debug.Config     `mapstructure:"debug"`
 	LogCfg       *utils.LogConfig  `mapstructure:"log"`
 	NodeCfg      *node.Config      `mapstructure:"node"`
 	FtServiceCfg *ftservice.Config `mapstructure:"ftservice"`
@@ -42,6 +44,7 @@ type ftConfig struct {
 
 func defaultFtConfig() *ftConfig {
 	return &ftConfig{
+		DebugCfg:     debug.DefaultConfig(),
 		LogCfg:       utils.DefaultLogConfig(),
 		NodeCfg:      defaultNodeConfig(),
 		FtServiceCfg: defaultFtServiceConfig(),
@@ -56,7 +59,7 @@ func defaultNodeConfig() *node.Config {
 		IPCPath:           params.ClientIdentifier + ".ipc",
 		HTTPHost:          "localhost",
 		HTTPPort:          8545,
-		HTTPModules:       []string{"ft", "miner", "dpos", "account", "txpool"},
+		HTTPModules:       []string{"ft", "miner", "dpos", "account", "txpool", "debug"},
 		HTTPVirtualHosts:  []string{"localhost"},
 		HTTPCors:          []string{"*"},
 		WSHost:            "localhost",

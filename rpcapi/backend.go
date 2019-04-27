@@ -25,6 +25,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -109,6 +110,12 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Version:   "1.0",
 			Service:   NewPrivateP2pAPI(apiBackend),
 			Public:    true,
+		},
+		{
+			Namespace: "debug",
+			Version:   "1.0",
+			Service:   debug.Handler,
+			Public:    true, // todo private
 		},
 	}
 	return append(apis, apiBackend.APIs()...)
