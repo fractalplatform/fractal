@@ -81,6 +81,18 @@
 			"revisionTime": "2019-04-25T19:33:18Z"
 		},
 		{
+			"checksumSHA1": "IfDucP2AWAj+1uW+ho6NEEDG7nk=",
+			"path": "github.com/fjl/memsize",
+			"revision": "2a09253e352a56f419bd88effab0483f52da4c7d",
+			"revisionTime": "2018-09-29T19:40:37Z"
+		},
+		{
+			"checksumSHA1": "Z13QAYTqeW4cTiglkc2F05gWLu4=",
+			"path": "github.com/fjl/memsize/memsizeui",
+			"revision": "2a09253e352a56f419bd88effab0483f52da4c7d",
+			"revisionTime": "2018-09-29T19:40:37Z"
+		},
+		{
 			"checksumSHA1": "YImPVNZRCKOaaReWnFEH+AaP8NM=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "1485a34d5d5723fea214f5710708e19a831720e4",
@@ -485,14 +497,14 @@
 		{
 			"checksumSHA1": "c2uqM0KcVJ2SFu/9Nt4w63GZ9xo=",
 			"path": "golang.org/x/sys/cpu",
-			"revision": "16072639606ea9e22c7d86e4cbd6af6314f4193c",
-			"revisionTime": "2019-04-25T09:41:36Z"
+			"revision": "a129542de9ae0895210abff9c95d67a1f33cb93d",
+			"revisionTime": "2019-04-26T13:04:56Z"
 		},
 		{
 			"checksumSHA1": "2WYPabcWodd4zqrrk9uOMxeEXEk=",
 			"path": "golang.org/x/sys/unix",
-			"revision": "16072639606ea9e22c7d86e4cbd6af6314f4193c",
-			"revisionTime": "2019-04-25T09:41:36Z"
+			"revision": "a129542de9ae0895210abff9c95d67a1f33cb93d",
+			"revisionTime": "2019-04-26T13:04:56Z"
 		},
 		{
 			"checksumSHA1": "R9iBDY+aPnT+8pyRcqGjXq5QixA=",

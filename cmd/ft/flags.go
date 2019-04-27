@@ -27,7 +27,72 @@ var (
 )
 
 func addFlags(flags *flag.FlagSet) {
+	// debug
+	flags.BoolVar(
+		&ftCfgInstance.DebugCfg.Pprof,
+		"debug_pprof",
+		ftCfgInstance.DebugCfg.Pprof,
+		"Enable the pprof HTTP server",
+	)
+	viper.BindPFlag("debug.pprof", flags.Lookup("debug_pprof"))
+
+	flags.IntVar(
+		&ftCfgInstance.DebugCfg.PprofPort,
+		"debug_pprof_port",
+		ftCfgInstance.DebugCfg.PprofPort,
+		"Pprof HTTP server listening port",
+	)
+	viper.BindPFlag("debug.pprofport", flags.Lookup("debug_pprof_port"))
+
+	flags.StringVar(
+		&ftCfgInstance.DebugCfg.PprofAddr,
+		"debug_pprof_addr",
+		ftCfgInstance.DebugCfg.PprofAddr,
+		"Pprof HTTP server listening interface",
+	)
+	viper.BindPFlag("debug.pprofaddr", flags.Lookup("debug_pprof_addr"))
+
+	flags.IntVar(
+		&ftCfgInstance.DebugCfg.Memprofilerate,
+		"debug_memprofilerate",
+		ftCfgInstance.DebugCfg.Memprofilerate,
+		"Turn on memory profiling with the given rate",
+	)
+	viper.BindPFlag("debug.memprofilerate", flags.Lookup("debug_memprofilerate"))
+
+	flags.IntVar(
+		&ftCfgInstance.DebugCfg.Blockprofilerate,
+		"debug_blockprofilerate",
+		ftCfgInstance.DebugCfg.Blockprofilerate,
+		"Turn on block profiling with the given rate",
+	)
+	viper.BindPFlag("debug.blockprofilerate", flags.Lookup("debug_blockprofilerate"))
+
+	flags.StringVar(
+		&ftCfgInstance.DebugCfg.Cpuprofile,
+		"debug_cpuprofile",
+		ftCfgInstance.DebugCfg.Cpuprofile,
+		"Write CPU profile to the given file",
+	)
+	viper.BindPFlag("debug.cpuprofile", flags.Lookup("debug_cpuprofile"))
+
+	flags.StringVar(
+		&ftCfgInstance.DebugCfg.Trace,
+		"debug_trace",
+		ftCfgInstance.DebugCfg.Trace,
+		"Write execution trace to the given file",
+	)
+	viper.BindPFlag("debug.trace", flags.Lookup("debug_trace"))
+
 	// log
+	flags.StringVar(
+		&ftCfgInstance.LogCfg.Logdir,
+		"log_dir",
+		ftCfgInstance.LogCfg.Logdir,
+		"Writes log records to file chunks at the given path",
+	)
+	viper.BindPFlag("log.dir", flags.Lookup("log_dir"))
+
 	flags.BoolVar(
 		&ftCfgInstance.LogCfg.PrintOrigins,
 		"log_debug",
