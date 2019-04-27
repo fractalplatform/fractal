@@ -48,6 +48,7 @@ func TestNewAccount(t *testing.T) {
 		accountName common.Name
 		founderName common.Name
 		pubkey      common.PubKey
+		detail      string
 	}
 	tests := []struct {
 		name    string
@@ -58,7 +59,7 @@ func TestNewAccount(t *testing.T) {
 		// TODO: Add test cases.
 	}
 	for _, tt := range tests {
-		got, err := NewAccount(tt.args.accountName, tt.args.founderName, tt.args.pubkey)
+		got, err := NewAccount(tt.args.accountName, tt.args.founderName, tt.args.pubkey, tt.args.detail)
 		if (err != nil) != tt.wantErr {
 			t.Errorf("%q. NewAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			continue
