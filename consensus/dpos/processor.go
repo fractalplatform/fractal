@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
 
 	"github.com/fractalplatform/fractal/params"
@@ -30,54 +29,39 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type RegisterCadidate struct {
-	Url string
+// RegisterCandidate candidate info
+type RegisterCandidate struct {
+	URL string
 }
 
-type UpdateCadidate struct {
-	Url   string
-	Stake *big.Int
+// UpdateCandidate candidate info
+type UpdateCandidate struct {
+	URL string
 }
 
-type VoteCadidate struct {
-	Cadidate string
+// VoteCandidate vote info
+type VoteCandidate struct {
+	Candidate string
+	Stake     *big.Int
 }
 
-type ChangeCadidate struct {
-	Cadidate string
+// KickedCandidate kicked info
+type KickedCandidate struct {
+	Candidates []string
 }
 
-type RemoveVoter struct {
-	Voters []string
-}
-
-type KickedCadidate struct {
-	Cadidates []string
-}
-
-func (dpos *Dpos) ProcessAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+// ProcessAction exec action
+func (dpos *Dpos) ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
-	internalLogs, err := dpos.processAction(chainCfg, state, action)
+	internalLogs, err := dpos.processAction(height, chainCfg, state, action)
 	if err != nil {
 		state.RevertToSnapshot(snap)
 	}
 	return internalLogs, err
 }
 
-func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
-	sys := &System{
-		config: dpos.config,
-		IDB: &LDB{
-			IDatabase: &stateDB{
-				name:    dpos.config.AccountName,
-				assetid: chainCfg.SysTokenID,
-				state:   state,
-			},
-		},
-	}
-
-	var internalActions []*types.InternalAction
-
+func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+	sys := NewSystem(state, dpos.config)
 	if !action.CheckValue() {
 		return nil, accountmanager.ErrAmountValueInvalid
 	}
@@ -101,84 +85,50 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 	}
 
 	switch action.Type() {
-	case types.RegCadidate:
-		arg := &RegisterCadidate{}
+	case types.RegCandidate:
+		arg := &RegisterCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCadidate(action.Sender().String(), arg.Url, action.Value()); err != nil {
+		if err := sys.RegCandidate(LastEpcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
 			return nil, err
 		}
-	case types.UpdateCadidate:
-		arg := &UpdateCadidate{}
+	case types.UpdateCandidate:
+		arg := &UpdateCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if arg.Stake.Sign() == 1 {
-			return nil, fmt.Errorf("stake cannot be greater zero")
-		}
-		if action.Value().Sign() == 1 && arg.Stake.Sign() == -1 {
-			return nil, fmt.Errorf("value & stake cannot allowed at the same time")
-		}
-		if err := sys.UpdateCadidate(action.Sender().String(), arg.Url, new(big.Int).Add(action.Value(), arg.Stake)); err != nil {
+		if err := sys.UpdateCandidate(LastEpcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
 			return nil, err
 		}
-	case types.UnregCadidate:
-		stake, err := sys.UnregCadidate(action.Sender().String())
+	case types.UnregCandidate:
+		err := sys.UnregCandidate(LastEpcho, action.Sender().String(), height)
 		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, action.AssetID(), 0, stake, nil)
-		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalActions = append(internalActions, internalAction)
-	case types.RemoveVoter:
-		arg := &RemoveVoter{}
-		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return nil, err
-		}
-		for _, voter := range arg.Voters {
-			stake, err := sys.UnvoteVoter(action.Sender().String(), voter)
-			if err != nil {
-				return nil, err
-			}
-			actionX := types.NewAction(action.Type(), action.Recipient(), common.Name(voter), 0, action.AssetID(), 0, stake, nil)
-			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-			internalActions = append(internalActions, internalAction)
-		}
-	case types.VoteCadidate:
-		arg := &VoteCadidate{}
-		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return nil, err
-		}
-		if err := sys.VoteCadidate(action.Sender().String(), arg.Cadidate, action.Value()); err != nil {
-			return nil, err
-		}
-	case types.ChangeCadidate:
-		arg := &ChangeCadidate{}
-		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
-			return nil, err
-		}
-		if err := sys.ChangeCadidate(action.Sender().String(), arg.Cadidate); err != nil {
-			return nil, err
-		}
-	case types.UnvoteCadidate:
-		stake, err := sys.UnvoteCadidate(action.Sender().String())
+	case types.RefundCandidate:
+		err := sys.RefundCandidate(LastEpcho, action.Sender().String(), height)
 		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), action.Recipient(), action.Sender(), 0, action.AssetID(), 0, stake, nil)
-		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		internalActions = append(internalActions, internalAction)
-	case types.KickedCadidate:
+	case types.VoteCandidate:
+		arg := &VoteCandidate{}
+		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
+			return nil, err
+		}
+		if err := sys.VoteCandidate(LastEpcho, action.Sender().String(), arg.Candidate, arg.Stake, height); err != nil {
+			return nil, err
+		}
+	case types.KickedCandidate:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
-			return nil, fmt.Errorf("no permission for kicking cadidates")
+			return nil, fmt.Errorf("no permission for kicking candidates")
 		}
-		arg := &KickedCadidate{}
+		arg := &KickedCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		for _, cadicate := range arg.Cadidates {
-			if err := sys.KickedCadidate(cadicate); err != nil {
+		for _, cadicate := range arg.Candidates {
+			if err := sys.KickedCandidate(LastEpcho, cadicate, height); err != nil {
 				return nil, err
 			}
 		}
@@ -186,9 +136,11 @@ func (dpos *Dpos) processAction(chainCfg *params.ChainConfig, state *state.State
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
-		sys.ExitTakeOver()
+		if err := sys.ExitTakeOver(LastEpcho); err != nil {
+			return nil, err
+		}
 	default:
 		return nil, accountmanager.ErrUnkownTxType
 	}
-	return internalActions, nil
+	return sys.internalActions, nil
 }

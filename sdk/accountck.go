@@ -164,7 +164,7 @@ func (acc *Account) chekRemoveVoter(action *types.Action) (func() error, error) 
 	return function, nil
 }
 
-func (acc *Account) chekKickedCadidate(action *types.Action) (func() error, error) {
+func (acc *Account) chekKickedCandidate(action *types.Action) (func() error, error) {
 	// TODO
 	function := func() error {
 		return nil

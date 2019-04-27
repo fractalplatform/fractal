@@ -53,6 +53,7 @@ type AccountAction struct {
 	Founder     common.Name   `json:"founder,omitempty"`
 	ChargeRatio uint64        `json:"chargeRatio,omitempty"`
 	PublicKey   common.PubKey `json:"publicKey,omitempty"`
+	Detail      string        `json:"detail,omitempty"`
 }
 
 type AuthorAction struct {
@@ -225,7 +226,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey, detail string) error {
 
 	if accountName.AccountNameLevel() > 1 {
 		if !fromName.IsValidCreator(accountName.String()) {
@@ -233,7 +234,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 		}
 	}
 
-	if err := am.CreateAccount(accountName, founderName, number, 0, pubkey); err != nil {
+	if err := am.CreateAccount(accountName, founderName, number, 0, pubkey, detail); err != nil {
 		return err
 	}
 
@@ -241,7 +242,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 }
 
 //CreateAccount contract account
-func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey, detail string) error {
 	if !common.IsValidAccountName(accountName.String()) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
@@ -274,7 +275,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		fname.SetString(accountName.String())
 	}
 
-	acctObj, err := NewAccount(accountName, fname, pubkey)
+	acctObj, err := NewAccount(accountName, fname, pubkey, detail)
 	if err != nil {
 		return err
 	}
@@ -512,13 +513,13 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 }
 
 // GetAuthorVersion returns the account author version
-func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
+func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
-		return 0, err
+		return common.Hash{}, err
 	}
 	if acct == nil {
-		return 0, ErrAccountNotExist
+		return common.Hash{}, ErrAccountNotExist
 	}
 	return acct.GetAuthorVersion(), nil
 }
@@ -547,9 +548,8 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			}
 		}
 
-		authorVersion := make(map[common.Name]uint64, 0)
+		authorVersion := make(map[common.Name]common.Hash, 0)
 		for name, acctAuthor := range recoverRes.acctAuthors {
-
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
 				count += weight
@@ -591,7 +591,7 @@ func (am *AccountManager) IsValidSign(accountName common.Name, pub common.PubKey
 	return fmt.Errorf("%v %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String())
 }
 
-//IsValidSign check the sign
+//ValidSign check the sign
 func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, index []uint64, recoverRes *recoverActionResult) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -1165,7 +1165,7 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 		}
 	}
 
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract()); err != nil {
+	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail()); err != nil {
 		return err
 	}
 
@@ -1234,7 +1234,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, 0, acct.PublicKey); err != nil {
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, 0, acct.PublicKey, acct.Detail); err != nil {
 			return nil, err
 		}
 

@@ -30,10 +30,31 @@ func (api *API) DposIrreversible() (map[string]interface{}, error) {
 	return info, err
 }
 
-// DposEpcho dpos state info by height
-func (api *API) DposEpcho(height uint64) (map[string]interface{}, error) {
+// DposCandidate candidate info by name
+func (api *API) DposCandidate(name string) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_epcho", height)
+	err := api.client.Call(&info, "dpos_candidate", name)
+	return info, err
+}
+
+// DposCandidates candidate info by name
+func (api *API) DposCandidates(detail bool) ([]map[string]interface{}, error) {
+	info := []map[string]interface{}{}
+	err := api.client.Call(&info, "dpos_candidates", detail)
+	return info, err
+}
+
+// DposVotersByCandidate get voters info of candidate
+func (api *API) DposVotersByCandidate(candidate string, detail bool) (map[string]interface{}, error) {
+	info := map[string]interface{}{}
+	err := api.client.Call(&info, "dpos_votersByCandidate", candidate, detail)
+	return info, err
+}
+
+// DposVotersByVoter get voters info of voter
+func (api *API) DposVotersByVoter(voter string, detail bool) (interface{}, error) {
+	info := map[string]interface{}{}
+	err := api.client.Call(&info, "dpos_votersByVoter", voter, detail)
 	return info, err
 }
 
@@ -44,23 +65,16 @@ func (api *API) DposLatestEpcho() (map[string]interface{}, error) {
 	return info, err
 }
 
-// DposValidateEpcho dpos state info
-func (api *API) DposValidateEpcho() (map[string]interface{}, error) {
+// DposAvailableStake state info
+func (api *API) DposAvailableStake(name string) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_validateEpcho")
+	err := api.client.Call(&info, "dpos_availableStake", name)
 	return info, err
 }
 
-// DposCadidates dpos cadidate info
-func (api *API) DposCadidates() ([]map[string]interface{}, error) {
-	info := []map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_cadidates")
-	return info, err
-}
-
-// DposAccount dpos account info
-func (api *API) DposAccount(name string) (map[string]interface{}, error) {
+// DposValidCandidates dpos candidate info
+func (api *API) DposValidCandidates() (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_account", name)
+	err := api.client.Call(&info, "dpos_validCandidates")
 	return info, err
 }

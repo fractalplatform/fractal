@@ -19,128 +19,150 @@ package dpos
 import (
 	"fmt"
 	"math/big"
-	"math/rand"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/types"
 )
 
+// System dpos internal contract
 type System struct {
-	config *Config
+	config          *Config
+	internalActions []*types.InternalAction
 	IDB
 }
 
+// NewSystem new object
 func NewSystem(state *state.StateDB, config *Config) *System {
 	return &System{
 		config: config,
 		IDB: &LDB{
 			IDatabase: &stateDB{
-				name:  config.AccountName,
-				state: state,
+				name:    config.AccountName,
+				assetid: config.AssetID,
+				state:   state,
 			},
 		},
 	}
 }
 
-// RegCadidate  register a cadidate
-func (sys *System) RegCadidate(cadidate string, url string, stake *big.Int) error {
-	// parameter validity
+// RegCandidate  register a candidate
+func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, height uint64) error {
+	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
 	}
+
+	// stake validity
 	m := big.NewInt(0)
 	q, _ := new(big.Int).DivMod(stake, sys.config.unitStake(), m)
 	if m.Sign() != 0 {
 		return fmt.Errorf("invalid stake %v(non divisibility, unit %v)", stake, sys.config.unitStake())
 	}
-	if q.Cmp(sys.config.CadidateMinQuantity) < 0 {
-		return fmt.Errorf("invalid stake %v(insufficient, cadidate min %v)", stake, new(big.Int).Mul(sys.config.CadidateMinQuantity, sys.config.unitStake()))
+	if q.Cmp(sys.config.CandidateMinQuantity) < 0 {
+		return fmt.Errorf("invalid stake %v(insufficient, candidate min %v)", stake, new(big.Int).Mul(sys.config.CandidateMinQuantity, sys.config.unitStake()))
 	}
 
-	if voter, err := sys.GetVoter(cadidate); err != nil {
-		return err
-	} else if voter != nil {
-		return fmt.Errorf("invalid cadidate %v(alreay vote to %v)", cadidate, voter.Cadidate)
-	}
-	prod, err := sys.GetCadidate(cadidate)
+	// name validity
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return err
 	}
 	if prod != nil {
-		return fmt.Errorf("invalid cadidate %v(already exist)", cadidate)
+		return fmt.Errorf("invalid candidate %v(already exist)", candidate)
 	}
-	prod = &cadidateInfo{
-		Name:          cadidate,
+
+	// quantity validity
+	quantity, err := sys.getAvailableQuantity(epcho, candidate)
+	if err != nil {
+		return err
+	}
+	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
+		return fmt.Errorf("invalid vote stake %v(insufficient) %v > %v", candidate, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
+	} else if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
+		return err
+	}
+
+	// db
+	prod = &CandidateInfo{
+		Name:          candidate,
+		URL:           url,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
+		Height:        height,
 	}
-	gstate, err := sys.GetState(LastBlockHeight)
+	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
+	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
+	if err := sys.SetCandidate(prod); err != nil {
+		return err
+	}
+
+	gstate, err := sys.GetState(epcho)
 	if err != nil {
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-
-	if err := sys.Delegate(cadidate, stake); err != nil {
-		return fmt.Errorf("delegate (%v) failed(%v)", stake, err)
-	}
-
-	prod.URL = url
-	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
-	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
-	prod.Height = gstate.Height
-	if err := sys.SetCadidate(prod); err != nil {
-		return err
-	}
 	if err := sys.SetState(gstate); err != nil {
 		return err
 	}
 	return nil
 }
 
-// UpdateCadidate  update a cadidate
-func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) error {
-	// parameter validity
+// UpdateCandidate  update a candidate
+func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, height uint64) error {
+	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
 	}
+
+	// stake validity
 	m := big.NewInt(0)
-	q, _ := new(big.Int).DivMod(stake, sys.config.unitStake(), m)
+	q, _ := new(big.Int).DivMod(nstake, sys.config.unitStake(), m)
 	if m.Sign() != 0 {
-		return fmt.Errorf("invalid stake %v(non divisibility, unit %v)", stake, sys.config.unitStake())
+		return fmt.Errorf("invalid stake %v(non divisibility, unit %v)", nstake, sys.config.unitStake())
 	}
-	if q.Cmp(sys.config.CadidateMinQuantity) < 0 {
-		return fmt.Errorf("invalid stake %v(insufficient, cadidate min %v)", stake, new(big.Int).Mul(sys.config.CadidateMinQuantity, sys.config.unitStake()))
+	if q.Cmp(sys.config.CandidateMinQuantity) < 0 {
+		return fmt.Errorf("invalid stake %v(insufficient, candidate min %v)", nstake, new(big.Int).Mul(sys.config.CandidateMinQuantity, sys.config.unitStake()))
 	}
 
-	prod, err := sys.GetCadidate(cadidate)
+	// name validity
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalid cadidate %v(not exist)", cadidate)
+		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
+	}
+
+	if q.Sign() != 0 && q.Cmp(prod.Quantity) == -1 {
+		return fmt.Errorf("not support reduce stake %v", candidate)
 	}
 
 	q = new(big.Int).Sub(q, prod.Quantity)
+	// quantity validity
+	if q.Sign() == 1 {
+		quantity, err := sys.getAvailableQuantity(epcho, candidate)
+		if err != nil {
+			return err
+		}
+		if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
+			return fmt.Errorf("invalid vote stake %v(insufficient) %v > %v", candidate, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
+		} else if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
+			return err
+		}
+	}
 
-	gstate, err := sys.GetState(LastBlockHeight)
+	// db
+	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+	action, err := sys.Undelegate(candidate, stake)
 	if err != nil {
-		return err
+		return fmt.Errorf("undelegate %v failed(%v)", q, err)
 	}
-	if sys.isdpos(gstate) && new(big.Int).Add(gstate.TotalQuantity, q).Cmp(sys.config.ActivatedMinQuantity) < 0 {
-		return fmt.Errorf("insufficient actived stake")
-	}
-	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-
-	tstake := new(big.Int).Mul(q, sys.config.unitStake())
-	if q.Sign() < 0 {
-		tstake = new(big.Int).Abs(tstake)
-		if err := sys.Undelegate(cadidate, tstake); err != nil {
-			return fmt.Errorf("undelegate %v failed(%v)", q, err)
-		}
-	} else {
-		if err := sys.Delegate(cadidate, tstake); err != nil {
-			return fmt.Errorf("delegate (%v) failed(%v)", q, err)
-		}
+	if action != nil {
+		sys.internalActions = append(sys.internalActions, &types.InternalAction{
+			Action: action.NewRPCAction(0),
+		})
 	}
 
 	if len(url) > 0 {
@@ -148,82 +170,166 @@ func (sys *System) UpdateCadidate(cadidate string, url string, stake *big.Int) e
 	}
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
-	if err := sys.SetCadidate(prod); err != nil {
+	prod.Height = height
+	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
+
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
+	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
 	if err := sys.SetState(gstate); err != nil {
 		return err
 	}
 	return nil
 }
 
-// UnregCadidate  unregister a cadidate
-func (sys *System) UnregCadidate(cadidate string) (*big.Int, error) {
-	// parameter validity
-	// modify or update
-	var stake *big.Int
-	prod, err := sys.GetCadidate(cadidate)
+// UnregCandidate  unregister a candidate
+func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64) error {
+	// name validity
+	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if prod != nil {
-
-		gstate, err := sys.GetState(LastBlockHeight)
-		if err != nil {
-			return nil, err
-		}
-		if sys.isdpos(gstate) {
-			if cnt, err := sys.CadidatesSize(); err != nil {
-				return nil, err
-			} else if uint64(cnt) <= sys.config.consensusSize() {
-				return nil, fmt.Errorf("insufficient actived cadidates")
-			}
-			if new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
-				return nil, fmt.Errorf("insufficient actived stake")
-			}
-		}
-
-		// voters, err := sys.GetDelegators(cadidate)
-		// if err != nil {
-		// 	return err
-		// }
-		// for _, voter := range voters {
-		// 	if err := sys.unvoteCadidate(voter); err != nil {
-		// 		return err
-		// 	}
-		// }
-
-		if prod.TotalQuantity.Cmp(prod.Quantity) > 0 {
-			return nil, fmt.Errorf("already has voter")
-		}
-
-		stake = new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
-		if err := sys.Undelegate(cadidate, stake); err != nil {
-			return nil, fmt.Errorf("undelegate %v failed(%v)", stake, err)
-		}
-		if prod.InBlackList {
-			if err := sys.SetCadidate(prod); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := sys.DelCadidate(prod.Name); err != nil {
-				return nil, err
-			}
-		}
-
-		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.Quantity)
-		if err := sys.SetState(gstate); err != nil {
-			return nil, err
-		}
-	} else {
-		return nil, fmt.Errorf("invalide cadidate %v", cadidate)
+	if prod == nil {
+		return fmt.Errorf("invalide candidate %v", candidate)
 	}
-	return stake, nil
+	if prod.Type != Normal {
+		return fmt.Errorf("not in normal %v", candidate)
+	}
+
+	// db
+	prod.Type = Freeze
+	prod.Height = height
+	if err := sys.SetCandidate(prod); err != nil {
+		return err
+	}
+
+	// stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+	// action, err := sys.Undelegate(candidate, stake)
+	// if err != nil {
+	// 	return fmt.Errorf("undelegate %v failed(%v)", stake, err)
+	// }
+	// sys.internalActions = append(sys.internalActions, &types.InternalAction{
+	// 	Action: action.NewRPCAction(0),
+	// })
+
+	// voters, err := sys.GetVoters(epcho, prod.Name)
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, voter := range voters {
+	// 	if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+	// 		return err
+	// 	} else if err := sys.DelVoter(voterInfo); err != nil {
+	// 		return err
+	// 	} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+	// 		return err
+	// 	} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+	// 		return err
+	// 	}
+	// }
+	// if err := sys.DelCandidate(prod.Name); err != nil {
+	// 	return err
+	// }
+
+	// gstate, err := sys.GetState(epcho)
+	// if err != nil {
+	// 	return err
+	// }
+	// gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	// if err := sys.SetState(gstate); err != nil {
+	// 	return err
+	// }
+	return nil
 }
 
-// VoteCadidate vote a cadidate
-func (sys *System) VoteCadidate(voter string, cadidate string, stake *big.Int) error {
-	// parameter validity
+// RefundCandidate  refund a candidate
+func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64) error {
+	// name validity
+	prod, err := sys.GetCandidate(candidate)
+	if err != nil {
+		return err
+	}
+	if prod == nil {
+		return fmt.Errorf("invalide candidate %v", candidate)
+	}
+	if prod.Type != Freeze {
+		return fmt.Errorf("not in freeze %v", candidate)
+	}
+
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
+
+	freeze := uint64(0)
+	pstate := gstate
+	for i := uint64(0); i < sys.config.FreezeEpchoSize+1; i++ {
+		if pstate.Height < prod.Height {
+			break
+		}
+		freeze++
+		tstate, err := sys.GetState(pstate.PreEpcho)
+		if err != nil {
+			return err
+		}
+		pstate = tstate
+	}
+	if freeze < sys.config.FreezeEpchoSize+1 {
+		return fmt.Errorf("freeze period has not arrived %v", candidate)
+	}
+
+	// db
+	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+	action, err := sys.Undelegate(candidate, stake)
+	if err != nil {
+		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
+	}
+	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+		Action: action.NewRPCAction(0),
+	})
+
+	// voters, err := sys.GetVoters(epcho, prod.Name)
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, voter := range voters {
+	// 	if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+	// 		return err
+	// 	} else if err := sys.DelVoter(voterInfo); err != nil {
+	// 		return err
+	// 	} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+	// 		return err
+	// 	} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+	// 		return err
+	// 	}
+	// }
+	if err := sys.DelCandidate(prod.Name); err != nil {
+		return err
+	}
+
+	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	if err := sys.SetState(gstate); err != nil {
+		return err
+	}
+	return nil
+}
+
+// VoteCandidate vote a candidate
+func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, height uint64) error {
+	// candidate validity
+	prod, err := sys.GetCandidate(candidate)
+	if err != nil {
+		return err
+	}
+	if prod == nil {
+		return fmt.Errorf("invalid candidate %v", candidate)
+	}
+
+	// stake validity
 	m := big.NewInt(0)
 	q, _ := new(big.Int).DivMod(stake, sys.config.unitStake(), m)
 	if m.Sign() != 0 {
@@ -233,271 +339,236 @@ func (sys *System) VoteCadidate(voter string, cadidate string, stake *big.Int) e
 		return fmt.Errorf("invalid stake %v(insufficient, voter min %v)", stake, new(big.Int).Mul(sys.config.VoterMinQuantity, sys.config.unitStake()))
 	}
 
-	if prod, err := sys.GetCadidate(voter); err != nil {
-		return err
-	} else if prod != nil {
-		return fmt.Errorf("invalid vote(alreay is cadidate)")
-	}
-	if vote, err := sys.GetVoter(voter); err != nil {
-		return err
-	} else if vote != nil {
-		return fmt.Errorf("invalid vote(already voted to cadidate %v)", vote.Cadidate)
-	}
-	prod, err := sys.GetCadidate(cadidate)
+	// quantity validity
+	quantity, err := sys.getAvailableQuantity(epcho, voter)
 	if err != nil {
 		return err
 	}
-	if prod == nil {
-		return fmt.Errorf("invalid vote(invalid cadidates %v)", cadidate)
+	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
+		return fmt.Errorf("invalid stake %v(insufficient) %v > %v", voter, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
+	} else if err := sys.SetAvailableQuantity(epcho, voter, sub); err != nil {
+		return err
 	}
 
-	// modify or update
-	if err := sys.Delegate(voter, stake); err != nil {
-		return fmt.Errorf("delegate %v failed(%v)", stake, err)
+	// db
+	voterInfo, err := sys.GetVoter(epcho, voter, candidate)
+	if err != nil {
+		return err
+	}
+	if voterInfo == nil {
+		voterInfo = &VoterInfo{
+			Epcho:     epcho,
+			Name:      voter,
+			Candidate: candidate,
+			Quantity:  big.NewInt(0),
+		}
 	}
 
-	gstate, err := sys.GetState(LastBlockHeight)
+	voterInfo.Height = height
+	voterInfo.Quantity = new(big.Int).Add(voterInfo.Quantity, q)
+	if err := sys.SetVoter(voterInfo); err != nil {
+		return err
+	}
+
+	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
+	if err := sys.SetCandidate(prod); err != nil {
+		return err
+	}
+
+	gstate, err := sys.GetState(epcho)
 	if err != nil {
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
-	vote := &voterInfo{
-		Name:     voter,
-		Cadidate: cadidate,
-		Quantity: q,
-		Height:   gstate.Height,
-	}
-	if err := sys.SetVoter(vote); err != nil {
-		return err
-	}
-	if err := sys.SetCadidate(prod); err != nil {
-		return err
-	}
 	if err := sys.SetState(gstate); err != nil {
 		return err
 	}
 	return nil
 }
 
-// ChangeCadidate change a cadidate
-func (sys *System) ChangeCadidate(voter string, cadidate string) error {
-	// parameter validity
-	vote, err := sys.GetVoter(voter)
-	if err != nil {
-		return err
-	}
-	if vote == nil {
-		return fmt.Errorf("invalid voter %v", voter)
-	}
-	if strings.Compare(vote.Cadidate, cadidate) == 0 {
-		return fmt.Errorf("same cadidate")
-	}
-	prod, err := sys.GetCadidate(cadidate)
-	if err != nil {
-		return err
-	}
-	if prod == nil {
-		return fmt.Errorf("invalid cadidate %v", cadidate)
-	}
-
-	// modify or update
-	oprod, err := sys.GetCadidate(vote.Cadidate)
-	if err != nil {
-		return err
-	}
-	oprod.TotalQuantity = new(big.Int).Sub(oprod.TotalQuantity, vote.Quantity)
-	if err := sys.SetCadidate(oprod); err != nil {
-		return err
-	}
-	if err := sys.DelVoter(vote.Name, vote.Cadidate); err != nil {
-		return err
-	}
-
-	vote.Cadidate = prod.Name
-	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, vote.Quantity)
-	if err := sys.SetVoter(vote); err != nil {
-		return err
-	}
-	if err := sys.SetCadidate(prod); err != nil {
-		return err
-	}
-	return nil
-}
-
-// UnvoteCadidate cancel vote
-func (sys *System) UnvoteCadidate(voter string) (*big.Int, error) {
-	// parameter validity
-	return sys.unvoteCadidate(voter)
-}
-
-// UnvoteVoter cancel voter
-func (sys *System) UnvoteVoter(cadidate string, voter string) (*big.Int, error) {
-	// parameter validity
-	vote, err := sys.GetVoter(voter)
-	if err != nil {
-		return nil, err
-	}
-	if vote == nil {
-		return nil, fmt.Errorf("invalid voter %v", voter)
-	}
-	if strings.Compare(cadidate, vote.Cadidate) != 0 {
-		return nil, fmt.Errorf("invalid cadidate %v", cadidate)
-	}
-	return sys.unvoteCadidate(voter)
-}
-
-func (sys *System) GetDelegatedByTime(name string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
-	q, tq, c, err := sys.IDB.GetDelegatedByTime(name, timestamp)
+// GetDelegatedByTime candidate delegated
+func (sys *System) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
+	q, tq, c, err := sys.IDB.GetDelegatedByTime(candidate, timestamp)
 	if err != nil {
 		return big.NewInt(0), big.NewInt(0), 0, err
 	}
 	return new(big.Int).Mul(q, sys.config.unitStake()), new(big.Int).Mul(tq, sys.config.unitStake()), c, nil
 }
 
-func (sys *System) KickedCadidate(cadidate string) error {
-	prod, err := sys.GetCadidate(cadidate)
-	if prod != nil {
-		if err := sys.Undelegate(sys.config.SystemName, new(big.Int).Mul(prod.Quantity, sys.config.unitStake())); err != nil {
-			return err
-		}
-		state, err := sys.GetState(LastBlockHeight)
-		if err != nil {
-			return err
-		}
-		state.TotalQuantity = new(big.Int).Sub(state.TotalQuantity, prod.Quantity)
-		prod.TotalQuantity = new(big.Int).Sub(prod.TotalQuantity, prod.Quantity)
-		prod.Quantity = big.NewInt(0)
-		prod.InBlackList = true
-		if err := sys.SetState(state); err != nil {
-			return err
-		}
-		return sys.SetCadidate(prod)
-	}
-	return err
-}
-
-func (sys *System) ExitTakeOver() error {
-	latest, err := sys.GetState(LastBlockHeight)
-	if latest != nil {
-		latest.TakeOver = false
-		return sys.SetState(latest)
-	}
-	return err
-}
-
-func (sys *System) unvoteCadidate(voter string) (*big.Int, error) {
-	// modify or update
-	var stake *big.Int
-	vote, err := sys.GetVoter(voter)
-	if err != nil {
-		return nil, err
-	}
-	if vote == nil {
-		return nil, fmt.Errorf("invalid voter %v", voter)
-	}
-	gstate, err := sys.GetState(LastBlockHeight)
-	if err != nil {
-		return nil, err
-	}
-	if sys.isdpos(gstate) && new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity).Cmp(sys.config.ActivatedMinQuantity) < 0 {
-		return nil, fmt.Errorf("insufficient actived stake")
-	}
-	stake = new(big.Int).Mul(vote.Quantity, sys.config.unitStake())
-	if err := sys.Undelegate(voter, stake); err != nil {
-		return nil, fmt.Errorf("undelegate %v failed(%v)", stake, err)
-	}
-	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, vote.Quantity)
-	prod, err := sys.GetCadidate(vote.Cadidate)
-	if err != nil {
-		return nil, err
-	}
-	prod.TotalQuantity = new(big.Int).Sub(prod.TotalQuantity, vote.Quantity)
-	if err := sys.SetCadidate(prod); err != nil {
-		return nil, err
-	}
-	if err := sys.DelVoter(vote.Name, vote.Cadidate); err != nil {
-		return nil, err
-	}
-	if err := sys.SetState(gstate); err != nil {
-		return nil, err
-	}
-	return stake, nil
-}
-
-func (sys *System) onblock(height uint64) error {
-	gstate, err := sys.GetState(height)
-	if err != nil {
-		return err
-	}
-	ngstate := &globalState{
-		Height:                          height + 1,
-		ActivatedCadidateSchedule:       gstate.ActivatedCadidateSchedule,
-		ActivatedCadidateScheduleUpdate: gstate.ActivatedCadidateScheduleUpdate,
-		ActivatedTotalQuantity:          gstate.ActivatedTotalQuantity,
-		TotalQuantity:                   new(big.Int).SetBytes(gstate.TotalQuantity.Bytes()),
-		TakeOver:                        gstate.TakeOver,
-	}
-	sys.SetState(ngstate)
-	return nil
-}
-
-func (sys *System) updateElectedCadidates(timestamp uint64) error {
-	gstate, err := sys.GetState(LastBlockHeight)
-	if err != nil {
+// KickedCandidate kicked
+func (sys *System) KickedCandidate(epcho uint64, candidate string, height uint64) error {
+	// name validity
+	prod, err := sys.GetCandidate(candidate)
+	if prod == nil || err != nil {
 		return err
 	}
 
-	size, _ := sys.CadidatesSize()
-	if gstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) < 0 || uint64(size) < sys.config.consensusSize() {
-		activatedCadidateSchedule := []string{}
-		activeTotalQuantity := big.NewInt(0)
-		cadidate, _ := sys.GetCadidate(sys.config.SystemName)
-		for i := uint64(0); i < sys.config.CadidateScheduleSize; i++ {
-			activatedCadidateSchedule = append(activatedCadidateSchedule, sys.config.SystemName)
-			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, cadidate.TotalQuantity)
-		}
-		gstate.ActivatedCadidateSchedule = activatedCadidateSchedule
-		gstate.ActivatedCadidateScheduleUpdate = timestamp
-		gstate.ActivatedTotalQuantity = activeTotalQuantity
-		return sys.SetState(gstate)
+	// db
+	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+	action, err := sys.Undelegate(sys.config.SystemName, stake)
+	if err != nil {
+		return fmt.Errorf("undelegate %v failed(%v)", stake, err)
+	}
+	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+		Action: action.NewRPCAction(0),
+	})
+
+	// voters, err := sys.GetVoters(epcho, prod.Name)
+	// if err != nil {
+	// 	return err
+	// }
+	// for _, voter := range voters {
+	// 	if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+	// 		return err
+	// 	} else if err := sys.DelVoter(voterInfo); err != nil {
+	// 		return err
+	// 	} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+	// 		return err
+	// 	} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	prod.TotalQuantity = big.NewInt(0)
+	prod.Height = height
+	prod.Type = Black
+	if err := sys.SetCandidate(prod); err != nil {
+		return err
 	}
 
-	cadidates, err := sys.Cadidates()
+	gstate, err := sys.GetState(epcho)
 	if err != nil {
 		return err
 	}
-	activatedCadidateSchedule := []string{}
-	activeTotalQuantity := big.NewInt(0)
-	for _, cadidate := range cadidates {
-		if cadidate.InBlackList || strings.Compare(cadidate.Name, sys.config.SystemName) == 0 {
-			continue
-		}
-		activatedCadidateSchedule = append(activatedCadidateSchedule, cadidate.Name)
-		activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, cadidate.TotalQuantity)
-		if uint64(len(activatedCadidateSchedule)) == sys.config.CadidateScheduleSize {
-			break
-		}
-	}
-
-	seed := int64(timestamp)
-	r := rand.New(rand.NewSource(seed))
-	for i := len(activatedCadidateSchedule) - 1; i > 0; i-- {
-		j := int(r.Int31n(int32(i + 1)))
-		activatedCadidateSchedule[i], activatedCadidateSchedule[j] = activatedCadidateSchedule[j], activatedCadidateSchedule[i]
-	}
-
-	gstate.ActivatedCadidateSchedule = activatedCadidateSchedule
-	gstate.ActivatedCadidateScheduleUpdate = timestamp
-	gstate.ActivatedTotalQuantity = activeTotalQuantity
+	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
 	return sys.SetState(gstate)
 }
 
-func (sys *System) isdpos(gstate *globalState) bool {
-	for _, cadidate := range gstate.ActivatedCadidateSchedule {
-		if strings.Compare(cadidate, sys.config.SystemName) != 0 {
-			return true
+// ExitTakeOver system exit take over
+func (sys *System) ExitTakeOver(epcho uint64) error {
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
+	gstate.TakeOver = false
+	return sys.SetState(gstate)
+}
+
+func (sys *System) onblock(epcho uint64, height uint64) error {
+	pepcho, err := sys.GetLastestEpcho()
+	if err != nil {
+		return err
+	}
+	if pepcho == epcho {
+		return nil
+	}
+
+	if pepcho > epcho {
+		panic(err)
+	}
+
+	pState, err := sys.GetState(pepcho)
+	if err != nil {
+		return err
+	}
+	gstate := &GlobalState{
+		Epcho:                  epcho,
+		PreEpcho:               pepcho,
+		ActivatedTotalQuantity: big.NewInt(0),
+		TotalQuantity:          new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
+		TakeOver:               pState.TakeOver,
+		Dpos:                   pState.Dpos,
+		Height:                 height,
+	}
+	return sys.SetState(gstate)
+}
+
+// UpdateElectedCandidates update
+func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height uint64) error {
+	if pepcho > epcho {
+		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
+	}
+	pstate, err := sys.GetState(pepcho)
+	if err != nil {
+		return err
+	}
+
+	candidateInfoArray, err := sys.GetCandidates()
+	if err != nil {
+		return err
+	}
+	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
+	if !pstate.Dpos && pstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
+		uint64(len(candidateInfoArray)) >= n {
+		pstate.Dpos = true
+	}
+
+	activatedCandidateSchedule := []string{}
+	activeTotalQuantity := big.NewInt(0)
+	totalQuantity := big.NewInt(0)
+	for _, candidateInfo := range candidateInfoArray {
+		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
+		if candidateInfo.invalid() || pstate.Dpos && strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+			continue
+		}
+		activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+		if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
+			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
 		}
 	}
-	return false
+
+	if !pstate.Dpos {
+		if init := len(activatedCandidateSchedule); init > 0 {
+			index := 0
+			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
+				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
+				index++
+			}
+		}
+	}
+	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+	pstate.ActivatedTotalQuantity = activeTotalQuantity
+	pstate.Height = height
+	if err := sys.SetState(pstate); err != nil {
+		return err
+	}
+
+	if pepcho != epcho {
+		gstate := &GlobalState{
+			Epcho:                  epcho,
+			PreEpcho:               pstate.Epcho,
+			ActivatedTotalQuantity: big.NewInt(0),
+			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
+			TakeOver:               pstate.TakeOver,
+			Dpos:                   pstate.Dpos,
+		}
+		return sys.SetState(gstate)
+	}
+	return nil
+}
+
+func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, error) {
+	q, err := sys.GetAvailableQuantity(epcho, voter)
+	if err != nil {
+		return nil, err
+	}
+	if q == nil {
+		gstate, err := sys.GetState(epcho)
+		if err != nil {
+			return nil, err
+		}
+		pstate, err := sys.GetState(gstate.PreEpcho)
+		if err != nil {
+			return nil, err
+		}
+		log.Debug("GetBalanceByTime Sanpshot", "epcho", pstate.PreEpcho, "time", pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime, "name", voter)
+		bquantity, err := sys.GetBalanceByTime(voter, pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime)
+		if err != nil {
+			return nil, err
+		}
+		m := new(big.Int)
+		quantity, _ := new(big.Int).DivMod(bquantity, sys.config.unitStake(), m)
+		q = quantity
+	}
+	return q, nil
 }

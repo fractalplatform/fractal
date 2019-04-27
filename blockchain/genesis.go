@@ -24,11 +24,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fractalplatform/fractal/consensus/dpos"
+
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
 	at "github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
+	fm "github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
@@ -45,8 +47,8 @@ type GenesisAccount struct {
 	PubKey common.PubKey `json:"pubKey,omitempty"`
 }
 
-// GenesisCadidate is an cadicate in the state of the genesis block.
-type GenesisCadidate struct {
+// GenesisCandidate is an cadicate in the state of the genesis block.
+type GenesisCandidate struct {
 	Name  string   `json:"name,omitempty"`
 	URL   string   `json:"url,omitempty"`
 	Stake *big.Int `json:"stake,omitempty"`
@@ -65,32 +67,36 @@ type GenesisAsset struct {
 
 // Genesis specifies the header fields, state of a genesis block.
 type Genesis struct {
-	Config         *params.ChainConfig `json:"config,omitempty"`
-	Timestamp      uint64              `json:"timestamp,omitempty"`
-	GasLimit       uint64              `json:"gasLimit,omitempty" `
-	Difficulty     *big.Int            `json:"difficulty,omitempty" `
-	AllocAccounts  []*GenesisAccount   `json:"allocAccounts,omitempty"`
-	AllocCadidates []*GenesisCadidate  `json:"allocCadidates,omitempty"`
-	AllocAssets    []*GenesisAsset     `json:"allocAssets,omitempty"`
+	Config          *params.ChainConfig `json:"config,omitempty"`
+	Timestamp       uint64              `json:"timestamp,omitempty"`
+	GasLimit        uint64              `json:"gasLimit,omitempty" `
+	Difficulty      *big.Int            `json:"difficulty,omitempty" `
+	AllocAccounts   []*GenesisAccount   `json:"allocAccounts,omitempty"`
+	AllocCandidates []*GenesisCandidate `json:"allocCandidates,omitempty"`
+	AllocAssets     []*GenesisAsset     `json:"allocAssets,omitempty"`
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 	return &dpos.Config{
-		MaxURLLen:            cfg.DposCfg.MaxURLLen,
-		UnitStake:            cfg.DposCfg.UnitStake,
-		CadidateMinQuantity:  cfg.DposCfg.CadidateMinQuantity,
-		VoterMinQuantity:     cfg.DposCfg.VoterMinQuantity,
-		ActivatedMinQuantity: cfg.DposCfg.ActivatedMinQuantity,
-		BlockInterval:        cfg.DposCfg.BlockInterval,
-		BlockFrequency:       cfg.DposCfg.BlockFrequency,
-		CadidateScheduleSize: cfg.DposCfg.CadidateScheduleSize,
-		DelayEcho:            cfg.DposCfg.DelayEcho,
-		AccountName:          cfg.DposName,
-		SystemName:           cfg.SysName,
-		SystemURL:            cfg.ChainURL,
-		ExtraBlockReward:     cfg.DposCfg.ExtraBlockReward,
-		BlockReward:          cfg.DposCfg.BlockReward,
-		Decimals:             cfg.SysTokenDecimals,
+		MaxURLLen:             cfg.DposCfg.MaxURLLen,
+		UnitStake:             cfg.DposCfg.UnitStake,
+		CandidateMinQuantity:  cfg.DposCfg.CandidateMinQuantity,
+		VoterMinQuantity:      cfg.DposCfg.VoterMinQuantity,
+		ActivatedMinQuantity:  cfg.DposCfg.ActivatedMinQuantity,
+		BlockInterval:         cfg.DposCfg.BlockInterval,
+		BlockFrequency:        cfg.DposCfg.BlockFrequency,
+		CandidateScheduleSize: cfg.DposCfg.CandidateScheduleSize,
+		BackupScheduleSize:    cfg.DposCfg.BackupScheduleSize,
+		EpchoInterval:         cfg.DposCfg.EpchoInterval,
+		FreezeEpchoSize:       cfg.DposCfg.FreezeEpchoSize,
+		AccountName:           cfg.DposName,
+		SystemName:            cfg.SysName,
+		SystemURL:             cfg.ChainURL,
+		ExtraBlockReward:      cfg.DposCfg.ExtraBlockReward,
+		BlockReward:           cfg.DposCfg.BlockReward,
+		Decimals:              cfg.SysTokenDecimals,
+		AssetID:               cfg.SysTokenID,
+		ReferenceTime:         cfg.ReferenceTime,
 	}
 }
 
@@ -102,7 +108,6 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 	defer func() {
 		if e := recover(); e != nil {
 			err = errors.New(e.(string))
-			log.Error("Setup genesis block recover faild", "err", err)
 		}
 	}()
 
@@ -152,6 +157,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
 	am.SetSysName(common.StrToName(storedcfg.AccountName))
+	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }
 
@@ -174,6 +180,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
 	})
 	am.SetSysName(common.StrToName(g.Config.AccountName))
+	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
@@ -194,7 +201,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	actActions := []*types.Action{}
-	if err := dpos.Genesis(dposConfig(g.Config), statedb, number.Uint64()); err != nil {
+	timestamp := g.Timestamp * uint64(time.Millisecond)
+	g.Config.ReferenceTime = timestamp
+	if err := dpos.Genesis(dposConfig(g.Config), statedb, timestamp, number.Uint64()); err != nil {
 		panic(fmt.Sprintf("genesis dpos err %v", err))
 	}
 
@@ -298,6 +307,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
 		panic(fmt.Sprintf("dpos is not exist %v", err))
 	}
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.FeeName)); !ok {
+		panic(fmt.Sprintf("fee is not exist %v", err))
+	}
 	assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
 	if err != nil {
 		panic(fmt.Sprintf("genesis system asset err %v", err))
@@ -307,9 +319,19 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	g.Config.SysTokenDecimals = assetInfo.Decimals
 
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
-	for _, cadidate := range g.AllocCadidates {
-		_ = cadidate
-		_ = sys
+	for _, candidate := range g.AllocCandidates {
+		if err := sys.SetCandidate(&dpos.CandidateInfo{
+			Name:          candidate.Name,
+			URL:           candidate.URL,
+			Quantity:      big.NewInt(0),
+			TotalQuantity: big.NewInt(0),
+			Height:        number.Uint64(),
+		}); err != nil {
+			panic(fmt.Sprintf("genesis create candidate err %v", err))
+		}
+	}
+	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64()); err != nil {
+		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
 	root := statedb.IntermediateRoot()
@@ -320,7 +342,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	head := &types.Header{
 		Number:     number,
-		Time:       new(big.Int).SetUint64(g.Timestamp),
+		Time:       new(big.Int).SetUint64(timestamp),
 		ParentHash: common.Hash{},
 		Extra:      gjson,
 		GasLimit:   g.GasLimit,
@@ -392,15 +414,14 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 
 // DefaultGenesis returns the ft net genesis block.
 func DefaultGenesis() *Genesis {
-	gtime, _ := time.Parse("2006-01-02 15:04:05.999999999", "2019-01-16 00:00:00")
 	return &Genesis{
-		Config:         params.DefaultChainconfig,
-		Timestamp:      uint64(gtime.UnixNano()),
-		GasLimit:       params.GenesisGasLimit,
-		Difficulty:     params.GenesisDifficulty,
-		AllocAccounts:  DefaultGenesisAccounts(),
-		AllocCadidates: DefaultGenesisCadidates(),
-		AllocAssets:    DefaultGenesisAssets(),
+		Config:          params.DefaultChainconfig,
+		Timestamp:       1555776000000, // 2019-04-21 00:00:00
+		GasLimit:        params.GenesisGasLimit,
+		Difficulty:      params.GenesisDifficulty,
+		AllocAccounts:   DefaultGenesisAccounts(),
+		AllocCandidates: DefaultGenesisCandidates(),
+		AllocAssets:     DefaultGenesisAssets(),
 	}
 }
 
@@ -419,12 +440,16 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 			Name:   params.DefaultChainconfig.DposName,
 			PubKey: common.HexToPubKey(""),
 		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.FeeName,
+			PubKey: common.HexToPubKey(""),
+		},
 	}
 }
 
-// DefaultGenesisCadidates returns the ft net genesis cadidates.
-func DefaultGenesisCadidates() []*GenesisCadidate {
-	return []*GenesisCadidate{}
+// DefaultGenesisCandidates returns the ft net genesis candidates.
+func DefaultGenesisCandidates() []*GenesisCandidate {
+	return []*GenesisCandidate{}
 }
 
 // DefaultGenesisAssets returns the ft net genesis assets.

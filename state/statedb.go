@@ -492,7 +492,7 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 	return stateDb, nil
 }
 
-const second = 1000000000
+const msecond = 1000000
 
 type SnapshotSt struct {
 	db           fdb.Database
@@ -507,14 +507,14 @@ func NewSnapshot(db fdb.Database, sptime uint64) *SnapshotSt {
 		db:           db,
 		snapshotTime: sptime,
 		stop:         make(chan struct{}),
-		intervalTime: (sptime * second),
+		intervalTime: (sptime * msecond),
 	}
 
 	return snapshot
 }
 
 func (sn *SnapshotSt) Start() {
-	log.Info("Snapshot start", "snapshot interval=", sn.snapshotTime)
+	log.Info("Snapshot start", "snapshot interval", sn.snapshotTime)
 	go sn.SnapShotblk()
 }
 
@@ -617,6 +617,18 @@ func (sn *SnapshotSt) snapshotRecord(block *types.Block) bool {
 			return false
 		}
 		curSnapshotTime = (prevTime / sn.intervalTime) * sn.intervalTime
+		snapshotmsg := types.SnapshotMsg{
+			Time:   0,
+			Number: blockNum,
+			Root:   head.Root,
+		}
+		curSnapshotTime = (prevTime / sn.intervalTime) * sn.intervalTime
+		batch := sn.db.NewBatch()
+		rawdb.WriteBlockSnapshotTime(batch, curSnapshotTime, snapshotmsg)
+		rawdb.WriteBlockSnapshotLast(batch, curSnapshotTime)
+		if err := batch.Write(); err != nil {
+			return false
+		}
 	} else {
 		curSnapshotTime = binary.BigEndian.Uint64(snapshotTimeLast)
 		snapshotInfo := rawdb.ReadSnapshotTime(sn.db, curSnapshotTime)

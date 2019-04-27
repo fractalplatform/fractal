@@ -32,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/crypto/ecies"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -1200,7 +1201,7 @@ func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, error) {
 	input := strings.Split(desc, ",")
-	if len(input) != 7 {
+	if len(input) != 9 {
 		return 0, fmt.Errorf("invalid desc string")
 	}
 	name := input[0]
@@ -1219,7 +1220,10 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 		return 0, fmt.Errorf("amount not correct")
 	}
 	founder := common.Name(input[6])
-	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit}
+	contractName := common.Name(input[7])
+	detail := input[8]
+
+	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Detail: detail}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
@@ -1298,6 +1302,46 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 			}
 			evm.InternalTxs = append(evm.InternalTxs, internalActions...)
 		}
+	}
+	return err
+}
+
+//withdraw all asset fee from system
+func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	offset, size := stack.pop(), stack.pop()
+	ret := memory.Get(offset.Int64(), size.Int64())
+	ret = bytes.TrimRight(ret, "\x00")
+	name := common.Name(ret)
+
+	err := execWithdrawFee(evm, contract, name)
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(1))
+	}
+	evm.interpreter.intPool.put(offset, size)
+
+	return nil, err
+}
+
+func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error {
+	fm := feemanager.NewFeeManager(evm.StateDB, evm.AccountDB)
+	withdrawInfos, err := fm.WithdrawFeeFromSystem(withdrawTo)
+
+	if evm.vmConfig.ContractLogFlag {
+		errmsg := ""
+		if err != nil {
+			errmsg = err.Error()
+		}
+		paload, errEnc := rlp.EncodeToBytes(withdrawInfos)
+		if errEnc != nil {
+			return errEnc
+		}
+
+		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawTo, 0, 0, 0, big.NewInt(0), paload)
+		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "withdrawfee", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
+		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 	return err
 }

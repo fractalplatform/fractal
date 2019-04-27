@@ -234,7 +234,7 @@ func TestSnapshot(t *testing.T) {
 	// rawdb.WriteBlock(batch, block)
 	batch.Write()
 
-	snapshot := NewSnapshot(db, 10)
+	snapshot := NewSnapshot(db, 10000)
 
 	snapshot.snapshotRecord(block)
 

@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
@@ -285,6 +286,21 @@ func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error)
 	return acctm, nil
 }
 
+//GetFeeManager get fee manager
+func (b *APIBackend) GetFeeManager() (*feemanager.FeeManager, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+	acctm, err := accountmanager.NewAccountManager(sdb)
+	if err != nil {
+		return nil, err
+	}
+
+	fm := feemanager.NewFeeManager(sdb, acctm)
+	return fm, nil
+}
+
 // AddPeer add a P2P peer
 func (b *APIBackend) AddPeer(url string) error {
 	node, err := enode.ParseV4(url)
@@ -369,6 +385,11 @@ func (b *APIBackend) SelfNode() string {
 // APIs returns apis
 func (b *APIBackend) Engine() consensus.IEngine {
 	return b.ftservice.engine
+}
+
+//SetStatePruning set state pruning
+func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
+	return b.ftservice.blockchain.StatePruning(enable)
 }
 
 // APIs returns apis

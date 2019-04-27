@@ -34,7 +34,8 @@ import (
 
 var (
 	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	from          = common.Name("ftsystemio")
+	from          = common.Name("fractal.admin")
+	to            = common.Name("fractal.account")
 	aca           = common.Name("accounta")
 	acb           = common.Name("accountb")
 	acc           = common.Name("accountc")
@@ -96,7 +97,7 @@ func generateAccount() {
 		PublicKey:   pubKey_a,
 	}
 	b, _ := rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, from, from, nonce, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, from, to, nonce, assetID, balance, b, []*types.KeyPair{key})
 
 	acct = &accountmanager.AccountAction{
 		AccountName: acb,
@@ -104,7 +105,7 @@ func generateAccount() {
 		PublicKey:   pubKey_b,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, from, from, nonce+1, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, from, to, nonce+1, assetID, balance, b, []*types.KeyPair{key})
 
 	acct = &accountmanager.AccountAction{
 		AccountName: acc,
@@ -112,13 +113,21 @@ func generateAccount() {
 		PublicKey:   pubKey_c,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, from, from, nonce+2, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, from, to, nonce+2, assetID, balance, b, []*types.KeyPair{key})
 
 	for {
 		time.Sleep(10 * time.Second)
 		aexist, _ := testcommon.CheckAccountIsExist(aca)
 		bexist, _ := testcommon.CheckAccountIsExist(acb)
 		cexist, _ := testcommon.CheckAccountIsExist(acc)
+
+		acaAccount, _ := testcommon.GetAccountByName(aca)
+		acbAccount, _ := testcommon.GetAccountByName(acb)
+		accAccount, _ := testcommon.GetAccountByName(acc)
+		fmt.Println("acaAccount version hash", acaAccount.AuthorVersion.Hex())
+		fmt.Println("acbAccount version hash", acbAccount.AuthorVersion.Hex())
+		fmt.Println("accAccount version hash", accAccount.AuthorVersion.Hex())
+
 		if aexist && bexist && cexist {
 			break
 		}
@@ -158,7 +167,7 @@ func addAuthorsForAca() {
 		return
 	}
 	key := types.MakeKeyPair(newPrivateKey_a, []uint64{0})
-	sendTransferTx(types.UpdateAccountAuthor, aca, aca, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
+	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
 }
 
 func addAuthorsForAcb() {
@@ -180,7 +189,7 @@ func addAuthorsForAcb() {
 		return
 	}
 	key := types.MakeKeyPair(newPrivateKey_b, []uint64{0})
-	sendTransferTx(types.UpdateAccountAuthor, acb, acb, bNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
+	sendTransferTx(types.UpdateAccountAuthor, acb, to, bNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
 }
 
 func addAuthorsForAcc() {
@@ -204,7 +213,7 @@ func addAuthorsForAcc() {
 		return
 	}
 	key := types.MakeKeyPair(newPrivateKey_c, []uint64{0})
-	sendTransferTx(types.UpdateAccountAuthor, acc, acc, cNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
+	sendTransferTx(types.UpdateAccountAuthor, acc, to, cNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
 }
 
 func transferFromA2B() {
@@ -217,7 +226,7 @@ func transferFromA2B() {
 	key_1_2 := types.MakeKeyPair(b_author_2_priv, []uint64{1, 2})
 
 	aNonce++
-	sendTransferTx(types.Transfer, aca, acb, aNonce, assetID, big.NewInt(1), nil, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2})
+	sendTransferTx(types.Transfer, aca, to, aNonce, assetID, big.NewInt(1), nil, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2})
 }
 
 func modifyAUpdateAUthorThreshold() {
@@ -230,7 +239,7 @@ func modifyAUpdateAUthorThreshold() {
 	}
 
 	aNonce++
-	sendTransferTx(types.UpdateAccountAuthor, aca, aca, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_2})
+	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_2})
 }
 
 func main() {
@@ -246,6 +255,13 @@ func main() {
 	addAuthorsForAcb()
 	addAuthorsForAcc()
 	time.Sleep(10 * time.Second)
+
+	acaAccount, _ := testcommon.GetAccountByName(aca)
+	acbAccount, _ := testcommon.GetAccountByName(acb)
+	accAccount, _ := testcommon.GetAccountByName(acc)
+	fmt.Println("update acaAccount version hash", acaAccount.AuthorVersion.Hex())
+	fmt.Println("update acbAccount version hash", acbAccount.AuthorVersion.Hex())
+	fmt.Println("update accAccount version hash", accAccount.AuthorVersion.Hex())
 
 	transferFromA2B()
 	modifyAUpdateAUthorThreshold()

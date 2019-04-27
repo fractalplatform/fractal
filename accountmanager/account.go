@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/types"
 )
 
 // AssetBalance asset and balance struct
@@ -39,7 +40,7 @@ type recoverActionResult struct {
 type accountAuthor struct {
 	threshold             uint64
 	updateAuthorThreshold uint64
-	version               uint64
+	version               common.Hash
 	indexWeight           map[uint64]uint64
 }
 
@@ -65,7 +66,7 @@ type Account struct {
 	CodeSize              uint64      `json:"codeSize"`
 	Threshold             uint64      `json:"threshold"`
 	UpdateAuthorThreshold uint64      `json:"updateAuthorThreshold"`
-	AuthorVersion         uint64      `json:"authorVersion"`
+	AuthorVersion         common.Hash `json:"authorVersion"`
 	//sort by asset id asc
 	Balances []*AssetBalance `json:"balances"`
 	//realated account, pubkey and address
@@ -73,13 +74,18 @@ type Account struct {
 	//code Suicide
 	Suicide bool `json:"suicide"`
 	//account destroy
-	Destroy bool `json:"destroy"`
+	Destroy bool   `json:"destroy"`
+	Detail  string `json:"detail"`
 }
 
 // NewAccount create a new account object.
-func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey) (*Account, error) {
+func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey, detail string) (*Account, error) {
 	if !common.IsValidAccountName(accountName.String()) {
 		return nil, ErrAccountNameInvalid
+	}
+
+	if uint64(len(detail)) > MaxDetailLength {
+		return nil, ErrCreateAccountError
 	}
 
 	auth := common.NewAuthor(pubkey, 1)
@@ -95,11 +101,12 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		CodeHash:              crypto.Keccak256Hash(nil),
 		Threshold:             1,
 		UpdateAuthorThreshold: 1,
-		AuthorVersion:         1,
 		Authors:               []*common.Author{auth},
 		Suicide:               false,
 		Destroy:               false,
+		Detail:                detail,
 	}
+	acctObject.SetAuthorVersion()
 	return &acctObject, nil
 }
 
@@ -174,12 +181,16 @@ func (a *Account) SetNonce(nonce uint64) {
 	a.Nonce = nonce
 }
 
-func (a *Account) GetAuthorVersion() uint64 {
+func (a *Account) GetAuthorVersion() common.Hash {
 	return a.AuthorVersion
 }
 
 func (a *Account) SetAuthorVersion() {
-	a.AuthorVersion++
+	a.AuthorVersion = types.RlpHash([]interface{}{
+		a.Authors,
+		a.Threshold,
+		a.UpdateAuthorThreshold,
+	})
 }
 
 //GetCode get code

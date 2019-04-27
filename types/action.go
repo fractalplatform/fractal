@@ -69,27 +69,28 @@ const (
 )
 
 const (
-	// RegCadidate repesents register cadidate action.
-	RegCadidate ActionType = 0x300 + iota
-	// UpdateCadidate repesents update cadidate action.
-	UpdateCadidate
-	// UnregCadidate repesents unregister cadidate action.
-	UnregCadidate
-	// RemoveVoter repesents cadidate remove voter action.
-	RemoveVoter
-	// VoteCadidate repesents voter vote cadidate action.
-	VoteCadidate
-	// ChangeCadidate repesents voter change cadidate action.
-	ChangeCadidate
-	// UnvoteCadidate repesents voter cancel vote some cadidate action.
-	UnvoteCadidate
+	// RegCandidate repesents register candidate action.
+	RegCandidate ActionType = 0x300 + iota
+	// UpdateCandidate repesents update candidate action.
+	UpdateCandidate
+	// UnregCandidate repesents unregister candidate action.
+	UnregCandidate
+	// RefundCandidate repesents unregister candidate action.
+	RefundCandidate
+	// VoteCandidate repesents voter vote candidate action.
+	VoteCandidate
 )
 
 const (
-	// KickedCadidate
-	KickedCadidate ActionType = 0x400 + iota
-	// exit
+	// KickedCandidate kicked
+	KickedCandidate ActionType = 0x400 + iota
+	// ExitTakeOver exit
 	ExitTakeOver
+)
+
+const (
+	// WithdrawFee
+	WithdrawFee ActionType = 0x500 + iota
 )
 
 type SignData struct {
@@ -164,11 +165,9 @@ func (a *Action) CheckValue() bool {
 		fallthrough
 	case DestroyAsset:
 		fallthrough
-	case RegCadidate:
+	case RegCandidate:
 		fallthrough
-	case UpdateCadidate:
-		fallthrough
-	case VoteCadidate:
+	case UpdateCandidate:
 		return true
 	default:
 	}
@@ -219,7 +218,7 @@ func (a *Action) Hash() common.Hash {
 	if hash := a.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := rlpHash(a)
+	v := RlpHash(a)
 	a.hash.Store(v)
 	return v
 }

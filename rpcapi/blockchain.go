@@ -328,8 +328,8 @@ func (s *PublicBlockChainAPI) GetChainConfig() map[string]interface{} {
 	return ret
 }
 
-// GetGeneisisJson returns geneisis config.
-func (s *PublicBlockChainAPI) GetGeneisis() map[string]interface{} {
+// GetGenesis returns genesis config.
+func (s *PublicBlockChainAPI) GetGenesis() map[string]interface{} {
 	ret := map[string]interface{}{}
 	g, err := s.b.BlockByNumber(context.Background(), 0)
 	if err != nil {
@@ -337,4 +337,9 @@ func (s *PublicBlockChainAPI) GetGeneisis() map[string]interface{} {
 	}
 	json.Unmarshal(g.Head.Extra, &ret)
 	return ret
+}
+
+func (s *PublicBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
+	prestatus, number := s.b.SetStatePruning(enable)
+	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
 }

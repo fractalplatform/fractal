@@ -72,7 +72,7 @@ func TestActionEncodeAndDecode(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	t.Log(rlpHash(actAction).Hex())
+	t.Log(RlpHash(actAction).Hex())
 
 	assert.Equal(t, testAction, actAction)
 }

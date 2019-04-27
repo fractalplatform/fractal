@@ -30,6 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
 	jww "github.com/spf13/jwalterweatherman"
@@ -123,6 +124,12 @@ func GetAccountByName(name common.Name) (*accountmanager.Account, error) {
 	account := &accountmanager.Account{}
 	err := ClientCall("account_getAccountByName", account, name)
 	return account, err
+}
+
+func GetObjectFeeByName(objectName common.Name) (*feemanager.ObjectFee, error) {
+	objectFee := &feemanager.ObjectFee{}
+	err := ClientCall("fee_getObjectFeeByName", objectFee, objectName)
+	return objectFee, err
 }
 
 func GetDposAccount(name common.Name) (map[string]interface{}, error) {
