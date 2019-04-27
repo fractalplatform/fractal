@@ -348,6 +348,8 @@ func (tab *Table) loop() {
 	defer revalidate.Stop()
 	defer copyNodes.Stop()
 
+	// fix bug: the tab.doRefresh will call udp.findnode, and then access upd.tab, but it's may not initialized.
+	<-tab.initDone
 	// Start initial refresh.
 	go tab.doRefresh(refreshDone)
 

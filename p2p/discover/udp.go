@@ -287,6 +287,9 @@ func newUDP(c conn, cfg Config) (*Table, *udp, error) {
 	}
 	udp.Table = tab
 
+	// fix bug: // fix bug: the newTable() on above will call udp.findnode by go-routing, and then access upd.tab, but upd.tab may not initialized.
+	tab.initDone <- struct{}{}
+
 	go udp.loop()
 	go udp.readLoop(cfg.Unhandled)
 	return udp.Table, udp, nil
