@@ -116,7 +116,7 @@ func (c *txsCache) ttlCheck(tx *types.Transaction) {
 	if target.hash != hash {
 		return
 	}
-	if target.getBloomSetBits() > len(*target.bloom)/2 {
+	if target.getBloomSetBits() > len(*target.bloom)*3 {
 		target.reset(hash, &types.Bloom{})
 	}
 }
