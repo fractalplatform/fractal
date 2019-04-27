@@ -14,22 +14,29 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package accountmanager
+package rpcapi
 
-// Config Account Level
-type Config struct {
-	AccountNameLevel     uint64 `json:"accountNameLevel"`
-	AccountNameLength    uint64 `json:"accountNameLength"`
-	SubAccountNameLength uint64 `json:"subAccountNameLength"`
+import (
+	"context"
+
+	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/feemanager"
+)
+
+type FeeAPI struct {
+	b Backend
 }
 
-// DefaultAccountNameConf return account config
-func DefaultAccountNameConf() *Config {
-	return &Config{
-		AccountNameLevel:     0,
-		AccountNameLength:    16,
-		SubAccountNameLength: 0,
+func NewFeeAPI(b Backend) *FeeAPI {
+	return &FeeAPI{b}
+}
+
+//GetObjectFeeByName get object fee by name
+func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName common.Name) (*feemanager.ObjectFee, error) {
+	fm, err := aapi.b.GetFeeManager()
+	if err != nil {
+		return nil, err
 	}
-}
 
-const MaxDetailLength uint64 = 255
+	return fm.GetObjectFeeByName(objectName)
+}

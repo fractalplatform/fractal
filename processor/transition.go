@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/txpool"
@@ -195,33 +196,44 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 			}
 		}
 	}
-	if err := st.distributeGas(); err != nil {
+	if err := st.distributeFee(); err != nil {
 		return ret, st.gasUsed(), true, err, vmerr
 	}
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 
-func (st *StateTransition) distributeGas() error {
-	var totalGas int64
-	for name, gas := range st.evm.FounderGasMap {
-		var founder common.Name
-		if vm.AssetGas == gas.TypeID {
-			assetInfo, _ := st.account.GetAssetInfoByName(name.String())
-			if assetInfo != nil {
-				founder = assetInfo.GetAssetFounder()
-			}
-		} else if vm.ContractGas == gas.TypeID {
-			founder, _ = st.account.GetFounder(name)
-		} else if vm.CoinbaseGas == gas.TypeID {
-			founder = name
-		}
+func transToObjectType(gasType uint64) uint64 {
+	if gasType == vm.AssetGas {
+		return common.AssetName
+	} else if gasType == vm.ContractGas {
+		return common.ContractName
+	} else if gasType == vm.CoinbaseGas {
+		return common.CoinbaseName
+	}
+	return 0
+}
 
-		st.account.AddAccountBalanceByID(founder, st.assetID, new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value)))
+func (st *StateTransition) distributeFee() error {
+	var totalGas int64
+	fm := feemanager.NewFeeManager(st.evm.StateDB, st.evm.AccountDB)
+
+	for name, gas := range st.evm.FounderGasMap {
+		if gas.Value > 0 {
+			value := new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value))
+			objectType := transToObjectType(gas.TypeID)
+			err := fm.RecordFeeInSystem(name, objectType, st.assetID, value)
+
+			if err != nil {
+				return fmt.Errorf("record fee err(%v), name:%v,type:%d,assetID:%d", err, name, gas.TypeID, st.assetID)
+			}
+		}
 		totalGas += gas.Value
 	}
+
 	if totalGas > int64(st.gasUsed()) {
 		return fmt.Errorf("calc wrong gas used")
 	}
+
 	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
 		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{
 			Value:  int64(st.gasUsed()) - totalGas,
@@ -233,7 +245,14 @@ func (st *StateTransition) distributeGas() error {
 		dGas.Value = st.evm.FounderGasMap[st.evm.Coinbase].Value + dGas.Value
 		st.evm.FounderGasMap[st.evm.Coinbase] = dGas
 	}
-	st.account.AddAccountBalanceByID(st.evm.Coinbase, st.assetID, new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas))))
+
+	value := new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas)))
+	gasType := st.evm.FounderGasMap[st.evm.Coinbase].TypeID
+	objectType := transToObjectType(gasType)
+	err := fm.RecordFeeInSystem(st.evm.Coinbase, objectType, st.assetID, value)
+	if err != nil {
+		return fmt.Errorf("record fee err(%v), name:%v,type:%d,assetID:%d", err, st.evm.Coinbase, gasType, st.assetID)
+	}
 	return nil
 }
 

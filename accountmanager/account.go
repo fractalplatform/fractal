@@ -74,13 +74,18 @@ type Account struct {
 	//code Suicide
 	Suicide bool `json:"suicide"`
 	//account destroy
-	Destroy bool `json:"destroy"`
+	Destroy bool   `json:"destroy"`
+	Detail  string `json:"detail"`
 }
 
 // NewAccount create a new account object.
-func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey) (*Account, error) {
+func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey, detail string) (*Account, error) {
 	if !common.IsValidAccountName(accountName.String()) {
 		return nil, ErrAccountNameInvalid
+	}
+
+	if uint64(len(detail)) > MaxDetailLength {
+		return nil, ErrCreateAccountError
 	}
 
 	auth := common.NewAuthor(pubkey, 1)
@@ -99,6 +104,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		Authors:               []*common.Author{auth},
 		Suicide:               false,
 		Destroy:               false,
+		Detail:                detail,
 	}
 	acctObject.SetAuthorVersion()
 	return &acctObject, nil

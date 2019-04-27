@@ -14,22 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package accountmanager
+package sdk
 
-// Config Account Level
-type Config struct {
-	AccountNameLevel     uint64 `json:"accountNameLevel"`
-	AccountNameLength    uint64 `json:"accountNameLength"`
-	SubAccountNameLength uint64 `json:"subAccountNameLength"`
+import (
+	"testing"
+
+	"github.com/fractalplatform/fractal/params"
+	. "github.com/smartystreets/goconvey/convey"
+)
+
+var feeaccount = params.DefaultChainconfig.FeeName
+
+func TestFeeInfo(t *testing.T) {
+	Convey("fee_getObjectFeeByName", t, func() {
+		api := NewAPI(rpchost)
+		objFee, err := api.FeeInfo(feeaccount)
+		So(err, ShouldBeNil)
+		So(objFee, ShouldNotBeNil)
+	})
 }
-
-// DefaultAccountNameConf return account config
-func DefaultAccountNameConf() *Config {
-	return &Config{
-		AccountNameLevel:     0,
-		AccountNameLength:    16,
-		SubAccountNameLength: 0,
-	}
-}
-
-const MaxDetailLength uint64 = 255

@@ -14,22 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package accountmanager
+package sdk
 
-// Config Account Level
-type Config struct {
-	AccountNameLevel     uint64 `json:"accountNameLevel"`
-	AccountNameLength    uint64 `json:"accountNameLength"`
-	SubAccountNameLength uint64 `json:"subAccountNameLength"`
+// FeeInfo get object fee by name
+func (api *API) FeeInfo(name string) (map[string]interface{}, error) {
+	account := map[string]interface{}{}
+	err := api.client.Call(account, "fee_getObjectFeeByName", name)
+	return account, err
 }
-
-// DefaultAccountNameConf return account config
-func DefaultAccountNameConf() *Config {
-	return &Config{
-		AccountNameLevel:     0,
-		AccountNameLength:    16,
-		SubAccountNameLength: 0,
-	}
-}
-
-const MaxDetailLength uint64 = 255

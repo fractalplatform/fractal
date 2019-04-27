@@ -26,6 +26,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/debug"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -70,6 +71,9 @@ type Backend interface {
 
 	SetGasPrice(gasPrice *big.Int) bool
 
+	//fee manager
+	GetFeeManager() (*feemanager.FeeManager, error)
+
 	// P2P
 	AddPeer(url string) error
 	RemovePeer(url string) error
@@ -109,6 +113,11 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Namespace: "p2p",
 			Version:   "1.0",
 			Service:   NewPrivateP2pAPI(apiBackend),
+			Public:    true,
+		}, {
+			Namespace: "fee",
+			Version:   "1.0",
+			Service:   NewFeeAPI(apiBackend),
 			Public:    true,
 		},
 		{
