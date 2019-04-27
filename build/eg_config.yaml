@@ -3,6 +3,8 @@ genesis: "./build/genesis.json"
 
 # log configuration table
 log:
+  # Writes log records to file chunks at the given path
+  dir: ""
   # Prepends log messages with call-site location (file and line number)
   printorigins: false
   # Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail

@@ -28,6 +28,14 @@ var (
 
 func addFlags(flags *flag.FlagSet) {
 	// log
+	flags.StringVar(
+		&ftCfgInstance.LogCfg.Logdir,
+		"log_dir",
+		ftCfgInstance.LogCfg.Logdir,
+		"Writes log records to file chunks at the given path",
+	)
+	viper.BindPFlag("log.dir", flags.Lookup("log_dir"))
+
 	flags.BoolVar(
 		&ftCfgInstance.LogCfg.PrintOrigins,
 		"log_debug",
