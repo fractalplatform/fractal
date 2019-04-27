@@ -1,8 +1,25 @@
 # Genesis json file
 genesis: "./build/genesis.json"
 
+debug: 
+  # Enable the pprof HTTP server
+  pprof: false
+  # Pprof HTTP server listening port
+  pprofport: 6060
+  # Pprof HTTP server listening interface
+  pprofaddr: "127.0.0.1"
+  # Turn on memory profiling with the given rate(512 * 1024)
+  memprofilerate: 524288
+  # Turn on block profiling with the given rate
+  blockprofilerate: 0 
+  # Write CPU profile to the given file
+  cpuprofile: ""
+  # Write execution trace to the given file
+  trace: ""
 # log configuration table
 log:
+  # Writes log records to file chunks at the given path
+  dir: ""
   # Prepends log messages with call-site location (file and line number)
   printorigins: false
   # Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail
