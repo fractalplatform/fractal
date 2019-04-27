@@ -56,7 +56,7 @@ func defaultNodeConfig() *node.Config {
 		IPCPath:           params.ClientIdentifier + ".ipc",
 		HTTPHost:          "localhost",
 		HTTPPort:          8545,
-		HTTPModules:       []string{"ft", "miner", "dpos", "account", "txpool"},
+		HTTPModules:       []string{"ft", "miner", "dpos", "account", "txpool", "fee"},
 		HTTPVirtualHosts:  []string{"localhost"},
 		HTTPCors:          []string{"*"},
 		WSHost:            "localhost",
