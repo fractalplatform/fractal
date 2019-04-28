@@ -48,8 +48,8 @@ var (
 )
 
 const (
-	AccountFee = 1
-	AssetFee   = 2
+	AccountFee uint64 = 1
+	AssetFee   uint64 = 2
 )
 
 func opAdd(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
@@ -1322,19 +1322,19 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		acct, err := evm.AccountDB.GetAccountById(objID)
 		if err != nil || acct == nil {
 			stack.push(evm.interpreter.intPool.getZero())
-			return nil, err
+			return nil, nil
 		}
 		name = acct.GetName()
 	} else if withdrawType == AssetFee {
 		assetInfo, err := evm.AccountDB.GetAssetInfoByID(objID)
 		if err != nil || assetInfo == nil {
 			stack.push(evm.interpreter.intPool.getZero())
-			return nil, err
+			return nil, nil
 		}
 		name = common.Name(assetInfo.GetAssetName())
 	} else {
 		stack.push(evm.interpreter.intPool.getZero())
-		return nil, fmt.Errorf("object type not correct")
+		return nil, nil
 	}
 
 	err := execWithdrawFee(evm, contract, name)
@@ -1346,7 +1346,7 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	}
 	evm.interpreter.intPool.put(feeType, feeId)
 
-	return nil, err
+	return nil, nil
 }
 
 func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error {
