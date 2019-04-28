@@ -355,7 +355,37 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	actions := []*types.Action{}
 	actions = append(actions, actActions...)
 	actions = append(actions, astActions...)
-	tx := types.NewTransaction(0, big.NewInt(0), actions...)
+	for _, action := range actActions {
+		if action.AssetID() == 0 {
+			action = types.NewAction(
+				action.Type(),
+				action.Sender(),
+				action.Recipient(),
+				action.Nonce(),
+				g.Config.SysTokenID,
+				action.Gas(),
+				action.Value(),
+				action.Data(),
+			)
+		}
+		actions = append(actions, action)
+	}
+	for _, action := range astActions {
+		if action.AssetID() == 0 {
+			action = types.NewAction(
+				action.Type(),
+				action.Sender(),
+				action.Recipient(),
+				action.Nonce(),
+				g.Config.SysTokenID,
+				action.Gas(),
+				action.Value(),
+				action.Data(),
+			)
+		}
+		actions = append(actions, action)
+	}
+	tx := types.NewTransaction(g.Config.SysTokenID, big.NewInt(0), actions...)
 	receipt := types.NewReceipt(root[:], 0, 0)
 	receipt.TxHash = tx.Hash()
 	for index := range actions {
