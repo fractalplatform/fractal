@@ -55,9 +55,6 @@ const (
 	BlockChainVersion = 0
 )
 
-type CacheConfig struct {
-}
-
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 type BlockChain struct {
