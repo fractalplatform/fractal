@@ -47,6 +47,11 @@ var (
 	errMaxCodeSizeExceeded   = errors.New("evm: max code size exceeded")
 )
 
+const (
+	AccountFee uint64 = 1
+	AssetFee   uint64 = 2
+)
+
 func opAdd(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	x, y := stack.pop(), stack.peek()
 	math.U256(y.Add(x, y))
@@ -1308,25 +1313,40 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 
 //withdraw all asset fee from system
 func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	to := stack.pop()
-	userID := to.Uint64()
-	acct, err := evm.AccountDB.GetAccountById(userID)
-	if err != nil || acct == nil {
+	feeType, feeId := stack.pop(), stack.pop()
+	withdrawType := feeType.Uint64()
+	objID := feeId.Uint64()
+
+	var name common.Name
+	if withdrawType == AccountFee {
+		acct, err := evm.AccountDB.GetAccountById(objID)
+		if err != nil || acct == nil {
+			stack.push(evm.interpreter.intPool.getZero())
+			return nil, nil
+		}
+		name = acct.GetName()
+	} else if withdrawType == AssetFee {
+		assetInfo, err := evm.AccountDB.GetAssetInfoByID(objID)
+		if err != nil || assetInfo == nil {
+			stack.push(evm.interpreter.intPool.getZero())
+			return nil, nil
+		}
+		name = common.Name(assetInfo.GetAssetName())
+	} else {
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
 	}
-	name := acct.GetName()
 
-	err = execWithdrawFee(evm, contract, name)
+	err := execWithdrawFee(evm, contract, name)
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
 	}
-	evm.interpreter.intPool.put(to)
+	evm.interpreter.intPool.put(feeType, feeId)
 
-	return nil, err
+	return nil, nil
 }
 
 func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error {
