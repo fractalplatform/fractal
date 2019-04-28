@@ -142,6 +142,8 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		fallthrough
 	case actionType == types.VoteCandidate:
 		fallthrough
+	case actionType == types.RefundCandidate:
+		fallthrough
 	case actionType == types.KickedCandidate:
 		fallthrough
 	case actionType == types.ExitTakeOver:

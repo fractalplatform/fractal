@@ -359,11 +359,6 @@ func (db *LDB) SetState(gstate *GlobalState) error {
 	} else if err := db.Put(key, val); err != nil {
 		return err
 	}
-
-	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
-	if err := db.Put(lkey, uint64tobytes(gstate.Epcho)); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -404,6 +399,12 @@ func (db *LDB) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int,
 		return big.NewInt(0), candidateInfo.TotalQuantity, candidateInfo.Counter, nil
 	}
 	return candidateInfo.Quantity, candidateInfo.TotalQuantity, candidateInfo.Counter, nil
+}
+
+// SetLastestEpcho set latest epcho
+func (db *LDB) SetLastestEpcho(epcho uint64) error {
+	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
+	return db.Put(lkey, uint64tobytes(epcho))
 }
 
 // GetLastestEpcho get latest epcho

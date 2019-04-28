@@ -47,6 +47,7 @@ type IDB interface {
 
 	SetState(*GlobalState) error
 	GetState(uint64) (*GlobalState, error)
+	SetLastestEpcho(uint64) error
 	GetLastestEpcho() (uint64, error)
 
 	Undelegate(string, *big.Int) (*types.Action, error)

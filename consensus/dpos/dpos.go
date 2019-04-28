@@ -115,6 +115,9 @@ func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, height uint64)
 	}
 
 	epcho := cfg.epoch(timestamp)
+	if err := sys.SetLastestEpcho(epcho); err != nil {
+		return err
+	}
 	if err := sys.SetState(&GlobalState{
 		Epcho:                  epcho,
 		PreEpcho:               epcho,
