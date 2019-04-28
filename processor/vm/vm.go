@@ -194,11 +194,11 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName common.Name, ca
 		}
 		if len(callerName.String()) > 0 {
 			if _, ok := evm.FounderGasMap[callerName]; !ok {
-				dGas := DistributeGas{-int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
+				dGas := DistributeGas{-int64(callValueGas * int64(assetFounderRatio) / 100), ContractGas}
+				//dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
 				evm.FounderGasMap[callerName] = dGas
 			} else {
-				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
+				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), ContractGas}
 				dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
 				evm.FounderGasMap[callerName] = dGas
 			}
@@ -277,7 +277,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 
 	evm.distributeContractGas(runGas, contractName, caller.Name())
 
-	callValueGas := int64(params.CallValueTransferGas - contract.Gas)
+	callValueGas := int64(params.CallValueTransferGas - params.CallStipend)
 	if action.Value().Sign() != 0 && callValueGas > 0 {
 		evm.distributeAssetGas(callValueGas, assetName, caller.Name())
 	}

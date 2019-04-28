@@ -27,6 +27,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/cmd/utils"
+	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/metrics/influxdb"
@@ -52,6 +53,10 @@ var RootCmd = &cobra.Command{
 			log.Error("viper umarshal config file faild", "err", err)
 		}
 
+		if err := debug.Setup(ftCfgInstance.DebugCfg); err != nil {
+			log.Error("debug setup faild", "err", err)
+		}
+
 		node, err := makeNode()
 		if err != nil {
 			log.Error("ft make node failed.", "err", err)
@@ -69,6 +74,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		node.Wait()
+		debug.Exit()
 	},
 }
 
@@ -119,6 +125,8 @@ func SetupMetrics() {
 
 // start up the node itself
 func startNode(stack *node.Node) error {
+	debug.Memsize.Add("node", stack)
+
 	if err := stack.Start(); err != nil {
 		return err
 	}
@@ -135,6 +143,8 @@ func startNode(stack *node.Node) error {
 				log.Warn("Already shutting down, interrupt more to panic.", "times", i-1)
 			}
 		}
+		debug.Exit() // ensure trace and CPU profile data is flushed.
+		debug.LoudPanic("boom")
 	}()
 	return nil
 }
