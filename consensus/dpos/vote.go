@@ -534,7 +534,6 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 
 	if pepcho != epcho {
-		log.Debug("Need Sanpshot", "epcho", pstate.Epcho, "time", sys.config.epochTimeStamp(pstate.Epcho), "height", pstate.Height)
 		gstate := &GlobalState{
 			Epcho:                  epcho,
 			PreEpcho:               pstate.Epcho,
@@ -561,8 +560,16 @@ func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, e
 		if err != nil {
 			return nil, err
 		}
-		log.Debug("GetBalanceByTime Sanpshot", "epcho", gstate.PreEpcho, "time", sys.config.epochTimeStamp(gstate.PreEpcho), "name", voter)
-		bquantity, err := sys.GetBalanceByTime(voter, sys.config.epochTimeStamp(gstate.PreEpcho))
+		timestamp := sys.config.epochTimeStamp(gstate.PreEpcho)
+		pstate, err := sys.GetState(gstate.PreEpcho)
+		if err != nil {
+			return nil, err
+		}
+		if sys.config.epoch(sys.config.ReferenceTime) == pstate.PreEpcho {
+			timestamp = sys.config.epochTimeStamp(pstate.PreEpcho)
+		}
+		log.Debug("GetBalanceByTime Sanpshot", "epcho", gstate.PreEpcho, "time", timestamp, "name", voter)
+		bquantity, err := sys.GetBalanceByTime(voter, timestamp)
 		if err != nil {
 			return nil, err
 		}

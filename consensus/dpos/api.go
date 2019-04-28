@@ -198,7 +198,7 @@ func (api *API) ValidCandidatesByHeight(height uint64) (interface{}, error) {
 // NextValidCandidates current valid candidates
 func (api *API) NextValidCandidates() (interface{}, error) {
 	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.ValidCandidatesByHeight(height)
+	return api.NextValidCandidatesByHeight(height)
 }
 
 // NextValidCandidatesByHeight current valid candidates
