@@ -357,7 +357,9 @@ func TestLDBGlobalState(t *testing.T) {
 		} else if !reflect.DeepEqual(gstate, ngstate) {
 			panic(fmt.Errorf("GetState mismatch"))
 		}
-		if epcho, err := db.GetLastestEpcho(); err != nil {
+		if err := db.SetLastestEpcho(gstate.Epcho); err != nil {
+			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
+		} else if epcho, err := db.GetLastestEpcho(); err != nil {
 			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
 		} else if epcho != uint64(index+1) {
 			panic(fmt.Errorf("GetLastestEpcho mismatch"))
@@ -380,7 +382,9 @@ func TestLDBGlobalState(t *testing.T) {
 		} else if !reflect.DeepEqual(gstate, ngstate) {
 			panic(fmt.Errorf("Redo GetState mismatch"))
 		}
-		if epcho, err := db.GetLastestEpcho(); err != nil {
+		if err := db.SetLastestEpcho(gstate.Epcho); err != nil {
+			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
+		} else if epcho, err := db.GetLastestEpcho(); err != nil {
 			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
 		} else if epcho != uint64(index+1) {
 			panic(fmt.Errorf("GetLastestEpcho mismatch"))

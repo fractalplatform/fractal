@@ -345,7 +345,7 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return err
 	}
 	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
-		return fmt.Errorf("invalid stake %v(insufficient) %v > %v", voter, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
+		return fmt.Errorf("invalid vote stake %v(insufficient) %v > %v", voter, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
 	} else if err := sys.SetAvailableQuantity(epcho, voter, sub); err != nil {
 		return err
 	}
@@ -534,6 +534,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 
 	if pepcho != epcho {
+		log.Debug("Need Sanpshot", "epcho", pstate.Epcho, "time", sys.config.epochTimeStamp(pstate.Epcho), "height", pstate.Height)
 		gstate := &GlobalState{
 			Epcho:                  epcho,
 			PreEpcho:               pstate.Epcho,
@@ -541,6 +542,9 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,
+		}
+		if err := sys.SetLastestEpcho(epcho); err != nil {
+			return err
 		}
 		return sys.SetState(gstate)
 	}
@@ -557,12 +561,8 @@ func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, e
 		if err != nil {
 			return nil, err
 		}
-		pstate, err := sys.GetState(gstate.PreEpcho)
-		if err != nil {
-			return nil, err
-		}
-		log.Debug("GetBalanceByTime Sanpshot", "epcho", pstate.PreEpcho, "time", pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime, "name", voter)
-		bquantity, err := sys.GetBalanceByTime(voter, pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime)
+		log.Debug("GetBalanceByTime Sanpshot", "epcho", gstate.PreEpcho, "time", sys.config.epochTimeStamp(gstate.PreEpcho), "name", voter)
+		bquantity, err := sys.GetBalanceByTime(voter, sys.config.epochTimeStamp(gstate.PreEpcho))
 		if err != nil {
 			return nil, err
 		}

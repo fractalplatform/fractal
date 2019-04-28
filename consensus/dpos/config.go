@@ -33,7 +33,7 @@ var DefaultConfig = &Config{
 	BlockFrequency:        6,
 	CandidateScheduleSize: 3,
 	BackupScheduleSize:    0,
-	EpchoInterval:         54000,
+	EpchoInterval:         540000,
 	FreezeEpchoSize:       3,
 	AccountName:           "ftsystemdpos",
 	SystemName:            "ftsystemio",
@@ -152,4 +152,8 @@ func (cfg *Config) getoffset(timestamp uint64) uint64 {
 
 func (cfg *Config) epoch(timestamp uint64) uint64 {
 	return (timestamp-cfg.ReferenceTime)/cfg.epochInterval() + 1
+}
+
+func (cfg *Config) epochTimeStamp(epcho uint64) uint64 {
+	return (epcho-1)*cfg.epochInterval() + cfg.ReferenceTime
 }
