@@ -216,9 +216,10 @@ func (db *LDB) SetAvailableQuantity(epcho uint64, voter string, quantity *big.In
 	}
 	if head == nil {
 		head = &VoterInfo{
-			Epcho:     epcho,
-			Name:      voter,
-			Candidate: VoterHead,
+			Epcho:           epcho,
+			Name:            voter,
+			Candidate:       VoterHead,
+			NextKeyForVoter: "EOF",
 		}
 	}
 	head.Quantity = quantity
@@ -245,6 +246,14 @@ func (db *LDB) SetVoter(voter *VoterInfo) error {
 			if err != nil {
 				return err
 			}
+			if head == nil {
+				head = &VoterInfo{
+					Epcho:           voter.Epcho,
+					Name:            voter.Name,
+					Candidate:       VoterHead,
+					NextKeyForVoter: "EOF",
+				}
+			}
 			voter.NextKeyForVoter = head.NextKeyForVoter
 			head.NextKeyForVoter = voter.key()
 			if err := db.SetVoter(head); err != nil {
@@ -258,9 +267,10 @@ func (db *LDB) SetVoter(voter *VoterInfo) error {
 			}
 			if head == nil {
 				head = &VoterInfo{
-					Epcho:     voter.Epcho,
-					Name:      CandidateHead,
-					Candidate: voter.Candidate,
+					Epcho:               voter.Epcho,
+					Name:                CandidateHead,
+					Candidate:           voter.Candidate,
+					NextKeyForCandidate: "EOF",
 				}
 			}
 			voter.NextKeyForCandidate = head.NextKeyForCandidate
@@ -311,7 +321,7 @@ func (db *LDB) GetVotersByCandidate(epcho uint64, candidate string) ([]*VoterInf
 
 	voterInfos := []*VoterInfo{}
 	nextKey := head.NextKeyForCandidate
-	for len(nextKey) != 0 {
+	for nextKey != "EOF" {
 		next := &VoterInfo{}
 		if val, err := db.Get(strings.Join([]string{VoterKeyPrefix, nextKey}, Separator)); err != nil {
 			return nil, err
@@ -337,7 +347,7 @@ func (db *LDB) GetVotersByVoter(epcho uint64, voter string) ([]*VoterInfo, error
 
 	voterInfos := []*VoterInfo{}
 	nextKey := head.NextKeyForVoter
-	for len(nextKey) != 0 {
+	for nextKey != "EOF" {
 		next := &VoterInfo{}
 		if val, err := db.Get(strings.Join([]string{VoterKeyPrefix, nextKey}, Separator)); err != nil {
 			return nil, err
