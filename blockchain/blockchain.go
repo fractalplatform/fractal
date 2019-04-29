@@ -597,12 +597,13 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	if err == nil {
 		if blockNumber == block.NumberU64() && blockHash == block.ParentHash() {
 			writeStateFlag = true
+		} else {
+			writeStateFlag = false
 		}
-		writeStateFlag = false
 	}
 
 	if writeStateFlag {
-		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64())
+		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "time", block.Time().Uint64()/bc.snapshotInterval*bc.snapshotInterval)
 		bc.WriteSnapshotToDB(batch, root, block)
 	}
 
