@@ -17,7 +17,7 @@ const (
 
 type (
 	Author struct {
-		Owner
+		Owner  `json:"owner"`
 		Weight uint64 `json:"weight"`
 	}
 	Owner interface {
