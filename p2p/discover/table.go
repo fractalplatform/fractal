@@ -384,14 +384,14 @@ loop:
 		}
 	}
 
-	if tab.net != nil {
-		tab.net.close()
-	}
 	if refreshDone != nil {
 		<-refreshDone
 	}
 	for _, ch := range waiting {
 		close(ch)
+	}
+	if tab.net != nil {
+		tab.net.close()
 	}
 	close(tab.closed)
 }
