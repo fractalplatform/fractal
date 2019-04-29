@@ -152,8 +152,9 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	default:
 		internalLogs, err := st.account.Process(&types.AccountManagerContext{
-			Action: st.action,
-			Number: st.evm.Context.BlockNumber.Uint64(),
+			Action:      st.action,
+			Number:      st.evm.Context.BlockNumber.Uint64(),
+			ChainConfig: st.chainConfig,
 		})
 		vmerr = err
 		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)

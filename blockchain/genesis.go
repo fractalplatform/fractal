@@ -157,7 +157,8 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
-	am.SetSysName(common.StrToName(storedcfg.AccountName))
+	//am.SetSysName(common.StrToName(storedcfg.AccountName))
+
 	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }
@@ -180,7 +181,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		AssetNameLevel:     g.Config.AssetNameCfg.Level,
 		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
 	})
-	am.SetSysName(common.StrToName(g.Config.AccountName))
+	//am.SetSysName(common.StrToName(g.Config.AccountName))
 	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
@@ -485,6 +486,10 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 		},
 		&GenesisAccount{
 			Name:   params.DefaultChainconfig.AccountName,
+			PubKey: common.HexToPubKey(""),
+		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.AssetName,
 			PubKey: common.HexToPubKey(""),
 		},
 		&GenesisAccount{
