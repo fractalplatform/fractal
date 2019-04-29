@@ -17,6 +17,7 @@
 package sdk
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
@@ -78,5 +79,15 @@ func TestGasPrice(t *testing.T) {
 		gasprice, err := api.GasPrice()
 		So(err, ShouldBeNil)
 		So(gasprice, ShouldNotBeNil)
+	})
+}
+
+func TestChainConfig(t *testing.T) {
+	Convey("ft_chainConfig", t, func() {
+		api := NewAPI(rpchost)
+		cfg, err := api.ChainConfig()
+		So(err, ShouldBeNil)
+		So(cfg, ShouldNotBeNil)
+		fmt.Printf("%v", cfg)
 	})
 }

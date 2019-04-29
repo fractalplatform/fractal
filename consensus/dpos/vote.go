@@ -556,20 +556,16 @@ func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, e
 		return nil, err
 	}
 	if q == nil {
+		timestamp := sys.config.epochTimeStamp(epcho)
 		gstate, err := sys.GetState(epcho)
 		if err != nil {
 			return nil, err
 		}
-		timestamp := sys.config.epochTimeStamp(gstate.PreEpcho)
-		pstate, err := sys.GetState(gstate.PreEpcho)
-		if err != nil {
-			return nil, err
+		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
+			timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
 		}
-		if sys.config.epoch(sys.config.ReferenceTime) == pstate.PreEpcho {
-			timestamp = sys.config.epochTimeStamp(pstate.PreEpcho)
-		}
-		log.Debug("GetBalanceByTime Sanpshot", "epcho", gstate.PreEpcho, "time", timestamp, "name", voter)
 		bquantity, err := sys.GetBalanceByTime(voter, timestamp)
+		log.Debug("GetAvailableQuantity Sanpshot", "epcho", gstate.Epcho, "time", timestamp, "name", voter, "q", bquantity, "error", err)
 		if err != nil {
 			return nil, err
 		}

@@ -19,6 +19,8 @@ package sdk
 import (
 	"math/big"
 
+	"github.com/fractalplatform/fractal/params"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rpc"
@@ -72,4 +74,11 @@ func (api *API) GasPrice() (*big.Int, error) {
 	gasprice := big.NewInt(0)
 	err := api.client.Call(gasprice, "ft_gasPrice")
 	return gasprice, err
+}
+
+// ChainConfig chain config
+func (api *API) ChainConfig() (*params.ChainConfig, error) {
+	cfg := &params.ChainConfig{}
+	err := api.client.Call(cfg, "ft_getChainConfig")
+	return cfg, err
 }

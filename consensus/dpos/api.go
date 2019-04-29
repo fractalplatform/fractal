@@ -230,12 +230,14 @@ func (api *API) SnapShotTimeByHeight(height uint64) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	timestamp := sys.config.epochTimeStamp(epcho)
 	gstate, err := sys.GetState(epcho)
 	if err != nil {
 		return nil, err
 	}
-
-	timestamp := api.dpos.config.epochTimeStamp(gstate.PreEpcho)
+	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
+		timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
+	}
 	res := map[string]interface{}{}
 	res["timestamp"] = timestamp
 	res["time"] = time.Unix(int64(timestamp/uint64(time.Second)), int64(timestamp%uint64(time.Second)))
