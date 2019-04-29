@@ -143,8 +143,8 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 		}
 		var gasAllot []*types.GasDistribution
-		for account, gas := range vmenv.FounderGasMap {
-			gasAllot = append(gasAllot, &types.GasDistribution{Account: account.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
+		for key, gas := range vmenv.FounderGasMap {
+			gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 		detailActions = append(detailActions, &types.DetailAction{InternalActions: vmenv.InternalTxs})

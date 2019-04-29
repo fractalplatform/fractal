@@ -19,7 +19,6 @@ package rpcapi
 import (
 	"context"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/feemanager"
 )
 
@@ -32,11 +31,11 @@ func NewFeeAPI(b Backend) *FeeAPI {
 }
 
 //GetObjectFeeByName get object fee by name
-func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName common.Name) (*feemanager.ObjectFee, error) {
+func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, objectType uint64) (*feemanager.ObjectFee, error) {
 	fm, err := aapi.b.GetFeeManager()
 	if err != nil {
 		return nil, err
 	}
 
-	return fm.GetObjectFeeByName(objectName)
+	return fm.GetObjectFeeByName(objectName, objectType)
 }
