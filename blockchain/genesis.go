@@ -252,7 +252,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	for index, action := range actActions {
-		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
+			Action:      action,
+			Number:      0,
+			ChainConfig: g.Config,
+		})
 		if err != nil {
 			panic(fmt.Sprintf("genesis create account %v,err %v", index, err))
 		}
@@ -293,7 +297,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	for index, action := range astActions {
-		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
+			Action:      action,
+			Number:      0,
+			ChainConfig: g.Config,
+		})
 		if err != nil {
 			panic(fmt.Sprintf("genesis create asset %v,err %v", index, err))
 		}

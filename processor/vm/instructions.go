@@ -1034,7 +1034,11 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 
 	action := types.NewAction(types.IncreaseAsset, contract.Name(), common.Name(evm.chainConfig.AssetName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b)
 
-	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      evm.Context.BlockNumber.Uint64(),
+		ChainConfig: evm.chainConfig,
+	})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1058,7 +1062,11 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 	action := types.NewAction(types.DestroyAsset, contract.Name(), common.Name(evm.chainConfig.AssetName), 0, astID, 0, value, nil)
 
-	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      evm.Context.BlockNumber.Uint64(),
+		ChainConfig: evm.chainConfig,
+	})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -1236,7 +1244,11 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	}
 	action := types.NewAction(types.IssueAsset, contract.Name(), common.Name(evm.chainConfig.AssetName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b)
 
-	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      evm.Context.BlockNumber.Uint64(),
+		ChainConfig: evm.chainConfig,
+	})
 	if err != nil {
 		return 0, err
 	} else {
@@ -1293,7 +1305,11 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 	}
 
 	action := types.NewAction(types.SetAssetOwner, contract.Name(), common.Name(evm.chainConfig.AssetName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b)
-	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{Action: action, Number: evm.Context.BlockNumber.Uint64()})
+	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      evm.Context.BlockNumber.Uint64(),
+		ChainConfig: evm.chainConfig,
+	})
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
