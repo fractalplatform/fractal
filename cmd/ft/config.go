@@ -91,7 +91,6 @@ func defaultFtServiceConfig() *ftservice.Config {
 		},
 		MetricsConf:     defaultMetricsConfig(),
 		ContractLogFlag: false,
-		Snapshot:        true,
 		StatePruning:    true,
 	}
 }

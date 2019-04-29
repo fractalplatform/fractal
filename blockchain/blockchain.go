@@ -34,6 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -64,8 +65,6 @@ type BlockChain struct {
 	statePruningClean bool
 	snapshotInterval  uint64
 	triesInMemory     uint64
-	preSnapshotTime   uint64
-	dereferenceNumber uint64
 	triegc            *prque.Prque
 
 	vmConfig           vm.Config    // vm configuration
@@ -116,8 +115,6 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		statePruningClean: true,
 		snapshotInterval:  chainConfig.SnapshotInterval * uint64(time.Millisecond),
 		triesInMemory:     ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
-		preSnapshotTime:   0,
-		dereferenceNumber: 0,
 		triegc:            prque.New(nil),
 		vmConfig:          vmConfig,
 		db:                db,
@@ -175,9 +172,6 @@ func (bc *BlockChain) loadLastBlock() error {
 			return err
 		}
 	}
-
-	// Load SnapshotTime
-	bc.preSnapshotTime = (currentBlock.Time().Uint64() / bc.snapshotInterval) * bc.snapshotInterval
 
 	// Everything seems to be fine, set as the head block
 	bc.currentBlock.Store(currentBlock)
@@ -489,17 +483,15 @@ func (bc *BlockChain) Stop() {
 
 	if bc.statePruning {
 		triedb := bc.stateCache.TrieDB()
-		if bc.dereferenceNumber != 0 {
-			recent := bc.GetBlockByNumber(bc.dereferenceNumber + 1)
-			log.Info("Writing cached state to disk", "block", recent.Number(), "hash", recent.Hash().String(), "root", recent.Root().String())
-			if err := triedb.Commit(recent.Root(), true); err != nil {
-				log.Error("Failed to commit recent state trie", "err", err)
+		for !bc.triegc.Empty() {
+			state, _ := bc.triegc.Pop()
+			log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
+			if err := triedb.Commit(state.(WriteStateToDB).Root, false); err != nil {
+				log.Error("Tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number, "err", err)
 			}
+			triedb.Dereference(state.(WriteStateToDB).Root)
 		}
 
-		for !bc.triegc.Empty() {
-			triedb.Dereference(bc.triegc.PopItem().(common.Hash))
-		}
 		if size, _ := triedb.Size(); size != 0 {
 			log.Error("Dangling trie nodes after full cleanup")
 		}
@@ -534,6 +526,43 @@ func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (e
 	return nil
 }
 
+func (bc *BlockChain) WriteSnapshotToState(block *types.Block, state *state.StateDB) error {
+	prevHeader := bc.GetHeaderByHash(block.ParentHash())
+
+	prevTime := prevHeader.Time.Uint64()
+	prevTimeFormat := prevTime / bc.snapshotInterval * bc.snapshotInterval
+
+	currentTime := block.Time().Uint64()
+	currentTimeFormat := currentTime / bc.snapshotInterval * bc.snapshotInterval
+
+	if prevTimeFormat != currentTimeFormat {
+		snapshotManager := snapshot.NewSnapshotManager(state)
+		err := snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: block.NumberU64(), BlockHash: block.ParentHash(), Timestamp: prevTimeFormat})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (bc *BlockChain) WriteSnapshotToDB(db rawdb.DatabaseWriter, root common.Hash, block *types.Block) {
+	snapshotInfo := types.SnapshotInfo{
+		Root: root,
+	}
+	key := types.SnapshotBlock{
+		Number:    block.NumberU64(),
+		BlockHash: block.ParentHash(),
+	}
+	rawdb.WriteSnapshot(db, key, snapshotInfo)
+}
+
+type WriteStateToDB struct {
+	Root        common.Hash
+	Number      uint64
+	WriteDbFlag bool
+}
+
 // WriteBlockWithState writes the block and all associated state to the database.
 func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (isCanon bool, err error) {
 	bc.wg.Add(1)
@@ -556,26 +585,46 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	batch := bc.db.NewBatch()
 	rawdb.WriteBlock(batch, block)
 
+	log.Debug("Tiredb commit memory", "number", block.NumberU64())
 	root, err := state.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
 		return false, err
 	}
 
+	var writeStateFlag bool
+	snapshotManager := snapshot.NewSnapshotManager(state)
+	blockNumber, blockHash, err := snapshotManager.GetCurrentSnapshotHash()
+	if err == nil {
+		if blockNumber == block.NumberU64() && blockHash == block.ParentHash() {
+			writeStateFlag = true
+		} else {
+			writeStateFlag = false
+		}
+	}
+
+	if writeStateFlag {
+		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "time", block.Time().Uint64()/bc.snapshotInterval*bc.snapshotInterval)
+		bc.WriteSnapshotToDB(batch, root, block)
+	}
+
 	triedb := bc.stateCache.TrieDB()
 
 	if !bc.statePruning {
-		log.Debug("Tiredb commit", "root", root.String(), "number", block.NumberU64())
+		log.Debug("Tiredb commit db", "root", root.String(), "number", block.NumberU64())
 		if err := triedb.Commit(root, false); err != nil {
 			return false, err
 		}
-		snapshotTime := (block.Time().Uint64() / bc.snapshotInterval) * bc.snapshotInterval
-		bc.preSnapshotTime = snapshotTime
 	} else {
+		writeStateToDB := WriteStateToDB{
+			Root:        root,
+			Number:      block.NumberU64(),
+			WriteDbFlag: writeStateFlag,
+		}
 		triedb.Reference(root, common.Hash{})
-		bc.triegc.Push(root, -int64(block.NumberU64()))
+		bc.triegc.Push(writeStateToDB, -int64(block.Time().Uint64()))
 
-		current := block.NumberU64()
-		if current > bc.triesInMemory {
+		sizegc := bc.triegc.Size()
+		if uint64(sizegc) == bc.triesInMemory {
 			var (
 				nodes, imgs = triedb.Size()
 				limit       = common.StorageSize(5) * 1024 * 1024
@@ -584,37 +633,31 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				log.Debug("triedb.Cap")
 				triedb.Cap(limit - fdb.IdealBatchSize)
 			}
-			chosen := current - bc.triesInMemory
-			for !bc.triegc.Empty() {
-				root, number := bc.triegc.Pop()
-				log.Debug("Memory trie", "number", uint64(-number), "chosen", chosen)
 
-				if uint64(-number) <= chosen && bc.statePruningClean {
-					header := bc.GetHeaderByNumber(uint64(-number))
-					snapshotTime := (header.Time.Uint64() / bc.snapshotInterval) * bc.snapshotInterval
-					if header.Root == root.(common.Hash) && snapshotTime != bc.preSnapshotTime {
-						log.Debug("Tiredb commit", "root", header.Root.String(), "number", uint64(-number), "time", header.Time.Uint64())
-						triedb.Commit(header.Root, true)
-						bc.preSnapshotTime = snapshotTime
-						triedb.Dereference(root.(common.Hash))
+			if !bc.triegc.Empty() {
+				state, timestamp := bc.triegc.Pop()
+				log.Debug("Memory trie", "number", state.(WriteStateToDB).Number, "sizegc", sizegc, "timestamp", -timestamp)
+
+				if bc.statePruningClean == false {
+					bc.triegc.Push(state, timestamp)
+					for !bc.triegc.Empty() {
+						state, timestamp = bc.triegc.Pop()
+						log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
+						if err := triedb.Commit(state.(WriteStateToDB).Root, true); err != nil {
+							return false, err
+						}
+						triedb.Dereference(state.(WriteStateToDB).Root)
 					}
-					triedb.Dereference(root.(common.Hash))
-					bc.dereferenceNumber = uint64(-number)
+					bc.statePruning = false
 				} else {
-					if bc.statePruningClean == false {
-						log.Debug("Tiredb commit", "root", root.(common.Hash).String(), "number", uint64(-number))
-						triedb.Commit(root.(common.Hash), true)
-						triedb.Dereference(root.(common.Hash))
-					} else {
-						bc.triegc.Push(root, number)
-						break
+					if state.(WriteStateToDB).WriteDbFlag {
+						log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
+						if err := triedb.Commit(state.(WriteStateToDB).Root, true); err != nil {
+							log.Crit("Tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number, "err", err)
+						}
 					}
+					triedb.Dereference(state.(WriteStateToDB).Root)
 				}
-			}
-
-			if bc.statePruningClean == false {
-				bc.statePruning = false
-				bc.dereferenceNumber = 0
 			}
 		}
 	}

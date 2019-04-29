@@ -16,35 +16,14 @@
 
 package types
 
-import (
-	"github.com/fractalplatform/fractal/common"
-)
+import "github.com/fractalplatform/fractal/common"
 
-// OptInfo status option info.
-type OptInfo struct {
-	Key   string
-	Value []byte
-	Opt   uint // record modification status : add/delete/update
+type SnapshotBlock struct {
+	Number    uint64
+	BlockHash common.Hash
 }
 
-// KvNode represents a status data.
-type KvNode struct {
-	Key   string
-	Value []byte
-}
-
-// StateOut represents a block exec status data.
-type StateOut struct {
-	ReadSet    []*KvNode   // replay
-	Reverts    []*OptInfo  // rollback previous block
-	Changes    []*OptInfo  // forward next block
-	ParentHash common.Hash // block parent hash
-	Number     uint64      // block num
-	Hash       common.Hash // current block hash
-}
-
-type AccountInfo struct {
-	Name  string
-	Key   string
-	Value []byte
+// SnapshotInfo write rawdb
+type SnapshotInfo struct {
+	Root common.Hash
 }

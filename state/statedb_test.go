@@ -17,16 +17,13 @@
 package state
 
 import (
-	"bytes"
 	"fmt"
-	"math/big"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/types"
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
@@ -190,148 +187,4 @@ func TestStateDB_IntermediateRoot(t *testing.T) {
 	}
 	state.IntermediateRoot()
 	fmt.Println("time: ", time.Since(st))
-}
-
-func TestSnapshot(t *testing.T) {
-	db := mdb.NewMemDatabase()
-	batch := db.NewBatch()
-	cachedb := NewDatabase(db)
-	root := common.Hash{}
-
-	state, _ := New(root, cachedb)
-	addr := "addr01"
-	key := "abcdef"
-	value := []byte(strconv.Itoa(100))
-	state.Put(addr, key, value)
-
-	root = state.IntermediateRoot()
-
-	head := &types.Header{
-		ParentHash: common.Hash{},
-		Root:       root,
-		Number:     big.NewInt(0),
-		Time:       big.NewInt(1548582552502000000),
-	}
-
-	block := &types.Block{
-		Head: head,
-	}
-
-	hash := head.Hash()
-
-	root1, err := state.Commit(batch, hash, 0)
-	if err != nil {
-		t.Error("commit trie err", err)
-	}
-
-	triedb := state.db.TrieDB()
-	if err := triedb.Commit(root1, false); err != nil {
-		t.Error("commit db err", err)
-	}
-	rawdb.WriteHeader(batch, head)
-	rawdb.WriteHeadBlockHash(batch, hash)
-	rawdb.WriteCanonicalHash(batch, hash, 0)
-	// rawdb.WriteBlock(batch, block)
-	batch.Write()
-
-	snapshot := NewSnapshot(db, 10000)
-
-	snapshot.snapshotRecord(block)
-
-	for i := 1; i < 10; i++ {
-
-		state, _ = New(root, cachedb)
-		value := []byte(strconv.Itoa(100 * i))
-		state.Put(addr, key, value)
-
-		root = state.IntermediateRoot()
-		head.ParentHash = hash
-		head.Root = root
-		head.Number = big.NewInt(int64(i))
-		head.Time = big.NewInt(1548582552502000000 + int64(i*5000000000))
-
-		block := &types.Block{
-			Head: head,
-		}
-
-		hash = head.Hash()
-
-		root, err = state.Commit(batch, hash, 0)
-		if err != nil {
-			t.Error("commit trie err", err)
-		}
-
-		triedb := state.db.TrieDB()
-		if err := triedb.Commit(root, false); err != nil {
-			t.Error("commit db err", err)
-		}
-
-		rawdb.WriteHeader(batch, head)
-		rawdb.WriteHeadBlockHash(batch, hash)
-		rawdb.WriteCanonicalHash(batch, hash, uint64(i))
-		batch.Write()
-
-		snapshot.snapshotRecord(block)
-	}
-
-	time, err := state.GetSnapshotLast()
-	pretime, _ := state.GetSnapshotPrev(time)
-
-	value1, _ := state.GetSnapshot(addr, key, time)
-	if bytes.Equal(value1, []byte(strconv.Itoa(100*6))) == false {
-		t.Error("Test snapshot failed")
-	}
-
-	value2, _ := state.GetSnapshot(addr, key, pretime)
-	if bytes.Equal(value2, []byte(strconv.Itoa(100*4))) == false {
-		t.Error("Test snapshot failed")
-	}
-
-	//
-	err = state.StartGetAccountInfo(time)
-	if err != nil {
-		t.Error("Test snapshot get account failed")
-	}
-
-	var flag bool = true
-	var accountInfo []types.AccountInfo
-	for flag {
-		accountInfo, flag = state.LookupAccountInfo()
-	}
-
-	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*6))) == false {
-		t.Error("Test snapshot get account failed")
-	}
-
-	err = state.StopGetAccountInfo()
-	if err != nil {
-		t.Error("Test snapshot get account failed")
-	}
-
-	err = state.StartGetAccountInfo(time)
-	if err != nil {
-		t.Error("Test snapshot get account failed")
-	}
-
-	//
-	err = state.StartGetAccountInfo(pretime)
-	if err != nil {
-		t.Error("Test snapshot get account failed")
-	}
-
-	flag = true
-	accountInfo = accountInfo[:0]
-	for flag {
-		accountInfo, flag = state.LookupAccountInfo()
-	}
-
-	if bytes.Equal(accountInfo[0].Value, []byte(strconv.Itoa(100*4))) == false {
-		t.Error("Test snapshot get account failed")
-	}
-
-	err = state.StopGetAccountInfo()
-	if err != nil {
-		t.Error("Test snapshot get account failed")
-	}
-
 }
