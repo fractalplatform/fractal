@@ -19,6 +19,7 @@ package dpos
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/rpc"
@@ -151,6 +152,11 @@ func (api *API) VotersByVoterByHeight(height uint64, voter string, detail bool) 
 // AvailableStake get available stake
 func (api *API) AvailableStake(voter string) (*big.Int, error) {
 	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.AvailableStakeByHeight(height, voter)
+}
+
+// AvailableStakeByHeight get available stake
+func (api *API) AvailableStakeByHeight(height uint64, voter string) (*big.Int, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
@@ -178,10 +184,6 @@ func (api *API) ValidCandidatesByHeight(height uint64) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	return api.validCandidates(epcho)
-}
-
-func (api *API) validCandidates(epcho uint64) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
@@ -191,6 +193,55 @@ func (api *API) validCandidates(epcho uint64) (interface{}, error) {
 		return nil, err
 	}
 	return sys.GetState(gstate.PreEpcho)
+}
+
+// NextValidCandidates current valid candidates
+func (api *API) NextValidCandidates() (interface{}, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.NextValidCandidatesByHeight(height)
+}
+
+// NextValidCandidatesByHeight current valid candidates
+func (api *API) NextValidCandidatesByHeight(height uint64) (interface{}, error) {
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	return sys.GetState(epcho)
+}
+
+// SnapShotTime get snapshort
+func (api *API) SnapShotTime() (interface{}, error) {
+	height := api.chain.CurrentHeader().Number.Uint64()
+	return api.SnapShotTimeByHeight(height)
+}
+
+// SnapShotTimeByHeight get snapshort by height
+func (api *API) SnapShotTimeByHeight(height uint64) (interface{}, error) {
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	timestamp := sys.config.epochTimeStamp(epcho)
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return nil, err
+	}
+	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
+		timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
+	}
+	res := map[string]interface{}{}
+	res["timestamp"] = timestamp
+	res["time"] = time.Unix(int64(timestamp/uint64(time.Second)), int64(timestamp%uint64(time.Second)))
+	return res, nil
 }
 
 func (api *API) epcho(height uint64) (uint64, error) {

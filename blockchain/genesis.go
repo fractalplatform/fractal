@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/consensus/dpos"
+	"github.com/fractalplatform/fractal/snapshot"
 
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
@@ -334,6 +335,15 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
+	// snapshot
+	currentTime := timestamp
+	currentTimeFormat := (currentTime / g.Config.SnapshotInterval) * g.Config.SnapshotInterval
+	snapshotManager := snapshot.NewSnapshotManager(statedb)
+	err = snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: number.Uint64(), BlockHash: common.Hash{}, Timestamp: 0})
+	if err != nil {
+		panic(fmt.Sprintf("genesis snapshot err %v", err))
+	}
+
 	root := statedb.IntermediateRoot()
 	gjson, err := json.Marshal(g)
 	if err != nil {
@@ -355,7 +365,37 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	actions := []*types.Action{}
 	actions = append(actions, actActions...)
 	actions = append(actions, astActions...)
-	tx := types.NewTransaction(0, big.NewInt(0), actions...)
+	for _, action := range actActions {
+		if action.AssetID() == 0 {
+			action = types.NewAction(
+				action.Type(),
+				action.Sender(),
+				action.Recipient(),
+				action.Nonce(),
+				g.Config.SysTokenID,
+				action.Gas(),
+				action.Value(),
+				action.Data(),
+			)
+		}
+		actions = append(actions, action)
+	}
+	for _, action := range astActions {
+		if action.AssetID() == 0 {
+			action = types.NewAction(
+				action.Type(),
+				action.Sender(),
+				action.Recipient(),
+				action.Nonce(),
+				g.Config.SysTokenID,
+				action.Gas(),
+				action.Value(),
+				action.Data(),
+			)
+		}
+		actions = append(actions, action)
+	}
+	tx := types.NewTransaction(g.Config.SysTokenID, big.NewInt(0), actions...)
 	receipt := types.NewReceipt(root[:], 0, 0)
 	receipt.TxHash = tx.Hash()
 	for index := range actions {
@@ -373,6 +413,17 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	receipts := []*types.Receipt{receipt}
 	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
 	batch := db.NewBatch()
+
+	// write snapshot to db
+	snapshotInfo := types.SnapshotInfo{
+		Root: root,
+	}
+	key := types.SnapshotBlock{
+		Number:    block.NumberU64(),
+		BlockHash: block.ParentHash(),
+	}
+	rawdb.WriteSnapshot(db, key, snapshotInfo)
+
 	roothash, err := statedb.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
 		panic(fmt.Sprintf("genesis statedb commit err: %v", err))

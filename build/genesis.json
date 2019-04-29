@@ -41,6 +41,7 @@
 		"systemName": "fractal.admin",
 		"accountName": "fractal.account",
 		"dposName": "fractal.dpos",
+		"feeName": "fractal.fee",
 		"systemToken": "ftoken"
 	},
 	"timestamp": 1555776000000,

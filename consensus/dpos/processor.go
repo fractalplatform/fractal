@@ -83,14 +83,17 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 	}
-
+	epcho, err := sys.GetLastestEpcho()
+	if err != nil {
+		return nil, err
+	}
 	switch action.Type() {
 	case types.RegCandidate:
 		arg := &RegisterCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(LastEpcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
+		if err := sys.RegCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
@@ -98,16 +101,16 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(LastEpcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
+		if err := sys.UpdateCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:
-		err := sys.UnregCandidate(LastEpcho, action.Sender().String(), height)
+		err := sys.UnregCandidate(epcho, action.Sender().String(), height)
 		if err != nil {
 			return nil, err
 		}
 	case types.RefundCandidate:
-		err := sys.RefundCandidate(LastEpcho, action.Sender().String(), height)
+		err := sys.RefundCandidate(epcho, action.Sender().String(), height)
 		if err != nil {
 			return nil, err
 		}
@@ -116,7 +119,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCandidate(LastEpcho, action.Sender().String(), arg.Candidate, arg.Stake, height); err != nil {
+		if err := sys.VoteCandidate(epcho, action.Sender().String(), arg.Candidate, arg.Stake, height); err != nil {
 			return nil, err
 		}
 	case types.KickedCandidate:
@@ -128,7 +131,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 		for _, cadicate := range arg.Candidates {
-			if err := sys.KickedCandidate(LastEpcho, cadicate, height); err != nil {
+			if err := sys.KickedCandidate(epcho, cadicate, height); err != nil {
 				return nil, err
 			}
 		}
@@ -136,7 +139,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
-		if err := sys.ExitTakeOver(LastEpcho); err != nil {
+		if err := sys.ExitTakeOver(epcho); err != nil {
 			return nil, err
 		}
 	default:

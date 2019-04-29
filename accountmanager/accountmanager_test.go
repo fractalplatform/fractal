@@ -186,7 +186,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 
 func TestAccountManager_AccountIsExist(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -221,7 +221,7 @@ func TestAccountManager_AccountIsExist(t *testing.T) {
 
 func TestAccountManager_AccountIsEmpty(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -260,7 +260,7 @@ func GeneragePubKey() (common.PubKey, *ecdsa.PrivateKey) {
 
 func TestAccountManager_GetAccountByName(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	//pubkey2 := new(common.PubKey)
@@ -309,7 +309,7 @@ func TestAccountManager_GetAccountByName(t *testing.T) {
 
 func TestAccountManager_SetAccount(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -342,7 +342,7 @@ func TestAccountManager_SetAccount(t *testing.T) {
 
 func TestAccountManager_SetNonce(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -371,7 +371,7 @@ func TestAccountManager_SetNonce(t *testing.T) {
 
 func TestAccountManager_GetNonce(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -405,7 +405,7 @@ func TestAccountManager_GetNonce(t *testing.T) {
 }
 func TestAccountManager_DeleteAccountByName(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -528,7 +528,7 @@ func TestAccountManager_DeleteAccountByName(t *testing.T) {
 
 func TestAccountManager_IsValidSign(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -562,7 +562,7 @@ func TestAccountManager_IsValidSign(t *testing.T) {
 
 func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -619,7 +619,7 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 
 func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -659,7 +659,7 @@ func TestAccountManager_GetAssetInfoByName(t *testing.T) {
 
 func TestAccountManager_GetAssetInfoByID(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -735,7 +735,7 @@ func TestAccountManager_GetAssetInfoByID(t *testing.T) {
 
 func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -769,7 +769,7 @@ func TestAccountManager_GetAssetAmountByTime(t *testing.T) {
 
 func TestAccountManager_GetAccountLastChange(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -802,7 +802,7 @@ func TestAccountManager_GetAccountLastChange(t *testing.T) {
 
 func TestAccountManager_GetSnapshotTime(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -836,7 +836,7 @@ func TestAccountManager_GetSnapshotTime(t *testing.T) {
 
 func TestAccountManager_GetBalanceByTime(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -871,7 +871,7 @@ func TestAccountManager_GetBalanceByTime(t *testing.T) {
 
 func TestAccountManager_GetAssetFounder(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -904,7 +904,7 @@ func TestAccountManager_GetAssetFounder(t *testing.T) {
 
 func TestAccountManager_GetChargeRatio(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -937,7 +937,7 @@ func TestAccountManager_GetChargeRatio(t *testing.T) {
 
 func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -970,7 +970,7 @@ func TestAccountManager_GetAssetChargeRatio(t *testing.T) {
 
 func TestAccountManager_SubAccountBalanceByID(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1001,7 +1001,7 @@ func TestAccountManager_SubAccountBalanceByID(t *testing.T) {
 
 func TestAccountManager_AddAccountBalanceByID(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1031,7 +1031,7 @@ func TestAccountManager_AddAccountBalanceByID(t *testing.T) {
 
 func TestAccountManager_AddAccountBalanceByName(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1061,7 +1061,7 @@ func TestAccountManager_AddAccountBalanceByName(t *testing.T) {
 
 func TestAccountManager_EnoughAccountBalance(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1101,7 +1101,7 @@ func TestAccountManager_EnoughAccountBalance(t *testing.T) {
 
 func TestAccountManager_GetCode(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1176,7 +1176,7 @@ func TestAccountManager_GetCode(t *testing.T) {
 
 func TestAccountManager_GetCodeSize(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1244,7 +1244,7 @@ func TestAccountManager_GetCodeSize(t *testing.T) {
 
 func TestAccountManager_CanTransfer(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1281,7 +1281,7 @@ func TestAccountManager_CanTransfer(t *testing.T) {
 
 func TestAccountManager_TransferAsset(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1328,7 +1328,7 @@ func TestAccountManager_TransferAsset(t *testing.T) {
 
 func TestAccountManager_IssueAsset(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1403,7 +1403,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 
 func TestAccountManager_IncAsset2Acct(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1465,7 +1465,7 @@ func TestAccountManager_IncAsset2Acct(t *testing.T) {
 
 func TestAccountManager_Process(t *testing.T) {
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {
@@ -1667,7 +1667,7 @@ func TestAccountManager_Process(t *testing.T) {
 func TestAccountManager_SubAccount(t *testing.T) {
 
 	type fields struct {
-		sdb SdbIf
+		sdb *state.StateDB
 		ast *asset.Asset
 	}
 	type args struct {

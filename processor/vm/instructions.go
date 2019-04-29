@@ -47,6 +47,11 @@ var (
 	errMaxCodeSizeExceeded   = errors.New("evm: max code size exceeded")
 )
 
+const (
+	AccountFee uint64 = 1
+	AssetFee   uint64 = 2
+)
+
 func opAdd(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	x, y := stack.pop(), stack.peek()
 	math.U256(y.Add(x, y))
@@ -1308,10 +1313,29 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 
 //withdraw all asset fee from system
 func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	offset, size := stack.pop(), stack.pop()
-	ret := memory.Get(offset.Int64(), size.Int64())
-	ret = bytes.TrimRight(ret, "\x00")
-	name := common.Name(ret)
+	feeType, feeId := stack.pop(), stack.pop()
+	withdrawType := feeType.Uint64()
+	objID := feeId.Uint64()
+
+	var name common.Name
+	if withdrawType == AccountFee {
+		acct, err := evm.AccountDB.GetAccountById(objID)
+		if err != nil || acct == nil {
+			stack.push(evm.interpreter.intPool.getZero())
+			return nil, nil
+		}
+		name = acct.GetName()
+	} else if withdrawType == AssetFee {
+		assetInfo, err := evm.AccountDB.GetAssetInfoByID(objID)
+		if err != nil || assetInfo == nil {
+			stack.push(evm.interpreter.intPool.getZero())
+			return nil, nil
+		}
+		name = common.Name(assetInfo.GetAssetName())
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 
 	err := execWithdrawFee(evm, contract, name)
 
@@ -1320,9 +1344,9 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
 	}
-	evm.interpreter.intPool.put(offset, size)
+	evm.interpreter.intPool.put(feeType, feeId)
 
-	return nil, err
+	return nil, nil
 }
 
 func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error {
@@ -1347,9 +1371,7 @@ func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error
 }
 
 func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	var ret []byte
 	evm.interpreter.intPool.put(stack.pop())
-	gas := evm.callGasTemp
 	name, assetId, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 
 	//toName, _ := common.BigToName(name)
@@ -1363,24 +1385,25 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 
 	assetID := assetId.Uint64()
 	value = math.U256(value)
-	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
-	if value.Sign() != 0 {
-		gas += params.CallStipend
+	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, assetID, 0, value, nil)
+
+	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+
+	//distribute gas
+	var assetName common.Name
+	assetFounder, _ := evm.AccountDB.GetAssetFounder(action.AssetID()) //get asset founder name
+	if len(assetFounder.String()) > 0 {
+		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(action.AssetID())
+		assetName = common.Name(assetInfo.GetAssetName())
 	}
+	evm.distributeAssetGas(int64(params.CallValueTransferGas-params.CallStipend), assetName, contract.Name())
 
-	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, assetID, gas, value, args)
-
-	ret, returnGas, err := evm.Call(contract, action, gas)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
 	}
-	if err == nil || err == errExecutionReverted {
-		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
-	}
-	contract.Gas += returnGas
 
 	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
 	if evm.vmConfig.ContractLogFlag {
@@ -1388,10 +1411,10 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		if err != nil {
 			errmsg = err.Error()
 		}
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transferex", GasUsed: 0, GasLimit: gas, Depth: uint64(evm.depth), Error: errmsg}
+		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transferex", GasUsed: 0, GasLimit: 0, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
-	return ret, nil
+	return nil, nil
 }
 
 func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {

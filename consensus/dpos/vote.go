@@ -345,7 +345,7 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return err
 	}
 	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
-		return fmt.Errorf("invalid stake %v(insufficient) %v > %v", voter, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
+		return fmt.Errorf("invalid vote stake %v(insufficient) %v > %v", voter, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
 	} else if err := sys.SetAvailableQuantity(epcho, voter, sub); err != nil {
 		return err
 	}
@@ -542,6 +542,9 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,
 		}
+		if err := sys.SetLastestEpcho(epcho); err != nil {
+			return err
+		}
 		return sys.SetState(gstate)
 	}
 	return nil
@@ -553,16 +556,16 @@ func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, e
 		return nil, err
 	}
 	if q == nil {
+		timestamp := sys.config.epochTimeStamp(epcho)
 		gstate, err := sys.GetState(epcho)
 		if err != nil {
 			return nil, err
 		}
-		pstate, err := sys.GetState(gstate.PreEpcho)
-		if err != nil {
-			return nil, err
+		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
+			timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
 		}
-		log.Debug("GetBalanceByTime Sanpshot", "epcho", pstate.PreEpcho, "time", pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime, "name", voter)
-		bquantity, err := sys.GetBalanceByTime(voter, pstate.PreEpcho*sys.config.epochInterval()+sys.config.ReferenceTime)
+		bquantity, err := sys.GetBalanceByTime(voter, timestamp)
+		log.Debug("GetAvailableQuantity Sanpshot", "epcho", gstate.Epcho, "time", timestamp, "name", voter, "q", bquantity, "error", err)
 		if err != nil {
 			return nil, err
 		}
