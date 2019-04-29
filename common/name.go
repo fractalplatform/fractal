@@ -42,13 +42,6 @@ var (
 	SubAssetNameLen   uint64 = 8
 )
 
-//Name type for fee withdraw
-const (
-	AssetName    = 0
-	ContractName = 1
-	CoinbaseName = 2
-)
-
 func init() {
 	SetAccountNameCheckRule(AccountNameLevel, AccountNameLen, SubAccountNameLen)
 	SetAssetNameCheckRule(AssetNameLevel, AssetNameLen, SubAssetNameLen)

@@ -28,7 +28,7 @@ var feeaccount = params.DefaultChainconfig.FeeName
 func TestFeeInfo(t *testing.T) {
 	Convey("fee_getObjectFeeByName", t, func() {
 		api := NewAPI(rpchost)
-		objFee, err := api.FeeInfo(feeaccount)
+		objFee, err := api.FeeInfo(feeaccount, 1)
 		So(err, ShouldBeNil)
 		So(objFee, ShouldNotBeNil)
 	})
