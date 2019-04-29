@@ -184,17 +184,19 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 		assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
 		if len(assetName.String()) > 0 {
-			if _, ok := evm.FounderGasMap[assetName]; !ok {
+			key := vm.DistributeKey{ObjectName: assetName,
+				ObjectType: feemanager.AssetFeeType}
+			if _, ok := evm.FounderGasMap[key]; !ok {
 				dGas := vm.DistributeGas{
 					Value:  int64(params.ActionGas * assetFounderRatio / 100),
-					TypeID: vm.AssetGas}
-				evm.FounderGasMap[assetName] = dGas
+					TypeID: feemanager.AssetFeeType}
+				evm.FounderGasMap[key] = dGas
 			} else {
 				dGas := vm.DistributeGas{
 					Value:  int64(params.ActionGas * assetFounderRatio / 100),
-					TypeID: vm.AssetGas}
-				dGas.Value = evm.FounderGasMap[assetName].Value + dGas.Value
-				evm.FounderGasMap[assetName] = dGas
+					TypeID: feemanager.AssetFeeType}
+				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+				evm.FounderGasMap[key] = dGas
 			}
 		}
 	}
@@ -204,29 +206,17 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 
-func transToObjectType(gasType uint64) uint64 {
-	if gasType == vm.AssetGas {
-		return common.AssetName
-	} else if gasType == vm.ContractGas {
-		return common.ContractName
-	} else if gasType == vm.CoinbaseGas {
-		return common.CoinbaseName
-	}
-	return 0
-}
-
 func (st *StateTransition) distributeFee() error {
 	var totalGas int64
 	fm := feemanager.NewFeeManager(st.evm.StateDB, st.evm.AccountDB)
 
-	for name, gas := range st.evm.FounderGasMap {
+	for key, gas := range st.evm.FounderGasMap {
 		if gas.Value > 0 {
 			value := new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value))
-			objectType := transToObjectType(gas.TypeID)
-			err := fm.RecordFeeInSystem(name, objectType, st.assetID, value)
+			err := fm.RecordFeeInSystem(key.ObjectName.String(), gas.TypeID, st.assetID, value)
 
 			if err != nil {
-				return fmt.Errorf("record fee err(%v), name:%v,type:%d,assetID:%d", err, name, gas.TypeID, st.assetID)
+				return fmt.Errorf("record fee err(%v), key:%v,assetID:%d", err, key, st.assetID)
 			}
 		}
 		totalGas += gas.Value
@@ -236,22 +226,23 @@ func (st *StateTransition) distributeFee() error {
 		return fmt.Errorf("calc wrong gas used")
 	}
 
-	if _, ok := st.evm.FounderGasMap[st.evm.Coinbase]; !ok {
-		st.evm.FounderGasMap[st.evm.Coinbase] = vm.DistributeGas{
+	key := vm.DistributeKey{ObjectName: st.evm.Coinbase,
+		ObjectType: feemanager.CoinbaseFeeType}
+	if _, ok := st.evm.FounderGasMap[key]; !ok {
+		st.evm.FounderGasMap[key] = vm.DistributeGas{
 			Value:  int64(st.gasUsed()) - totalGas,
-			TypeID: vm.CoinbaseGas}
+			TypeID: feemanager.CoinbaseFeeType}
 	} else {
 		dGas := vm.DistributeGas{
 			Value:  int64(st.gasUsed()) - totalGas,
-			TypeID: vm.CoinbaseGas}
-		dGas.Value = st.evm.FounderGasMap[st.evm.Coinbase].Value + dGas.Value
-		st.evm.FounderGasMap[st.evm.Coinbase] = dGas
+			TypeID: feemanager.CoinbaseFeeType}
+		dGas.Value = st.evm.FounderGasMap[key].Value + dGas.Value
+		st.evm.FounderGasMap[key] = dGas
 	}
 
 	value := new(big.Int).Mul(st.gasPrice, new(big.Int).SetUint64(st.gasUsed()-uint64(totalGas)))
-	gasType := st.evm.FounderGasMap[st.evm.Coinbase].TypeID
-	objectType := transToObjectType(gasType)
-	err := fm.RecordFeeInSystem(st.evm.Coinbase, objectType, st.assetID, value)
+	gasType := st.evm.FounderGasMap[key].TypeID
+	err := fm.RecordFeeInSystem(st.evm.Coinbase.String(), gasType, st.assetID, value)
 	if err != nil {
 		return fmt.Errorf("record fee err(%v), name:%v,type:%d,assetID:%d", err, st.evm.Coinbase, gasType, st.assetID)
 	}

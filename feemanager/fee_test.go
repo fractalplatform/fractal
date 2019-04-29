@@ -78,16 +78,16 @@ func TestRecordFeeInSystem(t *testing.T) {
 	}
 
 	testFeeInfo := []*testFee{
-		{1, "testtest.tt", uint64(common.ContractName), uint64(2), big.NewInt(200), big.NewInt(700)},
-		{0, "testtest.tt", uint64(common.ContractName), uint64(1), big.NewInt(100), big.NewInt(100)},
-		{3, "testtest.tt", uint64(common.ContractName), uint64(4), big.NewInt(400), big.NewInt(400)},
-		{2, "testtest.tt", uint64(common.ContractName), uint64(3), big.NewInt(300), big.NewInt(300)},
-		{1, "testtest.tt", uint64(common.ContractName), uint64(2), big.NewInt(500), big.NewInt(700)},
-		{0, "testtest.tt1", uint64(common.AssetName), uint64(1), big.NewInt(600), big.NewInt(600)},
+		{1, "testtest.tt", uint64(ContractFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
+		{0, "testtest.tt", uint64(ContractFeeType), uint64(1), big.NewInt(100), big.NewInt(100)},
+		{3, "testtest.tt", uint64(ContractFeeType), uint64(4), big.NewInt(400), big.NewInt(400)},
+		{2, "testtest.tt", uint64(ContractFeeType), uint64(3), big.NewInt(300), big.NewInt(300)},
+		{1, "testtest.tt", uint64(ContractFeeType), uint64(2), big.NewInt(500), big.NewInt(700)},
+		{0, "testtest.tt1", uint64(AssetFeeType), uint64(1), big.NewInt(600), big.NewInt(600)},
 	}
 
 	for _, tf := range testFeeInfo {
-		objectName := common.Name(tf.objectName)
+		objectName := tf.objectName
 		objectType := uint64(tf.objectType)
 		assetID := tf.assetID
 		value := tf.value
@@ -104,12 +104,12 @@ func TestRecordFeeInSystem(t *testing.T) {
 	//check
 	for _, tf := range testFeeInfo {
 		index := tf.assetIndex
-		objectName := common.Name(tf.objectName)
+		objectName := tf.objectName
 		objectType := uint64(tf.objectType)
 		assetID := tf.assetID
 		totalValue := tf.totalValue
 
-		objectID, err := fm.getObjectFeeIDByName(objectName)
+		objectID, err := fm.getObjectFeeIDByName(objectName, objectType)
 		if err != nil {
 			t.Errorf("get object id failed by id, err:%v", err)
 			return
@@ -182,16 +182,16 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 	}
 
 	testFeeInfo := []*testFee{
-		{1, "assettest.asset1", uint64(common.AssetName), uint64(2), big.NewInt(200), big.NewInt(700)},
-		{0, "assettest.asset1", uint64(common.AssetName), uint64(1), big.NewInt(100), big.NewInt(100)},
-		{3, "assettest.asset1", uint64(common.AssetName), uint64(4), big.NewInt(400), big.NewInt(400)},
-		{2, "assettest.asset1", uint64(common.AssetName), uint64(3), big.NewInt(300), big.NewInt(300)},
-		{1, "assettest.asset1", uint64(common.AssetName), uint64(2), big.NewInt(500), big.NewInt(700)},
-		{0, "testtest.testact1", uint64(common.CoinbaseName), uint64(1), big.NewInt(600), big.NewInt(600)},
+		{1, "assettest.asset1", uint64(AssetFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
+		{0, "assettest.asset1", uint64(AssetFeeType), uint64(1), big.NewInt(100), big.NewInt(100)},
+		{3, "assettest.asset1", uint64(AssetFeeType), uint64(4), big.NewInt(400), big.NewInt(400)},
+		{2, "assettest.asset1", uint64(AssetFeeType), uint64(3), big.NewInt(300), big.NewInt(300)},
+		{1, "assettest.asset1", uint64(AssetFeeType), uint64(2), big.NewInt(500), big.NewInt(700)},
+		{0, "testtest.testact1", uint64(CoinbaseFeeType), uint64(1), big.NewInt(600), big.NewInt(600)},
 	}
 
 	for _, tf := range testFeeInfo {
-		objectName := common.Name(tf.objectName)
+		objectName := tf.objectName
 		objectType := uint64(tf.objectType)
 		assetID := tf.assetID
 		value := tf.value
@@ -211,14 +211,14 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 	}
 
 	//withdraw fee from system
-	withdrawInfo, err := fm.WithdrawFeeFromSystem(common.Name(testFeeInfo[0].objectName))
+	withdrawInfo, err := fm.WithdrawFeeFromSystem(testFeeInfo[0].objectName, testFeeInfo[0].objectType)
 
-	if err != nil || len(withdrawInfo) == 0 {
+	if err != nil || withdrawInfo == nil {
 		t.Errorf("withdraw fee from system failed, err:%v", err)
 	}
 
 	//check
-	objectFee, err := fm.GetObjectFeeByName(common.Name(testFeeInfo[0].objectName))
+	objectFee, err := fm.GetObjectFeeByName(testFeeInfo[0].objectName, testFeeInfo[0].objectType)
 
 	if err != nil || objectFee == nil {
 		t.Errorf("check withdraw fee from system failed, err:%v", err)
@@ -227,12 +227,12 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 	for _, tf := range testFeeInfo {
 
 		index := tf.assetIndex
-		objectName := common.Name(tf.objectName)
+		objectName := tf.objectName
 		objectType := uint64(tf.objectType)
 		assetID := tf.assetID
 		totalValue := tf.totalValue
 
-		objectID, err := fm.getObjectFeeIDByName(objectName)
+		objectID, err := fm.getObjectFeeIDByName(objectName, objectType)
 		if err != nil {
 			t.Errorf("get object id failed by id, err:%v", err)
 			return

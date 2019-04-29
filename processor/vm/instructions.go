@@ -1337,7 +1337,7 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		return nil, nil
 	}
 
-	err := execWithdrawFee(evm, contract, name)
+	err := execWithdrawFee(evm, contract, name, withdrawType)
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1349,21 +1349,21 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	return nil, nil
 }
 
-func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error {
+func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name, objectType uint64) error {
 	fm := feemanager.NewFeeManager(evm.StateDB, evm.AccountDB)
-	withdrawInfos, err := fm.WithdrawFeeFromSystem(withdrawTo)
+	withdrawInfo, err := fm.WithdrawFeeFromSystem(withdrawTo.String(), objectType)
 
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
 			errmsg = err.Error()
 		}
-		paload, errEnc := rlp.EncodeToBytes(withdrawInfos)
+		paload, errEnc := rlp.EncodeToBytes(withdrawInfo)
 		if errEnc != nil {
 			return errEnc
 		}
 
-		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawTo, 0, 0, 0, big.NewInt(0), paload)
+		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload)
 		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "withdrawfee", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
