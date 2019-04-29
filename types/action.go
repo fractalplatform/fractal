@@ -157,11 +157,13 @@ func (a *Action) GetSign() []*SignData {
 func (a *Action) CheckValue(conf *params.ChainConfig) bool {
 	//check To
 	switch a.Type() {
-	//account
-	case CreateAccount:
+	case CreateContract:
 		if a.data.From != a.data.To {
 			return false
 		}
+		break
+	//account
+	case CreateAccount:
 		fallthrough
 	case UpdateAccount:
 		fallthrough
@@ -169,6 +171,7 @@ func (a *Action) CheckValue(conf *params.ChainConfig) bool {
 		fallthrough
 	case UpdateAccountAuthor:
 		if a.data.To.String() != conf.AccountName {
+			//fmt.Println("fanzhen to = ", a.data.To.String(), conf.AccountName)
 			return false
 		}
 		break
@@ -185,6 +188,8 @@ func (a *Action) CheckValue(conf *params.ChainConfig) bool {
 		if a.data.To.String() != conf.AssetName {
 			return false
 		}
+		break
+	case Transfer:
 		break
 	//dpos
 	case RegCandidate:
