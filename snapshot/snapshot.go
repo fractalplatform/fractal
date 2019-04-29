@@ -66,6 +66,30 @@ func (sn *SnapshotManager) SetSnapshot(time uint64, blockInfo BlockInfo) error {
 	return nil
 }
 
+func (sn *SnapshotManager) GetCurrentSnapshotHash() (uint64, common.Hash, error) {
+	timestampEnc, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
+	if err != nil {
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+	}
+
+	var timestamp uint64
+	if err = rlp.DecodeBytes(timestampEnc, &timestamp); err != nil {
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+	}
+
+	key1 := snapshotTime + strconv.FormatUint(timestamp, 10)
+	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
+	if err != nil {
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+	}
+	var blockInfo BlockInfo
+	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+	}
+
+	return blockInfo.Number, blockInfo.BlockHash, nil
+}
+
 // GetLastSnapshot get last snapshot time
 func (sn *SnapshotManager) GetLastSnapshotTime() (uint64, error) {
 	timestampEnc, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)

@@ -65,8 +65,6 @@ type BlockChain struct {
 	statePruningClean bool
 	snapshotInterval  uint64
 	triesInMemory     uint64
-	preSnapshotTime   uint64
-	dereferenceNumber uint64
 	triegc            *prque.Prque
 
 	vmConfig           vm.Config    // vm configuration
@@ -117,8 +115,6 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		statePruningClean: true,
 		snapshotInterval:  chainConfig.SnapshotInterval * uint64(time.Millisecond),
 		triesInMemory:     ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
-		preSnapshotTime:   0,
-		dereferenceNumber: 0,
 		triegc:            prque.New(nil),
 		vmConfig:          vmConfig,
 		db:                db,
@@ -595,14 +591,18 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 		return false, err
 	}
 
-	prevHeader := bc.GetHeaderByHash(block.ParentHash())
-	prevTime := prevHeader.Time.Uint64()
-	prevTimeFormat := prevTime / bc.snapshotInterval * bc.snapshotInterval
-	currentTime := block.Time().Uint64()
-	currentTimeFormat := currentTime / bc.snapshotInterval * bc.snapshotInterval
-	writeStateFlag := (prevTimeFormat != currentTimeFormat)
+	var writeStateFlag bool
+	snapshotManager := snapshot.NewSnapshotManager(state)
+	blockNumber, blockHash, err := snapshotManager.GetCurrentSnapshotHash()
+	if err == nil {
+		if blockNumber == block.NumberU64() && blockHash == block.ParentHash() {
+			writeStateFlag = true
+		}
+		writeStateFlag = false
+	}
+
 	if writeStateFlag {
-		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "currentTimeFormat", currentTimeFormat)
+		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64())
 		bc.WriteSnapshotToDB(batch, root, block)
 	}
 
@@ -619,7 +619,6 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 			Number:      block.NumberU64(),
 			WriteDbFlag: writeStateFlag,
 		}
-		writeStateFlag = false
 		triedb.Reference(root, common.Hash{})
 		bc.triegc.Push(writeStateToDB, -int64(block.Time().Uint64()))
 
@@ -830,11 +829,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 		receipts, logs, usedGas, err := bc.processor.Process(block, state, bc.vmConfig)
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
-			return i, coalescedLogs, err
-		}
-
-		err = bc.WriteSnapshotToState(block, state)
-		if err != nil {
 			return i, coalescedLogs, err
 		}
 
