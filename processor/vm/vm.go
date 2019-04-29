@@ -98,7 +98,7 @@ type EVM struct {
 	// applied in opCall*.
 	callGasTemp uint64
 
-	FounderGasMap map[common.Name]DistributeGas
+	FounderGasMap map[DistributeKey]DistributeGas
 
 	InternalTxs []*types.InternalAction
 }
@@ -108,11 +108,10 @@ type DistributeGas struct {
 	TypeID uint64
 }
 
-const (
-	AssetGas    = 0
-	ContractGas = 1
-	CoinbaseGas = 2
-)
+type DistributeKey struct {
+	ObjectName common.Name
+	ObjectType uint64
+}
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
 // only ever be used *once*.
@@ -125,7 +124,7 @@ func NewEVM(ctx Context, accountdb *accountmanager.AccountManager, statedb *stat
 		vmConfig:    vmConfig,
 	}
 	evm.interpreter = NewInterpreter(evm, vmConfig)
-	evm.FounderGasMap = map[common.Name]DistributeGas{}
+	evm.FounderGasMap = map[DistributeKey]DistributeGas{}
 	return evm
 }
 
@@ -157,22 +156,26 @@ func (evm *EVM) distributeContractGas(runGas uint64, contractName common.Name, c
 	if runGas > 0 && len(contractName.String()) > 0 {
 		contratFounderRatio := evm.chainConfig.ChargeCfg.ContractRatio
 
-		if _, ok := evm.FounderGasMap[contractName]; !ok {
-			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			evm.FounderGasMap[contractName] = dGas
+		key := DistributeKey{ObjectName: contractName,
+			ObjectType: params.ContractFeeType}
+		if _, ok := evm.FounderGasMap[key]; !ok {
+			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
+			evm.FounderGasMap[key] = dGas
 		} else {
-			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
-			evm.FounderGasMap[contractName] = dGas
+			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
+			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+			evm.FounderGasMap[key] = dGas
 		}
 		if evm.depth != 0 {
-			if _, ok := evm.FounderGasMap[callerName]; !ok {
-				dGas := DistributeGas{-int64(runGas * contratFounderRatio / 100), ContractGas}
-				evm.FounderGasMap[callerName] = dGas
+			key = DistributeKey{ObjectName: callerName,
+				ObjectType: params.ContractFeeType}
+			if _, ok := evm.FounderGasMap[key]; !ok {
+				dGas := DistributeGas{-int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
+				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := DistributeGas{-int64(runGas * contratFounderRatio / 100), ContractGas}
-				dGas.Value = evm.FounderGasMap[callerName].Value + dGas.Value
-				evm.FounderGasMap[callerName] = dGas
+				dGas := DistributeGas{-int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
+				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+				evm.FounderGasMap[key] = dGas
 			}
 		}
 	}
@@ -182,25 +185,28 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName common.Name, ca
 	if evm.depth != 0 {
 		assetFounderRatio := evm.chainConfig.ChargeCfg.AssetRatio //get asset founder charge ratio
 
+		key := DistributeKey{ObjectName: assetName,
+			ObjectType: params.AssetFeeType}
 		if len(assetName.String()) > 0 {
-			if _, ok := evm.FounderGasMap[assetName]; !ok {
-				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				evm.FounderGasMap[assetName] = dGas
+			if _, ok := evm.FounderGasMap[key]; !ok {
+				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), params.AssetFeeType}
+				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), AssetGas}
-				dGas.Value = evm.FounderGasMap[assetName].Value + dGas.Value
-				evm.FounderGasMap[assetName] = dGas
+				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), params.AssetFeeType}
+				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+				evm.FounderGasMap[key] = dGas
 			}
 		}
 		if len(callerName.String()) > 0 {
-			if _, ok := evm.FounderGasMap[callerName]; !ok {
-				dGas := DistributeGas{-int64(callValueGas * int64(assetFounderRatio) / 100), ContractGas}
-				//dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
-				evm.FounderGasMap[callerName] = dGas
+			key = DistributeKey{ObjectName: callerName,
+				ObjectType: params.ContractFeeType}
+			if _, ok := evm.FounderGasMap[key]; !ok {
+				dGas := DistributeGas{-int64(callValueGas * int64(assetFounderRatio) / 100), params.ContractFeeType}
+				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), ContractGas}
-				dGas.Value = evm.FounderGasMap[callerName].Value - dGas.Value
-				evm.FounderGasMap[callerName] = dGas
+				dGas := DistributeGas{int64(callValueGas * int64(assetFounderRatio) / 100), params.ContractFeeType}
+				dGas.Value = evm.FounderGasMap[key].Value - dGas.Value
+				evm.FounderGasMap[key] = dGas
 			}
 		}
 	}
@@ -208,9 +214,9 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName common.Name, ca
 
 func (evm *EVM) distributeGasByScale(actualUsedGas uint64, runGas uint64) {
 	if evm.depth == 0 && actualUsedGas != runGas {
-		for name, gas := range evm.FounderGasMap {
+		for key, gas := range evm.FounderGasMap {
 			v := DistributeGas{(gas.Value / int64(runGas)) * int64(actualUsedGas), gas.TypeID}
-			evm.FounderGasMap[name] = v
+			evm.FounderGasMap[key] = v
 		}
 	}
 }
@@ -523,13 +529,15 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 
 	contratFounderRatio := evm.chainConfig.ChargeCfg.ContractRatio
 	if runGas > 0 && len(contractName.String()) > 0 {
-		if _, ok := evm.FounderGasMap[contractName]; !ok {
-			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			evm.FounderGasMap[contractName] = dGas
+		key := DistributeKey{ObjectName: contractName,
+			ObjectType: params.ContractFeeType}
+		if _, ok := evm.FounderGasMap[key]; !ok {
+			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
+			evm.FounderGasMap[key] = dGas
 		} else {
-			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), ContractGas}
-			dGas.Value = evm.FounderGasMap[contractName].Value + dGas.Value
-			evm.FounderGasMap[contractName] = dGas
+			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
+			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+			evm.FounderGasMap[key] = dGas
 		}
 	}
 

@@ -158,7 +158,6 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
 	//am.SetSysName(common.StrToName(storedcfg.AccountName))
-
 	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }

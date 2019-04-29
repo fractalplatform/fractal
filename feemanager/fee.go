@@ -24,6 +24,7 @@ import (
 	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -60,13 +61,18 @@ type ObjectFee struct {
 	AssetFees   []*AssetFee `json:"assetFee"`
 }
 
+//WithdrawAsset  withdraw asset info
+type WithdrawAsset struct {
+	AssetID uint64
+	Amount  *big.Int
+}
+
 //WithdrawInfo record withdraw info
 type WithdrawInfo struct {
-	ObjectName common.Name
+	ObjectName string
 	ObjectType uint64
 	Founder    common.Name
-	AssetID    uint64
-	Amount     *big.Int
+	AssetInfo  []*WithdrawAsset
 }
 
 var feeConfig feeManagerConfig
@@ -114,9 +120,14 @@ func (fm *FeeManager) getFeeCounter() (uint64, error) {
 	return objectFeeCounter, nil
 }
 
+//GetObjectFeeIdKey get object fee id key
+func getObjectFeeIdKey(objectName string, objectType uint64) string {
+	return objectFeeIDPrefix + strconv.FormatUint(objectType, 10) + objectName
+}
+
 //GetObjectFeeByName get object fee by name
-func (fm *FeeManager) GetObjectFeeByName(objectName common.Name) (*ObjectFee, error) {
-	objectFeeID, err := fm.getObjectFeeIDByName(objectName)
+func (fm *FeeManager) GetObjectFeeByName(objectName string, objectType uint64) (*ObjectFee, error) {
+	objectFeeID, err := fm.getObjectFeeIDByName(objectName, objectType)
 
 	if err != nil || objectFeeID == 0 {
 		return nil, err
@@ -125,8 +136,8 @@ func (fm *FeeManager) GetObjectFeeByName(objectName common.Name) (*ObjectFee, er
 	return fm.getObjectFeeByID(objectFeeID)
 }
 
-func (fm *FeeManager) getObjectFeeIDByName(objectName common.Name) (uint64, error) {
-	feeIDEnc, err := fm.stateDB.Get(fm.name, objectFeeIDPrefix+objectName.String())
+func (fm *FeeManager) getObjectFeeIDByName(objectName string, objectType uint64) (uint64, error) {
+	feeIDEnc, err := fm.stateDB.Get(fm.name, getObjectFeeIdKey(objectName, objectType))
 
 	if err != nil || len(feeIDEnc) == 0 {
 		return 0, err
@@ -165,7 +176,7 @@ func (fm *FeeManager) setObjectFee(objectFee *ObjectFee) error {
 	return nil
 }
 
-func (fm *FeeManager) createObjectFee(objectName common.Name, objectType uint64) (*ObjectFee, error) {
+func (fm *FeeManager) createObjectFee(objectName string, objectType uint64) (*ObjectFee, error) {
 	//get object fee id
 	feeCounter, err := fm.getFeeCounter()
 	if err != nil {
@@ -174,7 +185,7 @@ func (fm *FeeManager) createObjectFee(objectName common.Name, objectType uint64)
 
 	feeCounter = feeCounter + 1
 	objectFee := &ObjectFee{ObjectFeeID: feeCounter,
-		ObjectName: objectName.String(),
+		ObjectName: objectName,
 		ObjectType: objectType,
 		AssetFees:  make([]*AssetFee, 0)}
 
@@ -182,7 +193,7 @@ func (fm *FeeManager) createObjectFee(objectName common.Name, objectType uint64)
 	if err != nil {
 		return nil, err
 	}
-	fm.stateDB.Put(fm.name, objectFeeIDPrefix+objectName.String(), value)
+	fm.stateDB.Put(fm.name, getObjectFeeIdKey(objectName, objectType), value)
 	fm.stateDB.Put(fm.name, feeCounterKey, value)
 
 	return objectFee, nil
@@ -238,9 +249,9 @@ func (of *ObjectFee) addAssetFee(assetID uint64, value *big.Int) {
 }
 
 //RecordFeeInSystem record object fee in system
-func (fm *FeeManager) RecordFeeInSystem(objectName common.Name, objectType uint64, assetID uint64, value *big.Int) error {
+func (fm *FeeManager) RecordFeeInSystem(objectName string, objectType uint64, assetID uint64, value *big.Int) error {
 	//get object fee in system
-	objectFee, err := fm.GetObjectFeeByName(objectName)
+	objectFee, err := fm.GetObjectFeeByName(objectName, objectType)
 
 	if err != nil {
 		return err
@@ -265,20 +276,20 @@ func (fm *FeeManager) RecordFeeInSystem(objectName common.Name, objectType uint6
 	return nil
 }
 
-func (fm *FeeManager) getObjectFounder(objectName common.Name, objectType uint64) (common.Name, error) {
+func (fm *FeeManager) getObjectFounder(objectName string, objectType uint64) (common.Name, error) {
 	var founder common.Name
 	var err error
 
-	if common.AssetName == objectType {
+	if params.AssetFeeType == objectType {
 		var assetInfo *asset.AssetObject
-		assetInfo, err = fm.accountDB.GetAssetInfoByName(objectName.String())
+		assetInfo, err = fm.accountDB.GetAssetInfoByName(objectName)
 		if assetInfo != nil {
 			founder = assetInfo.GetAssetFounder()
 		}
-	} else if common.ContractName == objectType {
-		founder, err = fm.accountDB.GetFounder(objectName)
-	} else if common.CoinbaseName == objectType {
-		founder = objectName
+	} else if params.ContractFeeType == objectType {
+		founder, err = fm.accountDB.GetFounder(common.Name(objectName))
+	} else if params.CoinbaseFeeType == objectType {
+		founder = common.Name(objectName)
 	} else {
 		err = fmt.Errorf("get founder failed, name:%s, type:%d", objectName, objectType)
 	}
@@ -286,35 +297,35 @@ func (fm *FeeManager) getObjectFounder(objectName common.Name, objectType uint64
 }
 
 //WithdrawFeeFromSystem withdraw object fee in system, return withdraw info
-func (fm *FeeManager) WithdrawFeeFromSystem(objectName common.Name) ([]*WithdrawInfo, error) {
-	var withdrawInfos []*WithdrawInfo
-
+func (fm *FeeManager) WithdrawFeeFromSystem(objectName string, objectType uint64) (*WithdrawInfo, error) {
 	//get fee info from system
-	objectFee, err := fm.GetObjectFeeByName(objectName)
+	objectFee, err := fm.GetObjectFeeByName(objectName, objectType)
 
 	if err != nil || objectFee == nil {
-		return withdrawInfos, fmt.Errorf("object(%s) fee not exsit, err:%v", objectName, err)
+		return nil, fmt.Errorf("object(%s) fee not exsit, err:%v", objectName, err)
 	}
 
-	founder, err1 := fm.getObjectFounder(objectName, objectFee.ObjectType)
+	founder, err1 := fm.getObjectFounder(objectName, objectType)
 	if err1 != nil || len(founder) == 0 {
-		return withdrawInfos, fmt.Errorf("get object(%s) founder failed, err:%v", objectName, err1)
+		return nil, fmt.Errorf("get object(%s) founder failed, err:%v", objectName, err1)
 	}
+
+	withdraw := &WithdrawInfo{ObjectName: objectName,
+		ObjectType: objectFee.ObjectType,
+		Founder:    founder,
+		AssetInfo:  make([]*WithdrawAsset, 0)}
 
 	//store fee to object, scan all asset
 	for _, assetFee := range objectFee.AssetFees {
 		if assetFee.RemainFee.Cmp(big.NewInt(0)) > 0 {
 			err = fm.accountDB.AddAccountBalanceByID(founder, assetFee.AssetID, assetFee.RemainFee)
 			if err != nil {
-				return withdrawInfos, fmt.Errorf("withdraw asset(%d) fee to founder(%s) err:%v", assetFee.AssetID, founder, err)
+				return nil, fmt.Errorf("withdraw asset(%d) fee to founder(%s) err:%v", assetFee.AssetID, founder, err)
 			}
 
-			withdraw := &WithdrawInfo{ObjectName: objectName,
-				ObjectType: objectFee.ObjectType,
-				Founder:    founder,
-				AssetID:    assetFee.AssetID,
-				Amount:     new(big.Int).Set(assetFee.RemainFee)}
-			withdrawInfos = append(withdrawInfos, withdraw)
+			withdrawAsset := &WithdrawAsset{AssetID: assetFee.AssetID,
+				Amount: new(big.Int).Set(assetFee.RemainFee)}
+			withdraw.AssetInfo = append(withdraw.AssetInfo, withdrawAsset)
 
 			//clear remain fee
 			assetFee.RemainFee = big.NewInt(0)
@@ -323,5 +334,5 @@ func (fm *FeeManager) WithdrawFeeFromSystem(objectName common.Name) ([]*Withdraw
 
 	//save fee modify info to db
 	err = fm.setObjectFee(objectFee)
-	return withdrawInfos, err
+	return withdraw, err
 }

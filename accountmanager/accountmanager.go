@@ -38,8 +38,8 @@ var (
 	counterPrefix       = "accountCounter"
 )
 var acctManagerName = "sysAccount"
-
 //var sysName string = "fractal.account"
+
 var counterID uint64 = 4096
 
 type AuthorActionType uint64
@@ -108,6 +108,14 @@ func SetAccountNameConfig(config *Config) bool {
 //	}
 //	return false
 //}
+
+func SetChainName(name common.Name) bool {
+	if common.IsValidAccountName(name.String()) {
+		chainName = name.String()
+		return true
+	}
+	return false
+}
 
 //SetAcctMangerName  set the global account manager name
 func SetAcctMangerName(name common.Name) bool {

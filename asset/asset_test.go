@@ -406,7 +406,7 @@ func TestAsset_IssueAsset(t *testing.T) {
 		{"nilname", fields{astdb}, args{"", "z", big.NewInt(1), 2, common.Name(""), common.Name("11")}, true},
 		{"nilsym", fields{astdb}, args{"22", "", big.NewInt(2), 2, common.Name(""), common.Name("11")}, true},
 		{"exist", fields{astdb}, args{"ft", "3", big.NewInt(2), 2, common.Name(""), common.Name("11")}, true},
-		{"normal", fields{astdb}, args{"ft22", "23", big.NewInt(2), 2, common.Name(""), common.Name("112345698")}, false},
+		{"normal", fields{astdb}, args{"ft22", "23", big.NewInt(2), 2, common.Name(""), common.Name("a112345698")}, true},
 		// {"normal1", fields{astdb}, args{"ft22.ft33", "23", big.NewInt(2), 2, common.Name(""), common.Name("112345698")}, false},
 		// {"normal2", fields{astdb}, args{"ft22.ft44.ft55", "23", big.NewInt(2), 2, common.Name(""), common.Name("112345698")}, false},
 		// {"erroronwer", fields{astdb}, args{"ft22.ft44.ft55", "23", big.NewInt(2), 2, common.Name(""), common.Name("11234512")}, true},

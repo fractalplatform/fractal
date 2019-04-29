@@ -47,11 +47,6 @@ var (
 	errMaxCodeSizeExceeded   = errors.New("evm: max code size exceeded")
 )
 
-const (
-	AccountFee uint64 = 1
-	AssetFee   uint64 = 2
-)
-
 func opAdd(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	x, y := stack.pop(), stack.peek()
 	math.U256(y.Add(x, y))
@@ -1334,14 +1329,15 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	objID := feeId.Uint64()
 
 	var name common.Name
-	if withdrawType == AccountFee {
+	if withdrawType == params.CoinbaseFeeType ||
+		withdrawType == params.ContractFeeType {
 		acct, err := evm.AccountDB.GetAccountById(objID)
 		if err != nil || acct == nil {
 			stack.push(evm.interpreter.intPool.getZero())
 			return nil, nil
 		}
 		name = acct.GetName()
-	} else if withdrawType == AssetFee {
+	} else if withdrawType == params.AssetFeeType {
 		assetInfo, err := evm.AccountDB.GetAssetInfoByID(objID)
 		if err != nil || assetInfo == nil {
 			stack.push(evm.interpreter.intPool.getZero())
@@ -1353,7 +1349,7 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		return nil, nil
 	}
 
-	err := execWithdrawFee(evm, contract, name)
+	err := execWithdrawFee(evm, contract, name, withdrawType)
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1365,21 +1361,21 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	return nil, nil
 }
 
-func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name) error {
+func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name, objectType uint64) error {
 	fm := feemanager.NewFeeManager(evm.StateDB, evm.AccountDB)
-	withdrawInfos, err := fm.WithdrawFeeFromSystem(withdrawTo)
+	withdrawInfo, err := fm.WithdrawFeeFromSystem(withdrawTo.String(), objectType)
 
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
 			errmsg = err.Error()
 		}
-		paload, errEnc := rlp.EncodeToBytes(withdrawInfos)
+		paload, errEnc := rlp.EncodeToBytes(withdrawInfo)
 		if errEnc != nil {
 			return errEnc
 		}
 
-		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawTo, 0, 0, 0, big.NewInt(0), paload)
+		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload)
 		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "withdrawfee", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
