@@ -26,6 +26,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -75,7 +76,7 @@ type IncAsset struct {
 
 //AccountManager represents account management model.
 type AccountManager struct {
-	sdb SdbIf
+	sdb *state.StateDB
 	ast *asset.Asset
 }
 
@@ -385,7 +386,8 @@ func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64)
 		return nil, err
 	}
 
-	b, err := am.sdb.GetSnapshot(acctManagerName, acctInfoPrefix+strconv.FormatUint(accountID, 10), time)
+	snapshotManager := snapshot.NewSnapshotManager(am.sdb)
+	b, err := snapshotManager.GetSnapshotMsg(acctManagerName, acctInfoPrefix+strconv.FormatUint(accountID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -795,12 +797,13 @@ func (am *AccountManager) GetAccountLastChange(accountName common.Name) (uint64,
 //GetSnapshotTime get snapshot time
 //num = 0  current snapshot time , 1 preview snapshot time , 2 next snapshot time
 func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, error) {
+	snapshotManager := snapshot.NewSnapshotManager(am.sdb)
 	if num == 0 {
-		return am.sdb.GetSnapshotLast()
+		return snapshotManager.GetLastSnapshotTime()
 	} else if num == 1 {
-		return am.sdb.GetSnapshotPrev(time)
+		return snapshotManager.GetPrevSnapshotTime(time)
 	} else if num == 2 {
-		t, err := am.sdb.GetSnapshotLast()
+		t, err := snapshotManager.GetLastSnapshotTime()
 		if err != nil {
 			return 0, err
 		}
@@ -809,7 +812,7 @@ func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, erro
 			return 0, ErrSnapshotTimeNotExist
 		} else {
 			for {
-				if t1, err := am.sdb.GetSnapshotPrev(t); err != nil {
+				if t1, err := snapshotManager.GetPrevSnapshotTime(t); err != nil {
 					return t, nil
 				} else if t1 <= time {
 					return t, nil

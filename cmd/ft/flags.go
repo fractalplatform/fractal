@@ -265,15 +265,6 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("ftservice.contractlog", flags.Lookup("contractlog"))
 
-	// snapshot
-	flags.BoolVar(
-		&ftCfgInstance.FtServiceCfg.Snapshot,
-		"snapshot_enable",
-		ftCfgInstance.FtServiceCfg.Snapshot,
-		"flag for enable/disable snapshot.",
-	)
-	viper.BindPFlag("ftservice.snapshot", flags.Lookup("snapshot_enable"))
-
 	// state pruning
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.StatePruning,

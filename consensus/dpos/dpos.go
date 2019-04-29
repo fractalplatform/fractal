@@ -23,12 +23,14 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	lru "github.com/hashicorp/golang-lru"
@@ -56,7 +58,8 @@ type stateDB struct {
 }
 
 func (s *stateDB) GetSnapshot(key string, timestamp uint64) ([]byte, error) {
-	return s.state.GetSnapshot(s.name, key, timestamp)
+	snapshotManager := snapshot.NewSnapshotManager(s.state)
+	return snapshotManager.GetSnapshotMsg(s.name, key, timestamp)
 }
 
 func (s *stateDB) Get(key string) ([]byte, error) {
@@ -237,6 +240,22 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	// the fork function will take effect. This function is valid only in the test network.
 	if err := chain.ForkUpdate(blk, state); err != nil {
 		return nil, err
+	}
+
+	prevHeader := chain.GetHeaderByHash(blk.ParentHash())
+	snapshotInterval := chain.Config().SnapshotInterval * uint64(time.Millisecond)
+	prevTime := prevHeader.Time.Uint64()
+	prevTimeFormat := prevTime / snapshotInterval * snapshotInterval
+
+	currentTime := blk.Time().Uint64()
+	currentTimeFormat := currentTime / snapshotInterval * snapshotInterval
+
+	if prevTimeFormat != currentTimeFormat {
+		snapshotManager := snapshot.NewSnapshotManager(state)
+		err := snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: blk.NumberU64(), BlockHash: blk.ParentHash(), Timestamp: prevTimeFormat})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// update state root at the end
