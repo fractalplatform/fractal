@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/consensus/dpos"
+	"github.com/fractalplatform/fractal/snapshot"
 
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
@@ -334,6 +335,15 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
+	// snapshot
+	currentTime := timestamp
+	currentTimeFormat := (currentTime / g.Config.SnapshotInterval) * g.Config.SnapshotInterval
+	snapshotManager := snapshot.NewSnapshotManager(statedb)
+	err = snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: number.Uint64(), BlockHash: common.Hash{}, Timestamp: 0})
+	if err != nil {
+		panic(fmt.Sprintf("genesis snapshot err %v", err))
+	}
+
 	root := statedb.IntermediateRoot()
 	gjson, err := json.Marshal(g)
 	if err != nil {
@@ -403,6 +413,17 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	receipts := []*types.Receipt{receipt}
 	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
 	batch := db.NewBatch()
+
+	// write snapshot to db
+	snapshotInfo := types.SnapshotInfo{
+		Root: root,
+	}
+	key := types.SnapshotBlock{
+		Number:    block.NumberU64(),
+		BlockHash: block.ParentHash(),
+	}
+	rawdb.WriteSnapshot(db, key, snapshotInfo)
+
 	roothash, err := statedb.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
 		panic(fmt.Sprintf("genesis statedb commit err: %v", err))

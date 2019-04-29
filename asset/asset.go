@@ -23,6 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -97,7 +98,9 @@ func (a *Asset) GetAssetObjectByTime(assetID uint64, time uint64) (*AssetObject,
 	if assetID == 0 {
 		return nil, ErrAssetIdInvalid
 	}
-	b, err := a.sdb.GetSnapshot(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
+
+	snapshotManager := snapshot.NewSnapshotManager(a.sdb)
+	b, err := snapshotManager.GetSnapshotMsg(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
 	if err != nil {
 		return nil, err
 	}
