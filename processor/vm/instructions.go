@@ -47,11 +47,6 @@ var (
 	errMaxCodeSizeExceeded   = errors.New("evm: max code size exceeded")
 )
 
-const (
-	AccountFee uint64 = 1
-	AssetFee   uint64 = 2
-)
-
 func opAdd(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	x, y := stack.pop(), stack.peek()
 	math.U256(y.Add(x, y))
@@ -1318,14 +1313,15 @@ func opWithdrawFee(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	objID := feeId.Uint64()
 
 	var name common.Name
-	if withdrawType == AccountFee {
+	if withdrawType == params.CoinbaseFeeType ||
+		withdrawType == params.ContractFeeType {
 		acct, err := evm.AccountDB.GetAccountById(objID)
 		if err != nil || acct == nil {
 			stack.push(evm.interpreter.intPool.getZero())
 			return nil, nil
 		}
 		name = acct.GetName()
-	} else if withdrawType == AssetFee {
+	} else if withdrawType == params.AssetFeeType {
 		assetInfo, err := evm.AccountDB.GetAssetInfoByID(objID)
 		if err != nil || assetInfo == nil {
 			stack.push(evm.interpreter.intPool.getZero())
