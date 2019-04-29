@@ -298,7 +298,7 @@ func newUDP(c conn, cfg Config) (*Table, *udp, error) {
 func (t *udp) close() {
 	close(t.closing)
 	t.conn.Close()
-	t.db.Close()
+	t.db.Close() // why close udp.Table.db in udp.close?
 	// TODO: wait for the loops to end.
 }
 
