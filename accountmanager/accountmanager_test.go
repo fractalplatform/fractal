@@ -89,10 +89,10 @@ func TestSDB(t *testing.T) {
 
 }
 func TestNN(t *testing.T) {
-	if err := acctm.CreateAccount(common.Name("123asdf2"), common.Name(""), 0, 0, *new(common.PubKey), ""); err != nil {
+	if err := acctm.CreateAccount(common.Name("a123asdf2"), common.Name(""), 0, 0, *new(common.PubKey), ""); err != nil {
 		t.Errorf("err create account\n")
 	}
-	_, err := acctm.GetAccountBalanceByID(common.Name("123asdf2"), 1, 0)
+	_, err := acctm.GetAccountBalanceByID(common.Name("a123asdf2"), 1, 0)
 	if err == nil {
 		t.Errorf("err get balance err %v\n", err)
 	}
@@ -154,7 +154,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"createAccount", fields{sdb, ast}, args{common.Name("111222332a"), common.Name(""), pubkey3}, false},
+		{"createAccount", fields{sdb, ast}, args{common.Name("a111222332a"), common.Name(""), pubkey3}, false},
 		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name(""), *pubkey2}, false},
 		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeed"), common.Name(""), *pubkey}, false},
 		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
@@ -174,7 +174,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	err := am1.CreateAccount(common.Name("aaaadddd"), common.Name("111222332a"), 0, 1, *pubkey, "")
+	err := am1.CreateAccount(common.Name("aaaadddd"), common.Name("a111222332a"), 0, 1, *pubkey, "")
 	if err != nil {
 		t.Errorf("create acct err:%v", err)
 	}
@@ -200,7 +200,7 @@ func TestAccountManager_AccountIsExist(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"accountExist", fields{sdb, ast}, args{common.Name("111222332a")}, true, false},
+		{"accountExist", fields{sdb, ast}, args{common.Name("a111222332a")}, true, false},
 		{"accountnotExist", fields{sdb, ast}, args{common.Name("a123456789aeee1")}, false, false},
 	}
 	for _, tt := range tests {
@@ -1602,7 +1602,7 @@ func TestAccountManager_Process(t *testing.T) {
 	}
 	//t.Logf("Process GetAccountBalanceByID val=%v", val)
 
-	ac, err := acctm.GetAccountByName(common.Name("123asdf2"))
+	ac, err := acctm.GetAccountByName(common.Name("a123asdf2"))
 	if err != nil {
 		t.Error("Process GetAccountByName err")
 	}
