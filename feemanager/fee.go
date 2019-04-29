@@ -24,6 +24,7 @@ import (
 	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -32,13 +33,6 @@ var (
 	feeCounterKey     = "feeCounter"
 	objectFeeIDPrefix = "feeIdPrefix"
 	objectFeePrefix   = "feePrefix"
-)
-
-//type for fee
-const (
-	AssetFeeType    = 1
-	ContractFeeType = 2
-	CoinbaseFeeType = 3
 )
 
 type feeManagerConfig struct {
@@ -286,15 +280,15 @@ func (fm *FeeManager) getObjectFounder(objectName string, objectType uint64) (co
 	var founder common.Name
 	var err error
 
-	if AssetFeeType == objectType {
+	if params.AssetFeeType == objectType {
 		var assetInfo *asset.AssetObject
 		assetInfo, err = fm.accountDB.GetAssetInfoByName(objectName)
 		if assetInfo != nil {
 			founder = assetInfo.GetAssetFounder()
 		}
-	} else if ContractFeeType == objectType {
+	} else if params.ContractFeeType == objectType {
 		founder, err = fm.accountDB.GetFounder(common.Name(objectName))
-	} else if CoinbaseFeeType == objectType {
+	} else if params.CoinbaseFeeType == objectType {
 		founder = common.Name(objectName)
 	} else {
 		err = fmt.Errorf("get founder failed, name:%s, type:%d", objectName, objectType)

@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
@@ -78,12 +79,12 @@ func TestRecordFeeInSystem(t *testing.T) {
 	}
 
 	testFeeInfo := []*testFee{
-		{1, "testtest.tt", uint64(ContractFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
-		{0, "testtest.tt", uint64(ContractFeeType), uint64(1), big.NewInt(100), big.NewInt(100)},
-		{3, "testtest.tt", uint64(ContractFeeType), uint64(4), big.NewInt(400), big.NewInt(400)},
-		{2, "testtest.tt", uint64(ContractFeeType), uint64(3), big.NewInt(300), big.NewInt(300)},
-		{1, "testtest.tt", uint64(ContractFeeType), uint64(2), big.NewInt(500), big.NewInt(700)},
-		{0, "testtest.tt1", uint64(AssetFeeType), uint64(1), big.NewInt(600), big.NewInt(600)},
+		{1, "testtest.tt", uint64(params.ContractFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
+		{0, "testtest.tt", uint64(params.ContractFeeType), uint64(1), big.NewInt(100), big.NewInt(100)},
+		{3, "testtest.tt", uint64(params.ContractFeeType), uint64(4), big.NewInt(400), big.NewInt(400)},
+		{2, "testtest.tt", uint64(params.ContractFeeType), uint64(3), big.NewInt(300), big.NewInt(300)},
+		{1, "testtest.tt", uint64(params.ContractFeeType), uint64(2), big.NewInt(500), big.NewInt(700)},
+		{0, "testtest.tt1", uint64(params.AssetFeeType), uint64(1), big.NewInt(600), big.NewInt(600)},
 	}
 
 	for _, tf := range testFeeInfo {
@@ -182,12 +183,12 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 	}
 
 	testFeeInfo := []*testFee{
-		{1, "assettest.asset1", uint64(AssetFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
-		{0, "assettest.asset1", uint64(AssetFeeType), uint64(1), big.NewInt(100), big.NewInt(100)},
-		{3, "assettest.asset1", uint64(AssetFeeType), uint64(4), big.NewInt(400), big.NewInt(400)},
-		{2, "assettest.asset1", uint64(AssetFeeType), uint64(3), big.NewInt(300), big.NewInt(300)},
-		{1, "assettest.asset1", uint64(AssetFeeType), uint64(2), big.NewInt(500), big.NewInt(700)},
-		{0, "testtest.testact1", uint64(CoinbaseFeeType), uint64(1), big.NewInt(600), big.NewInt(600)},
+		{1, "assettest.asset1", uint64(params.AssetFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
+		{0, "assettest.asset1", uint64(params.AssetFeeType), uint64(1), big.NewInt(100), big.NewInt(100)},
+		{3, "assettest.asset1", uint64(params.AssetFeeType), uint64(4), big.NewInt(400), big.NewInt(400)},
+		{2, "assettest.asset1", uint64(params.AssetFeeType), uint64(3), big.NewInt(300), big.NewInt(300)},
+		{1, "assettest.asset1", uint64(params.AssetFeeType), uint64(2), big.NewInt(500), big.NewInt(700)},
+		{0, "testtest.testact1", uint64(params.CoinbaseFeeType), uint64(1), big.NewInt(600), big.NewInt(600)},
 	}
 
 	for _, tf := range testFeeInfo {

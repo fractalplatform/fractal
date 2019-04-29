@@ -185,16 +185,16 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
 		if len(assetName.String()) > 0 {
 			key := vm.DistributeKey{ObjectName: assetName,
-				ObjectType: feemanager.AssetFeeType}
+				ObjectType: params.AssetFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
 				dGas := vm.DistributeGas{
 					Value:  int64(params.ActionGas * assetFounderRatio / 100),
-					TypeID: feemanager.AssetFeeType}
+					TypeID: params.AssetFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
 				dGas := vm.DistributeGas{
 					Value:  int64(params.ActionGas * assetFounderRatio / 100),
-					TypeID: feemanager.AssetFeeType}
+					TypeID: params.AssetFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 				evm.FounderGasMap[key] = dGas
 			}
@@ -227,15 +227,15 @@ func (st *StateTransition) distributeFee() error {
 	}
 
 	key := vm.DistributeKey{ObjectName: st.evm.Coinbase,
-		ObjectType: feemanager.CoinbaseFeeType}
+		ObjectType: params.CoinbaseFeeType}
 	if _, ok := st.evm.FounderGasMap[key]; !ok {
 		st.evm.FounderGasMap[key] = vm.DistributeGas{
 			Value:  int64(st.gasUsed()) - totalGas,
-			TypeID: feemanager.CoinbaseFeeType}
+			TypeID: params.CoinbaseFeeType}
 	} else {
 		dGas := vm.DistributeGas{
 			Value:  int64(st.gasUsed()) - totalGas,
-			TypeID: feemanager.CoinbaseFeeType}
+			TypeID: params.CoinbaseFeeType}
 		dGas.Value = st.evm.FounderGasMap[key].Value + dGas.Value
 		st.evm.FounderGasMap[key] = dGas
 	}
