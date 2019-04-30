@@ -5,10 +5,14 @@ contract WithdrawFee {
     }
 
     function withdrawAssetFee(uint256 assetId) public payable {
-        withdrawfee(assetId, 2);
+        withdrawfee(assetId, 0);
     }
 
-    function withdrawAccountFee(uint256 userId) public payable {
+    function withdrawContractFee(uint256 userId) public payable {
         withdrawfee(userId, 1);
+    }
+
+    function withdrawCoinbaseFee(uint256 userId) public payable {
+        withdrawfee(userId, 2);
     }
 }

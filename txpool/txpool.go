@@ -90,6 +90,7 @@ type TxPool struct {
 // transactions from the network.
 func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool {
 	//  check the input to ensure no vulnerable gas prices are set
+	config.GasAssetID = chainconfig.SysTokenID
 	config = (&config).check()
 	signer := types.NewSigner(chainconfig.ChainID)
 	all := newTxLookup()
@@ -430,7 +431,6 @@ func (tp *TxPool) local() map[common.Name][]*types.Transaction {
 func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	validateAction := func(tx *types.Transaction, action *types.Action) error {
 		from := action.Sender()
-
 		// Drop non-local transactions under our own minimal accepted gas price
 		local = local || tp.locals.contains(from) // account may be local even if the transaction arrived from the network
 		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
@@ -447,7 +447,9 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
+		// todo for the moment，only system asset
+		// balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tp.config.GasAssetID, 0)
 		if err != nil {
 			return err
 		}
@@ -464,7 +466,12 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		value := action.Value()
-		if tx.GasAssetID() == action.AssetID() {
+		// todo for the moment，only system asset
+		// if tx.GasAssetID() == action.AssetID() {
+
+		if tp.config.GasAssetID != action.AssetID() {
+			return fmt.Errorf("only support system asset %d as tx fee", tp.config.GasAssetID)
+		} else {
 			value.Add(value, gascost)
 		}
 

@@ -144,8 +144,8 @@ func formWithdrawAssetFeeInput(abifile string, assetId *big.Int) ([]byte, error)
 	return common.Hex2Bytes(transferAssetInput), nil
 }
 
-func formWithdrawAccountFeeInput(abifile string, userId *big.Int) ([]byte, error) {
-	transferAssetInput, err := input(abifile, "withdrawAccountFee", userId)
+func formWithdrawContractFeeInput(abifile string, userId *big.Int) ([]byte, error) {
+	transferAssetInput, err := input(abifile, "withdrawContractFee", userId)
 	if err != nil {
 		jww.INFO.Println("transferAssetInput error ", err)
 		return nil, err
@@ -322,7 +322,7 @@ func withdrawFee() {
 	jww.INFO.Println("withdrawFee contract ")
 
 	fmt.Println("withdraw contract_a_ID ", contract_a_ID)
-	input, err = formWithdrawAccountFeeInput(withDrawAbi, big.NewInt(contract_a_ID))
+	input, err = formWithdrawContractFeeInput(withDrawAbi, big.NewInt(contract_a_ID))
 	if err != nil {
 		jww.INFO.Println("withdrawFee formTransferAssetInput error ... ", err)
 		return
@@ -359,7 +359,7 @@ func main() {
 }
 
 func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair) {
-	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input)
+	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, nil)
 	gasprice := big.NewInt(1)
 	tx := types.NewTransaction(1, gasprice, action)
 

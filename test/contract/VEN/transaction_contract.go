@@ -129,9 +129,9 @@ func main() {
 func initNames() {
 	jww.INFO.Println("test initFrom... ")
 	nonce, _ = testcommon.GetNonce(from)
-	sendTransferTx(types.CreateAccount, from, ethVault, nonce, 1, big.NewInt(0), pubKey)
+	sendTransferTx(types.CreateAccount, from, ethVault, nonce, 1, big.NewInt(0), pubKey, nil)
 	nonce++
-	sendTransferTx(types.CreateAccount, from, venVault, nonce, 1, big.NewInt(0), pubKey)
+	sendTransferTx(types.CreateAccount, from, venVault, nonce, 1, big.NewInt(0), pubKey, nil)
 }
 
 func sendDeployVenTransaction() {
@@ -142,7 +142,7 @@ func sendDeployVenTransaction() {
 		return
 	}
 	nonce++
-	sendTransferTx(types.CreateContract, from, venContractAddr, nonce, 1, big.NewInt(0), input)
+	sendTransferTx(types.CreateContract, from, venContractAddr, nonce, 1, big.NewInt(0), input, nil)
 }
 
 func sendDeployVenSaleTransaction() {
@@ -153,7 +153,7 @@ func sendDeployVenSaleTransaction() {
 		return
 	}
 	nonce++
-	sendTransferTx(types.CreateContract, from, venSaleContractAddr, nonce, 1, big.NewInt(0), input)
+	sendTransferTx(types.CreateContract, from, venSaleContractAddr, nonce, 1, big.NewInt(0), input, nil)
 }
 
 func setVenOwner() {
@@ -164,7 +164,7 @@ func setVenOwner() {
 		return
 	}
 	nonce++
-	sendTransferTx(types.Transfer, from, venContractAddr, nonce, 1, big.NewInt(0), input)
+	sendTransferTx(types.Transfer, from, venContractAddr, nonce, 1, big.NewInt(0), input, nil)
 }
 
 func initializeVen() {
@@ -175,17 +175,17 @@ func initializeVen() {
 		return
 	}
 	nonce++
-	sendTransferTx(types.Transfer, from, venSaleContractAddr, nonce, 1, big.NewInt(0), input)
+	sendTransferTx(types.Transfer, from, venSaleContractAddr, nonce, 1, big.NewInt(0), input, nil)
 }
 
 func buyVen() {
 	jww.INFO.Println("test buyVen... ")
 	nonce++
-	sendTransferTx(types.Transfer, from, venSaleContractAddr, nonce, 1, big.NewInt(100000000000000000), nil)
+	sendTransferTx(types.Transfer, from, venSaleContractAddr, nonce, 1, big.NewInt(100000000000000000), nil, nil)
 }
 
-func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte) {
-	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input)
+func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input, remark []byte) {
+	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, remark)
 	gasprice, _ := testcommon.GasPrice()
 	tx := types.NewTransaction(assetID, gasprice, action)
 

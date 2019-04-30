@@ -46,6 +46,7 @@ func TestTxJournal(t *testing.T) {
 		uint64(2000),
 		big.NewInt(1000),
 		[]byte("test action"),
+		[]byte("test remark"),
 	))
 	txsMap[common.Name("test")] = []*types.Transaction{
 		tx,

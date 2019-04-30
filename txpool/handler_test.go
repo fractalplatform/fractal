@@ -22,7 +22,7 @@ const (
 
 func TxsGen(num int) []*types.Transaction {
 	txs := make([]*types.Transaction, num)
-	action := types.NewAction(types.CallContract, "yanprogram", "lixiaopeng", 0, 0, 0, nil, nil)
+	action := types.NewAction(types.CallContract, "yanprogram", "lixiaopeng", 0, 0, 0, nil, nil, nil)
 	for i := 0; i < num; i++ {
 		txs[i] = types.NewTransaction(uint64(i), nil, action)
 	}

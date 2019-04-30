@@ -66,6 +66,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 
 	tx0 := transaction(0, fname, tname, 100000, fkey)
 	tx1 := transaction(1, fname, tname, 100000, fkey)
+	params.DefaultChainconfig.SysTokenID = 1
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 

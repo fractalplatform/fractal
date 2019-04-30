@@ -68,7 +68,6 @@ func createAccount(accountName common.Name, founder common.Name, from, newname c
 	account := &accountmanager.AccountAction{
 		AccountName: accountName,
 		Founder:     founder,
-		ChargeRatio: 80,
 		PublicKey:   publickey,
 	}
 	payload, err := rlp.EncodeToBytes(account)
@@ -86,7 +85,6 @@ func updateAccount(from, founder common.Name, nonce uint64, privatekey *ecdsa.Pr
 	account := &accountmanager.AccountAction{
 		AccountName: from,
 		Founder:     founder,
-		ChargeRatio: 80,
 	}
 	payload, err := rlp.EncodeToBytes(account)
 	if err != nil {
@@ -167,7 +165,7 @@ func transfer(from, to common.Name, amount *big.Int, nonce uint64, prikey *ecdsa
 }
 
 func newGeAction(at types.ActionType, from, to common.Name, nonce uint64, assetid uint64, gaslimit uint64, amount *big.Int, payload []byte, prikey *ecdsa.PrivateKey) *GenAction {
-	action := types.NewAction(at, from, to, nonce, assetid, gaslimit, amount, payload)
+	action := types.NewAction(at, from, to, nonce, assetid, gaslimit, amount, payload, nil)
 
 	return &GenAction{
 		Action:     action,
