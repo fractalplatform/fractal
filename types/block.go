@@ -56,7 +56,7 @@ type Header struct {
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
-func (h *Header) Hash() common.Hash { return rlpHash(h) }
+func (h *Header) Hash() common.Hash { return RlpHash(h) }
 
 // WithForkID store fork id
 func (h *Header) WithForkID(cur, next uint64) {
@@ -297,7 +297,7 @@ func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 	return common.MerkleRoot(txHashs)
 }
 
-func rlpHash(x interface{}) (h common.Hash) {
+func RlpHash(x interface{}) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
 	err := rlp.Encode(hw, x)
 	if err != nil {
@@ -305,4 +305,9 @@ func rlpHash(x interface{}) (h common.Hash) {
 	}
 	hw.Sum(h[:0])
 	return h
+}
+
+type BlockState struct {
+	PreStatePruning bool   `json:"preStatePruning"`
+	CurrentNumber   uint64 `json:"currentNumber"`
 }

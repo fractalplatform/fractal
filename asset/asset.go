@@ -23,6 +23,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -97,7 +98,9 @@ func (a *Asset) GetAssetObjectByTime(assetID uint64, time uint64) (*AssetObject,
 	if assetID == 0 {
 		return nil, ErrAssetIdInvalid
 	}
-	b, err := a.sdb.GetSnapshot(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
+
+	snapshotManager := snapshot.NewSnapshotManager(a.sdb)
+	b, err := snapshotManager.GetSnapshotMsg(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -286,7 +289,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //IssueAsset issue asset
-func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name) error {
+func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) error {
 	if !common.IsValidAssetName(assetName) {
 		return fmt.Errorf("%s is invalid", assetName)
 	}
@@ -299,7 +302,7 @@ func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amoun
 		return ErrAssetIsExist
 	}
 
-	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract)
+	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, detail)
 	if err != nil {
 		return err
 	}

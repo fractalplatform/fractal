@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
@@ -31,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -285,6 +287,43 @@ func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error)
 	return acctm, nil
 }
 
+//GetFeeManager get fee manager
+func (b *APIBackend) GetFeeManager() (*feemanager.FeeManager, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+	acctm, err := accountmanager.NewAccountManager(sdb)
+	if err != nil {
+		return nil, err
+	}
+
+	fm := feemanager.NewFeeManager(sdb, acctm)
+	return fm, nil
+}
+
+//GetFeeManagerByTime get fee manager
+func (b *APIBackend) GetFeeManagerByTime(time uint64) (*feemanager.FeeManager, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+
+	snapshotManager := snapshot.NewSnapshotManager(sdb)
+	state, err := snapshotManager.GetSnapshotState(time)
+	if err != nil {
+		return nil, err
+	}
+
+	acctm, err := accountmanager.NewAccountManager(state)
+	if err != nil {
+		return nil, err
+	}
+
+	fm := feemanager.NewFeeManager(state, acctm)
+	return fm, nil
+}
+
 // AddPeer add a P2P peer
 func (b *APIBackend) AddPeer(url string) error {
 	node, err := enode.ParseV4(url)
@@ -337,6 +376,30 @@ func (b *APIBackend) Peers() []string {
 	return peers
 }
 
+// BadNodesCount returns the number of bad nodes.
+func (b *APIBackend) BadNodesCount() int {
+	return b.ftservice.p2pServer.BadNodesCount()
+}
+
+// BadNodes returns all bad nodes.
+func (b *APIBackend) BadNodes() []string {
+	nodes := b.ftservice.p2pServer.BadNodes()
+	ns := make([]string, len(nodes))
+	for i, node := range nodes {
+		ns[i] = node.String()
+	}
+	return ns
+}
+
+// AddBadNode add a bad Node and would cause the node disconnected
+func (b *APIBackend) AddBadNode(url string) error {
+	node, err := enode.ParseV4(url)
+	if err == nil {
+		b.ftservice.p2pServer.AddBadNode(node)
+	}
+	return err
+}
+
 // SelfNode returns the local node's endpoint information.
 func (b *APIBackend) SelfNode() string {
 	return b.ftservice.p2pServer.Self().String()
@@ -345,6 +408,11 @@ func (b *APIBackend) SelfNode() string {
 // APIs returns apis
 func (b *APIBackend) Engine() consensus.IEngine {
 	return b.ftservice.engine
+}
+
+//SetStatePruning set state pruning
+func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
+	return b.ftservice.blockchain.StatePruning(enable)
 }
 
 // APIs returns apis

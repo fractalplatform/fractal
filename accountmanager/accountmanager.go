@@ -26,6 +26,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -37,7 +38,9 @@ var (
 	counterPrefix       = "accountCounter"
 )
 var acctManagerName = "sysAccount"
-var sysName string = "fractal.account"
+
+//var sysName string = "fractal.account"
+
 var counterID uint64 = 4096
 
 type AuthorActionType uint64
@@ -49,10 +52,11 @@ const (
 )
 
 type AccountAction struct {
-	AccountName common.Name   `json:"accountName,omitempty"`
-	Founder     common.Name   `json:"founder,omitempty"`
-	ChargeRatio uint64        `json:"chargeRatio,omitempty"`
-	PublicKey   common.PubKey `json:"publicKey,omitempty"`
+	AccountName common.Name `json:"accountName,omitempty"`
+	Founder     common.Name `json:"founder,omitempty"`
+	//ChargeRatio uint64        `json:"chargeRatio,omitempty"`
+	PublicKey common.PubKey `json:"publicKey,omitempty"`
+	Detail    string        `json:"detail,omitempty"`
 }
 
 type AuthorAction struct {
@@ -74,7 +78,7 @@ type IncAsset struct {
 
 //AccountManager represents account management model.
 type AccountManager struct {
-	sdb SdbIf
+	sdb *state.StateDB
 	ast *asset.Asset
 }
 
@@ -98,13 +102,21 @@ func SetAccountNameConfig(config *Config) bool {
 }
 
 //SetSysName set the global sys name
-func SetSysName(name common.Name) bool {
-	if common.IsValidAccountName(name.String()) {
-		sysName = name.String()
-		return true
-	}
-	return false
-}
+//func SetSysName(name common.Name) bool {
+//	if common.IsValidAccountName(name.String()) {
+//		sysName = name.String()
+//		return true
+//	}
+//	return false
+//}
+
+// func SetChainName(name common.Name) bool {
+// 	if common.IsValidAccountName(name.String()) {
+// 		chainName = name.String()
+// 		return true
+// 	}
+// 	return false
+// }
 
 //SetAcctMangerName  set the global account manager name
 func SetAcctMangerName(name common.Name) bool {
@@ -225,15 +237,25 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
+//CreateAnyAccount include create sub account
+func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
 
 	if accountName.AccountNameLevel() > 1 {
+		accountObj, err := am.GetAccountByName(fromName)
+		if err != nil || accountObj == nil {
+			return ErrAccountInvaid
+		} else {
+			if accountObj.GetAccountNumber() != 0 {
+				return ErrAccountInvaid
+			}
+		}
+
 		if !fromName.IsValidCreator(accountName.String()) {
 			return ErrAccountInvaid
 		}
 	}
 
-	if err := am.CreateAccount(accountName, founderName, number, 0, pubkey); err != nil {
+	if err := am.CreateAccount(accountName, founderName, number, pubkey, detail); err != nil {
 		return err
 	}
 
@@ -241,7 +263,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 }
 
 //CreateAccount contract account
-func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, chargeRatio uint64, pubkey common.PubKey) error {
+func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
 	if !common.IsValidAccountName(accountName.String()) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
@@ -274,7 +296,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		fname.SetString(accountName.String())
 	}
 
-	acctObj, err := NewAccount(accountName, fname, pubkey)
+	acctObj, err := NewAccount(accountName, fname, pubkey, detail)
 	if err != nil {
 		return err
 	}
@@ -297,25 +319,25 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return err
 	}
 	acctObj.SetAccountNumber(number)
-	acctObj.SetChargeRatio(0)
+	//acctObj.SetChargeRatio(0)
 	am.SetAccount(acctObj)
 	am.sdb.Put(acctManagerName, accountNameIDPrefix+accountName.String(), aid)
 	am.sdb.Put(acctManagerName, counterPrefix, aid)
 	return nil
 }
 
-//SetChargeRatio set the Charge Ratio of the accunt
-func (am *AccountManager) SetChargeRatio(accountName common.Name, ra uint64) error {
-	acct, err := am.GetAccountByName(accountName)
-	if acct == nil {
-		return ErrAccountNotExist
-	}
-	if err != nil {
-		return err
-	}
-	acct.SetChargeRatio(ra)
-	return am.SetAccount(acct)
-}
+//SetChargeRatio set the Charge Ratio of the account
+// func (am *AccountManager) SetChargeRatio(accountName common.Name, ra uint64) error {
+// 	acct, err := am.GetAccountByName(accountName)
+// 	if acct == nil {
+// 		return ErrAccountNotExist
+// 	}
+// 	if err != nil {
+// 		return err
+// 	}
+// 	acct.SetChargeRatio(ra)
+// 	return am.SetAccount(acct)
+// }
 
 //UpdateAccount update the pubkey of the account
 func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *AccountAction) error {
@@ -338,11 +360,11 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *
 		accountAction.Founder.SetString(accountName.String())
 	}
 
-	if accountAction.ChargeRatio > 100 {
-		return ErrChargeRatioInvalid
-	}
+	// if accountAction.ChargeRatio > 100 {
+	// 	return ErrChargeRatioInvalid
+	// }
 	acct.SetFounder(accountAction.Founder)
-	acct.SetChargeRatio(accountAction.ChargeRatio)
+	//acct.SetChargeRatio(accountAction.ChargeRatio)
 	return am.SetAccount(acct)
 }
 
@@ -384,7 +406,8 @@ func (am *AccountManager) GetAccountByTime(accountName common.Name, time uint64)
 		return nil, err
 	}
 
-	b, err := am.sdb.GetSnapshot(acctManagerName, acctInfoPrefix+strconv.FormatUint(accountID, 10), time)
+	snapshotManager := snapshot.NewSnapshotManager(am.sdb)
+	b, err := snapshotManager.GetSnapshotMsg(acctManagerName, acctInfoPrefix+strconv.FormatUint(accountID, 10), time)
 	if err != nil {
 		return nil, err
 	}
@@ -512,13 +535,13 @@ func (am *AccountManager) SetNonce(accountName common.Name, nonce uint64) error 
 }
 
 // GetAuthorVersion returns the account author version
-func (am *AccountManager) GetAuthorVersion(accountName common.Name) (uint64, error) {
+func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash, error) {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
-		return 0, err
+		return common.Hash{}, err
 	}
 	if acct == nil {
-		return 0, ErrAccountNotExist
+		return common.Hash{}, ErrAccountNotExist
 	}
 	return acct.GetAuthorVersion(), nil
 }
@@ -547,9 +570,8 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			}
 		}
 
-		authorVersion := make(map[common.Name]uint64, 0)
+		authorVersion := make(map[common.Name]common.Hash, 0)
 		for name, acctAuthor := range recoverRes.acctAuthors {
-
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
 				count += weight
@@ -591,7 +613,7 @@ func (am *AccountManager) IsValidSign(accountName common.Name, pub common.PubKey
 	return fmt.Errorf("%v %v excepted %v", acct.AcctName, ErrkeyNotSame, pub.String())
 }
 
-//IsValidSign check the sign
+//ValidSign check the sign
 func (am *AccountManager) ValidSign(accountName common.Name, pub common.PubKey, index []uint64, recoverRes *recoverActionResult) error {
 	acct, err := am.GetAccountByName(accountName)
 	if err != nil {
@@ -795,12 +817,13 @@ func (am *AccountManager) GetAccountLastChange(accountName common.Name) (uint64,
 //GetSnapshotTime get snapshot time
 //num = 0  current snapshot time , 1 preview snapshot time , 2 next snapshot time
 func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, error) {
+	snapshotManager := snapshot.NewSnapshotManager(am.sdb)
 	if num == 0 {
-		return am.sdb.GetSnapshotLast()
+		return snapshotManager.GetLastSnapshotTime()
 	} else if num == 1 {
-		return am.sdb.GetSnapshotPrev(time)
+		return snapshotManager.GetPrevSnapshotTime(time)
 	} else if num == 2 {
-		t, err := am.sdb.GetSnapshotLast()
+		t, err := snapshotManager.GetLastSnapshotTime()
 		if err != nil {
 			return 0, err
 		}
@@ -809,7 +832,7 @@ func (am *AccountManager) GetSnapshotTime(num uint64, time uint64) (uint64, erro
 			return 0, ErrSnapshotTimeNotExist
 		} else {
 			for {
-				if t1, err := am.sdb.GetSnapshotPrev(t); err != nil {
+				if t1, err := snapshotManager.GetPrevSnapshotTime(t); err != nil {
 					return t, nil
 				} else if t1 <= time {
 					return t, nil
@@ -840,28 +863,28 @@ func (am *AccountManager) GetAssetFounder(assetID uint64) (common.Name, error) {
 }
 
 //GetChargeRatio Get Account ChargeRatio
-func (am *AccountManager) GetChargeRatio(accountName common.Name) (uint64, error) {
-	acct, err := am.GetAccountByName(accountName)
-	if err != nil {
-		return 0, err
-	}
-	if acct == nil {
-		return 0, ErrAccountNotExist
-	}
-	return acct.GetChargeRatio(), nil
-}
+// func (am *AccountManager) GetChargeRatio(accountName common.Name) (uint64, error) {
+// 	acct, err := am.GetAccountByName(accountName)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	if acct == nil {
+// 		return 0, ErrAccountNotExist
+// 	}
+// 	return acct.GetChargeRatio(), nil
+// }
 
 //GetAssetChargeRatio Get Asset ChargeRatio
-func (am *AccountManager) GetAssetChargeRatio(assetID uint64) (uint64, error) {
-	acctName, err := am.ast.GetAssetFounderById(assetID)
-	if err != nil {
-		return 0, err
-	}
-	if acctName == "" {
-		return 0, ErrAccountNotExist
-	}
-	return am.GetChargeRatio(acctName)
-}
+// func (am *AccountManager) GetAssetChargeRatio(assetID uint64) (uint64, error) {
+// 	acctName, err := am.ast.GetAssetFounderById(assetID)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	if acctName == "" {
+// 		return 0, ErrAccountNotExist
+// 	}
+// 	return am.GetChargeRatio(acctName)
+// }
 
 //GetAccountBalanceByName get account balance by name
 //func (am *AccountManager) GetAccountBalanceByName(accountName common.Name, assetName string) (*big.Int, error) {
@@ -1165,7 +1188,7 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 		}
 	}
 
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract()); err != nil {
+	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail()); err != nil {
 		return err
 	}
 
@@ -1210,13 +1233,13 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 
 	var internalActions []*types.InternalAction
 
-	if !action.CheckValue() {
-		return nil, ErrAmountValueInvalid
-	}
+	//if !action.CheckValue(accountManagerContext.ChainConfig) {
+	//	return nil, ErrAmountValueInvalid
+	//}
 
-	if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
-		return nil, ErrInvalidReceipt
-	}
+	//if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
+	//	return nil, ErrInvalidReceipt
+	//}
 
 	//transfer
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
@@ -1234,15 +1257,15 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, 0, acct.PublicKey); err != nil {
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Detail); err != nil {
 			return nil, err
 		}
 
 		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			if err := am.TransferAsset(common.Name(sysName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
+			if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
 				return nil, err
 			}
-			actionX := types.NewAction(action.Type(), common.Name(sysName), acct.AccountName, 0, 0, action.AssetID(), action.Value(), nil)
+			actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, 0, action.AssetID(), 0, action.Value(), nil, nil)
 			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 			internalActions = append(internalActions, internalAction)
 		}
@@ -1279,13 +1302,12 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), common.Name(sysName), asset.GetAssetOwner(), 0, 0, asset.GetAssetId(), asset.GetAssetAmount(), nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.GetAssetOwner(), 0, asset.GetAssetId(), 0, asset.GetAssetAmount(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
 	case types.IncreaseAsset:
 		var inc IncAsset
-		var accountFrom = common.Name("")
 		err := rlp.DecodeBytes(action.Data(), &inc)
 		if err != nil {
 			return nil, err
@@ -1293,7 +1315,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), common.Name(accountFrom), inc.To, 0, 0, inc.AssetId, inc.Amount, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1304,14 +1326,14 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		// if err != nil {
 		// 	return err
 		// }
-		if err := am.SubAccountBalanceByID(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
+		if err := am.SubAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
 
-		if err := am.ast.DestroyAsset(common.Name(sysName), action.AssetID(), action.Value()); err != nil {
+		if err := am.ast.DestroyAsset(common.Name(accountManagerContext.ChainConfig.AssetName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(action.Type(), common.Name(sysName), "", 0, 0, action.AssetID(), action.Value(), nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break

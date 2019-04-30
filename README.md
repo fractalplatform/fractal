@@ -19,7 +19,7 @@ The fractal project comes with several wrappers/executables found in the `cmd` d
 | Command    | Description |
 |:----------:|-------------|
 | **`ft`** | Our main fractal CLI client. It is the entry point into the fractal network (main-, test- or private net),  It can be used by other processes as a gateway into the fractal network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. `ft -h` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options. |
-| **`fkey`** | fractal key manager. You can use it generate ,change and inspect a keyfile,also to sign and verify message. `fkey -h ` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options. |
+| **`ftfinder`** | ftfinder is a fractal node discoverer.`ftfinder -h ` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options. |
 
 
 ## Getting Started
@@ -32,13 +32,17 @@ To download all of the code:
 
 ### Setting up a build/development environment
 
-Install latest distribution of [Go](https://golang.org/) if you don't have it already. (go version >= go1.9  )
+Install latest distribution of [Go](https://golang.org/) if you don't have it already. (go version >= go1.10  )
 
 Currently supports the following operating systems: 
 
 * Ubuntu 16.04
 * Ubuntu 18.04
 * MacOS Darwin 10.12 and higher
+
+### Build Fractal
+
+`make all`
 
 more information see: [Installing Fractal](https://github.com/fractalplatform/fractal/wiki/Build-Fractal)
 
@@ -55,7 +59,22 @@ Join the fractal test network see: [Test Network](https://github.com/fractalplat
 
 Operating a private network see:[Private Network](https://github.com/fractalplatform/fractal/wiki/Private-Network)
 
+## Resources
 
+[Fractal Official Website](https://fractalproject.com/)
+
+[白皮书](https://fractalproject.com/fractal-technical-whitepaper.pdf)
+
+[技术白皮书](https://fractalproject.com/fractal-technical-whitepaper.pdf)
+
+[White Paper](https://fractalproject.com/fractal-technical-whitepaper-en.pdf)
+
+[Technical White Paper](https://fractalproject.com/fractal-technical-whitepaper-en.pdf)
+
+[Fractal Blog](https://fractalproject.com/blog.html)
+
+
+More Documentation see [the Fractal wiki](https://github.com/fractalplatform/fractal/wiki)
 
 ## License
-Fractal is distributed under the terms of the GPLv3 License.
+Fractal is distributed under the terms of the [GPLv3 License](./License).

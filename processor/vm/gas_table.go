@@ -452,6 +452,10 @@ func gasCryptoCalc(gt params.GasTable, evm *EVM, contract *Contract, stack *Stac
 	return gt.CryptoCalc, nil
 }
 
+func gasDeductGas(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.DeductGas, nil
+}
+
 func gasGetDelegate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.GetDelegate, nil
 }
@@ -472,6 +476,10 @@ func gasDestroyAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *St
 
 func gasSetAssetOwner(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.SetOwner, nil
+}
+
+func gasWithdrawFee(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.WithdrawFee, nil
 }
 
 func gasCallEx(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

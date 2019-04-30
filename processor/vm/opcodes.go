@@ -217,6 +217,8 @@ const (
 	GETDELEGATE    = 0xca
 	GETACCOUNTTIME = 0xcb
 	CRYPTOCALC     = 0xcc
+	DEDUCTGAS      = 0xcd
+	WITHDRAWFEE    = 0xce
 )
 
 const (

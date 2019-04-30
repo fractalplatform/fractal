@@ -16,10 +16,6 @@
 
 package params
 
-import (
-	"github.com/fractalplatform/fractal/types"
-)
-
 // GasTable organizes gas prices for different phases.
 type GasTable struct {
 	ExtcodeSize uint64
@@ -49,6 +45,8 @@ type GasTable struct {
 	GetDelegate     uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
+	DeductGas       uint64
+	WithdrawFee     uint64
 }
 
 // Variables containing gas prices for different phases.
@@ -65,6 +63,7 @@ var (
 
 		CreateBySuicide: 25000,
 		SetOwner:        200,
+		WithdrawFee:     700,
 		GetAccountTime:  200,
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
@@ -76,36 +75,6 @@ var (
 		GetDelegate:     200,
 		CryptoCalc:      20000,
 		CryptoByte:      1000,
+		DeductGas:       200,
 	}
 )
-
-// CalcGasLimit computes the gas limit of the next block after parent.
-// This is miner strategy, not consensus protocol.
-func CalcGasLimit(parent *types.Block) uint64 {
-	// contrib = (parentGasUsed * 3 / 2) / 1024
-	contrib := (parent.GasUsed() + parent.GasUsed()/2) / GasLimitBoundDivisor
-
-	// decay = parentGasLimit / 1024 -1
-	decay := parent.GasLimit()/GasLimitBoundDivisor - 1
-
-	/*
-		strategy: gasLimit of block-to-mine is set based on parent's
-		gasUsed value.  if parentGasUsed > parentGasLimit * (2/3) then we
-		increase it, otherwise lower it (or leave it unchanged if it's right
-		at that usage) the amount increased/decreased depends on how far away
-		from parentGasLimit * (2/3) parentGasUsed is.
-	*/
-	limit := parent.GasLimit() - decay + contrib
-	if limit < MinGasLimit {
-		limit = MinGasLimit
-	}
-	// however, if we're now below the target (GenesisGasLimit) we increase the
-	// limit as much as we can (parentGasLimit / 1024 -1)
-	if limit < GenesisGasLimit {
-		limit = parent.GasLimit() + decay
-		if limit > GenesisGasLimit {
-			limit = GenesisGasLimit
-		}
-	}
-	return limit
-}

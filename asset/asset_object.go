@@ -33,9 +33,10 @@ type AssetObject struct {
 	AddIssue   *big.Int    `json:"addIssue"`
 	UpperLimit *big.Int    `json:"upperLimit"`
 	Contract   common.Name `json:"contract"`
+	Detail     string      `json:"detail"`
 }
 
-func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name) (*AssetObject, error) {
+func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) (*AssetObject, error) {
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}
@@ -60,6 +61,10 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 		return nil, ErrNewAssetObject
 	}
 
+	if uint64(len(detail)) > MaxDetailLength {
+		return nil, ErrDetailTooLong
+	}
+
 	ao := AssetObject{
 		AssetId:    0,
 		Number:     number,
@@ -72,6 +77,7 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 		AddIssue:   amount,
 		UpperLimit: limit,
 		Contract:   contract,
+		Detail:     detail,
 	}
 	return &ao, nil
 }
@@ -161,4 +167,12 @@ func (ao *AssetObject) GetAssetContract() common.Name {
 
 func (ao *AssetObject) SetAssetContract(contract common.Name) {
 	ao.Contract = contract
+}
+
+func (ao *AssetObject) GetAssetDetail() string {
+	return ao.Detail
+}
+
+func (ao *AssetObject) SetAssetDetail(detail string) {
+	ao.Detail = detail
 }

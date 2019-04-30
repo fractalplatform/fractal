@@ -60,6 +60,7 @@ type blockChain interface {
 	CurrentBlock() *types.Block
 	GetBlock(hash common.Hash, number uint64) *types.Block
 	StateAt(root common.Hash) (*state.StateDB, error)
+	Config() *params.ChainConfig
 }
 
 // TxPool contains all currently known transactions.
@@ -89,6 +90,7 @@ type TxPool struct {
 // transactions from the network.
 func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool {
 	//  check the input to ensure no vulnerable gas prices are set
+	config.GasAssetID = chainconfig.SysTokenID
 	config = (&config).check()
 	signer := types.NewSigner(chainconfig.ChainID)
 	all := newTxLookup()
@@ -429,7 +431,6 @@ func (tp *TxPool) local() map[common.Name][]*types.Transaction {
 func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	validateAction := func(tx *types.Transaction, action *types.Action) error {
 		from := action.Sender()
-
 		// Drop non-local transactions under our own minimal accepted gas price
 		local = local || tp.locals.contains(from) // account may be local even if the transaction arrived from the network
 		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
@@ -463,7 +464,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		value := action.Value()
-		if tx.GasAssetID() == action.AssetID() {
+		if tp.config.GasAssetID == action.AssetID() {
 			value.Add(value, gascost)
 		}
 
@@ -471,8 +472,8 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		if action.CheckValue() != true {
-			return ErrInvalidValue
+		if action.CheckValid(tp.chain.Config()) != true {
+			return ErrInvalidAction
 		}
 
 		intrGas, err := IntrinsicGas(action)
@@ -490,6 +491,10 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
 	if tx.Size() > 32*1024 {
 		return ErrOversizedData
+	}
+
+	if tp.config.GasAssetID != tx.GasAssetID() {
+		return fmt.Errorf("only support system asset %d as tx fee", tp.config.GasAssetID)
 	}
 
 	// Make sure the transaction is signed properly
@@ -568,7 +573,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 		// We've directly injected a replacement transaction, notify subsystems
 		events := []*event.Event{
 			{Typecode: event.TxEv, Data: []*types.Transaction{tx}},
-			{To: event.GetStationByName("broadcast"), Typecode: event.P2PTxMsg, Data: []*types.Transaction{tx}},
+			{Typecode: event.NewTxs, Data: []*types.Transaction{tx}},
 		}
 		go event.SendEvents(events)
 
@@ -889,16 +894,16 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 			tp.all.Remove(hash)
 			tp.priced.Removed()
 		}
-		// Drop all transactions that are too costly (low balance or out of gas)
+		// Drop all transactions that are too costly (low balance or out of gas or no permissions)
 		// todo assetID
 		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
 		if err != nil {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
-		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.curAccountManager.GetAccountBalanceByID)
+		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
 		for _, tx := range drops {
 			hash := tx.Hash()
-			log.Trace("Removed unpayable queued transaction", "hash", hash)
+			log.Trace("Removed unpayable queued or no permissions transaction", "hash", hash)
 			tp.all.Remove(hash)
 			tp.priced.Removed()
 		}
@@ -934,7 +939,7 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		// go event.SendEvent(&event.Event{Typecode: event.TxEv, Data: promoted})
 		events := []*event.Event{
 			{Typecode: event.TxEv, Data: promoted},
-			{To: event.GetStationByName("broadcast"), Typecode: event.P2PTxMsg, Data: promoted},
+			{Typecode: event.NewTxs, Data: promoted},
 		}
 		go event.SendEvents(events)
 	}
@@ -1077,16 +1082,16 @@ func (tp *TxPool) demoteUnexecutables() {
 			tp.priced.Removed()
 		}
 
-		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
+		// Drop all transactions that are too costly (low balance or out of gas or no permissions), and queue any invalids back for later
 		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
 		if err != nil && err != am.ErrAccountNotExist {
 			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
-		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.curAccountManager.GetAccountBalanceByID)
+		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
 		for _, tx := range drops {
 			hash := tx.Hash()
-			log.Trace("Removed unpayable pending transaction", "hash", hash)
+			log.Trace("Removed unpayable pending or no permissions transaction", "hash", hash)
 			tp.all.Remove(hash)
 			tp.priced.Removed()
 		}

@@ -34,7 +34,6 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/rpcapi"
-	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
@@ -53,7 +52,6 @@ type FtService struct {
 	gasPrice     *big.Int
 	lock         sync.RWMutex // Protects the variadic fields (e.g. gas price)
 	APIBackend   *APIBackend
-	snapshot     *state.SnapshotSt
 }
 
 // New creates a new ftservice object (including the initialisation of the common ftservice object)
@@ -82,14 +80,9 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	vmconfig := vm.Config{
 		ContractLogFlag: config.ContractLogFlag,
 	}
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
+	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
-	}
-
-	ftservice.snapshot = state.NewSnapshot(chainDb, 3600)
-	if config.Snapshot {
-		ftservice.snapshot.Start()
 	}
 
 	// txpool
@@ -150,7 +143,6 @@ func (fs *FtService) Start() error {
 
 // Stop implements node.Service, terminating all internal goroutine
 func (fs *FtService) Stop() error {
-	fs.snapshot.Stop()
 	fs.blockchain.Stop()
 	fs.txPool.Stop()
 	fs.chainDb.Close()

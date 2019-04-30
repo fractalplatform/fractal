@@ -85,10 +85,10 @@ type IAccountManager interface {
 type SdbIf interface {
 	Put(account string, key string, value []byte)
 	Get(account string, key string) ([]byte, error)
-	GetSnapshot(accountName string, key string, time uint64) ([]byte, error)
-	GetSnapshotLast() (uint64, error)
-	GetSnapshotPrev(time uint64) (uint64, error)
-	Snapshot() int
+	// GetSnapshot(accountName string, key string, time uint64) ([]byte, error)
+	// GetSnapshotLast() (uint64, error)
+	// GetSnapshotPrev(time uint64) (uint64, error)
+	// Snapshot() int
 	RevertToSnapshot(revid int)
 }
 

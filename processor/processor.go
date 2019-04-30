@@ -17,6 +17,8 @@
 package processor
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
@@ -59,6 +61,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		gp       = new(common.GasPool).AddGas(block.GasLimit())
 	)
 
+	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
+	p.engine.Prepare(p.bc, header, block.Transactions(), receipts, statedb)
+
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
 		statedb.Prepare(tx.Hash(), block.Hash(), i)
@@ -88,7 +93,12 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		return nil, 0, err
 	}
 
-	assetID := tx.GasAssetID()
+	// todo for the moment，only system asset
+	// assetID := tx.GasAssetID()
+	assetID := p.bc.Config().SysTokenID
+	if assetID != tx.GasAssetID() {
+		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.Config().SysTokenID)
+	}
 	gasPrice := tx.GasPrice()
 
 	var totalGas uint64
@@ -96,6 +106,11 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx := &types.DetailTx{}
 	var detailActions []*types.DetailAction
 	for i, action := range tx.GetActions() {
+		//
+		if !action.CheckValid(config) {
+			return nil, 0, ErrActionInvalid
+		}
+
 		if needCheckSign(accountDB, action) {
 			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
 				return nil, 0, err
@@ -140,8 +155,8 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 		}
 		var gasAllot []*types.GasDistribution
-		for account, gas := range vmenv.FounderGasMap {
-			gasAllot = append(gasAllot, &types.GasDistribution{Account: account.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
+		for key, gas := range vmenv.FounderGasMap {
+			gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 		detailActions = append(detailActions, &types.DetailAction{InternalActions: vmenv.InternalTxs})

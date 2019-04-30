@@ -449,40 +449,37 @@ func ReadOptBlockHash(db DatabaseReader) common.Hash {
 	return common.BytesToHash(data)
 }
 
-func WriteBlockSnapshotLast(db DatabaseWriter, time uint64) {
-	if err := db.Put(blockSnapshotLast, encodeBlockNumber(time)); err != nil {
-		log.Crit("Failed to store block snapshot", "err", err)
-	}
-}
-
-func WriteBlockSnapshotTime(db DatabaseWriter, time uint64, snapshotmsg types.SnapshotMsg) {
-	data, err := rlp.EncodeToBytes(snapshotmsg)
+func WriteSnapshot(db DatabaseWriter, key types.SnapshotBlock, snapshotInfo types.SnapshotInfo) {
+	keyEnc, err := rlp.EncodeToBytes(key)
 	if err != nil {
-		log.Crit("Failed to RLP encode state out", "err", err)
+		log.Crit("Failed to RLP encode snapshotBlock", "err", err)
 	}
-	if err := db.Put(blockSnapshotTKey(time), data); err != nil {
-		log.Crit("Failed to store block snapshot", "err", err)
+
+	snapshotInfoEnc, err := rlp.EncodeToBytes(snapshotInfo)
+	if err != nil {
+		log.Crit("Failed to RLP encode snapshotInfo", "err", err)
+	}
+
+	if err := db.Put(blockSnapshotKey(keyEnc), snapshotInfoEnc); err != nil {
+		log.Crit("Failed to store block snapshotInfo", "err", err)
 	}
 }
 
-func ReadSnapshotLast(db DatabaseReader) []byte {
-	data, _ := db.Get(blockSnapshotLast)
-	if len(data) == 0 {
-		return nil
+func ReadSnapshot(db DatabaseReader, key types.SnapshotBlock) *types.SnapshotInfo {
+	keyEnc, err := rlp.EncodeToBytes(key)
+	if err != nil {
+		log.Crit("Failed to RLP encode snapshotBlock", "err", err)
 	}
-	return data
-}
 
-func ReadSnapshotTime(db DatabaseReader, time uint64) *types.SnapshotMsg {
-	data, _ := db.Get(blockSnapshotTKey(time))
-	if len(data) == 0 {
+	snapshotInfoEnc, _ := db.Get(blockSnapshotKey(keyEnc))
+	if len(snapshotInfoEnc) == 0 {
 		return nil
 	}
 
-	snapshotmsg := new(types.SnapshotMsg)
-	if err := rlp.Decode(bytes.NewReader(data), snapshotmsg); err != nil {
-		log.Crit("Invalid block state RLP", "count", time, "err", err)
+	snapshotInfo := new(types.SnapshotInfo)
+	if err := rlp.Decode(bytes.NewReader(snapshotInfoEnc), snapshotInfo); err != nil {
+		log.Crit("Invalid block snapshotInfo RLP", "number", key.Number, "hash", key.BlockHash, "err", err)
 		return nil
 	}
-	return snapshotmsg
+	return snapshotInfo
 }

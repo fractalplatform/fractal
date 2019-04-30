@@ -115,6 +115,14 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
+	instructionSet[DEDUCTGAS] = operation{
+		execute:       opDeductGas,
+		gasCost:       gasDeductGas,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[GETDELEGATE] = operation{
 		execute:       opGetDelegate,
 		gasCost:       gasGetDelegate,
@@ -183,6 +191,14 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[SETASSETOWNER] = operation{
 		execute:       opSetAssetOwner,
 		gasCost:       gasSetAssetOwner,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[WITHDRAWFEE] = operation{
+		execute:       opWithdrawFee,
+		gasCost:       gasWithdrawFee,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
 		returns:       true,

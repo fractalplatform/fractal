@@ -87,3 +87,10 @@ var (
 	MaxSignDepth  = uint64(10)
 	MaxSignLength = uint64(50)
 )
+
+//type for fee
+const (
+	AssetFeeType    = uint64(0)
+	ContractFeeType = uint64(1)
+	CoinbaseFeeType = uint64(2)
+)

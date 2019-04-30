@@ -32,4 +32,5 @@ var (
 	ErrAssetCountNotExist   = errors.New("asset total count not exist")
 	ErrAssetIdInvalid       = errors.New("asset id invalid")
 	ErrAssetManagerNotExist = errors.New("asset manager name not exist")
+	ErrDetailTooLong        = errors.New("detail info exceed maxmium")
 )

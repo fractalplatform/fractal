@@ -28,11 +28,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/prque"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -57,15 +59,22 @@ const (
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 type BlockChain struct {
-	chainConfig        *params.ChainConfig // Chain & network configuration
-	vmConfig           vm.Config           // vm configuration
-	genesisBlock       *types.Block        // genesis block
-	db                 fdb.Database        // Low level persistent database to store final content in
-	mu                 sync.RWMutex        // global mutex for locking chain operations
-	chainmu            sync.RWMutex        // blockchain insertion lock
-	procmu             sync.RWMutex        // block processor lock
-	currentBlock       atomic.Value        // Current head of the block chain
-	irreversibleNumber atomic.Value        // irreversible Number of the block chain
+	chainConfig *params.ChainConfig // Chain & network configuration
+
+	statePruning      bool
+	statePruningClean bool
+	snapshotInterval  uint64
+	triesInMemory     uint64
+	triegc            *prque.Prque
+
+	vmConfig           vm.Config    // vm configuration
+	genesisBlock       *types.Block // genesis block
+	db                 fdb.Database // Low level persistent database to store final content in
+	mu                 sync.RWMutex // global mutex for locking chain operations
+	chainmu            sync.RWMutex // blockchain insertion lock
+	procmu             sync.RWMutex // block processor lock
+	currentBlock       atomic.Value // Current head of the block chain
+	irreversibleNumber atomic.Value // irreversible Number of the block chain
 
 	stateCache state.Database // State database to reuse between imports (contains state cache)
 
@@ -90,7 +99,7 @@ type BlockChain struct {
 }
 
 // NewBlockChain returns a fully initialised block chain using information　available in the database.
-func NewBlockChain(db fdb.Database, vmConfig vm.Config, chainConfig *params.ChainConfig, senderCacher TxSenderCacher) (*BlockChain, error) {
+func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chainConfig *params.ChainConfig, senderCacher TxSenderCacher) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	headerCache, _ := lru.New(headerCacheLimit)
@@ -101,20 +110,25 @@ func NewBlockChain(db fdb.Database, vmConfig vm.Config, chainConfig *params.Chai
 	badBlocks, _ := lru.New(badBlockLimit)
 
 	bc := &BlockChain{
-		chainConfig:  chainConfig,
-		vmConfig:     vmConfig,
-		db:           db,
-		stateCache:   state.NewDatabase(db),
-		quit:         make(chan struct{}),
-		bodyCache:    bodyCache,
-		headerCache:  headerCache,
-		tdCache:      tdCache,
-		numberCache:  numberCache,
-		bodyRLPCache: bodyRLPCache,
-		blockCache:   blockCache,
-		futureBlocks: futureBlocks,
-		badBlocks:    badBlocks,
-		senderCacher: senderCacher,
+		chainConfig:       chainConfig,
+		statePruning:      statePruning,
+		statePruningClean: true,
+		snapshotInterval:  chainConfig.SnapshotInterval * uint64(time.Millisecond),
+		triesInMemory:     ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
+		triegc:            prque.New(nil),
+		vmConfig:          vmConfig,
+		db:                db,
+		stateCache:        state.NewDatabase(db),
+		quit:              make(chan struct{}),
+		bodyCache:         bodyCache,
+		headerCache:       headerCache,
+		tdCache:           tdCache,
+		numberCache:       numberCache,
+		bodyRLPCache:      bodyRLPCache,
+		blockCache:        blockCache,
+		futureBlocks:      futureBlocks,
+		badBlocks:         badBlocks,
+		senderCacher:      senderCacher,
 		fcontroller: NewForkController(&ForkConfig{
 			ForkBlockNum:   chainConfig.ForkedCfg.ForkBlockNum,
 			Forkpercentage: chainConfig.ForkedCfg.Forkpercentage,
@@ -386,8 +400,7 @@ func (bc *BlockChain) HasBlock(hash common.Hash, number uint64) bool {
 
 // HasState checks if state trie is fully present in the database or not.
 func (bc *BlockChain) HasState(hash common.Hash) bool {
-	stateOut := rawdb.ReadBlockStateOut(bc.db, hash)
-	return stateOut != nil
+	return rawdb.ReadBlockStateOut(bc.db, hash) != nil
 }
 
 // HasBlockAndState checks if a block and  state  is fully present  in the database or not.
@@ -467,6 +480,23 @@ func (bc *BlockChain) Stop() {
 	atomic.StoreInt32(&bc.procInterrupt, 1)
 
 	bc.wg.Wait()
+
+	if bc.statePruning {
+		triedb := bc.stateCache.TrieDB()
+		for !bc.triegc.Empty() {
+			state, _ := bc.triegc.Pop()
+			log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
+			if err := triedb.Commit(state.(WriteStateToDB).Root, false); err != nil {
+				log.Error("Tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number, "err", err)
+			}
+			triedb.Dereference(state.(WriteStateToDB).Root)
+		}
+
+		if size, _ := triedb.Size(); size != 0 {
+			log.Error("Dangling trie nodes after full cleanup")
+		}
+	}
+
 	log.Info("Blockchain manager stopped")
 }
 
@@ -496,6 +526,43 @@ func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (e
 	return nil
 }
 
+func (bc *BlockChain) WriteSnapshotToState(block *types.Block, state *state.StateDB) error {
+	prevHeader := bc.GetHeaderByHash(block.ParentHash())
+
+	prevTime := prevHeader.Time.Uint64()
+	prevTimeFormat := prevTime / bc.snapshotInterval * bc.snapshotInterval
+
+	currentTime := block.Time().Uint64()
+	currentTimeFormat := currentTime / bc.snapshotInterval * bc.snapshotInterval
+
+	if prevTimeFormat != currentTimeFormat {
+		snapshotManager := snapshot.NewSnapshotManager(state)
+		err := snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: block.NumberU64(), BlockHash: block.ParentHash(), Timestamp: prevTimeFormat})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (bc *BlockChain) WriteSnapshotToDB(db rawdb.DatabaseWriter, root common.Hash, block *types.Block) {
+	snapshotInfo := types.SnapshotInfo{
+		Root: root,
+	}
+	key := types.SnapshotBlock{
+		Number:    block.NumberU64(),
+		BlockHash: block.ParentHash(),
+	}
+	rawdb.WriteSnapshot(db, key, snapshotInfo)
+}
+
+type WriteStateToDB struct {
+	Root        common.Hash
+	Number      uint64
+	WriteDbFlag bool
+}
+
 // WriteBlockWithState writes the block and all associated state to the database.
 func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (isCanon bool, err error) {
 	bc.wg.Add(1)
@@ -518,14 +585,81 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	batch := bc.db.NewBatch()
 	rawdb.WriteBlock(batch, block)
 
+	log.Debug("Tiredb commit memory", "number", block.NumberU64())
 	root, err := state.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
 		return false, err
 	}
 
+	var writeStateFlag bool
+	snapshotManager := snapshot.NewSnapshotManager(state)
+	blockNumber, blockHash, err := snapshotManager.GetCurrentSnapshotHash()
+	if err == nil {
+		if blockNumber == block.NumberU64() && blockHash == block.ParentHash() {
+			writeStateFlag = true
+		} else {
+			writeStateFlag = false
+		}
+	}
+
+	if writeStateFlag {
+		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "time", block.Time().Uint64()/bc.snapshotInterval*bc.snapshotInterval)
+		bc.WriteSnapshotToDB(batch, root, block)
+	}
+
 	triedb := bc.stateCache.TrieDB()
-	if err := triedb.Commit(root, false); err != nil {
-		return false, err
+
+	if !bc.statePruning {
+		log.Debug("Tiredb commit db", "root", root.String(), "number", block.NumberU64())
+		if err := triedb.Commit(root, false); err != nil {
+			return false, err
+		}
+	} else {
+		writeStateToDB := WriteStateToDB{
+			Root:        root,
+			Number:      block.NumberU64(),
+			WriteDbFlag: writeStateFlag,
+		}
+		triedb.Reference(root, common.Hash{})
+		bc.triegc.Push(writeStateToDB, -int64(block.Time().Uint64()))
+
+		sizegc := bc.triegc.Size()
+		if uint64(sizegc) == bc.triesInMemory {
+			var (
+				nodes, imgs = triedb.Size()
+				limit       = common.StorageSize(5) * 1024 * 1024
+			)
+			if nodes > limit || imgs > 4*1024*1024 {
+				log.Debug("triedb.Cap")
+				triedb.Cap(limit - fdb.IdealBatchSize)
+			}
+
+			if !bc.triegc.Empty() {
+				state, timestamp := bc.triegc.Pop()
+				log.Debug("Memory trie", "number", state.(WriteStateToDB).Number, "sizegc", sizegc, "timestamp", -timestamp)
+
+				if bc.statePruningClean == false {
+					bc.triegc.Push(state, timestamp)
+					for !bc.triegc.Empty() {
+						state, timestamp = bc.triegc.Pop()
+						log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
+						if err := triedb.Commit(state.(WriteStateToDB).Root, true); err != nil {
+							return false, err
+						}
+						triedb.Dereference(state.(WriteStateToDB).Root)
+					}
+					bc.statePruning = false
+				} else {
+					if state.(WriteStateToDB).WriteDbFlag {
+						log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
+						if err := triedb.Commit(state.(WriteStateToDB).Root, true); err != nil {
+							log.Crit("Tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number, "err", err)
+						}
+					}
+					triedb.Dereference(state.(WriteStateToDB).Root)
+				}
+			}
+		}
 	}
 
 	rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), receipts)
@@ -580,6 +714,19 @@ Target:
 	bc.futureBlocks.Remove(block.Hash())
 
 	return isCanon, nil
+}
+
+// StatePruning enale/disable state pruning
+func (bc *BlockChain) StatePruning(enable bool) (bool, uint64) {
+	log.Debug("Set State Pruning", "pruning", enable, "number", bc.CurrentBlock().NumberU64())
+	tmp := bc.statePruning
+	if enable {
+		bc.statePruningClean = true
+		bc.statePruning = true
+	} else {
+		bc.statePruningClean = false
+	}
+	return tmp, bc.CurrentBlock().NumberU64()
 }
 
 // InsertChain attempts to insert the given batch of blocks in to the canonical chain or, otherwise, create a fork.
@@ -806,7 +953,7 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 	// Ensure the user sees large reorgs
 	if len(oldChain) > 0 && len(newChain) > 0 {
 		if oldChain[len(oldChain)-1].NumberU64() <= bc.IrreversibleNumber() {
-			log.Warn("Do not accept other cadidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
+			log.Warn("Do not accept other candidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
 			return errReorgSystemBlock
 		}
 
@@ -1028,9 +1175,9 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
 // CalcGasLimit computes the gas limit of the next block after parent.
-func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
-	return params.CalcGasLimit(parent)
-}
+// func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
+// 	return params.CalcGasLimit(parent)
+// }
 
 // ForkUpdate .
 func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
@@ -1067,4 +1214,35 @@ func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 		}
 	}
 	return nil
+}
+
+// CalcGasLimit computes the gas limit of the next block after parent.
+// This is miner strategy, not consensus protocol.
+func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
+	// contrib = (parentGasUsed * 3 / 2) / 1024
+	contrib := (parent.GasUsed() + parent.GasUsed()/2) / params.GasLimitBoundDivisor
+
+	// decay = parentGasLimit / 1024 -1
+	decay := parent.GasLimit()/params.GasLimitBoundDivisor - 1
+
+	/*
+		strategy: gasLimit of block-to-mine is set based on parent's
+		gasUsed value.  if parentGasUsed > parentGasLimit * (2/3) then we
+		increase it, otherwise lower it (or leave it unchanged if it's right
+		at that usage) the amount increased/decreased depends on how far away
+		from parentGasLimit * (2/3) parentGasUsed is.
+	*/
+	limit := parent.GasLimit() - decay + contrib
+	if limit < params.MinGasLimit {
+		limit = params.MinGasLimit
+	}
+	// however, if we're now below the target (GenesisGasLimit) we increase the
+	// limit as much as we can (parentGasLimit / 1024 -1)
+	if limit < params.GenesisGasLimit {
+		limit = parent.GasLimit() + decay
+		if limit > params.GenesisGasLimit {
+			limit = params.GenesisGasLimit
+		}
+	}
+	return limit
 }

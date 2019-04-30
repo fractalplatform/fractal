@@ -23,7 +23,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
@@ -63,16 +62,6 @@ type StructLog struct {
 	Storage    map[common.Hash]common.Hash `json:"-"`
 	Depth      int                         `json:"depth"`
 	Err        error                       `json:"-"`
-}
-
-// overrides for gencodec
-type structLogMarshaling struct {
-	Stack       []*math.HexOrDecimal256
-	Gas         math.HexOrDecimal64
-	GasCost     math.HexOrDecimal64
-	Memory      hexutil.Bytes
-	OpName      string `json:"opName"` // adds call to OpName() in MarshalJSON
-	ErrorString string `json:"error"`  // adds call to ErrorString() in MarshalJSON
 }
 
 func (s *StructLog) OpName() string {

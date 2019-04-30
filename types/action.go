@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -69,27 +70,28 @@ const (
 )
 
 const (
-	// RegCadidate repesents register cadidate action.
-	RegCadidate ActionType = 0x300 + iota
-	// UpdateCadidate repesents update cadidate action.
-	UpdateCadidate
-	// UnregCadidate repesents unregister cadidate action.
-	UnregCadidate
-	// RemoveVoter repesents cadidate remove voter action.
-	RemoveVoter
-	// VoteCadidate repesents voter vote cadidate action.
-	VoteCadidate
-	// ChangeCadidate repesents voter change cadidate action.
-	ChangeCadidate
-	// UnvoteCadidate repesents voter cancel vote some cadidate action.
-	UnvoteCadidate
+	// RegCandidate repesents register candidate action.
+	RegCandidate ActionType = 0x300 + iota
+	// UpdateCandidate repesents update candidate action.
+	UpdateCandidate
+	// UnregCandidate repesents unregister candidate action.
+	UnregCandidate
+	// RefundCandidate repesents unregister candidate action.
+	RefundCandidate
+	// VoteCandidate repesents voter vote candidate action.
+	VoteCandidate
 )
 
 const (
-	// KickedCadidate
-	KickedCadidate ActionType = 0x400 + iota
-	// exit
+	// KickedCandidate kicked
+	KickedCandidate ActionType = 0x400 + iota
+	// ExitTakeOver exit
 	ExitTakeOver
+)
+
+const (
+	// WithdrawFee
+	WithdrawFee ActionType = 0x500 + iota
 )
 
 type SignData struct {
@@ -108,6 +110,7 @@ type actionData struct {
 	GasLimit uint64
 	Amount   *big.Int
 	Payload  []byte
+	Remark   []byte
 
 	Sign []*SignData
 }
@@ -122,7 +125,7 @@ type Action struct {
 }
 
 // NewAction initialize transaction's action.
-func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasLimit uint64, amount *big.Int, payload []byte) *Action {
+func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasLimit uint64, amount *big.Int, payload, remark []byte) *Action {
 	if len(payload) > 0 {
 		payload = common.CopyBytes(payload)
 	}
@@ -135,6 +138,7 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		GasLimit: gasLimit,
 		Amount:   new(big.Int),
 		Payload:  payload,
+		Remark:   remark,
 		Sign:     make([]*SignData, 0),
 	}
 	if amount != nil {
@@ -151,8 +155,68 @@ func (a *Action) GetSign() []*SignData {
 	return a.data.Sign
 }
 
-//CheckValue check action type and value
-func (a *Action) CheckValue() bool {
+//CheckValid Check the validity of all fields
+func (a *Action) CheckValid(conf *params.ChainConfig) bool {
+	//check To
+	switch a.Type() {
+	case CreateContract:
+		if a.data.From != a.data.To {
+			return false
+		}
+		break
+	case CallContract:
+		break
+	//account
+	case CreateAccount:
+		fallthrough
+	case UpdateAccount:
+		fallthrough
+	case DeleteAccount:
+		fallthrough
+	case UpdateAccountAuthor:
+		if a.data.To.String() != conf.AccountName {
+			//fmt.Println("fanzhen to = ", a.data.To.String(), conf.AccountName)
+			return false
+		}
+		break
+	//asset
+	case IncreaseAsset:
+		fallthrough
+	case IssueAsset:
+		fallthrough
+	case DestroyAsset:
+		fallthrough
+	case SetAssetOwner:
+		fallthrough
+	case UpdateAsset:
+		if a.data.To.String() != conf.AssetName {
+			return false
+		}
+		break
+	case Transfer:
+		break
+	//dpos
+	case RegCandidate:
+		fallthrough
+	case UpdateCandidate:
+		fallthrough
+	case UnregCandidate:
+		fallthrough
+	case VoteCandidate:
+		fallthrough
+	case RefundCandidate:
+		fallthrough
+	case KickedCandidate:
+		fallthrough
+	case ExitTakeOver:
+		if a.data.To.String() != conf.DposName {
+			return false
+		}
+	default:
+		return false
+	}
+
+	//check value
 	switch a.Type() {
 	case CreateContract:
 		fallthrough
@@ -164,11 +228,9 @@ func (a *Action) CheckValue() bool {
 		fallthrough
 	case DestroyAsset:
 		fallthrough
-	case RegCadidate:
+	case RegCandidate:
 		fallthrough
-	case UpdateCadidate:
-		fallthrough
-	case VoteCadidate:
+	case UpdateCandidate:
 		return true
 	default:
 	}
@@ -190,8 +252,11 @@ func (a *Action) Sender() common.Name { return a.data.From }
 // Recipient returns action's Recipient.
 func (a *Action) Recipient() common.Name { return a.data.To }
 
-// Data returns action's Data.
+// Data returns action's payload.
 func (a *Action) Data() []byte { return common.CopyBytes(a.data.Payload) }
+
+// Remark returns action's remark.
+func (a *Action) Remark() []byte { return common.CopyBytes(a.data.Remark) }
 
 // Gas returns action's Gas.
 func (a *Action) Gas() uint64 { return a.data.GasLimit }
@@ -219,7 +284,7 @@ func (a *Action) Hash() common.Hash {
 	if hash := a.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := rlpHash(a)
+	v := RlpHash(a)
 	a.hash.Store(v)
 	return v
 }
@@ -243,6 +308,7 @@ type RPCAction struct {
 	AssetID    uint64        `json:"assetID"`
 	GasLimit   uint64        `json:"gas"`
 	Amount     *big.Int      `json:"value"`
+	Remark     hexutil.Bytes `json:"remark"`
 	Payload    hexutil.Bytes `json:"payload"`
 	Hash       common.Hash   `json:"actionHash"`
 	ActionIdex uint64        `json:"actionIndex"`
@@ -258,6 +324,7 @@ func (a *Action) NewRPCAction(index uint64) *RPCAction {
 		AssetID:    a.AssetID(),
 		GasLimit:   a.Gas(),
 		Amount:     a.Value(),
+		Remark:     hexutil.Bytes(a.Remark()),
 		Payload:    hexutil.Bytes(a.Data()),
 		Hash:       a.Hash(),
 		ActionIdex: index,

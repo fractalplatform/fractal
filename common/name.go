@@ -50,9 +50,9 @@ func init() {
 func SetAccountNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	var nameCheck string
 	if nameLevel == 0 {
-		nameCheck = fmt.Sprintf("^[a-z0-9]{7,%d}$", nameLen)
+		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{6,%d}$", nameLen-1)
 	} else {
-		nameCheck = fmt.Sprintf("^[a-z0-9]{7,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
+		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{6,%d}(\\.[a-z][a-z0-9]{0,%d}){0,%d}$", nameLen-1, subNameLen-1, nameLevel)
 	}
 	log.Info("Account name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
 	accountNameCheck = regexp.MustCompile(nameCheck)
@@ -61,9 +61,9 @@ func SetAccountNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 func SetAssetNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
 	var nameCheck string
 	if nameLevel == 0 {
-		nameCheck = fmt.Sprintf("^[a-z0-9]{2,%d}$", nameLen)
+		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{1,%d}$", nameLen-1)
 	} else {
-		nameCheck = fmt.Sprintf("^[a-z0-9]{2,%d}(\\.[a-z0-9]{1,%d}){0,%d}$", nameLen, subNameLen, nameLevel)
+		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{1,%d}(\\.[a-z][a-z0-9]{0,%d}){0,%d}$", nameLen-1, subNameLen-1, nameLevel)
 	}
 	log.Info("Asset name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
 	assetNameCheck = regexp.MustCompile(nameCheck)

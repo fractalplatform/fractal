@@ -69,8 +69,8 @@ func TestHeaderStorage(t *testing.T) {
 // Tests block body storage and retrieval operations.
 func TestBodyStorage(t *testing.T) {
 	db := mdb.NewMemDatabase()
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
@@ -134,8 +134,8 @@ func TestBlockStorage(t *testing.T) {
 		Coinbase:     "coinbase",
 	}
 
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
@@ -256,8 +256,8 @@ func TestBlockReceiptStorage(t *testing.T) {
 		ActionResults:     []*types.ActionResult{&types.ActionResult{Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)}},
 		CumulativeGasUsed: 1,
 		Logs: []*types.Log{
-			{Name: common.StrToName("11111111")},
-			{Name: common.StrToName("11111111")},
+			{Name: common.StrToName("a11111111")},
+			{Name: common.StrToName("a11111111")},
 		},
 		TxHash:       common.BytesToHash([]byte{0x11, 0x11}),
 		TotalGasUsed: 111111,
@@ -268,8 +268,8 @@ func TestBlockReceiptStorage(t *testing.T) {
 		PostState:         common.Hash{2}.Bytes(),
 		CumulativeGasUsed: 2,
 		Logs: []*types.Log{
-			{Name: common.StrToName("22222222")},
-			{Name: common.StrToName("22222222")},
+			{Name: common.StrToName("a22222222")},
+			{Name: common.StrToName("a22222222")},
 		},
 		TxHash:       common.BytesToHash([]byte{0x22, 0x22}),
 		TotalGasUsed: 222222,

@@ -215,11 +215,11 @@ func (dl *Downloader) DelStation(station router.Station) {
 }
 
 func (dl *Downloader) bestStation() *stationStatus {
+	dl.remotesMutex.RLock()
+	defer dl.remotesMutex.RUnlock()
 	if dl.remotes.Len() == 0 {
 		return nil
 	}
-	dl.remotesMutex.RLock()
-	defer dl.remotesMutex.RUnlock()
 	return dl.remotes.min().(*stationStatus)
 }
 

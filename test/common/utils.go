@@ -30,6 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
 	jww "github.com/spf13/jwalterweatherman"
@@ -123,6 +124,24 @@ func GetAccountByName(name common.Name) (*accountmanager.Account, error) {
 	account := &accountmanager.Account{}
 	err := ClientCall("account_getAccountByName", account, name)
 	return account, err
+}
+
+func GetObjectFeeByName(objectName common.Name, objectType uint64) (*feemanager.ObjectFee, error) {
+	objectFee := &feemanager.ObjectFee{}
+	err := ClientCall("fee_getObjectFeeByName", objectFee, objectName, objectType)
+	return objectFee, err
+}
+
+func GetObjectFeeResult(startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+	objectFeeResult := &feemanager.ObjectFeeResult{}
+	err := ClientCall("fee_getObjectFeeResult", objectFeeResult, startObjectFeeID, count)
+	return objectFeeResult, err
+}
+
+func GetObjectFeeResultByTime(time uint64, startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+	objectFeeResult := &feemanager.ObjectFeeResult{}
+	err := ClientCall("fee_getObjectFeeResultByTime", objectFeeResult, time, startObjectFeeID, count)
+	return objectFeeResult, err
 }
 
 func GetDposAccount(name common.Name) (map[string]interface{}, error) {

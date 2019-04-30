@@ -25,6 +25,8 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/debug"
+	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -55,6 +57,7 @@ type Backend interface {
 	GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx
 	GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash
 	GetBadBlocks(ctx context.Context) ([]*types.Block, error)
+	SetStatePruning(enable bool) (bool, uint64)
 
 	// TxPool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
@@ -68,6 +71,10 @@ type Backend interface {
 
 	SetGasPrice(gasPrice *big.Int) bool
 
+	//fee manager
+	GetFeeManager() (*feemanager.FeeManager, error)
+	GetFeeManagerByTime(time uint64) (*feemanager.FeeManager, error)
+
 	// P2P
 	AddPeer(url string) error
 	RemovePeer(url string) error
@@ -75,6 +82,9 @@ type Backend interface {
 	RemoveTrustedPeer(url string) error
 	PeerCount() int
 	Peers() []string
+	BadNodesCount() int
+	BadNodes() []string
+	AddBadNode(url string) error
 	SelfNode() string
 	Engine() consensus.IEngine
 	APIs() []rpc.API
@@ -108,6 +118,17 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Version:   "1.0",
 			Service:   NewPrivateP2pAPI(apiBackend),
 			Public:    true,
+		}, {
+			Namespace: "fee",
+			Version:   "1.0",
+			Service:   NewFeeAPI(apiBackend),
+			Public:    true,
+		},
+		{
+			Namespace: "debug",
+			Version:   "1.0",
+			Service:   debug.Handler,
+			Public:    true, // todo private
 		},
 	}
 	return append(apis, apiBackend.APIs()...)
