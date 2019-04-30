@@ -110,13 +110,13 @@ func SetAccountNameConfig(config *Config) bool {
 //	return false
 //}
 
-func SetChainName(name common.Name) bool {
-	if common.IsValidAccountName(name.String()) {
-		chainName = name.String()
-		return true
-	}
-	return false
-}
+// func SetChainName(name common.Name) bool {
+// 	if common.IsValidAccountName(name.String()) {
+// 		chainName = name.String()
+// 		return true
+// 	}
+// 	return false
+// }
 
 //SetAcctMangerName  set the global account manager name
 func SetAcctMangerName(name common.Name) bool {
