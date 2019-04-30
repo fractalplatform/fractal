@@ -60,6 +60,28 @@ var (
 		big.NewInt(0),
 		[]byte("test action"),
 	)
+
+	testAction4 = NewAction(
+		CreateContract,
+		common.Name("fromname"),
+		common.Name("fromname"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
+
+	testAction5 = NewAction(
+		CreateAccount,
+		common.Name("fromname"),
+		common.Name("fractal.aaaaaa"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
 )
 
 func TestActionEncodeAndDecode(t *testing.T) {
@@ -83,7 +105,7 @@ func TestAction_CheckValid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	//
 	actAction := &Action{}
 	if err := rlp.Decode(bytes.NewReader(actionBytes), &actAction); err != nil {
 		t.Fatal(err)
@@ -116,6 +138,36 @@ func TestAction_CheckValid(t *testing.T) {
 
 	actAction3 := &Action{}
 	if err := rlp.Decode(bytes.NewReader(actionBytes3), &actAction3); err != nil {
+		t.Fatal(err)
+	}
+
+	if actAction3.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	//test4
+	actionBytes4, err := rlp.EncodeToBytes(testAction4)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actAction4 := &Action{}
+	if err := rlp.Decode(bytes.NewReader(actionBytes4), &actAction4); err != nil {
+		t.Fatal(err)
+	}
+
+	if actAction3.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	//test5
+	actionBytes5, err := rlp.EncodeToBytes(testAction5)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actAction5 := &Action{}
+	if err := rlp.Decode(bytes.NewReader(actionBytes5), &actAction5); err != nil {
 		t.Fatal(err)
 	}
 
