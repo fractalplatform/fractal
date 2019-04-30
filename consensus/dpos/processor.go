@@ -62,9 +62,9 @@ func (dpos *Dpos) ProcessAction(height uint64, chainCfg *params.ChainConfig, sta
 
 func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	sys := NewSystem(state, dpos.config)
-	if !action.CheckValue() {
-		return nil, accountmanager.ErrAmountValueInvalid
-	}
+	//if !action.CheckValue() {
+	//	return nil, accountmanager.ErrAmountValueInvalid
+	//}
 
 	if action.AssetID() != chainCfg.SysTokenID {
 		return nil, accountmanager.ErrAssetIDInvalid

@@ -13,7 +13,6 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-
 package feemanager
 
 import (
@@ -52,14 +51,13 @@ func getStateDB() *state.StateDB {
 
 func getAccountManager() *accountmanager.AccountManager {
 	accountmanager.SetAcctMangerName("systestname")
-	accountmanager.SetSysName("systestname")
 	am, err := accountmanager.NewAccountManager(sdb)
 	if err != nil {
 		fmt.Printf("test getAccountManager() failure %v", err)
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
+	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, *pubkey, "")
 	return am
 }
 
@@ -159,7 +157,7 @@ func addAssetAndAccount() error {
 		{"assettest.asset4", "s4", big.NewInt(0), 2, tname, tname},
 	}
 
-	if err := acctm.CreateAccount(tname, tname, 0, 0, *pubKey, ""); err != nil {
+	if err := acctm.CreateAccount(tname, tname, 0, *pubKey, ""); err != nil {
 		return err
 	}
 

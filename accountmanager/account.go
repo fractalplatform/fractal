@@ -55,11 +55,11 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 //Account account object
 type Account struct {
 	//LastTime *big.Int
-	AcctName              common.Name `json:"accountName"`
-	Founder               common.Name `json:"founder"`
-	AccountID             uint64      `json:"accountID"`
-	Number                uint64      `json:"number"`
-	ChargeRatio           uint64      `json:"chargeRatio"`
+	AcctName  common.Name `json:"accountName"`
+	Founder   common.Name `json:"founder"`
+	AccountID uint64      `json:"accountID"`
+	Number    uint64      `json:"number"`
+	//ChargeRatio           uint64      `json:"chargeRatio"`
 	Nonce                 uint64      `json:"nonce"`
 	Code                  []byte      `json:"code"`
 	CodeHash              common.Hash `json:"codeHash"`
@@ -90,11 +90,11 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 
 	auth := common.NewAuthor(pubkey, 1)
 	acctObject := Account{
-		AcctName:              accountName,
-		Founder:               founderName,
-		AccountID:             0,
-		Number:                0,
-		ChargeRatio:           0,
+		AcctName:  accountName,
+		Founder:   founderName,
+		AccountID: 0,
+		Number:    0,
+		//ChargeRatio:           0,
 		Nonce:                 0,
 		Balances:              make([]*AssetBalance, 0),
 		Code:                  make([]byte, 0),
@@ -162,14 +162,14 @@ func (a *Account) SetAccountNumber(number uint64) {
 }
 
 //GetChargeRatio return account charge ratio
-func (a *Account) GetChargeRatio() uint64 {
-	return a.ChargeRatio
-}
+// func (a *Account) GetChargeRatio() uint64 {
+// 	return a.ChargeRatio
+// }
 
 //SetChargeRatio set account object charge ratio
-func (a *Account) SetChargeRatio(ra uint64) {
-	a.ChargeRatio = ra
-}
+// func (a *Account) SetChargeRatio(ra uint64) {
+// 	a.ChargeRatio = ra
+// }
 
 // GetNonce get nonce
 func (a *Account) GetNonce() uint64 {

@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -153,7 +154,65 @@ func (a *Action) GetSign() []*SignData {
 }
 
 //CheckValue check action type and value
-func (a *Action) CheckValue() bool {
+func (a *Action) CheckValue(conf *params.ChainConfig) bool {
+	//check To
+	switch a.Type() {
+	case CreateContract:
+		if a.data.From != a.data.To {
+			return false
+		}
+		break
+	//account
+	case CreateAccount:
+		fallthrough
+	case UpdateAccount:
+		fallthrough
+	case DeleteAccount:
+		fallthrough
+	case UpdateAccountAuthor:
+		if a.data.To.String() != conf.AccountName {
+			//fmt.Println("fanzhen to = ", a.data.To.String(), conf.AccountName)
+			return false
+		}
+		break
+	//asset
+	case IncreaseAsset:
+		fallthrough
+	case IssueAsset:
+		fallthrough
+	case DestroyAsset:
+		fallthrough
+	case SetAssetOwner:
+		fallthrough
+	case UpdateAsset:
+		if a.data.To.String() != conf.AssetName {
+			return false
+		}
+		break
+	case Transfer:
+		break
+	//dpos
+	case RegCandidate:
+		fallthrough
+	case UpdateCandidate:
+		fallthrough
+	case UnregCandidate:
+		fallthrough
+	case VoteCandidate:
+		fallthrough
+	case RefundCandidate:
+		fallthrough
+	case KickedCandidate:
+		fallthrough
+	case ExitTakeOver:
+		if a.data.To.String() != conf.DposName {
+			return false
+		}
+	default:
+		return false
+	}
+
+	//check value
 	switch a.Type() {
 	case CreateContract:
 		fallthrough

@@ -1175,9 +1175,9 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
 // CalcGasLimit computes the gas limit of the next block after parent.
-func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
-	return params.CalcGasLimit(parent)
-}
+// func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
+// 	return params.CalcGasLimit(parent)
+// }
 
 // ForkUpdate .
 func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
@@ -1214,4 +1214,35 @@ func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 		}
 	}
 	return nil
+}
+
+// CalcGasLimit computes the gas limit of the next block after parent.
+// This is miner strategy, not consensus protocol.
+func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
+	// contrib = (parentGasUsed * 3 / 2) / 1024
+	contrib := (parent.GasUsed() + parent.GasUsed()/2) / params.GasLimitBoundDivisor
+
+	// decay = parentGasLimit / 1024 -1
+	decay := parent.GasLimit()/params.GasLimitBoundDivisor - 1
+
+	/*
+		strategy: gasLimit of block-to-mine is set based on parent's
+		gasUsed value.  if parentGasUsed > parentGasLimit * (2/3) then we
+		increase it, otherwise lower it (or leave it unchanged if it's right
+		at that usage) the amount increased/decreased depends on how far away
+		from parentGasLimit * (2/3) parentGasUsed is.
+	*/
+	limit := parent.GasLimit() - decay + contrib
+	if limit < params.MinGasLimit {
+		limit = params.MinGasLimit
+	}
+	// however, if we're now below the target (GenesisGasLimit) we increase the
+	// limit as much as we can (parentGasLimit / 1024 -1)
+	if limit < params.GenesisGasLimit {
+		limit = parent.GasLimit() + decay
+		if limit > params.GenesisGasLimit {
+			limit = params.GenesisGasLimit
+		}
+	}
+	return limit
 }
