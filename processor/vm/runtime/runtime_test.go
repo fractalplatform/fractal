@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fractalplatform/fractal/params"
+
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
@@ -208,18 +210,22 @@ func TestAsset(t *testing.T) {
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
 
-	if err := account.CreateAccount(senderName, "", 0, 0, senderPubkey, ""); err != nil {
+	if err := account.CreateAccount(senderName, "", 0, senderPubkey, ""); err != nil {
 		fmt.Println("create sender account error", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, "", 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(receiverName, "", 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create receiver account error", err)
 		return
 	}
 
 	action := issueAssetAction(senderName, receiverName)
-	if _, err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
+	if _, err := account.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      0,
+		ChainConfig: params.DefaultChainconfig,
+	}); err != nil {
 		fmt.Println("issue asset error", err)
 		return
 	}
@@ -239,7 +245,7 @@ func TestAsset(t *testing.T) {
 	binfile := "./contract/Asset/Asset.bin"
 	abifile := "./contract/Asset/Asset.abi"
 	contractName := common.Name("assetcontract")
-	if err := account.CreateAccount(contractName, "", 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(contractName, "", 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create contract account error", err)
 		return
 	}
@@ -401,18 +407,22 @@ func TestBNB(t *testing.T) {
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
 
-	if err := account.CreateAccount(senderName, common.Name(""), 0, 0, senderPubkey, ""); err != nil {
+	if err := account.CreateAccount(senderName, common.Name(""), 0, senderPubkey, ""); err != nil {
 		fmt.Println("create sender account error", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(receiverName, common.Name(""), 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create receiver account error", err)
 		return
 	}
 
 	action := issueAssetAction(senderName, receiverName)
-	if _, err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
+	if _, err := account.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      0,
+		ChainConfig: params.DefaultChainconfig,
+	}); err != nil {
 		fmt.Println("issue asset error", err)
 		return
 	}
@@ -438,16 +448,16 @@ func TestBNB(t *testing.T) {
 	ethvaultName := common.Name("ethvault")
 	venvaultName := common.Name("venvault")
 
-	if err := account.CreateAccount(venContractName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(venContractName, common.Name(""), 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create venContractName account error", err)
 		return
 	}
-	if err := account.CreateAccount(venSaleContractName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(venSaleContractName, common.Name(""), 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create venSaleContractName account error", err)
 		return
 	}
-	account.CreateAccount(ethvaultName, common.Name(""), 0, 0, senderPubkey, "")
-	account.CreateAccount(venvaultName, common.Name(""), 0, 0, senderPubkey, "")
+	account.CreateAccount(ethvaultName, common.Name(""), 0, senderPubkey, "")
+	account.CreateAccount(venvaultName, common.Name(""), 0, senderPubkey, "")
 
 	err := createContract(VenSaleAbifile, VenSaleBinfile, venSaleContractName, runtimeConfig)
 	if err != nil {

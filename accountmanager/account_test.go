@@ -58,6 +58,7 @@ func TestNewAccount(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
+
 	for _, tt := range tests {
 		got, err := NewAccount(tt.args.accountName, tt.args.founderName, tt.args.pubkey, tt.args.detail)
 		if (err != nil) != tt.wantErr {
