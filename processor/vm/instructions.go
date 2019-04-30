@@ -395,7 +395,15 @@ func opSha3(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 }
 
 func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(contract.Name().Big())
+	if acct, err := evm.AccountDB.GetAccountByName(contract.Name()); err == nil {
+		if acct != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
+		} else {
+			stack.push(evm.interpreter.intPool.getZero())
+		}
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+	}
 	return nil, nil
 }
 
@@ -560,12 +568,28 @@ func opBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 }
 
 func opOrigin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.Origin.Big())
+	if acct, err := evm.AccountDB.GetAccountByName(evm.Origin); err == nil {
+		if acct != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
+		} else {
+			stack.push(evm.interpreter.intPool.getZero())
+		}
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+	}
 	return nil, nil
 }
 
 func opCaller(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(contract.Caller().Big())
+	if acct, err := evm.AccountDB.GetAccountByName(contract.Caller()); err == nil {
+		if acct != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
+		} else {
+			stack.push(evm.interpreter.intPool.getZero())
+		}
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+	}
 	return nil, nil
 }
 
@@ -698,7 +722,15 @@ func opBlockhash(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 }
 
 func opCoinbase(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.Coinbase.Big())
+	if acct, err := evm.AccountDB.GetAccountByName(evm.Coinbase); err == nil {
+		if acct != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
+		} else {
+			stack.push(evm.interpreter.intPool.getZero())
+		}
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+	}
 	return nil, nil
 }
 
