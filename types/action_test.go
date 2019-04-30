@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/stretchr/testify/assert"
 )
@@ -41,7 +42,7 @@ var (
 	testAction2 = NewAction(
 		UpdateAccount,
 		common.Name("fromname"),
-		common.Name("totoname"),
+		common.Name("fractal.account"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -52,7 +53,7 @@ var (
 	testAction3 = NewAction(
 		UpdateAccount,
 		common.Name("fromname"),
-		common.Name("totoname"),
+		common.Name("fractal.account"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -88,7 +89,7 @@ func TestAction_CheckValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction.CheckValue() == false {
+	if actAction.CheckValue(params.DefaultChainconfig) == false {
 		t.Errorf("TestAction_CheckValue err, wantErr %v", true)
 	}
 
@@ -103,7 +104,7 @@ func TestAction_CheckValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction2.CheckValue() == true {
+	if actAction2.CheckValue(params.DefaultChainconfig) == true {
 		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
 	}
 
@@ -118,7 +119,7 @@ func TestAction_CheckValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction3.CheckValue() == false {
+	if actAction3.CheckValue(params.DefaultChainconfig) == false {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 }

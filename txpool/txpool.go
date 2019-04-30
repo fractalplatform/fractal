@@ -60,6 +60,7 @@ type blockChain interface {
 	CurrentBlock() *types.Block
 	GetBlock(hash common.Hash, number uint64) *types.Block
 	StateAt(root common.Hash) (*state.StateDB, error)
+	Config() *params.ChainConfig
 }
 
 // TxPool contains all currently known transactions.
@@ -471,7 +472,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		if action.CheckValue() != true {
+		if action.CheckValue(tp.chain.Config()) != true {
 			return ErrInvalidValue
 		}
 
