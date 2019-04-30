@@ -175,3 +175,90 @@ func TestAction_CheckValid(t *testing.T) {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 }
+
+var (
+	testAction10 = NewAction(
+		IncreaseAsset,
+		common.Name("fromname"),
+		common.Name("fractal.asset"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"))
+
+	testAction11 = NewAction(
+		IssueAsset,
+		common.Name("fromname"),
+		common.Name("fractal.asset"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"))
+
+	testAction12 = NewAction(
+		DestroyAsset,
+		common.Name("fromname"),
+		common.Name("fractal.asset"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"))
+
+	testAction13 = NewAction(
+		SetAssetOwner,
+		common.Name("fromname"),
+		common.Name("fractal.asset"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
+	testAction14 = NewAction(
+		UpdateAsset,
+		common.Name("fromname"),
+		common.Name("fractal.asset"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
+)
+
+func TestAction_CheckValid2(t *testing.T) {
+
+	// actionBytes10, err := rlp.EncodeToBytes(testAction10)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	// actAction10 := &Action{}
+	// if err := rlp.Decode(bytes.NewReader(actionBytes10), &actAction10); err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	if testAction10.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction11.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction12.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction13.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction14.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+}
