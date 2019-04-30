@@ -62,7 +62,7 @@ func (aapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uin
 		return nil, err
 	}
 
-	if feeCounter == 0 || feeCounter > startObjectFeeID {
+	if feeCounter == 0 || feeCounter < startObjectFeeID {
 		return nil, nil
 	}
 
@@ -107,7 +107,7 @@ func (aapi *FeeAPI) GetObjectFeeResultByTime(ctx context.Context, time uint64, s
 		return nil, err
 	}
 
-	if feeCounter == 0 || feeCounter > startObjectFeeID {
+	if feeCounter == 0 || feeCounter < startObjectFeeID {
 		return nil, nil
 	}
 
