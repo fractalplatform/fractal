@@ -31,7 +31,7 @@ const (
 	maxKonwnTxs      = 32
 	txsSendDelay     = 50 * time.Millisecond
 	txsSendThreshold = 32
-	cacheBits        = 10
+	cacheBits        = 12
 	cacheSize        = 1 << cacheBits
 	cacheMask        = cacheSize - 1
 )
@@ -58,7 +58,8 @@ type bloomPath struct {
 
 // return count of bits that set
 func (p *bloomPath) getBloomSetBits() int {
-	getBits := func(num uint64) int {
+	getBits := func(b []byte) int {
+		num := binary.BigEndian.Uint64(b)
 		ret := 0
 		for num > 0 {
 			ret++
@@ -66,10 +67,10 @@ func (p *bloomPath) getBloomSetBits() int {
 		}
 		return ret
 	}
-	ret := getBits(binary.BigEndian.Uint64((*p.bloom)[0:8]))
-	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[8:16]))
-	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[16:24]))
-	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[24:32]))
+	ret := 0
+	for i := 0; i < 256; i += 8 {
+		ret += getBits((*p.bloom)[i : i+8])
+	}
 	return ret
 }
 
@@ -204,6 +205,9 @@ func (s *TxpoolStation) addTxs(txs []*TransactionWithPath, from string) []*types
 }
 
 func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
+	if len(s.peers) == 0 {
+		return
+	}
 	sendTask := make(map[*peerInfo][]*TransactionWithPath)
 	addToTask := func(txObj *TransactionWithPath) bool {
 		txSend := 0
@@ -279,9 +283,13 @@ func (s *TxpoolStation) handleMsg() {
 		case router.NewPeerPassedNotify:
 			newpeer := &peerInfo{peer: e.From, idle: 1}
 			s.peers[e.From.Name()] = newpeer
+			s.delayedTxs = s.delayedTxs[:0]
 			s.syncTransactions(newpeer)
 		case router.DelPeerNotify:
 			delete(s.peers, e.From.Name())
+			if len(s.peers) == 0 {
+				s.delayedTxs = s.delayedTxs[:0]
+			}
 		}
 	}
 }
