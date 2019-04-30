@@ -155,14 +155,16 @@ func (a *Action) GetSign() []*SignData {
 	return a.data.Sign
 }
 
-//CheckValue check action type and value
-func (a *Action) CheckValue(conf *params.ChainConfig) bool {
+//CheckValid Check the validity of all fields
+func (a *Action) CheckValid(conf *params.ChainConfig) bool {
 	//check To
 	switch a.Type() {
 	case CreateContract:
 		if a.data.From != a.data.To {
 			return false
 		}
+		break
+	case CallContract:
 		break
 	//account
 	case CreateAccount:

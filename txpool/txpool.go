@@ -479,8 +479,8 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		if action.CheckValue(tp.chain.Config()) != true {
-			return ErrInvalidValue
+		if action.CheckValid(tp.chain.Config()) != true {
+			return ErrInvalidAction
 		}
 
 		intrGas, err := IntrinsicGas(action)
