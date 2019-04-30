@@ -58,7 +58,7 @@ type ObjectFee struct {
 	ObjectFeeID uint64      `json:"objectFeeID"`
 	ObjectType  uint64      `json:"objectType"`
 	ObjectName  string      `json:"objectName"`
-	AssetFees   []*AssetFee `json:"assetFee"`
+	AssetFees   []*AssetFee `json:"assetFees"`
 }
 
 //WithdrawAsset  withdraw asset info
@@ -77,8 +77,8 @@ type WithdrawInfo struct {
 
 //ObjectFeeResult multi object fee result
 type ObjectFeeResult struct {
-	Continue   bool
-	ObjectFees []*ObjectFee
+	Continue   bool         `json:"continue"`
+	ObjectFees []*ObjectFee `json:"objectFees"`
 }
 
 var feeConfig feeManagerConfig
