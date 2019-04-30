@@ -468,7 +468,10 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		value := action.Value()
 		// todo for the moment，only system asset
 		// if tx.GasAssetID() == action.AssetID() {
-		if tp.config.GasAssetID == action.AssetID() {
+
+		if tp.config.GasAssetID != action.AssetID() {
+			return fmt.Errorf("only support system asset %d as tx fee", tp.config.GasAssetID)
+		} else {
 			value.Add(value, gascost)
 		}
 
