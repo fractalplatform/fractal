@@ -38,10 +38,6 @@ import (
 
 // PublicBlockChainAPI provides an API to access the blockchain.
 // It offers only methods that operate on public data that is freely available to anyone.
-const (
-	defaultGasPrice = 1e9
-)
-
 type PublicBlockChainAPI struct {
 	b Backend
 }

@@ -26,8 +26,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var dataDir string
-
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init -g <genesis> -d <datadir>",

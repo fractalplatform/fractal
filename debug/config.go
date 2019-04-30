@@ -19,6 +19,7 @@ package debug
 import (
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 
 	"github.com/ethereum/go-ethereum/log"
