@@ -73,6 +73,7 @@ type Backend interface {
 
 	//fee manager
 	GetFeeManager() (*feemanager.FeeManager, error)
+	GetFeeManagerByTime(time uint64) (*feemanager.FeeManager, error)
 
 	// P2P
 	AddPeer(url string) error

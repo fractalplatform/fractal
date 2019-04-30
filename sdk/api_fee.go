@@ -16,9 +16,23 @@
 
 package sdk
 
+import "github.com/fractalplatform/fractal/feemanager"
+
 // FeeInfo get object fee by name
 func (api *API) FeeInfo(name string, objectType uint64) (map[string]interface{}, error) {
 	feeInfo := map[string]interface{}{}
 	err := api.client.Call(feeInfo, "fee_getObjectFeeByName", name, objectType)
+	return feeInfo, err
+}
+
+func (api *API) FeeInfoByID(startFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+	feeInfo := &feemanager.ObjectFeeResult{}
+	err := api.client.Call(feeInfo, "fee_getObjectFeeResult", startFeeID, count)
+	return feeInfo, err
+}
+
+func (api *API) FeeInfoByTime(time uint64, startFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+	feeInfo := &feemanager.ObjectFeeResult{}
+	err := api.client.Call(feeInfo, "fee_getObjectFeeResultByTime", time, startFeeID, count)
 	return feeInfo, err
 }

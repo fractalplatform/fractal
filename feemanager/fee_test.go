@@ -114,7 +114,7 @@ func TestRecordFeeInSystem(t *testing.T) {
 			return
 		}
 
-		objectFee, err := fm.getObjectFeeByID(objectID)
+		objectFee, err := fm.GetObjectFeeByID(objectID)
 
 		if err != nil || objectFee == nil {
 			t.Errorf("get objectfee failed by id, err:%v", err)
@@ -237,7 +237,7 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 			return
 		}
 
-		objectFee, err := fm.getObjectFeeByID(objectID)
+		objectFee, err := fm.GetObjectFeeByID(objectID)
 
 		if err != nil || objectFee == nil {
 			t.Errorf("get objectfee failed by id, err:%v", err)

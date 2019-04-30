@@ -88,4 +88,9 @@ func TestSnapshot(t *testing.T) {
 	if err != nil {
 		t.Error("set snapshot err", err)
 	}
+
+	_, err = snapshotManager.GetSnapshotState(100000000)
+	if err != nil {
+		t.Error("set snapshot err", err)
+	}
 }
