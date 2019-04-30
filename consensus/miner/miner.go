@@ -23,7 +23,6 @@ import (
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
@@ -135,10 +134,6 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 			return err
 		}
 		privs = append(privs, priv)
-	}
-
-	if !common.IsValidAccountName(name) {
-		return fmt.Errorf("invalid name %v", name)
 	}
 
 	miner.worker.setCoinbase(name, privs)

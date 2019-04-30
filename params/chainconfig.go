@@ -82,7 +82,7 @@ var DefaultChainconfig = &ChainConfig{
 	ChainName: "fractal",
 	ChainURL:  "https://fractalproject.com",
 	AccountNameCfg: &NameConfig{
-		Level:     1,
+		Level:     0,
 		Length:    16,
 		SubLength: 8,
 	},

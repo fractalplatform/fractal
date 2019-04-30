@@ -91,12 +91,8 @@ func NewFeeManager(state *state.StateDB, accountDB *am.AccountManager) *FeeManag
 }
 
 //SetFeeManagerName set fee manager name
-func SetFeeManagerName(name common.Name) bool {
-	if common.IsValidAccountName(name.String()) {
-		feeConfig.feeName = name.String()
-		return true
-	}
-	return false
+func SetFeeManagerName(name common.Name) {
+	feeConfig.feeName = name.String()
 }
 
 func newAssetFee(assetID uint64, value *big.Int) *AssetFee {

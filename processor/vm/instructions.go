@@ -1121,7 +1121,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 // opGetAccountID get account ID by name
 func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	account := stack.pop()
-	name, _ := common.BigToName(account)
+	name := common.BigToName(account)
 
 	if acct, err := evm.AccountDB.GetAccountByName(name); err == nil {
 		if acct != nil {

@@ -50,17 +50,12 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 			return nil, ErrNewAssetObject
 		}
 	}
-
-	// reg := regexp.MustCompile("^[a-z0-9]{2,16}$")
-
-	if common.IsValidAssetName(assetName) == false {
+	if !common.StrToName(assetName).IsValid(assetRegExp) {
 		return nil, ErrNewAssetObject
 	}
-
-	if common.IsValidAssetName(symbol) == false {
+	if !common.StrToName(symbol).IsValid(assetRegExp) {
 		return nil, ErrNewAssetObject
 	}
-
 	if uint64(len(detail)) > MaxDetailLength {
 		return nil, ErrDetailTooLong
 	}

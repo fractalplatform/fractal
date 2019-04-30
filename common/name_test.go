@@ -18,10 +18,8 @@ package common
 
 import (
 	"encoding/json"
+	"regexp"
 	"testing"
-
-	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestValidateName(t *testing.T) {
@@ -41,14 +39,14 @@ func TestValidateName(t *testing.T) {
 		{"longnamelongnamelongnamelongname", false},
 	}
 
+	reg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\\.[a-z][a-z0-9]{0,16}){0,2}$")
 	for _, test := range tests {
-		if result := IsValidAccountName(test.str); result != test.exp {
+		if result := StrToName(test.str).IsValid(reg); result != test.exp {
 			t.Errorf("IsValidAccountName(%s) == %v; expected %v, len:%v",
 				test.str, result, test.exp, len(test.str))
 		}
 	}
 }
-
 func TestNameUnmarshalJSON(t *testing.T) {
 	var tests = []struct {
 		Input     string
@@ -57,13 +55,13 @@ func TestNameUnmarshalJSON(t *testing.T) {
 		{"helloworld", false},
 		{"shortnam", false},
 		{"longnamelongname", false},
-		{"5aaeb6053f3e", true},
-		{"测试名称", true},
-		{"hello_world", true},
-		{"hello world", true},
-		{"Helloworld", true},
-		{"short", true},
-		{"longnamelongnamelongnamelongname", true},
+		{"5aaeb6053f3e", false},
+		{"测试名称", false},
+		{"hello_world", false},
+		{"hello world", false},
+		{"Helloworld", false},
+		{"short", false},
+		{"longnamelongnamelongnamelongname", false},
 	}
 
 	for i, test := range tests {
@@ -89,20 +87,4 @@ func TestNameUnmarshalJSON(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestNameRLP(t *testing.T) {
-	name := Name("testname")
-	nbytes, err := rlp.EncodeToBytes(&name)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	newName := new(Name)
-
-	if err := rlp.DecodeBytes(nbytes, &newName); err != nil {
-		t.Fatal(err)
-	}
-
-	assert.Equal(t, name.String(), newName.String())
 }

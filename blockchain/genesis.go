@@ -157,7 +157,8 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
-	//am.SetSysName(common.StrToName(storedcfg.AccountName))
+	am.SetAcctMangerName(common.StrToName(storedcfg.AccountName))
+	at.SetAssetMangerName(common.StrToName(storedcfg.AssetName))
 	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }
@@ -171,16 +172,17 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	detailTx := &types.DetailTx{}
 	var internals []*types.DetailAction
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     g.Config.AccountNameCfg.Level,
-		AccountNameLength:    g.Config.AccountNameCfg.Length,
-		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+		AccountNameLevel:     1,
+		AccountNameLength:    16,
+		SubAccountNameLength: 8,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLength:    g.Config.AssetNameCfg.Length,
-		AssetNameLevel:     g.Config.AssetNameCfg.Level,
-		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+		AssetNameLevel:     1,
+		AssetNameLength:    16,
+		SubAssetNameLength: 8,
 	})
-	//am.SetSysName(common.StrToName(g.Config.AccountName))
+	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
+	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
 	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
@@ -309,7 +311,16 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		}
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
-
+	am.SetAccountNameConfig(&am.Config{
+		AccountNameLevel:     g.Config.AccountNameCfg.Level,
+		AccountNameLength:    g.Config.AccountNameCfg.Length,
+		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+	})
+	at.SetAssetNameConfig(&at.Config{
+		AssetNameLength:    g.Config.AssetNameCfg.Length,
+		AssetNameLevel:     g.Config.AssetNameCfg.Level,
+		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+	})
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
 		panic(fmt.Sprintf("system is not exist %v", err))
 	}
