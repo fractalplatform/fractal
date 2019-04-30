@@ -50,9 +50,32 @@ func TestBloom(t *testing.T) {
 		}
 	}
 
+	if hadTx == nil {
+		t.Fatalf("no transaction cached!\n")
+	}
+
+	var unkownNode string
 	for i, node := range nodeIDs {
 		if !cache.txHadPath(hadTx, node) {
+			unkownNode = node
 			if i < len(nodeIDs)/2 {
+				t.Fatalf("%d %x %x\n", i, hadTx.Hash(), *cache.getTxBloom(hadTx))
+			}
+		}
+	}
+
+	if len(unkownNode) == 0 {
+		t.Fatalf("didn't find unkown node")
+	}
+
+	target := cache.getTarget(hadTx.Hash())
+	oldBloom := target.bloom
+	target.reset(hadTx.Hash(), nil)
+	cache.addTx(hadTx, oldBloom, unkownNode)
+
+	for i, node := range nodeIDs {
+		if !cache.txHadPath(hadTx, node) {
+			if i < len(nodeIDs)/2 || node == unkownNode {
 				t.Fatalf("%d %x %x\n", i, hadTx.Hash(), *cache.getTxBloom(hadTx))
 			}
 		}
