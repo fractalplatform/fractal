@@ -33,7 +33,8 @@ type ChainConfig struct {
 	ForkedCfg        *FrokedConfig `json:"upgradeParams,omitempty"`
 	DposCfg          *DposConfig   `json:"dposParams,omitempty"`
 	SysName          string        `json:"systemName,omitempty"`  // system name
-	AccountName      string        `json:"accountName,omitempty"` // system name
+	AccountName      string        `json:"accountName,omitempty"` // account name
+	AssetName        string        `json:"assetName,omitempty"`   // asset name
 	DposName         string        `json:"dposName,omitempty"`    // system name
 	SnapshotInterval uint64        `json:"snapshotInterval,omitempty"`
 	FeeName          string        `json:"feeName,omitempty"`     //fee name
@@ -116,6 +117,7 @@ var DefaultChainconfig = &ChainConfig{
 	SnapshotInterval: 180000,
 	SysName:          "fractal.admin",
 	AccountName:      "fractal.account",
+	AssetName:        "fractal.asset",
 	DposName:         "fractal.dpos",
 	FeeName:          "fractal.fee",
 	SysToken:         "ftoken",

@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/fractalplatform/fractal/params"
+
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
@@ -169,7 +171,7 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 	}
 
 	createCode := append(code, createInput...)
-	action := types.NewAction(types.CreateContract, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, createCode)
+	action := types.NewAction(types.CreateContract, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, createCode, nil)
 	_, _, err = Create(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("create error ", err)
@@ -194,7 +196,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(types.IssueAsset, ownerName, "fractal.account", 0, 0, 0, big.NewInt(0), b)
+	action := types.NewAction(types.IssueAsset, ownerName, "fractal.account", 0, 0, 0, big.NewInt(0), b, nil)
 	return action
 }
 
@@ -208,18 +210,22 @@ func TestAsset(t *testing.T) {
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
 
-	if err := account.CreateAccount(senderName, "", 0, 0, senderPubkey, ""); err != nil {
+	if err := account.CreateAccount(senderName, "", 0, senderPubkey, ""); err != nil {
 		fmt.Println("create sender account error", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, "", 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(receiverName, "", 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create receiver account error", err)
 		return
 	}
 
 	action := issueAssetAction(senderName, receiverName)
-	if _, err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
+	if _, err := account.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      0,
+		ChainConfig: params.DefaultChainconfig,
+	}); err != nil {
 		fmt.Println("issue asset error", err)
 		return
 	}
@@ -239,7 +245,7 @@ func TestAsset(t *testing.T) {
 	binfile := "./contract/Asset/Asset.bin"
 	abifile := "./contract/Asset/Asset.abi"
 	contractName := common.Name("assetcontract")
-	if err := account.CreateAccount(contractName, "", 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(contractName, "", 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create contract account error", err)
 		return
 	}
@@ -255,7 +261,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("issuseAssetInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput, nil)
 
 	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {
@@ -287,7 +293,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("addAssetInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, addAssetInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, addAssetInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -313,7 +319,7 @@ func TestAsset(t *testing.T) {
 	}
 	runtimeConfig.Value = big.NewInt(100000)
 	runtimeConfig.AssetID = 2
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, transferExAssetInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, transferExAssetInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -349,7 +355,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 	runtimeConfig.Value = big.NewInt(0)
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -362,7 +368,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
 	ret, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -379,7 +385,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput, nil)
 
 	ret, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -401,18 +407,22 @@ func TestBNB(t *testing.T) {
 	receiverName := common.Name("denverfolk")
 	receiverPubkey := common.HexToPubKey("12345")
 
-	if err := account.CreateAccount(senderName, common.Name(""), 0, 0, senderPubkey, ""); err != nil {
+	if err := account.CreateAccount(senderName, common.Name(""), 0, senderPubkey, ""); err != nil {
 		fmt.Println("create sender account error", err)
 		return
 	}
 
-	if err := account.CreateAccount(receiverName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(receiverName, common.Name(""), 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create receiver account error", err)
 		return
 	}
 
 	action := issueAssetAction(senderName, receiverName)
-	if _, err := account.Process(&types.AccountManagerContext{Action: action, Number: 0}); err != nil {
+	if _, err := account.Process(&types.AccountManagerContext{
+		Action:      action,
+		Number:      0,
+		ChainConfig: params.DefaultChainconfig,
+	}); err != nil {
 		fmt.Println("issue asset error", err)
 		return
 	}
@@ -438,16 +448,16 @@ func TestBNB(t *testing.T) {
 	ethvaultName := common.Name("ethvault")
 	venvaultName := common.Name("venvault")
 
-	if err := account.CreateAccount(venContractName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(venContractName, common.Name(""), 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create venContractName account error", err)
 		return
 	}
-	if err := account.CreateAccount(venSaleContractName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(venSaleContractName, common.Name(""), 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create venSaleContractName account error", err)
 		return
 	}
-	account.CreateAccount(ethvaultName, common.Name(""), 0, 0, senderPubkey, "")
-	account.CreateAccount(venvaultName, common.Name(""), 0, 0, senderPubkey, "")
+	account.CreateAccount(ethvaultName, common.Name(""), 0, senderPubkey, "")
+	account.CreateAccount(venvaultName, common.Name(""), 0, senderPubkey, "")
 
 	err := createContract(VenSaleAbifile, VenSaleBinfile, venSaleContractName, runtimeConfig)
 	if err != nil {
@@ -482,7 +492,7 @@ func TestBNB(t *testing.T) {
 		return
 	}
 
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -495,7 +505,7 @@ func TestBNB(t *testing.T) {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -505,7 +515,7 @@ func TestBNB(t *testing.T) {
 
 	runtimeConfig.Value = big.NewInt(100000000000000000)
 	runtimeConfig.Time = big.NewInt(1503057700)
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -519,7 +529,7 @@ func TestBNB(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
 	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {

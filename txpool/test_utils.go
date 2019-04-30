@@ -73,6 +73,10 @@ func (bc *testBlockChain) StateAt(common.Hash) (*state.StateDB, error) {
 	return bc.statedb, nil
 }
 
+func (bc *testBlockChain) Config() *params.ChainConfig {
+	return nil
+}
+
 func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
 	return pricedTransaction(nonce, from, to, gaslimit, big.NewInt(1), key)
 }
@@ -93,7 +97,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if err := m.CreateAccount(name, common.Name(""), 0, 80, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
+		if err := m.CreateAccount(name, common.Name(""), 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -209,7 +213,7 @@ func (c *testChain) State() (*state.StateDB, error) {
 }
 
 func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
-	return types.NewAction(types.Transfer, from, to, nonce, uint64(1), gasLimit, amount, data)
+	return types.NewAction(types.Transfer, from, to, nonce, uint64(1), gasLimit, amount, data, nil)
 }
 
 func newTx(gasPrice *big.Int, action ...*types.Action) *types.Transaction {

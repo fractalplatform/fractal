@@ -67,6 +67,12 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 	}
 	gas += dataGas
 
+	remarkGas, err := dataGasFunc(action.Remark())
+	if err != nil {
+		return 0, err
+	}
+	gas += remarkGas
+
 	if signLen := len(action.GetSign()); signLen > 1 {
 		gas += (uint64(len(action.GetSign()) - 1)) * params.ActionGas
 	}

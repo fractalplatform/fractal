@@ -69,30 +69,29 @@ type Event struct {
 
 // Type enumerator
 const (
-	P2PRouterTestInt            int = iota // 0
-	P2PRouterTestInt64                     // 1
-	P2PRouterTestString                    // 2
-	P2PRouterTestNewPeer                   // 3 fixed bug
-	P2PRouterTestDelPeer                   // 4 fixed bug
-	P2PRouterTestDisconnectPeer            // 5 fixed bug
-	P2PGetStatus                           // 6 Status request
-	P2PStatusMsg                           // 7 Status response
-	P2PGetBlockHashMsg                     // 8 BlockHash request
-	P2PGetBlockHeadersMsg                  // 9 BlockHeader request
-	P2PGetBlockBodiesMsg                   // 10 BlockBodies request
-	P2PBlockHeadersMsg                     // 11 BlockHeader response
-	P2PBlockBodiesMsg                      // 12 BlockBodies response
-	P2PBlockHashMsg                        // 13 BlockHash response
-	P2PNewBlockHashesMsg                   // 14 NewBlockHash notify
-	P2PTxMsg                               // 15 TxMsg notify
+	P2PRouterTestInt      int = iota // 0
+	P2PRouterTestInt64               // 1
+	P2PRouterTestString              // 2
+	P2PGetStatus                     // 3 Status request
+	P2PStatusMsg                     // 4 Status response
+	P2PGetBlockHashMsg               // 5 BlockHash request
+	P2PGetBlockHeadersMsg            // 6 BlockHeader request
+	P2PGetBlockBodiesMsg             // 7 BlockBodies request
+	P2PBlockHeadersMsg               // 8 BlockHeader response
+	P2PBlockBodiesMsg                // 9 BlockBodies response
+	P2PBlockHashMsg                  // 10 BlockHash response
+	P2PNewBlockHashesMsg             // 11 NewBlockHash notify
+	P2PTxMsg                         // 12 TxMsg notify
 	P2PEndSize
-	ChainHeadEv         = 1024 + iota - P2PEndSize // 1024
-	NewPeerNotify                                  // 1025
-	DelPeerNotify                                  // 1026
-	DisconectCtrl                                  // 1027
-	NewPeerPassedNotify                            // 1028 same chain ID and gensis block
-	TxEv                                           // 1029
-	NewMinedEv                                     // 1030
+	ChainHeadEv         = 1023 + iota - P2PEndSize // 1024
+	NewPeerNotify                                  // 1025 emit when remote peer incoming but needed to check chainID and genesis block
+	DelPeerNotify                                  // 1026 emit when remote peer disconnected
+	DisconectCtrl                                  // 1027 emit if needed to let remote peer disconnect
+	NewPeerPassedNotify                            // 1028 emit when remote peer had same chain ID and genesis block
+	AddPeerToBlacklist                             // 1029 add peer to blacklist
+	TxEv                                           // 1030
+	NewMinedEv                                     // 1031 emit when new block was mined
+	NewTxs                                         // 1032 emit when new transactions needed to broadcast
 	EndSize
 )
 

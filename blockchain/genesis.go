@@ -157,8 +157,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
-	am.SetChainName(common.StrToName(storedcfg.SysName))
-	am.SetSysName(common.StrToName(storedcfg.AccountName))
+	//am.SetSysName(common.StrToName(storedcfg.AccountName))
 	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }
@@ -181,8 +180,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		AssetNameLevel:     g.Config.AssetNameCfg.Level,
 		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
 	})
-	am.SetChainName(common.StrToName(g.Config.SysName))
-	am.SetSysName(common.StrToName(g.Config.AccountName))
+	//am.SetSysName(common.StrToName(g.Config.AccountName))
 	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
@@ -227,6 +225,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		0,
 		big.NewInt(0),
 		payload,
+		nil,
 	))
 
 	for _, account := range g.AllocAccounts {
@@ -249,11 +248,16 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			0,
 			big.NewInt(0),
 			payload,
+			nil,
 		))
 	}
 
 	for index, action := range actActions {
-		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
+			Action:      action,
+			Number:      0,
+			ChainConfig: g.Config,
+		})
 		if err != nil {
 			panic(fmt.Sprintf("genesis create account %v,err %v", index, err))
 		}
@@ -290,11 +294,16 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			0,
 			big.NewInt(0),
 			payload,
+			nil,
 		))
 	}
 
 	for index, action := range astActions {
-		internalLogs, err := accountManager.Process(&types.AccountManagerContext{Action: action, Number: 0})
+		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
+			Action:      action,
+			Number:      0,
+			ChainConfig: g.Config,
+		})
 		if err != nil {
 			panic(fmt.Sprintf("genesis create asset %v,err %v", index, err))
 		}
@@ -378,6 +387,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				action.Gas(),
 				action.Value(),
 				action.Data(),
+				action.Remark(),
 			)
 		}
 		actions = append(actions, action)
@@ -393,6 +403,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				action.Gas(),
 				action.Value(),
 				action.Data(),
+				action.Remark(),
 			)
 		}
 		actions = append(actions, action)
@@ -487,6 +498,10 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 		},
 		&GenesisAccount{
 			Name:   params.DefaultChainconfig.AccountName,
+			PubKey: common.HexToPubKey(""),
+		},
+		&GenesisAccount{
+			Name:   params.DefaultChainconfig.AssetName,
 			PubKey: common.HexToPubKey(""),
 		},
 		&GenesisAccount{

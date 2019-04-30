@@ -121,6 +121,21 @@ func (api *PrivateP2pAPI) Peers() []string {
 	return api.b.Peers()
 }
 
+// BadNodesCount returns the number of bad nodes.
+func (api *PrivateP2pAPI) BadNodesCount() int {
+	return api.b.BadNodesCount()
+}
+
+// BadNodes returns all bad nodes.
+func (api *PrivateP2pAPI) BadNodes() []string {
+	return api.b.BadNodes()
+}
+
+// AddBadNode add a bad node
+func (api *PrivateP2pAPI) AddBadNode(url string) error {
+	return api.b.AddBadNode(url)
+}
+
 // SelfNode return self enode url
 func (api *PrivateP2pAPI) SelfNode() string {
 	return api.b.SelfNode()

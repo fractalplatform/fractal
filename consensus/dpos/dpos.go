@@ -74,7 +74,7 @@ func (s *stateDB) Delete(key string) error {
 	return nil
 }
 func (s *stateDB) Undelegate(to string, amount *big.Int) (*types.Action, error) {
-	action := types.NewAction(types.Transfer, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil)
+	action := types.NewAction(types.Transfer, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil, nil)
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
 		return action, err
@@ -82,7 +82,7 @@ func (s *stateDB) Undelegate(to string, amount *big.Int) (*types.Action, error) 
 	return action, accountDB.TransferAsset(common.StrToName(s.name), common.StrToName(to), s.assetid, amount)
 }
 func (s *stateDB) IncAsset2Acct(from string, to string, amount *big.Int) (*types.Action, error) {
-	action := types.NewAction(types.IncreaseAsset, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil)
+	action := types.NewAction(types.IncreaseAsset, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil, nil)
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
 		return action, err

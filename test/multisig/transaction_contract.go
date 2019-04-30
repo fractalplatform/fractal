@@ -268,7 +268,7 @@ func main() {
 }
 
 func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair) {
-	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input)
+	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, nil)
 	gasprice, _ := testcommon.GasPrice()
 	tx := types.NewTransaction(1, gasprice, action)
 

@@ -36,6 +36,7 @@ func getPriceTx(price *big.Int, nonce uint64) *types.Transaction {
 		uint64(2000),
 		big.NewInt(1000),
 		[]byte("test action"),
+		[]byte("test remark"),
 	))
 }
 

@@ -265,7 +265,7 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 	var actions []*types.Action
 	for i := 0; i < len(getCandidates()); i++ {
 		amount := new(big.Int).Mul(delegateValue, big.NewInt(2))
-		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCandidates()[syscandidatePrefix+strconv.Itoa(i)].name), nonce, uint64(1), uint64(210000), amount, nil)
+		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCandidates()[syscandidatePrefix+strconv.Itoa(i)].name), nonce, uint64(1), uint64(210000), amount, nil, nil)
 		actions = append(actions, action)
 		nonce++
 	}
@@ -288,7 +288,7 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 			URL: url,
 		}
 		payload, _ := rlp.EncodeToBytes(arg)
-		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload)
+		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload, nil)
 		actions1 = append(actions1, action)
 	}
 
@@ -391,7 +391,7 @@ func makeHeader(chain consensus.IChainReader, parent *types.Block, state *state.
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		Difficulty: engine.CalcDifficulty(chain, 0, parent.Header()),
-		GasLimit:   params.CalcGasLimit(parent),
+		GasLimit:   chain.CalcGasLimit(parent),
 		Number:     new(big.Int).Add(parent.Number(), big.NewInt(1)),
 		Time:       big.NewInt(0),
 	}
