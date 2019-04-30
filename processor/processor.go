@@ -91,7 +91,9 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		return nil, 0, err
 	}
 
-	assetID := tx.GasAssetID()
+	// todo for the moment，only system asset
+	// assetID := tx.GasAssetID()
+	assetID := p.bc.Config().SysTokenID
 	gasPrice := tx.GasPrice()
 
 	var totalGas uint64
