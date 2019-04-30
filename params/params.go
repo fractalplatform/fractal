@@ -90,7 +90,7 @@ var (
 
 //type for fee
 const (
-	AssetFeeType    = uint64(1)
-	ContractFeeType = uint64(2)
-	CoinbaseFeeType = uint64(3)
+	AssetFeeType    = uint64(0)
+	ContractFeeType = uint64(1)
+	CoinbaseFeeType = uint64(2)
 )

@@ -32,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -298,6 +299,28 @@ func (b *APIBackend) GetFeeManager() (*feemanager.FeeManager, error) {
 	}
 
 	fm := feemanager.NewFeeManager(sdb, acctm)
+	return fm, nil
+}
+
+//GetFeeManagerByTime get fee manager
+func (b *APIBackend) GetFeeManagerByTime(time uint64) (*feemanager.FeeManager, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+
+	snapshotManager := snapshot.NewSnapshotManager(sdb)
+	state, err := snapshotManager.GetSnapshotState(time)
+	if err != nil {
+		return nil, err
+	}
+
+	acctm, err := accountmanager.NewAccountManager(state)
+	if err != nil {
+		return nil, err
+	}
+
+	fm := feemanager.NewFeeManager(state, acctm)
 	return fm, nil
 }
 
