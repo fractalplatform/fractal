@@ -132,6 +132,18 @@ func GetObjectFeeByName(objectName common.Name, objectType uint64) (*feemanager.
 	return objectFee, err
 }
 
+func GetObjectFeeResult(startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+	objectFeeResult := &feemanager.ObjectFeeResult{}
+	err := ClientCall("fee_getObjectFeeResult", objectFeeResult, startObjectFeeID, count)
+	return objectFeeResult, err
+}
+
+func GetObjectFeeResultByTime(time uint64, startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+	objectFeeResult := &feemanager.ObjectFeeResult{}
+	err := ClientCall("fee_getObjectFeeResultByTime", objectFeeResult, time, startObjectFeeID, count)
+	return objectFeeResult, err
+}
+
 func GetDposAccount(name common.Name) (map[string]interface{}, error) {
 	fields := map[string]interface{}{}
 	err := ClientCall("dpos_account", fields, name.String())

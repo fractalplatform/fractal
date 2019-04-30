@@ -75,6 +75,12 @@ type WithdrawInfo struct {
 	AssetInfo  []*WithdrawAsset
 }
 
+//ObjectFeeResult multi object fee result
+type ObjectFeeResult struct {
+	Continue   bool
+	ObjectFees []*ObjectFee
+}
+
 var feeConfig feeManagerConfig
 
 //NewFeeManager new fee manager
@@ -99,7 +105,8 @@ func newAssetFee(assetID uint64, value *big.Int) *AssetFee {
 		RemainFee: new(big.Int).Set(value)}
 }
 
-func (fm *FeeManager) getFeeCounter() (uint64, error) {
+//GetFeeCounter get cur fee counter
+func (fm *FeeManager) GetFeeCounter() (uint64, error) {
 	countEnc, err := fm.stateDB.Get(fm.name, feeCounterKey)
 	if err != nil {
 		errInfo := fmt.Errorf("get fee counter failed, err %v", err)
@@ -121,7 +128,7 @@ func (fm *FeeManager) getFeeCounter() (uint64, error) {
 }
 
 //GetObjectFeeIdKey get object fee id key
-func getObjectFeeIdKey(objectName string, objectType uint64) string {
+func getObjectFeeIDKey(objectName string, objectType uint64) string {
 	return objectFeeIDPrefix + strconv.FormatUint(objectType, 10) + objectName
 }
 
@@ -133,11 +140,11 @@ func (fm *FeeManager) GetObjectFeeByName(objectName string, objectType uint64) (
 		return nil, err
 	}
 
-	return fm.getObjectFeeByID(objectFeeID)
+	return fm.GetObjectFeeByID(objectFeeID)
 }
 
 func (fm *FeeManager) getObjectFeeIDByName(objectName string, objectType uint64) (uint64, error) {
-	feeIDEnc, err := fm.stateDB.Get(fm.name, getObjectFeeIdKey(objectName, objectType))
+	feeIDEnc, err := fm.stateDB.Get(fm.name, getObjectFeeIDKey(objectName, objectType))
 
 	if err != nil || len(feeIDEnc) == 0 {
 		return 0, err
@@ -149,7 +156,8 @@ func (fm *FeeManager) getObjectFeeIDByName(objectName string, objectType uint64)
 	return objectFeeID, nil
 }
 
-func (fm *FeeManager) getObjectFeeByID(objectFeeID uint64) (*ObjectFee, error) {
+//GetObjectFeeByID  get object fee by id
+func (fm *FeeManager) GetObjectFeeByID(objectFeeID uint64) (*ObjectFee, error) {
 	key := objectFeePrefix + strconv.FormatUint(objectFeeID, 10)
 	objectFeeEnc, err := fm.stateDB.Get(fm.name, key)
 
@@ -178,7 +186,7 @@ func (fm *FeeManager) setObjectFee(objectFee *ObjectFee) error {
 
 func (fm *FeeManager) createObjectFee(objectName string, objectType uint64) (*ObjectFee, error) {
 	//get object fee id
-	feeCounter, err := fm.getFeeCounter()
+	feeCounter, err := fm.GetFeeCounter()
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +201,7 @@ func (fm *FeeManager) createObjectFee(objectName string, objectType uint64) (*Ob
 	if err != nil {
 		return nil, err
 	}
-	fm.stateDB.Put(fm.name, getObjectFeeIdKey(objectName, objectType), value)
+	fm.stateDB.Put(fm.name, getObjectFeeIDKey(objectName, objectType), value)
 	fm.stateDB.Put(fm.name, feeCounterKey, value)
 
 	return objectFee, nil

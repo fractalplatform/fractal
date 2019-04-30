@@ -159,3 +159,39 @@ func (sn *SnapshotManager) GetSnapshotMsg(account string, key string, time uint6
 	}
 	return value, nil
 }
+
+//GetSnapshotState get snapshot state
+func (sn *SnapshotManager) GetSnapshotState(time uint64) (*state.StateDB, error) {
+	if time == 0 {
+		return nil, fmt.Errorf("Not snapshot info, time = %v", time)
+	}
+
+	key1 := snapshotTime + strconv.FormatUint(time, 10)
+	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
+	if err != nil {
+		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
+	}
+	var blockInfo BlockInfo
+	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
+		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
+	}
+
+	snapshotBlock := types.SnapshotBlock{
+		Number:    blockInfo.Number,
+		BlockHash: blockInfo.BlockHash,
+	}
+
+	db := sn.stateDB.Database().GetDB()
+	snapshotInfo := rawdb.ReadSnapshot(db, snapshotBlock)
+	if snapshotInfo == nil {
+		return nil, fmt.Errorf("Not snapshot info, rawdb not exist.")
+	}
+
+	dbCache := sn.stateDB.Database()
+	statedb, err := state.New(snapshotInfo.Root, dbCache)
+	if err != nil {
+		return nil, fmt.Errorf("Not snapshot info, new state failed, error = %v", err)
+	}
+
+	return statedb, nil
+}

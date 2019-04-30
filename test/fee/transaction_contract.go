@@ -144,8 +144,8 @@ func formWithdrawAssetFeeInput(abifile string, assetId *big.Int) ([]byte, error)
 	return common.Hex2Bytes(transferAssetInput), nil
 }
 
-func formWithdrawAccountFeeInput(abifile string, userId *big.Int) ([]byte, error) {
-	transferAssetInput, err := input(abifile, "withdrawAccountFee", userId)
+func formWithdrawContractFeeInput(abifile string, userId *big.Int) ([]byte, error) {
+	transferAssetInput, err := input(abifile, "withdrawContractFee", userId)
 	if err != nil {
 		jww.INFO.Println("transferAssetInput error ", err)
 		return nil, err
@@ -322,7 +322,7 @@ func withdrawFee() {
 	jww.INFO.Println("withdrawFee contract ")
 
 	fmt.Println("withdraw contract_a_ID ", contract_a_ID)
-	input, err = formWithdrawAccountFeeInput(withDrawAbi, big.NewInt(contract_a_ID))
+	input, err = formWithdrawContractFeeInput(withDrawAbi, big.NewInt(contract_a_ID))
 	if err != nil {
 		jww.INFO.Println("withdrawFee formTransferAssetInput error ... ", err)
 		return
