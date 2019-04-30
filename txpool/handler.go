@@ -31,7 +31,7 @@ const (
 	maxKonwnTxs      = 32
 	txsSendDelay     = 50 * time.Millisecond
 	txsSendThreshold = 32
-	cacheBits        = 10
+	cacheBits        = 12
 	cacheSize        = 1 << cacheBits
 	cacheMask        = cacheSize - 1
 )
@@ -204,6 +204,9 @@ func (s *TxpoolStation) addTxs(txs []*TransactionWithPath, from string) []*types
 }
 
 func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
+	if len(s.peers) == 0 {
+		return
+	}
 	sendTask := make(map[*peerInfo][]*TransactionWithPath)
 	addToTask := func(txObj *TransactionWithPath) bool {
 		txSend := 0
@@ -279,9 +282,13 @@ func (s *TxpoolStation) handleMsg() {
 		case router.NewPeerPassedNotify:
 			newpeer := &peerInfo{peer: e.From, idle: 1}
 			s.peers[e.From.Name()] = newpeer
+			s.delayedTxs = s.delayedTxs[:0]
 			s.syncTransactions(newpeer)
 		case router.DelPeerNotify:
 			delete(s.peers, e.From.Name())
+			if len(s.peers) == 0 {
+				s.delayedTxs = s.delayedTxs[:0]
+			}
 		}
 	}
 }
