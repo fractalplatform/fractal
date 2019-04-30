@@ -241,6 +241,15 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
 
 	if accountName.AccountNameLevel() > 1 {
+		accountObj, err := am.GetAccountByName(fromName)
+		if err != nil || accountObj == nil {
+			return ErrAccountInvaid
+		} else {
+			if accountObj.GetAccountNumber() != 0 {
+				return ErrAccountInvaid
+			}
+		}
+
 		if !fromName.IsValidCreator(accountName.String()) {
 			return ErrAccountInvaid
 		}
