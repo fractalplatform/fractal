@@ -89,7 +89,7 @@ func TestAction_CheckValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction.CheckValue(params.DefaultChainconfig) == false {
+	if actAction.CheckValid(params.DefaultChainconfig) == false {
 		t.Errorf("TestAction_CheckValue err, wantErr %v", true)
 	}
 
@@ -104,7 +104,7 @@ func TestAction_CheckValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction2.CheckValue(params.DefaultChainconfig) == true {
+	if actAction2.CheckValid(params.DefaultChainconfig) == true {
 		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
 	}
 
@@ -119,7 +119,7 @@ func TestAction_CheckValue(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction3.CheckValue(params.DefaultChainconfig) == false {
+	if actAction3.CheckValid(params.DefaultChainconfig) == false {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 }

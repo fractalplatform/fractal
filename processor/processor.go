@@ -100,8 +100,8 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	var detailActions []*types.DetailAction
 	for i, action := range tx.GetActions() {
 		//
-		if !action.CheckValue(config) {
-			return nil, 0, ErrActionInvalidValue
+		if !action.CheckValid(config) {
+			return nil, 0, ErrActionInvalid
 		}
 
 		if needCheckSign(accountDB, action) {
