@@ -37,6 +37,7 @@ var (
 		uint64(2000),
 		big.NewInt(1000),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 
 	testAction2 = NewAction(
@@ -48,6 +49,7 @@ var (
 		uint64(2000),
 		big.NewInt(1000),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 
 	testAction3 = NewAction(
@@ -59,6 +61,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 )
 
@@ -72,8 +75,6 @@ func TestActionEncodeAndDecode(t *testing.T) {
 	if err := rlp.Decode(bytes.NewReader(actionBytes), &actAction); err != nil {
 		t.Fatal(err)
 	}
-
-	t.Log(RlpHash(actAction).Hex())
 
 	assert.Equal(t, testAction, actAction)
 }

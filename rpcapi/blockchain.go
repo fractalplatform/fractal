@@ -203,6 +203,7 @@ type CallArgs struct {
 	GasPrice   *big.Int         `json:"gasPrice"`
 	Value      *big.Int         `json:"value"`
 	Data       hexutil.Bytes    `json:"data"`
+	Remark     hexutil.Bytes    `json:"remark"`
 }
 
 func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr rpc.BlockNumber, vmCfg vm.Config, timeout time.Duration) ([]byte, uint64, bool, error) {
@@ -247,7 +248,7 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	// Setup the gas pool (also for unmetered requests)
 	// and apply the message.
 	gp := new(common.GasPool).AddGas(math.MaxUint64)
-	action := types.NewAction(args.ActionType, args.From, args.To, 0, assetID, gas, value, args.Data)
+	action := types.NewAction(args.ActionType, args.From, args.To, 0, assetID, gas, value, args.Data, args.Remark)
 	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, assetID, s.b.ChainConfig(), s.b.Engine())
 	if err := vmError(); err != nil {
 		return nil, 0, false, err

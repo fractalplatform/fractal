@@ -69,8 +69,8 @@ func TestHeaderStorage(t *testing.T) {
 // Tests block body storage and retrieval operations.
 func TestBodyStorage(t *testing.T) {
 	db := mdb.NewMemDatabase()
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
@@ -134,8 +134,8 @@ func TestBlockStorage(t *testing.T) {
 		Coinbase:     "coinbase",
 	}
 
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)

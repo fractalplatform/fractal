@@ -213,7 +213,7 @@ func (c *testChain) State() (*state.StateDB, error) {
 }
 
 func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
-	return types.NewAction(types.Transfer, from, to, nonce, uint64(1), gasLimit, amount, data)
+	return types.NewAction(types.Transfer, from, to, nonce, uint64(1), gasLimit, amount, data, nil)
 }
 
 func newTx(gasPrice *big.Int, action ...*types.Action) *types.Transaction {
