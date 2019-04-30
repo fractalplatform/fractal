@@ -64,6 +64,6 @@ var (
 	// ErrEmptyActions transaction no actions
 	ErrEmptyActions = errors.New("transaction no actions")
 
-	// ErrInvalidValue action value invalid
-	ErrInvalidValue = errors.New("action value invalid")
+	// ErrInvalidAction action have field invalid
+	ErrInvalidAction = errors.New("action field invalid")
 )
