@@ -50,8 +50,6 @@ const (
 
 	// Maximum amount of time allowed for writing a complete message.
 	frameWriteTimeout = 20 * time.Second
-
-	rlpxVersion = 5
 )
 
 var errServerStopped = errors.New("server stopped")
@@ -62,28 +60,29 @@ type Config struct {
 	PrivateKey *ecdsa.PrivateKey
 
 	// NetworkID is ID of network
-	NetworkID uint `mapstructure:"networkid"`
+	NetworkID uint `mapstructure:"p2p-networkdID"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
-	MaxPeers int `mapstructure:"maxpeers"`
+	MaxPeers int `mapstructure:"p2p-maxpeers"`
 
 	// MaxPendingPeers is the maximum number of peers that can be pending in the
 	// handshake phase, counted separately for inbound and outbound connections.
 	// Zero defaults to preset values.
-	MaxPendingPeers int `mapstructure:"maxpendpeers"`
+	MaxPendingPeers int `mapstructure:"p2p-maxpendpeers"`
 
 	// DialRatio controls the ratio of inbound to dialed connections.
 	// Example: a DialRatio of 2 allows 1/2 of connections to be dialed.
 	// Setting DialRatio to zero defaults it to 3.
-	DialRatio int `mapstructure:"dialratio"`
+	DialRatio int `mapstructure:"p2p-dialratio"`
 
 	// NoDiscovery can be used to disable the peer discovery mechanism.
 	// Disabling is useful for protocol debugging (manual topology).
-	NoDiscovery bool `mapstructure:"nodiscover"`
+	NoDiscovery bool `mapstructure:"p2p-nodiscover"`
 
 	// Name sets the node name of this server.
-	Name string `mapstructure:"name"`
+	// Use common.MakeName to create a name that follows existing conventions.
+	Name string `mapstructure:"p2p-nodename"`
 
 	// BootstrapNodes are used to establish connectivity
 	// with the rest of the network.
@@ -100,11 +99,11 @@ type Config struct {
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
 	// IP networks contained in the list are considered.
-	NetRestrict *netutil.Netlist
+	NetRestrict *netutil.Netlist `mapstructure:"p2p-badIP"`
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
-	NodeDatabase string `mapstructure:"nodedb"`
+	NodeDatabase string `mapstructure:"p2p-nodedb"`
 
 	// Protocols should contain the protocols supported
 	// by the server. Matching protocols are launched for
@@ -117,7 +116,7 @@ type Config struct {
 	// If the port is zero, the operating system will pick a port. The
 	// ListenAddr field will be updated with the actual address when
 	// the server is started.
-	ListenAddr string `mapstructure:"listenaddr"`
+	ListenAddr string `mapstructure:"p2p-listenaddr"`
 
 	// If set to a non-nil value, the given NAT port mapper
 	// is used to make the listening port available to the
@@ -129,7 +128,7 @@ type Config struct {
 	Dialer NodeDialer
 
 	// If NoDial is true, the server will not dial any peers.
-	NoDial bool `mapstructure:"nodial"`
+	NoDial bool `mapstructure:"p2p-nodial"`
 
 	// If EnableMsgEvents is set then the server will emit PeerEvents
 	// whenever a message is sent to or received from a peer
@@ -146,7 +145,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn, uint, uint) transport
+	newTransport func(net.Conn, uint) transport
 	newPeerHook  func(*Peer)
 
 	lock    sync.Mutex // protects running
@@ -162,11 +161,15 @@ type Server struct {
 	peerOp     chan peerOpFunc
 	peerOpDone chan struct{}
 
+	badNodeOp     chan badOpFunc
+	badNodeOpDone chan struct{}
+
 	quit          chan struct{}
 	addstatic     chan *enode.Node
 	removestatic  chan *enode.Node
 	addtrusted    chan *enode.Node
 	removetrusted chan *enode.Node
+	addBad        chan *enode.Node
 	posthandshake chan *conn
 	addpeer       chan *conn
 	delpeer       chan peerDrop
@@ -176,6 +179,7 @@ type Server struct {
 }
 
 type peerOpFunc func(map[enode.ID]*Peer)
+type badOpFunc func(map[enode.ID]*enode.Node)
 
 type peerDrop struct {
 	*Peer
@@ -190,6 +194,7 @@ const (
 	staticDialedConn
 	inboundConn
 	trustedConn
+	badNodeConn
 )
 
 // conn wraps a network connection with information gathered
@@ -296,12 +301,50 @@ func (srv *Server) PeerCount() int {
 	return count
 }
 
+// BadNodes returns all bad nodes.
+func (srv *Server) BadNodes() []*enode.Node {
+	var ns []*enode.Node
+	select {
+	// Note: We'd love to put this function into a variable but
+	// that seems to cause a weird compiler error in some
+	// environments.
+	case srv.badNodeOp <- func(nodes map[enode.ID]*enode.Node) {
+		ns = make([]*enode.Node, 0, len(nodes))
+		for _, n := range nodes {
+			ns = append(ns, n)
+		}
+	}:
+		<-srv.badNodeOpDone
+	case <-srv.quit:
+	}
+	return ns
+}
+
+// BadNodesCount returns the number of bad nodes.
+func (srv *Server) BadNodesCount() int {
+	var count int
+	select {
+	case srv.badNodeOp <- func(nodes map[enode.ID]*enode.Node) { count = len(nodes) }:
+		<-srv.badNodeOpDone
+	case <-srv.quit:
+	}
+	return count
+}
+
 // AddPeer connects to the given node and maintains the connection until the
 // server is shut down. If the connection fails for any reason, the server will
 // attempt to reconnect the peer.
 func (srv *Server) AddPeer(node *enode.Node) {
 	select {
 	case srv.addstatic <- node:
+	case <-srv.quit:
+	}
+}
+
+// AddBadNode add the node to the blacklist
+func (srv *Server) AddBadNode(node *enode.Node) {
+	select {
+	case srv.addBad <- node:
 	case <-srv.quit:
 	}
 }
@@ -331,7 +374,7 @@ func (srv *Server) RemoveTrustedPeer(node *enode.Node) {
 	}
 }
 
-// SubscribePeers subscribes the given channel to peer events
+// SubscribeEvents subscribes the given channel to peer events
 func (srv *Server) SubscribeEvents(ch chan *PeerEvent) event.Subscription {
 	return srv.peerFeed.Subscribe(ch)
 }
@@ -501,6 +544,10 @@ func (srv *Server) Start() (err error) {
 	srv.peerOp = make(chan peerOpFunc)
 	srv.peerOpDone = make(chan struct{})
 
+	srv.addBad = make(chan *enode.Node)
+	srv.badNodeOp = make(chan badOpFunc)
+	srv.badNodeOpDone = make(chan struct{})
+
 	if !srv.NoDiscovery {
 		addr, err := net.ResolveUDPAddr("udp", srv.ListenAddr)
 		if err != nil {
@@ -577,6 +624,7 @@ func (srv *Server) run(dialstate dialer) {
 	defer srv.loopWG.Done()
 	var (
 		peers        = make(map[enode.ID]*Peer)
+		badNodes     = make(map[enode.ID]*enode.Node)
 		inboundCount = 0
 		trusted      = make(map[enode.ID]bool, len(srv.TrustedNodes))
 		taskdone     = make(chan task, maxActiveDialTasks)
@@ -680,12 +728,24 @@ running:
 				// Ensure that the trusted flag is set before checking against MaxPeers.
 				c.flags |= trustedConn
 			}
+			if badNodes[c.node.ID()] != nil {
+				c.flags |= badNodeConn
+			}
 			// TODO: track in-progress inbound node IDs (pre-Peer) to avoid dialing them.
 			select {
 			case c.cont <- srv.encHandshakeChecks(peers, inboundCount, c):
 			case <-srv.quit:
 				break running
 			}
+		case n := <-srv.addBad:
+			badNodes[n.ID()] = n
+			srv.log.Trace("Add bad node", "node", n)
+			if p, ok := peers[n.ID()]; ok {
+				p.Disconnect(DiscBadNode)
+			}
+		case op := <-srv.badNodeOp:
+			op(badNodes)
+			srv.badNodeOpDone <- struct{}{}
 		case c := <-srv.addpeer:
 			// At this point the connection is past the protocol handshake.
 			// Its capabilities are known and the remote identity is verified.
@@ -762,6 +822,8 @@ func (srv *Server) protoHandshakeChecks(peers map[enode.ID]*Peer, inboundCount i
 
 func (srv *Server) encHandshakeChecks(peers map[enode.ID]*Peer, inboundCount int, c *conn) error {
 	switch {
+	case !c.is(trustedConn) && c.is(badNodeConn):
+		return DiscBadNode
 	case !c.is(trustedConn|staticDialedConn) && len(peers) >= srv.MaxPeers:
 		return DiscTooManyPeers
 	case !c.is(trustedConn) && c.is(inboundConn) && inboundCount >= srv.maxInboundConns():
@@ -855,7 +917,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	if self == nil {
 		return errors.New("shutdown")
 	}
-	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID, rlpxVersion), flags: flags, cont: make(chan error)}
+	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
 		c.close(err)
