@@ -447,9 +447,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		// todo for the moment，only system asset
-		// balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tp.config.GasAssetID, 0)
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
 		if err != nil {
 			return err
 		}
@@ -466,12 +464,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		value := action.Value()
-		// todo for the moment，only system asset
-		// if tx.GasAssetID() == action.AssetID() {
-
-		if tp.config.GasAssetID != action.AssetID() {
-			return fmt.Errorf("only support system asset %d as tx fee", tp.config.GasAssetID)
-		} else {
+		if tp.config.GasAssetID == action.AssetID() {
 			value.Add(value, gascost)
 		}
 
@@ -498,6 +491,10 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
 	if tx.Size() > 32*1024 {
 		return ErrOversizedData
+	}
+
+	if tp.config.GasAssetID != tx.GasAssetID() {
+		return fmt.Errorf("only support system asset %d as tx fee", tp.config.GasAssetID)
 	}
 
 	// Make sure the transaction is signed properly
