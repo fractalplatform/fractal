@@ -111,7 +111,7 @@ func TestP2PTxMsg(t *testing.T) {
 	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
-
+	params.DefaultChainconfig.SysTokenID = 1
 	blockchain := &testChain{&testBlockChain{statedb, 1000000000, new(event.Feed)}, fname, &trigger}
 
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
