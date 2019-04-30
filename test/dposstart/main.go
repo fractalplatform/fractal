@@ -119,8 +119,7 @@ func main() {
 	for name, acct := range prods {
 		value := big.NewInt(1e5)
 		hash, err := acct.RegCandidate(name, big.NewInt(0), systokenid, gasLimit, &args.RegisterCandidate{
-			Url:   "www." + name.String() + ".io",
-			Stake: delegateValue,
+			URL: "www." + name.String() + ".io",
 		})
 		fmt.Println(hash.String(), ":", issuerName, "reg", delegateValue, "& transfer", value, "(", systokenid, ")", "to ", name, "error", err)
 	}

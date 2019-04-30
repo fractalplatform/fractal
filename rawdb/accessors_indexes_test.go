@@ -29,9 +29,9 @@ import (
 func TestLookupStorage(t *testing.T) {
 	db := mdb.NewMemDatabase()
 
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action1"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action2"))
-	action3 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action3"))
+	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action1"), []byte("test remark1"))
+	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action2"), []byte("test remark2"))
+	action3 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action3"), []byte("test remark3"))
 
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
 	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)

@@ -171,7 +171,7 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 	}
 
 	createCode := append(code, createInput...)
-	action := types.NewAction(types.CreateContract, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, createCode)
+	action := types.NewAction(types.CreateContract, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, createCode, nil)
 	_, _, err = Create(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("create error ", err)
@@ -196,7 +196,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(types.IssueAsset, ownerName, "fractal.account", 0, 0, 0, big.NewInt(0), b)
+	action := types.NewAction(types.IssueAsset, ownerName, "fractal.account", 0, 0, 0, big.NewInt(0), b, nil)
 	return action
 }
 
@@ -261,7 +261,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("issuseAssetInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput, nil)
 
 	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {
@@ -293,7 +293,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("addAssetInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, addAssetInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, addAssetInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -319,7 +319,7 @@ func TestAsset(t *testing.T) {
 	}
 	runtimeConfig.Value = big.NewInt(100000)
 	runtimeConfig.AssetID = 2
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, transferExAssetInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, transferExAssetInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -355,7 +355,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 	runtimeConfig.Value = big.NewInt(0)
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -368,7 +368,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
 	ret, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -385,7 +385,7 @@ func TestAsset(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput, nil)
 
 	ret, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -492,7 +492,7 @@ func TestBNB(t *testing.T) {
 		return
 	}
 
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -505,7 +505,7 @@ func TestBNB(t *testing.T) {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -515,7 +515,7 @@ func TestBNB(t *testing.T) {
 
 	runtimeConfig.Value = big.NewInt(100000000000000000)
 	runtimeConfig.Time = big.NewInt(1503057700)
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -529,7 +529,7 @@ func TestBNB(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
 	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {

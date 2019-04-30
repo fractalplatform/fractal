@@ -108,7 +108,7 @@ func TestRunCode(t *testing.T) {
 		return
 	}
 
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, receiverName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, myInput)
+	action = types.NewAction(types.Transfer, runtimeConfig.Origin, receiverName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, myInput, nil)
 
 	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {

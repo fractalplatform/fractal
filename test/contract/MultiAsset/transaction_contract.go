@@ -158,7 +158,7 @@ func sendDeployContractTransaction() {
 		return
 	}
 	nonce, _ := tc.GetNonce(systemname)
-	sendTx(types.CreateContract, systemname, contractAddr, nonce, assetID, big.NewInt(100000000000), input, systemprikey)
+	sendTx(types.CreateContract, systemname, contractAddr, nonce, assetID, big.NewInt(100000000000), input, nil, systemprikey)
 }
 
 func sendIssueTransaction() {
@@ -171,7 +171,7 @@ func sendIssueTransaction() {
 		return
 	}
 	nonce, _ := tc.GetNonce(contractAddr)
-	sendTx(types.CallContract, contractAddr, contractAddr, nonce, assetID, big.NewInt(0), input, prikey1)
+	sendTx(types.CallContract, contractAddr, contractAddr, nonce, assetID, big.NewInt(0), input, nil, prikey1)
 }
 
 func sendIncreaseIssueTransaction() {
@@ -183,7 +183,7 @@ func sendIncreaseIssueTransaction() {
 		return
 	}
 	nonce, _ := tc.GetNonce(contractAddr)
-	sendTx(types.CallContract, contractAddr, contractAddr, nonce, assetID, big.NewInt(0), input, prikey1)
+	sendTx(types.CallContract, contractAddr, contractAddr, nonce, assetID, big.NewInt(0), input, nil, prikey1)
 }
 
 func sendSetOwnerIssueTransaction() {
@@ -196,12 +196,12 @@ func sendSetOwnerIssueTransaction() {
 	}
 
 	nonce, _ := tc.GetNonce(contractAddr)
-	sendTx(types.CallContract, contractAddr, contractAddr, nonce, assetID, big.NewInt(0), input, prikey1)
+	sendTx(types.CallContract, contractAddr, contractAddr, nonce, assetID, big.NewInt(0), input, nil, prikey1)
 }
 
 func sendTransferToContractTransaction() {
 	nonce, _ := tc.GetNonce(systemname)
-	sendTx(types.Transfer, systemname, contractAddr, nonce, 1, big.NewInt(100), nil, systemprikey)
+	sendTx(types.Transfer, systemname, contractAddr, nonce, 1, big.NewInt(100), nil, nil, systemprikey)
 }
 
 func sendTransferTransaction() {
@@ -212,7 +212,7 @@ func sendTransferTransaction() {
 		return
 	}
 	nonce, _ := tc.GetNonce(systemname)
-	sendTx(types.CallContract, systemname, contractAddr, nonce, assetID, big.NewInt(0), input, systemprikey)
+	sendTx(types.CallContract, systemname, contractAddr, nonce, assetID, big.NewInt(0), input, nil, systemprikey)
 }
 
 func sendGetDelgateContractTransaction() {
@@ -227,11 +227,11 @@ func sendGetDelgateContractTransaction() {
 		return
 	}
 	nonce, _ := tc.GetNonce(systemname)
-	sendTx(types.CallContract, systemname, contractAddr, nonce, assetID, big.NewInt(0), input, systemprikey)
+	sendTx(types.CallContract, systemname, contractAddr, nonce, assetID, big.NewInt(0), input, nil, systemprikey)
 }
 
-func sendTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, prikey *ecdsa.PrivateKey) {
-	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input)
+func sendTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input, remark []byte, prikey *ecdsa.PrivateKey) {
+	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, remark)
 	gasprice, _ := tc.GasPrice()
 	tx := types.NewTransaction(1, gasprice, action)
 

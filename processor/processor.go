@@ -17,6 +17,8 @@
 package processor
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
@@ -91,7 +93,12 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		return nil, 0, err
 	}
 
-	assetID := tx.GasAssetID()
+	// todo for the moment，only system asset
+	// assetID := tx.GasAssetID()
+	assetID := p.bc.Config().SysTokenID
+	if assetID != tx.GasAssetID() {
+		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.Config().SysTokenID)
+	}
 	gasPrice := tx.GasPrice()
 
 	var totalGas uint64

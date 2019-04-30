@@ -34,7 +34,6 @@ import (
 )
 
 var sdb = getStateDB()
-
 var acctm = getAccountManager()
 var ast = getAsset()
 var sysName = "fractal.account"
@@ -1550,12 +1549,12 @@ func TestAccountManager_Process(t *testing.T) {
 		panic("rlp payload err")
 	}
 
-	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 0, big.NewInt(0), payload)
-	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload2)
-	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload1)
-	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3)
-	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload4)
-	action5 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload5)
+	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 0, big.NewInt(0), payload, nil)
+	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload2, nil)
+	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload1, nil)
+	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3, nil)
+	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload4, nil)
+	action5 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload5, nil)
 
 	//action5 := types.NewAction(types.DeleteAccount, common.Name("123asdf2"), common.Name("123asdf2"), 1, 1, 2, big.NewInt(0), pubkey1[:])
 	//action6 := types.NewAction(types.Transfer, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), pubkey1[:])
@@ -1637,7 +1636,7 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		panic("rlp payload err")
 	}
-	action6 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload6)
+	action6 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload6, nil)
 
 	tests = []struct {
 		name    string
@@ -1834,15 +1833,15 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		panic("rlp payload err")
 	}
 
-	action := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(40), payload)
-	action1 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload1)
-	action2 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload2)
-	action3 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3)
-	action4 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload4)
-	action5 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb.cc"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload5)
-	action6 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb.ccc"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload6)
-	action7 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(30), payload7)
-	action8 := types.NewAction(types.CreateAccount, common.Name("cccccccc"), common.Name(sysName), 1, 1, 2, big.NewInt(30), payload8)
+	action := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(40), payload, nil)
+	action1 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload1, nil)
+	action2 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload2, nil)
+	action3 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3, nil)
+	action4 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload4, nil)
+	action5 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb.cc"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload5, nil)
+	action6 := types.NewAction(types.CreateAccount, common.Name("bbbbbbbb.ccc"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload6, nil)
+	action7 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(30), payload7, nil)
+	action8 := types.NewAction(types.CreateAccount, common.Name("cccccccc"), common.Name(sysName), 1, 1, 2, big.NewInt(30), payload8, nil)
 
 	tests := []struct {
 		name    string

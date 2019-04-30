@@ -52,7 +52,6 @@ var DefaultTxPoolConfig = &Config{
 	AccountQueue: 1280,
 	GlobalQueue:  4096,
 	Lifetime:     3 * time.Hour,
-	GasAssetID:   1,
 }
 
 // check checks the provided user configurations and changes anything that's
