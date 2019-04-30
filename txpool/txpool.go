@@ -569,7 +569,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 		// We've directly injected a replacement transaction, notify subsystems
 		events := []*event.Event{
 			{Typecode: event.TxEv, Data: []*types.Transaction{tx}},
-			{To: event.GetStationByName("broadcast"), Typecode: event.P2PTxMsg, Data: []*types.Transaction{tx}},
+			{Typecode: event.NewTxs, Data: []*types.Transaction{tx}},
 		}
 		go event.SendEvents(events)
 
@@ -935,7 +935,7 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		// go event.SendEvent(&event.Event{Typecode: event.TxEv, Data: promoted})
 		events := []*event.Event{
 			{Typecode: event.TxEv, Data: promoted},
-			{To: event.GetStationByName("broadcast"), Typecode: event.P2PTxMsg, Data: promoted},
+			{Typecode: event.NewTxs, Data: promoted},
 		}
 		go event.SendEvents(events)
 	}

@@ -4,7 +4,9 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/types"
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
@@ -39,6 +41,14 @@ func TestSnapshot(t *testing.T) {
 	if err != nil {
 		t.Error("set snapshot err", err)
 	}
+	snapshotInfo := types.SnapshotInfo{
+		Root: root,
+	}
+	key1 := types.SnapshotBlock{
+		Number:    0,
+		BlockHash: prevHash,
+	}
+	rawdb.WriteSnapshot(db, key1, snapshotInfo)
 
 	timestamp, err := snapshotManager.GetLastSnapshotTime()
 	if err != nil {
@@ -46,6 +56,21 @@ func TestSnapshot(t *testing.T) {
 	}
 
 	if timestamp != 100000000 {
+		t.Error("set snapshot err", err)
+	}
+
+	timestamp, err = snapshotManager.GetPrevSnapshotTime(100000000)
+	if err != nil {
+		t.Error("set snapshot err", err)
+	}
+
+	_, _, err = snapshotManager.GetCurrentSnapshotHash()
+	if err != nil {
+		t.Error("set snapshot err", err)
+	}
+
+	_, err = snapshotManager.GetSnapshotMsg(addr, key, 100000000)
+	if err != nil {
 		t.Error("set snapshot err", err)
 	}
 }

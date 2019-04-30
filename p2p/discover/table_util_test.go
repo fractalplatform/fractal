@@ -34,6 +34,7 @@ func newTestTable(t transport) (*Table, *enode.DB) {
 	n := enode.SignNull(&r, enode.ID{})
 	db, _ := enode.OpenDB("")
 	tab, _ := newTable(t, n, db, nil)
+	tab.initDone <- struct{}{}
 	return tab, db
 }
 

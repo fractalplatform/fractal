@@ -353,6 +353,30 @@ func (b *APIBackend) Peers() []string {
 	return peers
 }
 
+// BadNodesCount returns the number of bad nodes.
+func (b *APIBackend) BadNodesCount() int {
+	return b.ftservice.p2pServer.BadNodesCount()
+}
+
+// BadNodes returns all bad nodes.
+func (b *APIBackend) BadNodes() []string {
+	nodes := b.ftservice.p2pServer.BadNodes()
+	ns := make([]string, len(nodes))
+	for i, node := range nodes {
+		ns[i] = node.String()
+	}
+	return ns
+}
+
+// AddBadNode add a bad Node and would cause the node disconnected
+func (b *APIBackend) AddBadNode(url string) error {
+	node, err := enode.ParseV4(url)
+	if err == nil {
+		b.ftservice.p2pServer.AddBadNode(node)
+	}
+	return err
+}
+
 // SelfNode returns the local node's endpoint information.
 func (b *APIBackend) SelfNode() string {
 	return b.ftservice.p2pServer.Self().String()
