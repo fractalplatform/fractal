@@ -82,6 +82,9 @@ type Backend interface {
 	RemoveTrustedPeer(url string) error
 	PeerCount() int
 	Peers() []string
+	BadNodesCount() int
+	BadNodes() []string
+	AddBadNode(url string) error
 	SelfNode() string
 	Engine() consensus.IEngine
 	APIs() []rpc.API

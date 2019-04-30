@@ -60,7 +60,7 @@ func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.CreateAccount, acc.name, to, acc.nonce, id, gas, value, pubkey.Bytes())
+	action := types.NewAction(types.CreateAccount, acc.name, to, acc.nonce, id, gas, value, pubkey.Bytes(), nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -82,7 +82,7 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.Transfer, acc.name, to, acc.nonce, id, gas, value, nil)
+	action := types.NewAction(types.Transfer, acc.name, to, acc.nonce, id, gas, value, nil, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -109,7 +109,7 @@ func (acc *Account) RegCandidate(to common.Name, value *big.Int, id uint64, gas 
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.RegCandidate, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.RegCandidate, acc.name, to, acc.nonce, id, gas, value, payload, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -136,7 +136,7 @@ func (acc *Account) UpdateCandidate(to common.Name, value *big.Int, id uint64, g
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.UpdateCandidate, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.UpdateCandidate, acc.name, to, acc.nonce, id, gas, value, payload, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -158,7 +158,7 @@ func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, ga
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.UnregCandidate, acc.name, to, acc.nonce, id, gas, value, nil)
+	action := types.NewAction(types.UnregCandidate, acc.name, to, acc.nonce, id, gas, value, nil, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}
@@ -188,7 +188,7 @@ func (acc *Account) VoteCandidate(to common.Name, value *big.Int, id uint64, gas
 	if acc.getnonce != nil {
 		acc.nonce = acc.getnonce(acc.name)
 	}
-	action := types.NewAction(types.VoteCandidate, acc.name, to, acc.nonce, id, gas, value, payload)
+	action := types.NewAction(types.VoteCandidate, acc.name, to, acc.nonce, id, gas, value, payload, nil)
 	if acc.getnonce == nil {
 		acc.nonce++
 	}

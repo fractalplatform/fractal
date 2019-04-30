@@ -66,6 +66,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 
 	tx0 := transaction(0, fname, tname, 100000, fkey)
 	tx1 := transaction(1, fname, tname, 100000, fkey)
+	params.DefaultChainconfig.SysTokenID = 1
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
@@ -1680,6 +1681,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	file.Close()
 	os.Remove(journal)
 
+	event.Reset()
 	// Create the original pool to inject transaction into the journal
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -1689,7 +1691,6 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	config.Journal = journal
 	config.Rejournal = time.Second
 
-	event.Reset()
 	pool := New(config, params.DefaultChainconfig, blockchain)
 
 	var (
@@ -1734,11 +1735,10 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	// Terminate the old pool, bump the local nonce, create a new pool and ensure relevant transaction survive
 	pool.Stop()
 
+	event.Reset()
 	manager.SetNonce(localName, 1)
 	blockchain = &testBlockChain{statedb, 1000000, new(event.Feed)}
-	event.Reset()
 	pool = New(config, params.DefaultChainconfig, blockchain)
-
 	pending, queued = pool.Stats()
 	if queued != 0 {
 		t.Fatalf("queued transactions mismatched: have %d, want %d", queued, 0)
@@ -1762,11 +1762,10 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	time.Sleep(2 * config.Rejournal)
 	pool.Stop()
 
+	event.Reset()
 	manager.SetNonce(localName, 1)
 	blockchain = &testBlockChain{statedb, 1000000, new(event.Feed)}
-	event.Reset()
 	pool = New(config, params.DefaultChainconfig, blockchain)
-
 	pending, queued = pool.Stats()
 	if pending != 0 {
 		t.Fatalf("pending transactions mismatched: have %d, want %d", pending, 0)

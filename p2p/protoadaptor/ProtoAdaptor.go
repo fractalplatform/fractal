@@ -29,6 +29,7 @@ type ProtoAdaptor struct {
 	peerMangaer
 	event   chan *router.Event
 	station router.Station
+	quit    chan struct{}
 }
 
 // NewProtoAdaptor return new ProtoAdaptor
@@ -43,6 +44,7 @@ func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 		},
 		event:   make(chan *router.Event),
 		station: router.NewLocalStation("p2p", nil),
+		quit:    make(chan struct{}),
 	}
 	adaptor.peerMangaer.station = router.NewBroadcastStation("broadcast", &adaptor.peerMangaer)
 	adaptor.Server.Config.Protocols = adaptor.Protocols()
@@ -54,18 +56,25 @@ func (adaptor *ProtoAdaptor) Start() error {
 	router.StationRegister(adaptor.peerMangaer.station)
 	router.AdaptorRegister(adaptor)
 	router.Subscribe(nil, adaptor.event, router.DisconectCtrl, nil)
+	router.Subscribe(nil, adaptor.event, router.AddPeerToBlacklist, nil)
 	go adaptor.adaptorEvent()
 	return adaptor.Server.Start()
 }
 
 func (adaptor *ProtoAdaptor) adaptorEvent() {
 	for {
-		e := <-adaptor.event
-		switch e.Typecode {
-		case router.DisconectCtrl:
-			peer := e.Data.(router.Station).Data().(*remotePeer)
-			peer.peer.Disconnect(p2p.DiscSubprotocolError)
-			//peer.Disconnect(DiscSubprotocolError)
+		select {
+		case <-adaptor.quit:
+			return
+		case e := <-adaptor.event:
+			switch e.Typecode {
+			case router.DisconectCtrl:
+				peer := e.Data.(router.Station).Data().(*remotePeer)
+				peer.peer.Disconnect(p2p.DiscSubprotocolError)
+			case router.AddPeerToBlacklist:
+				peer := e.Data.(router.Station).Data().(*remotePeer)
+				adaptor.Server.AddBadNode(peer.peer.Node()) // AddBadNode also disconnect the peer
+			}
 		}
 	}
 }
@@ -102,9 +111,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 
 		ret := checkDDOS(monitor, e)
 		if ret {
-			time.Sleep(10 * time.Second) // delay to prevent the reconnection
-			router.SendTo(nil, nil, router.DisconectCtrl, e.From)
-			//ToDo blacklist
+			router.SendTo(nil, nil, router.AddPeerToBlacklist, e.From)
 			return fmt.Errorf("DDos %x", e.From.Name())
 		}
 		router.SendEvent(e)
@@ -149,6 +156,7 @@ func (adaptor *ProtoAdaptor) Protocols() []p2p.Protocol {
 
 // Stop .
 func (adaptor *ProtoAdaptor) Stop() {
+	close(adaptor.quit)
 	adaptor.Server.Stop()
 	log.Info("P2P networking stopped")
 }
@@ -173,6 +181,7 @@ func (adaptor *ProtoAdaptor) msgSend(e *router.Event) error {
 func (adaptor *ProtoAdaptor) msgBroadcast(e *router.Event) {
 	te := *e
 	te.To = nil
+	te.From = nil
 	pack, err := event2pack(&te)
 	if err != nil {
 		return

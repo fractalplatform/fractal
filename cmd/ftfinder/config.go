@@ -20,20 +20,11 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/ftservice"
-	"github.com/fractalplatform/fractal/node"
 	colorable "github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 )
 
 var glogger *log.GlogHandler
-
-type ftConfig struct {
-	ConfigFileFlag  string
-	GenesisFileFlag string
-	NodeCfg         *node.Config
-	FtServiceCfg    *ftservice.Config
-}
 
 // LogConfig log config
 type LogConfig struct {

@@ -241,6 +241,15 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
 
 	if accountName.AccountNameLevel() > 1 {
+		accountObj, err := am.GetAccountByName(fromName)
+		if err != nil || accountObj == nil {
+			return ErrAccountInvaid
+		} else {
+			if accountObj.GetAccountNumber() != 0 {
+				return ErrAccountInvaid
+			}
+		}
+
 		if !fromName.IsValidCreator(accountName.String()) {
 			return ErrAccountInvaid
 		}
@@ -1256,7 +1265,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
 				return nil, err
 			}
-			actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, 0, action.AssetID(), 0, action.Value(), nil)
+			actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, 0, action.AssetID(), 0, action.Value(), nil, nil)
 			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 			internalActions = append(internalActions, internalAction)
 		}
@@ -1293,7 +1302,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.GetAssetOwner(), 0, asset.GetAssetId(), 0, asset.GetAssetAmount(), nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.GetAssetOwner(), 0, asset.GetAssetId(), 0, asset.GetAssetAmount(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1306,7 +1315,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1324,7 +1333,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.DestroyAsset(common.Name(accountManagerContext.ChainConfig.AssetName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break

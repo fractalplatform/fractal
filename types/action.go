@@ -110,6 +110,7 @@ type actionData struct {
 	GasLimit uint64
 	Amount   *big.Int
 	Payload  []byte
+	Remark   []byte
 
 	Sign []*SignData
 }
@@ -124,7 +125,7 @@ type Action struct {
 }
 
 // NewAction initialize transaction's action.
-func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasLimit uint64, amount *big.Int, payload []byte) *Action {
+func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasLimit uint64, amount *big.Int, payload, remark []byte) *Action {
 	if len(payload) > 0 {
 		payload = common.CopyBytes(payload)
 	}
@@ -137,6 +138,7 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		GasLimit: gasLimit,
 		Amount:   new(big.Int),
 		Payload:  payload,
+		Remark:   remark,
 		Sign:     make([]*SignData, 0),
 	}
 	if amount != nil {
@@ -153,14 +155,16 @@ func (a *Action) GetSign() []*SignData {
 	return a.data.Sign
 }
 
-//CheckValue check action type and value
-func (a *Action) CheckValue(conf *params.ChainConfig) bool {
+//CheckValid Check the validity of all fields
+func (a *Action) CheckValid(conf *params.ChainConfig) bool {
 	//check To
 	switch a.Type() {
 	case CreateContract:
 		if a.data.From != a.data.To {
 			return false
 		}
+		break
+	case CallContract:
 		break
 	//account
 	case CreateAccount:
@@ -248,8 +252,11 @@ func (a *Action) Sender() common.Name { return a.data.From }
 // Recipient returns action's Recipient.
 func (a *Action) Recipient() common.Name { return a.data.To }
 
-// Data returns action's Data.
+// Data returns action's payload.
 func (a *Action) Data() []byte { return common.CopyBytes(a.data.Payload) }
+
+// Remark returns action's remark.
+func (a *Action) Remark() []byte { return common.CopyBytes(a.data.Remark) }
 
 // Gas returns action's Gas.
 func (a *Action) Gas() uint64 { return a.data.GasLimit }
@@ -301,6 +308,7 @@ type RPCAction struct {
 	AssetID    uint64        `json:"assetID"`
 	GasLimit   uint64        `json:"gas"`
 	Amount     *big.Int      `json:"value"`
+	Remark     hexutil.Bytes `json:"remark"`
 	Payload    hexutil.Bytes `json:"payload"`
 	Hash       common.Hash   `json:"actionHash"`
 	ActionIdex uint64        `json:"actionIndex"`
@@ -316,6 +324,7 @@ func (a *Action) NewRPCAction(index uint64) *RPCAction {
 		AssetID:    a.AssetID(),
 		GasLimit:   a.Gas(),
 		Amount:     a.Value(),
+		Remark:     hexutil.Bytes(a.Remark()),
 		Payload:    hexutil.Bytes(a.Data()),
 		Hash:       a.Hash(),
 		ActionIdex: index,

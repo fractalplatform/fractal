@@ -225,6 +225,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		0,
 		big.NewInt(0),
 		payload,
+		nil,
 	))
 
 	for _, account := range g.AllocAccounts {
@@ -247,6 +248,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			0,
 			big.NewInt(0),
 			payload,
+			nil,
 		))
 	}
 
@@ -292,6 +294,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			0,
 			big.NewInt(0),
 			payload,
+			nil,
 		))
 	}
 
@@ -384,6 +387,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				action.Gas(),
 				action.Value(),
 				action.Data(),
+				action.Remark(),
 			)
 		}
 		actions = append(actions, action)
@@ -399,6 +403,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				action.Gas(),
 				action.Value(),
 				action.Data(),
+				action.Remark(),
 			)
 		}
 		actions = append(actions, action)
