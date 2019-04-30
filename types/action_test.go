@@ -262,3 +262,90 @@ func TestAction_CheckValid2(t *testing.T) {
 	}
 
 }
+
+var (
+	testAction20 = NewAction(
+		RegCandidate,
+		common.Name("fromname"),
+		common.Name("fractal.dpos"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"))
+
+	testAction21 = NewAction(
+		UpdateCandidate,
+		common.Name("fromname"),
+		common.Name("fractal.dpos"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"))
+
+	testAction22 = NewAction(
+		UnregCandidate,
+		common.Name("fromname"),
+		common.Name("fractal.dpos"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"))
+
+	testAction23 = NewAction(
+		VoteCandidate,
+		common.Name("fromname"),
+		common.Name("fractal.dpos"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
+	testAction24 = NewAction(
+		RefundCandidate,
+		common.Name("fromname"),
+		common.Name("fractal.dpos"),
+		uint64(1),
+		uint64(3),
+		uint64(2000),
+		big.NewInt(0),
+		[]byte("test action"),
+	)
+)
+
+func TestAction_CheckValid3(t *testing.T) {
+
+	// actionBytes10, err := rlp.EncodeToBytes(testAction10)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	// actAction10 := &Action{}
+	// if err := rlp.Decode(bytes.NewReader(actionBytes10), &actAction10); err != nil {
+	// 	t.Fatal(err)
+	// }
+
+	if testAction20.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction21.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction22.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction23.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+	if testAction24.CheckValid(params.DefaultChainconfig) == false {
+		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
+	}
+
+}
