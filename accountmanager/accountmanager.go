@@ -38,6 +38,7 @@ var (
 	counterPrefix       = "accountCounter"
 )
 var acctManagerName = "sysAccount"
+
 //var sysName string = "fractal.account"
 
 var counterID uint64 = 4096
