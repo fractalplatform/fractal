@@ -126,9 +126,9 @@ func GetAccountByName(name common.Name) (*accountmanager.Account, error) {
 	return account, err
 }
 
-func GetObjectFeeByName(objectName common.Name) (*feemanager.ObjectFee, error) {
+func GetObjectFeeByName(objectName common.Name, objectType uint64) (*feemanager.ObjectFee, error) {
 	objectFee := &feemanager.ObjectFee{}
-	err := ClientCall("fee_getObjectFeeByName", objectFee, objectName)
+	err := ClientCall("fee_getObjectFeeByName", objectFee, objectName, objectType)
 	return objectFee, err
 }
 

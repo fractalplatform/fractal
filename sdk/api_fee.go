@@ -17,8 +17,8 @@
 package sdk
 
 // FeeInfo get object fee by name
-func (api *API) FeeInfo(name string) (map[string]interface{}, error) {
-	account := map[string]interface{}{}
-	err := api.client.Call(account, "fee_getObjectFeeByName", name)
-	return account, err
+func (api *API) FeeInfo(name string, objectType uint64) (map[string]interface{}, error) {
+	feeInfo := map[string]interface{}{}
+	err := api.client.Call(feeInfo, "fee_getObjectFeeByName", name, objectType)
+	return feeInfo, err
 }
