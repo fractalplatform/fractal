@@ -94,7 +94,13 @@ func TestBloom(t *testing.T) {
 
 	target := cache.getTarget(hadTx.Hash())
 	oldBloom := target.bloom
+	refBloom := cache.getTxBloom(hadTx)
+	cpyBloom := cache.copyTxBloom(hadTx, &types.Bloom{})
+	if (*refBloom != *cpyBloom) || (oldBloom != refBloom) {
+		t.Fatalf("Bloom not equal")
+	}
 	target.reset(hadTx.Hash(), nil)
+
 	cache.addTx(hadTx, oldBloom, unkownNode)
 
 	for i, node := range nodeIDs {
@@ -180,5 +186,45 @@ func TestP2PTxMsg(t *testing.T) {
 	}
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
+	}
+}
+
+func TestBloombits(t *testing.T) {
+	bp := &bloomPath{
+		hash:  common.Hash{},
+		bloom: &types.Bloom{},
+	}
+	for i := 0; i < len(bp.bloom)*8; i++ {
+		b := big.NewInt(1)
+		b.Lsh(b, uint(i))
+		b.Sub(b, big.NewInt(1))
+		bp.bloom.SetBytes(b.Bytes())
+		if bp.getBloomSetBits() != i {
+			t.Fatalf("error:%d", i)
+		}
+	}
+}
+
+func TestTTL(t *testing.T) {
+	var (
+		tx    = TxsGen(1)[0]
+		cache = &txsCache{}
+	)
+	i := 0
+	NewName := func() string {
+		i++
+		return fmt.Sprintf("Node%x", i)
+	}
+	for {
+		cache.addTx(tx, nil, NewName())
+		target := cache.getTarget(tx.Hash())
+		if target.getBloomSetBits() > len(*target.bloom)*3 {
+			break
+		}
+	}
+	cache.ttlCheck(tx)
+	target := cache.getTarget(tx.Hash())
+	if target.getBloomSetBits() != 0 {
+		t.Fatal("ttl check failed!")
 	}
 }

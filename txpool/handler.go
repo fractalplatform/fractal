@@ -58,7 +58,8 @@ type bloomPath struct {
 
 // return count of bits that set
 func (p *bloomPath) getBloomSetBits() int {
-	getBits := func(num uint64) int {
+	getBits := func(b []byte) int {
+		num := binary.BigEndian.Uint64(b)
 		ret := 0
 		for num > 0 {
 			ret++
@@ -66,10 +67,10 @@ func (p *bloomPath) getBloomSetBits() int {
 		}
 		return ret
 	}
-	ret := getBits(binary.BigEndian.Uint64((*p.bloom)[0:8]))
-	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[8:16]))
-	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[16:24]))
-	ret += getBits(binary.BigEndian.Uint64((*p.bloom)[24:32]))
+	ret := 0
+	for i := 0; i < 256; i += 8 {
+		ret += getBits((*p.bloom)[i : i+8])
+	}
 	return ret
 }
 
