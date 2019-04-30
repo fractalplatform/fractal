@@ -73,6 +73,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 
 	testAction5 = NewAction(
@@ -84,6 +85,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 )
 
@@ -186,7 +188,9 @@ var (
 		uint64(3),
 		uint64(2000),
 		big.NewInt(0),
-		[]byte("test action"))
+		[]byte("test action"),
+		[]byte("test remark"),
+	)
 
 	testAction11 = NewAction(
 		IssueAsset,
@@ -196,7 +200,9 @@ var (
 		uint64(3),
 		uint64(2000),
 		big.NewInt(0),
-		[]byte("test action"))
+		[]byte("test action"),
+		[]byte("test remark"),
+	)
 
 	testAction12 = NewAction(
 		DestroyAsset,
@@ -206,7 +212,9 @@ var (
 		uint64(3),
 		uint64(2000),
 		big.NewInt(0),
-		[]byte("test action"))
+		[]byte("test action"),
+		[]byte("test remark"),
+	)
 
 	testAction13 = NewAction(
 		SetAssetOwner,
@@ -217,6 +225,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 	testAction14 = NewAction(
 		UpdateAsset,
@@ -227,6 +236,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 )
 
@@ -273,7 +283,9 @@ var (
 		uint64(3),
 		uint64(2000),
 		big.NewInt(0),
-		[]byte("test action"))
+		[]byte("test action"),
+		[]byte("test remark"),
+	)
 
 	testAction21 = NewAction(
 		UpdateCandidate,
@@ -283,7 +295,9 @@ var (
 		uint64(3),
 		uint64(2000),
 		big.NewInt(0),
-		[]byte("test action"))
+		[]byte("test action"),
+		[]byte("test remark"),
+	)
 
 	testAction22 = NewAction(
 		UnregCandidate,
@@ -293,7 +307,9 @@ var (
 		uint64(3),
 		uint64(2000),
 		big.NewInt(0),
-		[]byte("test action"))
+		[]byte("test action"),
+		[]byte("test remark"),
+	)
 
 	testAction23 = NewAction(
 		VoteCandidate,
@@ -304,6 +320,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 	testAction24 = NewAction(
 		RefundCandidate,
@@ -314,6 +331,7 @@ var (
 		uint64(2000),
 		big.NewInt(0),
 		[]byte("test action"),
+		[]byte("test remark"),
 	)
 )
 
