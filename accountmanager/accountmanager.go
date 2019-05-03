@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	acctRegExp          = regexp.MustCompile("^([a-z][a-z0-9]{6,15})(?:\\.([a-z][a-z0-9]{0,7})){0,1}$")
+	acctRegExp          = regexp.MustCompile("^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$")
 	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
 	accountNameIDPrefix = "accountNameId"
@@ -82,9 +82,9 @@ type AccountManager struct {
 }
 
 func SetAccountNameConfig(config *Config) bool {
-	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{6,%v})", config.AccountNameLength)
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{6,%v})", config.AccountNameLength-1)
 	for i := 0; i < int(config.AccountNameLevel); i++ {
-		regexpStr += fmt.Sprintf("(?:\\.([a-z][a-z0-9]{0,%v})){0,1}", config.SubAccountNameLength)
+		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{1,%v})){0,1}", config.SubAccountNameLength)
 	}
 
 	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
