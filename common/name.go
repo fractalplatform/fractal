@@ -17,114 +17,63 @@
 package common
 
 import (
-	"fmt"
-	"io"
 	"math/big"
 	"regexp"
 	"strings"
-
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // Name represents the account name
 type Name string
 
-var accountNameCheck *regexp.Regexp
-var assetNameCheck *regexp.Regexp
-
-var (
-	AccountNameLevel  uint64 = 1
-	AccountNameLen    uint64 = 16
-	SubAccountNameLen uint64 = 8
-	AssetNameLevel    uint64 = 1
-	AssetNameLen      uint64 = 16
-	SubAssetNameLen   uint64 = 8
-)
-
-func init() {
-	SetAccountNameCheckRule(AccountNameLevel, AccountNameLen, SubAccountNameLen)
-	SetAssetNameCheckRule(AssetNameLevel, AssetNameLen, SubAssetNameLen)
-}
-
-func SetAccountNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
-	var nameCheck string
-	if nameLevel == 0 {
-		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{6,%d}$", nameLen-1)
-	} else {
-		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{6,%d}(\\.[a-z][a-z0-9]{0,%d}){0,%d}$", nameLen-1, subNameLen-1, nameLevel)
-	}
-	log.Info("Account name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
-	accountNameCheck = regexp.MustCompile(nameCheck)
-}
-
-func SetAssetNameCheckRule(nameLevel, nameLen, subNameLen uint64) {
-	var nameCheck string
-	if nameLevel == 0 {
-		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{1,%d}$", nameLen-1)
-	} else {
-		nameCheck = fmt.Sprintf("^[a-z][a-z0-9]{1,%d}(\\.[a-z][a-z0-9]{0,%d}){0,%d}$", nameLen-1, subNameLen-1, nameLevel)
-	}
-	log.Info("Asset name level", "level", nameLevel, "name length", nameLen, "sub name length", subNameLen)
-	assetNameCheck = regexp.MustCompile(nameCheck)
-}
-
-// IsValidAccountName verifies whether a string can represent a valid name or not.
-func IsValidAccountName(s string) bool {
-	if accountNameCheck == nil {
-		return false
-	}
-	return accountNameCheck.MatchString(s)
-}
-
-func IsValidAssetName(s string) bool {
-	if assetNameCheck == nil {
-		return false
-	}
-	return assetNameCheck.MatchString(s)
-}
-
 // StrToName  returns Name with string of s.
 func StrToName(s string) Name {
-	n, err := parseName(s)
-	if err != nil {
-		panic(err)
-	}
-	return n
-}
-
-// StrToName  returns Name with string of s.
-func StringToName(s string) (Name, error) {
-	var n Name
-	if !n.SetString(s) {
-		return n, fmt.Errorf("invalid name %v", s)
-	}
-	return n, nil
-}
-
-func parseName(s string) (Name, error) {
-	var n Name
-	if !n.SetString(s) {
-		return n, fmt.Errorf("invalid name %v", s)
-	}
-	return n, nil
+	return Name(s)
 }
 
 // BytesToName returns Name with value b.
-func BytesToName(b []byte) (Name, error) {
-	return parseName(string(b))
+func BytesToName(b []byte) Name {
+	return StrToName(string(b))
 }
 
 // BigToName returns Name with byte values of b.
-func BigToName(b *big.Int) (Name, error) { return BytesToName(b.Bytes()) }
+func BigToName(b *big.Int) Name {
+	return BytesToName(b.Bytes())
+}
+
+// Big converts a name to a big integer.
+func (n Name) Big() *big.Int {
+	return new(big.Int).SetBytes(n.Bytes())
+}
+
+// Bytes converts a name to bytes.
+func (n Name) Bytes() []byte {
+	return []byte(n.String())
+}
+
+// String converts a name to string.
+func (n Name) String() string {
+	return string(n)
+}
 
 // SetString  sets the name to the value of b..
-func (n *Name) SetString(s string) bool {
-	if !IsValidAccountName(s) {
-		return false
-	}
+func (n *Name) SetString(s string) {
 	*n = Name(s)
-	return true
+}
+
+// IsValid verifies whether a string can represent a valid name or not.
+func (n Name) IsValid(reg *regexp.Regexp) bool {
+	return reg.MatchString(n.String())
+}
+
+// IsChildren name children
+func (n Name) IsChildren(name Name, reg *regexp.Regexp) bool {
+	if strings.Contains(name.String(), n.String()) {
+		parent := FindStringSubmatch(reg, n.String())
+		children := FindStringSubmatch(reg, name.String())
+		len := len(parent)
+		return strings.Compare(parent[len-1], children[len-1]) == 0
+	}
+	return false
 }
 
 // UnmarshalText parses a hash in hex syntax.
@@ -138,82 +87,17 @@ func (n *Name) UnmarshalJSON(data []byte) error {
 	if len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"' {
 		input = input[1 : len(input)-1]
 	}
-	if len(input) > 0 {
-		dec, err := parseName(string(input))
-		if err != nil {
-			return err
-		}
-		*n = dec
-	}
+	*n = StrToName(input)
 	return nil
 }
 
-// EncodeRLP implements rlp.Encoder
-func (n Name) EncodeRLP(w io.Writer) error {
-	str := n.String()
-	if len(str) != 0 {
-		if _, err := parseName(str); err != nil {
-			return err
+func FindStringSubmatch(reg *regexp.Regexp, name string) (ret []string) {
+	list := reg.FindStringSubmatch(name)
+	for i := 1; i < len(list); i++ {
+		if len(list[i]) == 0 {
+			continue
 		}
+		ret = append(ret, list[i])
 	}
-	rlp.Encode(w, str)
-	return nil
-}
-
-// DecodeRLP implements rlp.Decoder
-func (n *Name) DecodeRLP(s *rlp.Stream) error {
-	var str string
-	err := s.Decode(&str)
-	if err == nil {
-		if len(str) != 0 {
-			name, err := parseName(str)
-			if err != nil {
-				return err
-			}
-			*n = name
-		}
-	}
-	return err
-}
-
-// String implements fmt.Stringer.
-func (n Name) String() string {
-	return string(n)
-}
-
-// Big converts a name to a big integer.
-func (n Name) Big() *big.Int { return new(big.Int).SetBytes([]byte(n.String())) }
-
-func (n Name) IsValidCreator(name string) bool {
-
-	creator := n.String()
-	current := name
-	trimName := strings.TrimPrefix(current, creator)
-
-	if strings.Index(trimName, ".") != 0 {
-		return false
-	}
-
-	return true
-}
-
-func (n Name) AccountNameLevel() int {
-	return len(strings.Split(n.String(), "."))
-}
-
-func SplitString(s string) []string {
-	return strings.Split(s, ".")
-}
-
-func IsValidCreator(name string, subName string) bool {
-
-	creator := name
-	current := subName
-	trimName := strings.TrimPrefix(current, creator)
-
-	if strings.Index(trimName, ".") != 0 {
-		return false
-	}
-
-	return true
+	return
 }

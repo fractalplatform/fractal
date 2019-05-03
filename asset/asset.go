@@ -19,6 +19,7 @@ package asset
 import (
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -28,10 +29,9 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-//AssetManager is used to access asset
-var assetManagerName = "sysAccount"
-
 var (
+	assetRegExp       = regexp.MustCompile("^([a-z][a-z0-9]{1,15})(?:\\.([a-z][a-z0-9]{0,15})){0,1}$")
+	assetManagerName  = "assetAccount"
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
 	assetObjectPrefix = "assetDefinitionObject"
@@ -42,31 +42,25 @@ type Asset struct {
 }
 
 func SetAssetNameConfig(config *Config) bool {
-	if config == nil {
-		return false
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{1,%v})", config.AssetNameLength)
+	for i := 0; i < int(config.AssetNameLevel); i++ {
+		regexpStr += fmt.Sprintf("(?:\\.([a-z][a-z0-9]{0,%v})){0,1}", config.SubAssetNameLength)
 	}
 
-	if config.AssetNameLevel < 0 || config.AssetNameLength <= 2 {
-		return false
+	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
+	if err != nil {
+		panic(err)
 	}
-
-	if config.AssetNameLevel > 0 {
-		if config.SubAssetNameLength < 1 {
-			return false
-		}
-	}
-
-	common.SetAssetNameCheckRule(config.AssetNameLevel, config.AssetNameLength, config.SubAssetNameLength)
+	assetRegExp = regexp
 	return true
+}
+func GetAssetNameRegExp() *regexp.Regexp {
+	return assetRegExp
 }
 
 //SetAssetMangerName  set the global asset manager name
-func SetAssetMangerName(name common.Name) bool {
-	if common.IsValidAccountName(name.String()) {
-		assetManagerName = name.String()
-		return true
-	}
-	return false
+func SetAssetMangerName(name common.Name) {
+	assetManagerName = name.String()
 }
 
 //NewAsset New create Asset
@@ -74,12 +68,6 @@ func NewAsset(sdb *state.StateDB) *Asset {
 	asset := Asset{
 		sdb: sdb,
 	}
-
-	if len(assetManagerName) == 0 {
-		log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
-		return nil
-	}
-
 	asset.InitAssetCount()
 	return &asset
 }
@@ -290,10 +278,6 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 
 //IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) error {
-	if !common.IsValidAssetName(assetName) {
-		return fmt.Errorf("%s is invalid", assetName)
-	}
-
 	assetId, err := a.GetAssetIdByName(assetName)
 	if err != nil {
 		return err
@@ -463,12 +447,12 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // }
 
 func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
-	assetNames := common.SplitString(assetName)
-	if len(assetNames) == 1 {
+	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	if len(assetNames) < 2 {
 		return true
 	}
 
-	if !common.IsValidAssetName(assetName) {
+	if !common.StrToName(assetName).IsValid(assetRegExp) {
 		return false
 	}
 

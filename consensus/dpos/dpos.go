@@ -335,10 +335,6 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return errInvalidMintBlockTime
 	}
 
-	if !common.IsValidAccountName(candidate) {
-		return ErrIllegalCandidateName
-	}
-
 	db := &stateDB{
 		name:  dpos.config.AccountName,
 		state: state,
