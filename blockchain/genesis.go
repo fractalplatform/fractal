@@ -327,6 +327,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
 		panic(fmt.Sprintf("account is not exist %v", err))
 	}
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AssetName)); !ok {
+		panic(fmt.Sprintf("assetname is not exist %v", err))
+	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
 		panic(fmt.Sprintf("dpos is not exist %v", err))
 	}
