@@ -1730,7 +1730,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	payload4, err := rlp.EncodeToBytes(a4)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1741,7 +1741,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	payload5, err := rlp.EncodeToBytes(a5)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1752,7 +1752,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	payload6, err := rlp.EncodeToBytes(a6)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1785,7 +1785,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	_, err = rlp.EncodeToBytes(a9)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1796,7 +1796,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	_, err = rlp.EncodeToBytes(a10)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1807,7 +1807,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	_, err = rlp.EncodeToBytes(a11)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1818,7 +1818,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	_, err = rlp.EncodeToBytes(a12)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 
@@ -1829,7 +1829,7 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		PublicKey: pubkey,
 	}
 	_, err = rlp.EncodeToBytes(a13)
-	if err == nil {
+	if err != nil {
 		panic("rlp payload err")
 	}
 

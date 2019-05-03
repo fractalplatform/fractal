@@ -19,6 +19,7 @@ package accountmanager
 import (
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -33,15 +34,13 @@ import (
 )
 
 var (
+	acctRegExp          = regexp.MustCompile("^([a-z][a-z0-9]{6,15})(?:\\.([a-z][a-z0-9]{0,7})){0,1}$")
+	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
 	accountNameIDPrefix = "accountNameId"
 	counterPrefix       = "accountCounter"
+	counterID           = uint64(4096)
 )
-var acctManagerName = "sysAccount"
-
-//var sysName string = "fractal.account"
-
-var counterID uint64 = 4096
 
 type AuthorActionType uint64
 
@@ -83,48 +82,25 @@ type AccountManager struct {
 }
 
 func SetAccountNameConfig(config *Config) bool {
-	if config == nil {
-		return false
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{6,%v})", config.AccountNameLength)
+	for i := 0; i < int(config.AccountNameLevel); i++ {
+		regexpStr += fmt.Sprintf("(?:\\.([a-z][a-z0-9]{0,%v})){0,1}", config.SubAccountNameLength)
 	}
 
-	if config.AccountNameLevel < 0 || config.AccountNameLength <= 8 {
-		return false
+	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
+	if err != nil {
+		panic(err)
 	}
-
-	if config.AccountNameLevel > 0 {
-		if config.SubAccountNameLength < 1 {
-			return false
-		}
-	}
-
-	common.SetAccountNameCheckRule(config.AccountNameLevel, config.AccountNameLength, config.SubAccountNameLength)
+	acctRegExp = regexp
 	return true
 }
-
-//SetSysName set the global sys name
-//func SetSysName(name common.Name) bool {
-//	if common.IsValidAccountName(name.String()) {
-//		sysName = name.String()
-//		return true
-//	}
-//	return false
-//}
-
-// func SetChainName(name common.Name) bool {
-// 	if common.IsValidAccountName(name.String()) {
-// 		chainName = name.String()
-// 		return true
-// 	}
-// 	return false
-// }
+func GetAcountNameRegExp() *regexp.Regexp {
+	return acctRegExp
+}
 
 //SetAcctMangerName  set the global account manager name
-func SetAcctMangerName(name common.Name) bool {
-	if common.IsValidAccountName(name.String()) {
-		acctManagerName = name.String()
-		return true
-	}
-	return false
+func SetAcctMangerName(name common.Name) {
+	acctManagerName = name.String()
 }
 
 //NewAccountManager create new account manager
@@ -239,18 +215,8 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 
 //CreateAnyAccount include create sub account
 func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
-
-	if accountName.AccountNameLevel() > 1 {
-		accountObj, err := am.GetAccountByName(fromName)
-		if err != nil || accountObj == nil {
-			return ErrAccountInvaid
-		} else {
-			if accountObj.GetAccountNumber() != 0 {
-				return ErrAccountInvaid
-			}
-		}
-
-		if !fromName.IsValidCreator(accountName.String()) {
+	if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
+		if !fromName.IsChildren(accountName, acctRegExp) {
 			return ErrAccountInvaid
 		}
 	}
@@ -264,10 +230,9 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 
 //CreateAccount contract account
 func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
-	if !common.IsValidAccountName(accountName.String()) {
+	if !accountName.IsValid(acctRegExp) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
-
 	//check is exist
 	accountID, err := am.GetAccountIDByName(accountName)
 	if err != nil {
@@ -725,7 +690,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 			return nil, err
 		}
 
-		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp()) {
 			ba[id] = balance
 		}
 	}
@@ -758,7 +723,7 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 			return big.NewInt(0), err
 		}
 
-		if common.IsValidCreator(assetName, subAssetObj.GetAssetName()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp()) {
 			ba = ba.Add(ba, balance)
 		}
 	}
@@ -1181,11 +1146,10 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 		asset.SetAssetFounder(asset.GetAssetOwner())
 	}
 
-	if name, err := common.StringToName(asset.GetAssetName()); err == nil {
-		accountID, _ := am.GetAccountIDByName(name)
-		if accountID > 0 {
-			return ErrNameIsExist
-		}
+	name := common.StrToName(asset.GetAssetName())
+	accountID, _ := am.GetAccountIDByName(name)
+	if accountID > 0 {
+		return ErrNameIsExist
 	}
 
 	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail()); err != nil {
