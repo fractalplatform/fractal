@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	assetRegExp       = regexp.MustCompile("^([a-z][a-z0-9]{1,15})(?:\\.([a-z][a-z0-9]{0,15})){0,1}$")
+	assetRegExp       = regexp.MustCompile("^([a-z][a-z0-9]{1,15})(?:\\.([a-z0-9]{1,8})){0,1}$")
 	assetManagerName  = "assetAccount"
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
@@ -42,9 +42,9 @@ type Asset struct {
 }
 
 func SetAssetNameConfig(config *Config) bool {
-	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{1,%v})", config.AssetNameLength)
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{1,%v})", config.AssetNameLength-1)
 	for i := 0; i < int(config.AssetNameLevel); i++ {
-		regexpStr += fmt.Sprintf("(?:\\.([a-z][a-z0-9]{0,%v})){0,1}", config.SubAssetNameLength)
+		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{1,%v})){0,1}", config.SubAssetNameLength)
 	}
 
 	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
