@@ -41,6 +41,20 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.8 - 2019-04-30",
+		`### Added
+- [DEBUG] add debug pprof,trace cmd flags and rpc
+- [FEE] add fee manager and some rpc interface
+- [TXPOOL] add bloom in transaction P2P message
+- [TYPES] types/action.go add remark field
+### Fixed
+- [TXPOOL] fixed txpool queue and pending don't remove no permissions transactions
+- [VM] fix bug that distribute more gas than given when internal call happens
+- [BLOCKCHAIN] fixed restart node missmatch genesis block hash
+- [ACCOUNTMANAGER] generate author version when account create
+- [DPOS] solve infinite loop for getvoters
+- [ALL] fixs some bugs
+`,
 		"0.0.7 - 2019-04-23",
 		`### Removed
 - [WALLET] removed wallet module，the local node not support store private key

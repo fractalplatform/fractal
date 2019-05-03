@@ -1,4 +1,19 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.8] - 2019-04-30
+### Added
+- [DEBUG] add debug pprof,trace cmd flags and rpc
+- [FEE] add fee manager and some rpc interface
+- [TXPOOL] add bloom in transaction P2P message
+- [TYPES] types/action.go add remark field
+### Fixed
+- [TXPOOL] fixed txpool queue and pending don't remove no permissions transactions
+- [VM] fix bug that distribute more gas than given when internal call happens
+- [BLOCKCHAIN] fixed restart node missmatch genesis block hash
+- [ACCOUNTMANAGER] generate author version when account create
+- [DPOS] solve infinite loop for getvoters
+- [ALL] fixs some bugs
+
+
 ## [0.0.7] - 2019-04-23
 ### Removed
 - [WALLET] removed wallet module，the local node not support store private key
@@ -27,6 +42,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.8]: https://github.com/fractalplatform/fractal/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/fractalplatform/fractal/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/fractalplatform/fractal/compare/v0.0.5...v0.0.6
 [0.0.5]: https://github.com/fractalplatform/fractal/commits/v0.0.5
