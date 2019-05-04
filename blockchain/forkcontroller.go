@@ -60,7 +60,7 @@ func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkContr
 	return &ForkController{cfg: cfg, chainCfg: chaincfg}
 }
 
-func InitForkController(chainName string, statedb *state.StateDB) error {
+func initForkController(chainName string, statedb *state.StateDB) error {
 	var info = ForkInfo{}
 	infoBytes, err := statedb.Get(chainName, forkInfo)
 	if err != nil {

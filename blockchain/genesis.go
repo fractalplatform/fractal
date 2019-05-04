@@ -361,7 +361,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	// init  fork controller
-	if err := InitForkController(chainName.String(), statedb); err != nil {
+	if err := initForkController(chainName.String(), statedb); err != nil {
 		panic(fmt.Sprintf("genesis init fork controller err %v", err))
 	}
 

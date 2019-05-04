@@ -143,7 +143,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	if err := bc.loadLastBlock(); err != nil {
 		return nil, err
 	}
-	bc.station = newBlcokchainStation(bc, 0)
+	bc.station = newBlockchainStation(bc, 0)
 	go bc.update()
 	return bc, nil
 }
