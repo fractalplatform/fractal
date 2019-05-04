@@ -360,6 +360,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
+	// init  fork controller
+	if err := initForkController(chainName.String(), statedb); err != nil {
+		panic(fmt.Sprintf("genesis init fork controller err %v", err))
+	}
+
 	// snapshot
 	currentTime := timestamp
 	currentTimeFormat := (currentTime / g.Config.SnapshotInterval) * g.Config.SnapshotInterval
