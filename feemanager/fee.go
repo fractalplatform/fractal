@@ -322,7 +322,7 @@ func (fm *FeeManager) WithdrawFeeFromSystem(objectName string, objectType uint64
 	//store fee to object, scan all asset
 	for _, assetFee := range objectFee.AssetFees {
 		if assetFee.RemainFee.Cmp(big.NewInt(0)) > 0 {
-			err = fm.accountDB.AddAccountBalanceByID(founder, assetFee.AssetID, assetFee.RemainFee)
+			err = fm.accountDB.TransferAsset(common.Name(feeConfig.feeName), founder, assetFee.AssetID, assetFee.RemainFee)
 			if err != nil {
 				return nil, fmt.Errorf("withdraw asset(%d) fee to founder(%s) err:%v", assetFee.AssetID, founder, err)
 			}
