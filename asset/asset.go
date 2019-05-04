@@ -490,3 +490,18 @@ func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
 	log.Debug("Asset create failed", "account", fromName, "name", assetName)
 	return false
 }
+
+// HasAccess contract asset access
+func (a *Asset) HasAccess(assetID uint64, names ...common.Name) bool {
+	ast, _ := a.GetAssetObjectById(assetID)
+	if ast != nil && len(ast.Contract.String()) != 0 {
+		for _, name := range names {
+			if name == ast.Contract {
+				return true
+			}
+		}
+	} else {
+		return true
+	}
+	return false
+}
