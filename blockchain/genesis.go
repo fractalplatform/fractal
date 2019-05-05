@@ -394,8 +394,6 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	actions := []*types.Action{}
-	actions = append(actions, actActions...)
-	actions = append(actions, astActions...)
 	for _, action := range actActions {
 		if action.AssetID() == 0 {
 			action = types.NewAction(

@@ -1268,9 +1268,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-		if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
-			return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
-		}
+		// if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
+		// }
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
@@ -1318,9 +1318,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 				return nil, ErrAccountNotExist
 			}
 		}
-		if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
-			return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
-		}
+		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
+		// }
 		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder(), asset.GetAssetContract()); err != nil {
 			return nil, err
 		}
@@ -1338,9 +1338,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if acct == nil {
 			return nil, ErrAccountNotExist
 		}
-		if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
-			return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
-		}
+		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
+		// }
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner()); err != nil {
 			return nil, err
 		}
