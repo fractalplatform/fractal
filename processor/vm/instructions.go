@@ -448,25 +448,25 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	t := time.Uint64()
 
 	ast, err := evm.AccountDB.GetAssetInfoByID(astID)
-	if err != nil {
+	if err != nil || ast == nil {
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
-	} else {
-		name := []byte(ast.GetAssetName())
-		datalen := len(name)
-		if uint64(datalen) > retSize.Uint64()*32 {
-			err = errors.New("out of space")
-			stack.push(evm.interpreter.intPool.getZero())
-			return nil, nil
-		}
-		memory.Set(retOffset.Uint64(), uint64(len(name)), name)
 	}
+
+	name := []byte(ast.GetAssetName())
+	datalen := len(name)
+	if uint64(datalen) > retSize.Uint64()*32 {
+		err = errors.New("out of space")
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	memory.Set(retOffset.Uint64(), uint64(len(name)), name)
 
 	amount, err := evm.AccountDB.GetAssetAmountByTime(astID, t)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
-
 		stack.push(amount)
 	}
 	evm.interpreter.intPool.put(time, assetID)
