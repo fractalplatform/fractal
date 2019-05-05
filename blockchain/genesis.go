@@ -278,7 +278,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				pname = ast.Owner
 			}
 		}
-		ast := &at.AssetObject{
+		ast := &am.IssueAsset{
 			AssetName:  asset.Name,
 			Symbol:     asset.Symbol,
 			Amount:     asset.Amount,
@@ -287,6 +287,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			Owner:      common.StrToName(asset.Owner),
 			UpperLimit: asset.UpperLimit,
 		}
+
 		payload, _ := rlp.EncodeToBytes(ast)
 		astActions = append(astActions, types.NewAction(
 			types.IssueAsset,

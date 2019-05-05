@@ -1398,7 +1398,19 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.IssueAsset(tt.args.asset); (err != nil) != tt.wantErr {
+		var asset = IssueAsset{
+			AssetName:  tt.args.asset.GetAssetName(),
+			Number:     tt.args.asset.GetAssetNumber(),
+			Symbol:     tt.args.asset.GetSymbol(),
+			Amount:     tt.args.asset.GetAssetAmount(),
+			Decimals:   tt.args.asset.GetDecimals(),
+			Founder:    tt.args.asset.GetAssetFounder(),
+			Owner:      tt.args.asset.GetAssetOwner(),
+			UpperLimit: tt.args.asset.GetUpperLimit(),
+			Contract:   tt.args.asset.GetContract(),
+			Detail:     tt.args.asset.GetAssetDetail(),
+		}
+		if err := am.IssueAsset(asset); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1496,6 +1508,19 @@ func TestAccountManager_Process(t *testing.T) {
 		AddIssue:   big.NewInt(0),
 		UpperLimit: big.NewInt(1000000000),
 	}
+	var asset0 = IssueAsset{
+		AssetName: ast0.GetAssetName(),
+		//Number:     ast0.GetAssetNumber(),
+		Symbol:     ast0.GetSymbol(),
+		Amount:     ast0.GetAssetAmount(),
+		Decimals:   ast0.GetDecimals(),
+		Founder:    ast0.GetAssetFounder(),
+		Owner:      ast0.GetAssetOwner(),
+		UpperLimit: ast0.GetUpperLimit(),
+		Contract:   ast0.GetContract(),
+		Detail:     ast0.GetAssetDetail(),
+	}
+
 	ast1 := &asset.AssetObject{
 		AssetId:    2,
 		AssetName:  "abced99",
@@ -1507,11 +1532,18 @@ func TestAccountManager_Process(t *testing.T) {
 		AddIssue:   big.NewInt(0),
 		UpperLimit: big.NewInt(1000000000),
 	}
-	payload, err := rlp.EncodeToBytes(ast0)
+	payload, err := rlp.EncodeToBytes(asset0)
 	if err != nil {
 		panic("rlp payload err")
 	}
-	payload1, err := rlp.EncodeToBytes(ast1)
+
+	var asset1 = UpdateAsset{
+		AssetID:  ast1.GetAssetId(),
+		Founder:  ast1.GetAssetFounder(),
+		Owner:    ast0.GetAssetOwner(),
+		Contract: ast0.GetContract(),
+	}
+	payload1, err := rlp.EncodeToBytes(asset1)
 	if err != nil {
 		panic("rlp payload err")
 	}
@@ -1535,6 +1567,7 @@ func TestAccountManager_Process(t *testing.T) {
 		PublicKey: pubkey1,
 		Detail:    "",
 	}
+
 	payload4, err := rlp.EncodeToBytes(aa1)
 	if err != nil {
 		panic("rlp payload err")
@@ -1882,7 +1915,21 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	if err := am.IssueAsset(ast1); err != nil {
+
+	var asset1 = IssueAsset{
+		AssetName:  ast1.GetAssetName(),
+		Number:     ast1.GetAssetNumber(),
+		Symbol:     ast1.GetSymbol(),
+		Amount:     ast1.GetAssetAmount(),
+		Decimals:   ast1.GetDecimals(),
+		Founder:    ast1.GetAssetFounder(),
+		Owner:      ast1.GetAssetOwner(),
+		UpperLimit: ast1.GetUpperLimit(),
+		Contract:   ast1.GetContract(),
+		Detail:     ast1.GetAssetDetail(),
+	}
+
+	if err := am.IssueAsset(asset1); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
@@ -1941,7 +1988,21 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	if err := am.IssueAsset(ast1); err != nil {
+
+	var asset1 = IssueAsset{
+		AssetName:  ast1.GetAssetName(),
+		Number:     ast1.GetAssetNumber(),
+		Symbol:     ast1.GetSymbol(),
+		Amount:     ast1.GetAssetAmount(),
+		Decimals:   ast1.GetDecimals(),
+		Founder:    ast1.GetAssetFounder(),
+		Owner:      ast1.GetAssetOwner(),
+		UpperLimit: ast1.GetUpperLimit(),
+		Contract:   ast1.GetContract(),
+		Detail:     ast1.GetAssetDetail(),
+	}
+
+	if err := am.IssueAsset(asset1); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
