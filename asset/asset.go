@@ -220,14 +220,16 @@ func (a *Asset) addNewAssetObject(ao *AssetObject) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	assetCount = assetCount + 1
+
 	ao.SetAssetId(assetCount)
 	//store asset object
 	aobject, err := rlp.EncodeToBytes(ao)
 	if err != nil {
 		return 0, err
 	}
+
 	//store asset name with asset id
+	assetCount = assetCount + 1
 	aid, err := rlp.EncodeToBytes(&assetCount)
 	if err != nil {
 		return 0, err
