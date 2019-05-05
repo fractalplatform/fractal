@@ -456,6 +456,7 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 		datalen := len(name)
 		if uint64(datalen) > retSize.Uint64()*32 {
 			err = errors.New("out of space")
+			stack.push(evm.interpreter.intPool.getZero())
 			return nil, nil
 		}
 		memory.Set(retOffset.Uint64(), uint64(len(name)), name)
