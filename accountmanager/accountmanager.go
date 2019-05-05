@@ -75,6 +75,26 @@ type IncAsset struct {
 	To      common.Name `json:"account,omitempty"`
 }
 
+type IssueAsset struct {
+	AssetName  string      `json:"assetName"`
+	Number     uint64      `json:"number,omitempty"`
+	Symbol     string      `json:"symbol"`
+	Amount     *big.Int    `json:"amount"`
+	Decimals   uint64      `json:"decimals"`
+	Founder    common.Name `json:"founder"`
+	Owner      common.Name `json:"owner"`
+	UpperLimit *big.Int    `json:"upperLimit"`
+	Contract   common.Name `json:"contract"`
+	Detail     string      `json:"detail"`
+}
+
+type UpdateAsset struct {
+	AssetID  uint64      `json:"assetId,omitempty"`
+	Founder  common.Name `json:"founder"`
+	Owner    common.Name `json:"owner"`
+	Contract common.Name `json:"contract"`
+}
+
 //AccountManager represents account management model.
 type AccountManager struct {
 	sdb *state.StateDB
@@ -1111,6 +1131,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
+
 func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) (uint64, error) {
 	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
@@ -1125,7 +1146,7 @@ func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.Asset
 //IssueAsset issue asset
 func (am *AccountManager) IssueAsset(asset *asset.AssetObject) (uint64, error) {
 	//check owner
-	acct, err := am.GetAccountByName(asset.GetAssetOwner())
+	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
 		return 0, err
 	}
@@ -1133,8 +1154,8 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) (uint64, error) {
 		return 0, ErrAccountNotExist
 	}
 	//check founder
-	if len(asset.GetAssetFounder()) > 0 {
-		f, err := am.GetAccountByName(asset.GetAssetFounder())
+	if len(asset.Founder) > 0 {
+		f, err := am.GetAccountByName(asset.Founder)
 		if err != nil {
 			return 0, err
 		}
@@ -1142,22 +1163,21 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) (uint64, error) {
 			return 0, ErrAccountNotExist
 		}
 	} else {
-		asset.SetAssetFounder(asset.GetAssetOwner())
+		asset.Founder = asset.Owner
 	}
 
-	name := common.StrToName(asset.GetAssetName())
+	name := common.StrToName(asset.AssetName)
 	accountID, _ := am.GetAccountIDByName(name)
 	if accountID > 0 {
 		return 0, ErrNameIsExist
 	}
 
-	assetID, err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail())
-	if err != nil {
+	if assetID, err := am.ast.IssueAsset(asset.AssetName, asset.Number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Detail); err != nil {
 		return 0, err
 	}
 
 	//add the asset to owner
-	return assetID, am.AddAccountBalanceByName(asset.GetAssetOwner(), asset.GetAssetName(), asset.GetAssetAmount())
+	return am.AddAccountBalanceByName(asset.Owner, asset.AssetName, asset.Amount)
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
@@ -1248,18 +1268,17 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 		break
 	case types.IssueAsset:
-		var asset asset.AssetObject
+		var asset IssueAsset
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return nil, err
 		}
-
-		asset.SetAssetNumber(number)
-		assetID, err := am.IssueAnyAsset(action.Sender(), &asset)
+		asset.Number = number
+    assetID,err := am.IssueAnyAsset(action.Sender(), asset)
 		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.GetAssetOwner(), 0, assetID, 0, asset.GetAssetAmount(), nil, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.Owner, 0, assetID, 0, asset.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1269,9 +1288,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-		if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
-			return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
-		}
+		// if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
+		// }
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
@@ -1298,20 +1317,20 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		internalActions = append(internalActions, internalAction)
 		break
 	case types.UpdateAsset:
-		var asset asset.AssetObject
+		var asset UpdateAsset
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return nil, err
 		}
-		acct, err := am.GetAccountByName(asset.GetAssetOwner())
+		acct, err := am.GetAccountByName(asset.Owner)
 		if err != nil {
 			return nil, err
 		}
 		if acct == nil {
 			return nil, ErrAccountNotExist
 		}
-		if len(asset.GetAssetFounder().String()) > 0 {
-			acct, err := am.GetAccountByName(asset.GetAssetFounder())
+		if len(asset.Founder.String()) > 0 {
+			acct, err := am.GetAccountByName(asset.Founder)
 			if err != nil {
 				return nil, err
 			}
@@ -1319,30 +1338,30 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 				return nil, ErrAccountNotExist
 			}
 		}
-		if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
-			return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
-		}
-		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder(), asset.GetAssetContract()); err != nil {
+		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
+		// }
+		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Owner, asset.Founder, asset.Contract); err != nil {
 			return nil, err
 		}
 		break
 	case types.SetAssetOwner:
-		var asset asset.AssetObject
+		var asset UpdateAsset
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return nil, err
 		}
-		acct, err := am.GetAccountByName(asset.GetAssetOwner())
+		acct, err := am.GetAccountByName(asset.Owner)
 		if err != nil {
 			return nil, err
 		}
 		if acct == nil {
 			return nil, ErrAccountNotExist
 		}
-		if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
-			return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
-		}
-		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner()); err != nil {
+		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
+		// }
+		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.AssetID, asset.Owner); err != nil {
 			return nil, err
 		}
 		break

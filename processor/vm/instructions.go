@@ -442,16 +442,34 @@ func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory,
 }
 
 func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	time, assetId := stack.pop(), stack.pop()
-	assetID := assetId.Uint64()
+	retOffset, retSize, time, assetID := stack.pop(), stack.pop(), stack.pop(), stack.pop()
+
+	astID := assetID.Uint64()
 	t := time.Uint64()
-	amount, err := evm.AccountDB.GetAssetAmountByTime(assetID, t)
+
+	ast, err := evm.AccountDB.GetAssetInfoByID(astID)
+	if err != nil || ast == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	name := []byte(ast.GetAssetName())
+	datalen := len(name)
+	if uint64(datalen) > retSize.Uint64()*32 {
+		err = errors.New("out of space")
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
+	memory.Set(retOffset.Uint64(), uint64(len(name)), name)
+
+	amount, err := evm.AccountDB.GetAssetAmountByTime(astID, t)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(amount)
 	}
-	evm.interpreter.intPool.put(time, assetId)
+	evm.interpreter.intPool.put(time, assetID)
 	return nil, nil
 }
 
@@ -1325,7 +1343,8 @@ func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, s
 }
 
 func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner common.Name) error {
-	asset := &asset.AssetObject{AssetId: assetID, Owner: owner}
+	//asset := &asset.AssetObject{AssetId: assetID, Owner: owner}
+	asset := &accountmanager.UpdateAsset{AssetID: assetID, Founder: "", Owner: owner, Contract: ""}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err

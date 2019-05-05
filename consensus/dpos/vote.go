@@ -264,17 +264,20 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 	}
 
 	freeze := uint64(0)
-	pstate := gstate
+	tepcho := gstate.PreEpcho
 	for i := uint64(0); i < sys.config.FreezeEpchoSize+1; i++ {
-		if pstate.Height < prod.Height {
-			break
-		}
-		freeze++
-		tstate, err := sys.GetState(pstate.PreEpcho)
+		tstate, err := sys.GetState(tepcho)
 		if err != nil {
 			return err
 		}
-		pstate = tstate
+		if tstate == nil {
+			break
+		}
+		if tstate.Height < prod.Height {
+			break
+		}
+		freeze++
+		tepcho = tstate.PreEpcho
 	}
 	if freeze < sys.config.FreezeEpchoSize {
 		return fmt.Errorf("%v freeze period %v has not arrived %v", candidate, freeze, sys.config.FreezeEpchoSize)
@@ -520,6 +523,29 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 
 	if !pstate.Dpos {
+		if pstate.Epcho != pstate.PreEpcho {
+			ppstate, err := sys.GetState(pstate.PreEpcho)
+			if err != nil {
+				return err
+			}
+			candidates := map[string]bool{}
+			activeTotalQuantity = big.NewInt(0)
+			activatedCandidateSchedule = []string{}
+			for _, candidate := range ppstate.ActivatedCandidateSchedule {
+				candidateInfo, err := sys.GetCandidate(candidate)
+				if err != nil {
+					return err
+				}
+				if candidateInfo == nil || candidateInfo.invalid() {
+					continue
+				}
+				if _, ok := candidates[candidate]; !ok {
+					candidates[candidateInfo.Name] = true
+					activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+					activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.Quantity)
+				}
+			}
+		}
 		if init := len(activatedCandidateSchedule); init > 0 {
 			index := 0
 			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {

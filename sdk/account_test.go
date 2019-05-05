@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/crypto"
@@ -102,33 +101,34 @@ func TestAsset(t *testing.T) {
 		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
 		assetname := common.StrToName(GenerateAccountName("asset", 2)).String()
 		// IssueAsset
-		hash, err = acct.IssueAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &asset.AssetObject{
-			AssetName:  assetname,
-			Symbol:     assetname[len(assetname)-4:],
-			Amount:     new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
-			Decimals:   18,
-			Owner:      accountName,
-			Founder:    accountName,
-			AddIssue:   big.NewInt(0),
+		ast1 := accountmanager.IssueAsset{
+			AssetName: assetname,
+			Symbol:    assetname[len(assetname)-4:],
+			Amount:    new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
+			Decimals:  18,
+			Owner:     accountName,
+			Founder:   accountName,
+			//AddIssue:   big.NewInt(0),
 			UpperLimit: big.NewInt(0),
-		})
+		}
+
+		hash, err = acct.IssueAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &ast1)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 
 		ast, _ := api.AssetInfoByName(assetname)
 
+		ast2 := accountmanager.UpdateAsset{
+			AssetID: ast.AssetId,
+
+			Owner:   accountName,
+			Founder: accountName,
+
+			//UpperLimit: big.NewInt(0),
+		}
+
 		// acct.UpdateAsset()
-		hash, err = acct.UpdateAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &asset.AssetObject{
-			AssetId:    ast.AssetId,
-			AssetName:  assetname,
-			Symbol:     assetname[len(assetname)-4:],
-			Amount:     new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
-			Decimals:   18,
-			Owner:      accountName,
-			Founder:    accountName,
-			AddIssue:   big.NewInt(0),
-			UpperLimit: big.NewInt(0),
-		})
+		hash, err = acct.UpdateAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &ast2)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 		So(err, ShouldBeNil)
