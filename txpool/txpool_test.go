@@ -66,7 +66,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 
 	tx0 := transaction(0, fname, tname, 100000, fkey)
 	tx1 := transaction(1, fname, tname, 100000, fkey)
-	params.DefaultChainconfig.SysTokenID = 1
+	params.DefaultChainconfig.SysTokenID = 0
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
@@ -110,7 +110,7 @@ func TestInvalidTransactions(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -156,7 +156,7 @@ func TestTransactionQueue(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -250,7 +250,7 @@ func TestTransactionChainFork(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -296,7 +296,7 @@ func TestTransactionDoubleNonce(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -374,7 +374,7 @@ func TestTransactionMissingNonce(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -404,7 +404,7 @@ func TestTransactionNonceRecovery(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -435,7 +435,7 @@ func TestTransactionDropping(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -535,7 +535,7 @@ func TestTransactionPostponing(t *testing.T) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager)
 
@@ -653,7 +653,7 @@ func TestTransactionGapFilling(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -714,7 +714,7 @@ func TestTransactionQueueAccountLimiting(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -769,7 +769,7 @@ func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 	config.GlobalQueue = config.AccountQueue*3 - 1 // reduce the queue limits to shorten test time (-1 to make it non divisible)
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager)
 
@@ -877,7 +877,7 @@ func testTransactionQueueTimeLimiting(t *testing.T, nolocals bool) {
 		remoteName = common.Name("remotename")
 
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 
 	manager, _ := am.NewAccountManager(statedb)
@@ -934,7 +934,7 @@ func TestTransactionPendingLimiting(t *testing.T) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -992,7 +992,7 @@ func TestTransactionPoolRepricing(t *testing.T) {
 	defer sub.Unsubscribe()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1117,7 +1117,7 @@ func TestTransactionPoolRepricingKeepsLocals(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1194,7 +1194,7 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1308,7 +1308,7 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1380,7 +1380,7 @@ func TestTransactionReplacement(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	fname := common.Name("fromname")
 	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
@@ -1461,7 +1461,7 @@ func testTransactionLimitingEquivalency(t *testing.T, origin uint64) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	event.Reset()
 	pool, manager := setupTxPool(fname)
@@ -1530,7 +1530,7 @@ func TestTransactionPendingGlobalLimiting(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1587,7 +1587,7 @@ func TestTransactionCapClearsFromAll(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	fname := common.Name("fromname")
 	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
@@ -1624,7 +1624,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1698,7 +1698,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 		remoteName = common.Name("remotename")
 
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 
 	manager, _ := am.NewAccountManager(statedb)
@@ -1797,7 +1797,7 @@ func TestTransactionStatusCheck(t *testing.T) {
 	defer pool.Stop()
 
 	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(1)
+	assetID := uint64(0)
 	tname := common.Name("totestname")
 	generateAccount(t, tname, manager, pool.pendingAccountManager)
 
@@ -1862,7 +1862,7 @@ func benchmarkPendingDemotion(b *testing.B, size int) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -1894,7 +1894,7 @@ func benchmarkFuturePromotion(b *testing.B, size int) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -1920,7 +1920,7 @@ func BenchmarkPoolInsert(b *testing.B) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -1950,7 +1950,7 @@ func benchmarkPoolBatchInsert(b *testing.B, size int) {
 	var (
 		fname   = common.Name("fromname")
 		tname   = common.Name("totestname")
-		assetID = uint64(1)
+		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()

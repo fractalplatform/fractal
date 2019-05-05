@@ -123,19 +123,16 @@ func TestP2PTxMsg(t *testing.T) {
 		asset      = asset.NewAsset(statedb)
 		trigger    = false
 	)
-
 	// issue asset
 	if _, err := asset.IssueAsset("ft", 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
 		t.Fatal(err)
 	}
-
 	// add balance
 	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
-	params.DefaultChainconfig.SysTokenID = 1
+	params.DefaultChainconfig.SysTokenID = 0
 	blockchain := &testChain{&testBlockChain{statedb, 1000000000, new(event.Feed)}, fname, &trigger}
-
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
@@ -157,6 +154,7 @@ func TestP2PTxMsg(t *testing.T) {
 			Bloom: &types.Bloom{},
 		},
 	}
+
 	event.SendTo(event.NewLocalStation("test", nil), nil, event.P2PTxMsg, txs)
 	for {
 		if pending, quened := pool.Stats(); pending > 0 || quened > 0 {

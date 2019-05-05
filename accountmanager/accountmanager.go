@@ -242,8 +242,9 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrAccountIsExist
 	}
 
-	assetID, _ := am.ast.GetAssetIdByName(accountName.String())
-	if assetID > 0 {
+	// asset and account name diff
+	_, err = am.ast.GetAssetIdByName(accountName.String())
+	if err == nil {
 		return ErrNameIsExist
 	}
 
@@ -450,6 +451,7 @@ func (am *AccountManager) SetAccount(acct *Account) error {
 	if err != nil {
 		return err
 	}
+
 	//am.sdb.Put(acctManagerName, acctInfoPrefix+acct.GetName().String(), b)
 	am.sdb.Put(acctManagerName, acctInfoPrefix+strconv.FormatUint(acct.GetAccountID(), 10), b)
 	return nil
@@ -937,9 +939,6 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return err
 	}
 
-	if assetID == 0 {
-		return asset.ErrAssetNotExist
-	}
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
@@ -1025,22 +1024,22 @@ func (am *AccountManager) GetCodeSize(accountName common.Name) (uint64, error) {
 //}
 
 //GetAccountFromValue  get account info via value bytes
-func (am *AccountManager) GetAccountFromValue(accountName common.Name, key string, value []byte) (*Account, error) {
-	if len(value) == 0 {
-		return nil, ErrAccountNotExist
-	}
-	if key != accountName.String()+acctInfoPrefix {
-		return nil, ErrAccountNameInvalid
-	}
-	var acct Account
-	if err := rlp.DecodeBytes(value, &acct); err != nil {
-		return nil, ErrAccountNotExist
-	}
-	if acct.AcctName != accountName {
-		return nil, ErrAccountNameInvalid
-	}
-	return &acct, nil
-}
+// func (am *AccountManager) GetAccountFromValue(accountName common.Name, key string, value []byte) (*Account, error) {
+// 	if len(value) == 0 {
+// 		return nil, ErrAccountNotExist
+// 	}
+// 	if key != accountName.String()+acctInfoPrefix {
+// 		return nil, ErrAccountNameInvalid
+// 	}
+// 	var acct Account
+// 	if err := rlp.DecodeBytes(value, &acct); err != nil {
+// 		return nil, ErrAccountNotExist
+// 	}
+// 	if acct.AcctName != accountName {
+// 		return nil, ErrAccountNameInvalid
+// 	}
+// 	return &acct, nil
+// }
 
 // CanTransfer check if can transfer.
 func (am *AccountManager) CanTransfer(accountName common.Name, assetID uint64, value *big.Int) (bool, error) {
@@ -1294,7 +1293,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.DestroyAsset(common.Name(accountManagerContext.ChainConfig.AssetName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break

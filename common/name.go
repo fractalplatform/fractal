@@ -67,6 +67,10 @@ func (n Name) IsValid(reg *regexp.Regexp) bool {
 
 // IsChildren name children
 func (n Name) IsChildren(name Name, reg *regexp.Regexp) bool {
+	if strings.Compare(n.String(), name.String()) == 0 {
+		return false
+	}
+
 	if strings.Contains(name.String(), n.String()) {
 		parent := FindStringSubmatch(reg, n.String())
 		children := FindStringSubmatch(reg, name.String())
