@@ -1300,6 +1300,7 @@ func TestAccountManager_TransferAsset(t *testing.T) {
 	}{
 		//
 		{"tranferok", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeed"), 1, big.NewInt(3)}, false},
+		{"tranferfail", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeed"), 1, big.NewInt(-3)}, true},
 	}
 	val, err := acctm.GetAccountBalanceByID(common.Name("a123456789aeee"), 1, 0)
 	if err != nil {
@@ -1549,12 +1550,12 @@ func TestAccountManager_Process(t *testing.T) {
 		panic("rlp payload err")
 	}
 
-	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 0, big.NewInt(0), payload, nil)
-	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload2, nil)
-	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload1, nil)
-	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(sysName), 1, 1, 2, big.NewInt(10), payload3, nil)
-	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload4, nil)
-	action5 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name(sysName), 1, 1, 2, big.NewInt(0), payload5, nil)
+	action := types.NewAction(types.IssueAsset, common.Name("a123456789aeee"), common.Name(params.DefaultChainconfig.AssetName), 1, 1, 0, big.NewInt(0), payload, nil)
+	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeee"), common.Name(params.DefaultChainconfig.AssetName), 1, 1, 2, big.NewInt(0), payload2, nil)
+	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeee"), common.Name(params.DefaultChainconfig.AssetName), 1, 1, 2, big.NewInt(0), payload1, nil)
+	action3 := types.NewAction(types.CreateAccount, common.Name("a123456789aeee"), common.Name(params.DefaultChainconfig.AccountName), 1, 1, 2, big.NewInt(10), payload3, nil)
+	action4 := types.NewAction(types.UpdateAccount, common.Name("a123456789addd"), common.Name(params.DefaultChainconfig.AccountName), 1, 1, 2, big.NewInt(0), payload4, nil)
+	action5 := types.NewAction(types.UpdateAccountAuthor, common.Name("a123456789addd"), common.Name(params.DefaultChainconfig.AccountName), 1, 1, 2, big.NewInt(0), payload5, nil)
 
 	//action5 := types.NewAction(types.DeleteAccount, common.Name("123asdf2"), common.Name("123asdf2"), 1, 1, 2, big.NewInt(0), pubkey1[:])
 	//action6 := types.NewAction(types.Transfer, common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, 1, 2, big.NewInt(1), pubkey1[:])
@@ -1870,4 +1871,135 @@ func TestAccountManager_SubAccount(t *testing.T) {
 		}
 	}
 
+}
+
+func TestAccountManager_TransferContractAsset(t *testing.T) {
+	ast1, err := asset.NewAssetObject("zi0123456789zi2", 0, "zi2", big.NewInt(1000), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(100000), common.Name("a123456789aeee"), "")
+	if err != nil {
+		t.Fatal("NewAssetObject err", err)
+	}
+	am := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+	if err := am.IssueAsset(ast1); err != nil {
+		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
+	}
+	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
+
+	type fields struct {
+		sdb *state.StateDB
+		ast *asset.Asset
+	}
+	type args struct {
+		fromAccount common.Name
+		toAccount   common.Name
+		assetID     uint64
+		value       *big.Int
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		//
+		{"tranferok", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeed"), ast1.AssetId, big.NewInt(3)}, false},
+		{"tranferfail", fields{sdb, ast}, args{common.Name("a123456789aeed"), common.Name("a123456789aeed"), ast1.AssetId, big.NewInt(3)}, true},
+	}
+	val, err := acctm.GetAccountBalanceByID(common.Name("a123456789aeee"), ast1.AssetId, 0)
+	if err != nil {
+		t.Error("TransferAsset GetAccountBalanceByID err")
+	}
+	if val.Cmp(big.NewInt(1000)) != 0 {
+		t.Errorf("TransferAsset GetAccountBalanceByID val=%v", val)
+	}
+
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		if err := am.TransferAsset(tt.args.fromAccount, tt.args.toAccount, tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.TransferAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+	val1, err := acctm.GetAccountBalanceByID(common.Name("a123456789aeee"), ast1.AssetId, 0)
+	if err != nil {
+		t.Error("TransferAsset GetAccountBalanceByID err")
+	}
+	if val1.Cmp(big.NewInt(997)) != 0 {
+		t.Errorf("TransferAsset1 GetAccountBalanceByID val=%v", val1)
+	}
+}
+func TestAccountManager_ProcessContractAsset(t *testing.T) {
+	ast1, err := asset.NewAssetObject("zi0123456789zi3", 0, "zi3", big.NewInt(1000), 18, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(100000), common.Name("a123456789aeee"), "")
+	if err != nil {
+		t.Fatal("NewAssetObject err", err)
+	}
+	am := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+	if err := am.IssueAsset(ast1); err != nil {
+		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
+	}
+	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
+
+	type fields struct {
+		sdb *state.StateDB
+		ast *asset.Asset
+	}
+	type args struct {
+		action *types.Action
+	}
+
+	inc := &IncAsset{
+		AssetId: ast1.AssetId,
+		Amount:  big.NewInt(100),
+		To:      common.Name("a123456789aeee"),
+	}
+	payload2, err := rlp.EncodeToBytes(inc)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	ast01 := &asset.AssetObject{
+		AssetId:    ast1.AssetId,
+		AssetName:  "abced99",
+		Symbol:     "aaa",
+		Amount:     big.NewInt(100000000),
+		Decimals:   2,
+		Founder:    common.Name(sysName),
+		Owner:      common.Name(sysName),
+		AddIssue:   big.NewInt(0),
+		UpperLimit: big.NewInt(1000000000),
+	}
+	payload1, err := rlp.EncodeToBytes(ast01)
+	if err != nil {
+		panic("rlp payload err")
+	}
+
+	action1 := types.NewAction(types.IncreaseAsset, common.Name("a123456789aeed"), common.Name(params.DefaultChainconfig.AssetName), 1, 1, 2, big.NewInt(0), payload2, nil)
+	action2 := types.NewAction(types.UpdateAsset, common.Name("a123456789aeed"), common.Name(params.DefaultChainconfig.AssetName), 1, 1, 2, big.NewInt(0), payload1, nil)
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		//
+		{"increase", fields{sdb, ast}, args{action1}, true},
+		{"updateasset", fields{sdb, ast}, args{action2}, true},
+	}
+
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		if _, err := am.Process(&types.AccountManagerContext{Action: tt.args.action, ChainConfig: params.DefaultChainconfig, Number: 0}); (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
 }

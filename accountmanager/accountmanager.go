@@ -1056,14 +1056,13 @@ func (am *AccountManager) CanTransfer(accountName common.Name, assetID uint64, v
 
 //TransferAsset transfer asset
 func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount common.Name, assetID uint64, value *big.Int) error {
-	if value.Sign() == -1 {
-		return ErrNegativeValue
+	if !am.ast.HasAccess(assetID, fromAccount, toAccount) {
+		return fmt.Errorf("no permissions of asset %v", assetID)
 	}
-
-	if ast, err := am.GetAssetInfoByID(assetID); err != nil {
-		return err
-	} else if len(ast.Contract.String()) != 0 && !(fromAccount == ast.Contract || toAccount == ast.Contract) {
-		return ErrInvalidReceiptAsset
+	if sign := value.Sign(); sign == 0 {
+		return nil
+	} else if sign == -1 {
+		return ErrNegativeValue
 	}
 
 	//check from account
@@ -1074,20 +1073,21 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if fromAcct == nil {
 		return ErrAccountNotExist
 	}
-	if value.Cmp(big.NewInt(0)) < 0 {
-		return ErrAmountValueInvalid
-	}
-	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
-		return nil
-	}
+
 	//check from account balance
 	val, err := fromAcct.GetBalanceByID(assetID)
 	if err != nil {
 		return err
 	}
+
 	if val.Cmp(big.NewInt(0)) < 0 || val.Cmp(value) < 0 {
 		return ErrInsufficientBalance
 	}
+
+	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
+		return nil
+	}
+
 	fromAcct.SetBalance(assetID, new(big.Int).Sub(val, value))
 	//check to account
 	toAcct, err := am.GetAccountByName(toAccount)
@@ -1194,22 +1194,14 @@ func (am *AccountManager) Process(accountManagerContext *types.AccountManagerCon
 func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
+	if err := action.CheckValid(accountManagerContext.ChainConfig); err != nil {
+		return nil, err
+	}
 
 	var internalActions []*types.InternalAction
-
-	//if !action.CheckValue(accountManagerContext.ChainConfig) {
-	//	return nil, ErrAmountValueInvalid
-	//}
-
-	//if action.Type() != types.Transfer && action.Recipient() != common.Name(sysName) {
-	//	return nil, ErrInvalidReceipt
-	//}
-
 	//transfer
-	if action.Value().Cmp(big.NewInt(0)) > 0 {
-		if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
-			return nil, err
-		}
+	if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+		return nil, err
 	}
 
 	//transaction
@@ -1276,6 +1268,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
+		// if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
+		// }
 		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
@@ -1323,6 +1318,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 				return nil, ErrAccountNotExist
 			}
 		}
+		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
+		// }
 		if err := am.ast.UpdateAsset(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner(), asset.GetAssetFounder(), asset.GetAssetContract()); err != nil {
 			return nil, err
 		}
@@ -1340,6 +1338,9 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if acct == nil {
 			return nil, ErrAccountNotExist
 		}
+		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
+		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
+		// }
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.GetAssetId(), asset.GetAssetOwner()); err != nil {
 			return nil, err
 		}

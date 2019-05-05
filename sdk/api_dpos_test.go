@@ -63,10 +63,29 @@ func TestDposVotersByVoter(t *testing.T) {
 		//So(info, ShouldNotBeEmpty)
 	})
 }
+
+func TestDposVotersByVoterByHeight(t *testing.T) {
+	Convey("dpos_votersByVoterByHeight", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposVotersByVoterByHeight(0, systemaccount, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
 func TestDposVotersByCandidate(t *testing.T) {
 	Convey("dpos_votersByCandidate", t, func() {
 		api := NewAPI(rpchost)
 		info, err := api.DposVotersByCandidate(systemaccount, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposVotersByCandidateByHeight(t *testing.T) {
+	Convey("dpos_votersByCandidateByHeight", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposVotersByCandidateByHeight(0, systemaccount, true)
 		So(err, ShouldBeNil)
 		_ = info
 		//So(info, ShouldNotBeEmpty)
@@ -81,10 +100,61 @@ func TestDposAvailableStake(t *testing.T) {
 	})
 }
 
+func TestDposAvailableStakebyHeight(t *testing.T) {
+	SkipConvey("dpos_availableStakeByHeight", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposAvailableStakeByHeight(0, systemaccount)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
 func TestDposValidCandidates(t *testing.T) {
 	Convey("dpos_validCandidates", t, func() {
 		api := NewAPI(rpchost)
 		info, err := api.DposValidCandidates()
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposValidCandidatesByHeight(t *testing.T) {
+	Convey("dpos_validCandidatesByHeight", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposValidCandidatesByHeight(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposNextValidCandidates(t *testing.T) {
+	Convey("dpos_nextValidCandidates", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposNextValidCandidates()
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposNextValidCandidatesByHeight(t *testing.T) {
+	Convey("dpos_nextValidCandidatesByHeight", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposNextValidCandidatesByHeight(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposSnapShotTime(t *testing.T) {
+	Convey("dpos_snapShotTime", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposSnapShotTime()
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposSnapShotTimeByHeight(t *testing.T) {
+	Convey("dpos_snapShotTimeByHeight", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposSnapShotTimeByHeight(0)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})
