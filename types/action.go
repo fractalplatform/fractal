@@ -18,6 +18,7 @@ package types
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -156,12 +157,12 @@ func (a *Action) GetSign() []*SignData {
 }
 
 //CheckValid Check the validity of all fields
-func (a *Action) CheckValid(conf *params.ChainConfig) bool {
+func (a *Action) CheckValid(conf *params.ChainConfig) error {
 	//check To
 	switch a.Type() {
 	case CreateContract:
 		if a.data.From != a.data.To {
-			return false
+			return fmt.Errorf("Receipt should is %v", a.data.From)
 		}
 		break
 	case CallContract:
@@ -175,8 +176,7 @@ func (a *Action) CheckValid(conf *params.ChainConfig) bool {
 		fallthrough
 	case UpdateAccountAuthor:
 		if a.data.To.String() != conf.AccountName {
-			//fmt.Println("fanzhen to = ", a.data.To.String(), conf.AccountName)
-			return false
+			return fmt.Errorf("Receipt should is %v", conf.AccountName)
 		}
 		break
 	//asset
@@ -190,7 +190,7 @@ func (a *Action) CheckValid(conf *params.ChainConfig) bool {
 		fallthrough
 	case UpdateAsset:
 		if a.data.To.String() != conf.AssetName {
-			return false
+			return fmt.Errorf("Receipt should is %v", conf.AssetName)
 		}
 		break
 	case Transfer:
@@ -210,10 +210,13 @@ func (a *Action) CheckValid(conf *params.ChainConfig) bool {
 		fallthrough
 	case ExitTakeOver:
 		if a.data.To.String() != conf.DposName {
-			return false
+			return fmt.Errorf("Receipt should is %v", conf.AssetName)
+		}
+		if a.data.AssetID != conf.SysTokenID {
+			return fmt.Errorf("Asset id should is %v", conf.SysTokenID)
 		}
 	default:
-		return false
+		return fmt.Errorf("Receipt undefined")
 	}
 
 	//check value
@@ -231,10 +234,13 @@ func (a *Action) CheckValid(conf *params.ChainConfig) bool {
 	case RegCandidate:
 		fallthrough
 	case UpdateCandidate:
-		return true
+		return nil
 	default:
 	}
-	return a.Value().Cmp(big.NewInt(0)) == 0
+	if a.Value().Cmp(big.NewInt(0)) != 0 {
+		return fmt.Errorf("Value should is zero")
+	}
+	return nil
 }
 
 // Type returns action's type.

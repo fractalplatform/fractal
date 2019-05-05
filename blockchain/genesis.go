@@ -212,6 +212,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	chainName := common.Name(g.Config.ChainName)
 	accoutName := common.Name(g.Config.AccountName)
+	assetName := common.Name(g.Config.AssetName)
 	// chain name
 	act := &am.AccountAction{
 		AccountName: chainName,
@@ -290,7 +291,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		astActions = append(astActions, types.NewAction(
 			types.IssueAsset,
 			pname,
-			accoutName,
+			assetName,
 			0,
 			0,
 			0,
