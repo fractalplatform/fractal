@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 
@@ -32,6 +33,12 @@ type StorageAuthor struct {
 	Type    AuthorType
 	DataRaw rlp.RawValue
 	Weight  uint64
+}
+
+type AuthorJSON struct {
+	Type     AuthorType
+	OwnerStr string
+	Weight   uint64
 }
 
 func NewAuthor(owner Owner, weight uint64) *Author {
@@ -123,4 +130,35 @@ func (a *Author) decode(sa *StorageAuthor) error {
 		return nil
 	}
 	return errors.New("Author decode failed")
+}
+
+func (a *Author) MarshalJSON() ([]byte, error) {
+	switch aTy := a.Owner.(type) {
+	case Name:
+		return json.Marshal(&AuthorJSON{Type: AccountNameType, OwnerStr: aTy.String(), Weight: a.Weight})
+	case PubKey:
+		return json.Marshal(&AuthorJSON{Type: PubKeyType, OwnerStr: aTy.String(), Weight: a.Weight})
+	case Address:
+		return json.Marshal(&AuthorJSON{Type: AddressType, OwnerStr: aTy.String(), Weight: a.Weight})
+	}
+	return nil, errors.New("Author marshal failed")
+}
+
+func (a *Author) UnmarshalJSON(data []byte) error {
+	aj := &AuthorJSON{}
+	if err := json.Unmarshal(data, aj); err != nil {
+		return err
+	}
+	switch aj.Type {
+	case AccountNameType:
+		a.Owner = Name(aj.OwnerStr)
+		a.Weight = aj.Weight
+	case PubKeyType:
+		a.Owner = HexToPubKey(aj.OwnerStr)
+		a.Weight = aj.Weight
+	case AddressType:
+		a.Owner = HexToAddress(aj.OwnerStr)
+		a.Weight = aj.Weight
+	}
+	return nil
 }
