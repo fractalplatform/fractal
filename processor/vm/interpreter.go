@@ -207,9 +207,11 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 			in.cfg.Tracer.CaptureState(in.evm, pc, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
 			logged = true
 		}
-
+		fmt.Println("\ninterpreter pc=", pc, "\tcode=", contract.Code[pc], "\tname=", op)
 		// execute the operation
 		res, err := operation.execute(&pc, in.evm, contract, mem, stack)
+		stack.DebugPrint()
+		mem.Print()
 		// verifyPool is a build flag. Pool verification makes sure the integrity
 		// of the integer pool by comparing values to a default value.
 		if verifyPool {

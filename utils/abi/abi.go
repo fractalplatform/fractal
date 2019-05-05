@@ -44,6 +44,49 @@ func JSON(reader io.Reader) (ABI, error) {
 	return abi, nil
 }
 
+// InputsUnpack input in v according to the abi specification
+func (abi ABI) InputsUnPack(v interface{}, name string, input []byte) error {
+	if len(input) == 0 {
+		return fmt.Errorf("abi: unmarshalling empty output")
+	}
+	// since there can't be naming collisions with contracts and events,
+	// we need to decide whether we're calling a method or an event
+	if method, ok := abi.Methods[name]; ok {
+		if len(input)%32 != 0 {
+			return fmt.Errorf("abi: improperly formatted output")
+		}
+		return method.Inputs.Unpack(v, input)
+	} else if event, ok := abi.Events[name]; ok {
+		return event.Inputs.Unpack(v, input)
+	}
+	return fmt.Errorf("abi: could not locate named method or event")
+}
+
+// OutputsPack pack the outputs
+func (abi ABI) OutputsPack(name string, args ...interface{}) ([]byte, error) {
+	// Fetch the ABI of the requested method
+	if name == "" {
+		// constructor
+		arguments, err := abi.Constructor.Inputs.Pack(args...)
+		if err != nil {
+			return nil, err
+		}
+		return arguments, nil
+
+	}
+	method, exist := abi.Methods[name]
+	if !exist {
+		return nil, fmt.Errorf("method '%s' not found", name)
+	}
+
+	arguments, err := method.Outputs.Pack(args...)
+	if err != nil {
+		return nil, err
+	}
+	// Pack up the method ID too if not a constructor and return
+	return append(method.Id(), arguments...), nil
+}
+
 // Pack the given method name to conform the ABI. Method call's data
 // will consist of method_id, args0, arg1, ... argN. Method id consists
 // of 4 bytes and arguments are all 32 bytes.

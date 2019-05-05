@@ -442,16 +442,37 @@ func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory,
 }
 
 func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	time, assetId := stack.pop(), stack.pop()
-	assetID := assetId.Uint64()
-	t := time.Uint64()
-	amount, err := evm.AccountDB.GetAssetAmountByTime(assetID, t)
+	offset, size := stack.pop(), stack.pop()
+
+	type getassetinput struct {
+		AssetID *big.Int
+		Time2   *big.Int
+	}
+	var i getassetinput
+
+	data := memory.Get(offset.Int64(), size.Int64())
+
+	InputsUnPack("system.abi", "testdecode", &i, data)
+	//var a = 1
+	//var b = 22
+	fmt.Println("value =", i.AssetID, i.Time2)
+
+	ret, err := OutputsPack("system.abi", "testdecode", "testcontract", "fractal.admin", "fractal.admin", big.NewInt(1), big.NewInt(22))
+	datalen := len(ret)
+	if uint64(datalen) > size.Uint64()*32 {
+		err = errors.New("out of space")
+	}
+	//assetID := assetId.Uint64()
+	//t := time.Uint64()
+	//amount, err := evm.AccountDB.GetAssetAmountByTime(assetID, t)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
-		stack.push(amount)
+		//stack.push(amount)
 	}
-	evm.interpreter.intPool.put(time, assetId)
+
+	memory.Set(offset.Uint64(), uint64(datalen), ret)
+	//evm.interpreter.intPool.put(time, assetId)
 	return nil, nil
 }
 
