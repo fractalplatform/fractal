@@ -343,6 +343,41 @@ func (t *testTask) Do(srv *Server) {
 	t.called = true
 }
 
+func TestServerBadNodes(t *testing.T) {
+	badNode := newkey()
+	badID := enode.PubkeyToIDV4(&badNode.PublicKey)
+	srv := &Server{
+		Config: &Config{
+			PrivateKey: newkey(),
+			MaxPeers:   10,
+			NoDial:     true,
+		},
+	}
+	if err := srv.Start(); err != nil {
+		t.Fatalf("could not start: %v", err)
+	}
+	defer srv.Stop()
+	newconn := func(id enode.ID) *conn {
+		fd, _ := net.Pipe()
+		tx := newTestTransport(&badNode.PublicKey, fd)
+		node := enode.SignNull(new(enr.Record), id)
+		return &conn{fd: fd, transport: tx, flags: inboundConn, node: node, cont: make(chan error)}
+	}
+
+	c := newconn(badID)
+	if err := srv.checkpoint(c, srv.posthandshake); err != nil {
+		t.Error("wrong error for insert:", err)
+	}
+	srv.AddBadNode(c.node)
+	if err := srv.checkpoint(c, srv.posthandshake); err != DiscBadNode {
+		t.Error("wrong error for insert:", err)
+	}
+	srv.AddTrustedPeer(c.node)
+	if err := srv.checkpoint(c, srv.posthandshake); err != nil {
+		t.Error("wrong error for insert:", err)
+	}
+}
+
 // This test checks that connections are disconnected
 // just after the encryption handshake when the server is
 // at capacity. Trusted connections should still be accepted.
