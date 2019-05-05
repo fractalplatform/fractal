@@ -1414,7 +1414,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			Contract:   tt.args.asset.GetContract(),
 			Detail:     tt.args.asset.GetAssetDetail(),
 		}
-		if err := am.IssueAsset(asset); (err != nil) != tt.wantErr {
+		if _, err := am.IssueAsset(asset); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1920,7 +1920,6 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		ast: ast,
 	}
 
-
 	var asset1 = IssueAsset{
 		AssetName:  ast1.GetAssetName(),
 		Number:     ast1.GetAssetNumber(),
@@ -1934,7 +1933,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		Detail:     ast1.GetAssetDetail(),
 	}
 
-	if err := am.IssueAsset(asset1); err != nil {
+	if _, err := am.IssueAsset(asset1); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
@@ -1994,7 +1993,6 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		ast: ast,
 	}
 
-
 	var asset1 = IssueAsset{
 		AssetName:  ast1.GetAssetName(),
 		Number:     ast1.GetAssetNumber(),
@@ -2008,7 +2006,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		Detail:     ast1.GetAssetDetail(),
 	}
 
-	if err := am.IssueAsset(asset1); err != nil {
+	if _, err := am.IssueAsset(asset1); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())

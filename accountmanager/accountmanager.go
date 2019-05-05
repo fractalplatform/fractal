@@ -1131,20 +1131,17 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
+//
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset) (uint64, error) {
+	if !am.ast.IsValidOwner(fromName, asset.AssetName) {
+		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+	}
 
-func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) (uint64, error) {
-	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
-		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
-	}
-	assetID, err := am.IssueAsset(asset)
-	if err != nil {
-		return 0, err
-	}
-	return assetID, nil
+	return am.IssueAsset(asset)
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset *asset.AssetObject) (uint64, error) {
+func (am *AccountManager) IssueAsset(asset IssueAsset) (uint64, error) {
 	//check owner
 	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
@@ -1172,12 +1169,13 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) (uint64, error) {
 		return 0, ErrNameIsExist
 	}
 
-	if assetID, err := am.ast.IssueAsset(asset.AssetName, asset.Number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Detail); err != nil {
+	assetID, err := am.ast.IssueAsset(asset.AssetName, asset.Number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Detail)
+	if err != nil {
 		return 0, err
 	}
 
 	//add the asset to owner
-	return am.AddAccountBalanceByName(asset.Owner, asset.AssetName, asset.Amount)
+	return assetID, am.AddAccountBalanceByName(asset.Owner, asset.AssetName, asset.Amount)
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
@@ -1274,7 +1272,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 		asset.Number = number
-    assetID,err := am.IssueAnyAsset(action.Sender(), asset)
+		assetID, err := am.IssueAnyAsset(action.Sender(), asset)
 		if err != nil {
 			return nil, err
 		}
