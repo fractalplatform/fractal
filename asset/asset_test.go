@@ -424,7 +424,7 @@ func TestAsset_IssueAsset(t *testing.T) {
 		a := &Asset{
 			sdb: tt.fields.sdb,
 		}
-		if err := a.IssueAsset(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, big.NewInt(9999999999), common.Name(""), ""); (err != nil) != tt.wantErr {
+		if _, err := a.IssueAsset(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, big.NewInt(9999999999), common.Name(""), ""); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Asset.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}

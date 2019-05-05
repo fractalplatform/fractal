@@ -1112,35 +1112,35 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
-func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) error {
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset *asset.AssetObject) (uint64, error) {
 	if !am.ast.IsValidOwner(fromName, asset.GetAssetName()) {
-		return fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
+		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.GetAssetName())
 	}
-
-	if err := am.IssueAsset(asset); err != nil {
-		return err
+	assetID, err := am.IssueAsset(asset)
+	if err != nil {
+		return 0, err
 	}
-	return nil
+	return assetID, nil
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
+func (am *AccountManager) IssueAsset(asset *asset.AssetObject) (uint64, error) {
 	//check owner
 	acct, err := am.GetAccountByName(asset.GetAssetOwner())
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if acct == nil {
-		return ErrAccountNotExist
+		return 0, ErrAccountNotExist
 	}
 	//check founder
 	if len(asset.GetAssetFounder()) > 0 {
 		f, err := am.GetAccountByName(asset.GetAssetFounder())
 		if err != nil {
-			return err
+			return 0, err
 		}
 		if f == nil {
-			return ErrAccountNotExist
+			return 0, ErrAccountNotExist
 		}
 	} else {
 		asset.SetAssetFounder(asset.GetAssetOwner())
@@ -1149,15 +1149,16 @@ func (am *AccountManager) IssueAsset(asset *asset.AssetObject) error {
 	name := common.StrToName(asset.GetAssetName())
 	accountID, _ := am.GetAccountIDByName(name)
 	if accountID > 0 {
-		return ErrNameIsExist
+		return 0, ErrNameIsExist
 	}
 
-	if err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail()); err != nil {
-		return err
+	assetID, err := am.ast.IssueAsset(asset.GetAssetName(), asset.GetAssetNumber(), asset.GetSymbol(), asset.GetAssetAmount(), asset.GetDecimals(), asset.GetAssetFounder(), asset.GetAssetOwner(), asset.GetUpperLimit(), asset.GetContract(), asset.GetAssetDetail())
+	if err != nil {
+		return 0, err
 	}
 
 	//add the asset to owner
-	return am.AddAccountBalanceByName(asset.GetAssetOwner(), asset.GetAssetName(), asset.GetAssetAmount())
+	return assetID, am.AddAccountBalanceByName(asset.GetAssetOwner(), asset.GetAssetName(), asset.GetAssetAmount())
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
@@ -1255,10 +1256,11 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 
 		asset.SetAssetNumber(number)
-		if err := am.IssueAnyAsset(action.Sender(), &asset); err != nil {
+		assetID, err := am.IssueAnyAsset(action.Sender(), &asset)
+		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.GetAssetOwner(), 0, asset.GetAssetId(), 0, asset.GetAssetAmount(), nil, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.GetAssetOwner(), 0, assetID, 0, asset.GetAssetAmount(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break

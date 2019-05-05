@@ -1398,7 +1398,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.IssueAsset(tt.args.asset); (err != nil) != tt.wantErr {
+		if _, err := am.IssueAsset(tt.args.asset); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1882,7 +1882,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	if err := am.IssueAsset(ast1); err != nil {
+	if _, err := am.IssueAsset(ast1); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
@@ -1941,7 +1941,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	if err := am.IssueAsset(ast1); err != nil {
+	if _, err := am.IssueAsset(ast1); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())

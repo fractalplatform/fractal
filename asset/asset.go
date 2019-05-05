@@ -277,24 +277,24 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //IssueAsset issue asset
-func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) error {
+func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) (uint64, error) {
 	assetId, err := a.GetAssetIdByName(assetName)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if assetId > 0 {
-		return ErrAssetIsExist
+		return 0, ErrAssetIsExist
 	}
 
 	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, detail)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	assetId, err = a.addNewAssetObject(ao)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return assetId, nil
 }
 
 //DestroyAsset destroy asset
