@@ -17,6 +17,7 @@
 package sdk
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -26,6 +27,7 @@ func TestAccountIsExist(t *testing.T) {
 	Convey("account_accountIsExist", t, func() {
 		api := NewAPI(rpchost)
 		existed, err := api.AccountIsExist(systemaccount)
+		fmt.Printf("====> %v\n", existed)
 		So(err, ShouldBeNil)
 		So(existed, ShouldBeTrue)
 	})
@@ -34,6 +36,7 @@ func TestAccountInfo(t *testing.T) {
 	Convey("account_getAccountByName", t, func() {
 		api := NewAPI(rpchost)
 		acct, err := api.AccountInfo(systemaccount)
+		fmt.Printf("====> %v\n", acct)
 		So(err, ShouldBeNil)
 		So(acct, ShouldNotBeNil)
 	})
@@ -74,6 +77,7 @@ func TestBalanceByAssetID(t *testing.T) {
 	Convey("account_getAccountBalanceByID", t, func() {
 		api := NewAPI(rpchost)
 		balance, err := api.BalanceByAssetID(systemaccount, systemassetid, 0)
+		fmt.Printf("=====> %v : %v\n", balance, err)
 		So(err, ShouldBeNil)
 		So(balance, ShouldNotBeNil)
 	})

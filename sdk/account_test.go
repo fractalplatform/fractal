@@ -43,7 +43,7 @@ var (
 	assetaccount    = params.DefaultChainconfig.AssetName
 	systemprivkey   = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
 	systemassetname = params.DefaultChainconfig.SysToken
-	systemassetid   = uint64(1)
+	systemassetid   = uint64(0)
 	chainid         = big.NewInt(1)
 	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
 	tGas            = uint64(90000)

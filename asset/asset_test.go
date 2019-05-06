@@ -103,16 +103,16 @@ func TestAsset_GetAssetObjectByName(t *testing.T) {
 	}
 
 	ao, _ := NewAssetObject("ft", 0, "zz", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
-	ao.SetAssetId(1)
+	//ao.SetAssetId(0)
 	ast.addNewAssetObject(ao)
 	ao1, _ := NewAssetObject("ft2", 0, "zz2", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
-	ao1.SetAssetId(2)
+	//ao1.SetAssetId(1)
 	ast.addNewAssetObject(ao1)
 	ao2, _ := NewAssetObject("ft0", 0, "zz0", big.NewInt(1000), 0, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
-	ao1.SetAssetId(2)
+	//ao1.SetAssetId(2)
 	ast.addNewAssetObject(ao2)
 	ao3, _ := NewAssetObject("ftc", 0, "zzc", big.NewInt(1000), 0, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name("a123456789aeee"), "")
-	ao3.SetAssetId(4)
+	//ao3.SetAssetId(3)
 	ast.addNewAssetObject(ao3)
 	tests := []struct {
 		name    string
@@ -163,7 +163,7 @@ func TestAsset_addNewAssetObject(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{"addnil", fields{astdb}, args{nil}, 0, true},
-		{"add", fields{astdb}, args{ao3}, 5, false},
+		{"add", fields{astdb}, args{ao3}, 4, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{
@@ -196,8 +196,8 @@ func TestAsset_GetAssetIdByName(t *testing.T) {
 	}{
 		//
 		{"normal", fields{astdb}, args{""}, 0, true},
-		{"normal", fields{astdb}, args{"ft"}, 1, false},
-		{"wrong", fields{astdb}, args{"ft2"}, 2, false},
+		{"normal", fields{astdb}, args{"ft"}, 0, false},
+		{"wrong", fields{astdb}, args{"ft2"}, 1, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{
@@ -223,7 +223,7 @@ func TestAsset_GetAssetObjectById(t *testing.T) {
 	}
 
 	ao, _ := NewAssetObject("ft", 0, "zz", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
-	ao.SetAssetId(1)
+	ao.SetAssetId(0)
 	ast.IssueAssetObject(ao)
 	tests := []struct {
 		name    string
@@ -233,8 +233,8 @@ func TestAsset_GetAssetObjectById(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"normal", fields{astdb}, args{0}, nil, true},
-		{"normal", fields{astdb}, args{1}, ao, false},
+		//{"normal", fields{astdb}, args{0}, nil, true},
+		{"normal2", fields{astdb}, args{0}, ao, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{
@@ -290,41 +290,41 @@ func TestAsset_getAssetCount(t *testing.T) {
 	}
 }
 
-func TestAsset_GetAllAssetObject(t *testing.T) {
-	type fields struct {
-		sdb *state.StateDB
-	}
-	aslice := make([]*AssetObject, 0)
-	ao, _ := ast.GetAssetObjectById(1)
-	aslice = append(aslice, ao)
-	ao, _ = ast.GetAssetObjectById(2)
-	aslice = append(aslice, ao)
-	ao, _ = ast.GetAssetObjectById(3)
-	aslice = append(aslice, ao)
+// func TestAsset_GetAllAssetObject(t *testing.T) {
+// 	type fields struct {
+// 		sdb *state.StateDB
+// 	}
+// 	aslice := make([]*AssetObject, 0)
+// 	ao, _ := ast.GetAssetObjectById(1)
+// 	aslice = append(aslice, ao)
+// 	ao, _ = ast.GetAssetObjectById(2)
+// 	aslice = append(aslice, ao)
+// 	ao, _ = ast.GetAssetObjectById(3)
+// 	aslice = append(aslice, ao)
 
-	tests := []struct {
-		name    string
-		fields  fields
-		want    []*AssetObject
-		wantErr bool
-	}{
-		//
-		//{"getall", fields{astdb}, aslice, false},
-	}
-	for _, tt := range tests {
-		a := &Asset{
-			sdb: tt.fields.sdb,
-		}
-		got, err := a.GetAllAssetObject()
-		if (err != nil) != tt.wantErr {
-			t.Errorf("%q. Asset.GetAllAssetObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
-			continue
-		}
-		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("%q. Asset.GetAllAssetObject() = %v, want %v", tt.name, got, tt.want)
-		}
-	}
-}
+// 	tests := []struct {
+// 		name    string
+// 		fields  fields
+// 		want    []*AssetObject
+// 		wantErr bool
+// 	}{
+// 		//
+// 		//{"getall", fields{astdb}, aslice, false},
+// 	}
+// 	for _, tt := range tests {
+// 		a := &Asset{
+// 			sdb: tt.fields.sdb,
+// 		}
+// 		got, err := a.GetAllAssetObject()
+// 		if (err != nil) != tt.wantErr {
+// 			t.Errorf("%q. Asset.GetAllAssetObject() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+// 			continue
+// 		}
+// 		if !reflect.DeepEqual(got, tt.want) {
+// 			t.Errorf("%q. Asset.GetAllAssetObject() = %v, want %v", tt.name, got, tt.want)
+// 		}
+// 	}
+// }
 
 func TestAsset_SetAssetObject(t *testing.T) {
 	type fields struct {
@@ -335,7 +335,7 @@ func TestAsset_SetAssetObject(t *testing.T) {
 	}
 
 	ao4, _ := NewAssetObject("ft4", 0, "zz4", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
-	ao4.SetAssetId(0)
+	ao4.SetAssetId(54)
 	ao5, _ := NewAssetObject("ft5", 0, "zz5", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
 	ao5.SetAssetId(55)
 	tests := []struct {
@@ -346,8 +346,8 @@ func TestAsset_SetAssetObject(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{"setnil", fields{astdb}, args{nil}, true},
-		{"add", fields{astdb}, args{ao4}, true},
-		{"add", fields{astdb}, args{ao5}, false},
+		{"add", fields{astdb}, args{ao4}, false},
+		{"add2", fields{astdb}, args{ao5}, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{
@@ -424,7 +424,7 @@ func TestAsset_IssueAsset(t *testing.T) {
 		a := &Asset{
 			sdb: tt.fields.sdb,
 		}
-		if err := a.IssueAsset(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, big.NewInt(9999999999), common.Name(""), ""); (err != nil) != tt.wantErr {
+		if _, err := a.IssueAsset(tt.args.assetName, 0, tt.args.symbol, tt.args.amount, tt.args.dec, tt.args.founder, tt.args.owner, big.NewInt(9999999999), common.Name(""), ""); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Asset.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -539,11 +539,11 @@ func TestAsset_HasAccesss(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases
-		{"a0", fields{astdb}, args{1, common.Name("")}, true},
-		{"a1", fields{astdb}, args{2, common.Name("")}, true},
-		{"a2", fields{astdb}, args{3, common.Name("")}, true},
-		{"a3", fields{astdb}, args{4, common.Name("a123456789aeee")}, true},
-		{"a3_1", fields{astdb}, args{4, common.Name("a123456789afff")}, false},
+		{"a0", fields{astdb}, args{0, common.Name("")}, true},
+		{"a1", fields{astdb}, args{1, common.Name("")}, true},
+		{"a2", fields{astdb}, args{2, common.Name("")}, true},
+		{"a3", fields{astdb}, args{3, common.Name("a123456789aeee")}, true},
+		{"a3_1", fields{astdb}, args{3, common.Name("a123456789afff")}, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{

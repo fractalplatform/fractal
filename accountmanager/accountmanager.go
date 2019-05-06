@@ -262,8 +262,9 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 		return ErrAccountIsExist
 	}
 
-	assetID, _ := am.ast.GetAssetIdByName(accountName.String())
-	if assetID > 0 {
+	// asset and account name diff
+	_, err = am.ast.GetAssetIdByName(accountName.String())
+	if err == nil {
 		return ErrNameIsExist
 	}
 
@@ -470,6 +471,7 @@ func (am *AccountManager) SetAccount(acct *Account) error {
 	if err != nil {
 		return err
 	}
+
 	//am.sdb.Put(acctManagerName, acctInfoPrefix+acct.GetName().String(), b)
 	am.sdb.Put(acctManagerName, acctInfoPrefix+strconv.FormatUint(acct.GetAccountID(), 10), b)
 	return nil
@@ -957,9 +959,6 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return err
 	}
 
-	if assetID == 0 {
-		return asset.ErrAssetNotExist
-	}
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
@@ -1045,22 +1044,22 @@ func (am *AccountManager) GetCodeSize(accountName common.Name) (uint64, error) {
 //}
 
 //GetAccountFromValue  get account info via value bytes
-func (am *AccountManager) GetAccountFromValue(accountName common.Name, key string, value []byte) (*Account, error) {
-	if len(value) == 0 {
-		return nil, ErrAccountNotExist
-	}
-	if key != accountName.String()+acctInfoPrefix {
-		return nil, ErrAccountNameInvalid
-	}
-	var acct Account
-	if err := rlp.DecodeBytes(value, &acct); err != nil {
-		return nil, ErrAccountNotExist
-	}
-	if acct.AcctName != accountName {
-		return nil, ErrAccountNameInvalid
-	}
-	return &acct, nil
-}
+// func (am *AccountManager) GetAccountFromValue(accountName common.Name, key string, value []byte) (*Account, error) {
+// 	if len(value) == 0 {
+// 		return nil, ErrAccountNotExist
+// 	}
+// 	if key != accountName.String()+acctInfoPrefix {
+// 		return nil, ErrAccountNameInvalid
+// 	}
+// 	var acct Account
+// 	if err := rlp.DecodeBytes(value, &acct); err != nil {
+// 		return nil, ErrAccountNotExist
+// 	}
+// 	if acct.AcctName != accountName {
+// 		return nil, ErrAccountNameInvalid
+// 	}
+// 	return &acct, nil
+// }
 
 // CanTransfer check if can transfer.
 func (am *AccountManager) CanTransfer(accountName common.Name, assetID uint64, value *big.Int) (bool, error) {
@@ -1133,35 +1132,32 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 }
 
 //
-func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset) error {
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset) (uint64, error) {
 	if !am.ast.IsValidOwner(fromName, asset.AssetName) {
-		return fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 	}
 
-	if err := am.IssueAsset(asset); err != nil {
-		return err
-	}
-	return nil
+	return am.IssueAsset(asset)
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset IssueAsset) error {
+func (am *AccountManager) IssueAsset(asset IssueAsset) (uint64, error) {
 	//check owner
 	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if acct == nil {
-		return ErrAccountNotExist
+		return 0, ErrAccountNotExist
 	}
 	//check founder
 	if len(asset.Founder) > 0 {
 		f, err := am.GetAccountByName(asset.Founder)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		if f == nil {
-			return ErrAccountNotExist
+			return 0, ErrAccountNotExist
 		}
 	} else {
 		asset.Founder = asset.Owner
@@ -1170,15 +1166,16 @@ func (am *AccountManager) IssueAsset(asset IssueAsset) error {
 	name := common.StrToName(asset.AssetName)
 	accountID, _ := am.GetAccountIDByName(name)
 	if accountID > 0 {
-		return ErrNameIsExist
+		return 0, ErrNameIsExist
 	}
 
-	if err := am.ast.IssueAsset(asset.AssetName, asset.Number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Detail); err != nil {
-		return err
+	assetID, err := am.ast.IssueAsset(asset.AssetName, asset.Number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Detail)
+	if err != nil {
+		return 0, err
 	}
 
 	//add the asset to owner
-	return am.AddAccountBalanceByName(asset.Owner, asset.AssetName, asset.Amount)
+	return assetID, am.AddAccountBalanceByName(asset.Owner, asset.AssetName, asset.Amount)
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
@@ -1274,12 +1271,12 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-
 		asset.Number = number
-		if err := am.IssueAnyAsset(action.Sender(), asset); err != nil {
+		assetID, err := am.IssueAnyAsset(action.Sender(), asset)
+		if err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.Owner, 0, 0, 0, asset.Amount, nil, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.Owner, 0, assetID, 0, asset.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break
@@ -1313,7 +1310,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.DestroyAsset(common.Name(accountManagerContext.ChainConfig.AssetName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 		break

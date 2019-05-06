@@ -49,7 +49,7 @@ func init() {
 		AccountQueue: 64,
 		GlobalQueue:  1024,
 		Lifetime:     3 * time.Hour,
-		GasAssetID:   uint64(1),
+		GasAssetID:   uint64(0),
 	}
 }
 
@@ -213,9 +213,9 @@ func (c *testChain) State() (*state.StateDB, error) {
 }
 
 func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
-	return types.NewAction(types.Transfer, from, to, nonce, uint64(1), gasLimit, amount, data, nil)
+	return types.NewAction(types.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
 }
 
 func newTx(gasPrice *big.Int, action ...*types.Action) *types.Transaction {
-	return types.NewTransaction(uint64(1), gasPrice, action...)
+	return types.NewTransaction(uint64(0), gasPrice, action...)
 }
