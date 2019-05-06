@@ -1,4 +1,10 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.10] - 2019-05-06
+### Fixed
+- [ASSET] get asset object return panic
+- [VM] fix contract issue asset bug
+
+
 ## [0.0.9] - 2019-05-06
 ### Added
 - [BLOCKCHAIN] add gensis block account
@@ -59,6 +65,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.10]: https://github.com/fractalplatform/fractal/compare/v0.0.9...v0.0.10
 [0.0.9]: https://github.com/fractalplatform/fractal/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/fractalplatform/fractal/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/fractalplatform/fractal/compare/v0.0.6...v0.0.7

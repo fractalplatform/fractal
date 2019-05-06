@@ -41,6 +41,11 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.10 - 2019-05-06",
+		`### Fixed
+- [ASSET] get asset object return panic
+- [VM] fix contract issue asset bug
+`,
 		"0.0.9 - 2019-05-06",
 		`### Added
 - [BLOCKCHAIN] add gensis block account
