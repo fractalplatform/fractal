@@ -53,8 +53,7 @@ type IDB interface {
 	Undelegate(string, *big.Int) (*types.Action, error)
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
-
-	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
+	GetCandidateInfoByTime(name string, timestamp uint64) (*CandidateInfo, error)
 }
 
 type CandidateType uint64
@@ -123,6 +122,7 @@ type CandidateInfo struct {
 	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
 	Height        uint64        `json:"height"`        // timestamp
 	Counter       uint64        `json:"counter"`
+	ActualCounter uint64        `json:"actualCounter"`
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
 	NextKey       string        `json:"-"`
@@ -161,6 +161,8 @@ type GlobalState struct {
 	PreEpcho                   uint64   `json:"preEpcho"`                   // epcho
 	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
 	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
+	OffCandidateSchedule       []uint64 `json:"offCandidateSchedule"`       // activated backup candidates
+	OffCandidateHeight         []uint64 `json:"offCandidateHeight"`         // activated backup candidates
 	TotalQuantity              *big.Int `json:"totalQuantity"`              // the sum of all candidate votes
 	TakeOver                   bool     `json:"takeOver"`                   // systemio take over dpos
 	Dpos                       bool     `json:"dpos"`                       // dpos status
