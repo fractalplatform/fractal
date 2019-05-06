@@ -577,6 +577,8 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			PreEpcho:               pstate.Epcho,
 			ActivatedTotalQuantity: big.NewInt(0),
 			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
+			OffCandidateHeight:     []uint64{},
+			OffCandidateSchedule:   []uint64{},
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,
 		}

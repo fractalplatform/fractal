@@ -126,6 +126,8 @@ func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, height uint64)
 		PreEpcho:               epcho,
 		ActivatedTotalQuantity: big.NewInt(0),
 		TotalQuantity:          big.NewInt(0),
+		OffCandidateHeight:     []uint64{},
+		OffCandidateSchedule:   []uint64{},
 		Height:                 height,
 	}); err != nil {
 		return err
