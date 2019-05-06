@@ -1,13 +1,15 @@
 ### Added
-- [DEBUG] add debug pprof,trace cmd flags and rpc
-- [FEE] add fee manager and some rpc interface
-- [TXPOOL] add bloom in transaction P2P message
-- [TYPES] types/action.go add remark field
+- [BLOCKCHAIN] add gensis block account
+- [FEE] the distributed gas will add to fractal.fee's balance
+- [COMMON] add json unmarshal for author
+- [ASSET] check valid for modifing about contract asset
 ### Fixed
-- [TXPOOL] fixed txpool queue and pending don't remove no permissions transactions
-- [VM] fix bug that distribute more gas than given when internal call happens
-- [BLOCKCHAIN] fixed restart node missmatch genesis block hash
-- [ACCOUNTMANAGER] generate author version when account create
-- [DPOS] solve infinite loop for getvoters
+- [VM] execWithdrawFee return err when fm.WithdrawFeeFromSystem fail
+- [BLOCKCHAIN] fix fork contracl init err
+- [GENESIS] genesis block action repeat
+- [DPOS] fix updateElectedCandidates bug when dpos is false
 - [ALL] fixs some bugs
+### Changed
+- [COMMON] modify name for support more scenes and modify subaccount/subasset name
+- [ASSET] modify issue asset return assetID
 

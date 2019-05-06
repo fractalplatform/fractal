@@ -1,4 +1,21 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.9] - 2019-05-06
+### Added
+- [BLOCKCHAIN] add gensis block account
+- [FEE] the distributed gas will add to fractal.fee's balance
+- [COMMON] add json unmarshal for author
+- [ASSET] check valid for modifing about contract asset
+### Fixed
+- [VM] execWithdrawFee return err when fm.WithdrawFeeFromSystem fail
+- [BLOCKCHAIN] fix fork contracl init err
+- [GENESIS] genesis block action repeat
+- [DPOS] fix updateElectedCandidates bug when dpos is false
+- [ALL] fixs some bugs
+### Changed
+- [COMMON] modify name for support more scenes and modify subaccount/subasset name
+- [ASSET] modify issue asset return assetID
+
+
 ## [0.0.8] - 2019-04-30
 ### Added
 - [DEBUG] add debug pprof,trace cmd flags and rpc
@@ -42,6 +59,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.9]: https://github.com/fractalplatform/fractal/compare/v0.0.8...v0.0.9
 [0.0.8]: https://github.com/fractalplatform/fractal/compare/v0.0.7...v0.0.8
 [0.0.7]: https://github.com/fractalplatform/fractal/compare/v0.0.6...v0.0.7
 [0.0.6]: https://github.com/fractalplatform/fractal/compare/v0.0.5...v0.0.6
