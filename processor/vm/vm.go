@@ -34,7 +34,7 @@ type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
-	GetDelegatedByTimeFunc func(string, uint64, *state.StateDB) (*big.Int, *big.Int, uint64, error)
+	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
 	// GetHeaderByNumberFunc
 	GetHeaderByNumberFunc func(number uint64) *types.Header
 )

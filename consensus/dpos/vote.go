@@ -387,15 +387,6 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 	return nil
 }
 
-// GetDelegatedByTime candidate delegated
-func (sys *System) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
-	q, tq, c, err := sys.IDB.GetDelegatedByTime(candidate, timestamp)
-	if err != nil {
-		return big.NewInt(0), big.NewInt(0), 0, err
-	}
-	return new(big.Int).Mul(q, sys.config.unitStake()), new(big.Int).Mul(tq, sys.config.unitStake()), c, nil
-}
-
 // KickedCandidate kicked
 func (sys *System) KickedCandidate(epcho uint64, candidate string, height uint64) error {
 	// name validity
@@ -485,7 +476,7 @@ func (sys *System) onblock(epcho uint64, height uint64) error {
 }
 
 // UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height uint64) error {
+func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height uint64, counter func(from uint64, to uint64, index uint64) uint64) error {
 	if pepcho > epcho {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -494,27 +485,46 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 		return err
 	}
 
+	// not is first
+	if pstate.Epcho != pstate.PreEpcho && pepcho == epcho {
+		return nil
+	}
+
+	// old  actived candidates
+	oldcandidates := map[string]uint64{}
+	ppstate, err := sys.GetState(pstate.PreEpcho)
+	if err != nil {
+		return err
+	}
+	for index, candidate := range ppstate.ActivatedCandidateSchedule {
+		oldcandidates[candidate] = uint64(index)
+	}
+
 	candidateInfoArray, err := sys.GetCandidates()
 	if err != nil {
 		return err
 	}
+	// is dpos
 	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
 	if !pstate.Dpos && pstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
 		uint64(len(candidateInfoArray)) >= n {
 		pstate.Dpos = true
 	}
 
+	// clear
 	activatedCandidateSchedule := []string{}
 	activeTotalQuantity := big.NewInt(0)
 	totalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
-		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
-		if candidateInfo.invalid() || pstate.Dpos && strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-			continue
+		if index, ok := oldcandidates[candidateInfo.Name]; ok {
+			candidateInfo.Counter += counter(ppstate.Height, height, index)
 		}
-		activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-		if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
-			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
+		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
+		if !candidateInfo.invalid() && (!pstate.Dpos || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0) {
+			activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+			if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
+				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
+			}
 		}
 		candidateInfo.TotalQuantity = candidateInfo.Quantity
 		if err := sys.SetCandidate(candidateInfo); err != nil {
