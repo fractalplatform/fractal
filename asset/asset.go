@@ -279,7 +279,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //IssueAsset issue asset
-func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) (uint64, error) {
+func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
 	assetId, err := a.GetAssetIdByName(assetName)
 	if err != nil && err != ErrAssetNotExist {
 		return 0, err
@@ -289,7 +289,7 @@ func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amoun
 		return 0, ErrAssetIsExist
 	}
 
-	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, detail)
+	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, description)
 	if err != nil {
 		return 0, err
 	}

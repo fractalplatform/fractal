@@ -1412,7 +1412,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			Owner:       tt.args.asset.GetAssetOwner(),
 			UpperLimit:  tt.args.asset.GetUpperLimit(),
 			Contract:    tt.args.asset.GetContract(),
-			Description: tt.args.asset.GetAssetDetail(),
+			Description: tt.args.asset.GetAssetDescription(),
 		}
 		if _, err := am.IssueAsset(asset, blockNumber); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
@@ -1521,7 +1521,7 @@ func TestAccountManager_Process(t *testing.T) {
 		Owner:       ast0.GetAssetOwner(),
 		UpperLimit:  ast0.GetUpperLimit(),
 		Contract:    ast0.GetContract(),
-		Description: ast0.GetAssetDetail(),
+		Description: ast0.GetAssetDescription(),
 	}
 
 	ast1 := &asset.AssetObject{
@@ -1908,7 +1908,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		Owner:       ast1.GetAssetOwner(),
 		UpperLimit:  ast1.GetUpperLimit(),
 		Contract:    ast1.GetContract(),
-		Description: ast1.GetAssetDetail(),
+		Description: ast1.GetAssetDescription(),
 	}
 
 	if _, err := am.IssueAsset(asset1, blockNumber); err != nil {
@@ -1980,7 +1980,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		Owner:       ast1.GetAssetOwner(),
 		UpperLimit:  ast1.GetUpperLimit(),
 		Contract:    ast1.GetContract(),
-		Description: ast1.GetAssetDetail(),
+		Description: ast1.GetAssetDescription(),
 	}
 
 	if _, err := am.IssueAsset(asset1, blockNumber); err != nil {

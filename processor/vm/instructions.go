@@ -1279,9 +1279,9 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	}
 	founder := common.Name(input[6])
 	contractName := common.Name(input[7])
-	detail := input[8]
+	description := input[8]
 
-	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Detail: detail}
+	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
