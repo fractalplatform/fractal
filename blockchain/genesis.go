@@ -214,7 +214,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	accoutName := common.Name(g.Config.AccountName)
 	assetName := common.Name(g.Config.AssetName)
 	// chain name
-	act := &am.AccountAction{
+	act := &am.CreateAccountAction{
 		AccountName: chainName,
 		PublicKey:   common.PubKey{},
 	}
@@ -237,7 +237,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		if len(slt) > 1 {
 			pname = common.Name(slt[0])
 		}
-		act := &am.AccountAction{
+		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
 			PublicKey:   account.PubKey,
 		}

@@ -376,11 +376,11 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 }
 
 //UpdateAsset change asset info
-func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner common.Name, founderName common.Name, contractName common.Name) error {
+func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName common.Name) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
-	asset, err := a.GetAssetObjectById(assetId)
+	asset, err := a.GetAssetObjectById(assetID)
 	if err != nil {
 		return err
 	}
@@ -390,9 +390,8 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner commo
 	if asset.GetAssetOwner() != accountName {
 		return ErrOwnerMismatch
 	}
-	asset.SetAssetOwner(Owner)
+
 	asset.SetAssetFounder(founderName)
-	asset.SetAssetContract(contractName)
 	return a.SetAssetObject(asset)
 }
 

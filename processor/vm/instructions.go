@@ -1344,7 +1344,7 @@ func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, s
 
 func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner common.Name) error {
 	//asset := &asset.AssetObject{AssetId: assetID, Owner: owner}
-	asset := &accountmanager.UpdateAsset{AssetID: assetID, Founder: "", Owner: owner, Contract: ""}
+	asset := &accountmanager.UpdateAssetOwner{AssetID: assetID, Owner: owner}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err
