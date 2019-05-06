@@ -58,10 +58,7 @@ func main() {
 		println("系统账户出错啦~~~", *issueHex)
 		return
 	}
-	if !common.IsValidAccountName(splits[0]) {
-		println("系统账户非法啦~~~", splits[0])
-		return
-	}
+
 	issuerName := common.StrToName(splits[0])
 	issuerPriv, err := crypto.HexToECDSA(splits[1])
 	if err != nil {
@@ -80,10 +77,6 @@ func main() {
 		splits := strings.Split(privHex, ":")
 		if len(splits) != 2 {
 			println("生产者账户出错啦~~~", privHex)
-			return
-		}
-		if !common.IsValidAccountName(splits[0]) {
-			println("生产者账户非法啦~~~", splits[0])
 			return
 		}
 		name := common.StrToName(splits[0])

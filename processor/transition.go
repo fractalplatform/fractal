@@ -209,6 +209,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 func (st *StateTransition) distributeFee() error {
 	var totalGas int64
+	totalFee := big.NewInt(0)
 	fm := feemanager.NewFeeManager(st.evm.StateDB, st.evm.AccountDB)
 
 	for key, gas := range st.evm.FounderGasMap {
@@ -219,6 +220,7 @@ func (st *StateTransition) distributeFee() error {
 			if err != nil {
 				return fmt.Errorf("record fee err(%v), key:%v,assetID:%d", err, key, st.assetID)
 			}
+			totalFee.Add(totalFee, value)
 		}
 		totalGas += gas.Value
 	}
@@ -247,6 +249,8 @@ func (st *StateTransition) distributeFee() error {
 	if err != nil {
 		return fmt.Errorf("record fee err(%v), name:%v,type:%d,assetID:%d", err, st.evm.Coinbase, gasType, st.assetID)
 	}
+	totalFee.Add(totalFee, value)
+	st.account.AddAccountBalanceByID(common.Name(st.chainConfig.FeeName), st.assetID, totalFee)
 	return nil
 }
 

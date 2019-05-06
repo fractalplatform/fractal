@@ -19,6 +19,7 @@ package asset
 import (
 	"fmt"
 	"math/big"
+	"regexp"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -28,10 +29,9 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-//AssetManager is used to access asset
-var assetManagerName = "sysAccount"
-
 var (
+	assetRegExp       = regexp.MustCompile("^([a-z][a-z0-9]{1,15})(?:\\.([a-z0-9]{1,8})){0,1}$")
+	assetManagerName  = "assetAccount"
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
 	assetObjectPrefix = "assetDefinitionObject"
@@ -42,31 +42,25 @@ type Asset struct {
 }
 
 func SetAssetNameConfig(config *Config) bool {
-	if config == nil {
-		return false
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{1,%v})", config.AssetNameLength-1)
+	for i := 0; i < int(config.AssetNameLevel); i++ {
+		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{1,%v})){0,1}", config.SubAssetNameLength)
 	}
 
-	if config.AssetNameLevel < 0 || config.AssetNameLength <= 2 {
-		return false
+	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
+	if err != nil {
+		panic(err)
 	}
-
-	if config.AssetNameLevel > 0 {
-		if config.SubAssetNameLength < 1 {
-			return false
-		}
-	}
-
-	common.SetAssetNameCheckRule(config.AssetNameLevel, config.AssetNameLength, config.SubAssetNameLength)
+	assetRegExp = regexp
 	return true
+}
+func GetAssetNameRegExp() *regexp.Regexp {
+	return assetRegExp
 }
 
 //SetAssetMangerName  set the global asset manager name
-func SetAssetMangerName(name common.Name) bool {
-	if common.IsValidAccountName(name.String()) {
-		assetManagerName = name.String()
-		return true
-	}
-	return false
+func SetAssetMangerName(name common.Name) {
+	assetManagerName = name.String()
 }
 
 //NewAsset New create Asset
@@ -74,12 +68,6 @@ func NewAsset(sdb *state.StateDB) *Asset {
 	asset := Asset{
 		sdb: sdb,
 	}
-
-	if len(assetManagerName) == 0 {
-		log.Error("NewAsset error", "name", ErrAssetManagerNotExist, assetManagerName)
-		return nil
-	}
-
 	asset.InitAssetCount()
 	return &asset
 }
@@ -95,10 +83,6 @@ func (a *Asset) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, err
 
 //GetAssetObjectByTime  get asset object by time
 func (a *Asset) GetAssetObjectByTime(assetID uint64, time uint64) (*AssetObject, error) {
-	if assetID == 0 {
-		return nil, ErrAssetIdInvalid
-	}
-
 	snapshotManager := snapshot.NewSnapshotManager(a.sdb)
 	b, err := snapshotManager.GetSnapshotMsg(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10), time)
 	if err != nil {
@@ -124,7 +108,7 @@ func (a *Asset) GetAssetIdByName(assetName string) (uint64, error) {
 		return 0, err
 	}
 	if len(b) == 0 {
-		return 0, nil
+		return 0, ErrAssetNotExist
 	}
 	var assetID uint64
 	if err := rlp.DecodeBytes(b, &assetID); err != nil {
@@ -144,9 +128,6 @@ func (a *Asset) GetAssetFounderById(id uint64) (common.Name, error) {
 
 //GetAssetObjectById get asset by asset id
 func (a *Asset) GetAssetObjectById(id uint64) (*AssetObject, error) {
-	if id == 0 {
-		return nil, ErrAssetIdInvalid
-	}
 	b, err := a.sdb.Get(assetManagerName, assetObjectPrefix+strconv.FormatUint(id, 10))
 	if err != nil {
 		return nil, err
@@ -195,23 +176,23 @@ func (a *Asset) InitAssetCount() {
 }
 
 //GetAllAssetObject get all asset
-func (a *Asset) GetAllAssetObject() ([]*AssetObject, error) {
-	assetCount, err := a.getAssetCount()
-	if err != nil {
-		return nil, err
-	}
-	assets := make([]*AssetObject, assetCount)
-	//
-	var i uint64
-	for i = 1; i <= assetCount; i++ {
-		asset, err := a.GetAssetObjectById(i)
-		if err != nil {
-			return nil, err
-		}
-		assets[i-1] = asset
-	}
-	return assets, nil
-}
+// func (a *Asset) GetAllAssetObject() ([]*AssetObject, error) {
+// 	assetCount, err := a.getAssetCount()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	assets := make([]*AssetObject, assetCount)
+// 	//
+// 	var i uint64
+// 	for i = 1; i <= assetCount; i++ {
+// 		asset, err := a.GetAssetObjectById(i)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		assets[i-1] = asset
+// 	}
+// 	return assets, nil
+// }
 
 //GetAssetObjectByName get asset object by name
 func (a *Asset) GetAssetObjectByName(assetName string) (*AssetObject, error) {
@@ -232,23 +213,31 @@ func (a *Asset) addNewAssetObject(ao *AssetObject) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	assetCount = assetCount + 1
+
 	ao.SetAssetId(assetCount)
 	//store asset object
 	aobject, err := rlp.EncodeToBytes(ao)
 	if err != nil {
 		return 0, err
 	}
+
 	//store asset name with asset id
-	aid, err := rlp.EncodeToBytes(&assetCount)
+	assetID, err := rlp.EncodeToBytes(&assetCount)
+	if err != nil {
+		return 0, err
+	}
+
+	assetCount2 := assetCount + 1
+	aid, err := rlp.EncodeToBytes(&assetCount2)
 	if err != nil {
 		return 0, err
 	}
 
 	a.sdb.Put(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetCount, 10), aobject)
-	a.sdb.Put(assetManagerName, assetNameIdPrefix+ao.GetAssetName(), aid)
+	a.sdb.Put(assetManagerName, assetNameIdPrefix+ao.GetAssetName(), assetID)
 	//store assetCount
 	a.sdb.Put(assetManagerName, assetCountPrefix, aid)
+
 	return assetCount, nil
 }
 
@@ -258,9 +247,7 @@ func (a *Asset) SetAssetObject(ao *AssetObject) error {
 		return ErrAssetObjectEmpty
 	}
 	assetId := ao.GetAssetId()
-	if assetId == 0 {
-		return ErrAssetIdInvalid
-	}
+
 	b, err := rlp.EncodeToBytes(ao)
 	if err != nil {
 		return err
@@ -274,13 +261,16 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 	if ao == nil {
 		return 0, ErrAssetObjectEmpty
 	}
-	assetId, err := a.GetAssetIdByName(ao.GetAssetName())
-	if err != nil {
+
+	_, err := a.GetAssetIdByName(ao.GetAssetName())
+	if err != nil && err != ErrAssetNotExist {
 		return 0, err
 	}
-	if assetId > 0 {
+
+	if err == nil {
 		return 0, ErrAssetIsExist
 	}
+
 	assetID, err := a.addNewAssetObject(ao)
 	if err != nil {
 		return 0, err
@@ -289,37 +279,31 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //IssueAsset issue asset
-func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) error {
-	if !common.IsValidAssetName(assetName) {
-		return fmt.Errorf("%s is invalid", assetName)
+func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) (uint64, error) {
+	assetId, err := a.GetAssetIdByName(assetName)
+	if err != nil && err != ErrAssetNotExist {
+		return 0, err
 	}
 
-	assetId, err := a.GetAssetIdByName(assetName)
-	if err != nil {
-		return err
-	}
-	if assetId > 0 {
-		return ErrAssetIsExist
+	if err == nil {
+		return 0, ErrAssetIsExist
 	}
 
 	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, detail)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	assetId, err = a.addNewAssetObject(ao)
 	if err != nil {
-		return err
+		return 0, err
 	}
-	return nil
+	return assetId, nil
 }
 
 //DestroyAsset destroy asset
 func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {
 		return ErrAccountNameNull
-	}
-	if assetId == 0 {
-		return ErrAssetIdInvalid
 	}
 	if amount.Sign() <= 0 {
 		return ErrAssetAmountZero
@@ -353,9 +337,6 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *bi
 func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *big.Int) error {
 	if accountName == "" {
 		return ErrAccountNameNull
-	}
-	if assetId == 0 {
-		return ErrAssetIdInvalid
 	}
 	if amount.Sign() <= 0 {
 		return ErrAssetAmountZero
@@ -399,9 +380,6 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner commo
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
-	if assetId == 0 {
-		return ErrAssetIdInvalid
-	}
 	asset, err := a.GetAssetObjectById(assetId)
 	if err != nil {
 		return err
@@ -422,9 +400,6 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetId uint64, Owner commo
 func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwner common.Name) error {
 	if accountName == "" {
 		return ErrAccountNameNull
-	}
-	if assetId == 0 {
-		return ErrAssetIdInvalid
 	}
 	asset, err := a.GetAssetObjectById(assetId)
 	if err != nil {
@@ -463,12 +438,12 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // }
 
 func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
-	assetNames := common.SplitString(assetName)
-	if len(assetNames) == 1 {
+	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	if len(assetNames) < 2 {
 		return true
 	}
 
-	if !common.IsValidAssetName(assetName) {
+	if !common.StrToName(assetName).IsValid(assetRegExp) {
 		return false
 	}
 
@@ -482,10 +457,6 @@ func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
 
 		assetId, err := a.GetAssetIdByName(an)
 		if err != nil {
-			continue
-		}
-
-		if assetId <= 0 {
 			continue
 		}
 
@@ -504,5 +475,20 @@ func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
 		}
 	}
 	log.Debug("Asset create failed", "account", fromName, "name", assetName)
+	return false
+}
+
+// HasAccess contract asset access
+func (a *Asset) HasAccess(assetID uint64, names ...common.Name) bool {
+	ast, _ := a.GetAssetObjectById(assetID)
+	if ast != nil && len(ast.Contract.String()) != 0 {
+		for _, name := range names {
+			if name == ast.Contract {
+				return true
+			}
+		}
+	} else {
+		return true
+	}
 	return false
 }

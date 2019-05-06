@@ -61,18 +61,10 @@ func (dpos *Dpos) ProcessAction(height uint64, chainCfg *params.ChainConfig, sta
 }
 
 func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+	if err := action.CheckValid(chainCfg); err != nil {
+		return nil, err
+	}
 	sys := NewSystem(state, dpos.config)
-	//if !action.CheckValue() {
-	//	return nil, accountmanager.ErrAmountValueInvalid
-	//}
-
-	if action.AssetID() != chainCfg.SysTokenID {
-		return nil, accountmanager.ErrAssetIDInvalid
-	}
-
-	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
-		return nil, accountmanager.ErrInvalidReceiptAsset
-	}
 
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		accountDB, err := accountmanager.NewAccountManager(state)

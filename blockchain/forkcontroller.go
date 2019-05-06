@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/fractalplatform/fractal/params"
@@ -59,6 +60,23 @@ func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkContr
 	return &ForkController{cfg: cfg, chainCfg: chaincfg}
 }
 
+func initForkController(chainName string, statedb *state.StateDB) error {
+	var info = ForkInfo{}
+	infoBytes, err := statedb.Get(chainName, forkInfo)
+	if err != nil {
+		return err
+	}
+
+	if len(infoBytes) == 0 {
+		infoRlp, err := rlp.EncodeToBytes(info)
+		if err != nil {
+			return err
+		}
+		statedb.Put(chainName, forkInfo, infoRlp)
+	}
+	return nil
+}
+
 func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) {
 	info := ForkInfo{}
 
@@ -68,8 +86,7 @@ func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) 
 	}
 
 	if len(infoBytes) == 0 {
-		// return nil when not exists
-		return info, fc.putForkInfo(info, statedb)
+		return info, errors.New("not found info in statedb")
 	}
 
 	if err := rlp.DecodeBytes(infoBytes, &info); err != nil {

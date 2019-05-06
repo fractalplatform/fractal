@@ -157,7 +157,8 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
 		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
 	})
-	//am.SetSysName(common.StrToName(storedcfg.AccountName))
+	am.SetAcctMangerName(common.StrToName(storedcfg.AccountName))
+	at.SetAssetMangerName(common.StrToName(storedcfg.AssetName))
 	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
 	return storedcfg, dposConfig(storedcfg), stored, nil
 }
@@ -171,16 +172,17 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	detailTx := &types.DetailTx{}
 	var internals []*types.DetailAction
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     g.Config.AccountNameCfg.Level,
-		AccountNameLength:    g.Config.AccountNameCfg.Length,
-		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+		AccountNameLevel:     1,
+		AccountNameLength:    16,
+		SubAccountNameLength: 8,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLength:    g.Config.AssetNameCfg.Length,
-		AssetNameLevel:     g.Config.AssetNameCfg.Level,
-		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+		AssetNameLevel:     1,
+		AssetNameLength:    16,
+		SubAssetNameLength: 8,
 	})
-	//am.SetSysName(common.StrToName(g.Config.AccountName))
+	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
+	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
 	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
@@ -210,6 +212,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	chainName := common.Name(g.Config.ChainName)
 	accoutName := common.Name(g.Config.AccountName)
+	assetName := common.Name(g.Config.AssetName)
 	// chain name
 	act := &am.AccountAction{
 		AccountName: chainName,
@@ -275,7 +278,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				pname = ast.Owner
 			}
 		}
-		ast := &at.AssetObject{
+		ast := &am.IssueAsset{
 			AssetName:  asset.Name,
 			Symbol:     asset.Symbol,
 			Amount:     asset.Amount,
@@ -284,11 +287,12 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			Owner:      common.StrToName(asset.Owner),
 			UpperLimit: asset.UpperLimit,
 		}
+
 		payload, _ := rlp.EncodeToBytes(ast)
 		astActions = append(astActions, types.NewAction(
 			types.IssueAsset,
 			pname,
-			accoutName,
+			assetName,
 			0,
 			0,
 			0,
@@ -309,12 +313,24 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		}
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
-
+	am.SetAccountNameConfig(&am.Config{
+		AccountNameLevel:     g.Config.AccountNameCfg.Level,
+		AccountNameLength:    g.Config.AccountNameCfg.Length,
+		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+	})
+	at.SetAssetNameConfig(&at.Config{
+		AssetNameLength:    g.Config.AssetNameCfg.Length,
+		AssetNameLevel:     g.Config.AssetNameCfg.Level,
+		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+	})
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
 		panic(fmt.Sprintf("system is not exist %v", err))
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
 		panic(fmt.Sprintf("account is not exist %v", err))
+	}
+	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AssetName)); !ok {
+		panic(fmt.Sprintf("asset account is not exist %v", err))
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
 		panic(fmt.Sprintf("dpos is not exist %v", err))
@@ -346,6 +362,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
+	// init  fork controller
+	if err := initForkController(chainName.String(), statedb); err != nil {
+		panic(fmt.Sprintf("genesis init fork controller err %v", err))
+	}
+
 	// snapshot
 	currentTime := timestamp
 	currentTimeFormat := (currentTime / g.Config.SnapshotInterval) * g.Config.SnapshotInterval
@@ -374,8 +395,6 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	actions := []*types.Action{}
-	actions = append(actions, actActions...)
-	actions = append(actions, astActions...)
 	for _, action := range actActions {
 		if action.AssetID() == 0 {
 			action = types.NewAction(

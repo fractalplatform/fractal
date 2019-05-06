@@ -293,10 +293,9 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		Time:       big.NewInt(timestamp),
 		Difficulty: worker.CalcDifficulty(worker.IConsensus, uint64(timestamp), parent),
 	}
-	if common.IsValidAccountName(worker.coinbase) {
-		header.Coinbase = common.StrToName(worker.coinbase)
-		header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, parent, false)
-	}
+	header.Coinbase = common.StrToName(worker.coinbase)
+	header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, parent, false)
+
 	state, err := worker.StateAt(parent.Root)
 	if err != nil {
 		return nil, fmt.Errorf("get parent state %v, err: %v ", header.Root, err)
@@ -454,7 +453,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 func (worker *Worker) commitTransaction(work *Work, tx *types.Transaction) ([]*types.Log, error) {
 	snap := work.currentState.Snapshot()
 	var name *common.Name
-	if common.IsValidAccountName(work.currentHeader.Coinbase.String()) {
+	if len(work.currentHeader.Coinbase.String()) > 0 {
 		name = new(common.Name)
 		*name = common.StrToName(work.currentHeader.Coinbase.String())
 	}
