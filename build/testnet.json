@@ -1,7 +1,7 @@
 {
 	"config": {
-		"bootnodes": ["enode://938597139178830dac79a3c1bcc7be70d41a79a1a1f479cde73862a3d2b808e83f60c6b7d9bd4ff999403828d2b4b5a27ff7323b3467ba3f45db6150db943c32@120.131.7.228:2018","enode://e30016f87e9f32895039c5b4fbbb40fbbf04fc2ef93299124a115df8344d81fff070591b2e455f043d2ccc9ffab3b881ce89c426ae111a5400034bb0fe64e1fa@120.131.7.101:2018"],
-		"chainId": 1,
+		"bootnodes": ["fnode://938597139178830dac79a3c1bcc7be70d41a79a1a1f479cde73862a3d2b808e83f60c6b7d9bd4ff999403828d2b4b5a27ff7323b3467ba3f45db6150db943c32@120.131.7.228:2018","fnode://e30016f87e9f32895039c5b4fbbb40fbbf04fc2ef93299124a115df8344d81fff070591b2e455f043d2ccc9ffab3b881ce89c426ae111a5400034bb0fe64e1fa@120.131.7.101:2018"],
+		"chainId": 45,
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
 		"accountParams": {
@@ -30,9 +30,9 @@
 			"activatedMinQuantity": 100,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
-			"candidateScheduleSize": 3,
+			"candidateScheduleSize": 15,
 			"backupScheduleSize": 0,
-			"epchoInterval": 10800000,
+			"epchoInterval": 21600000,
 			"freezeEpchoSize": 3,
 			"extraBlockReward": 1,
 			"blockReward": 5
@@ -50,7 +50,7 @@
 	"difficulty": 131072,
 	"allocAccounts": [{
 		"name": "fractal.admin",
-		"pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
+		"pubKey": "0x04474da0e3024d2089888dd60b7cdd79784725c4074f207b09dd7caa63a5b6ceb226b7141f4720c921003b54be581c84a05072c2d4752a1f5fae698684753424c5"
 	}, {
 		"name": "fractal.account",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"

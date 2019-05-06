@@ -28,7 +28,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/crypto/ecies"
@@ -1281,7 +1280,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	contractName := common.Name(input[7])
 	description := input[8]
 
-	asset := &asset.AssetObject{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
+	asset := &accountmanager.IssueAsset{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
@@ -1451,7 +1450,6 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, assetID, 0, value, nil, nil)
 
 	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-
 	//distribute gas
 	var assetName common.Name
 	assetFounder, _ := evm.AccountDB.GetAssetFounder(action.AssetID()) //get asset founder name

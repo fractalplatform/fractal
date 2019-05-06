@@ -233,7 +233,7 @@ func TestAsset_GetAssetObjectById(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		//{"normal", fields{astdb}, args{0}, nil, true},
+		{"assetnotexist", fields{astdb}, args{222}, nil, true},
 		{"normal2", fields{astdb}, args{0}, ao, false},
 	}
 	for _, tt := range tests {

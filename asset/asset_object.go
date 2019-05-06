@@ -37,6 +37,7 @@ type AssetObject struct {
 }
 
 func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (*AssetObject, error) {
+
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}
