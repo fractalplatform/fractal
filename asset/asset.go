@@ -133,7 +133,7 @@ func (a *Asset) GetAssetObjectById(id uint64) (*AssetObject, error) {
 		return nil, err
 	}
 	if len(b) == 0 {
-		return nil, nil
+		return nil, ErrAssetNotExist
 	}
 	var asset AssetObject
 	if err := rlp.DecodeBytes(b, &asset); err != nil {
