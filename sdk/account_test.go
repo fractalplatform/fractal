@@ -57,7 +57,7 @@ func TestAccount(t *testing.T) {
 		// CreateAccount
 		priv, pub := GenerateKey()
 		accountName := common.StrToName(GenerateAccountName("test", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName,
 			PublicKey:   pub,
 		})
@@ -71,10 +71,9 @@ func TestAccount(t *testing.T) {
 
 		// UpdateAccount
 		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
-		_, npub := GenerateKey()
-		hash, err = acct.UpdateAccount(common.StrToName(accountaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &accountmanager.AccountAction{
-			AccountName: accountName,
-			PublicKey:   npub,
+		// _, npub := GenerateKey()
+		hash, err = acct.UpdateAccount(common.StrToName(accountaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &accountmanager.UpdataAccountAction{
+			Founder: accountName,
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
@@ -91,7 +90,7 @@ func TestAsset(t *testing.T) {
 		// CreateAccount
 		priv, pub := GenerateKey()
 		accountName := common.StrToName(GenerateAccountName("test", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName,
 			PublicKey:   pub,
 		})
@@ -120,8 +119,6 @@ func TestAsset(t *testing.T) {
 
 		ast2 := accountmanager.UpdateAsset{
 			AssetID: ast.AssetId,
-
-			Owner:   accountName,
 			Founder: accountName,
 
 			//UpperLimit: big.NewInt(0),
@@ -153,7 +150,7 @@ func TestDPOS(t *testing.T) {
 		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
 		priv, pub := GenerateKey()
 		accountName := common.StrToName(GenerateAccountName("prod", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName,
 			PublicKey:   pub,
 		})
@@ -162,7 +159,7 @@ func TestDPOS(t *testing.T) {
 
 		priv2, pub2 := GenerateKey()
 		accountName2 := common.StrToName(GenerateAccountName("voter", 8))
-		hash, err = sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err = sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName2,
 			PublicKey:   pub2,
 		})

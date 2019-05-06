@@ -481,10 +481,8 @@ func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	if err == nil {
 		if acct != nil {
 			name := acct.GetName()
-			if dbalance, totalDelegate, totalNum, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+			if dbalance, err := evm.Context.GetDelegatedByTime(evm.StateDB, name.String(), t); err == nil {
 				stack.push(dbalance)
-				stack.push(totalDelegate)
-				stack.push(evm.interpreter.intPool.get().SetUint64(totalNum))
 			}
 		} else {
 			err = errors.New("account object is null")
@@ -493,13 +491,10 @@ func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
-		stack.push(evm.interpreter.intPool.getZero())
-		stack.push(evm.interpreter.intPool.getZero())
 	}
 	evm.interpreter.intPool.put(time, account)
 	return nil, nil
 }
-
 func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	opt, time, assetId, account := stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	o := opt.Uint64()
@@ -525,7 +520,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 
 			if balance, err := evm.AccountDB.GetBalanceByTime(name, assetID, id, t); err == nil {
 				if (o == 1 || o == 3) && (assetID == evm.chainConfig.SysTokenID) {
-					if dbalance, _, _, err := evm.Context.GetDelegatedByTime(name.String(), t, evm.StateDB); err == nil {
+					if dbalance, err := evm.Context.GetDelegatedByTime(evm.StateDB, name.String(), t); err == nil {
 						rbalance = new(big.Int).Add(balance, dbalance)
 					}
 				} else {
@@ -1278,9 +1273,9 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	}
 	founder := common.Name(input[6])
 	contractName := common.Name(input[7])
-	detail := input[8]
+	description := input[8]
 
-	asset := &accountmanager.IssueAsset{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Detail: detail}
+	asset := &accountmanager.IssueAsset{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
 
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
@@ -1343,7 +1338,7 @@ func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, s
 
 func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner common.Name) error {
 	//asset := &asset.AssetObject{AssetId: assetID, Owner: owner}
-	asset := &accountmanager.UpdateAsset{AssetID: assetID, Founder: "", Owner: owner, Contract: ""}
+	asset := &accountmanager.UpdateAssetOwner{AssetID: assetID, Owner: owner}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err

@@ -50,12 +50,15 @@ const (
 	DeleteAuthor
 )
 
-type AccountAction struct {
-	AccountName common.Name `json:"accountName,omitempty"`
-	Founder     common.Name `json:"founder,omitempty"`
-	//ChargeRatio uint64        `json:"chargeRatio,omitempty"`
-	PublicKey common.PubKey `json:"publicKey,omitempty"`
-	Detail    string        `json:"detail,omitempty"`
+type CreateAccountAction struct {
+	AccountName common.Name   `json:"accountName,omitempty"`
+	Founder     common.Name   `json:"founder,omitempty"`
+	PublicKey   common.PubKey `json:"publicKey,omitempty"`
+	Description string        `json:"description,omitempty"`
+}
+
+type UpdataAccountAction struct {
+	Founder common.Name `json:"founder,omitempty"`
 }
 
 type AuthorAction struct {
@@ -69,30 +72,32 @@ type AccountAuthorAction struct {
 	AuthorActions         []*AuthorAction `json:"authorActions,omitempty"`
 }
 
+type IssueAsset struct {
+	AssetName   string      `json:"assetName"`
+	Symbol      string      `json:"symbol"`
+	Amount      *big.Int    `json:"amount"`
+	Decimals    uint64      `json:"decimals"`
+	Founder     common.Name `json:"founder"`
+	Owner       common.Name `json:"owner"`
+	UpperLimit  *big.Int    `json:"upperLimit"`
+	Contract    common.Name `json:"contract"`
+	Description string      `json:"description"`
+}
+
 type IncAsset struct {
 	AssetId uint64      `json:"assetId,omitempty"`
 	Amount  *big.Int    `json:"amount,omitempty"`
-	To      common.Name `json:"account,omitempty"`
-}
-
-type IssueAsset struct {
-	AssetName  string      `json:"assetName"`
-	Number     uint64      `json:"number,omitempty"`
-	Symbol     string      `json:"symbol"`
-	Amount     *big.Int    `json:"amount"`
-	Decimals   uint64      `json:"decimals"`
-	Founder    common.Name `json:"founder"`
-	Owner      common.Name `json:"owner"`
-	UpperLimit *big.Int    `json:"upperLimit"`
-	Contract   common.Name `json:"contract"`
-	Detail     string      `json:"detail"`
+	To      common.Name `json:"acceptor,omitempty"`
 }
 
 type UpdateAsset struct {
-	AssetID  uint64      `json:"assetId,omitempty"`
-	Founder  common.Name `json:"founder"`
-	Owner    common.Name `json:"owner"`
-	Contract common.Name `json:"contract"`
+	AssetID uint64      `json:"assetId,omitempty"`
+	Founder common.Name `json:"founder"`
+}
+
+type UpdateAssetOwner struct {
+	AssetID uint64      `json:"assetId,omitempty"`
+	Owner   common.Name `json:"owner"`
 }
 
 //AccountManager represents account management model.
@@ -326,7 +331,7 @@ func (am *AccountManager) CreateAccount(accountName common.Name, founderName com
 // }
 
 //UpdateAccount update the pubkey of the account
-func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *AccountAction) error {
+func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *UpdataAccountAction) error {
 	acct, err := am.GetAccountByName(accountName)
 	if acct == nil {
 		return ErrAccountNotExist
@@ -346,11 +351,7 @@ func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *
 		accountAction.Founder.SetString(accountName.String())
 	}
 
-	// if accountAction.ChargeRatio > 100 {
-	// 	return ErrChargeRatioInvalid
-	// }
 	acct.SetFounder(accountAction.Founder)
-	//acct.SetChargeRatio(accountAction.ChargeRatio)
 	return am.SetAccount(acct)
 }
 
@@ -1132,16 +1133,16 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 }
 
 //
-func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset) (uint64, error) {
+func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
 	if !am.ast.IsValidOwner(fromName, asset.AssetName) {
 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 	}
 
-	return am.IssueAsset(asset)
+	return am.IssueAsset(asset, number)
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset IssueAsset) (uint64, error) {
+func (am *AccountManager) IssueAsset(asset IssueAsset, number uint64) (uint64, error) {
 	//check owner
 	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
@@ -1169,7 +1170,7 @@ func (am *AccountManager) IssueAsset(asset IssueAsset) (uint64, error) {
 		return 0, ErrNameIsExist
 	}
 
-	assetID, err := am.ast.IssueAsset(asset.AssetName, asset.Number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Detail)
+	assetID, err := am.ast.IssueAsset(asset.AssetName, number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Description)
 	if err != nil {
 		return 0, err
 	}
@@ -1225,13 +1226,13 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	//transaction
 	switch action.Type() {
 	case types.CreateAccount:
-		var acct AccountAction
+		var acct CreateAccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Detail); err != nil {
+		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Description); err != nil {
 			return nil, err
 		}
 
@@ -1245,7 +1246,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 		break
 	case types.UpdateAccount:
-		var acct AccountAction
+		var acct UpdataAccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
 			return nil, err
@@ -1271,8 +1272,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-		asset.Number = number
-		assetID, err := am.IssueAnyAsset(action.Sender(), asset)
+
+		assetID, err := am.IssueAnyAsset(action.Sender(), asset, number)
 		if err != nil {
 			return nil, err
 		}
@@ -1320,13 +1321,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-		acct, err := am.GetAccountByName(asset.Owner)
-		if err != nil {
-			return nil, err
-		}
-		if acct == nil {
-			return nil, ErrAccountNotExist
-		}
+
 		if len(asset.Founder.String()) > 0 {
 			acct, err := am.GetAccountByName(asset.Founder)
 			if err != nil {
@@ -1336,15 +1331,13 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 				return nil, ErrAccountNotExist
 			}
 		}
-		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
-		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
-		// }
-		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Owner, asset.Founder, asset.Contract); err != nil {
+
+		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder); err != nil {
 			return nil, err
 		}
 		break
 	case types.SetAssetOwner:
-		var asset UpdateAsset
+		var asset UpdateAssetOwner
 		err := rlp.DecodeBytes(action.Data(), &asset)
 		if err != nil {
 			return nil, err
@@ -1356,34 +1349,12 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if acct == nil {
 			return nil, ErrAccountNotExist
 		}
-		// if !am.ast.HasAccess(asset.AssetId, action.Sender()) {
-		// 	return nil, fmt.Errorf("no permissions of asset %v", asset.AssetId)
-		// }
+
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.AssetID, asset.Owner); err != nil {
 			return nil, err
 		}
 		break
-	// case types.SetAssetFounder:
-	// 	var asset asset.AssetObject
-	// 	err := rlp.DecodeBytes(action.Data(), &asset)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if len(asset.GetAssetFounder().String()) > 0 {
-	// 		acct, err := am.GetAccountByName(asset.GetAssetFounder())
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		if acct == nil {
-	// 			return ErrAccountNotExist
-	// 		}
-	// 	}
-	// 	if err = am.ast.SetAssetFounder(action.Sender(), asset.GetAssetId(), asset.GetAssetFounder()); err != nil {
-	// 		return err
-	// 	}
-	// 	break
 	case types.Transfer:
-		//return am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		break
 	default:
 		return nil, ErrUnkownTxType
