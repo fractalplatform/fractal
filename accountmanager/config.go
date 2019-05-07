@@ -32,4 +32,4 @@ func DefaultAccountNameConf() *Config {
 	}
 }
 
-const MaxDetailLength uint64 = 255
+const MaxDescriptionLength uint64 = 255
