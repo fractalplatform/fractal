@@ -37,7 +37,7 @@ func TestFeeInfo(t *testing.T) {
 func TestFeeInfoByID(t *testing.T) {
 	Convey("fee_getObjectFeeResult", t, func() {
 		api := NewAPI(rpchost)
-		objFee, err := api.FeeInfoByID(1, 1)
+		objFee, err := api.FeeInfoByID(1, 1, 0)
 		So(err, ShouldBeNil)
 		So(objFee, ShouldNotBeNil)
 	})
