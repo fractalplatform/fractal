@@ -132,15 +132,9 @@ func GetObjectFeeByName(objectName common.Name, objectType uint64) (*feemanager.
 	return objectFee, err
 }
 
-func GetObjectFeeResult(startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+func GetObjectFeeResult(startObjectFeeID uint64, count uint64, time uint64) (*feemanager.ObjectFeeResult, error) {
 	objectFeeResult := &feemanager.ObjectFeeResult{}
-	err := ClientCall("fee_getObjectFeeResult", objectFeeResult, startObjectFeeID, count)
-	return objectFeeResult, err
-}
-
-func GetObjectFeeResultByTime(time uint64, startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
-	objectFeeResult := &feemanager.ObjectFeeResult{}
-	err := ClientCall("fee_getObjectFeeResultByTime", objectFeeResult, time, startObjectFeeID, count)
+	err := ClientCall("fee_getObjectFeeResult", objectFeeResult, startObjectFeeID, count, time)
 	return objectFeeResult, err
 }
 
