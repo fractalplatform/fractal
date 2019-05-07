@@ -1046,6 +1046,30 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 }
 
 //multi-asset
+// opGetEpoch get epoch
+func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+
+	return nil, nil
+}
+
+// opGetCandidateNum get Candidate num
+func opGetCandidateNum(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//
+	return nil, nil
+}
+
+// opGetCandidate
+func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//evm.GetCandidate
+	return nil, nil
+}
+
+// opGetVoterStake
+func opGetVoterStake(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	//evm.GetVoterStake()
+	return nil, nil
+}
+
 //Increase asset already exist
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
