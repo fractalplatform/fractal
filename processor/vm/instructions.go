@@ -472,29 +472,6 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	return nil, nil
 }
 
-func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	time, account := stack.pop(), stack.pop()
-	t := time.Uint64()
-	userID := account.Uint64()
-
-	acct, err := evm.AccountDB.GetAccountById(userID)
-	if err == nil {
-		if acct != nil {
-			name := acct.GetName()
-			if dbalance, err := evm.Context.GetDelegatedByTime(evm.StateDB, name.String(), t); err == nil {
-				stack.push(dbalance)
-			}
-		} else {
-			err = errors.New("account object is null")
-		}
-	}
-
-	if err != nil {
-		stack.push(evm.interpreter.intPool.getZero())
-	}
-	evm.interpreter.intPool.put(time, account)
-	return nil, nil
-}
 func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	opt, time, assetId, account := stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	o := opt.Uint64()
