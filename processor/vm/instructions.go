@@ -1048,25 +1048,80 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 //multi-asset
 // opGetEpoch get epoch
 func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	epochID := stack.pop()
+	id := epochID.Uint64()
+	var num uint64
+	var err error
+	if id == 0 {
+		num, err := evm.Context.GetLatestEpcho(evm.StateDB)
 
+	} else {
+		num, err := evm.GetPrevEpcho(evm.StateDB, id)
+	}
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
+
+	//
 	return nil, nil
 }
 
 // opGetCandidateNum get Candidate num
 func opGetCandidateNum(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	epochID := stack.pop()
+	id := epochID.Uint64()
+	num, err := evm.Context.GetActivedCandidateSize(evm.StateDB)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
 	//
 	return nil, nil
 }
 
 // opGetCandidate
 func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	//evm.GetCandidate
+	nameOffset, nameSize, index, epochID := stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	id := epochID.Uint64()
+	i := index.Uint64()
+	//
+	name, stake, counter, actualCounter, replace, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
+	nameBytes := []byte(name)
+	datalen := len(name)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		//don't copy
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(replace))
+		stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
+		stack.push(evm.interpreter.intPool.get().SetUint64(counter))
+		stack.push(evm.interpreter.intPool.get().SetUint64(stake))
+		memory.Set(nameOffset.Uint64(), uint64(datalen), nameBytes)
+	}
 	return nil, nil
 }
 
 // opGetVoterStake
 func opGetVoterStake(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	//evm.GetVoterStake()
+	candidateOffet, candidateSize, voterOffset, voterSize, epochID := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	id := epochID.Uint64()
+	voter := memory.Get(voterOffset.Int64(), voterSize.Int64())
+	candidate := memory.Get(candidateOffet.Int64(), candidateSize.Int64())
+	//
+	num, err := evm.Context.GetVoterStake(evm.StateDB, id, voter, candidate)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
+
 	return nil, nil
 }
 
