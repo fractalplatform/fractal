@@ -100,8 +100,8 @@ func NewEnv(cfg *Config) *vm.EVM {
 		//CanTransfer: vm.CanTransfer,
 		//Transfer:    vm.Transfer,
 		GetHash: func(uint64) common.Hash { return common.Hash{} },
-		GetDelegatedByTime: func(string, uint64, *state.StateDB) (*big.Int, *big.Int, uint64, error) {
-			return big.NewInt(0), big.NewInt(0), 0, nil
+		GetDelegatedByTime: func(*state.StateDB, string, uint64) (*big.Int, error) {
+			return big.NewInt(0), nil
 		},
 		Origin:      cfg.Origin,
 		From:        cfg.Origin,

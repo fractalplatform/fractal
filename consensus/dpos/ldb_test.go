@@ -347,6 +347,8 @@ func TestLDBGlobalState(t *testing.T) {
 			PreEpcho:                   uint64(index),
 			ActivatedTotalQuantity:     big.NewInt(0),
 			ActivatedCandidateSchedule: candidates[index:],
+			OffCandidateHeight:         []uint64{},
+			OffCandidateSchedule:       []uint64{},
 			TotalQuantity:              big.NewInt(0),
 		}
 		if err := db.SetState(gstate); err != nil {
@@ -355,7 +357,7 @@ func TestLDBGlobalState(t *testing.T) {
 		if ngstate, err := db.GetState(uint64(index + 1)); err != nil {
 			panic(fmt.Errorf("GetState --- %v", err))
 		} else if !reflect.DeepEqual(gstate, ngstate) {
-			panic(fmt.Errorf("GetState mismatch"))
+			panic(fmt.Errorf("GetState mismatch %v %v", gstate, ngstate))
 		}
 		if err := db.SetLastestEpcho(gstate.Epcho); err != nil {
 			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
@@ -373,6 +375,8 @@ func TestLDBGlobalState(t *testing.T) {
 			ActivatedTotalQuantity:     big.NewInt(0),
 			ActivatedCandidateSchedule: candidates[index:],
 			TotalQuantity:              big.NewInt(0),
+			OffCandidateHeight:         []uint64{},
+			OffCandidateSchedule:       []uint64{},
 		}
 		if err := db.SetState(gstate); err != nil {
 			panic(fmt.Errorf("Redo SetState --- %v", err))
