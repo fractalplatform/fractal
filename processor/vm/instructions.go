@@ -1073,7 +1073,7 @@ func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 func opGetCandidateNum(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	epochID := stack.pop()
 	id := epochID.Uint64()
-	num, err := evm.Context.GetActivedCandidateSize(evm.StateDB)
+	num, err := evm.Context.GetActivedCandidateSize(evm.StateDB, id)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
