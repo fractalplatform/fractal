@@ -449,6 +449,7 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	ast, err := evm.AccountDB.GetAssetInfoByID(astID)
 	if err != nil || ast == nil {
 		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
 	}
 
@@ -456,6 +457,7 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	datalen := len(name)
 	if uint64(datalen) > retSize.Uint64()*32 {
 		err = errors.New("out of space")
+		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
 	}
@@ -465,8 +467,10 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	amount, err := evm.AccountDB.GetAssetAmountByTime(astID, t)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(amount)
+		stack.push(evm.interpreter.intPool.getZero())
 	}
 	evm.interpreter.intPool.put(time, assetID)
 	return nil, nil
