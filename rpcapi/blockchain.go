@@ -132,6 +132,9 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 	return r, err
 }
 
+// GetTxsByAccount return all txs, sent from or received by a specific account
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	filterFn := func(name common.Name) bool {
 		return name == acctName
@@ -140,6 +143,10 @@ func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName comm
 	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetTxsByBloom return all txs, filtered by a bloomByte
+// bloomByte is constructed by some quantities of account names
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	bloom := types.BytesToBloom(bloomByte)
 
@@ -149,6 +156,9 @@ func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexut
 	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetInternalTxByAccount return all logs of interal txs, sent from or received by a specific account
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	filterFn := func(name common.Name) bool {
 		return name == acctName
@@ -157,6 +167,10 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetInternalTxByBloom return all logs of interal txs, filtered by a bloomByte
+// bloomByte is constructed by some quantities of account names
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	bloom := types.BytesToBloom(bloomByte)
 
@@ -166,6 +180,7 @@ func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByt
 	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetInternalTxByHash return logs of interal txs include by a transcastion
 func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash common.Hash) (*types.DetailTx, error) {
 	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
 	if tx == nil {
