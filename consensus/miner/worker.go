@@ -83,7 +83,7 @@ func newWorker(consensus consensus.IConsensus) *Worker {
 // update keeps track of events.
 func (worker *Worker) update() {
 	txsCh := make(chan *event.Event, txChanSize)
-	txsSub := event.Subscribe(nil, txsCh, event.TxEv, []*types.Transaction{})
+	txsSub := event.Subscribe(nil, txsCh, event.NewTxs, []*types.Transaction{})
 	defer txsSub.Unsubscribe()
 
 	chainHeadCh := make(chan *event.Event, chainHeadChanSize)

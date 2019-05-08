@@ -664,7 +664,7 @@ func TestTransactionGapFilling(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, testTxPoolConfig.AccountQueue+5)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Create a pending and a queued transaction with a nonce-gap in between
@@ -945,7 +945,7 @@ func TestTransactionPendingLimiting(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, testTxPoolConfig.AccountQueue+5)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Keep queuing up transactions and make sure all above a limit are dropped
@@ -988,7 +988,7 @@ func TestTransactionPoolRepricing(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	manager, _ := am.NewAccountManager(statedb)
@@ -1200,7 +1200,7 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
@@ -1314,7 +1314,7 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
@@ -1390,7 +1390,7 @@ func TestTransactionReplacement(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Add pending transactions, ensuring the minimum price bump is enforced for replacement (for ultra low prices too)

@@ -156,7 +156,7 @@ func validateEvents(events chan *event.Event, count int) error {
 	for len(received) < count {
 		select {
 		case ev := <-events:
-			if ev.Typecode == event.TxEv {
+			if ev.Typecode == event.NewTxs {
 				received = append(received, ev.Data.([]*types.Transaction)...)
 			}
 		case <-time.After(time.Second):
