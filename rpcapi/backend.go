@@ -114,21 +114,20 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewAccountAPI(apiBackend),
 			Public:    true,
 		}, {
-			Namespace: "p2p",
-			Version:   "1.0",
-			Service:   NewPrivateP2pAPI(apiBackend),
-			Public:    true,
-		}, {
 			Namespace: "fee",
 			Version:   "1.0",
 			Service:   NewFeeAPI(apiBackend),
 			Public:    true,
 		},
 		{
+			Namespace: "p2p",
+			Version:   "1.0",
+			Service:   NewPrivateP2pAPI(apiBackend),
+		},
+		{
 			Namespace: "debug",
 			Version:   "1.0",
 			Service:   debug.Handler,
-			Public:    true, // todo private
 		},
 	}
 	return append(apis, apiBackend.APIs()...)

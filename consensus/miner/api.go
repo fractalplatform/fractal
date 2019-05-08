@@ -61,7 +61,6 @@ func (miner *Miner) APIs(chain consensus.IChainReader) []rpc.API {
 				miner: miner,
 				chain: chain,
 			},
-			Public: true,
 		},
 	}
 	apis = append(apis, miner.worker.Engine().APIs(chain)...)
