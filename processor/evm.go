@@ -78,7 +78,7 @@ type EgnineContext interface {
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
 
-	ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
+	ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
 
 	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
 

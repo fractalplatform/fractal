@@ -29,9 +29,9 @@ func GetCurrentBlock(fullTx bool) (map[string]interface{}, error) {
 }
 
 //GetBlockByNumber returns the requested block.
-func GetBlockByNumber(height uint64, fullTx bool) (map[string]interface{}, error) {
+func GetBlockByNumber(number uint64, fullTx bool) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	err := ClientCall("ft_getBlockByNumber", &result, height, fullTx)
+	err := ClientCall("ft_getBlockByNumber", &result, number, fullTx)
 	return result, err
 }
 
