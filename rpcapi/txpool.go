@@ -50,7 +50,6 @@ func (s *PublicTxPoolAPI) Content() map[string]map[string]map[string]*types.RPCT
 		"queued":  make(map[string]map[string]*types.RPCTransaction),
 	}
 	pending, queue := s.b.TxPoolContent()
-
 	// Flatten the pending transactions
 	for account, txs := range pending {
 		dump := make(map[string]*types.RPCTransaction)

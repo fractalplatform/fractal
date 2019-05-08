@@ -21,8 +21,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// accountSet is simply a set of name to check for existence, and a signer
-// capable of deriving name from transactions.
+// accountSet is simply a set of name to check for existence
 type accountSet struct {
 	accounts map[common.Name]struct{}
 }
@@ -41,8 +40,7 @@ func (as *accountSet) contains(name common.Name) bool {
 	return exist
 }
 
-// containsTx checks if the sender of a given tx is within the set. If the sender
-// cannot be derived, this method returns false.
+// containsTx checks if the sender of a given tx is within the set.
 func (as *accountSet) containsTx(tx *types.Transaction) bool {
 	// todo every action
 	return as.contains(tx.GetActions()[0].Sender())

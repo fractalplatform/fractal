@@ -119,13 +119,12 @@ type ServerCodec interface {
 type BlockNumber int64
 
 const (
-	PendingBlockNumber  = BlockNumber(-2)
 	LatestBlockNumber   = BlockNumber(-1)
 	EarliestBlockNumber = BlockNumber(0)
 )
 
 // UnmarshalJSON parses the given JSON fragment into a BlockNumber. It supports:
-// - "latest", "earliest" or "pending" as string arguments
+// - "latest", "earliest" as string arguments
 // - the block number
 // Returned errors:
 // - an invalid block number error when the given argument isn't a known strings
@@ -142,9 +141,6 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return nil
 	case "latest":
 		*bn = LatestBlockNumber
-		return nil
-	case "pending":
-		*bn = PendingBlockNumber
 		return nil
 	}
 

@@ -301,7 +301,6 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 		txs := list.Flatten() // Heavy but will be cached and is needed by the miner anyway
 		// todo change transaction action nonce
 		if err := tp.pendingAccountManager.SetNonce(name, txs[len(txs)-1].GetActions()[0].Nonce()+1); err != nil {
-
 			if err != am.ErrAccountIsDestroy {
 				log.Error("Failed to pendingAccountManager SetNonce", "err", err)
 				return
@@ -312,6 +311,7 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 			log.Debug("Remove all destory account ", "name", name)
 		}
 	}
+
 	// Check the queue and move transactions over to the pending if possible
 	// or remove those that have become invalid
 	tp.promoteExecutables(nil)
@@ -402,7 +402,6 @@ func (tp *TxPool) Content() (map[common.Name][]*types.Transaction, map[common.Na
 func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
-
 	pending := make(map[common.Name][]*types.Transaction)
 	for addr, list := range tp.pending {
 		pending[addr] = list.Flatten()
@@ -519,7 +518,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	if tp.currentMaxGas < allgas {
 		return ErrGasLimit
 	}
-
 	return nil
 }
 
@@ -600,7 +598,6 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 func (tp *TxPool) enqueueTx(hash common.Hash, tx *types.Transaction) (bool, error) {
 	// Try to insert the transaction into the future queue
 	from := tx.GetActions()[0].Sender()
-
 	if tp.queue[from] == nil {
 		tp.queue[from] = newTxList(false)
 	}

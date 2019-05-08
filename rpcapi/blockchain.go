@@ -49,9 +49,7 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 
 // GetCurrentBlock returns cureent block.
 func (s *PublicBlockChainAPI) GetCurrentBlock(fullTx bool) map[string]interface{} {
-	block := s.b.CurrentBlock()
-	response := s.rpcOutputBlock(s.b.ChainConfig().ChainID, block, true, fullTx)
-	return response
+	return s.rpcOutputBlock(s.b.ChainConfig().ChainID, s.b.CurrentBlock(), true, fullTx)
 }
 
 // GetBlockByHash returns the requested block. When fullTx is true all transactions in the block are returned in full
@@ -70,12 +68,6 @@ func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.
 	block, err := s.b.BlockByNumber(ctx, blockNr)
 	if block != nil {
 		response := s.rpcOutputBlock(s.b.ChainConfig().ChainID, block, true, fullTx)
-		if blockNr == rpc.PendingBlockNumber {
-			// Pending blocks need to nil out a few fields
-			for _, field := range []string{"hash", "nonce", "miner"} {
-				response[field] = nil
-			}
-		}
 		return response, err
 	}
 	return nil, err
@@ -291,7 +283,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 		hi = uint64(args.Gas)
 	} else {
 		// Retrieve the current pending block to act as the gas ceiling
-		block, err := s.b.BlockByNumber(ctx, rpc.PendingBlockNumber)
+		block, err := s.b.BlockByNumber(ctx, rpc.LatestBlockNumber)
 		if err != nil {
 			return 0, err
 		}
@@ -302,8 +294,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 	// Create a helper to check if a gas allowance results in an executable transaction
 	executable := func(gas uint64) bool {
 		args.Gas = gas
-
-		_, _, failed, err := s.doCall(ctx, args, rpc.PendingBlockNumber, vm.Config{}, 0)
+		_, _, failed, err := s.doCall(ctx, args, rpc.LatestBlockNumber, vm.Config{}, 0)
 		if err != nil || failed {
 			return false
 		}
