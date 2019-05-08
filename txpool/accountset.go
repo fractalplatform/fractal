@@ -25,7 +25,6 @@ import (
 // capable of deriving name from transactions.
 type accountSet struct {
 	accounts map[common.Name]struct{}
-	signer   types.Signer
 }
 
 // newAccountSet creates a new name set with an associated signer for sender
@@ -33,7 +32,6 @@ type accountSet struct {
 func newAccountSet(signer types.Signer) *accountSet {
 	return &accountSet{
 		accounts: make(map[common.Name]struct{}),
-		signer:   signer,
 	}
 }
 
