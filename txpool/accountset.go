@@ -40,8 +40,8 @@ func (as *accountSet) contains(name common.Name) bool {
 	return exist
 }
 
-// containsTx checks if the sender of a given tx is within the set.
-func (as *accountSet) containsTx(tx *types.Transaction) bool {
+// containsName checks if the sender of a given tx is within the set.
+func (as *accountSet) containsName(tx *types.Transaction) bool {
 	// todo every action
 	return as.contains(tx.GetActions()[0].Sender())
 }

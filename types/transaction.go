@@ -214,7 +214,7 @@ func NewTransactionsByPriceAndNonce(txs map[common.Name][]*Transaction) *Transac
 	heads := make(TxByPrice, 0, len(txs))
 	for from, accTxs := range txs {
 		heads = append(heads, accTxs[0])
-		// Ensure the sender address is from the signer
+		// Ensure the sender name is from the signer
 		action := accTxs[0].actions[0]
 		acc := action.Sender()
 		txs[acc] = accTxs[1:]

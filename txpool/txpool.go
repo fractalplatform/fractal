@@ -181,14 +181,14 @@ func (tp *TxPool) loop() {
 			// Handle inactive account transaction eviction
 		case <-evict.C:
 			tp.mu.Lock()
-			for addr := range tp.queue {
+			for name := range tp.queue {
 				// Skip local transactions from the eviction mechanism
-				if tp.locals.contains(addr) {
+				if tp.locals.contains(name) {
 					continue
 				}
 				// Any non-locals old enough should be removed
-				if time.Since(tp.beats[addr]) > tp.config.Lifetime {
-					for _, tx := range tp.queue[addr].Flatten() {
+				if time.Since(tp.beats[name]) > tp.config.Lifetime {
+					for _, tx := range tp.queue[name].Flatten() {
 						tp.removeTx(tx.Hash(), true)
 					}
 				}
@@ -386,12 +386,12 @@ func (tp *TxPool) Content() (map[common.Name][]*types.Transaction, map[common.Na
 	defer tp.mu.Unlock()
 
 	pending := make(map[common.Name][]*types.Transaction)
-	for addr, list := range tp.pending {
-		pending[addr] = list.Flatten()
+	for name, list := range tp.pending {
+		pending[name] = list.Flatten()
 	}
 	queued := make(map[common.Name][]*types.Transaction)
-	for addr, list := range tp.queue {
-		queued[addr] = list.Flatten()
+	for name, list := range tp.queue {
+		queued[name] = list.Flatten()
 	}
 	return pending, queued
 }
@@ -403,8 +403,8 @@ func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 	pending := make(map[common.Name][]*types.Transaction)
-	for addr, list := range tp.pending {
-		pending[addr] = list.Flatten()
+	for name, list := range tp.pending {
+		pending[name] = list.Flatten()
 	}
 	return pending, nil
 }
@@ -414,12 +414,12 @@ func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
 // freely modified by calling code.
 func (tp *TxPool) local() map[common.Name][]*types.Transaction {
 	txs := make(map[common.Name][]*types.Transaction)
-	for addr := range tp.locals.accounts {
-		if list := tp.pending[addr]; list != nil {
-			txs[addr] = append(txs[addr], list.Flatten()...)
+	for name := range tp.locals.accounts {
+		if list := tp.pending[name]; list != nil {
+			txs[name] = append(txs[name], list.Flatten()...)
 		}
-		if list := tp.queue[addr]; list != nil {
-			txs[addr] = append(txs[addr], list.Flatten()...)
+		if list := tp.queue[name]; list != nil {
+			txs[name] = append(txs[name], list.Flatten()...)
 		}
 	}
 	return txs
@@ -581,7 +581,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	// Mark local addresses and journal local transactions
+	// Mark local names and journal local transactions
 	if local {
 		tp.locals.add(from)
 	}
@@ -771,11 +771,11 @@ func (tp *TxPool) addTxsLocked(txs []*types.Transaction, local bool) []error {
 	}
 	// Only reprocess the internal state if something was actually added
 	if len(dirty) > 0 {
-		addrs := make([]common.Name, 0, len(dirty))
-		for addr := range dirty {
-			addrs = append(addrs, addr)
+		names := make([]common.Name, 0, len(dirty))
+		for name := range dirty {
+			names = append(names, name)
 		}
-		tp.promoteExecutables(addrs)
+		tp.promoteExecutables(names)
 	}
 	return errs
 }
@@ -869,20 +869,20 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 	// Gather all the accounts potentially needing updates
 	if accounts == nil {
 		accounts = make([]common.Name, 0, len(tp.queue))
-		for addr := range tp.queue {
-			accounts = append(accounts, addr)
+		for name := range tp.queue {
+			accounts = append(accounts, name)
 		}
 	}
 	// Iterate over all accounts and promote any executable transactions
-	for _, addr := range accounts {
-		list := tp.queue[addr]
+	for _, name := range accounts {
+		list := tp.queue[name]
 		if list == nil {
 			continue // Just in case someone calls with a non existing account
 		}
 		// Drop all transactions that are deemed too old (low nonce)
-		nonce, err := tp.curAccountManager.GetNonce(addr)
+		nonce, err := tp.curAccountManager.GetNonce(name)
 		if err != nil {
-			log.Error("promoteExecutables current account manager get nonce err", "name", addr, "err", err)
+			log.Error("promoteExecutables current account manager get nonce err", "name", name, "err", err)
 		}
 		for _, tx := range list.Forward(nonce) {
 			hash := tx.Hash()
@@ -892,9 +892,9 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		}
 		// Drop all transactions that are too costly (low balance or out of gas or no permissions)
 		// todo assetID
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
+		balance, err := tp.curAccountManager.GetAccountBalanceByID(name, tp.config.GasAssetID, 0)
 		if err != nil {
-			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
+			log.Error("promoteExecutables current account manager get balance err ", "name", name, "assetID", tp.config.GasAssetID, "err", err)
 		}
 		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
 		for _, tx := range drops {
@@ -905,19 +905,19 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		}
 
 		// Gather all executable transactions and promote them
-		nonce, err = tp.pendingAccountManager.GetNonce(addr)
+		nonce, err = tp.pendingAccountManager.GetNonce(name)
 		if err != nil && err != am.ErrAccountNotExist {
-			log.Error("promoteExecutables pending account manager get nonce err ", "name", addr, "err", err)
+			log.Error("promoteExecutables pending account manager get nonce err ", "name", name, "err", err)
 		}
 		for _, tx := range list.Ready(nonce) {
 			hash := tx.Hash()
-			if tp.promoteTx(addr, hash, tx) {
+			if tp.promoteTx(name, hash, tx) {
 				log.Trace("Promoting queued transaction", "hash", hash)
 				promoted = append(promoted, tx)
 			}
 		}
 		// Drop all transactions over the allowed limit
-		if !tp.locals.contains(addr) {
+		if !tp.locals.contains(name) {
 			for _, tx := range list.Cap(int(tp.config.AccountQueue)) {
 				hash := tx.Hash()
 				tp.all.Remove(hash)
@@ -927,7 +927,7 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		}
 		// Delete the entire queue entry if it became empty.
 		if list.Empty() {
-			delete(tp.queue, addr)
+			delete(tp.queue, name)
 		}
 	}
 	// Notify subsystem for new promoted transactions.
@@ -945,16 +945,16 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 	if pending > tp.config.GlobalSlots {
 		// Assemble a spam order to penalize large transactors first
 		spammers := prque.New()
-		for addr, list := range tp.pending {
+		for name, list := range tp.pending {
 			// Only evict transactions from high rollers
-			if !tp.locals.contains(addr) && uint64(list.Len()) > tp.config.AccountSlots {
-				spammers.Push(addr, float32(list.Len()))
+			if !tp.locals.contains(name) && uint64(list.Len()) > tp.config.AccountSlots {
+				spammers.Push(name, float32(list.Len()))
 			}
 		}
 		// Gradually drop transactions from offenders
 		offenders := []common.Name{}
 		for pending > tp.config.GlobalSlots && !spammers.Empty() {
-			// Retrieve the next offender if not local address
+			// Retrieve the next offender if not local name
 			offender, _ := spammers.Pop()
 			offenders = append(offenders, offender.(common.Name))
 
@@ -994,8 +994,8 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 		// If still above threshold, reduce to limit or min allowance
 		if pending > tp.config.GlobalSlots && len(offenders) > 0 {
 			for pending > tp.config.GlobalSlots && uint64(tp.pending[offenders[len(offenders)-1]].Len()) > tp.config.AccountSlots {
-				for _, addr := range offenders {
-					list := tp.pending[addr]
+				for _, name := range offenders {
+					list := tp.pending[name]
 					for _, tx := range list.Cap(list.Len() - 1) {
 						// Drop the transaction from the global pools too
 						hash := tx.Hash()
@@ -1003,12 +1003,12 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 						tp.priced.Removed()
 
 						// Update the account nonce to the dropped transaction
-						pnonce, err := tp.pendingAccountManager.GetNonce(addr)
+						pnonce, err := tp.pendingAccountManager.GetNonce(name)
 						if err != nil && err != am.ErrAccountNotExist {
-							log.Error("promoteExecutables pending account manager get nonce err ", "name", addr, "err", err)
+							log.Error("promoteExecutables pending account manager get nonce err ", "name", name, "err", err)
 						}
 						if nonce := tx.GetActions()[0].Nonce(); pnonce > nonce {
-							tp.pendingAccountManager.SetNonce(addr, nonce)
+							tp.pendingAccountManager.SetNonce(name, nonce)
 						}
 						log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
 					}
@@ -1024,20 +1024,20 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 	}
 	if queued > tp.config.GlobalQueue {
 		// Sort all accounts with queued transactions by heartbeat
-		addresses := make(namesByHeartbeat, 0, len(tp.queue))
-		for addr := range tp.queue {
-			if !tp.locals.contains(addr) { // don't drop locals
-				addresses = append(addresses, nameByHeartbeat{addr, tp.beats[addr]})
+		names := make(namesByHeartbeat, 0, len(tp.queue))
+		for name := range tp.queue {
+			if !tp.locals.contains(name) { // don't drop locals
+				names = append(names, nameByHeartbeat{name, tp.beats[name]})
 			}
 		}
-		sort.Sort(addresses)
+		sort.Sort(names)
 
 		// Drop transactions until the total is below the limit or only locals remain
-		for drop := queued - tp.config.GlobalQueue; drop > 0 && len(addresses) > 0; {
-			addr := addresses[len(addresses)-1]
-			list := tp.queue[addr.name]
+		for drop := queued - tp.config.GlobalQueue; drop > 0 && len(names) > 0; {
+			nameBeat := names[len(names)-1]
+			list := tp.queue[nameBeat.name]
 
-			addresses = addresses[:len(addresses)-1]
+			names = names[:len(names)-1]
 
 			// Drop all transactions if they are less than the overflow
 			if size := uint64(list.Len()); size <= drop {
@@ -1062,10 +1062,10 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) {
 // are moved back into the future queue.
 func (tp *TxPool) demoteUnexecutables() {
 	// Iterate over all accounts and demote any non-executable transactions
-	for addr, list := range tp.pending {
-		nonce, err := tp.curAccountManager.GetNonce(addr)
+	for name, list := range tp.pending {
+		nonce, err := tp.curAccountManager.GetNonce(name)
 		if err != nil && err != am.ErrAccountNotExist {
-			log.Error("promoteExecutables current account manager get nonce err ", "name", addr, "err", err)
+			log.Error("promoteExecutables current account manager get nonce err ", "name", name, "err", err)
 		}
 
 		// Drop all transactions that are deemed too old (low nonce)
@@ -1077,9 +1077,9 @@ func (tp *TxPool) demoteUnexecutables() {
 		}
 
 		// Drop all transactions that are too costly (low balance or out of gas or no permissions), and queue any invalids back for later
-		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(addr, tp.config.GasAssetID, 0)
+		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(name, tp.config.GasAssetID, 0)
 		if err != nil && err != am.ErrAccountNotExist {
-			log.Error("promoteExecutables current account manager get balance err ", "name", addr, "assetID", tp.config.GasAssetID, "err", err)
+			log.Error("promoteExecutables current account manager get balance err ", "name", name, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
 		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
@@ -1105,8 +1105,8 @@ func (tp *TxPool) demoteUnexecutables() {
 		}
 		// Delete the entire queue entry if it became empty.
 		if list.Empty() {
-			delete(tp.pending, addr)
-			delete(tp.beats, addr)
+			delete(tp.pending, name)
+			delete(tp.beats, name)
 		}
 	}
 }

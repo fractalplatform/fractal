@@ -129,7 +129,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 	}
 	// Ensure the next nonce to assign is the correct one
 
-	for addr, list := range pool.pending {
+	for name, list := range pool.pending {
 		// Find the last transaction
 		var last uint64
 		for nonce := range list.txs.items {
@@ -138,7 +138,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 			}
 		}
 
-		nonce, err := pool.pendingAccountManager.GetNonce(addr)
+		nonce, err := pool.pendingAccountManager.GetNonce(name)
 		if err != nil {
 			return err
 		}

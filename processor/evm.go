@@ -73,7 +73,7 @@ type ChainContext interface {
 }
 
 type EgnineContext interface {
-	// Author retrieves the address of the account that minted the given
+	// Author retrieves the name of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
