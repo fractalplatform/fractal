@@ -110,17 +110,18 @@ func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header
 		beneficiary = *author
 	}
 	return vm.Context{
-		GetHash:            GetHashFn(header, chain),
-		GetDelegatedByTime: chain.GetDelegatedByTime,
-		GetHeaderByNumber:  chain.GetHeaderByNumber,
-		Origin:             sender,
-		AssetID:            assetID,
-		Coinbase:           beneficiary,
-		BlockNumber:        new(big.Int).Set(header.Number),
-		Time:               new(big.Int).Set(header.Time),
-		Difficulty:         new(big.Int).Set(header.Difficulty),
-		GasLimit:           header.GasLimit,
-		GasPrice:           new(big.Int).Set(gasPrice),
+		GetHash: GetHashFn(header, chain),
+		//GetDelegatedByTime: chain.GetDelegatedByTime,
+		Engine:            chain.EgnineContext,
+		GetHeaderByNumber: chain.GetHeaderByNumber,
+		Origin:            sender,
+		AssetID:           assetID,
+		Coinbase:          beneficiary,
+		BlockNumber:       new(big.Int).Set(header.Number),
+		Time:              new(big.Int).Set(header.Time),
+		Difficulty:        new(big.Int).Set(header.Difficulty),
+		GasLimit:          header.GasLimit,
+		GasPrice:          new(big.Int).Set(gasPrice),
 	}
 }
 

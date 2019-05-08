@@ -34,10 +34,33 @@ type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
-	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
+	//GetDelegatedByEgnineContext
 	// GetHeaderByNumberFunc
 	GetHeaderByNumberFunc func(number uint64) *types.Header
 )
+
+type EgnineContext interface {
+	// Author retrieves the address of the account that minted the given
+	// block, which may be different from the header's coinbase if a consensus
+	// engine is based on signatures.
+	//Author(header *types.Header) (common.Name, error)
+
+	//ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
+
+	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
+
+	GetLatestEpcho(state *state.StateDB) (epcho uint64, err error)
+
+	GetPrevEpcho(state *state.StateDB, epcho uint64) (pecho uint64, err error)
+
+	GetActivedCandidateSize(state *state.StateDB, epcho uint64) (size uint64, err error)
+
+	GetActivedCandidate(state *state.StateDB, epcho uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
+
+	GetCandidateStake(state *state.StateDB, epcho uint64, candidate string) (stake *big.Int, err error)
+
+	GetVoterStake(state *state.StateDB, epcho uint64, voter string, candidate string) (stake *big.Int, err error)
+}
 
 // Context provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
@@ -46,8 +69,8 @@ type Context struct {
 	GetHash GetHashFunc
 
 	// GetDelegatedByTime returns the delegated balance
-	GetDelegatedByTime GetDelegatedByTimeFunc
-
+	//GetDelegatedByTime GetDelegatedByTimeFunc
+	Engine EgnineContext
 	//GetHeaderByNumber
 	GetHeaderByNumber GetHeaderByNumberFunc
 
@@ -75,6 +98,8 @@ type EVM struct {
 	Context
 	// Asset operation func
 	AccountDB *accountmanager.AccountManager
+	// DPOS operation func
+	//Engine consensus.IEngine
 	// StateDB gives access to the underlying state
 	StateDB *state.StateDB
 	// Depth is the current call stack
@@ -117,7 +142,8 @@ type DistributeKey struct {
 // only ever be used *once*.
 func NewEVM(ctx Context, accountdb *accountmanager.AccountManager, statedb *state.StateDB, chainCfg *params.ChainConfig, vmConfig Config) *EVM {
 	evm := &EVM{
-		Context:     ctx,
+		Context: ctx,
+		//Engine:      eg,
 		AccountDB:   accountdb,
 		StateDB:     statedb,
 		chainConfig: chainCfg,
