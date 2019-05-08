@@ -120,9 +120,9 @@ type actionData struct {
 type Action struct {
 	data actionData
 	// cache
-	hash   atomic.Value
-	sender atomic.Value
-	author atomic.Value
+	hash          atomic.Value
+	senderPubkeys atomic.Value
+	author        atomic.Value
 }
 
 // NewAction initialize transaction's action.
