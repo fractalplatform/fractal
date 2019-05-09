@@ -102,17 +102,17 @@ type IEngine interface {
 
 	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
 
-	GetLatestEpcho(state *state.StateDB) (epcho uint64, err error)
+	GetLatestEpoch(state *state.StateDB) (epoch uint64, err error)
 
-	GetPrevEpcho(state *state.StateDB, epcho uint64) (pecho uint64, err error)
+	GetPrevEpoch(state *state.StateDB, epoch uint64) (pecho uint64, err error)
 
-	GetActivedCandidateSize(state *state.StateDB, epcho uint64) (size uint64, err error)
+	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
 
-	GetActivedCandidate(state *state.StateDB, epcho uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
+	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
 
-	GetCandidateStake(state *state.StateDB, epcho uint64, candidate string) (stake *big.Int, err error)
+	GetCandidateStake(state *state.StateDB, epoch uint64, candidate string) (stake *big.Int, err error)
 
-	GetVoterStake(state *state.StateDB, epcho uint64, voter string, candidate string) (stake *big.Int, err error)
+	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 
 	IAPI
 }
