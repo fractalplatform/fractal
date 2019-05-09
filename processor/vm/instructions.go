@@ -470,7 +470,7 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(amount)
-		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(len(name))))
 	}
 	evm.interpreter.intPool.put(time, assetID)
 	return nil, nil
