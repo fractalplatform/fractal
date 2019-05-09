@@ -18,12 +18,25 @@ package types
 
 import (
 	"container/heap"
+	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
+)
+
+var (
+	// ErrOversizedData is returned if the input data of a transaction is greater
+	// than some meaningful limit a user might use. This is not a consensus error
+	// making the transaction invalid, rather a DOS protection.
+	ErrOversizedData = errors.New("oversized data")
+
+	// ErrEmptyActions transaction no actions
+	ErrEmptyActions = errors.New("transaction no actions")
 )
 
 // Transaction represents an entire transaction in the block.
@@ -112,6 +125,29 @@ func (tx *Transaction) Size() common.StorageSize {
 	tx.EncodeRLP(&c)
 	tx.size.Store(common.StorageSize(c))
 	return common.StorageSize(c)
+}
+
+// Check the validity of all fields
+func (tx *Transaction) Check(conf *params.ChainConfig) error {
+	if len(tx.actions) == 0 {
+		return ErrEmptyActions
+	}
+
+	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
+	if tx.Size() > common.StorageSize(params.MaxTxSize) {
+		return ErrOversizedData
+	}
+
+	if conf.SysTokenID != tx.gasAssetID {
+		return fmt.Errorf("only support system asset %d as tx fee", conf.SysTokenID)
+	}
+
+	for _, action := range tx.actions {
+		if err := action.Check(conf); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // RPCTransaction that will serialize to the RPC representation of a transaction.

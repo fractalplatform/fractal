@@ -58,7 +58,8 @@ const (
 	CreateGas       uint64 = 32000 // Once per CREATE operation & contract-creation transaction.
 	MemoryGas       uint64 = 3     // Times the address of the (highest referenced byte in memory + 1). NOTE: referencing happens on read, write and in instructions such as RETURN and CALL.
 
-	MaxCodeSize = 24576 // Maximum bytecode to permit for a contract
+	MaxCodeSize uint64 = 24576     // Maximum bytecode to permit for a contract
+	MaxTxSize   uint64 = 32 * 1024 // Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
 
 	// Precompiled contract gas prices
 
@@ -83,7 +84,7 @@ var (
 	DurationLimit          = big.NewInt(13)     // The decision boundary on the blocktime duration used to determine whether difficulty should go up or not.
 )
 
-var (
+const (
 	MaxSignDepth  = uint64(10)
 	MaxSignLength = uint64(50)
 )

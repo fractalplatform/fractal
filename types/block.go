@@ -227,6 +227,16 @@ func (b *Block) WithBody(transactions []*Transaction) *Block {
 	return block
 }
 
+// Check the validity of all fields
+func (b *Block) Check() error {
+	for _, tx := range b.Txs {
+		if len(tx.actions) == 0 {
+			return ErrEmptyActions
+		}
+	}
+	return nil
+}
+
 // CopyHeader creates a deep copy of a block header to prevent side effects from
 // modifying a header variable.
 func CopyHeader(h *Header) *Header {

@@ -61,7 +61,7 @@ func (dpos *Dpos) ProcessAction(number uint64, chainCfg *params.ChainConfig, sta
 }
 
 func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
-	if err := action.CheckValid(chainCfg); err != nil {
+	if err := action.Check(chainCfg); err != nil {
 		return nil, err
 	}
 	sys := NewSystem(state, dpos.config)

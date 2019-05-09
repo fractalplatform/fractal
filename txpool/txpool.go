@@ -471,10 +471,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		if err := action.CheckValid(tp.chain.Config()); err != nil {
-			return err
-		}
-
 		intrGas, err := IntrinsicGas(action)
 		if err != nil {
 			return err
@@ -485,15 +481,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 		return nil
 
-	}
-
-	// Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
-	if tx.Size() > 32*1024 {
-		return ErrOversizedData
-	}
-
-	if tp.config.GasAssetID != tx.GasAssetID() {
-		return fmt.Errorf("only support system asset %d as tx fee", tp.config.GasAssetID)
 	}
 
 	// Make sure the transaction is signed properly
@@ -695,10 +682,9 @@ func (tp *TxPool) AddRemotes(txs []*types.Transaction) []error {
 
 // addTx enqueues a single transaction into the pool if it is valid.
 func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
-	if len(tx.GetActions()) == 0 {
-		return ErrEmptyActions
+	if err := tx.Check(tp.chain.Config()); err != nil {
+		return err
 	}
-
 	// Cache senders in transactions before obtaining lock
 	for _, action := range tx.GetActions() {
 		_, err := types.RecoverMultiKey(tp.signer, action, tx)
@@ -732,8 +718,8 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
 		isErr bool
 	)
 	for _, tx := range txs {
-		if len(tx.GetActions()) == 0 {
-			errs = append(errs, fmt.Errorf(ErrEmptyActions.Error()+" hash %v", tx.Hash()))
+		if err := tx.Check(tp.chain.Config()); err != nil {
+			errs = append(errs, fmt.Errorf(err.Error()+" hash %v", tx.Hash()))
 			isErr = true
 			continue
 		}

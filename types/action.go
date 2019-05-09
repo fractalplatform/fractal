@@ -36,7 +36,6 @@ var ErrInvalidSig = errors.New("invalid action v, r, s values")
 type ActionType uint64
 
 const (
-
 	// CallContract represents the call contract action.
 	CallContract ActionType = iota
 	// CreateContract repesents the create contract action.
@@ -44,13 +43,13 @@ const (
 )
 
 const (
-	//CreateAccount repesents the create account.
+	// CreateAccount repesents the create account.
 	CreateAccount ActionType = 0x100 + iota
-	//UpdateAccount repesents update account.
+	// UpdateAccount repesents update account.
 	UpdateAccount
 	// DeleteAccount repesents the delete account action.
 	DeleteAccount
-	//UpdateAccountAuthor represents the update account author.
+	// UpdateAccountAuthor represents the update account author.
 	UpdateAccountAuthor
 )
 
@@ -59,14 +58,13 @@ const (
 	IncreaseAsset ActionType = 0x200 + iota
 	// IssueAsset repesents Issue asset action.
 	IssueAsset
-	//DestroyAsset destroy asset
+	// DestroyAsset destroy asset
 	DestroyAsset
 	// SetAssetOwner repesents set asset new owner action.
 	SetAssetOwner
-	//SetAssetFounder set asset founder
-	//SetAssetFounder
+	// UpdateAsset update asset
 	UpdateAsset
-	//Transfer repesents transfer asset action.
+	// Transfer repesents transfer asset action.
 	Transfer
 )
 
@@ -156,8 +154,8 @@ func (a *Action) GetSign() []*SignData {
 	return a.data.Sign
 }
 
-//CheckValid Check the validity of all fields
-func (a *Action) CheckValid(conf *params.ChainConfig) error {
+// Check the validity of all fields
+func (a *Action) Check(conf *params.ChainConfig) error {
 	//check To
 	switch a.Type() {
 	case CreateContract:
