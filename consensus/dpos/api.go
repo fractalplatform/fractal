@@ -32,8 +32,8 @@ type API struct {
 }
 
 // Info get dpos info
-func (api *API) Info() (interface{}, error) {
-	return api.dpos.config, nil
+func (api *API) Info() interface{} {
+	return api.dpos.config
 }
 
 // IrreversibleRet result
@@ -44,12 +44,12 @@ type IrreversibleRet struct {
 }
 
 // Irreversible get irreversible info
-func (api *API) Irreversible() (interface{}, error) {
+func (api *API) Irreversible() interface{} {
 	ret := &IrreversibleRet{}
 	ret.Reversible = api.chain.CurrentHeader().Number.Uint64()
 	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
 	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
-	return ret, nil
+	return ret
 }
 
 // Candidate get candidate info of dpos
@@ -80,7 +80,7 @@ func (api *API) Candidates(detail bool) (interface{}, error) {
 		return candidates, nil
 	}
 
-	names := []string{}
+	names := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		names = append(names, candidate.Name)
 	}
@@ -111,7 +111,7 @@ func (api *API) VotersByCandidateByNumber(number uint64, candidate string, detai
 		return voters, nil
 	}
 
-	names := []string{}
+	names := make([]string, 0, len(voters))
 	for _, voter := range voters {
 		names = append(names, voter.Name)
 	}
