@@ -42,7 +42,6 @@ type GasTable struct {
 	DestroyAsset    uint64
 	AddAsset        uint64
 	GetAccountID    uint64
-	GetDelegate     uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
 	DeductGas       uint64
@@ -72,7 +71,6 @@ var (
 		DestroyAsset:    200,
 		AddAsset:        200,
 		GetAccountID:    200,
-		GetDelegate:     200,
 		CryptoCalc:      20000,
 		CryptoByte:      1000,
 		DeductGas:       200,
