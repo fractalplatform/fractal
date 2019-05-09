@@ -66,6 +66,19 @@ func (api *API) Candidate(name string) (interface{}, error) {
 	return nil, nil
 }
 
+// CandidateByHeight get candidate info of dpos
+func (api *API) CandidateByHeight(height uint64, name string) (interface{}, error) {
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	epcho, err := api.epcho(height)
+	if err != nil {
+		return nil, err
+	}
+	return sys.GetCandidateInfoByTime(name, api.dpos.config.epochTimeStamp(epcho))
+}
+
 // Candidates all candidates info
 func (api *API) Candidates(detail bool) (interface{}, error) {
 	sys, err := api.system()
