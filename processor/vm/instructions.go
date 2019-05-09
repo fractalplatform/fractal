@@ -1022,6 +1022,91 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 }
 
 //multi-asset
+// opGetEpoch get epoch
+func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	fmt.Println("in opGetEpoch")
+	epochID := stack.pop()
+	id := epochID.Uint64()
+	var num uint64
+	var err error
+	fmt.Println("in opGetEpoch 1")
+
+	if id == 0 {
+		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
+
+	} else {
+		num, err = evm.Context.GetPrevEpoch(evm.StateDB, id)
+	}
+	fmt.Println("in opGetEpoch 2")
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
+	return nil, nil
+}
+
+// opGetCandidateNum get Candidate num
+func opGetCandidateNum(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	fmt.Println("in opGetCandidateNum")
+	epochID := stack.pop()
+	id := epochID.Uint64()
+	num, err := evm.Context.GetActivedCandidateSize(evm.StateDB, id)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
+	return nil, nil
+}
+
+// opGetCandidate
+func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	fmt.Println("in opGetCandidate")
+	nameOffset, nameSize, index, epochID := stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	id := epochID.Uint64()
+	i := index.Uint64()
+	//
+	name, stake, counter, actualCounter, replace, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
+	nameBytes := []byte(name)
+	datalen := len(nameBytes)
+	if uint64(datalen) > nameSize.Uint64()*32 {
+		err = errors.New("out of space")
+	}
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		//don't copy
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(replace))
+		stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
+		stack.push(evm.interpreter.intPool.get().SetUint64(counter))
+		stack.push(evm.interpreter.intPool.get().Set(stake))
+		memory.Set(nameOffset.Uint64(), uint64(datalen), nameBytes)
+	}
+	return nil, nil
+}
+
+// opGetVoterStake
+func opGetVoterStake(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	fmt.Println("in opGetVoterStake")
+	candidateOffet, candidateSize, voterOffset, voterSize, epochID := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	id := epochID.Uint64()
+	voter := memory.Get(voterOffset.Int64(), voterSize.Int64())
+
+	candidate := memory.Get(candidateOffet.Int64(), candidateSize.Int64())
+	//
+	num, err := evm.Context.GetVoterStake(evm.StateDB, id, string(voter), string(candidate))
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().Set(num))
+	}
+	return nil, nil
+}
+
 //Increase asset already exist
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	value, to, assetId := stack.pop(), stack.pop(), stack.pop()

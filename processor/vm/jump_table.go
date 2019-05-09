@@ -91,6 +91,38 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet := NewHomesteadInstructionSet()
 
 	//multi-asset InstructionSet
+	instructionSet[GETEPCHO] = operation{
+		execute:       opGetEpoch,
+		gasCost:       gasGetEpoch,
+		validateStack: makeStackFunc(1, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETCANDIDATENUM] = operation{
+		execute:       opGetCandidateNum,
+		gasCost:       gasGetCandidateNum,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETCANDIDATE] = operation{
+		execute:       opGetCandidate,
+		gasCost:       gasGetCandidate,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETVOTERSTAKE] = operation{
+		execute:       opGetVoterStake,
+		gasCost:       gasGetVoterStake,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[GETACCOUNTTIME] = operation{
 		execute:       opGetAccountTime,
 		gasCost:       gasGetAccountTime,
