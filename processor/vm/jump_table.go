@@ -134,7 +134,7 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[ASSETAMOUNT] = operation{
 		execute:       opGetAssetAmount,
 		gasCost:       gasGetAssetAmount,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(2, 2),
 		valid:         true,
 		returns:       true,
 	}
