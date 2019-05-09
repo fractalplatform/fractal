@@ -178,6 +178,24 @@ func (evm *EVM) Cancel() {
 	atomic.StoreInt32(&evm.abort, 1)
 }
 
+func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
+	toAcct, err := evm.AccountDB.GetAccountByName(action.Recipient())
+	if err != nil {
+		return 0
+	}
+	if toAcct == nil {
+		return 0
+	}
+	if toAcct.IsDestroyed() {
+		return 0
+	}
+	_, err = toAcct.GetBalanceByID(action.AssetID())
+	if err == accountmanager.ErrAccountAssetNotExist {
+		return params.CallValueTransferGas
+	}
+	return 0
+}
+
 func (evm *EVM) distributeContractGas(runGas uint64, contractName common.Name, callerName common.Name) {
 	if runGas > 0 && len(contractName.String()) > 0 {
 		contratFounderRatio := evm.chainConfig.ChargeCfg.ContractRatio
@@ -272,6 +290,12 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		snapshot = evm.StateDB.Snapshot()
 	)
 
+	receiptGas := evm.CheckReceipt(action)
+	if gas < receiptGas {
+		return nil, gas, ErrInsufficientBalance
+	} else {
+		gas -= receiptGas
+	}
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
 		return nil, gas, err
 	}
@@ -530,6 +554,12 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 		return nil, 0, ErrContractCodeCollision
 	}
 
+	receiptGas := evm.CheckReceipt(action)
+	if gas < receiptGas {
+		return nil, gas, ErrInsufficientBalance
+	} else {
+		gas -= receiptGas
+	}
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		return nil, gas, err

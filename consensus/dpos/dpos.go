@@ -193,11 +193,24 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	pepcho := dpos.config.epoch(parent.Time.Uint64())
 	epcho := dpos.config.epoch(header.Time.Uint64())
 	if pepcho != epcho {
-		counter := func(from uint64, to uint64, index uint64) uint64 {
-			timestamp := chain.GetHeaderByNumber(to).Time.Uint64() - chain.GetHeaderByNumber(from).Time.Uint64()
-			m := timestamp / dpos.config.mepochInterval()
+		counter := func(from uint64, index uint64) uint64 {
+			if header.Number.Uint64() <= 1 {
+				return 0
+			}
+			if from == 0 {
+				from = 1
+			}
+			timestamp := header.Time.Uint64() - chain.GetHeaderByNumber(from).Time.Uint64()
+			m := (timestamp / dpos.config.mepochInterval()) * dpos.config.BlockFrequency
 			n := timestamp % dpos.config.mepochInterval()
-			return m + n
+			offset := n / (dpos.config.blockInterval() * dpos.config.BlockFrequency)
+			if index < offset {
+				m += dpos.config.BlockFrequency
+			} else if index == offset {
+				n = n % (dpos.config.blockInterval() * dpos.config.BlockFrequency)
+				m += n / dpos.config.blockInterval()
+			}
+			return m
 		}
 		log.Debug("UpdateElectedCandidates", "prev", pepcho, "curr", epcho, "height", parent.Number.Uint64(), "time", parent.Time.Uint64())
 		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64(), counter)

@@ -449,6 +449,7 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	ast, err := evm.AccountDB.GetAssetInfoByID(astID)
 	if err != nil || ast == nil {
 		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
 	}
 
@@ -456,6 +457,7 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	datalen := len(name)
 	if uint64(datalen) > retSize.Uint64()*32 {
 		err = errors.New("out of space")
+		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
 	}
@@ -465,36 +467,16 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	amount, err := evm.AccountDB.GetAssetAmountByTime(astID, t)
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(amount)
+		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(len(name))))
 	}
 	evm.interpreter.intPool.put(time, assetID)
 	return nil, nil
 }
 
-func opGetDelegate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	time, account := stack.pop(), stack.pop()
-	t := time.Uint64()
-	userID := account.Uint64()
 
-	acct, err := evm.AccountDB.GetAccountById(userID)
-	if err == nil {
-		if acct != nil {
-			name := acct.GetName()
-			if dbalance, err := evm.Context.Engine.GetDelegatedByTime(evm.StateDB, name.String(), t); err == nil {
-				stack.push(dbalance)
-			}
-		} else {
-			err = errors.New("account object is null")
-		}
-	}
-
-	if err != nil {
-		stack.push(evm.interpreter.intPool.getZero())
-	}
-	evm.interpreter.intPool.put(time, account)
-	return nil, nil
-}
 func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	opt, time, assetId, account := stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	o := opt.Uint64()
@@ -1526,6 +1508,11 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	value = math.U256(value)
 
 	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, assetID, 0, value, nil, nil)
+
+	if !contract.UseGas(evm.CheckReceipt(action)) {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
 
 	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 	//distribute gas

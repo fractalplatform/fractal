@@ -472,9 +472,6 @@ func gasDeductGas(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack
 	return gt.DeductGas, nil
 }
 
-func gasGetDelegate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
-	return gt.GetDelegate, nil
-}
 func gasAddAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 
 	return gt.AddAsset, nil
