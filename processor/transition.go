@@ -116,7 +116,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	if err != nil {
 		return nil, 0, true, err, vmerr
 	}
-	intrinsicGas += st.evm.CheckReceipt()
+	intrinsicGas += st.evm.CheckReceipt(st.action)
 	if err := st.useGas(intrinsicGas); err != nil {
 		return nil, 0, true, err, vmerr
 	}
