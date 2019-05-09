@@ -214,7 +214,6 @@ const (
 	DESTROYASSET = 0xc8
 	GETACCOUNTID = 0xc9
 
-	GETDELEGATE    = 0xca
 	GETACCOUNTTIME = 0xcb
 	CRYPTOCALC     = 0xcc
 	DEDUCTGAS      = 0xcd
