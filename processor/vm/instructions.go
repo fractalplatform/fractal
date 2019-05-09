@@ -1448,6 +1448,11 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 
 	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, assetID, 0, value, nil, nil)
 
+	if !contract.UseGas(evm.CheckReceipt(action)) {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+
 	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 	//distribute gas
 	var assetName common.Name
