@@ -51,7 +51,7 @@ func MustParseV4(rawurl string) *Node {
 //
 // For incomplete nodes, the designator must look like one of these
 //
-//    enode://<hex node id>
+//    fnode://<hex node id>
 //    <hex node id>
 //
 // For complete nodes, the node ID is encoded in the username portion
@@ -65,7 +65,7 @@ func MustParseV4(rawurl string) *Node {
 // a node with IP address 10.3.58.6, TCP listening port 30303
 // and UDP discovery port 30301.
 //
-//    enode://<hex node id>@10.3.58.6:30303?discport=30301
+//    fnode://<hex node id>@10.3.58.6:30303?discport=30301
 func ParseV4(rawurl string) (*Node, error) {
 	if m := incompleteNodeURL.FindStringSubmatch(rawurl); m != nil {
 		id, err := parsePubkey(m[1])
@@ -124,7 +124,18 @@ func parseComplete(rawurl string) (*Node, error) {
 		return nil, fmt.Errorf("invalid host: %v", err)
 	}
 	if ip = net.ParseIP(host); ip == nil {
-		return nil, errors.New("invalid IP address")
+		dips, err := net.LookupHost(host)
+		if err != nil || len(dips) == 0 {
+			return nil, errors.New("invalid IP address")
+		}
+		for _, dip := range dips {
+			if ip = net.ParseIP(dip); ip == nil {
+				return nil, errors.New("invalid IP address")
+			}
+			if ip.To4() != nil {
+				break
+			}
+		}
 	}
 	// Ensure the IP is 4 bytes long for IPv4 addresses.
 	if ipv4 := ip.To4(); ipv4 != nil {
