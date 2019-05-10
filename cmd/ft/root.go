@@ -36,6 +36,11 @@ import (
 	"github.com/spf13/viper"
 )
 
+var (
+	errNoConfigFile    string
+	errViperReadConfig error
+)
+
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "ft",
@@ -49,6 +54,14 @@ var RootCmd = &cobra.Command{
 			err = viperUmarshalConfig()
 		}
 		ftCfgInstance.LogCfg.Setup()
+		if errNoConfigFile != "" {
+			log.Info(errNoConfigFile)
+		}
+
+		if errViperReadConfig != nil {
+			log.Error("Can't read config, use default configuration", "err", errViperReadConfig)
+		}
+
 		if err != nil {
 			log.Error("viper umarshal config file faild", "err", err)
 		}
@@ -126,7 +139,6 @@ func SetupMetrics() {
 // start up the node itself
 func startNode(stack *node.Node) error {
 	debug.Memsize.Add("node", stack)
-
 	if err := stack.Start(); err != nil {
 		return err
 	}
@@ -159,11 +171,11 @@ func initConfig() {
 	if ConfigFile != "" {
 		viper.SetConfigFile(ConfigFile)
 	} else {
-		fmt.Println("No config file , use default configuration.")
+		errNoConfigFile = "No config file , use default configuration."
 		return
 	}
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Printf("Can't read config: %v, use default configuration.", err)
+		errViperReadConfig = err
 	}
 }
 
