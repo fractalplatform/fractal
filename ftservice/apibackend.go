@@ -263,7 +263,7 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 
 	evmcontext := &processor.EvmContext{
 		ChainContext:  b.ftservice.BlockChain(),
-		EgnineContext: b.ftservice.Engine(),
+		EngineContext: b.ftservice.Engine(),
 	}
 
 	context := processor.NewEVMContext(from, assetID, gasPrice, header, evmcontext, nil)

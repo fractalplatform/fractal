@@ -1022,6 +1022,93 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 }
 
 //multi-asset
+// opGetEpoch get epoch
+func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	epochID := stack.pop()
+	id := epochID.Uint64()
+	var num uint64
+	var err error
+	if id == 0 {
+		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
+	} else {
+		num, err = evm.Context.GetPrevEpoch(evm.StateDB, id)
+	}
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
+	return nil, nil
+}
+
+// opGetCandidateNum get Candidate num
+func opGetCandidateNum(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	epochID := stack.pop()
+	id := epochID.Uint64()
+	num, err := evm.Context.GetActivedCandidateSize(evm.StateDB, id)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+	}
+	return nil, nil
+}
+
+// opGetCandidate
+func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	nameOffset, nameSize, index, epochID := stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	id := epochID.Uint64()
+	i := index.Uint64()
+	//
+	name, stake, counter, actualCounter, replace, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
+	nameBytes := []byte(name)
+	datalen := len(nameBytes)
+	if uint64(datalen) > nameSize.Uint64()*32 {
+		err = errors.New("out of space")
+	}
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
+		//don't copy
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(replace))
+		stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
+		stack.push(evm.interpreter.intPool.get().SetUint64(counter))
+		stack.push(evm.interpreter.intPool.get().Set(stake))
+		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(datalen)))
+		memory.Set(nameOffset.Uint64(), uint64(datalen), nameBytes)
+	}
+	return nil, nil
+}
+
+// opGetVoterStake
+func opGetVoterStake(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	candidateID, voterID, epochID := stack.pop(), stack.pop(), stack.pop()
+	id := epochID.Uint64()
+	vid := voterID.Uint64()
+	cid := candidateID.Uint64()
+	voter, err := evm.AccountDB.GetAccountById(vid)
+	if err != nil || voter == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+	candidate, err := evm.AccountDB.GetAccountById(cid)
+	if err != nil || candidate == nil {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, nil
+	}
+	num, err := evm.Context.GetVoterStake(evm.StateDB, id, voter.GetName().String(), candidate.GetName().String())
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().Set(num))
+	}
+	return nil, nil
+}
+
 //Increase asset already exist
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
@@ -1150,10 +1237,10 @@ func opDeductGas(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 
 // opCryptoCalc to encrypt or decrypt bytes
 func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	typeID, retOffset, retSize, offset2, size2, offset, size := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	typeID, retOffset, retSize, keyOffset, keySize, dataOffset, dataSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	//
-	data := memory.Get(offset.Int64(), size.Int64())
-	key := memory.Get(offset2.Int64(), size2.Int64())
+	data := memory.Get(dataOffset.Int64(), dataSize.Int64())
+	key := memory.Get(keyOffset.Int64(), keySize.Int64())
 	i := typeID.Uint64()
 	//
 	var ret = make([]byte, retSize.Int64()*32)
@@ -1161,8 +1248,8 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	if contract.Gas >= uint64(size.Int64())*params.GasTableInstanse.CryptoByte {
-		contract.Gas = contract.Gas - uint64(size.Int64())*params.GasTableInstanse.CryptoByte
+	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte {
+		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte
 	} else {
 		//errors.New("gas insufficient")
 		contract.Gas = 0
@@ -1211,7 +1298,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		memory.Set(retOffset.Uint64(), uint64(datalen), ret)
 	}
 
-	evm.interpreter.intPool.put(offset, size, offset2, size2, typeID)
+	evm.interpreter.intPool.put(dataOffset, dataSize, keyOffset, keySize, typeID)
 	return nil, nil
 }
 

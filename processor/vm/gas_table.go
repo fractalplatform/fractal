@@ -424,6 +424,22 @@ func gasDelegateCall(gt params.GasTable, evm *EVM, contract *Contract, stack *St
 	return gas, nil
 }
 
+func gasGetEpoch(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetEpoch, nil
+}
+
+func gasGetCandidateNum(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetCandidateNum, nil
+}
+
+func gasGetCandidate(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetCandidate, nil
+}
+
+func gasGetVoterStake(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetVoterStake, nil
+}
+
 func gasIssueAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	return gt.IssueAsset, nil
 }

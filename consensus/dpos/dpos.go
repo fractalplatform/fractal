@@ -427,15 +427,15 @@ func (dpos *Dpos) GetDelegatedByTime(state *state.StateDB, candidate string, tim
 }
 
 // GetLatestEpcho get latest epcho
-func (dpos *Dpos) GetLatestEpcho(state *state.StateDB) (epcho uint64, err error) {
+func (dpos *Dpos) GetLatestEpoch(state *state.StateDB) (epoch uint64, err error) {
 	sys := NewSystem(state, dpos.config)
 	return sys.GetLastestEpcho()
 }
 
 // GetPrevEpcho get pre epcho
-func (dpos *Dpos) GetPrevEpcho(state *state.StateDB, epcho uint64) (uint64, error) {
+func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
 	sys := NewSystem(state, dpos.config)
-	gstate, err := sys.GetState(epcho)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return 0, err
 	}

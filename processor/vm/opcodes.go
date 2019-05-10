@@ -221,6 +221,14 @@ const (
 )
 
 const (
+	//0xd0 range  new add for dpos
+	GETEPCHO        OpCode = 0xd0 + iota
+	GETCANDIDATENUM        = 0xd1
+	GETCANDIDATE           = 0xd2
+	GETVOTERSTAKE          = 0xd3
+)
+
+const (
 	// 0xf0 range - closures
 	CREATE OpCode = 0xf0 + iota
 	CALL

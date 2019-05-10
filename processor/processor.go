@@ -125,7 +125,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
-			EgnineContext: p.engine,
+			EngineContext: p.engine,
 		}
 		context := NewEVMContext(action.Sender(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)

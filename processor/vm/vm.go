@@ -35,6 +35,16 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
 	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
+	//GetLatestEpchoFunc
+	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
+	//GetPrevEpcho
+	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
+	//GetActivedCandidateSize
+	GetActivedCandidateSizeFunc func(state *state.StateDB, epoch uint64) (size uint64, err error)
+	//GetActivedCandidate
+	GetActivedCandidateFunc func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
+	//GetVoterStake
+	GetVoterStakeFunc func(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 	// GetHeaderByNumberFunc
 	GetHeaderByNumberFunc func(number uint64) *types.Header
 )
@@ -47,6 +57,13 @@ type Context struct {
 
 	// GetDelegatedByTime returns the delegated balance
 	GetDelegatedByTime GetDelegatedByTimeFunc
+	//
+	GetLatestEpoch          GetLatestEpochFunc
+	GetPrevEpoch            GetPrevEpochFunc
+	GetActivedCandidateSize GetActivedCandidateSizeFunc
+	GetActivedCandidate     GetActivedCandidateFunc
+	GetVoterStake           GetVoterStakeFunc
+	// Engine EgnineContext
 
 	//GetHeaderByNumber
 	GetHeaderByNumber GetHeaderByNumberFunc

@@ -28,7 +28,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
+	//"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -181,7 +181,7 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 }
 
 func issueAssetAction(ownerName, toName common.Name) *types.Action {
-	asset := &asset.AssetObject{
+	asset := accountmanager.IssueAsset{
 		AssetName:  "bitcoin",
 		Symbol:     "btc",
 		Amount:     big.NewInt(1000000000000000000),
@@ -196,7 +196,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(types.IssueAsset, ownerName, "fractal.account", 0, 0, 0, big.NewInt(0), b, nil)
+	action := types.NewAction(types.IssueAsset, ownerName, "fractal.asset", 0, 0, 0, big.NewInt(0), b, nil)
 	return action
 }
 
