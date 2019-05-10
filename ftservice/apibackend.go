@@ -251,11 +251,7 @@ func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error)
 	if err != nil {
 		return nil, err
 	}
-	acctm, err := accountmanager.NewAccountManager(sdb)
-	if err != nil {
-		return nil, err
-	}
-	return acctm, nil
+	return accountmanager.NewAccountManager(sdb)
 }
 
 //GetFeeManager get fee manager
