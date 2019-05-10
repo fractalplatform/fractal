@@ -104,24 +104,24 @@ func NewEnv(cfg *Config) *vm.EVM {
 			return big.NewInt(0), nil
 		},
 		GetLatestEpoch: func(state *state.StateDB) (epoch uint64, err error) {
-			return 0, nil
+			return 1, nil
 		},
 		//GetPrevEpcho
 		GetPrevEpoch: func(state *state.StateDB, epoch uint64) (peoch uint64, err error) {
-			return 0, nil
+			return 2, nil
 		},
 		//GetActivedCandidateSize
 		GetActivedCandidateSize: func(state *state.StateDB, epoch uint64) (size uint64, err error) {
-			return 0, nil
+			return 3, nil
 		},
 		//GetActivedCandidate
 		GetActivedCandidate: func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error) {
-			return "testname", big.NewInt(0), 0, 0, 0, nil
+			return "testname", big.NewInt(3), 3, 3, 3, nil
 		},
 
 		//GetVoterStake
 		GetVoterStake: func(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error) {
-			return big.NewInt(0), nil
+			return big.NewInt(9), nil
 		},
 		Origin:      cfg.Origin,
 		From:        cfg.Origin,
