@@ -120,7 +120,7 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 
 func checkDDOS(m map[int][]int64, e *router.Event) bool {
 	t := e.Typecode
-	limit := int64(router.GetDDosLimit(t))
+	limit := int64(router.GetDDosLimit(t)) * 10
 	if limit == 0 {
 		return false
 	}
