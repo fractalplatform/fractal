@@ -17,7 +17,6 @@
 package blockchain
 
 import (
-	"container/heap"
 	"errors"
 	"fmt"
 	"math/big"
@@ -62,7 +61,7 @@ func (status *stationStatus) getStatus() *NewBlockHashesData {
 type Downloader struct {
 	station         router.Station
 	statusCh        chan *router.Event
-	remotes         *stack //map[string]*stationStatus
+	remotes         *simpleHeap //map[string]*stationStatus
 	remotesMutex    sync.RWMutex
 	blockchain      *BlockChain
 	downloading     int32
@@ -78,7 +77,7 @@ func NewDownloader(chain *BlockChain) *Downloader {
 		station:    router.NewLocalStation("downloader", nil),
 		statusCh:   make(chan *router.Event),
 		blockchain: chain,
-		remotes: &stack{cmp: func(a, b interface{}) int {
+		remotes: &simpleHeap{cmp: func(a, b interface{}) int {
 			ra, rb := a.(*stationStatus), b.(*stationStatus)
 			return rb.getStatus().TD.Cmp(ra.getStatus().TD)
 		}},
@@ -235,20 +234,27 @@ func waitEvent(errch chan struct{}, ch chan *router.Event, timeout time.Duration
 	}
 }
 
-func syncReq(e *router.Event, recvCode int, recvData interface{}, errch chan struct{}) (interface{}, error) {
+func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.Duration, errch chan struct{}) (*router.Event, error) {
+	start := time.Now()
+	defer func() {
+		router.AddAck(e.To, uint64(time.Since(start)/time.Microsecond))
+	}()
 	ch := make(chan *router.Event)
-	sub := router.Subscribe(e.From, ch, recvCode, recvData)
+	sub := router.Subscribe(e.From, ch, recvCode, recvType)
 	defer sub.Unsubscribe()
 	router.SendEvent(e)
-	return waitEvent(errch, ch, 2*time.Second)
+	return waitEvent(errch, ch, timeout)
 }
 
 func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByNumber, errch chan struct{}) ([]common.Hash, error) {
-	ch := make(chan *router.Event)
-	sub := router.Subscribe(from, ch, router.P2PBlockHashMsg, []common.Hash{})
-	defer sub.Unsubscribe()
-	router.SendTo(from, to, router.P2PGetBlockHashMsg, req)
-	e, err := waitEvent(errch, ch, time.Second+time.Duration(req.Amount)*(10*time.Millisecond))
+	se := &router.Event{
+		From:     from,
+		To:       to,
+		Typecode: router.P2PGetBlockHashMsg,
+		Data:     req,
+	}
+	timeout := time.Second + time.Duration(req.Amount)*(10*time.Millisecond)
+	e, err := syncReq(se, router.P2PBlockHashMsg, []common.Hash{}, timeout, errch)
 	if err != nil {
 		return nil, err
 	}
@@ -256,23 +262,29 @@ func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByN
 }
 
 func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData, errch chan struct{}) ([]*types.Header, error) {
-	ch := make(chan *router.Event)
-	sub := router.Subscribe(from, ch, router.P2PBlockHeadersMsg, []*types.Header{})
-	defer sub.Unsubscribe()
-	router.SendTo(from, to, router.P2PGetBlockHeadersMsg, req)
-	e, err := waitEvent(errch, ch, time.Second+time.Duration(req.Amount)*(50*time.Millisecond))
+	se := &router.Event{
+		From:     from,
+		To:       to,
+		Typecode: router.P2PGetBlockHeadersMsg,
+		Data:     req,
+	}
+	timeout := time.Second + time.Duration(req.Amount)*(50*time.Millisecond)
+	e, err := syncReq(se, router.P2PBlockHeadersMsg, []*types.Header{}, timeout, errch)
 	if err != nil {
 		return nil, err
 	}
 	return e.Data.([]*types.Header), nil
 }
 
-func getBlocks(from router.Station, to router.Station, hashes []common.Hash, errch chan struct{}) ([]*types.Body, error) {
-	ch := make(chan *router.Event)
-	sub := router.Subscribe(from, ch, router.P2PBlockBodiesMsg, []*types.Body{})
-	defer sub.Unsubscribe()
-	router.SendTo(from, to, router.P2PGetBlockBodiesMsg, hashes)
-	e, err := waitEvent(errch, ch, time.Second+time.Duration(len(hashes))*time.Second)
+func getBlocks(from router.Station, to router.Station, req []common.Hash, errch chan struct{}) ([]*types.Body, error) {
+	se := &router.Event{
+		From:     from,
+		To:       to,
+		Typecode: router.P2PGetBlockBodiesMsg,
+		Data:     req,
+	}
+	timeout := time.Second + time.Duration(len(req))*(100*time.Millisecond)
+	e, err := syncReq(se, router.P2PBlockBodiesMsg, []*types.Body{}, timeout, errch)
 	if err != nil {
 		return nil, err
 	}
@@ -475,11 +487,11 @@ func (dl *Downloader) loop() {
 
 func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64) (uint64, error) {
 	log.Debug(fmt.Sprint("assingDownloadTask:", len(hashes), len(numbers), numbers))
-	workers := &stack{cmp: dl.remotes.cmp}
+	workers := &simpleHeap{cmp: dl.remotes.cmp}
 	dl.remotesMutex.RLock()
 	workers.data = append(workers.data, dl.remotes.data...)
 	dl.remotesMutex.RUnlock()
-	taskes := &stack{
+	taskes := &simpleHeap{
 		data: make([]interface{}, 0, len(numbers)-1),
 		cmp: func(a, b interface{}) int {
 			wa, wb := a.(*downloadTask), b.(*downloadTask)
@@ -543,13 +555,8 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 		if blocks == nil {
 			return start - 1, nil
 		}
-		if _, err := dl.blockchain.InsertChain(blocks); err != nil {
-			// bug: try again...
-			log.Error("bug: try again...")
-			time.Sleep(time.Second)
-			if index, err := dl.blockchain.InsertChain(blocks); err != nil {
-				return blocks[index].NumberU64() - 1, err
-			}
+		if index, err := dl.blockchain.InsertChain(blocks); err != nil {
+			return blocks[index].NumberU64() - 1, err
 		}
 	}
 	return numbers[len(numbers)-1], nil
@@ -571,6 +578,9 @@ func (task *downloadTask) Do() {
 	defer func() {
 		task.errorTotal++
 		task.result <- task
+		if len(task.blocks) == 0 {
+			router.AddErr(task.worker.station)
+		}
 	}()
 	latestStatus := task.worker.getStatus()
 	if latestStatus.Number < task.endNumber {
@@ -643,59 +653,4 @@ func (task *downloadTask) Do() {
 	}
 	task.blocks = blocks
 	return
-}
-
-type stack struct {
-	cmp  func(interface{}, interface{}) int
-	data []interface{}
-}
-
-func (s *stack) Swap(i, j int) {
-	s.data[i], s.data[j] = s.data[j], s.data[i]
-}
-
-func (s *stack) Less(i, j int) bool {
-	return s.cmp(s.data[i], s.data[j]) < 0
-}
-
-func (s *stack) Push(v interface{}) {
-	s.data = append(s.data, v)
-}
-
-func (s *stack) Pop() interface{} {
-	v := s.data[len(s.data)-1]
-	s.data = s.data[:len(s.data)-1]
-	return v
-}
-
-func (s *stack) Len() int {
-	return len(s.data)
-}
-
-func (s *stack) pop() interface{} {
-	if len(s.data) == 0 {
-		return nil
-	}
-	return heap.Pop(s)
-}
-
-func (s *stack) push(v interface{}) {
-	heap.Push(s, v)
-}
-
-func (s *stack) remove(i int) {
-	if len(s.data) > i {
-		heap.Remove(s, i)
-	}
-}
-
-func (s *stack) min() interface{} {
-	if len(s.data) == 0 {
-		return nil
-	}
-	return s.data[0]
-}
-
-func (s *stack) clear() {
-	s.data = nil
 }

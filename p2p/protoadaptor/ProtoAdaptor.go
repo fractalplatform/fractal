@@ -108,11 +108,11 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
-
-		ret := checkDDOS(monitor, e)
-		if ret {
+		router.AddNetIn(station, 1)
+		if checkDDOS(monitor, e) {
 			router.SendTo(nil, nil, router.AddPeerToBlacklist, e.From)
-			return fmt.Errorf("DDos %x", e.From.Name())
+			log.Warn("DDos defense", "peer", remote.peer.String(), "typecode", e.Typecode, "count", monitor[e.Typecode][1])
+			return p2p.DiscDDOS
 		}
 		router.SendEvent(e)
 	}
@@ -175,6 +175,7 @@ func (adaptor *ProtoAdaptor) msgSend(e *router.Event) error {
 	if err != nil {
 		return err
 	}
+	router.AddNetOut(e.To, 1)
 	return p2p.Send(e.To.Data().(*remotePeer).ws, 0, pack)
 }
 
@@ -188,10 +189,10 @@ func (adaptor *ProtoAdaptor) msgBroadcast(e *router.Event) {
 	}
 
 	send := func(peer *remotePeer) {
+		//router.AddNetOut(x,1)
 		p2p.Send(peer.ws, 0, pack)
 	}
 	if e.To.Data() != nil {
-		pack.To = "" // if sendto 'broadcast' station, remote will broadcast again, and dead loop (-_-)
 		e.To.Data().(*peerMangaer).mapActivePeer(send)
 		return
 	}

@@ -36,6 +36,7 @@ type Router struct {
 	unnamedMutex sync.RWMutex
 	stations     map[string]Station
 	stationMutex sync.RWMutex
+	eval         *stationEval
 }
 
 var router *Router
@@ -51,6 +52,7 @@ func New() *Router {
 		unnamedFeeds: make(map[int]*Feed),
 		namedFeeds:   make(map[string]map[int]*Feed),
 		stations:     make(map[string]Station),
+		eval:         newStationEval(),
 	}
 }
 
@@ -165,6 +167,9 @@ func (router *Router) StationRegister(station Station) {
 	router.stationMutex.Lock()
 	router.stations[station.Name()] = station
 	router.stationMutex.Unlock()
+	if station.IsRemote() {
+		router.eval.register(station)
+	}
 }
 
 // StationUnregister unregister 'Station'
@@ -173,6 +178,9 @@ func (router *Router) StationUnregister(station Station) {
 	router.stationMutex.Lock()
 	delete(router.stations, station.Name())
 	router.stationMutex.Unlock()
+	if station.IsRemote() {
+		router.eval.unregister(station)
+	}
 }
 
 func (router *Router) bindChannelToStation(station Station, typecode int, channel chan *Event) Subscription {
@@ -291,4 +299,39 @@ func SendEvents(es []*Event) (nsent int) {
 //GetDDosLimit get messagetype req limit per second
 func GetDDosLimit(t int) int {
 	return typeLimit[t]
+}
+
+func AddNetIn(s Station, pkg uint64) uint64 {
+	return router.eval.addNetIn(s, pkg)
+}
+func AddNetOut(s Station, pkg uint64) uint64 {
+	return router.eval.addNetOut(s, pkg)
+}
+
+func AddCPU(s Station, us uint64) uint64 {
+	return router.eval.addCPU(s, us)
+}
+
+func AddAck(s Station, us uint64) uint64 {
+	return router.eval.addAck(s, us)
+}
+func AddErr(s Station) uint64 {
+	return router.eval.addErr(s)
+}
+
+func CPU(s Station) uint64 {
+	return router.eval.cpu(s)
+}
+func NetIn(s Station) uint64 {
+	return router.eval.netin(s)
+}
+func NetOut(s Station) uint64 {
+	return router.eval.netout(s)
+}
+func Ack(s Station) uint64 {
+	return router.eval.ack(s)
+}
+
+func Err(s Station) uint64 {
+	return router.eval.err(s)
 }
