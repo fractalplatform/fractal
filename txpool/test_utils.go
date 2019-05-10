@@ -74,7 +74,9 @@ func (bc *testBlockChain) StateAt(common.Hash) (*state.StateDB, error) {
 }
 
 func (bc *testBlockChain) Config() *params.ChainConfig {
-	return nil
+	cfg := params.DefaultChainconfig
+	cfg.SysTokenID = 0
+	return cfg
 }
 
 func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
