@@ -17,17 +17,24 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
+	"strings"
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/node"
+	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rpc"
 	"github.com/naoina/toml"
+	jww "github.com/spf13/jwalterweatherman"
 )
 
 // defaultDataDir is the default data directory to use for the databases and other
@@ -91,4 +98,71 @@ var tomlSettings = toml.Config{
 		}
 		return fmt.Errorf("field '%s' is not defined in %s%s", field, rt.String(), link)
 	},
+}
+
+func clientCall(endpoint string, result interface{}, method string, args ...interface{}) {
+	client, err := dialRPC(ipcEndpoint)
+	if err != nil {
+		jww.ERROR.Println(err)
+		return
+	}
+	if err := client.Call(result, method, args...); err != nil {
+		jww.ERROR.Println(err)
+	}
+}
+
+// dialRPC returns a RPC client which connects to the given endpoint.
+func dialRPC(endpoint string) (*rpc.Client, error) {
+	if endpoint == "" {
+		endpoint = defaultIPCEndpoint(params.ClientIdentifier)
+	}
+	return rpc.Dial(endpoint)
+}
+
+// DefaultIPCEndpoint returns the IPC path used by default.
+func defaultIPCEndpoint(clientIdentifier string) string {
+	if clientIdentifier == "" {
+		clientIdentifier = strings.TrimSuffix(filepath.Base(os.Args[0]), ".exe")
+		if clientIdentifier == "" {
+			panic("empty executable name")
+		}
+	}
+	config := &node.Config{DataDir: defaultDataDir(), IPCPath: clientIdentifier + ".ipc"}
+	return config.IPCEndpoint()
+}
+
+func printJSON(data interface{}) {
+	rawData, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		jww.ERROR.Println(err)
+		os.Exit(1)
+	}
+	jww.FEEDBACK.Println(string(rawData))
+}
+
+func printJSONList(data interface{}) {
+	value := reflect.ValueOf(data)
+	if value.Kind() != reflect.Slice {
+		jww.ERROR.Printf("invalid type %v assertion", value.Kind())
+		os.Exit(1)
+	}
+
+	for idx := 0; idx < value.Len(); idx++ {
+		jww.FEEDBACK.Println(idx, ":")
+		rawData, err := json.MarshalIndent(value.Index(idx).Interface(), "", "  ")
+		if err != nil {
+			jww.ERROR.Println(err)
+			os.Exit(1)
+		}
+		jww.FEEDBACK.Println(string(rawData))
+	}
+}
+
+func parseUint64(arg string) uint64 {
+	num, err := strconv.ParseUint(arg, 10, 64)
+	if err != nil {
+		jww.ERROR.Printf("Invalid fulltx value: %v err: %v", arg, err)
+		os.Exit(1)
+	}
+	return num
 }

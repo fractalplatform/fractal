@@ -32,6 +32,7 @@ import (
 var (
 	//ft config instance
 	ftCfgInstance = defaultFtConfig()
+	ipcEndpoint   string
 )
 
 type ftConfig struct {

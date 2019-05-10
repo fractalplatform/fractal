@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -45,7 +46,15 @@ const (
 )
 
 var (
-	importCommnad = &cobra.Command{
+	chainCommand = &cobra.Command{
+		Use:   "chain",
+		Short: "Support blockchain import and export block and pure state ",
+		Long:  "Support blockchain import and export block and pure state ",
+		Run: func(cmd *cobra.Command, args []string) {
+		},
+	}
+
+	importCommand = &cobra.Command{
 		Use:   "import -d <datadir> -g <genesis.json> <block file name>",
 		Short: "Import a blockchain file",
 		Long:  "Import a blockchain file",
@@ -56,6 +65,7 @@ var (
 			}
 		},
 	}
+
 	exportCommand = &cobra.Command{
 		Use:   "export -d <datadir> <block file name> <start num> <end num>",
 		Short: "Export blockchain to file",
@@ -67,13 +77,27 @@ var (
 			}
 		},
 	}
+
+	statePureCommand = &cobra.Command{
+		Use:   "startpure -i <ipc path> <enable/disable>",
+		Short: "Start or stop pure state ",
+		Long:  "Start or stop pure state",
+		//	Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			if err := prueState(args[0]); err != nil {
+				fmt.Println(err)
+			}
+		},
+	}
 )
 
 func init() {
-	RootCmd.AddCommand(importCommnad, exportCommand)
-	importCommnad.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
-	importCommnad.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "genesis json file")
+	RootCmd.AddCommand(chainCommand)
+	chainCommand.AddCommand(importCommand, exportCommand, statePureCommand)
+	importCommand.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
+	importCommand.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "genesis json file")
 	exportCommand.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
+	statePureCommand.Flags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
 }
 
 func exportChain(args []string) error {
@@ -354,5 +378,22 @@ func missingBlocks(chain *blockchain.BlockChain, blocks []*types.Block) []*types
 			return blocks[i:]
 		}
 	}
+	return nil
+}
+
+func prueState(arg string) error {
+	var enable bool
+
+	switch arg {
+	case "enable":
+		enable = true
+	case "disable":
+	default:
+		return fmt.Errorf("not support arg %v", arg)
+	}
+
+	result := new(types.BlockState)
+	clientCall(ipcEndpoint, &result, "ft_setStatePruning", enable)
+	printJSON(result)
 	return nil
 }
