@@ -34,8 +34,8 @@ func NewFeeAPI(b Backend) *FeeAPI {
 //GetObjectFeeByName get object fee by name
 //objectName: Asset Name, Contract Name, Coinbase Name
 //objectType:  Asset Type(0),Contract Type(1),Coinbase Type(2)
-func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, objectType uint64) (*feemanager.ObjectFee, error) {
-	fm, err := aapi.b.GetFeeManager()
+func (fapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, objectType uint64) (*feemanager.ObjectFee, error) {
+	fm, err := fapi.b.GetFeeManager()
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, o
 //startObjectFeeID: object fee id, start from 1
 //count: The count of results obtained at one time, If it's more than 1,000, it's 1,000
 //time: snapshot time
-func (aapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uint64, count uint64, time uint64) (*feemanager.ObjectFeeResult, error) {
+func (fapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uint64, count uint64, time uint64) (*feemanager.ObjectFeeResult, error) {
 	var fm *feemanager.FeeManager
 	var err error
 	var bContinue bool
@@ -57,11 +57,10 @@ func (aapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uin
 	}
 
 	if time == 0 {
-		fm, err = aapi.b.GetFeeManager()
+		fm, err = fapi.b.GetFeeManager()
 	} else {
-		fm, err = aapi.b.GetFeeManagerByTime(time)
+		fm, err = fapi.b.GetFeeManagerByTime(time)
 	}
-
 	if err != nil {
 		return nil, err
 	}

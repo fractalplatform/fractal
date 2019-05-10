@@ -61,15 +61,13 @@ type Backend interface {
 
 	// TxPool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
-	GetPoolTransactions() ([]*types.Transaction, error)
 	GetPoolTransaction(txHash common.Hash) *types.Transaction
 	Stats() (pending int, queued int)
 	TxPoolContent() (map[common.Name][]*types.Transaction, map[common.Name][]*types.Transaction)
+	SetGasPrice(gasPrice *big.Int) bool
 
 	//Account API
 	GetAccountManager() (*accountmanager.AccountManager, error)
-
-	SetGasPrice(gasPrice *big.Int) bool
 
 	//fee manager
 	GetFeeManager() (*feemanager.FeeManager, error)
@@ -95,9 +93,14 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		{
 			Namespace: "txpool",
 			Version:   "1.0",
-			Service:   NewPublicTxPoolAPI(apiBackend),
-			Public:    true,
-		}, {
+			Service:   NewPrivateTxPoolAPI(apiBackend),
+		},
+		{
+			Namespace: "ft",
+			Version:   "1.0",
+			Service:   NewPrivateBlockChainAPI(apiBackend),
+		},
+		{
 			Namespace: "ft",
 			Version:   "1.0",
 			Service:   NewPublicBlockChainAPI(apiBackend),

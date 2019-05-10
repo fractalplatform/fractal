@@ -18,7 +18,6 @@ package rpcapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -110,7 +109,6 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 		return nil, nil
 	}
 	receipt := receipts[index]
-
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
 }
 
@@ -131,7 +129,6 @@ func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName comm
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-
 	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
@@ -141,7 +138,6 @@ func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName comm
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	bloom := types.BytesToBloom(bloomByte)
-
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
@@ -155,7 +151,6 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-
 	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
@@ -165,7 +160,6 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	bloom := types.BytesToBloom(bloomByte)
-
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
@@ -190,13 +184,11 @@ func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash comm
 func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]map[string]interface{}, error) {
 	blocks, err := s.b.GetBadBlocks(ctx)
 	if len(blocks) != 0 {
-		ret_block := make([]map[string]interface{}, len(blocks))
-
+		badBlocks := make([]map[string]interface{}, len(blocks))
 		for i, b := range blocks {
-			ret_block[i] = s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx)
+			badBlocks[i] = s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx)
 		}
-
-		return ret_block, nil
+		return badBlocks, nil
 	}
 	return nil, err
 }
@@ -319,30 +311,27 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 }
 
 // GetChainConfig returns chain config.
-func (s *PublicBlockChainAPI) GetChainConfig() map[string]interface{} {
-	ret := map[string]interface{}{}
-	g, err := s.b.BlockByNumber(context.Background(), 0)
+func (s *PublicBlockChainAPI) GetChainConfig(ctx context.Context) (*params.ChainConfig, error) {
+	g, err := s.b.BlockByNumber(ctx, 0)
 	if err != nil {
-		return ret
+		return nil, err
 	}
-	cfg := rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash())
-	bts, _ := json.Marshal(cfg)
-	json.Unmarshal(bts, &ret)
-	return ret
+	return rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash()), nil
 }
 
-// GetGenesis returns genesis config.
-func (s *PublicBlockChainAPI) GetGenesis() map[string]interface{} {
-	ret := map[string]interface{}{}
-	g, err := s.b.BlockByNumber(context.Background(), 0)
-	if err != nil {
-		return ret
-	}
-	json.Unmarshal(g.Head.Extra, &ret)
-	return ret
+// PrivateBlockChainAPI provides an API to access the blockchain.
+// It offers only methods that operate on private data that is freely available to anyone.
+type PrivateBlockChainAPI struct {
+	b Backend
 }
 
-func (s *PublicBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
+// NewPrivateBlockChainAPI creates a new blockchain API.
+func NewPrivateBlockChainAPI(b Backend) *PrivateBlockChainAPI {
+	return &PrivateBlockChainAPI{b}
+}
+
+// SetStatePruning start blockchain state prune
+func (s *PrivateBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
 	prestatus, number := s.b.SetStatePruning(enable)
 	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
 }
