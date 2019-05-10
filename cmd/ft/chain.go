@@ -392,14 +392,8 @@ func prueState(arg string) error {
 		return fmt.Errorf("not support arg %v", arg)
 	}
 
-	client, err := dialRPC(ipcEndpoint)
-	if err != nil {
-		return err
-	}
 	result := new(types.BlockState)
-	if err := client.Call(&result, "ft_setStatePruning", enable); err != nil {
-		return err
-	}
-	PrintJSON(result)
+	clientCall(ipcEndpoint, &result, "ft_setStatePruning", enable)
+	printJSON(result)
 	return nil
 }

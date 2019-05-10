@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -99,6 +100,17 @@ var tomlSettings = toml.Config{
 	},
 }
 
+func clientCall(endpoint string, result interface{}, method string, args ...interface{}) {
+	client, err := dialRPC(ipcEndpoint)
+	if err != nil {
+		jww.ERROR.Println(err)
+		return
+	}
+	if err := client.Call(result, method, args...); err != nil {
+		jww.ERROR.Println(err)
+	}
+}
+
 // dialRPC returns a RPC client which connects to the given endpoint.
 func dialRPC(endpoint string) (*rpc.Client, error) {
 	if endpoint == "" {
@@ -119,7 +131,7 @@ func defaultIPCEndpoint(clientIdentifier string) string {
 	return config.IPCEndpoint()
 }
 
-func PrintJSON(data interface{}) {
+func printJSON(data interface{}) {
 	rawData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		jww.ERROR.Println(err)
@@ -128,7 +140,7 @@ func PrintJSON(data interface{}) {
 	jww.FEEDBACK.Println(string(rawData))
 }
 
-func PrintJSONList(data interface{}) {
+func printJSONList(data interface{}) {
 	value := reflect.ValueOf(data)
 	if value.Kind() != reflect.Slice {
 		jww.ERROR.Printf("invalid type %v assertion", value.Kind())
@@ -144,4 +156,13 @@ func PrintJSONList(data interface{}) {
 		}
 		jww.FEEDBACK.Println(string(rawData))
 	}
+}
+
+func parseUint64(arg string) uint64 {
+	num, err := strconv.ParseUint(arg, 10, 64)
+	if err != nil {
+		jww.ERROR.Printf("Invalid fulltx value: %v err: %v", arg, err)
+		os.Exit(1)
+	}
+	return num
 }
