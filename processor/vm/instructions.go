@@ -1071,12 +1071,14 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
+		stack.push(evm.interpreter.intPool.getZero())
 		//don't copy
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(replace))
 		stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
 		stack.push(evm.interpreter.intPool.get().SetUint64(counter))
 		stack.push(evm.interpreter.intPool.get().Set(stake))
+		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(datalen)))
 		memory.Set(nameOffset.Uint64(), uint64(datalen), nameBytes)
 	}
 	return nil, nil
