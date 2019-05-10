@@ -367,6 +367,15 @@ func (b *APIBackend) AddBadNode(url string) error {
 	return err
 }
 
+// RemoveBadNode add a bad Node and would cause the node disconnected
+func (b *APIBackend) RemoveBadNode(url string) error {
+	node, err := enode.ParseV4(url)
+	if err == nil {
+		b.ftservice.p2pServer.RemoveBadNode(node)
+	}
+	return err
+}
+
 // SelfNode returns the local node's endpoint information.
 func (b *APIBackend) SelfNode() string {
 	return b.ftservice.p2pServer.Self().String()

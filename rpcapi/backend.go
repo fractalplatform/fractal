@@ -83,6 +83,7 @@ type Backend interface {
 	BadNodesCount() int
 	BadNodes() []string
 	AddBadNode(url string) error
+	RemoveBadNode(url string) error
 	SelfNode() string
 	Engine() consensus.IEngine
 	APIs() []rpc.API

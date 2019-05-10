@@ -170,6 +170,7 @@ type Server struct {
 	addtrusted    chan *enode.Node
 	removetrusted chan *enode.Node
 	addBad        chan *enode.Node
+	removeBad     chan *enode.Node
 	posthandshake chan *conn
 	addpeer       chan *conn
 	delpeer       chan peerDrop
@@ -345,6 +346,14 @@ func (srv *Server) AddPeer(node *enode.Node) {
 func (srv *Server) AddBadNode(node *enode.Node) {
 	select {
 	case srv.addBad <- node:
+	case <-srv.quit:
+	}
+}
+
+// RemoveBadNode remove the node from the blacklist
+func (srv *Server) RemoveBadNode(node *enode.Node) {
+	select {
+	case srv.removeBad <- node:
 	case <-srv.quit:
 	}
 }
@@ -545,6 +554,7 @@ func (srv *Server) Start() (err error) {
 	srv.peerOpDone = make(chan struct{})
 
 	srv.addBad = make(chan *enode.Node)
+	srv.removeBad = make(chan *enode.Node)
 	srv.badNodeOp = make(chan badOpFunc)
 	srv.badNodeOpDone = make(chan struct{})
 
@@ -742,6 +752,13 @@ running:
 			srv.log.Trace("Add bad node", "node", n)
 			if p, ok := peers[n.ID()]; ok {
 				p.Disconnect(DiscBadNode)
+			}
+		case n := <-srv.removeBad:
+			if _, ok := badNodes[n.ID()]; ok {
+				delete(badNodes, n.ID())
+			}
+			if p, ok := peers[n.ID()]; ok {
+				p.rw.set(badNodeConn, false)
 			}
 		case op := <-srv.badNodeOp:
 			op(badNodes)
