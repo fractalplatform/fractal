@@ -136,6 +136,11 @@ func (api *PrivateP2pAPI) AddBadNode(url string) error {
 	return api.b.AddBadNode(url)
 }
 
+// RemoveBadNode remove a bad node
+func (api *PrivateP2pAPI) RemoveBadNode(url string) error {
+	return api.b.RemoveBadNode(url)
+}
+
 // SelfNode return self enode url
 func (api *PrivateP2pAPI) SelfNode() string {
 	return api.b.SelfNode()
