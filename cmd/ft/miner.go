@@ -33,8 +33,6 @@ var minerCmd = &cobra.Command{
 	Short: "control miner start or stop else",
 	Long:  `control miner start or stop else`,
 	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-	},
 }
 
 var startCmd = &cobra.Command{

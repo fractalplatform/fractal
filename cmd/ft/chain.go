@@ -50,8 +50,6 @@ var (
 		Use:   "chain",
 		Short: "Support blockchain import and export block and pure state ",
 		Long:  "Support blockchain import and export block and pure state ",
-		Run: func(cmd *cobra.Command, args []string) {
-		},
 	}
 
 	importCommand = &cobra.Command{

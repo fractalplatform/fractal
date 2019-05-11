@@ -19,7 +19,6 @@ package main
 import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
-
 	"github.com/spf13/cobra"
 )
 
@@ -27,8 +26,6 @@ var txpoolCommand = &cobra.Command{
 	Use:   "txpool",
 	Short: "Query txpool state and change txpool the Minimum gas price",
 	Long:  "Query txpool state and change txpool the Minimum gas price",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
 }
 
 var contentCmd = &cobra.Command{
