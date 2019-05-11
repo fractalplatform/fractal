@@ -66,7 +66,7 @@ func (*HandlerT) GcStats() *debug.GCStats {
 }
 
 // CpuProfile turns on CPU profiling for nsec seconds and writesprofile data to file.
-func (h *HandlerT) CpuProfile(file string, nsec uint) error {
+func (h *HandlerT) CpuProfile(file string, nsec uint64) error {
 	if err := h.StartCPUProfile(file); err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (h *HandlerT) StopCPUProfile() error {
 
 // GoTrace turns on tracing for nsec seconds and writes
 // trace data to file.
-func (h *HandlerT) GoTrace(file string, nsec uint) error {
+func (h *HandlerT) GoTrace(file string, nsec uint64) error {
 	if err := h.StartGoTrace(file); err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (h *HandlerT) GoTrace(file string, nsec uint) error {
 // BlockProfile turns on goroutine profiling for nsec seconds and writes profile data to
 // file. It uses a profile rate of 1 for most accurate information. If a different rate is
 // desired, set the rate and write the profile manually.
-func (*HandlerT) BlockProfile(file string, nsec uint) error {
+func (*HandlerT) BlockProfile(file string, nsec uint64) error {
 	runtime.SetBlockProfileRate(1)
 	time.Sleep(time.Duration(nsec) * time.Second)
 	defer runtime.SetBlockProfileRate(0)
@@ -144,7 +144,7 @@ func (*HandlerT) WriteBlockProfile(file string) error {
 // MutexProfile turns on mutex profiling for nsec seconds and writes profile data to file.
 // It uses a profile rate of 1 for most accurate information. If a different rate is
 // desired, set the rate and write the profile manually.
-func (*HandlerT) MutexProfile(file string, nsec uint) error {
+func (*HandlerT) MutexProfile(file string, nsec uint64) error {
 	runtime.SetMutexProfileFraction(1)
 	time.Sleep(time.Duration(nsec) * time.Second)
 	defer runtime.SetMutexProfileFraction(0)
