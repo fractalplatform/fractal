@@ -13,32 +13,30 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-package sdk
+package prque_test
 
 import (
-	"testing"
+	"fmt"
 
-	"github.com/fractalplatform/fractal/params"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/fractalplatform/fractal/common/prque"
 )
 
-var feeaccount = params.DefaultChainconfig.FeeName
+// Insert some data into a priority queue and pop them out in prioritized order.
+func Example_usage() {
+	// Define some data to push into the priority queue
+	prio := []int64{77, 22, 44, 55, 11, 88, 33, 99, 0, 66}
+	data := []string{"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"}
 
-func TestFeeInfo(t *testing.T) {
-	Convey("fee_getObjectFeeByName", t, func() {
-		api := NewAPI(rpchost)
-		objFee, err := api.FeeInfo(feeaccount, 1)
-		So(err, ShouldBeNil)
-		So(objFee, ShouldNotBeNil)
-	})
-}
-
-func TestFeeInfoByID(t *testing.T) {
-	Convey("fee_getObjectFeeResult", t, func() {
-		api := NewAPI(rpchost)
-		objFee, err := api.FeeInfoByID(1, 1, 0)
-		So(err, ShouldBeNil)
-		So(objFee, ShouldNotBeNil)
-	})
+	// Create the priority queue and insert the prioritized data
+	pq := prque.New(nil)
+	for i := 0; i < len(data); i++ {
+		pq.Push(data[i], prio[i])
+	}
+	// Pop out the data and print them
+	for !pq.Empty() {
+		val, prio := pq.Pop()
+		fmt.Printf("%d:%s ", prio, val)
+	}
+	// Output:
+	// 99:seven 88:five 77:zero 66:nine 55:three 44:two 33:six 22:one 11:four 0:eight
 }

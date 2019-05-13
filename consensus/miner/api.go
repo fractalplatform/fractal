@@ -48,7 +48,6 @@ func (api *API) SetCoinbase(name string, privKeys []string) error {
 }
 
 func (api *API) SetExtra(extra string) error {
-
 	return api.miner.SetExtra([]byte(extra))
 }
 
@@ -61,7 +60,6 @@ func (miner *Miner) APIs(chain consensus.IChainReader) []rpc.API {
 				miner: miner,
 				chain: chain,
 			},
-			Public: true,
 		},
 	}
 	apis = append(apis, miner.worker.Engine().APIs(chain)...)

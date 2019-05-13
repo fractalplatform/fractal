@@ -664,7 +664,7 @@ func TestTransactionGapFilling(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, testTxPoolConfig.AccountQueue+5)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Create a pending and a queued transaction with a nonce-gap in between
@@ -806,9 +806,9 @@ func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 	pool.AddRemotes(txs)
 
 	queued := 0
-	for addr, list := range pool.queue {
+	for name, list := range pool.queue {
 		if list.Len() > int(config.AccountQueue) {
-			t.Fatalf("addr %x: queued accounts overflown allowance: %d > %d", addr, list.Len(), config.AccountQueue)
+			t.Fatalf("name %x: queued accounts overflown allowance: %d > %d", name, list.Len(), config.AccountQueue)
 		}
 		queued += list.Len()
 	}
@@ -825,9 +825,9 @@ func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 	// If locals are disabled, the previous eviction algorithm should apply here too
 	if nolocals {
 		queued := 0
-		for addr, list := range pool.queue {
+		for name, list := range pool.queue {
 			if list.Len() > int(config.AccountQueue) {
-				t.Fatalf("addr %x: queued accounts overflown allowance: %d > %d", addr, list.Len(), config.AccountQueue)
+				t.Fatalf("name %x: queued accounts overflown allowance: %d > %d", name, list.Len(), config.AccountQueue)
 			}
 			queued += list.Len()
 		}
@@ -945,7 +945,7 @@ func TestTransactionPendingLimiting(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, testTxPoolConfig.AccountQueue+5)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Keep queuing up transactions and make sure all above a limit are dropped
@@ -988,7 +988,7 @@ func TestTransactionPoolRepricing(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	manager, _ := am.NewAccountManager(statedb)
@@ -1200,7 +1200,7 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
@@ -1314,7 +1314,7 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
@@ -1390,7 +1390,7 @@ func TestTransactionReplacement(t *testing.T) {
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
-	sub := event.Subscribe(nil, events, event.TxEv, []*types.Transaction{})
+	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
 	// Add pending transactions, ensuring the minimum price bump is enforced for replacement (for ultra low prices too)
@@ -1655,7 +1655,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 
 	for name, list := range pool.pending {
 		if list.Len() != int(testTxPoolConfig.AccountSlots) {
-			t.Fatalf("addr %s: total pending transactions mismatch: have %d, want %d", name, list.Len(), testTxPoolConfig.AccountSlots)
+			t.Fatalf("name %s: total pending transactions mismatch: have %d, want %d", name, list.Len(), testTxPoolConfig.AccountSlots)
 		}
 	}
 	if err := validateTxPoolInternals(pool); err != nil {

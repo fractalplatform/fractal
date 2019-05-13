@@ -24,24 +24,6 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 )
 
-// func TestSigning(t *testing.T) {
-// 	key, _ := crypto.GenerateKey()
-// 	exp := crypto.FromECDSAPub(&key.PublicKey)
-// 	signer := NewSigner(big.NewInt(18))
-// 	if err := SignAction(testTx.GetActions()[0], testTx, signer, key); err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	pubkey, err := Recover(signer, testTx.GetActions()[0], testTx)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
-
-// 	if bytes.Compare(pubkey.Bytes(), exp) != 0 {
-// 		t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, exp)
-// 	}
-// }
-
 func TestSigningMultiKey(t *testing.T) {
 	keys := make([]*KeyPair, 0)
 	pubs := make([]common.PubKey, 0)
@@ -63,7 +45,7 @@ func TestSigningMultiKey(t *testing.T) {
 
 	for i, pubkey := range pubkeys {
 		if pubkey.Compare(pubs[i]) != 0 {
-			t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, pubs[i])
+			t.Errorf("exected from and pubkey to be equal. Got %x want %x", pubkey, pubs[i])
 		}
 	}
 
@@ -75,7 +57,7 @@ func TestSigningMultiKey(t *testing.T) {
 
 	for i, pubkey := range pubkeys {
 		if pubkey.Compare(pubs[i]) != 0 {
-			t.Errorf("exected from and address to be equal. Got %x want %x", pubkey, pubs[i])
+			t.Errorf("exected from and pubkey to be equal. Got %x want %x", pubkey, pubs[i])
 		}
 	}
 }

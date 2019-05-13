@@ -18,26 +18,24 @@ package rpcapi
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fractalplatform/fractal/feemanager"
+	"github.com/fractalplatform/fractal/params"
 )
 
 type FeeAPI struct {
 	b Backend
 }
 
-const (
-	MaxIDCount = uint64(1000)
-)
-
 func NewFeeAPI(b Backend) *FeeAPI {
 	return &FeeAPI{b}
 }
 
 //GetObjectFeeByName get object fee by name
-func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, objectType uint64) (*feemanager.ObjectFee, error) {
-	fm, err := aapi.b.GetFeeManager()
+//objectName: Asset Name, Contract Name, Coinbase Name
+//objectType:  Asset Type(0),Contract Type(1),Coinbase Type(2)
+func (fapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, objectType uint64) (*feemanager.ObjectFee, error) {
+	fm, err := fapi.b.GetFeeManager()
 	if err != nil {
 		return nil, err
 	}
@@ -45,19 +43,29 @@ func (aapi *FeeAPI) GetObjectFeeByName(ctx context.Context, objectName string, o
 	return fm.GetObjectFeeByName(objectName, objectType)
 }
 
-//GetObjectFeeByIDRange get object fee by name
-func (aapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
-	if count > MaxIDCount {
-		return nil, fmt.Errorf("count can not over %d", MaxIDCount)
+//GetObjectFeeResult get object fee infomation
+//startObjectFeeID: object fee id, start from 1
+//count: The count of results obtained at one time, If it's more than 1,000, it's 1,000
+//time: snapshot time
+func (fapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uint64, count uint64, time uint64) (*feemanager.ObjectFeeResult, error) {
+	var fm *feemanager.FeeManager
+	var err error
+	var bContinue bool
+
+	if count > params.MaxFeeResultCount {
+		count = params.MaxFeeResultCount
 	}
 
-	fm, err := aapi.b.GetFeeManager()
+	if time == 0 {
+		fm, err = fapi.b.GetFeeManager()
+	} else {
+		fm, err = fapi.b.GetFeeManagerByTime(time)
+	}
 	if err != nil {
 		return nil, err
 	}
 
 	feeCounter, err := fm.GetFeeCounter()
-
 	if err != nil {
 		return nil, err
 	}
@@ -66,70 +74,24 @@ func (aapi *FeeAPI) GetObjectFeeResult(ctx context.Context, startObjectFeeID uin
 		return nil, nil
 	}
 
-	objectFeeResult := &feemanager.ObjectFeeResult{Continue: false,
-		ObjectFees: make([]*feemanager.ObjectFee, 0)}
+	if count <= (feeCounter - startObjectFeeID) {
+		bContinue = true
+	} else {
+		count = feeCounter - startObjectFeeID + 1
+		bContinue = false
+	}
+
+	objectFeeResult := &feemanager.ObjectFeeResult{Continue: bContinue,
+		ObjectFees: make([]*feemanager.ObjectFee, 0, count)}
 	for index := uint64(0); index < count; index++ {
 		objectFeeID := startObjectFeeID + index
-
-		if objectFeeID <= feeCounter {
-			objectFee, err := fm.GetObjectFeeByID(objectFeeID)
-
-			if err != nil {
-				return nil, err
-			}
-			if objectFee != nil {
-				objectFeeResult.ObjectFees = append(objectFeeResult.ObjectFees, objectFee)
-			}
+		objectFee, err := fm.GetObjectFeeByID(objectFeeID)
+		if err != nil {
+			return nil, err
 		}
-	}
-
-	if (startObjectFeeID + count) <= feeCounter {
-		objectFeeResult.Continue = true
-	}
-
-	return objectFeeResult, nil
-}
-
-//GetFeeManagerByTime
-func (aapi *FeeAPI) GetObjectFeeResultByTime(ctx context.Context, time uint64, startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
-	if count > MaxIDCount {
-		return nil, fmt.Errorf("count can not over %d", MaxIDCount)
-	}
-
-	fm, err := aapi.b.GetFeeManagerByTime(time)
-	if err != nil {
-		return nil, err
-	}
-
-	feeCounter, err := fm.GetFeeCounter()
-
-	if err != nil {
-		return nil, err
-	}
-
-	if feeCounter == 0 || feeCounter < startObjectFeeID {
-		return nil, nil
-	}
-
-	objectFeeResult := &feemanager.ObjectFeeResult{Continue: false,
-		ObjectFees: make([]*feemanager.ObjectFee, 0)}
-	for index := uint64(0); index < count; index++ {
-		objectFeeID := startObjectFeeID + index
-
-		if objectFeeID <= feeCounter {
-			objectFee, err := fm.GetObjectFeeByID(objectFeeID)
-
-			if err != nil {
-				return nil, err
-			}
-			if objectFee != nil {
-				objectFeeResult.ObjectFees = append(objectFeeResult.ObjectFees, objectFee)
-			}
+		if objectFee != nil {
+			objectFeeResult.ObjectFees = append(objectFeeResult.ObjectFees, objectFee)
 		}
-	}
-
-	if (startObjectFeeID + count) <= feeCounter {
-		objectFeeResult.Continue = true
 	}
 
 	return objectFeeResult, nil

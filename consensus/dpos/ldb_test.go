@@ -243,7 +243,7 @@ func TestLDBVoter(t *testing.T) {
 			Name:      voter,
 			Candidate: candidates[0],
 			Quantity:  big.NewInt(int64(index)),
-			Height:    uint64(index),
+			Number:    uint64(index),
 		}
 		if err := db.SetAvailableQuantity(epcho, voter, big.NewInt(int64(index))); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
@@ -275,7 +275,7 @@ func TestLDBVoter(t *testing.T) {
 			Name:      voters[0],
 			Candidate: candidate,
 			Quantity:  big.NewInt(int64(index)),
-			Height:    uint64(index),
+			Number:    uint64(index),
 		}
 		if err := db.SetAvailableQuantity(epcho, voters[0], big.NewInt(int64(index))); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
@@ -307,7 +307,7 @@ func TestLDBVoter(t *testing.T) {
 			Name:      voters[index],
 			Candidate: candidate,
 			Quantity:  big.NewInt(int64(index)),
-			Height:    uint64(index),
+			Number:    uint64(index),
 		}
 		if err := db.SetAvailableQuantity(epcho, voters[index], big.NewInt(int64(index))); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
@@ -347,7 +347,7 @@ func TestLDBGlobalState(t *testing.T) {
 			PreEpcho:                   uint64(index),
 			ActivatedTotalQuantity:     big.NewInt(0),
 			ActivatedCandidateSchedule: candidates[index:],
-			OffCandidateHeight:         []uint64{},
+			OffCandidateNumber:         []uint64{},
 			OffCandidateSchedule:       []uint64{},
 			TotalQuantity:              big.NewInt(0),
 		}
@@ -375,7 +375,7 @@ func TestLDBGlobalState(t *testing.T) {
 			ActivatedTotalQuantity:     big.NewInt(0),
 			ActivatedCandidateSchedule: candidates[index:],
 			TotalQuantity:              big.NewInt(0),
-			OffCandidateHeight:         []uint64{},
+			OffCandidateNumber:         []uint64{},
 			OffCandidateSchedule:       []uint64{},
 		}
 		if err := db.SetState(gstate); err != nil {

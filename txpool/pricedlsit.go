@@ -85,7 +85,7 @@ func (l *txPricedList) Cap(threshold *big.Int, local *accountSet) []*types.Trans
 			break
 		}
 		// Non stale transaction found, discard unless local
-		if local.containsTx(tx) {
+		if local.containsName(tx) {
 			save = append(save, tx)
 		} else {
 			drop = append(drop, tx)
@@ -101,7 +101,7 @@ func (l *txPricedList) Cap(threshold *big.Int, local *accountSet) []*types.Trans
 // lowest priced transaction currently being tracked.
 func (l *txPricedList) Underpriced(tx *types.Transaction, local *accountSet) bool {
 	// Local transactions cannot be underpriced
-	if local.containsTx(tx) {
+	if local.containsName(tx) {
 		return false
 	}
 	// Discard stale price points if found at the heap start
@@ -137,7 +137,7 @@ func (l *txPricedList) Discard(count int, local *accountSet) []*types.Transactio
 			continue
 		}
 		// Non stale transaction found, discard unless local
-		if local.containsTx(tx) {
+		if local.containsName(tx) {
 			save = append(save, tx)
 		} else {
 			drop = append(drop, tx)

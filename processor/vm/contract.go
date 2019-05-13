@@ -30,7 +30,7 @@ type ContractRef interface {
 // AccountRef implements ContractRef.
 //
 // Account references are used during EVM initialisation and
-// it's primary use is to fetch addresses. Removing this object
+// it's primary use is to fetch names. Removing this object
 // proves difficult because of the cached jump destinations which
 // are fetched from the parent contract (i.e. the caller), which
 // is a ContractRef.
@@ -140,15 +140,14 @@ func (c *Contract) Value() *big.Int {
 }
 
 // SetCode sets the code to the contract
-func (self *Contract) SetCode(hash common.Hash, code []byte) {
-	self.Code = code
-	self.CodeHash = hash
+func (c *Contract) SetCode(hash common.Hash, code []byte) {
+	c.Code = code
+	c.CodeHash = hash
 }
 
-// SetCallCode sets the code of the contract and address of the backing data
-// object
-func (self *Contract) SetCallCode(name *common.Name, hash common.Hash, code []byte) {
-	self.Code = code
-	self.CodeHash = hash
-	self.CodeName = name
+// SetCallCode sets the code of the contract and name of the backing dataobject
+func (c *Contract) SetCallCode(name *common.Name, hash common.Hash, code []byte) {
+	c.Code = code
+	c.CodeHash = hash
+	c.CodeName = name
 }

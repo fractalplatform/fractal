@@ -72,7 +72,7 @@ func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, keys []*KeyPai
 }
 
 func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
-	if sc := a.sender.Load(); sc != nil {
+	if sc := a.senderPubkeys.Load(); sc != nil {
 		sigCache := sc.(sigCache)
 		if sigCache.signer.Equal(signer) {
 			return sigCache.pubKeys, nil
@@ -83,7 +83,7 @@ func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey
 	if err != nil {
 		return []common.PubKey{}, err
 	}
-	a.sender.Store(sigCache{signer: signer, pubKeys: pubKeys})
+	a.senderPubkeys.Store(sigCache{signer: signer, pubKeys: pubKeys})
 	return pubKeys, nil
 }
 
@@ -136,7 +136,7 @@ func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
 	for _, sign := range a.data.Sign {
 		V := new(big.Int).Sub(sign.V, s.chainIDMul)
 		V.Sub(V, big8)
-		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V, true)
+		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V)
 		if err != nil {
 			return nil, err
 		}
@@ -187,12 +187,12 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 	})
 }
 
-func recoverPlain(sighash common.Hash, R, S, Vb *big.Int, homestead bool) ([]byte, error) {
+func recoverPlain(sighash common.Hash, R, S, Vb *big.Int) ([]byte, error) {
 	if Vb.BitLen() > 8 {
 		return nil, ErrInvalidSig
 	}
 	V := byte(Vb.Uint64() - 27)
-	if !crypto.ValidateSignatureValues(V, R, S, homestead) {
+	if !crypto.ValidateSignatureValues(V, R, S) {
 		return nil, ErrInvalidSig
 	}
 	// encode the snature in uncompressed format

@@ -138,8 +138,8 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 	}
 	newcfg := genesis.configOrDefault(stored)
 
-	height := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
-	if height == nil {
+	number := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
+	if number == nil {
 		return newcfg, dposConfig(newcfg), common.Hash{}, fmt.Errorf("missing block number for head header hash")
 	}
 
@@ -353,7 +353,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			URL:           candidate.URL,
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
-			Height:        number.Uint64(),
+			Number:        number.Uint64(),
 		}); err != nil {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}

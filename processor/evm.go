@@ -73,12 +73,12 @@ type ChainContext interface {
 }
 
 type EgnineContext interface {
-	// Author retrieves the address of the account that minted the given
+	// Author retrieves the name of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
 
-	ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
+	ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
 
 	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
 

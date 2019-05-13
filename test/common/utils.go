@@ -78,14 +78,14 @@ func ClientCall(method string, result interface{}, args ...interface{}) error {
 	return err
 }
 
-// GetNonce get nonce by address and block number.
+// GetNonce get nonce by name and block number.
 func GetNonce(accountname common.Name) (uint64, error) {
 	nonce := new(uint64)
 	err := ClientCall("account_getNonce", nonce, accountname)
 	return *nonce, err
 }
 
-// GetAccountBalanceByID get balance by address ,assetID and number.
+// GetAccountBalanceByID get balance by name ,assetID and number.
 func GetAccountBalanceByID(accountName common.Name, assetID uint64) (*big.Int, error) {
 	balance := big.NewInt(0)
 	err := ClientCall("account_getAccountBalanceByID", balance, accountName, assetID, 1)
@@ -132,15 +132,9 @@ func GetObjectFeeByName(objectName common.Name, objectType uint64) (*feemanager.
 	return objectFee, err
 }
 
-func GetObjectFeeResult(startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+func GetObjectFeeResult(startObjectFeeID uint64, count uint64, time uint64) (*feemanager.ObjectFeeResult, error) {
 	objectFeeResult := &feemanager.ObjectFeeResult{}
-	err := ClientCall("fee_getObjectFeeResult", objectFeeResult, startObjectFeeID, count)
-	return objectFeeResult, err
-}
-
-func GetObjectFeeResultByTime(time uint64, startObjectFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
-	objectFeeResult := &feemanager.ObjectFeeResult{}
-	err := ClientCall("fee_getObjectFeeResultByTime", objectFeeResult, time, startObjectFeeID, count)
+	err := ClientCall("fee_getObjectFeeResult", objectFeeResult, startObjectFeeID, count, time)
 	return objectFeeResult, err
 }
 

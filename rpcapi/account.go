@@ -18,7 +18,6 @@ package rpcapi
 
 import (
 	"context"
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -35,66 +34,49 @@ func NewAccountAPI(b Backend) *AccountAPI {
 	return &AccountAPI{b}
 }
 
-var (
-	ErrGetAccounManagerErr = errors.New("get account manager failure")
-)
-
 //AccountIsExist
-func (aapi *AccountAPI) AccountIsExist(ctx context.Context, acctName common.Name) (bool, error) {
+func (aapi *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
 	acct, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return false, err
-	}
-	if acct == nil {
-		return false, ErrGetAccounManagerErr
 	}
 	return acct.AccountIsExist(acctName)
 }
 
 //GetAccountByID
-func (aapi *AccountAPI) GetAccountByID(ctx context.Context, accountID uint64) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Account, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
-	}
+
 	return am.GetAccountById(accountID)
 }
 
 //GetAccountByName
-func (aapi *AccountAPI) GetAccountByName(ctx context.Context, accountName common.Name) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanager.Account, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
-	}
+
 	return am.GetAccountByName(accountName)
 }
 
 //GetAccountBalanceByID
-func (aapi *AccountAPI) GetAccountBalanceByID(ctx context.Context, accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
+func (aapi *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
-	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
 	}
 	return am.GetAccountBalanceByID(accountName, assetID, typeID)
 }
 
 //GetCode
-func (aapi *AccountAPI) GetCode(ctx context.Context, accountName common.Name) (hexutil.Bytes, error) {
+func (aapi *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) {
 	acct, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrGetAccounManagerErr
 	}
 
 	result, err := acct.GetCode(accountName)
@@ -106,14 +88,12 @@ func (aapi *AccountAPI) GetCode(ctx context.Context, accountName common.Name) (h
 }
 
 //GetNonce
-func (aapi *AccountAPI) GetNonce(ctx context.Context, accountName common.Name) (uint64, error) {
+func (aapi *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
 	acct, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}
-	if acct == nil {
-		return 0, ErrGetAccounManagerErr
-	}
+
 	return acct.GetNonce(accountName)
 
 }
@@ -124,57 +104,43 @@ func (aapi *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string
 	if err != nil {
 		return nil, err
 	}
-	if acct == nil {
-		return nil, ErrGetAccounManagerErr
-	}
 	return acct.GetAssetInfoByName(assetName)
 }
 
 //GetAssetInfoByID
-func (aapi *AccountAPI) GetAssetInfoByID(ctx context.Context, assetID uint64) (*asset.AssetObject, error) {
+func (aapi *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, error) {
 	acct, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
-	}
-	if acct == nil {
-		return nil, ErrGetAccounManagerErr
 	}
 	return acct.GetAssetInfoByID(assetID)
 }
 
 //GetAssetAmountByTime
-func (aapi *AccountAPI) GetAssetAmountByTime(ctx context.Context, assetID uint64, time uint64) (*big.Int, error) {
+func (aapi *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
-	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
 	}
 	return am.GetAssetAmountByTime(assetID, time)
 }
 
 //GetAccountBalanceByTime
-func (aapi *AccountAPI) GetAccountBalanceByTime(ctx context.Context, accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
+func (aapi *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
-	}
-	if am == nil {
-		return nil, ErrGetAccounManagerErr
 	}
 	return am.GetBalanceByTime(accountName, assetID, typeID, time)
 }
 
 //GetSnapshotLast  get last snapshot time
-func (aapi *AccountAPI) GetSnapshotLast(ctx context.Context) (uint64, error) {
+func (aapi *AccountAPI) GetSnapshotLast() (uint64, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}
-	if am == nil {
-		return 0, ErrGetAccounManagerErr
-	}
+
 	return am.GetSnapshotTime(0, 0)
 }
 
@@ -183,9 +149,6 @@ func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return 0, err
-	}
-	if am == nil {
-		return 0, ErrGetAccounManagerErr
 	}
 	return am.GetSnapshotTime(m, time)
 }

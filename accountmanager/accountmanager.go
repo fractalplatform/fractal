@@ -1187,19 +1187,6 @@ func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name
 	return am.AddAccountBalanceByID(toName, assetID, amount)
 }
 
-//AddBalanceByName add balance to account
-//func (am *AccountManager) AddBalanceByName(accountName common.Name, assetID uint64, amount *big.Int) error {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return err
-//	}
-//	if acct == nil {
-//		return ErrAccountNotExist
-//	}
-//	return acct.AddBalanceByID(assetID, amount)
-//	rerturn
-//}
-
 //Process account action
 func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	snap := am.sdb.Snapshot()
@@ -1213,7 +1200,7 @@ func (am *AccountManager) Process(accountManagerContext *types.AccountManagerCon
 func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
-	if err := action.CheckValid(accountManagerContext.ChainConfig); err != nil {
+	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
 		return nil, err
 	}
 

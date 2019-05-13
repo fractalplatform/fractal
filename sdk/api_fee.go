@@ -25,14 +25,9 @@ func (api *API) FeeInfo(name string, objectType uint64) (map[string]interface{},
 	return feeInfo, err
 }
 
-func (api *API) FeeInfoByID(startFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
+//FeeInfoByID get object fee by id
+func (api *API) FeeInfoByID(startFeeID uint64, count uint64, time uint64) (*feemanager.ObjectFeeResult, error) {
 	feeInfo := &feemanager.ObjectFeeResult{}
-	err := api.client.Call(feeInfo, "fee_getObjectFeeResult", startFeeID, count)
-	return feeInfo, err
-}
-
-func (api *API) FeeInfoByTime(time uint64, startFeeID uint64, count uint64) (*feemanager.ObjectFeeResult, error) {
-	feeInfo := &feemanager.ObjectFeeResult{}
-	err := api.client.Call(feeInfo, "fee_getObjectFeeResultByTime", time, startFeeID, count)
+	err := api.client.Call(feeInfo, "fee_getObjectFeeResult", startFeeID, count, time)
 	return feeInfo, err
 }
