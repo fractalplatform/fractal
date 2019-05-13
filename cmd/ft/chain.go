@@ -29,13 +29,14 @@ var (
 		Use:   "chain",
 		Short: "Support blockchain pure state ",
 		Long:  "Support blockchain pure state ",
+		Args:  cobra.NoArgs,
 	}
 
 	statePureCommand = &cobra.Command{
-		Use:   "startpure -i <ipc path> <enable/disable>",
+		Use:   "startpure <enable/disable>",
 		Short: "Start or stop pure state ",
 		Long:  "Start or stop pure state",
-		//	Args:  cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			if err := prueState(args[0]); err != nil {
 				fmt.Println(err)

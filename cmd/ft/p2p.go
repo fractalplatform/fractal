@@ -114,8 +114,8 @@ var countCmd = &cobra.Command{
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "return connected peers list.",
-	Long:  `return connected peers list.`,
+	Short: "Return connected peers list.",
+	Long:  `Return connected peers list.`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var result []string
@@ -138,8 +138,8 @@ var badcountCmd = &cobra.Command{
 
 var badlistCmd = &cobra.Command{
 	Use:   "badlist",
-	Short: "return bad nodes list.",
-	Long:  `return bad nodes list.`,
+	Short: "Return bad nodes list.",
+	Long:  `Return bad nodes list.`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var result []string
@@ -150,8 +150,8 @@ var badlistCmd = &cobra.Command{
 
 var selfnodeCmd = &cobra.Command{
 	Use:   "selfnode",
-	Short: "return bad nodes list.",
-	Long:  `return bad nodes list.`,
+	Short: "Return self enode url.",
+	Long:  `Return self enode url.`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var result string
