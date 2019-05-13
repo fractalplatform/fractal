@@ -175,6 +175,8 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 			a.data.GasLimit,
 			a.data.Amount,
 			a.data.Payload,
+			a.data.AssetID,
+			a.data.Remark,
 			s.chainID, uint(0), uint(0),
 		})
 		actionHashs[i] = hash
