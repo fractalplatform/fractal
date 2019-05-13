@@ -19,6 +19,7 @@ package dpos
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"sort"
 	"strings"
@@ -387,7 +388,7 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, nil
+		return nil, errors.New("GlobalState not exist")
 	} else if err := rlp.DecodeBytes(val, gstate); err != nil {
 		return nil, err
 	}

@@ -88,3 +88,40 @@ func TestNameUnmarshalJSON(t *testing.T) {
 		}
 	}
 }
+
+func TestIsChildren(t *testing.T) {
+	acctRegExp := regexp.MustCompile("^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$")
+
+	type fields struct {
+		from Name
+		acct Name
+		reg  *regexp.Regexp
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		exp    bool
+	}{
+		{"include", fields{StrToName("helloworld"), StrToName("helloworld.wert"), acctRegExp}, true},
+		{"include2", fields{StrToName("helloworld.wert2"), StrToName("helloworld.wert2"), acctRegExp}, false},
+		{"uninclude", fields{StrToName("helloworld"), StrToName("hellowordx.wert"), acctRegExp}, false},
+		// {"longnamelongname", true},
+		// {"5aaeb6053f3e", false},
+		// {"测试名称", false},
+		// {"hello_world", false},
+		// {"hello world", false},
+		// {"Helloworld", false},
+		// {"short", false},
+		// {"longnamelongnamelongnamelongname", false},
+	}
+
+	//eg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\\.[a-z][a-z0-9]{0,16}){0,2}$")
+	for _, tt := range tests {
+
+		if result := tt.fields.from.IsChildren(tt.fields.acct, tt.fields.reg); result != tt.exp {
+			t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
+
+		}
+	}
+}

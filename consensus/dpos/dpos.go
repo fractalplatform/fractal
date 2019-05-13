@@ -501,6 +501,9 @@ func (dpos *Dpos) GetVoterStake(state *state.StateDB, epcho uint64, voter string
 	if err != nil {
 		return big.NewInt(0), err
 	}
+	if voterInfo == nil {
+		return big.NewInt(0), nil
+	}
 	return new(big.Int).Mul(voterInfo.Quantity, sys.config.unitStake()), nil
 }
 
