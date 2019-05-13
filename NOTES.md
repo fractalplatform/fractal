@@ -1,5 +1,6 @@
+### Add
+- [CMD] add p2p miner txpool command.
 ### Deprecated
-- [ASSET] modify asset and account action struct
-- [ACCOUNT] modify account detail to description
-- [DPOS] add dpos reward interface for solidity
+- [RPCAPI] modify account and blockchain return result
+- [DOC] add jsonrpc, cmd, p2p docs in wiki
 

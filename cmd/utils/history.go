@@ -41,6 +41,13 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.12 - 2019-05-13",
+		`### Add
+- [CMD] add p2p miner txpool command.
+### Deprecated
+- [RPCAPI] modify account and blockchain return result
+- [DOC] add jsonrpc, cmd, p2p docs in wiki
+`,
 		"0.0.11 - 2019-05-06",
 		`### Deprecated
 - [ASSET] modify asset and account action struct

@@ -1,4 +1,12 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.12] - 2019-05-13
+### Add
+- [CMD] add p2p miner txpool command.
+### Deprecated
+- [RPCAPI] modify account and blockchain return result
+- [DOC] add jsonrpc, cmd, p2p docs in wiki
+
+
 ## [0.0.11] - 2019-05-06
 ### Deprecated
 - [ASSET] modify asset and account action struct
@@ -72,6 +80,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.12]: https://github.com/fractalplatform/fractal/compare/v0.0.11...v0.0.12
 [0.0.11]: https://github.com/fractalplatform/fractal/compare/v0.0.10...v0.0.11
 [0.0.10]: https://github.com/fractalplatform/fractal/compare/v0.0.9...v0.0.10
 [0.0.9]: https://github.com/fractalplatform/fractal/compare/v0.0.8...v0.0.9
