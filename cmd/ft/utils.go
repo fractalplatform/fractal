@@ -104,10 +104,11 @@ func clientCall(endpoint string, result interface{}, method string, args ...inte
 	client, err := dialRPC(ipcEndpoint)
 	if err != nil {
 		jww.ERROR.Println(err)
-		return
+		os.Exit(-1)
 	}
 	if err := client.Call(result, method, args...); err != nil {
 		jww.ERROR.Println(err)
+		os.Exit(-1)
 	}
 }
 

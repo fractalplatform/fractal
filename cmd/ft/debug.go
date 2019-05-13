@@ -63,6 +63,7 @@ var cpuProfileCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		clientCall(ipcEndpoint, nil, "debug_gcStats", args[0], parseUint64(args[1]))
+		printJSON(true)
 	},
 }
 
@@ -73,6 +74,7 @@ var goTraceCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		clientCall(ipcEndpoint, nil, "debug_goTrace", args[0], parseUint64(args[1]))
+		printJSON(true)
 	},
 }
 
@@ -83,6 +85,7 @@ var blockProfileCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		clientCall(ipcEndpoint, nil, "debug_blockProfile", args[0], parseUint64(args[1]))
+		printJSON(true)
 	},
 }
 
@@ -93,6 +96,7 @@ var mutexProfileCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		clientCall(ipcEndpoint, nil, "debug_mutexProfile", args[0], parseUint64(args[1]))
+		printJSON(true)
 	},
 }
 
@@ -103,6 +107,7 @@ var writeMemProfileCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		clientCall(ipcEndpoint, nil, "debug_writeMemProfile", args[0])
+		printJSON(true)
 	},
 }
 
@@ -125,6 +130,7 @@ var freeOSMemoryCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		clientCall(ipcEndpoint, nil, "debug_freeOSMemory")
+		printJSON(true)
 	},
 }
 

@@ -51,7 +51,7 @@ var forceCmd = &cobra.Command{
 	Use:   "force ",
 	Short: "force start mint new block.",
 	Long:  `force start mint new block.`,
-	Args:  cobra.RangeArgs(0, 1),
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var result bool
 		clientCall(ipcEndpoint, &result, "miner_force")
@@ -89,7 +89,6 @@ var setCoinbaseCmd = &cobra.Command{
 	Long:  `Set the coinbase of the miner.`,
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		var result bool
 		name := common.Name(args[0])
 		if !name.IsValid(regexp.MustCompile("^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$")) {
 			jww.ERROR.Println("valid name: " + name)
@@ -123,9 +122,8 @@ var setCoinbaseCmd = &cobra.Command{
 			jww.ERROR.Println("keys is empty ", "path", path)
 			return
 		}
-
-		clientCall(ipcEndpoint, &result, "miner_mining", name, keys)
-		printJSON(result)
+		clientCall(ipcEndpoint, nil, "miner_setCoinbase", name, keys)
+		printJSON(true)
 	},
 }
 
@@ -135,9 +133,8 @@ var setExtraCmd = &cobra.Command{
 	Long:  `Set the extra of the miner.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var result bool
-		clientCall(ipcEndpoint, &result, "miner_setExtra", args[0])
-		printJSON(result)
+		clientCall(ipcEndpoint, nil, "miner_setExtra", args[0])
+		printJSON(true)
 	},
 }
 

@@ -33,8 +33,6 @@ log:
 node:
   # the node datadir
   datadir: "./build/testdatadir"
-  # Reduce key-derivation RAM & CPU usage at some expense of KDF strength
-  lightkdf: false
   # RPC:ipc file name
   ipcpath: "ft.ipc"
   # RPC:http host address

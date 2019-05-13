@@ -140,7 +140,7 @@ var badlistCmd = &cobra.Command{
 	Use:   "badlist",
 	Short: "return bad nodes list.",
 	Long:  `return bad nodes list.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var result []string
 		clientCall(ipcEndpoint, &result, "p2p_badNodes")
@@ -152,7 +152,7 @@ var selfnodeCmd = &cobra.Command{
 	Use:   "selfnode",
 	Short: "return bad nodes list.",
 	Long:  `return bad nodes list.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		var result string
 		clientCall(ipcEndpoint, &result, "p2p_selfNode")
