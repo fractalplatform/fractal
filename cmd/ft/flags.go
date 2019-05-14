@@ -152,14 +152,6 @@ func addFlags(flags *flag.FlagSet) {
 	viper.BindPFlag("node.datadir", flags.Lookup("datadir"))
 
 	// node
-	flags.BoolVar(
-		&ftCfgInstance.NodeCfg.UseLightweightKDF,
-		"lightkdf",
-		ftCfgInstance.NodeCfg.UseLightweightKDF,
-		"Reduce key-derivation RAM & CPU usage at some expense of KDF strength",
-	)
-	viper.BindPFlag("node.lightkdf", flags.Lookup("lightkdf"))
-
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.IPCPath,
 		"ipcpath",

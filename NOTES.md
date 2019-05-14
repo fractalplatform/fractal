@@ -1,4 +1,6 @@
-### Fixed
-- [ASSET] get asset object return panic
-- [VM] fix contract issue asset bug
+### Add
+- [CMD] add p2p miner txpool command.
+### Deprecated
+- [RPCAPI] modify account and blockchain return result
+- [DOC] add jsonrpc, cmd, p2p docs in wiki
 

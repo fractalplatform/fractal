@@ -48,7 +48,7 @@ func NewSystem(state *state.StateDB, config *Config) *System {
 }
 
 // RegCandidate  register a candidate
-func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, height uint64) error {
+func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
@@ -90,7 +90,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 		URL:           url,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
-		Height:        height,
+		Number:        number,
 	}
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
@@ -110,7 +110,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 }
 
 // UpdateCandidate  update a candidate
-func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, height uint64) error {
+func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
@@ -168,7 +168,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	prod.URL = url
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
-	prod.Height = height
+	prod.Number = number
 	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 }
 
 // UnregCandidate  unregister a candidate
-func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64) error {
+func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64) error {
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -200,7 +200,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64)
 
 	// db
 	prod.Type = Freeze
-	prod.Height = height
+	prod.Number = number
 	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
@@ -245,7 +245,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64)
 }
 
 // RefundCandidate  refund a candidate
-func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64) error {
+func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64) error {
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -273,7 +273,7 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 		if tstate == nil {
 			break
 		}
-		if tstate.Height < prod.Height {
+		if tstate.Number < prod.Number {
 			break
 		}
 		freeze++
@@ -320,7 +320,7 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 }
 
 // VoteCandidate vote a candidate
-func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, height uint64) error {
+func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, number uint64) error {
 	// candidate validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -365,7 +365,7 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		}
 	}
 
-	voterInfo.Height = height
+	voterInfo.Number = number
 	voterInfo.Quantity = new(big.Int).Add(voterInfo.Quantity, q)
 	if err := sys.SetVoter(voterInfo); err != nil {
 		return err
@@ -388,7 +388,7 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 }
 
 // KickedCandidate kicked
-func (sys *System) KickedCandidate(epcho uint64, candidate string, height uint64) error {
+func (sys *System) KickedCandidate(epcho uint64, candidate string, number uint64) error {
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
 	if prod == nil || err != nil {
@@ -422,7 +422,7 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string, height uint64
 	// }
 
 	prod.TotalQuantity = big.NewInt(0)
-	prod.Height = height
+	prod.Number = number
 	prod.Type = Black
 	if err := sys.SetCandidate(prod); err != nil {
 		return err
@@ -446,7 +446,7 @@ func (sys *System) ExitTakeOver(epcho uint64) error {
 	return sys.SetState(gstate)
 }
 
-func (sys *System) onblock(epcho uint64, height uint64) error {
+func (sys *System) onblock(epcho uint64, number uint64) error {
 	pepcho, err := sys.GetLastestEpcho()
 	if err != nil {
 		return err
@@ -470,13 +470,13 @@ func (sys *System) onblock(epcho uint64, height uint64) error {
 		TotalQuantity:          new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
 		TakeOver:               pState.TakeOver,
 		Dpos:                   pState.Dpos,
-		Height:                 height,
+		Number:                 number,
 	}
 	return sys.SetState(gstate)
 }
 
 // UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height uint64, counter func(from uint64, index uint64) uint64) error {
+func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64, counter func(from uint64, index uint64) uint64) error {
 	if pepcho > epcho {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -501,7 +501,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 		index := n - 1
 		candidate := ppstate.ActivatedCandidateSchedule[index]
 		if index >= sys.config.CandidateScheduleSize {
-			h := pstate.OffCandidateHeight[index-sys.config.CandidateScheduleSize]
+			h := pstate.OffCandidateNumber[index-sys.config.CandidateScheduleSize]
 			i := pstate.OffCandidateSchedule[index-sys.config.CandidateScheduleSize]
 			cnt := counter(h-1, i)
 			if _, ok := roldcandidates[i]; !ok {
@@ -514,7 +514,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			roldcandidates[i] = append(roldcandidates[i], candidate)
 			oldcandidates[candidate] += cnt
 		} else {
-			cnt := counter(ppstate.Height, index)
+			cnt := counter(ppstate.Number, index)
 			if _, ok := roldcandidates[index]; ok {
 				for _, c := range roldcandidates[index] {
 					cnt -= oldcandidates[c]
@@ -590,7 +590,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activeTotalQuantity
-	pstate.Height = height
+	pstate.Number = number
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
@@ -601,7 +601,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			PreEpcho:               pstate.Epcho,
 			ActivatedTotalQuantity: big.NewInt(0),
 			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
-			OffCandidateHeight:     []uint64{},
+			OffCandidateNumber:     []uint64{},
 			OffCandidateSchedule:   []uint64{},
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,

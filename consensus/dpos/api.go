@@ -32,8 +32,8 @@ type API struct {
 }
 
 // Info get dpos info
-func (api *API) Info() (interface{}, error) {
-	return api.dpos.config, nil
+func (api *API) Info() interface{} {
+	return api.dpos.config
 }
 
 // IrreversibleRet result
@@ -44,12 +44,12 @@ type IrreversibleRet struct {
 }
 
 // Irreversible get irreversible info
-func (api *API) Irreversible() (interface{}, error) {
+func (api *API) Irreversible() interface{} {
 	ret := &IrreversibleRet{}
 	ret.Reversible = api.chain.CurrentHeader().Number.Uint64()
 	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
 	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
-	return ret, nil
+	return ret
 }
 
 // Candidate get candidate info of dpos
@@ -93,7 +93,7 @@ func (api *API) Candidates(detail bool) (interface{}, error) {
 		return candidates, nil
 	}
 
-	names := []string{}
+	names := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		names = append(names, candidate.Name)
 	}
@@ -102,17 +102,17 @@ func (api *API) Candidates(detail bool) (interface{}, error) {
 
 // VotersByCandidate get voters info of candidate
 func (api *API) VotersByCandidate(candidate string, detail bool) (interface{}, error) {
-	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.VotersByCandidateByHeight(height, candidate, detail)
+	number := api.chain.CurrentHeader().Number.Uint64()
+	return api.VotersByCandidateByNumber(number, candidate, detail)
 }
 
-// VotersByCandidateByHeight get voters info of candidate
-func (api *API) VotersByCandidateByHeight(height uint64, candidate string, detail bool) (interface{}, error) {
+// VotersByCandidateByNumber get voters info of candidate
+func (api *API) VotersByCandidateByNumber(number uint64, candidate string, detail bool) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	epcho, err := api.epcho(height)
+	epcho, err := api.epcho(number)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func (api *API) VotersByCandidateByHeight(height uint64, candidate string, detai
 		return voters, nil
 	}
 
-	names := []string{}
+	names := make([]string, 0, len(voters))
 	for _, voter := range voters {
 		names = append(names, voter.Name)
 	}
@@ -133,17 +133,17 @@ func (api *API) VotersByCandidateByHeight(height uint64, candidate string, detai
 
 // VotersByVoter get voters info of voter
 func (api *API) VotersByVoter(voter string, detail bool) (interface{}, error) {
-	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.VotersByVoterByHeight(height, voter, detail)
+	number := api.chain.CurrentHeader().Number.Uint64()
+	return api.VotersByVoterByNumber(number, voter, detail)
 }
 
-// VotersByVoterByHeight get voters info of voter
-func (api *API) VotersByVoterByHeight(height uint64, voter string, detail bool) (interface{}, error) {
+// VotersByVoterByNumber get voters info of voter
+func (api *API) VotersByVoterByNumber(number uint64, voter string, detail bool) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	epcho, err := api.epcho(height)
+	epcho, err := api.epcho(number)
 	if err != nil {
 		return nil, err
 	}
@@ -164,17 +164,17 @@ func (api *API) VotersByVoterByHeight(height uint64, voter string, detail bool) 
 
 // AvailableStake get available stake
 func (api *API) AvailableStake(voter string) (*big.Int, error) {
-	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.AvailableStakeByHeight(height, voter)
+	number := api.chain.CurrentHeader().Number.Uint64()
+	return api.AvailableStakeByNumber(number, voter)
 }
 
-// AvailableStakeByHeight get available stake
-func (api *API) AvailableStakeByHeight(height uint64, voter string) (*big.Int, error) {
+// AvailableStakeByNumber get available stake
+func (api *API) AvailableStakeByNumber(number uint64, voter string) (*big.Int, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	epcho, err := api.epcho(height)
+	epcho, err := api.epcho(number)
 	if err != nil {
 		return nil, err
 	}
@@ -187,13 +187,13 @@ func (api *API) AvailableStakeByHeight(height uint64, voter string) (*big.Int, e
 
 // ValidCandidates current valid candidates
 func (api *API) ValidCandidates() (interface{}, error) {
-	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.ValidCandidatesByHeight(height)
+	number := api.chain.CurrentHeader().Number.Uint64()
+	return api.ValidCandidatesByNumber(number)
 }
 
-// ValidCandidatesByHeight valid candidates
-func (api *API) ValidCandidatesByHeight(height uint64) (interface{}, error) {
-	epcho, err := api.epcho(height)
+// ValidCandidatesByNumber valid candidates
+func (api *API) ValidCandidatesByNumber(number uint64) (interface{}, error) {
+	epcho, err := api.epcho(number)
 	if err != nil {
 		return nil, err
 	}
@@ -210,13 +210,13 @@ func (api *API) ValidCandidatesByHeight(height uint64) (interface{}, error) {
 
 // NextValidCandidates current valid candidates
 func (api *API) NextValidCandidates() (interface{}, error) {
-	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.NextValidCandidatesByHeight(height)
+	number := api.chain.CurrentHeader().Number.Uint64()
+	return api.NextValidCandidatesByNumber(number)
 }
 
-// NextValidCandidatesByHeight current valid candidates
-func (api *API) NextValidCandidatesByHeight(height uint64) (interface{}, error) {
-	epcho, err := api.epcho(height)
+// NextValidCandidatesByNumber current valid candidates
+func (api *API) NextValidCandidatesByNumber(number uint64) (interface{}, error) {
+	epcho, err := api.epcho(number)
 	if err != nil {
 		return nil, err
 	}
@@ -229,13 +229,13 @@ func (api *API) NextValidCandidatesByHeight(height uint64) (interface{}, error) 
 
 // SnapShotTime get snapshort
 func (api *API) SnapShotTime() (interface{}, error) {
-	height := api.chain.CurrentHeader().Number.Uint64()
-	return api.SnapShotTimeByHeight(height)
+	number := api.chain.CurrentHeader().Number.Uint64()
+	return api.SnapShotTimeByNumber(number)
 }
 
-// SnapShotTimeByHeight get snapshort by height
-func (api *API) SnapShotTimeByHeight(height uint64) (interface{}, error) {
-	epcho, err := api.epcho(height)
+// SnapShotTimeByNumber get snapshort by number
+func (api *API) SnapShotTimeByNumber(number uint64) (interface{}, error) {
+	epcho, err := api.epcho(number)
 	if err != nil {
 		return nil, err
 	}
@@ -257,10 +257,10 @@ func (api *API) SnapShotTimeByHeight(height uint64) (interface{}, error) {
 	return res, nil
 }
 
-func (api *API) epcho(height uint64) (uint64, error) {
-	header := api.chain.GetHeaderByNumber(height)
+func (api *API) epcho(number uint64) (uint64, error) {
+	header := api.chain.GetHeaderByNumber(number)
 	if header == nil {
-		return 0, fmt.Errorf("not found height %v", height)
+		return 0, fmt.Errorf("not found number %v", number)
 	}
 	timestamp := header.Time.Uint64()
 	return api.dpos.config.epoch(timestamp), nil

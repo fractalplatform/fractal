@@ -41,20 +41,22 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 func RPCMarshalBlock(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool) map[string]interface{} {
 	head := b.Header() // copies the header once
 	fields := map[string]interface{}{
-		"number":           head.Number,
-		"hash":             b.Hash(),
-		"parentHash":       head.ParentHash,
-		"logsBloom":        head.Bloom,
-		"stateRoot":        head.Root,
-		"miner":            head.Coinbase,
-		"difficulty":       head.Difficulty,
-		"extraData":        hexutil.Bytes(head.Extra),
-		"size":             b.Size(),
-		"gasLimit":         head.GasLimit,
-		"gasUsed":          head.GasUsed,
-		"timestamp":        head.Time,
-		"transactionsRoot": head.TxsRoot,
-		"receiptsRoot":     head.ReceiptsRoot,
+		"number":               head.Number,
+		"hash":                 b.Hash(),
+		"proposedIrreversible": head.ProposedIrreversible,
+		"parentHash":           head.ParentHash,
+		"logsBloom":            head.Bloom,
+		"stateRoot":            head.Root,
+		"miner":                head.Coinbase,
+		"difficulty":           head.Difficulty,
+		"extraData":            hexutil.Bytes(head.Extra),
+		"size":                 b.Size(),
+		"gasLimit":             head.GasLimit,
+		"gasUsed":              head.GasUsed,
+		"timestamp":            head.Time,
+		"transactionsRoot":     head.TxsRoot,
+		"receiptsRoot":         head.ReceiptsRoot,
+		"forkID":               head.ForkID,
 	}
 
 	if inclTx {

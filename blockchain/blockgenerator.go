@@ -47,14 +47,14 @@ type BlockGenerator struct {
 }
 
 // SetCoinbase sets the coinbase of the generated block.
-func (bg *BlockGenerator) SetCoinbase(addr common.Name) {
+func (bg *BlockGenerator) SetCoinbase(name common.Name) {
 	if bg.gasPool != nil {
 		if len(bg.txs) > 0 {
 			panic("coinbase must be set before adding transactions")
 		}
 		panic("coinbase can only be set once")
 	}
-	bg.header.Coinbase = addr
+	bg.header.Coinbase = name
 	bg.gasPool = new(common.GasPool).AddGas(bg.header.GasLimit)
 }
 

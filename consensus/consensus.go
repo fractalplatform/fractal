@@ -77,7 +77,7 @@ type IChainReader interface {
 
 // IEngine is an algorithm agnostic consensus engine.
 type IEngine interface {
-	// Author retrieves the address of the account that minted the given block
+	// Author retrieves the name of the account that minted the given block
 	Author(header *types.Header) (common.Name, error)
 
 	// Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
@@ -98,7 +98,7 @@ type IEngine interface {
 
 	Engine() IEngine
 
-	ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
+	ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
 
 	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
 

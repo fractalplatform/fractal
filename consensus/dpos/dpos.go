@@ -105,14 +105,14 @@ func (s *stateDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, err
 }
 
 // Genesis dpos genesis store
-func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, height uint64) error {
+func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, number uint64) error {
 	sys := NewSystem(state, cfg)
 	if err := sys.SetCandidate(&CandidateInfo{
 		Name:          cfg.SystemName,
 		URL:           cfg.SystemURL,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
-		Height:        height,
+		Number:        number,
 	}); err != nil {
 		return err
 	}
@@ -126,9 +126,9 @@ func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, height uint64)
 		PreEpcho:               epcho,
 		ActivatedTotalQuantity: big.NewInt(0),
 		TotalQuantity:          big.NewInt(0),
-		OffCandidateHeight:     []uint64{},
+		OffCandidateNumber:     []uint64{},
 		OffCandidateSchedule:   []uint64{},
-		Height:                 height,
+		Number:                 number,
 	}); err != nil {
 		return err
 	}
@@ -212,7 +212,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 			}
 			return m
 		}
-		log.Debug("UpdateElectedCandidates", "prev", pepcho, "curr", epcho, "height", parent.Number.Uint64(), "time", parent.Time.Uint64())
+		log.Debug("UpdateElectedCandidates", "prev", pepcho, "curr", epcho, "number", parent.Number.Uint64(), "time", parent.Time.Uint64())
 		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64(), counter)
 	}
 	return nil
@@ -256,8 +256,8 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 
 	blk := types.NewBlock(header, txs, receipts)
 
-	// first hard fork at a specific height
-	// If the block height is greater than or equal to the hard forking height,
+	// first hard fork at a specific number
+	// If the block number is greater than or equal to the hard forking number,
 	// the fork function will take effect. This function is valid only in the test network.
 	if err := chain.ForkUpdate(blk, state); err != nil {
 		return nil, err
@@ -341,7 +341,7 @@ func (dpos *Dpos) VerifySeal(chain consensus.IChainReader, header *types.Header)
 // CalcDifficulty is the difficulty adjustment algorithm.
 // It returns the difficulty that a new block should have when created at time given the parent block's time and difficulty.
 func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, parent *types.Header) *big.Int {
-	// return the current height as difficulty
+	// return the current number as difficulty
 	if timeOfGenesisBlock == 0 {
 		if genesisBlock := chain.GetHeaderByNumber(0); genesisBlock != nil {
 			timeOfGenesisBlock = genesisBlock.Time.Int64()

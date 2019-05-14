@@ -51,10 +51,10 @@ func (api *API) DposVotersByCandidate(candidate string, detail bool) (map[string
 	return info, err
 }
 
-// DposVotersByCandidateByHeight get voters info of candidate
-func (api *API) DposVotersByCandidateByHeight(height uint64, candidate string, detail bool) (map[string]interface{}, error) {
+// DposVotersByCandidateByNumber get voters info of candidate
+func (api *API) DposVotersByCandidateByNumber(number uint64, candidate string, detail bool) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_votersByCandidateByHeight", height, candidate, detail)
+	err := api.client.Call(&info, "dpos_votersByCandidateByNumber", number, candidate, detail)
 	return info, err
 }
 
@@ -65,10 +65,10 @@ func (api *API) DposVotersByVoter(voter string, detail bool) (interface{}, error
 	return info, err
 }
 
-// DposVotersByVoterByHeight get voters info of voter
-func (api *API) DposVotersByVoterByHeight(height uint64, voter string, detail bool) (interface{}, error) {
+// DposVotersByVoterByNumber get voters info of voter
+func (api *API) DposVotersByVoterByNumber(number uint64, voter string, detail bool) (interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_votersByVoterByHeight", height, voter, detail)
+	err := api.client.Call(&info, "dpos_votersByVoterByNumber", number, voter, detail)
 	return info, err
 }
 
@@ -79,10 +79,10 @@ func (api *API) DposAvailableStake(name string) (map[string]interface{}, error) 
 	return info, err
 }
 
-// DposAvailableStakeByHeight state info
-func (api *API) DposAvailableStakeByHeight(height uint64, name string) (map[string]interface{}, error) {
+// DposAvailableStakeByNumber state info
+func (api *API) DposAvailableStakeByNumber(number uint64, name string) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_availableStakeByHeight", height, name)
+	err := api.client.Call(&info, "dpos_availableStakeByNumber", number, name)
 	return info, err
 }
 
@@ -93,10 +93,10 @@ func (api *API) DposValidCandidates() (map[string]interface{}, error) {
 	return info, err
 }
 
-// DposValidCandidatesByHeight dpos candidate info
-func (api *API) DposValidCandidatesByHeight(height uint64) (map[string]interface{}, error) {
+// DposValidCandidatesByNumber dpos candidate info
+func (api *API) DposValidCandidatesByNumber(number uint64) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_validCandidatesByHeight", height)
+	err := api.client.Call(&info, "dpos_validCandidatesByNumber", number)
 	return info, err
 }
 
@@ -107,10 +107,10 @@ func (api *API) DposNextValidCandidates() (map[string]interface{}, error) {
 	return info, err
 }
 
-// DposNextValidCandidatesByHeight dpos candidate info
-func (api *API) DposNextValidCandidatesByHeight(height uint64) (map[string]interface{}, error) {
+// DposNextValidCandidatesByNumber dpos candidate info
+func (api *API) DposNextValidCandidatesByNumber(number uint64) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_nextValidCandidatesByHeight", height)
+	err := api.client.Call(&info, "dpos_nextValidCandidatesByNumber", number)
 	return info, err
 }
 
@@ -121,9 +121,9 @@ func (api *API) DposSnapShotTime() (map[string]interface{}, error) {
 	return info, err
 }
 
-// DposSnapShotTimeByHeight dpos snapshot time info
-func (api *API) DposSnapShotTimeByHeight(height uint64) (map[string]interface{}, error) {
+// DposSnapShotTimeByNumber dpos snapshot time info
+func (api *API) DposSnapShotTimeByNumber(number uint64) (map[string]interface{}, error) {
 	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_snapShotTimeByHeight", height)
+	err := api.client.Call(&info, "dpos_snapShotTimeByNumber", number)
 	return info, err
 }

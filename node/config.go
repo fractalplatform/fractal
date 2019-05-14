@@ -42,10 +42,9 @@ const (
 // Config represents a small collection of configuration values to fine tune the
 // P2P network layer of a protocol stack.
 type Config struct {
-	Name              string
-	DataDir           string `mapstructure:"datadir"`
-	UseLightweightKDF bool   `mapstructure:"lightkdf"`
-	IPCPath           string `mapstructure:"ipcpath"`
+	Name    string
+	DataDir string `mapstructure:"datadir"`
+	IPCPath string `mapstructure:"ipcpath"`
 
 	HTTPHost         string   `mapstructure:"httphost"`
 	HTTPPort         int      `mapstructure:"httpport"`
