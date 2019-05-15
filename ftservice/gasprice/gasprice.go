@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -142,9 +141,6 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	if len(blockPrices) > 0 {
 		sort.Sort(bigIntArray(blockPrices))
 		price = blockPrices[(len(blockPrices)-1)*gpo.percentile/100]
-	}
-	if price.Cmp(params.GpoMaxPrice) > 0 {
-		price = new(big.Int).Set(params.GpoMaxPrice)
 	}
 
 	gpo.cacheLock.Lock()

@@ -16,15 +16,10 @@
 
 package params
 
-import "math/big"
-
 const (
 	// Fractal
 	Fractal = 1e18
 )
-
-// GpoMaxPrice the gas price oracle max gas price
-var GpoMaxPrice = big.NewInt(500 * 1e9)
 
 const (
 	//ClientIdentifier Client identifier to advertise over the network
