@@ -23,13 +23,17 @@ import (
 	"sync"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi"
 	"github.com/fractalplatform/fractal/types"
 )
 
-var maxPrice = big.NewInt(500 * 1e9)
+type backend interface {
+	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error)
+	BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error)
+}
 
+//Config gas price oracle config
 type Config struct {
 	Blocks     int `mapstructure:"blocks"`
 	Percentile int `mapstructure:"percentile"`
@@ -39,7 +43,7 @@ type Config struct {
 // Oracle recommends gas prices based on the content of recent
 // blocks. Suitable for both light and full clients.
 type Oracle struct {
-	backend   rpcapi.Backend
+	backend   backend
 	lastHead  common.Hash
 	lastPrice *big.Int
 	cacheLock sync.RWMutex
@@ -50,7 +54,7 @@ type Oracle struct {
 }
 
 // NewOracle returns a new oracle.
-func NewOracle(backend rpcapi.Backend, params Config) *Oracle {
+func NewOracle(backend backend, params Config) *Oracle {
 	blocks := params.Blocks
 	if blocks < 1 {
 		blocks = 1
@@ -79,7 +83,11 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	lastPrice := gpo.lastPrice
 	gpo.cacheLock.RUnlock()
 
-	head, _ := gpo.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
+	head, err := gpo.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
+	if err != nil {
+		return lastPrice, nil
+	}
+
 	headHash := head.Hash()
 	if headHash == lastHead {
 		return lastPrice, nil
@@ -103,7 +111,7 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	exp := 0
 	var blockPrices []*big.Int
 	for sent < gpo.checkBlocks && blockNum > 0 {
-		go gpo.getBlockPrices(ctx, types.MakeSigner(gpo.backend.ChainConfig().ChainID), blockNum, ch)
+		go gpo.getBlockPrices(ctx, blockNum, ch)
 		sent++
 		exp++
 		blockNum--
@@ -124,7 +132,7 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 			continue
 		}
 		if blockNum > 0 && sent < gpo.maxBlocks {
-			go gpo.getBlockPrices(ctx, types.MakeSigner(gpo.backend.ChainConfig().ChainID), blockNum, ch)
+			go gpo.getBlockPrices(ctx, blockNum, ch)
 			sent++
 			exp++
 			blockNum--
@@ -135,8 +143,8 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 		sort.Sort(bigIntArray(blockPrices))
 		price = blockPrices[(len(blockPrices)-1)*gpo.percentile/100]
 	}
-	if price.Cmp(maxPrice) > 0 {
-		price = new(big.Int).Set(maxPrice)
+	if price.Cmp(params.GpoMaxPrice) > 0 {
+		price = new(big.Int).Set(params.GpoMaxPrice)
 	}
 
 	gpo.cacheLock.Lock()
@@ -159,7 +167,7 @@ func (t transactionsByGasPrice) Less(i, j int) bool { return t[i].GasPrice().Cmp
 
 // getBlockPrices calculates the lowest transaction gas price in a given block
 // and sends it to the result channel. If the block is empty, price is nil.
-func (gpo *Oracle) getBlockPrices(ctx context.Context, signer types.Signer, blockNum uint64, ch chan getBlockPricesResult) {
+func (gpo *Oracle) getBlockPrices(ctx context.Context, blockNum uint64, ch chan getBlockPricesResult) {
 	block, err := gpo.backend.BlockByNumber(ctx, rpc.BlockNumber(blockNum))
 	if block == nil {
 		ch <- getBlockPricesResult{nil, err}
@@ -170,7 +178,6 @@ func (gpo *Oracle) getBlockPrices(ctx context.Context, signer types.Signer, bloc
 	txs := make([]*types.Transaction, len(blockTxs))
 	copy(txs, blockTxs)
 	sort.Sort(transactionsByGasPrice(txs))
-
 	for _, tx := range txs {
 		sender := tx.GetActions()[0].Sender()
 		if err == nil && sender != block.Coinbase() {
