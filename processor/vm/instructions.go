@@ -846,6 +846,8 @@ func opGas(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stac
 }
 
 func opCreate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	_, _, _ = stack.pop(), stack.pop(), stack.pop()
+	stack.push(evm.interpreter.intPool.getZero())
 	// var (
 	// 	value        = stack.pop()
 	// 	offset, size = stack.pop(), stack.pop()
