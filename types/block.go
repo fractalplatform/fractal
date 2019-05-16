@@ -27,7 +27,6 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
 )
 
 // ForkID  represents a blockchain fork
@@ -308,7 +307,8 @@ func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 }
 
 func RlpHash(x interface{}) (h common.Hash) {
-	hw := sha3.NewLegacyKeccak256()
+	hw := common.Get256()
+	defer common.Put256(hw)
 	err := rlp.Encode(hw, x)
 	if err != nil {
 		panic(fmt.Sprintf("rlp hash encode err: %v", err))

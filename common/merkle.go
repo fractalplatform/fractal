@@ -18,8 +18,6 @@ package common
 
 import (
 	"math"
-
-	"golang.org/x/crypto/sha3"
 )
 
 // MerkleRoot return merkle tree root hash.
@@ -38,7 +36,8 @@ func MerkleRoot(nodes []Hash) Hash {
 }
 
 func interiorMerkleHash(left, right Hash) (hash Hash) {
-	d := sha3.NewLegacyKeccak256()
+	d := Get256()
+	defer Put256(d)
 	d.Write(left.Bytes())
 	d.Write(right.Bytes())
 	d.Sum(hash[:0])
@@ -46,7 +45,8 @@ func interiorMerkleHash(left, right Hash) (hash Hash) {
 }
 
 func leafMerkleHash(node Hash) (hash Hash) {
-	d := sha3.NewLegacyKeccak256()
+	d := Get256()
+	defer Put256(d)
 	d.Write(node.Bytes())
 	d.Sum(hash[:0])
 	return hash
