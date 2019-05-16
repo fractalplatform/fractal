@@ -26,7 +26,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"golang.org/x/crypto/sha3"
 )
 
 // AddressLength of addresses in bytes
@@ -74,7 +73,8 @@ func (a Address) Hash() Hash { return BytesToHash(a[:]) }
 // Hex returns an EIP55-compliant hex string representation of the address.
 func (a Address) Hex() string {
 	unchecksummed := hex.EncodeToString(a[:])
-	sha := sha3.NewLegacyKeccak256()
+	sha := Get256()
+	defer Put256(sha)
 	sha.Write([]byte(unchecksummed))
 	hash := sha.Sum(nil)
 
