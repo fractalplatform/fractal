@@ -24,7 +24,6 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
-	trie "github.com/fractalplatform/fractal/state/mtp"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
@@ -44,9 +43,6 @@ var (
 type StateDB struct {
 	db   Database
 	trie Trie
-
-	iterator *trie.Iterator
-	triehd   *trie.SecureTrie
 
 	readSet  map[string][]byte   // save old/unmodified data
 	writeSet map[string][]byte   // last modify data
@@ -83,8 +79,6 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 	return &StateDB{
 		db:         db,
 		trie:       tr,
-		iterator:   nil,
-		triehd:     nil,
 		readSet:    make(map[string][]byte),
 		writeSet:   make(map[string][]byte),
 		dirtySet:   make(map[string]struct{}),
@@ -94,17 +88,19 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 		stateTrace: false}, nil
 }
 
-// only save first err
+//setError only save first err
 func (s *StateDB) setError(err error) {
 	if s.dbErr == nil {
 		s.dbErr = err
 	}
 }
 
+// Error return error info
 func (s *StateDB) Error() error {
 	return s.dbErr
 }
 
+// Reset clear StateDB
 func (s *StateDB) Reset(root common.Hash) error {
 	tr, err := s.db.OpenTrie(root)
 	if err != nil {
@@ -112,8 +108,6 @@ func (s *StateDB) Reset(root common.Hash) error {
 	}
 
 	s.trie = tr
-	s.iterator = nil
-	s.triehd = nil
 	s.readSet = make(map[string][]byte)
 	s.writeSet = make(map[string][]byte)
 	s.dirtySet = make(map[string]struct{})
@@ -128,7 +122,7 @@ func (s *StateDB) Reset(root common.Hash) error {
 	return nil
 }
 
-// save transaction log
+// AddLog save transaction log
 func (s *StateDB) AddLog(log *types.Log) {
 	s.journal.append(addLogChange{txhash: s.thash})
 
@@ -140,12 +134,12 @@ func (s *StateDB) AddLog(log *types.Log) {
 	s.logSize++
 }
 
-// get a strip of transaction log
+// GetLogs get a strip of transaction log
 func (s *StateDB) GetLogs(hash common.Hash) []*types.Log {
 	return s.logs[hash]
 }
 
-// get all transaction log
+// Logs get all transaction log
 func (s *StateDB) Logs() []*types.Log {
 	var logs []*types.Log
 	for _, lgs := range s.logs {
@@ -154,7 +148,7 @@ func (s *StateDB) Logs() []*types.Log {
 	return logs
 }
 
-// hash is preimageHash
+// AddPreimage hash is preimageHash
 func (s *StateDB) AddPreimage(hash common.Hash, preimage []byte) {
 	if _, ok := s.preimages[hash]; !ok {
 		s.journal.append(addPreimageChange{hash: hash})
@@ -164,6 +158,7 @@ func (s *StateDB) AddPreimage(hash common.Hash, preimage []byte) {
 	}
 }
 
+// Preimages return preimages
 func (s *StateDB) Preimages() map[common.Hash][]byte {
 	return s.preimages
 }
@@ -276,8 +271,6 @@ func (s *StateDB) Copy() *StateDB {
 	state := &StateDB{
 		db:        s.db,
 		trie:      s.trie,
-		iterator:  nil,
-		triehd:    nil,
 		readSet:   make(map[string][]byte, len(s.writeSet)),
 		writeSet:  make(map[string][]byte, len(s.writeSet)),
 		dirtySet:  make(map[string]struct{}, len(s.dirtySet)),
