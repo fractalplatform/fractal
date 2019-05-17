@@ -20,7 +20,7 @@ import "math/big"
 
 const (
 	// GenesisGasLimit Gas limit of the Genesis block.
-	GenesisGasLimit uint64 = 100000000
+	GenesisGasLimit uint64 = 30000000
 	// MinGasLimit Minimum the gas limit may ever be.
 	MinGasLimit uint64 = 5000
 	// GasLimitBoundDivisor The bound divisor of the gas limit, used in update calculations.
