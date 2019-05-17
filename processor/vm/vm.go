@@ -250,7 +250,7 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName common.Name, ca
 func (evm *EVM) distributeGasByScale(actualUsedGas uint64, runGas uint64) {
 	if evm.depth == 0 && actualUsedGas != runGas {
 		for key, gas := range evm.FounderGasMap {
-			v := DistributeGas{(gas.Value / int64(runGas)) * int64(actualUsedGas), gas.TypeID}
+			v := DistributeGas{int64((float64(gas.Value) / float64(runGas)) * float64(actualUsedGas)), gas.TypeID}
 			evm.FounderGasMap[key] = v
 		}
 	}
@@ -338,7 +338,6 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 			contract.UseGas(contract.Gas)
 		}
 	}
-
 	actualUsedGas := gas - contract.Gas
 	evm.distributeGasByScale(actualUsedGas, runGas)
 
