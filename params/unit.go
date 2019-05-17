@@ -17,6 +17,7 @@
 package params
 
 const (
+	// Fractal
 	Fractal = 1e18
 )
 

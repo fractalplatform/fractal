@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
 )
 
 var (
@@ -43,7 +42,8 @@ var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
-	d := sha3.NewLegacyKeccak256()
+	d := common.Get256()
+	defer common.Put256(d)
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -53,7 +53,8 @@ func Keccak256(data ...[]byte) []byte {
 // Keccak256Hash calculates and returns the Keccak256 hash of the input data,
 // converting it to an internal Hash data structure.
 func Keccak256Hash(data ...[]byte) (h common.Hash) {
-	d := sha3.NewLegacyKeccak256()
+	d := common.Get256()
+	defer common.Put256(d)
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -63,7 +64,8 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 
 // Keccak512 calculates and returns the Keccak512 hash of the input data.
 func Keccak512(data ...[]byte) []byte {
-	d := sha3.NewLegacyKeccak512()
+	d := common.Get512()
+	defer common.Put512(d)
 	for _, b := range data {
 		d.Write(b)
 	}
