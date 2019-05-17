@@ -5,7 +5,7 @@
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
 		"accountParams": {
-			"level": 1,
+			"level": 0,
 			"length": 16,
 			"subLength": 8
 		},
