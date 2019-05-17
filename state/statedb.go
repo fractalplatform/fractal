@@ -17,7 +17,6 @@
 package state
 
 import (
-	"container/list"
 	"errors"
 	"fmt"
 	"sort"
@@ -71,12 +70,6 @@ type StateDB struct {
 	stateTrace bool // replay transaction, true is replayed , false is not replayed
 
 	lock sync.Mutex
-}
-
-type transferInfo struct {
-	// list save state info
-	rollBack list.List
-	forworad list.List
 }
 
 //New func generate a statedb object
