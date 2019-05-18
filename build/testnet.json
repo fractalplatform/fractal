@@ -68,10 +68,10 @@
 	"allocAssets": [{
 		"name": "ftoken",
 		"symbol": "ft",
-		"amount": 100000000000000000000000000000,
+		"amount": 10000000000000000000000000000,
 		"decimals": 18,
 		"founder": "fractal.admin",
 		"owner": "fractal.admin",
-		"upperLimit": 100000000000000000000000000000
+		"upperLimit": 10000000000000000000000000000
 	}]
 }
