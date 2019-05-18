@@ -267,11 +267,11 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNr r
 func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
-		lo  uint64 = params.ActionGas - 1
+		lo  uint64 = params.GasTableInstanse.ActionGas - 1
 		hi  uint64
 		cap uint64
 	)
-	if uint64(args.Gas) >= params.ActionGas {
+	if uint64(args.Gas) >= params.GasTableInstanse.ActionGas {
 		hi = uint64(args.Gas)
 	} else {
 		// Retrieve the current pending block to act as the gas ceiling
