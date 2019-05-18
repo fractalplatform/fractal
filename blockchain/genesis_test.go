@@ -32,7 +32,7 @@ import (
 	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0xc0ed972da4b4f680814daf7189a30223a327f80f3f217158002925756d5834fd")
+var defaultgenesisBlockHash = common.HexToHash("0xf6879916569e035c50b47969f5a6dc3e45a08ede049291e361ec24d8616d3165")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block, _ := DefaultGenesis().ToBlock(nil)
