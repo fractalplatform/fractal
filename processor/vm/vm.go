@@ -151,12 +151,6 @@ var emptyCodeHash = crypto.Keccak256Hash(nil)
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
 func run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
-	// if contract.CodeAddr != nil {
-	// 	precompiles = PrecompiledContractsByzantium
-	// }
-	// if p := precompiles[*contract.CodeAddr]; p != nil {
-	// 	return RunPrecompiledContract(p, input, contract)
-	// }
 	return evm.interpreter.Run(contract, input)
 }
 
