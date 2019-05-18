@@ -1,6 +1,9 @@
 ### Add
-- [CMD] add p2p miner txpool command.
-### Deprecated
-- [RPCAPI] modify account and blockchain return result
-- [DOC] add jsonrpc, cmd, p2p docs in wiki
+- [GPO] add add gas price oracle unit test 
+- [VM] move gas to GasTableInstanse
+### Fixed
+- [PARAMS] change genesis gas limit to 30 million 
+- [VM] opCreate doing nothing but push zero into stack and distributeGasByScale distribute right num
+- [ACCOUNT] add check asset contract name, check account name length 
+- [ALL] fixs some bugs
 

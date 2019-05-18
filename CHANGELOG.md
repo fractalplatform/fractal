@@ -1,4 +1,15 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.13] - 2019-05-18
+### Add
+- [GPO] add add gas price oracle unit test 
+- [VM] move gas to GasTableInstanse
+### Fixed
+- [PARAMS] change genesis gas limit to 30 million 
+- [VM] opCreate doing nothing but push zero into stack and distributeGasByScale distribute right num
+- [ACCOUNT] add check asset contract name, check account name length 
+- [ALL] fixs some bugs
+
+
 ## [0.0.12] - 2019-05-13
 ### Add
 - [CMD] add p2p miner txpool command.
@@ -80,6 +91,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.13]: https://github.com/fractalplatform/fractal/compare/v0.0.12...v0.0.13
 [0.0.12]: https://github.com/fractalplatform/fractal/compare/v0.0.11...v0.0.12
 [0.0.11]: https://github.com/fractalplatform/fractal/compare/v0.0.10...v0.0.11
 [0.0.10]: https://github.com/fractalplatform/fractal/compare/v0.0.9...v0.0.10
