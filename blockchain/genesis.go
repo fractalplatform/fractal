@@ -542,7 +542,7 @@ func DefaultGenesisCandidates() []*GenesisCandidate {
 // DefaultGenesisAssets returns the ft net genesis assets.
 func DefaultGenesisAssets() []*GenesisAsset {
 	supply := new(big.Int)
-	supply.SetString("100000000000000000000000000000", 10)
+	supply.SetString("10000000000000000000000000000", 10)
 	return []*GenesisAsset{
 		&GenesisAsset{
 			Name:       params.DefaultChainconfig.SysToken,
