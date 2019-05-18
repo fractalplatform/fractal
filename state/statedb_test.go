@@ -17,6 +17,7 @@
 package state
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"testing"
@@ -24,16 +25,76 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
+	"github.com/fractalplatform/fractal/types"
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-func TestSetState(t *testing.T) {
+func TestPutAndGet(t *testing.T) {
 	db := mdb.NewMemDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
-	prevHash := common.Hash{}
-	curHash := common.BytesToHash([]byte("2222222"))
-	state, _ := New(prevHash, cachedb)
+	prevRoot := common.Hash{}
+	currentBlockHash := common.Hash{}
+	currentBlockNumber := uint64(0)
+
+	accountName := "testtest"
+	key := "testKey"
+	value := []byte("1")
+
+	state, err := New(prevRoot, cachedb)
+	if err != nil {
+		t.Error(fmt.Sprintf("new state error, %v", err))
+	}
+
+	state.Put(accountName, key, value)
+	root, err := state.Commit(batch, currentBlockHash, currentBlockNumber)
+	if err != nil {
+		t.Error("commit trie err", err)
+	}
+
+	triedb := state.db.TrieDB()
+	triedb.Reference(root, common.Hash{})
+	if err := triedb.Commit(root, false); err != nil {
+		t.Error("commit db err", err)
+	}
+	batch.Write()
+	triedb.Dereference(root)
+
+	// read
+	state, err = New(root, cachedb)
+	if err != nil {
+		t.Error(fmt.Sprintf("new state error, %v", err))
+	}
+
+	value, err = state.Get(accountName, key)
+	if err != nil {
+		t.Error(fmt.Sprintf("get value error, %v", err))
+	}
+
+	if !bytes.Equal(value, []byte("1")) {
+		t.Error("value error")
+	}
+
+	accountName01 := "testtest01"
+	value, err = state.Get(accountName01, key)
+	if err != nil {
+		t.Error(fmt.Sprintf("get value error, %v", err))
+	}
+
+	if len(value) != 0 {
+		t.Error("value error")
+	}
+}
+
+func TestSetAndGetState(t *testing.T) {
+	db := mdb.NewMemDatabase()
+	batch := db.NewBatch()
+	cachedb := NewDatabase(db)
+	prevRoot := common.Hash{}
+	currentBlockHash := common.Hash{}
+	currentBlockNumber := uint64(0)
+
+	state, _ := New(prevRoot, cachedb)
 	for i := 0; i < 4; i++ {
 		addr := string([]byte{byte(i)})
 		for j := 0; j < 4; j++ {
@@ -42,31 +103,76 @@ func TestSetState(t *testing.T) {
 			state.SetState(addr, common.BytesToHash(key), common.BytesToHash(value))
 		}
 	}
-	root, err := state.Commit(batch, curHash, 1)
+
+	root, err := state.Commit(batch, currentBlockHash, currentBlockNumber)
 	if err != nil {
 		t.Error("commit trie err", err)
 	}
+
 	triedb := state.db.TrieDB()
+	triedb.Reference(root, common.Hash{})
 	if err := triedb.Commit(root, false); err != nil {
 		t.Error("commit db err", err)
 	}
+	triedb.Dereference(root)
 	batch.Write()
 
 	//get from db
-	cachedb1 := NewDatabase(db)
-	state3, _ := New(root, cachedb1)
+	cachedb01 := NewDatabase(db)
+	state01, _ := New(root, cachedb01)
 	for i := 0; i < 4; i++ {
 		addr := string([]byte{byte(i)})
 		for j := 0; j < 4; j++ {
 			key := []byte("sk" + strconv.Itoa(i) + strconv.Itoa(j))
 			value := []byte("sv" + strconv.Itoa(i) + strconv.Itoa(j))
-			s := state3.GetState(addr, common.BytesToHash(key))
+			s := state01.GetState(addr, common.BytesToHash(key))
 			if common.BytesToHash(value) != s {
 				t.Error("get from cachedb failed")
 			}
 		}
 	}
 
+}
+
+func TestLog(t *testing.T) {
+	db := mdb.NewMemDatabase()
+	cachedb := NewDatabase(db)
+	prevRoot := common.Hash{}
+	currentBlockHash := common.BytesToHash([]byte("01"))
+	currentBlockNumber := uint64(0)
+	currentTxHash := common.BytesToHash([]byte("02"))
+	currentTxIndex := 0
+
+	currentLog01 := types.Log{
+		Data:        []byte("01"),
+		BlockNumber: currentBlockNumber,
+	}
+
+	currentLog02 := types.Log{
+		Data:        []byte("02"),
+		BlockNumber: currentBlockNumber,
+	}
+
+	type args struct {
+		txLog types.Log
+	}
+
+	currentLog := []args{
+		args{txLog: currentLog01},
+		args{txLog: currentLog02},
+	}
+
+	state, _ := New(prevRoot, cachedb)
+	state.Prepare(currentTxHash, currentBlockHash, currentTxIndex)
+	state.AddLog(&currentLog01)
+	state.AddLog(&currentLog02)
+
+	getLogs := state.GetLogs(currentTxHash)
+	for i, l := range getLogs {
+		if !bytes.Equal(l.Data, currentLog[i].txLog.Data) {
+			t.Error(fmt.Sprintf("log error get %v, want %v", l.Data, currentLog[i].txLog.Data))
+		}
+	}
 }
 
 func TestRevertSnap(t *testing.T) {
