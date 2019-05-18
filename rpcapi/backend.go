@@ -61,15 +61,13 @@ type Backend interface {
 
 	// TxPool API
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
-	GetPoolTransactions() ([]*types.Transaction, error)
 	GetPoolTransaction(txHash common.Hash) *types.Transaction
 	Stats() (pending int, queued int)
 	TxPoolContent() (map[common.Name][]*types.Transaction, map[common.Name][]*types.Transaction)
+	SetGasPrice(gasPrice *big.Int) bool
 
 	//Account API
 	GetAccountManager() (*accountmanager.AccountManager, error)
-
-	SetGasPrice(gasPrice *big.Int) bool
 
 	//fee manager
 	GetFeeManager() (*feemanager.FeeManager, error)
@@ -85,6 +83,7 @@ type Backend interface {
 	BadNodesCount() int
 	BadNodes() []string
 	AddBadNode(url string) error
+	RemoveBadNode(url string) error
 	SelfNode() string
 	Engine() consensus.IEngine
 	APIs() []rpc.API
@@ -95,9 +94,14 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		{
 			Namespace: "txpool",
 			Version:   "1.0",
-			Service:   NewPublicTxPoolAPI(apiBackend),
-			Public:    true,
-		}, {
+			Service:   NewPrivateTxPoolAPI(apiBackend),
+		},
+		{
+			Namespace: "ft",
+			Version:   "1.0",
+			Service:   NewPrivateBlockChainAPI(apiBackend),
+		},
+		{
 			Namespace: "ft",
 			Version:   "1.0",
 			Service:   NewPublicBlockChainAPI(apiBackend),
@@ -114,21 +118,20 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewAccountAPI(apiBackend),
 			Public:    true,
 		}, {
-			Namespace: "p2p",
-			Version:   "1.0",
-			Service:   NewPrivateP2pAPI(apiBackend),
-			Public:    true,
-		}, {
 			Namespace: "fee",
 			Version:   "1.0",
 			Service:   NewFeeAPI(apiBackend),
 			Public:    true,
 		},
 		{
+			Namespace: "p2p",
+			Version:   "1.0",
+			Service:   NewPrivateP2pAPI(apiBackend),
+		},
+		{
 			Namespace: "debug",
 			Version:   "1.0",
 			Service:   debug.Handler,
-			Public:    true, // todo private
 		},
 	}
 	return append(apis, apiBackend.APIs()...)

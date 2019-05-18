@@ -74,17 +74,17 @@ type Account struct {
 	//code Suicide
 	Suicide bool `json:"suicide"`
 	//account destroy
-	Destroy bool   `json:"destroy"`
-	Detail  string `json:"detail"`
+	Destroy     bool   `json:"destroy"`
+	Description string `json:"description"`
 }
 
 // NewAccount create a new account object.
-func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey, detail string) (*Account, error) {
+func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey, description string) (*Account, error) {
 	if !accountName.IsValid(acctRegExp) {
 		return nil, ErrAccountNameInvalid
 	}
 
-	if uint64(len(detail)) > MaxDetailLength {
+	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrCreateAccountError
 	}
 
@@ -104,7 +104,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 		Authors:               []*common.Author{auth},
 		Suicide:               false,
 		Destroy:               false,
-		Detail:                detail,
+		Description:           description,
 	}
 	acctObject.SetAuthorVersion()
 	return &acctObject, nil
@@ -273,12 +273,11 @@ func (a *Account) GetCodeHash() (common.Hash, error) {
 
 //GetBalanceByID get balance by asset id
 func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
-	if assetID == 0 {
-		return big.NewInt(0), ErrAssetIDInvalid
-	}
-	if p, find := a.binarySearch(assetID); find == true {
+	p, find := a.binarySearch(assetID)
+	if find == true {
 		return a.Balances[p].Balance, nil
 	}
+
 	log.Debug("get balance by ID", "err", ErrAccountAssetNotExist, "account", a.AcctName, "asset", assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
@@ -304,7 +303,6 @@ func (a *Account) binarySearch(assetID uint64) (int64, bool) {
 	}
 	low := int64(0)
 	high := int64(len(a.Balances)) - 1
-
 	for low <= high {
 		mid := (low + high) / 2
 		if a.Balances[mid].AssetID < assetID {

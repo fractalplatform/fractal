@@ -18,7 +18,6 @@ package rpcapi
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/big"
@@ -49,9 +48,7 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 
 // GetCurrentBlock returns cureent block.
 func (s *PublicBlockChainAPI) GetCurrentBlock(fullTx bool) map[string]interface{} {
-	block := s.b.CurrentBlock()
-	response := s.rpcOutputBlock(s.b.ChainConfig().ChainID, block, true, fullTx)
-	return response
+	return s.rpcOutputBlock(s.b.ChainConfig().ChainID, s.b.CurrentBlock(), true, fullTx)
 }
 
 // GetBlockByHash returns the requested block. When fullTx is true all transactions in the block are returned in full
@@ -70,12 +67,6 @@ func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.
 	block, err := s.b.BlockByNumber(ctx, blockNr)
 	if block != nil {
 		response := s.rpcOutputBlock(s.b.ChainConfig().ChainID, block, true, fullTx)
-		if blockNr == rpc.PendingBlockNumber {
-			// Pending blocks need to nil out a few fields
-			for _, field := range []string{"hash", "nonce", "miner"} {
-				response[field] = nil
-			}
-		}
 		return response, err
 	}
 	return nil, err
@@ -118,7 +109,6 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 		return nil, nil
 	}
 	receipt := receipts[index]
-
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
 }
 
@@ -132,40 +122,51 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 	return r, err
 }
 
+// GetTxsByAccount return all txs, sent from or received by a specific account
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-
 	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetTxsByBloom return all txs, filtered by a bloomByte
+// bloomByte is constructed by some quantities of account names
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	bloom := types.BytesToBloom(bloomByte)
-
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
 	return s.b.GetTxsByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetInternalTxByAccount return all logs of interal txs, sent from or received by a specific account
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-
 	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetInternalTxByBloom return all logs of interal txs, filtered by a bloomByte
+// bloomByte is constructed by some quantities of account names
+// the range is indicate by blockNr and lookbackNum,
+// from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	bloom := types.BytesToBloom(bloomByte)
-
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
 	return s.b.GetDetailTxByFilter(ctx, filterFn, blockNr, lookbackNum), nil
 }
 
+// GetInternalTxByHash return logs of interal txs include by a transcastion
 func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash common.Hash) (*types.DetailTx, error) {
 	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
 	if tx == nil {
@@ -183,13 +184,11 @@ func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash comm
 func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]map[string]interface{}, error) {
 	blocks, err := s.b.GetBadBlocks(ctx)
 	if len(blocks) != 0 {
-		ret_block := make([]map[string]interface{}, len(blocks))
-
+		badBlocks := make([]map[string]interface{}, len(blocks))
 		for i, b := range blocks {
-			ret_block[i] = s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx)
+			badBlocks[i] = s.rpcOutputBlock(s.b.ChainConfig().ChainID, b, true, fullTx)
 		}
-
-		return ret_block, nil
+		return badBlocks, nil
 	}
 	return nil, err
 }
@@ -268,15 +267,15 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNr r
 func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
-		lo  uint64 = params.ActionGas - 1
+		lo  uint64 = params.GasTableInstanse.ActionGas - 1
 		hi  uint64
 		cap uint64
 	)
-	if uint64(args.Gas) >= params.ActionGas {
+	if uint64(args.Gas) >= params.GasTableInstanse.ActionGas {
 		hi = uint64(args.Gas)
 	} else {
 		// Retrieve the current pending block to act as the gas ceiling
-		block, err := s.b.BlockByNumber(ctx, rpc.PendingBlockNumber)
+		block, err := s.b.BlockByNumber(ctx, rpc.LatestBlockNumber)
 		if err != nil {
 			return 0, err
 		}
@@ -287,8 +286,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 	// Create a helper to check if a gas allowance results in an executable transaction
 	executable := func(gas uint64) bool {
 		args.Gas = gas
-
-		_, _, failed, err := s.doCall(ctx, args, rpc.PendingBlockNumber, vm.Config{}, 0)
+		_, _, failed, err := s.doCall(ctx, args, rpc.LatestBlockNumber, vm.Config{}, 0)
 		if err != nil || failed {
 			return false
 		}
@@ -313,30 +311,27 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 }
 
 // GetChainConfig returns chain config.
-func (s *PublicBlockChainAPI) GetChainConfig() map[string]interface{} {
-	ret := map[string]interface{}{}
-	g, err := s.b.BlockByNumber(context.Background(), 0)
+func (s *PublicBlockChainAPI) GetChainConfig(ctx context.Context) (*params.ChainConfig, error) {
+	g, err := s.b.BlockByNumber(ctx, 0)
 	if err != nil {
-		return ret
+		return nil, err
 	}
-	cfg := rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash())
-	bts, _ := json.Marshal(cfg)
-	json.Unmarshal(bts, &ret)
-	return ret
+	return rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash()), nil
 }
 
-// GetGenesis returns genesis config.
-func (s *PublicBlockChainAPI) GetGenesis() map[string]interface{} {
-	ret := map[string]interface{}{}
-	g, err := s.b.BlockByNumber(context.Background(), 0)
-	if err != nil {
-		return ret
-	}
-	json.Unmarshal(g.Head.Extra, &ret)
-	return ret
+// PrivateBlockChainAPI provides an API to access the blockchain.
+// It offers only methods that operate on private data that is freely available to anyone.
+type PrivateBlockChainAPI struct {
+	b Backend
 }
 
-func (s *PublicBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
+// NewPrivateBlockChainAPI creates a new blockchain API.
+func NewPrivateBlockChainAPI(b Backend) *PrivateBlockChainAPI {
+	return &PrivateBlockChainAPI{b}
+}
+
+// SetStatePruning start blockchain state prune
+func (s *PrivateBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
 	prestatus, number := s.b.SetStatePruning(enable)
 	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
 }

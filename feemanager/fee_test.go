@@ -58,6 +58,7 @@ func getAccountManager() *accountmanager.AccountManager {
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
 	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, *pubkey, "")
+	am.CreateAccount(common.Name("fractal.fee"), common.Name(""), 0, *pubkey, "")
 	return am
 }
 
@@ -162,7 +163,7 @@ func addAssetAndAccount() error {
 	}
 
 	for _, tt := range tests {
-		err := ast.IssueAsset(tt.assetName, 0, tt.symbol, tt.amount, tt.dec, tt.founder, tt.owner, big.NewInt(9999999999), common.Name(""), "desv")
+		_, err := ast.IssueAsset(tt.assetName, 0, tt.symbol, tt.amount, tt.dec, tt.founder, tt.owner, big.NewInt(9999999999), common.Name(""), "desv")
 		if err != nil {
 			return err
 		}
@@ -202,6 +203,7 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 			t.Errorf("record fee in system failed, err:%v", err)
 			return
 		}
+		fm.accountDB.AddAccountBalanceByID(common.Name(feeConfig.feeName), assetID, value)
 	}
 
 	err := addAssetAndAccount()

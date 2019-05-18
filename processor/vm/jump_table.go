@@ -91,6 +91,38 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet := NewHomesteadInstructionSet()
 
 	//multi-asset InstructionSet
+	instructionSet[GETEPCHO] = operation{
+		execute:       opGetEpoch,
+		gasCost:       gasGetEpoch,
+		validateStack: makeStackFunc(1, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETCANDIDATENUM] = operation{
+		execute:       opGetCandidateNum,
+		gasCost:       gasGetCandidateNum,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETCANDIDATE] = operation{
+		execute:       opGetCandidate,
+		gasCost:       gasGetCandidate,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETVOTERSTAKE] = operation{
+		execute:       opGetVoterStake,
+		gasCost:       gasGetVoterStake,
+		validateStack: makeStackFunc(2, 1),
+		valid:         true,
+		returns:       true,
+	}
+
 	instructionSet[GETACCOUNTTIME] = operation{
 		execute:       opGetAccountTime,
 		gasCost:       gasGetAccountTime,
@@ -123,18 +155,10 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
-	instructionSet[GETDELEGATE] = operation{
-		execute:       opGetDelegate,
-		gasCost:       gasGetDelegate,
-		validateStack: makeStackFunc(2, 1),
-		valid:         true,
-		returns:       true,
-	}
-
 	instructionSet[ASSETAMOUNT] = operation{
 		execute:       opGetAssetAmount,
 		gasCost:       gasGetAssetAmount,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(2, 2),
 		valid:         true,
 		returns:       true,
 	}
@@ -616,7 +640,7 @@ func NewFrontierInstructionSet() [256]operation {
 		},
 		JUMPDEST: {
 			execute:       opJumpdest,
-			gasCost:       constGasFunc(params.JumpdestGas),
+			gasCost:       gasJumpDest,
 			validateStack: makeStackFunc(0, 0),
 			valid:         true,
 		},

@@ -22,21 +22,22 @@ import (
 )
 
 type AssetObject struct {
-	AssetId    uint64      `json:"assetId,omitempty"`
-	Number     uint64      `json:"number,omitempty"`
-	AssetName  string      `json:"assetName"`
-	Symbol     string      `json:"symbol"`
-	Amount     *big.Int    `json:"amount"`
-	Decimals   uint64      `json:"decimals"`
-	Founder    common.Name `json:"founder"`
-	Owner      common.Name `json:"owner"`
-	AddIssue   *big.Int    `json:"addIssue"`
-	UpperLimit *big.Int    `json:"upperLimit"`
-	Contract   common.Name `json:"contract"`
-	Detail     string      `json:"detail"`
+	AssetId     uint64      `json:"assetId"`
+	Number      uint64      `json:"number"`
+	AssetName   string      `json:"assetName"`
+	Symbol      string      `json:"symbol"`
+	Amount      *big.Int    `json:"amount"`
+	Decimals    uint64      `json:"decimals"`
+	Founder     common.Name `json:"founder"`
+	Owner       common.Name `json:"owner"`
+	AddIssue    *big.Int    `json:"addIssue"`
+	UpperLimit  *big.Int    `json:"upperLimit"`
+	Contract    common.Name `json:"contract"`
+	Description string      `json:"description"`
 }
 
-func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, detail string) (*AssetObject, error) {
+func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (*AssetObject, error) {
+
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}
@@ -56,23 +57,23 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 	if !common.StrToName(symbol).IsValid(assetRegExp) {
 		return nil, ErrNewAssetObject
 	}
-	if uint64(len(detail)) > MaxDetailLength {
+	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrDetailTooLong
 	}
 
 	ao := AssetObject{
-		AssetId:    0,
-		Number:     number,
-		AssetName:  assetName,
-		Symbol:     symbol,
-		Amount:     amount,
-		Decimals:   dec,
-		Founder:    founder,
-		Owner:      owner,
-		AddIssue:   amount,
-		UpperLimit: limit,
-		Contract:   contract,
-		Detail:     detail,
+		AssetId:     0,
+		Number:      number,
+		AssetName:   assetName,
+		Symbol:      symbol,
+		Amount:      amount,
+		Decimals:    dec,
+		Founder:     founder,
+		Owner:       owner,
+		AddIssue:    amount,
+		UpperLimit:  limit,
+		Contract:    contract,
+		Description: description,
 	}
 	return &ao, nil
 }
@@ -164,10 +165,10 @@ func (ao *AssetObject) SetAssetContract(contract common.Name) {
 	ao.Contract = contract
 }
 
-func (ao *AssetObject) GetAssetDetail() string {
-	return ao.Detail
+func (ao *AssetObject) GetAssetDescription() string {
+	return ao.Description
 }
 
-func (ao *AssetObject) SetAssetDetail(detail string) {
-	ao.Detail = detail
+func (ao *AssetObject) SetAssetDescription(description string) {
+	ao.Description = description
 }

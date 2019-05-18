@@ -42,10 +42,6 @@ var parseNodeTests = []struct {
 	},
 	// Complete nodes with IP address.
 	{
-		rawurl:    "fnode://1dd9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439@hostname:3",
-		wantError: `invalid IP address`,
-	},
-	{
 		rawurl:    "fnode://1dd9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439@127.0.0.1:foo",
 		wantError: `invalid port`,
 	},
@@ -120,12 +116,51 @@ var parseNodeTests = []struct {
 	},
 }
 
+var parseDNSNodeTests = []struct {
+	rawurl     string
+	wantError  string
+	wantResult *Node
+}{
+	{
+		rawurl: "fnode://1dd9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439@localhost:52150",
+		wantResult: NewV4(
+			hexPubkey("1dd9d65c4552b5eb43d5ad55a2ee3f56c6cbc1c64a5c8d659f51fcd51bace24351232b8d7821617d2b29b54b81cdefb9b3e9c37d7fd5f63270bcc9e1a6f6a439"),
+			net.IP{0x7f, 0x0, 0x0, 0x1},
+			52150,
+			52150,
+		),
+	},
+}
+
 func hexPubkey(h string) *ecdsa.PublicKey {
 	k, err := parsePubkey(h)
 	if err != nil {
 		panic(err)
 	}
 	return k
+}
+
+func TestParseDNSNode(t *testing.T) {
+	for _, test := range parseDNSNodeTests {
+		n, err := ParseV4(test.rawurl)
+		if test.wantError != "" {
+			if err == nil {
+				t.Errorf("test %q:\n  got nil error, expected %#q", test.rawurl, test.wantError)
+				continue
+			} else if err.Error() != test.wantError {
+				t.Errorf("test %q:\n  got error %#q, expected %#q", test.rawurl, err.Error(), test.wantError)
+				continue
+			}
+		} else {
+			if err != nil {
+				t.Errorf("test %q:\n  unexpected error: %v", test.rawurl, err)
+				continue
+			}
+			if !reflect.DeepEqual(n, test.wantResult) {
+				t.Errorf("test %q:\n  result mismatch:\ngot:  %#v\nwant: %#v", test.rawurl, n, test.wantResult)
+			}
+		}
+	}
 }
 
 func TestParseNode(t *testing.T) {

@@ -19,6 +19,7 @@ package dpos
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"sort"
 	"strings"
@@ -387,28 +388,25 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, nil
+		return nil, errors.New("GlobalState not exist")
 	} else if err := rlp.DecodeBytes(val, gstate); err != nil {
 		return nil, err
 	}
 	return gstate, nil
 }
 
-// GetDelegatedByTime candidate delegate
-func (db *LDB) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
+// GetCandidateInfoByTime candidate info
+func (db *LDB) GetCandidateInfoByTime(candidate string, timestamp uint64) (*CandidateInfo, error) {
 	key := strings.Join([]string{CandidateKeyPrefix, candidate}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
 	if val == nil || err != nil {
-		return big.NewInt(0), big.NewInt(0), 0, err
+		return nil, err
 	}
 	candidateInfo := &CandidateInfo{}
 	if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
-		return big.NewInt(0), big.NewInt(0), 0, err
+		return nil, err
 	}
-	if candidateInfo.Type == Black {
-		return big.NewInt(0), candidateInfo.TotalQuantity, candidateInfo.Counter, nil
-	}
-	return candidateInfo.Quantity, candidateInfo.TotalQuantity, candidateInfo.Counter, nil
+	return candidateInfo, nil
 }
 
 // SetLastestEpcho set latest epcho

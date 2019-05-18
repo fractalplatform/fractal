@@ -32,6 +32,7 @@ import (
 var (
 	//ft config instance
 	ftCfgInstance = defaultFtConfig()
+	ipcEndpoint   string
 )
 
 type ftConfig struct {
@@ -53,20 +54,19 @@ func defaultFtConfig() *ftConfig {
 
 func defaultNodeConfig() *node.Config {
 	return &node.Config{
-		Name:              params.ClientIdentifier,
-		DataDir:           defaultDataDir(),
-		UseLightweightKDF: false,
-		IPCPath:           params.ClientIdentifier + ".ipc",
-		HTTPHost:          "localhost",
-		HTTPPort:          8545,
-		HTTPModules:       []string{"ft", "miner", "dpos", "account", "txpool", "fee", "debug"},
-		HTTPVirtualHosts:  []string{"localhost"},
-		HTTPCors:          []string{"*"},
-		WSHost:            "localhost",
-		WSPort:            8546,
-		WSModules:         []string{"ft"},
-		Logger:            log.New(),
-		P2PConfig:         defaultP2pConfig(),
+		Name:             params.ClientIdentifier,
+		DataDir:          defaultDataDir(),
+		IPCPath:          params.ClientIdentifier + ".ipc",
+		HTTPHost:         "localhost",
+		HTTPPort:         8545,
+		HTTPModules:      []string{"ft", "dpos", "fee", "account"},
+		HTTPVirtualHosts: []string{"localhost"},
+		HTTPCors:         []string{"*"},
+		WSHost:           "localhost",
+		WSPort:           8546,
+		WSModules:        []string{"ft"},
+		Logger:           log.New(),
+		P2PConfig:        defaultP2pConfig(),
 	}
 }
 

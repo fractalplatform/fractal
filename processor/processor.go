@@ -106,11 +106,6 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx := &types.DetailTx{}
 	var detailActions []*types.DetailAction
 	for i, action := range tx.GetActions() {
-		//
-		if !action.CheckValid(config) {
-			return nil, 0, ErrActionInvalid
-		}
-
 		if needCheckSign(accountDB, action) {
 			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
 				return nil, 0, err
@@ -129,7 +124,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
-			EgnineContext: p.engine,
+			EngineContext: p.engine,
 		}
 		context := NewEVMContext(action.Sender(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)

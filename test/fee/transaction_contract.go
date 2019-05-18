@@ -67,10 +67,10 @@ var (
 	bNonce = uint64(0)
 	cNonce = uint64(0)
 
-	assetID        = uint64(1)
+	assetID        = uint64(0)
 	issueAssetName = "ether" + contract_a.String()
 	issueAssetID   = int64(1)
-	contract_a_ID  = int64(4104)
+	contract_a_ID  = int64(4105)
 	nonce          = uint64(0)
 	gasLimit       = uint64(2000000)
 )
@@ -155,8 +155,8 @@ func formWithdrawContractFeeInput(abifile string, userId *big.Int) ([]byte, erro
 
 func generateAccount() {
 	nonce, _ = testcommon.GetNonce(adminAccount)
-	issueAssetID = int64(nonce/4 + 2)
-	contract_a_ID = int64(4104 + 4*nonce/4)
+	issueAssetID = int64(nonce/4 + 1)
+	contract_a_ID = int64(4105 + 4*nonce/4)
 
 	newPrivateKey_a, _ = crypto.GenerateKey()
 	pubKey_a = common.BytesToPubKey(crypto.FromECDSAPub(&newPrivateKey_a.PublicKey))
@@ -179,9 +179,10 @@ func generateAccount() {
 	normal_a = common.Name(fmt.Sprintf("normalaccta%d", nonce))
 	normal_b = common.Name(fmt.Sprintf("normalacctb%d", nonce))
 	contract_a = common.Name(fmt.Sprintf("contracta%d", nonce))
+	contract_b = common.Name(fmt.Sprintf("contractb%d", nonce))
 
 	key := types.MakeKeyPair(privateKey, []uint64{0})
-	acct := &accountmanager.AccountAction{
+	acct := &accountmanager.CreateAccountAction{
 		AccountName: normal_a,
 		Founder:     normal_a,
 		PublicKey:   pubKey_a,
@@ -189,7 +190,7 @@ func generateAccount() {
 	b, _ := rlp.EncodeToBytes(acct)
 	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce, assetID, balance, b, []*types.KeyPair{key})
 
-	acct = &accountmanager.AccountAction{
+	acct = &accountmanager.CreateAccountAction{
 		AccountName: normal_b,
 		Founder:     normal_b,
 		PublicKey:   pubKey_b,
@@ -197,7 +198,7 @@ func generateAccount() {
 	b, _ = rlp.EncodeToBytes(acct)
 	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce+1, assetID, balance, b, []*types.KeyPair{key})
 
-	acct = &accountmanager.AccountAction{
+	acct = &accountmanager.CreateAccountAction{
 		AccountName: contract_a,
 		Founder:     contract_a,
 		PublicKey:   pubKey_c,
@@ -205,7 +206,7 @@ func generateAccount() {
 	b, _ = rlp.EncodeToBytes(acct)
 	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce+2, assetID, big.NewInt(1000000000000), b, []*types.KeyPair{key})
 
-	acct = &accountmanager.AccountAction{
+	acct = &accountmanager.CreateAccountAction{
 		AccountName: contract_b,
 		Founder:     contract_b,
 		PublicKey:   pubKey_c,
@@ -251,10 +252,9 @@ func deployMultiAssetContract() {
 		return
 	}
 
-	key_0 := types.MakeKeyPair(a_author_0_priv, []uint64{0})
+	key_0 := types.MakeKeyPair(c_author_0_priv, []uint64{0})
 
-	aNonce++
-	sendTransferTx(types.CreateContract, normal_a, contract_a, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
+	sendTransferTx(types.CreateContract, contract_a, contract_a, 0, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
 }
 
 func issueAssetForA() {
@@ -274,15 +274,17 @@ func issueAssetForA() {
 func transferAssetByContractFromA2B() {
 	jww.INFO.Println("transferAssetByContractFromA2B ")
 
-	input, err := formTransferAssetInput(multiAssetAbi, common.BigToAddress(big.NewInt(4102)), big.NewInt(1))
+	input, err := formTransferAssetInput(multiAssetAbi, common.BigToAddress(big.NewInt(4099)), big.NewInt(1))
 	if err != nil {
 		jww.INFO.Println("transferAssetByContractFromA2B formTransferAssetInput error ... ", err)
 		return
 	}
 
 	key_0 := types.MakeKeyPair(a_author_0_priv, []uint64{0})
-	aNonce++
-	sendTransferTx(types.CallContract, normal_a, contract_a, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
+	for i := 0; i < 200; i++ {
+		aNonce++
+		sendTransferTx(types.CallContract, normal_a, contract_a, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
+	}
 }
 
 func deployWithDrawContract() {
@@ -294,10 +296,9 @@ func deployWithDrawContract() {
 		return
 	}
 
-	key_0 := types.MakeKeyPair(a_author_0_priv, []uint64{0})
+	key_0 := types.MakeKeyPair(c_author_0_priv, []uint64{0})
 
-	aNonce++
-	sendTransferTx(types.CreateContract, normal_a, contract_b, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
+	sendTransferTx(types.CreateContract, contract_b, contract_b, 0, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
 }
 
 func withdrawFee() {
@@ -348,20 +349,20 @@ func main() {
 
 	time.Sleep(10 * time.Second)
 
-	b, _ := testcommon.GetAccountBalanceByID(contract_a, 1)
+	b, _ := testcommon.GetAccountBalanceByID(contract_a, 0)
 	fmt.Println("balance ", b)
 	withdrawFee()
 
 	time.Sleep(10 * time.Second)
 
-	b, _ = testcommon.GetAccountBalanceByID(contract_a, 1)
+	b, _ = testcommon.GetAccountBalanceByID(contract_a, 0)
 	fmt.Println("balance after withdraw ", b) //shoud be 1000000028786
 }
 
 func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair) {
 	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, nil)
 	gasprice := big.NewInt(1)
-	tx := types.NewTransaction(1, gasprice, action)
+	tx := types.NewTransaction(0, gasprice, action)
 
 	signer := types.MakeSigner(big.NewInt(1))
 	err := types.SignActionWithMultiKey(action, tx, signer, keys)

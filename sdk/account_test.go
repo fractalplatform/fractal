@@ -40,12 +40,13 @@ var (
 	systemaccount   = params.DefaultChainconfig.SysName
 	accountaccount  = params.DefaultChainconfig.AccountName
 	dposaccount     = params.DefaultChainconfig.DposName
+	assetaccount    = params.DefaultChainconfig.AssetName
 	systemprivkey   = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
 	systemassetname = params.DefaultChainconfig.SysToken
-	systemassetid   = uint64(1)
+	systemassetid   = uint64(0)
 	chainid         = big.NewInt(1)
 	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
-	tGas            = uint64(90000)
+	tGas            = uint64(20000000)
 )
 
 func TestAccount(t *testing.T) {
@@ -56,7 +57,7 @@ func TestAccount(t *testing.T) {
 		// CreateAccount
 		priv, pub := GenerateKey()
 		accountName := common.StrToName(GenerateAccountName("test", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName,
 			PublicKey:   pub,
 		})
@@ -70,10 +71,9 @@ func TestAccount(t *testing.T) {
 
 		// UpdateAccount
 		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
-		_, npub := GenerateKey()
-		hash, err = acct.UpdateAccount(common.StrToName(accountaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &accountmanager.AccountAction{
-			AccountName: accountName,
-			PublicKey:   npub,
+		// _, npub := GenerateKey()
+		hash, err = acct.UpdateAccount(common.StrToName(accountaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &accountmanager.UpdataAccountAction{
+			Founder: accountName,
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
@@ -83,40 +83,64 @@ func TestAccount(t *testing.T) {
 }
 
 func TestAsset(t *testing.T) {
-	// Convey("types.IssueAsset", t, func() {
-	// 	api := NewAPI(rpchost)
-	// 	var systempriv, _ = crypto.HexToECDSA(systemprivkey)
-	// 	sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
-	// 	priv, pub := GenerateKey()
-	// 	accountName := common.StrToName(GenerateAccountName("test", 8))
-	// 	hash, err := sysAcct.CreateAccount(common.StrToName(systemaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
-	// 		AccountName: accountName,
-	// 		PublicKey:   pub,
-	// 	})
-	// 	So(err, ShouldBeNil)
-	// 	So(hash, ShouldNotBeNil)
+	Convey("Asset", t, func() {
+		api := NewAPI(rpchost)
+		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
+		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
+		// CreateAccount
+		priv, pub := GenerateKey()
+		accountName := common.StrToName(GenerateAccountName("test", 8))
+		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
+			AccountName: accountName,
+			PublicKey:   pub,
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 
-	// 	acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
-	// 	assetname := common.StrToName(GenerateAccountName("asset", 8)).String()
-	// 	// IssueAsset
-	// 	hash, err = acct.IssueAsset(accountName, new(big.Int).Div(tValue, big.NewInt(10)), systemassetid, tGas, &asset.AssetObject{
-	// 		AssetName:  assetname,
-	// 		Symbol:     assetname[len(assetname)-4:],
-	// 		Amount:     new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
-	// 		Decimals:   18,
-	// 		Owner:      accountName,
-	// 		Founder:    accountName,
-	// 		AddIssue:   big.NewInt(0),
-	// 		UpperLimit: big.NewInt(0),
-	// 	})
-	// 	So(err, ShouldBeNil)
-	// 	So(hash, ShouldNotBeNil)
+		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
+		assetname := common.StrToName(GenerateAccountName("asset", 2)).String()
+		// IssueAsset
+		ast1 := accountmanager.IssueAsset{
+			AssetName: assetname,
+			Symbol:    assetname[len(assetname)-4:],
+			Amount:    new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
+			Decimals:  18,
+			Owner:     accountName,
+			Founder:   accountName,
+			//AddIssue:   big.NewInt(0),
+			UpperLimit: big.NewInt(0),
+		}
 
-	// 	// acct.UpdateAsset()
-	// 	// acct.IncreaseAsset()
-	// 	// acct.SetAssetOwner()
-	// 	// acct.DestroyAsset()
-	// })
+		hash, err = acct.IssueAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &ast1)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+
+		ast, _ := api.AssetInfoByName(assetname)
+
+		ast2 := accountmanager.UpdateAsset{
+			AssetID: ast.AssetId,
+			Founder: accountName,
+
+			//UpperLimit: big.NewInt(0),
+		}
+
+		// acct.UpdateAsset()
+		hash, err = acct.UpdateAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &ast2)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+
+		hash, err = acct.IncreaseAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &accountmanager.IncAsset{
+			Amount:  new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
+			To:      accountName,
+			AssetId: ast.AssetId,
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+		// acct.SetAssetOwner()
+		// acct.DestroyAsset()
+	})
 }
 
 func TestDPOS(t *testing.T) {
@@ -126,7 +150,7 @@ func TestDPOS(t *testing.T) {
 		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
 		priv, pub := GenerateKey()
 		accountName := common.StrToName(GenerateAccountName("prod", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName,
 			PublicKey:   pub,
 		})
@@ -135,7 +159,7 @@ func TestDPOS(t *testing.T) {
 
 		priv2, pub2 := GenerateKey()
 		accountName2 := common.StrToName(GenerateAccountName("voter", 8))
-		hash, err = sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.AccountAction{
+		hash, err = sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 			AccountName: accountName2,
 			PublicKey:   pub2,
 		})

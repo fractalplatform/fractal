@@ -51,28 +51,20 @@ type KickedCandidate struct {
 }
 
 // ProcessAction exec action
-func (dpos *Dpos) ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+func (dpos *Dpos) ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
-	internalLogs, err := dpos.processAction(height, chainCfg, state, action)
+	internalLogs, err := dpos.processAction(number, chainCfg, state, action)
 	if err != nil {
 		state.RevertToSnapshot(snap)
 	}
 	return internalLogs, err
 }
 
-func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+	if err := action.Check(chainCfg); err != nil {
+		return nil, err
+	}
 	sys := NewSystem(state, dpos.config)
-	//if !action.CheckValue() {
-	//	return nil, accountmanager.ErrAmountValueInvalid
-	//}
-
-	if action.AssetID() != chainCfg.SysTokenID {
-		return nil, accountmanager.ErrAssetIDInvalid
-	}
-
-	if strings.Compare(action.Recipient().String(), dpos.config.AccountName) != 0 {
-		return nil, accountmanager.ErrInvalidReceiptAsset
-	}
 
 	if action.Value().Cmp(big.NewInt(0)) > 0 {
 		accountDB, err := accountmanager.NewAccountManager(state)
@@ -93,7 +85,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
+		if err := sys.RegCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
@@ -101,16 +93,16 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), height); err != nil {
+		if err := sys.UpdateCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:
-		err := sys.UnregCandidate(epcho, action.Sender().String(), height)
+		err := sys.UnregCandidate(epcho, action.Sender().String(), number)
 		if err != nil {
 			return nil, err
 		}
 	case types.RefundCandidate:
-		err := sys.RefundCandidate(epcho, action.Sender().String(), height)
+		err := sys.RefundCandidate(epcho, action.Sender().String(), number)
 		if err != nil {
 			return nil, err
 		}
@@ -119,7 +111,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCandidate(epcho, action.Sender().String(), arg.Candidate, arg.Stake, height); err != nil {
+		if err := sys.VoteCandidate(epcho, action.Sender().String(), arg.Candidate, arg.Stake, number); err != nil {
 			return nil, err
 		}
 	case types.KickedCandidate:
@@ -131,7 +123,7 @@ func (dpos *Dpos) processAction(height uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 		for _, cadicate := range arg.Candidates {
-			if err := sys.KickedCandidate(epcho, cadicate, height); err != nil {
+			if err := sys.KickedCandidate(epcho, cadicate, number); err != nil {
 				return nil, err
 			}
 		}

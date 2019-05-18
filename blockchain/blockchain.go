@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -143,7 +144,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	if err := bc.loadLastBlock(); err != nil {
 		return nil, err
 	}
-	bc.station = newBlcokchainStation(bc, 0)
+	bc.station = newBlockchainStation(bc, 0)
 	go bc.update()
 	return bc, nil
 }
@@ -1014,8 +1015,10 @@ func (bc *BlockChain) addBadBlock(block *types.Block) {
 // reportBlock logs a bad block error.
 func (bc *BlockChain) reportBlock(block *types.Block, receipts []*types.Receipt, err error) {
 	bc.addBadBlock(block)
+	chainCfgBytes, _ := json.MarshalIndent(bc.chainConfig, " ", "  ")
 	log.Error(fmt.Sprintf(`
 ########## BAD BLOCK #########
+
 Error: %v
 
 Chain config: %v
@@ -1024,7 +1027,7 @@ Number: %v
 Hash: %v
 
 ##############################
-`, err, bc.chainConfig, block.NumberU64(), block.Hash().Hex()))
+`, err, string(chainCfgBytes), block.NumberU64(), block.Hash().Hex()))
 }
 
 // GetBlockNumber retrieves the block number belonging to the given hash from the cache or database

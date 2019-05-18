@@ -27,31 +27,30 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
 )
 
 // ForkID  represents a blockchain fork
 type ForkID struct {
-	Cur  uint64
-	Next uint64
+	Cur  uint64 `json:"cur"`
+	Next uint64 `json:"next"`
 }
 
 // Header represents a block header in the blockchain.
 type Header struct {
-	ParentHash           common.Hash `json:"parentHash"`
-	Coinbase             common.Name `json:"miner"`
-	ProposedIrreversible uint64      `json:"proposedIrreversible"`
-	Root                 common.Hash `json:"stateRoot"`
-	TxsRoot              common.Hash `json:"transactionsRoot"`
-	ReceiptsRoot         common.Hash `json:"receiptsRoot"`
-	Bloom                Bloom       `json:"logsBloom"`
-	Difficulty           *big.Int    `json:"difficulty"`
-	Number               *big.Int    `json:"number"`
-	GasLimit             uint64      `json:"gasLimit"`
-	GasUsed              uint64      `json:"gasUsed"`
-	Time                 *big.Int    `json:"timestamp"`
-	Extra                []byte      `json:"extraData"`
-	ForkID               ForkID      `json:"forkID"`
+	ParentHash           common.Hash
+	Coinbase             common.Name
+	ProposedIrreversible uint64
+	Root                 common.Hash
+	TxsRoot              common.Hash
+	ReceiptsRoot         common.Hash
+	Bloom                Bloom
+	Difficulty           *big.Int
+	Number               *big.Int
+	GasLimit             uint64
+	GasUsed              uint64
+	Time                 *big.Int
+	Extra                []byte
+	ForkID               ForkID
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
@@ -227,6 +226,16 @@ func (b *Block) WithBody(transactions []*Transaction) *Block {
 	return block
 }
 
+// Check the validity of all fields
+func (b *Block) Check() error {
+	for _, tx := range b.Txs {
+		if len(tx.actions) == 0 {
+			return ErrEmptyActions
+		}
+	}
+	return nil
+}
+
 // CopyHeader creates a deep copy of a block header to prevent side effects from
 // modifying a header variable.
 func CopyHeader(h *Header) *Header {
@@ -298,7 +307,8 @@ func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
 }
 
 func RlpHash(x interface{}) (h common.Hash) {
-	hw := sha3.NewLegacyKeccak256()
+	hw := common.Get256()
+	defer common.Put256(hw)
 	err := rlp.Encode(hw, x)
 	if err != nil {
 		panic(fmt.Sprintf("rlp hash encode err: %v", err))

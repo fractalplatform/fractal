@@ -88,6 +88,10 @@ func NewInterpreter(evm *EVM, cfg Config) *Interpreter {
 	}
 }
 
+func (in *Interpreter) GetGasTable() params.GasTable {
+	return in.gasTable
+}
+
 func (in *Interpreter) enforceRestrictions(op OpCode, operation operation, stack *Stack) error {
 	//if in.evm.chainRules.IsByzantium {
 	//	if in.readOnly {

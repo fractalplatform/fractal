@@ -49,7 +49,7 @@ func init() {
 		AccountQueue: 64,
 		GlobalQueue:  1024,
 		Lifetime:     3 * time.Hour,
-		GasAssetID:   uint64(1),
+		GasAssetID:   uint64(0),
 	}
 }
 
@@ -74,7 +74,9 @@ func (bc *testBlockChain) StateAt(common.Hash) (*state.StateDB, error) {
 }
 
 func (bc *testBlockChain) Config() *params.ChainConfig {
-	return nil
+	cfg := params.DefaultChainconfig
+	cfg.SysTokenID = 0
+	return cfg
 }
 
 func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
@@ -129,7 +131,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 	}
 	// Ensure the next nonce to assign is the correct one
 
-	for addr, list := range pool.pending {
+	for name, list := range pool.pending {
 		// Find the last transaction
 		var last uint64
 		for nonce := range list.txs.items {
@@ -138,7 +140,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 			}
 		}
 
-		nonce, err := pool.pendingAccountManager.GetNonce(addr)
+		nonce, err := pool.pendingAccountManager.GetNonce(name)
 		if err != nil {
 			return err
 		}
@@ -156,7 +158,7 @@ func validateEvents(events chan *event.Event, count int) error {
 	for len(received) < count {
 		select {
 		case ev := <-events:
-			if ev.Typecode == event.TxEv {
+			if ev.Typecode == event.NewTxs {
 				received = append(received, ev.Data.([]*types.Transaction)...)
 			}
 		case <-time.After(time.Second):
@@ -213,9 +215,9 @@ func (c *testChain) State() (*state.StateDB, error) {
 }
 
 func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
-	return types.NewAction(types.Transfer, from, to, nonce, uint64(1), gasLimit, amount, data, nil)
+	return types.NewAction(types.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
 }
 
 func newTx(gasPrice *big.Int, action ...*types.Action) *types.Transaction {
-	return types.NewTransaction(uint64(1), gasPrice, action...)
+	return types.NewTransaction(uint64(0), gasPrice, action...)
 }

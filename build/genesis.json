@@ -5,12 +5,12 @@
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
 		"accountParams": {
-			"level": 1,
+			"level": 0,
 			"length": 16,
 			"subLength": 8
 		},
 		"assetParams": {
-			"level": 1,
+			"level": 2,
 			"length": 16,
 			"subLength": 8
 		},
@@ -46,7 +46,7 @@
 		"systemToken": "ftoken"
 	},
 	"timestamp": 1555776000000,
-	"gasLimit": 100000000,
+	"gasLimit": 30000000,
 	"difficulty": 131072,
 	"allocAccounts": [{
 		"name": "fractal.admin",

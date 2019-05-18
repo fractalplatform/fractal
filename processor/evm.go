@@ -72,20 +72,30 @@ type ChainContext interface {
 	ForkUpdate(block *types.Block, statedb *state.StateDB) error
 }
 
-type EgnineContext interface {
-	// Author retrieves the address of the account that minted the given
+type EngineContext interface {
+	// Author retrieves the name of the account that minted the given
 	// block, which may be different from the header's coinbase if a consensus
 	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
 
-	ProcessAction(height uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
+	ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
 
-	GetDelegatedByTime(name string, timestamp uint64, state *state.StateDB) (*big.Int, *big.Int, uint64, error)
+	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
+
+	GetLatestEpoch(state *state.StateDB) (epoch uint64, err error)
+
+	GetPrevEpoch(state *state.StateDB, epoch uint64) (peoch uint64, err error)
+
+	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
+
+	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
+
+	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 }
 
 type EvmContext struct {
 	ChainContext
-	EgnineContext
+	EngineContext
 }
 
 // NewEVMContext creates a new context for use in the EVM.
@@ -100,15 +110,21 @@ func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header
 	return vm.Context{
 		GetHash:            GetHashFn(header, chain),
 		GetDelegatedByTime: chain.GetDelegatedByTime,
-		GetHeaderByNumber:  chain.GetHeaderByNumber,
-		Origin:             sender,
-		AssetID:            assetID,
-		Coinbase:           beneficiary,
-		BlockNumber:        new(big.Int).Set(header.Number),
-		Time:               new(big.Int).Set(header.Time),
-		Difficulty:         new(big.Int).Set(header.Difficulty),
-		GasLimit:           header.GasLimit,
-		GasPrice:           new(big.Int).Set(gasPrice),
+		//Engine: chain,
+		GetLatestEpoch:          chain.GetLatestEpoch,
+		GetPrevEpoch:            chain.GetPrevEpoch,
+		GetActivedCandidateSize: chain.GetActivedCandidateSize,
+		GetActivedCandidate:     chain.GetActivedCandidate,
+		GetVoterStake:           chain.GetVoterStake,
+		GetHeaderByNumber:       chain.GetHeaderByNumber,
+		Origin:                  sender,
+		AssetID:                 assetID,
+		Coinbase:                beneficiary,
+		BlockNumber:             new(big.Int).Set(header.Number),
+		Time:                    new(big.Int).Set(header.Time),
+		Difficulty:              new(big.Int).Set(header.Difficulty),
+		GasLimit:                header.GasLimit,
+		GasPrice:                new(big.Int).Set(gasPrice),
 	}
 }
 

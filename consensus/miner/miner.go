@@ -123,7 +123,7 @@ func (miner *Miner) Pending() (*types.Block, *state.StateDB) {
 
 // SetCoinbase coinbase name & private key
 func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
-	privs := []*ecdsa.PrivateKey{}
+	privs := make([]*ecdsa.PrivateKey, 0, len(privKeys))
 	for _, privKey := range privKeys {
 		bts, err := hex.DecodeString(privKey)
 		if err != nil {

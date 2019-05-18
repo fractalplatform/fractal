@@ -137,11 +137,8 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 
 func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
 	lastnum := uint64(blockNr) - lookbackNum
-
 	txHashs := make([]common.Hash, 0)
-
 	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
-
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
 		if hash == (common.Hash{}) {
 			continue
@@ -168,11 +165,9 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
 	lastnum := uint64(blockNr) - lookbackNum
-
 	txdetails := make([]*types.DetailTx, 0)
 
 	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
-
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
 		if hash == (common.Hash{}) {
 			continue
@@ -180,7 +175,6 @@ func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(comm
 
 		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
 		for _, txd := range batch_txdetails {
-
 			new_intxs := make([]*types.DetailAction, 0)
 			for _, intx := range txd.Actions {
 				new_inactions := make([]*types.InternalAction, 0)
@@ -212,43 +206,20 @@ func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
 }
 
 func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error) {
-
-	// Pending block is only known by the miner
-	if blockNr == rpc.PendingBlockNumber {
-		block, _ := b.ftservice.miner.Pending()
-		return block.Header(), nil
-	}
-
-	// Otherwise resolve and return the block
 	if blockNr == rpc.LatestBlockNumber {
 		return b.ftservice.blockchain.CurrentBlock().Header(), nil
 	}
-
 	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr)), nil
 }
 
 func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
-	// Pending block is only known by the miner
-	if blockNr == rpc.PendingBlockNumber {
-		block, _ := b.ftservice.miner.Pending()
-		return block, nil
-	}
-
-	// Otherwise resolve and return the block
 	if blockNr == rpc.LatestBlockNumber {
 		return b.ftservice.blockchain.CurrentBlock(), nil
 	}
 	return b.ftservice.blockchain.GetBlockByNumber(uint64(blockNr)), nil
 }
 
-//
 func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*state.StateDB, *types.Header, error) {
-	// Pending state is only known by the miner
-	if blockNr == rpc.PendingBlockNumber {
-		block, state := b.ftservice.miner.Pending()
-		return state, block.Header(), nil
-	}
-	// Otherwise resolve the block number and return its state
 	header, err := b.HeaderByNumber(ctx, blockNr)
 	if header == nil || err != nil {
 		return nil, nil, err
@@ -263,7 +234,7 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 
 	evmcontext := &processor.EvmContext{
 		ChainContext:  b.ftservice.BlockChain(),
-		EgnineContext: b.ftservice.Engine(),
+		EngineContext: b.ftservice.Engine(),
 	}
 
 	context := processor.NewEVMContext(from, assetID, gasPrice, header, evmcontext, nil)
@@ -280,11 +251,7 @@ func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error)
 	if err != nil {
 		return nil, err
 	}
-	acctm, err := accountmanager.NewAccountManager(sdb)
-	if err != nil {
-		return nil, err
-	}
-	return acctm, nil
+	return accountmanager.NewAccountManager(sdb)
 }
 
 //GetFeeManager get fee manager
@@ -400,12 +367,20 @@ func (b *APIBackend) AddBadNode(url string) error {
 	return err
 }
 
+// RemoveBadNode add a bad Node and would cause the node disconnected
+func (b *APIBackend) RemoveBadNode(url string) error {
+	node, err := enode.ParseV4(url)
+	if err == nil {
+		b.ftservice.p2pServer.RemoveBadNode(node)
+	}
+	return err
+}
+
 // SelfNode returns the local node's endpoint information.
 func (b *APIBackend) SelfNode() string {
 	return b.ftservice.p2pServer.Self().String()
 }
 
-// APIs returns apis
 func (b *APIBackend) Engine() consensus.IEngine {
 	return b.ftservice.engine
 }

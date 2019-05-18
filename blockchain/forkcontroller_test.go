@@ -34,25 +34,28 @@ func TestForkController(t *testing.T) {
 		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
-
+	if err := initForkController(params.DefaultChainconfig.ChainName, statedb); err != nil {
+		t.Fatal(err)
+	}
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
-	var height int64
+
+	var number int64
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 8; i++ {
 
-			block := &types.Block{Head: &types.Header{Number: big.NewInt(height)}}
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
 			block.Head.WithForkID(uint64(j), uint64(j+1))
 			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
 			assert.NoError(t, fc.update(block, statedb))
-			height++
+			number++
 		}
 
 		for i := 0; i < 10; i++ {
-			block := &types.Block{Head: &types.Header{Number: big.NewInt(height)}}
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
 			block.Head.WithForkID(uint64(j+1), uint64(j+1))
 			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
 			assert.NoError(t, fc.update(block, statedb))
-			height++
+			number++
 		}
 
 		id, _, err := fc.currentForkID(statedb)
@@ -69,16 +72,19 @@ func TestUpdateDifferentForkBlock(t *testing.T) {
 		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
+	if err := initForkController(params.DefaultChainconfig.ChainName, statedb); err != nil {
+		t.Fatal(err)
+	}
 
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
-	var height int64
+	var number int64
 	for j := 0; j < 2; j++ {
 		for i := 0; i < 7; i++ {
-			block := &types.Block{Head: &types.Header{Number: big.NewInt(height)}}
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
 			block.Head.WithForkID(uint64(0), uint64(j+1))
 			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
 			assert.NoError(t, fc.update(block, statedb))
-			height++
+			number++
 
 			info, err := fc.getForkInfo(statedb)
 			if err != nil {
@@ -96,6 +102,9 @@ func TestFillForkID(t *testing.T) {
 		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
+	if err := initForkController(params.DefaultChainconfig.ChainName, statedb); err != nil {
+		t.Fatal(err)
+	}
 
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
 

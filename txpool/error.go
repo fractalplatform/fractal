@@ -55,15 +55,4 @@ var (
 	// ErrNegativeValue is a sanity error to ensure noone is able to specify a
 	// transaction with a negative value.
 	ErrNegativeValue = errors.New("negative value")
-
-	// ErrOversizedData is returned if the input data of a transaction is greater
-	// than some meaningful limit a user might use. This is not a consensus error
-	// making the transaction invalid, rather a DOS protection.
-	ErrOversizedData = errors.New("oversized data")
-
-	// ErrEmptyActions transaction no actions
-	ErrEmptyActions = errors.New("transaction no actions")
-
-	// ErrInvalidAction action have field invalid
-	ErrInvalidAction = errors.New("action field invalid")
 )

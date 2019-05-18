@@ -28,6 +28,7 @@ import (
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
 func IntrinsicGas(action *types.Action) (uint64, error) {
 	// Bump the required gas by the amount of transactional data
+	gasTable := params.GasTableInstanse
 	dataGasFunc := func(data []byte) (uint64, error) {
 		var gas uint64
 		if len(data) > 0 {
@@ -39,26 +40,28 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 				}
 			}
 			// Make sure we don't exceed uint64 for all data combinations
-			if (math.MaxUint64-gas)/params.TxDataNonZeroGas < nz {
+			if (math.MaxUint64-gas)/gasTable.TxDataNonZeroGas < nz {
 				return 0, ErrOutOfGas
 			}
-			gas += nz * params.TxDataNonZeroGas
+			gas += nz * gasTable.TxDataNonZeroGas
 
 			z := uint64(len(data)) - nz
-			if (math.MaxUint64-gas)/params.TxDataZeroGas < z {
+			if (math.MaxUint64-gas)/gasTable.TxDataZeroGas < z {
 				return 0, ErrOutOfGas
 			}
-			gas += z * params.TxDataZeroGas
+			gas += z * gasTable.TxDataZeroGas
 		}
 		return gas, nil
 	}
 
 	var gas uint64
 
-	if action.Type() == types.CreateContract || action.Type() == types.CreateAccount || action.Type() == types.IssueAsset {
-		gas += params.ActionGasContractCreation
+	if action.Type() == types.CreateContract || action.Type() == types.CreateAccount {
+		gas += gasTable.ActionGasCreation
+	} else if action.Type() == types.IssueAsset {
+		gas += gasTable.ActionGasIssueAsset
 	} else {
-		gas += params.ActionGas
+		gas += gasTable.ActionGas
 	}
 
 	dataGas, err := dataGasFunc(action.Data())
@@ -74,7 +77,7 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 	gas += remarkGas
 
 	if signLen := len(action.GetSign()); signLen > 1 {
-		gas += (uint64(len(action.GetSign()) - 1)) * params.ActionGas
+		gas += (uint64(len(action.GetSign()) - 1)) * gasTable.SignGas
 	}
 
 	return gas, nil

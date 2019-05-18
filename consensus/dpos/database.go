@@ -53,8 +53,7 @@ type IDB interface {
 	Undelegate(string, *big.Int) (*types.Action, error)
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
-
-	GetDelegatedByTime(string, uint64) (*big.Int, *big.Int, uint64, error)
+	GetCandidateInfoByTime(name string, timestamp uint64) (*CandidateInfo, error)
 }
 
 type CandidateType uint64
@@ -121,8 +120,9 @@ type CandidateInfo struct {
 	URL           string        `json:"url"`           // candidate url
 	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
 	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
-	Height        uint64        `json:"height"`        // timestamp
+	Number        uint64        `json:"number"`        // timestamp
 	Counter       uint64        `json:"counter"`
+	ActualCounter uint64        `json:"actualCounter"`
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
 	NextKey       string        `json:"-"`
@@ -138,7 +138,7 @@ type VoterInfo struct {
 	Name                string   `json:"name"`      // voter name
 	Candidate           string   `json:"candidate"` // candidate approved by this voter
 	Quantity            *big.Int `json:"quantity"`  // stake approved by this voter
-	Height              uint64   `json:"height"`    // timestamp
+	Number              uint64   `json:"number"`    // timestamp
 	NextKeyForVoter     string   `json:"-"`
 	NextKeyForCandidate string   `json:"-"`
 }
@@ -161,10 +161,12 @@ type GlobalState struct {
 	PreEpcho                   uint64   `json:"preEpcho"`                   // epcho
 	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
 	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
+	OffCandidateSchedule       []uint64 `json:"offCandidateSchedule"`       // activated backup candidates
+	OffCandidateNumber         []uint64 `json:"offCandidateNumber"`         // activated backup candidates
 	TotalQuantity              *big.Int `json:"totalQuantity"`              // the sum of all candidate votes
 	TakeOver                   bool     `json:"takeOver"`                   // systemio take over dpos
 	Dpos                       bool     `json:"dpos"`                       // dpos status
-	Height                     uint64   `json:"height"`                     // timestamp
+	Number                     uint64   `json:"number"`                     // timestamp
 }
 
 // CandidateInfoArray array of candidate
@@ -176,10 +178,10 @@ func (prods CandidateInfoArray) Len() int {
 func (prods CandidateInfoArray) Less(i, j int) bool {
 	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
 	if val == 0 {
-		if prods[i].Height == prods[j].Height {
+		if prods[i].Number == prods[j].Number {
 			return strings.Compare(prods[i].Name, prods[j].Name) > 0
 		}
-		return prods[i].Height < prods[j].Height
+		return prods[i].Number < prods[j].Number
 	}
 	return val > 0
 }

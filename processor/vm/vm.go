@@ -34,7 +34,17 @@ type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
-	GetDelegatedByTimeFunc func(string, uint64, *state.StateDB) (*big.Int, *big.Int, uint64, error)
+	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
+	//GetLatestEpchoFunc
+	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
+	//GetPrevEpcho
+	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
+	//GetActivedCandidateSize
+	GetActivedCandidateSizeFunc func(state *state.StateDB, epoch uint64) (size uint64, err error)
+	//GetActivedCandidate
+	GetActivedCandidateFunc func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
+	//GetVoterStake
+	GetVoterStakeFunc func(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 	// GetHeaderByNumberFunc
 	GetHeaderByNumberFunc func(number uint64) *types.Header
 )
@@ -47,6 +57,13 @@ type Context struct {
 
 	// GetDelegatedByTime returns the delegated balance
 	GetDelegatedByTime GetDelegatedByTimeFunc
+	//
+	GetLatestEpoch          GetLatestEpochFunc
+	GetPrevEpoch            GetPrevEpochFunc
+	GetActivedCandidateSize GetActivedCandidateSizeFunc
+	GetActivedCandidate     GetActivedCandidateFunc
+	GetVoterStake           GetVoterStakeFunc
+	// Engine EgnineContext
 
 	//GetHeaderByNumber
 	GetHeaderByNumber GetHeaderByNumberFunc
@@ -134,15 +151,12 @@ var emptyCodeHash = crypto.Keccak256Hash(nil)
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
 func run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
-	//if contract.CodeAddr != nil {
-	//	precompiles := PrecompiledContractsHomestead
-	//	if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
-	//		precompiles = PrecompiledContractsByzantium
-	//	}
-	//	if p := precompiles[*contract.CodeAddr]; p != nil {
-	//		return RunPrecompiledContract(p, input, contract)
-	//	}
-	//}
+	// if contract.CodeAddr != nil {
+	// 	precompiles = PrecompiledContractsByzantium
+	// }
+	// if p := precompiles[*contract.CodeAddr]; p != nil {
+	// 	return RunPrecompiledContract(p, input, contract)
+	// }
 	return evm.interpreter.Run(contract, input)
 }
 
@@ -150,6 +164,29 @@ func run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
 // it's safe to be called multiple times.
 func (evm *EVM) Cancel() {
 	atomic.StoreInt32(&evm.abort, 1)
+}
+
+func (evm *EVM) GetCurrentGasTable() params.GasTable {
+	return evm.interpreter.GetGasTable()
+}
+
+func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
+	gasTable := evm.GetCurrentGasTable()
+	toAcct, err := evm.AccountDB.GetAccountByName(action.Recipient())
+	if err != nil {
+		return 0
+	}
+	if toAcct == nil {
+		return 0
+	}
+	if toAcct.IsDestroyed() {
+		return 0
+	}
+	_, err = toAcct.GetBalanceByID(action.AssetID())
+	if err == accountmanager.ErrAccountAssetNotExist {
+		return gasTable.CallValueTransferGas
+	}
+	return 0
 }
 
 func (evm *EVM) distributeContractGas(runGas uint64, contractName common.Name, callerName common.Name) {
@@ -215,7 +252,7 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName common.Name, ca
 func (evm *EVM) distributeGasByScale(actualUsedGas uint64, runGas uint64) {
 	if evm.depth == 0 && actualUsedGas != runGas {
 		for key, gas := range evm.FounderGasMap {
-			v := DistributeGas{(gas.Value / int64(runGas)) * int64(actualUsedGas), gas.TypeID}
+			v := DistributeGas{int64((float64(gas.Value) / float64(runGas)) * float64(actualUsedGas)), gas.TypeID}
 			evm.FounderGasMap[key] = v
 		}
 	}
@@ -246,6 +283,12 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		snapshot = evm.StateDB.Snapshot()
 	)
 
+	receiptGas := evm.CheckReceipt(action)
+	if gas < receiptGas {
+		return nil, gas, ErrInsufficientBalance
+	} else {
+		gas -= receiptGas
+	}
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
 		return nil, gas, err
 	}
@@ -283,7 +326,8 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 
 	evm.distributeContractGas(runGas, contractName, caller.Name())
 
-	callValueGas := int64(params.CallValueTransferGas - params.CallStipend)
+	gasTable := evm.GetCurrentGasTable()
+	callValueGas := int64(gasTable.CallValueTransferGas - gasTable.CallStipend)
 	if action.Value().Sign() != 0 && callValueGas > 0 {
 		evm.distributeAssetGas(callValueGas, assetName, caller.Name())
 	}
@@ -297,7 +341,6 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 			contract.UseGas(contract.Gas)
 		}
 	}
-
 	actualUsedGas := gas - contract.Gas
 	evm.distributeGasByScale(actualUsedGas, runGas)
 
@@ -504,6 +547,12 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 		return nil, 0, ErrContractCodeCollision
 	}
 
+	receiptGas := evm.CheckReceipt(action)
+	if gas < receiptGas {
+		return nil, gas, ErrInsufficientBalance
+	} else {
+		gas -= receiptGas
+	}
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		return nil, gas, err
@@ -542,14 +591,13 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	}
 
 	// check whether the max code size has been exceeded
-	//maxCodeSizeExceeded := evm.ChainConfig().IsEIP158(evm.BlockNumber) && len(ret) > params.MaxCodeSize
-	maxCodeSizeExceeded := len(ret) > params.MaxCodeSize
+	maxCodeSizeExceeded := len(ret) > int(params.MaxCodeSize)
 	// if the contract creation ran successfully and no errors were returned
 	// calculate the gas required to store the code. If the code could not
 	// be stored due to not enough gas set an error and let it be handled
 	// by the error checking condition below.
 	if err == nil && !maxCodeSizeExceeded {
-		createDataGas := uint64(len(ret)) * params.CreateDataGas
+		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
 			acct, err := evm.AccountDB.GetAccountByName(contractName)
 			if err != nil {

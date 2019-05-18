@@ -17,8 +17,8 @@
 package txpool
 
 import (
+	"container/heap"
 	"math/big"
-	"sort"
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
@@ -41,33 +41,34 @@ func getPriceTx(price *big.Int, nonce uint64) *types.Transaction {
 }
 
 func TestPriceHeap(t *testing.T) {
-	var ph priceHeap
+	var ph = new(priceHeap)
+	heap.Init(ph)
+
 	txs := []*types.Transaction{
 		getPriceTx(big.NewInt(200), 2),
 		getPriceTx(big.NewInt(200), 1),
-		getPriceTx(big.NewInt(400), 4),
+		getPriceTx(big.NewInt(500), 4),
 		getPriceTx(big.NewInt(100), 3),
-	}
-	for _, v := range txs {
-		ph.Push(v)
-	}
-	for i := 0; i < 4; i++ {
-		assert.Equal(t, txs[3-i], ph.Pop().(*types.Transaction))
+		getPriceTx(big.NewInt(500), 5),
+		getPriceTx(big.NewInt(100), 6),
 	}
 
 	//test sort,first sort by price,if the price is equal,sort by nonce,high nonce is worse.
 	sortTxs := []*types.Transaction{
-		getPriceTx(big.NewInt(400), 4),
-		getPriceTx(big.NewInt(200), 1),
-		getPriceTx(big.NewInt(200), 2),
+		getPriceTx(big.NewInt(100), 6),
 		getPriceTx(big.NewInt(100), 3),
+		getPriceTx(big.NewInt(200), 2),
+		getPriceTx(big.NewInt(200), 1),
+		getPriceTx(big.NewInt(500), 5),
+		getPriceTx(big.NewInt(500), 4),
 	}
 
 	for _, v := range txs {
-		ph.Push(v)
+		heap.Push(ph, v)
 	}
-	sort.Sort(ph)
-	for i := 0; i < 4; i++ {
-		assert.Equal(t, sortTxs[i].Hash(), ph.Pop().(*types.Transaction).Hash())
+
+	for i := 0; i < len(txs); i++ {
+		tx := heap.Pop(ph).(*types.Transaction)
+		assert.Equal(t, sortTxs[i].Hash(), tx.Hash())
 	}
 }

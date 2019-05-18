@@ -103,7 +103,7 @@ func TestActionEncodeAndDecode(t *testing.T) {
 	assert.Equal(t, testAction, actAction)
 }
 
-func TestAction_CheckValid(t *testing.T) {
+func TestAction_Check(t *testing.T) {
 	actionBytes, err := rlp.EncodeToBytes(testAction)
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +114,7 @@ func TestAction_CheckValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction.CheckValid(params.DefaultChainconfig) == false {
+	if err := actAction.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction_CheckValue err, wantErr %v", true)
 	}
 
@@ -129,7 +129,7 @@ func TestAction_CheckValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction2.CheckValid(params.DefaultChainconfig) == true {
+	if err := actAction2.Check(params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
 	}
 
@@ -144,7 +144,7 @@ func TestAction_CheckValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction3.CheckValid(params.DefaultChainconfig) == false {
+	if err := actAction3.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
@@ -159,7 +159,7 @@ func TestAction_CheckValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction3.CheckValid(params.DefaultChainconfig) == false {
+	if err := actAction3.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
@@ -174,7 +174,7 @@ func TestAction_CheckValid(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if actAction3.CheckValid(params.DefaultChainconfig) == false {
+	if err := actAction3.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 }
@@ -240,7 +240,7 @@ var (
 	)
 )
 
-func TestAction_CheckValid2(t *testing.T) {
+func TestAction_Check2(t *testing.T) {
 
 	// actionBytes10, err := rlp.EncodeToBytes(testAction10)
 	// if err != nil {
@@ -252,23 +252,23 @@ func TestAction_CheckValid2(t *testing.T) {
 	// 	t.Fatal(err)
 	// }
 
-	if testAction10.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction10.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction11.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction11.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction12.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction12.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction13.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction13.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction14.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction14.Check(params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
@@ -335,7 +335,7 @@ var (
 	)
 )
 
-func TestAction_CheckValid3(t *testing.T) {
+func TestAction_Check3(t *testing.T) {
 
 	// actionBytes10, err := rlp.EncodeToBytes(testAction10)
 	// if err != nil {
@@ -347,23 +347,23 @@ func TestAction_CheckValid3(t *testing.T) {
 	// 	t.Fatal(err)
 	// }
 
-	if testAction20.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction20.Check(params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction21.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction21.Check(params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction22.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction22.Check(params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction23.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction23.Check(params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if testAction24.CheckValid(params.DefaultChainconfig) == false {
+	if err := testAction24.Check(params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 

@@ -138,8 +138,8 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 	}
 	newcfg := genesis.configOrDefault(stored)
 
-	height := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
-	if height == nil {
+	number := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
+	if number == nil {
 		return newcfg, dposConfig(newcfg), common.Hash{}, fmt.Errorf("missing block number for head header hash")
 	}
 
@@ -212,8 +212,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	chainName := common.Name(g.Config.ChainName)
 	accoutName := common.Name(g.Config.AccountName)
+	assetName := common.Name(g.Config.AssetName)
 	// chain name
-	act := &am.AccountAction{
+	act := &am.CreateAccountAction{
 		AccountName: chainName,
 		PublicKey:   common.PubKey{},
 	}
@@ -236,7 +237,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		if len(slt) > 1 {
 			pname = common.Name(slt[0])
 		}
-		act := &am.AccountAction{
+		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
 			PublicKey:   account.PubKey,
 		}
@@ -277,7 +278,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 				pname = ast.Owner
 			}
 		}
-		ast := &at.AssetObject{
+		ast := &am.IssueAsset{
 			AssetName:  asset.Name,
 			Symbol:     asset.Symbol,
 			Amount:     asset.Amount,
@@ -286,11 +287,12 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			Owner:      common.StrToName(asset.Owner),
 			UpperLimit: asset.UpperLimit,
 		}
+
 		payload, _ := rlp.EncodeToBytes(ast)
 		astActions = append(astActions, types.NewAction(
 			types.IssueAsset,
 			pname,
-			accoutName,
+			assetName,
 			0,
 			0,
 			0,
@@ -351,13 +353,18 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			URL:           candidate.URL,
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
-			Height:        number.Uint64(),
+			Number:        number.Uint64(),
 		}); err != nil {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64()); err != nil {
+	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64(), nil); err != nil {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
+	}
+
+	// init  fork controller
+	if err := initForkController(chainName.String(), statedb); err != nil {
+		panic(fmt.Sprintf("genesis init fork controller err %v", err))
 	}
 
 	// snapshot
@@ -388,8 +395,6 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	actions := []*types.Action{}
-	actions = append(actions, actActions...)
-	actions = append(actions, astActions...)
 	for _, action := range actActions {
 		if action.AssetID() == 0 {
 			action = types.NewAction(

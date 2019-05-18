@@ -63,10 +63,29 @@ func TestDposVotersByVoter(t *testing.T) {
 		//So(info, ShouldNotBeEmpty)
 	})
 }
+
+func TestDposVotersByVoterByNumber(t *testing.T) {
+	Convey("dpos_votersByVoterByNumber", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposVotersByVoterByNumber(0, systemaccount, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
 func TestDposVotersByCandidate(t *testing.T) {
 	Convey("dpos_votersByCandidate", t, func() {
 		api := NewAPI(rpchost)
 		info, err := api.DposVotersByCandidate(systemaccount, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposVotersByCandidateByNumber(t *testing.T) {
+	Convey("dpos_votersByCandidateByNumber", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposVotersByCandidateByNumber(0, systemaccount, true)
 		So(err, ShouldBeNil)
 		_ = info
 		//So(info, ShouldNotBeEmpty)
@@ -81,10 +100,61 @@ func TestDposAvailableStake(t *testing.T) {
 	})
 }
 
+func TestDposAvailableStakebyNumber(t *testing.T) {
+	SkipConvey("dpos_availableStakeByNumber", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposAvailableStakeByNumber(0, systemaccount)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
 func TestDposValidCandidates(t *testing.T) {
 	Convey("dpos_validCandidates", t, func() {
 		api := NewAPI(rpchost)
 		info, err := api.DposValidCandidates()
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposValidCandidatesByNumber(t *testing.T) {
+	Convey("dpos_validCandidatesByNumber", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposValidCandidatesByNumber(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposNextValidCandidates(t *testing.T) {
+	Convey("dpos_nextValidCandidates", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposNextValidCandidates()
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposNextValidCandidatesByNumber(t *testing.T) {
+	Convey("dpos_nextValidCandidatesByNumber", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposNextValidCandidatesByNumber(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposSnapShotTime(t *testing.T) {
+	Convey("dpos_snapShotTime", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposSnapShotTime()
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposSnapShotTimeByNumber(t *testing.T) {
+	Convey("dpos_snapShotTimeByNumber", t, func() {
+		api := NewAPI(rpchost)
+		info, err := api.DposSnapShotTimeByNumber(0)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})

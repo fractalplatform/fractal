@@ -31,7 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"golang.org/x/crypto/sha3"
 )
 
 var (
@@ -43,7 +42,8 @@ var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 
 // Keccak256 calculates and returns the Keccak256 hash of the input data.
 func Keccak256(data ...[]byte) []byte {
-	d := sha3.NewLegacyKeccak256()
+	d := common.Get256()
+	defer common.Put256(d)
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -53,7 +53,8 @@ func Keccak256(data ...[]byte) []byte {
 // Keccak256Hash calculates and returns the Keccak256 hash of the input data,
 // converting it to an internal Hash data structure.
 func Keccak256Hash(data ...[]byte) (h common.Hash) {
-	d := sha3.NewLegacyKeccak256()
+	d := common.Get256()
+	defer common.Put256(d)
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -63,7 +64,8 @@ func Keccak256Hash(data ...[]byte) (h common.Hash) {
 
 // Keccak512 calculates and returns the Keccak512 hash of the input data.
 func Keccak512(data ...[]byte) []byte {
-	d := sha3.NewLegacyKeccak512()
+	d := common.Get512()
+	defer common.Put512(d)
 	for _, b := range data {
 		d.Write(b)
 	}
@@ -184,13 +186,13 @@ func GenerateKey() (*ecdsa.PrivateKey, error) {
 
 // ValidateSignatureValues verifies whether the signature values are valid with
 // the given chain rules. The v value is assumed to be either 0 or 1.
-func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
+func ValidateSignatureValues(v byte, r, s *big.Int) bool {
 	if r.Cmp(common.Big1) < 0 || s.Cmp(common.Big1) < 0 {
 		return false
 	}
 	// reject upper range of s values (ECDSA malleability)
 	// see discussion in secp256k1/libsecp256k1/include/secp256k1.h
-	if homestead && s.Cmp(secp256k1halfN) > 0 {
+	if s.Cmp(secp256k1halfN) > 0 {
 		return false
 	}
 	// Frontier: allow s to be in full N range

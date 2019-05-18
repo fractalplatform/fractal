@@ -48,7 +48,7 @@ func NewSystem(state *state.StateDB, config *Config) *System {
 }
 
 // RegCandidate  register a candidate
-func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, height uint64) error {
+func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
@@ -90,7 +90,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 		URL:           url,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
-		Height:        height,
+		Number:        number,
 	}
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
@@ -110,7 +110,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 }
 
 // UpdateCandidate  update a candidate
-func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, height uint64) error {
+func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
@@ -122,9 +122,9 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	if m.Sign() != 0 {
 		return fmt.Errorf("invalid stake %v(non divisibility, unit %v)", nstake, sys.config.unitStake())
 	}
-	if q.Cmp(sys.config.CandidateMinQuantity) < 0 {
-		return fmt.Errorf("invalid stake %v(insufficient, candidate min %v)", nstake, new(big.Int).Mul(sys.config.CandidateMinQuantity, sys.config.unitStake()))
-	}
+	// if q.Cmp(sys.config.CandidateMinQuantity) < 0 {
+	// 	return fmt.Errorf("invalid stake %v(insufficient, candidate min %v)", nstake, new(big.Int).Mul(sys.config.CandidateMinQuantity, sys.config.unitStake()))
+	// }
 
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
@@ -135,11 +135,11 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
 	}
 
-	if q.Sign() != 0 && q.Cmp(prod.Quantity) == -1 {
-		return fmt.Errorf("not support reduce stake %v", candidate)
-	}
+	// if q.Sign() != 0 && q.Cmp(prod.Quantity) == -1 {
+	// 	return fmt.Errorf("not support reduce stake %v", candidate)
+	// }
 
-	q = new(big.Int).Sub(q, prod.Quantity)
+	// q = new(big.Int).Sub(q, prod.Quantity)
 	// quantity validity
 	if q.Sign() == 1 {
 		quantity, err := sys.getAvailableQuantity(epcho, candidate)
@@ -154,23 +154,21 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	}
 
 	// db
-	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
-	action, err := sys.Undelegate(candidate, stake)
-	if err != nil {
-		return fmt.Errorf("undelegate %v failed(%v)", q, err)
-	}
-	if action != nil {
-		sys.internalActions = append(sys.internalActions, &types.InternalAction{
-			Action: action.NewRPCAction(0),
-		})
-	}
+	// stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
+	// action, err := sys.Undelegate(candidate, stake)
+	// if err != nil {
+	// 	return fmt.Errorf("undelegate %v failed(%v)", q, err)
+	// }
+	// if action != nil {
+	// 	sys.internalActions = append(sys.internalActions, &types.InternalAction{
+	// 		Action: action.NewRPCAction(0),
+	// 	})
+	// }
 
-	if len(url) > 0 {
-		prod.URL = url
-	}
+	prod.URL = url
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
-	prod.Height = height
+	prod.Number = number
 	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
@@ -187,7 +185,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 }
 
 // UnregCandidate  unregister a candidate
-func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64) error {
+func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64) error {
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -202,7 +200,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64)
 
 	// db
 	prod.Type = Freeze
-	prod.Height = height
+	prod.Number = number
 	if err := sys.SetCandidate(prod); err != nil {
 		return err
 	}
@@ -247,7 +245,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, height uint64)
 }
 
 // RefundCandidate  refund a candidate
-func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64) error {
+func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64) error {
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -266,20 +264,23 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 	}
 
 	freeze := uint64(0)
-	pstate := gstate
+	tepcho := gstate.PreEpcho
 	for i := uint64(0); i < sys.config.FreezeEpchoSize+1; i++ {
-		if pstate.Height < prod.Height {
-			break
-		}
-		freeze++
-		tstate, err := sys.GetState(pstate.PreEpcho)
+		tstate, err := sys.GetState(tepcho)
 		if err != nil {
 			return err
 		}
-		pstate = tstate
+		if tstate == nil {
+			break
+		}
+		if tstate.Number < prod.Number {
+			break
+		}
+		freeze++
+		tepcho = tstate.PreEpcho
 	}
-	if freeze < sys.config.FreezeEpchoSize+1 {
-		return fmt.Errorf("freeze period has not arrived %v", candidate)
+	if freeze < sys.config.FreezeEpchoSize {
+		return fmt.Errorf("%v freeze period %v has not arrived %v", candidate, freeze, sys.config.FreezeEpchoSize)
 	}
 
 	// db
@@ -319,7 +320,7 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, height uint64
 }
 
 // VoteCandidate vote a candidate
-func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, height uint64) error {
+func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, number uint64) error {
 	// candidate validity
 	prod, err := sys.GetCandidate(candidate)
 	if err != nil {
@@ -364,7 +365,7 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		}
 	}
 
-	voterInfo.Height = height
+	voterInfo.Number = number
 	voterInfo.Quantity = new(big.Int).Add(voterInfo.Quantity, q)
 	if err := sys.SetVoter(voterInfo); err != nil {
 		return err
@@ -386,17 +387,8 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 	return nil
 }
 
-// GetDelegatedByTime candidate delegated
-func (sys *System) GetDelegatedByTime(candidate string, timestamp uint64) (*big.Int, *big.Int, uint64, error) {
-	q, tq, c, err := sys.IDB.GetDelegatedByTime(candidate, timestamp)
-	if err != nil {
-		return big.NewInt(0), big.NewInt(0), 0, err
-	}
-	return new(big.Int).Mul(q, sys.config.unitStake()), new(big.Int).Mul(tq, sys.config.unitStake()), c, nil
-}
-
 // KickedCandidate kicked
-func (sys *System) KickedCandidate(epcho uint64, candidate string, height uint64) error {
+func (sys *System) KickedCandidate(epcho uint64, candidate string, number uint64) error {
 	// name validity
 	prod, err := sys.GetCandidate(candidate)
 	if prod == nil || err != nil {
@@ -430,7 +422,7 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string, height uint64
 	// }
 
 	prod.TotalQuantity = big.NewInt(0)
-	prod.Height = height
+	prod.Number = number
 	prod.Type = Black
 	if err := sys.SetCandidate(prod); err != nil {
 		return err
@@ -454,7 +446,7 @@ func (sys *System) ExitTakeOver(epcho uint64) error {
 	return sys.SetState(gstate)
 }
 
-func (sys *System) onblock(epcho uint64, height uint64) error {
+func (sys *System) onblock(epcho uint64, number uint64) error {
 	pepcho, err := sys.GetLastestEpcho()
 	if err != nil {
 		return err
@@ -478,13 +470,13 @@ func (sys *System) onblock(epcho uint64, height uint64) error {
 		TotalQuantity:          new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
 		TakeOver:               pState.TakeOver,
 		Dpos:                   pState.Dpos,
-		Height:                 height,
+		Number:                 number,
 	}
 	return sys.SetState(gstate)
 }
 
 // UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height uint64) error {
+func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64, counter func(from uint64, index uint64) uint64) error {
 	if pepcho > epcho {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -493,27 +485,70 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 		return err
 	}
 
+	// not is first & no changes
+	if pstate.Epcho != pstate.PreEpcho && pepcho == epcho {
+		return nil
+	}
+
+	// old  actived candidates
+	oldcandidates := map[string]uint64{}
+	roldcandidates := map[uint64][]string{}
+	ppstate, err := sys.GetState(pstate.PreEpcho)
+	if err != nil {
+		return err
+	}
+	for n := uint64(len(ppstate.ActivatedCandidateSchedule)); n > 0; n-- {
+		index := n - 1
+		candidate := ppstate.ActivatedCandidateSchedule[index]
+		if index >= sys.config.CandidateScheduleSize {
+			h := pstate.OffCandidateNumber[index-sys.config.CandidateScheduleSize]
+			i := pstate.OffCandidateSchedule[index-sys.config.CandidateScheduleSize]
+			cnt := counter(h-1, i)
+			if _, ok := roldcandidates[i]; !ok {
+				roldcandidates[i] = []string{}
+			} else {
+				for _, c := range roldcandidates[index] {
+					cnt -= oldcandidates[c]
+				}
+			}
+			roldcandidates[i] = append(roldcandidates[i], candidate)
+			oldcandidates[candidate] += cnt
+		} else {
+			cnt := counter(ppstate.Number, index)
+			if _, ok := roldcandidates[index]; ok {
+				for _, c := range roldcandidates[index] {
+					cnt -= oldcandidates[c]
+				}
+			}
+			oldcandidates[candidate] += cnt
+		}
+	}
+
 	candidateInfoArray, err := sys.GetCandidates()
 	if err != nil {
 		return err
 	}
+	// is dpos
 	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
 	if !pstate.Dpos && pstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
 		uint64(len(candidateInfoArray)) >= n {
 		pstate.Dpos = true
 	}
 
+	// clear
 	activatedCandidateSchedule := []string{}
 	activeTotalQuantity := big.NewInt(0)
 	totalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
 		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
-		if candidateInfo.invalid() || pstate.Dpos && strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-			continue
+		if cnt, ok := oldcandidates[candidateInfo.Name]; ok {
+			candidateInfo.Counter += cnt
 		}
-		activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-		if uint64(len(activatedCandidateSchedule)) <= sys.config.CandidateScheduleSize {
-			activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
+		if !candidateInfo.invalid() && (!pstate.Dpos || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0) {
+			if uint64(len(activatedCandidateSchedule)) <= n {
+				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
+			}
 		}
 		candidateInfo.TotalQuantity = candidateInfo.Quantity
 		if err := sys.SetCandidate(candidateInfo); err != nil {
@@ -522,6 +557,29 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 
 	if !pstate.Dpos {
+		if pstate.Epcho != pstate.PreEpcho {
+			ppstate, err := sys.GetState(pstate.PreEpcho)
+			if err != nil {
+				return err
+			}
+			candidates := map[string]bool{}
+			activeTotalQuantity = big.NewInt(0)
+			activatedCandidateSchedule = []string{}
+			for _, candidate := range ppstate.ActivatedCandidateSchedule {
+				candidateInfo, err := sys.GetCandidate(candidate)
+				if err != nil {
+					return err
+				}
+				if candidateInfo == nil || candidateInfo.invalid() {
+					continue
+				}
+				if _, ok := candidates[candidate]; !ok {
+					candidates[candidateInfo.Name] = true
+					activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+					activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.Quantity)
+				}
+			}
+		}
 		if init := len(activatedCandidateSchedule); init > 0 {
 			index := 0
 			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
@@ -532,7 +590,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 	}
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activeTotalQuantity
-	pstate.Height = height
+	pstate.Number = number
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
@@ -543,6 +601,8 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, height u
 			PreEpcho:               pstate.Epcho,
 			ActivatedTotalQuantity: big.NewInt(0),
 			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
+			OffCandidateNumber:     []uint64{},
+			OffCandidateSchedule:   []uint64{},
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,
 		}

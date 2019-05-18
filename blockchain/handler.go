@@ -38,7 +38,7 @@ func errResp(code errCode, format string, v ...interface{}) error {
 	return fmt.Errorf("%v - %v", code, fmt.Sprintf(format, v...))
 }
 
-func newBlcokchainStation(bc *BlockChain, networkId uint64) *BlockchainStation {
+func newBlockchainStation(bc *BlockChain, networkId uint64) *BlockchainStation {
 	bs := &BlockchainStation{
 		peerCh:     make(chan *router.Event),
 		blockchain: bc,

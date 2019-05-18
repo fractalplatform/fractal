@@ -72,7 +72,7 @@ func (acc *Account) Pubkey() common.PubKey {
 //=====================================================================================
 
 // CreateAccount new account
-func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas uint64, newacct *accountmanager.AccountAction) (hash common.Hash, err error) {
+func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas uint64, newacct *accountmanager.CreateAccountAction) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -122,7 +122,7 @@ func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas
 }
 
 // UpdateAccount update accout
-func (acc *Account) UpdateAccount(to common.Name, value *big.Int, id uint64, gas uint64, newacct *accountmanager.AccountAction) (hash common.Hash, err error) {
+func (acc *Account) UpdateAccount(to common.Name, value *big.Int, id uint64, gas uint64, newacct *accountmanager.UpdataAccountAction) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -222,7 +222,7 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 }
 
 // IssueAsset new asset
-func (acc *Account) IssueAsset(to common.Name, value *big.Int, id uint64, gas uint64, asset *asset.AssetObject) (hash common.Hash, err error) {
+func (acc *Account) IssueAsset(to common.Name, value *big.Int, id uint64, gas uint64, asset *accountmanager.IssueAsset) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -275,7 +275,7 @@ func (acc *Account) IssueAsset(to common.Name, value *big.Int, id uint64, gas ui
 }
 
 // UpdateAsset update asset
-func (acc *Account) UpdateAsset(to common.Name, value *big.Int, id uint64, gas uint64, asset *asset.AssetObject) (hash common.Hash, err error) {
+func (acc *Account) UpdateAsset(to common.Name, value *big.Int, id uint64, gas uint64, asset *accountmanager.UpdateAsset) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
