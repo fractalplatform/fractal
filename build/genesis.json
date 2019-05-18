@@ -10,7 +10,7 @@
 			"subLength": 8
 		},
 		"assetParams": {
-			"level": 1,
+			"level": 2,
 			"length": 16,
 			"subLength": 8
 		},
@@ -46,7 +46,7 @@
 		"systemToken": "ftoken"
 	},
 	"timestamp": 1555776000000,
-	"gasLimit": 100000000,
+	"gasLimit": 30000000,
 	"difficulty": 131072,
 	"allocAccounts": [{
 		"name": "fractal.admin",
@@ -68,10 +68,10 @@
 	"allocAssets": [{
 		"name": "ftoken",
 		"symbol": "ft",
-		"amount": 100000000000000000000000000000,
+		"amount": 10000000000000000000000000000,
 		"decimals": 18,
 		"founder": "fractal.admin",
 		"owner": "fractal.admin",
-		"upperLimit": 100000000000000000000000000000
+		"upperLimit": 10000000000000000000000000000
 	}]
 }

@@ -1,6 +1,6 @@
 {
 	"config": {
-		"bootnodes": ["fnode://938597139178830dac79a3c1bcc7be70d41a79a1a1f479cde73862a3d2b808e83f60c6b7d9bd4ff999403828d2b4b5a27ff7323b3467ba3f45db6150db943c32@120.131.7.228:2018","fnode://e30016f87e9f32895039c5b4fbbb40fbbf04fc2ef93299124a115df8344d81fff070591b2e455f043d2ccc9ffab3b881ce89c426ae111a5400034bb0fe64e1fa@120.131.7.101:2018"],
+		"bootnodes": ["fnode://1eff962a4db4f6d15e2361eafdcbd8ae448c9d9327334f8bc0a7026f3c6d123a20c240ab19fe8ffda5c0da10ede7171eff257961a35ef6bdff0441c6b9b875f6@boot.fractalproject.com:30000","fnode://e6fee5646cb00b6cb7f9a7741af7280a63712f8b60ad1edef5f0d3e8d9e7708869be44b8c4981d35f94c260708f992f5a58e93a8e40abdb1ec6d08f91da136fc@boot.fractalproject.com:30001"],
 		"chainId": 45,
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
@@ -10,7 +10,7 @@
 			"subLength": 8
 		},
 		"assetParams": {
-			"level": 1,
+			"level": 2,
 			"length": 16,
 			"subLength": 8
 		},
@@ -46,7 +46,7 @@
 		"systemToken": "ftoken"
 	},
 	"timestamp": 1555776000000,
-	"gasLimit": 100000000,
+	"gasLimit": 30000000,
 	"difficulty": 131072,
 	"allocAccounts": [{
 		"name": "fractal.admin",
@@ -68,10 +68,10 @@
 	"allocAssets": [{
 		"name": "ftoken",
 		"symbol": "ft",
-		"amount": 100000000000000000000000000000,
+		"amount": 10000000000000000000000000000,
 		"decimals": 18,
 		"founder": "fractal.admin",
 		"owner": "fractal.admin",
-		"upperLimit": 100000000000000000000000000000
+		"upperLimit": 10000000000000000000000000000
 	}]
 }
