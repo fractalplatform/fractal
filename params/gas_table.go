@@ -18,21 +18,25 @@ package params
 
 // GasTable organizes gas prices for different phases.
 type GasTable struct {
-	ExtcodeSize uint64
-	ExtcodeCopy uint64
-	Balance     uint64
-	SLoad       uint64
-	Calls       uint64
-	Suicide     uint64
+	ActionGas           uint64
+	ActionGasCreation   uint64
+	ActionGasIssueAsset uint64
+	SignGas             uint64
+	TxDataNonZeroGas    uint64
+	TxDataZeroGas       uint64
 
-	ExpByte uint64
+	ExtcodeSize          uint64
+	ExtcodeCopy          uint64
+	Balance              uint64
+	SLoad                uint64
+	Calls                uint64
+	ExpByte              uint64
+	CallValueTransferGas uint64
+	QuadCoeffDiv         uint64
+	SstoreSetGas         uint64
+	LogDataGas           uint64
+	CallStipend          uint64
 
-	// CreateBySuicide occurs when the
-	// refunded account is one that does
-	// not exist. This logic is similar
-	// to call. May be left nil. Nil means
-	// not charged.
-	CreateBySuicide uint64
 	SetOwner        uint64
 	GetAccountTime  uint64
 	GetSnapshotTime uint64
@@ -42,39 +46,79 @@ type GasTable struct {
 	DestroyAsset    uint64
 	AddAsset        uint64
 	GetAccountID    uint64
-	GetDelegate     uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
 	DeductGas       uint64
 	WithdrawFee     uint64
+	GetEpoch        uint64
+	GetCandidateNum uint64
+	GetCandidate    uint64
+	GetVoterStake   uint64
+
+	Sha3Gas        uint64
+	Sha3WordGas    uint64
+	SstoreResetGas uint64
+	JumpdestGas    uint64
+	CreateDataGas  uint64
+	LogGas         uint64
+	CopyGas        uint64
+	LogTopicGas    uint64
+	CreateGas      uint64
+	MemoryGas      uint64
 }
 
 // Variables containing gas prices for different phases.
 var (
 	// GasTable contain the gas re-prices
 	GasTableInstanse = GasTable{
+		ActionGas:           100000,
+		ActionGasCreation:   500000,
+		ActionGasIssueAsset: 10000000,
+		SignGas:             50000,
+
 		ExtcodeSize: 700,
 		ExtcodeCopy: 700,
 		Balance:     400,
 		SLoad:       200,
 		Calls:       700,
-		Suicide:     5000,
 		ExpByte:     50,
 
-		CreateBySuicide: 25000,
 		SetOwner:        200,
 		WithdrawFee:     700,
 		GetAccountTime:  200,
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
 		SnapBalance:     200,
-		IssueAsset:      200,
+		IssueAsset:      10000000,
 		DestroyAsset:    200,
 		AddAsset:        200,
 		GetAccountID:    200,
-		GetDelegate:     200,
 		CryptoCalc:      20000,
 		CryptoByte:      1000,
 		DeductGas:       200,
+		GetEpoch:        200,
+		GetCandidateNum: 200,
+		GetCandidate:    200,
+		GetVoterStake:   200,
+
+		TxDataNonZeroGas: 68,
+		TxDataZeroGas:    4,
+
+		CallValueTransferGas: 9000,
+		QuadCoeffDiv:         512,
+		SstoreSetGas:         20000,
+		LogDataGas:           8,
+		CallStipend:          2300,
+
+		Sha3Gas:        30,
+		Sha3WordGas:    6,
+		SstoreResetGas: 5000,
+		JumpdestGas:    1,
+		CreateDataGas:  200,
+		LogGas:         375,
+		CopyGas:        3,
+		LogTopicGas:    375,
+		CreateGas:      32000,
+		MemoryGas:      3,
 	}
 )

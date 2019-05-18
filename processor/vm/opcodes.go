@@ -214,11 +214,18 @@ const (
 	DESTROYASSET = 0xc8
 	GETACCOUNTID = 0xc9
 
-	GETDELEGATE    = 0xca
 	GETACCOUNTTIME = 0xcb
 	CRYPTOCALC     = 0xcc
 	DEDUCTGAS      = 0xcd
 	WITHDRAWFEE    = 0xce
+)
+
+const (
+	//0xd0 range  new add for dpos
+	GETEPCHO        OpCode = 0xd0 + iota
+	GETCANDIDATENUM        = 0xd1
+	GETCANDIDATE           = 0xd2
+	GETVOTERSTAKE          = 0xd3
 )
 
 const (

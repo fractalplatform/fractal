@@ -46,7 +46,7 @@ var (
 	systemassetid   = uint64(0)
 	chainid         = big.NewInt(1)
 	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
-	tGas            = uint64(90000)
+	tGas            = uint64(20000000)
 )
 
 func TestAccount(t *testing.T) {

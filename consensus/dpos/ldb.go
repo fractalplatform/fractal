@@ -19,6 +19,7 @@ package dpos
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"math/big"
 	"sort"
 	"strings"
@@ -387,7 +388,7 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, nil
+		return nil, errors.New("GlobalState not exist")
 	} else if err := rlp.DecodeBytes(val, gstate); err != nil {
 		return nil, err
 	}
@@ -398,9 +399,12 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 func (db *LDB) GetCandidateInfoByTime(candidate string, timestamp uint64) (*CandidateInfo, error) {
 	key := strings.Join([]string{CandidateKeyPrefix, candidate}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
-	if val == nil || err != nil {
+	if err != nil || val == nil {
 		return nil, err
 	}
+	// if len(val) == 0 {
+	// 	return nil, nil
+	// }
 	candidateInfo := &CandidateInfo{}
 	if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
 		return nil, err

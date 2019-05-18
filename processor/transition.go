@@ -36,7 +36,7 @@ var (
 )
 
 type StateTransition struct {
-	engine      EgnineContext
+	engine      EngineContext
 	from        common.Name
 	gp          *common.GasPool
 	action      *types.Action
@@ -50,7 +50,7 @@ type StateTransition struct {
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EgnineContext) *StateTransition {
+func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EngineContext) *StateTransition {
 	return &StateTransition{
 		engine:      engine,
 		from:        action.Sender(),
@@ -65,7 +65,7 @@ func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, a
 }
 
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
-func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EgnineContext) ([]byte, uint64, bool, error, error) {
+func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EngineContext) ([]byte, uint64, bool, error, error) {
 	return NewStateTransition(accountDB, evm, action, gp, gasPrice, assetID, config, engine).TransitionDb()
 }
 
@@ -116,6 +116,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	if err != nil {
 		return nil, 0, true, err, vmerr
 	}
+	intrinsicGas += st.evm.CheckReceipt(st.action)
 	if err := st.useGas(intrinsicGas); err != nil {
 		return nil, 0, true, err, vmerr
 	}
@@ -189,12 +190,12 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 				ObjectType: params.AssetFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
 				dGas := vm.DistributeGas{
-					Value:  int64(params.ActionGas * assetFounderRatio / 100),
+					Value:  int64(evm.GetCurrentGasTable().ActionGas * assetFounderRatio / 100),
 					TypeID: params.AssetFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
 				dGas := vm.DistributeGas{
-					Value:  int64(params.ActionGas * assetFounderRatio / 100),
+					Value:  int64(evm.GetCurrentGasTable().ActionGas * assetFounderRatio / 100),
 					TypeID: params.AssetFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 				evm.FounderGasMap[key] = dGas

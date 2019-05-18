@@ -193,11 +193,24 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	pepcho := dpos.config.epoch(parent.Time.Uint64())
 	epcho := dpos.config.epoch(header.Time.Uint64())
 	if pepcho != epcho {
-		counter := func(from uint64, to uint64, index uint64) uint64 {
-			timestamp := chain.GetHeaderByNumber(to).Time.Uint64() - chain.GetHeaderByNumber(from).Time.Uint64()
-			m := timestamp / dpos.config.mepochInterval()
+		counter := func(from uint64, index uint64) uint64 {
+			if header.Number.Uint64() <= 1 {
+				return 0
+			}
+			if from == 0 {
+				from = 1
+			}
+			timestamp := header.Time.Uint64() - chain.GetHeaderByNumber(from).Time.Uint64()
+			m := (timestamp / dpos.config.mepochInterval()) * dpos.config.BlockFrequency
 			n := timestamp % dpos.config.mepochInterval()
-			return m + n
+			offset := n / (dpos.config.blockInterval() * dpos.config.BlockFrequency)
+			if index < offset {
+				m += dpos.config.BlockFrequency
+			} else if index == offset {
+				n = n % (dpos.config.blockInterval() * dpos.config.BlockFrequency)
+				m += n / dpos.config.blockInterval()
+			}
+			return m
 		}
 		log.Debug("UpdateElectedCandidates", "prev", pepcho, "curr", epcho, "number", parent.Number.Uint64(), "time", parent.Time.Uint64())
 		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64(), counter)
@@ -414,15 +427,15 @@ func (dpos *Dpos) GetDelegatedByTime(state *state.StateDB, candidate string, tim
 }
 
 // GetLatestEpcho get latest epcho
-func (dpos *Dpos) GetLatestEpcho(state *state.StateDB) (epcho uint64, err error) {
+func (dpos *Dpos) GetLatestEpoch(state *state.StateDB) (epoch uint64, err error) {
 	sys := NewSystem(state, dpos.config)
 	return sys.GetLastestEpcho()
 }
 
 // GetPrevEpcho get pre epcho
-func (dpos *Dpos) GetPrevEpcho(state *state.StateDB, epcho uint64) (uint64, error) {
+func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
 	sys := NewSystem(state, dpos.config)
-	gstate, err := sys.GetState(epcho)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return 0, err
 	}
@@ -440,25 +453,29 @@ func (dpos *Dpos) GetActivedCandidateSize(state *state.StateDB, epcho uint64) (u
 }
 
 // GetActivedCandidate get actived candidate info
-func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index uint64) (string, *big.Int, uint64, uint64, uint64, error) {
+func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index uint64) (string, *big.Int, *big.Int, uint64, uint64, uint64, error) {
 	sys := NewSystem(state, dpos.config)
 	gstate, err := sys.GetState(epcho)
 	if err != nil {
-		return "", big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 	if index >= uint64(len(gstate.ActivatedCandidateSchedule)) {
-		return "", big.NewInt(0), 0, 0, 0, fmt.Errorf("out of index")
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, fmt.Errorf("out of index")
 	}
 
 	candidate := gstate.ActivatedCandidateSchedule[index]
 	prevCandidateInfo, err := sys.GetCandidateInfoByTime(candidate, dpos.config.epochTimeStamp(gstate.PreEpcho))
 	if err != nil {
-		return "", big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
 	candidateInfo, err := sys.GetCandidateInfoByTime(candidate, dpos.config.epochTimeStamp(gstate.Epcho))
 	if err != nil {
-		return "", big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+	}
+
+	if candidateInfo == nil {
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
 	counter := candidateInfo.Counter
@@ -473,7 +490,7 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index 
 		rindex = gstate.OffCandidateSchedule[index-dpos.config.CandidateScheduleSize]
 	}
 
-	return candidate, new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), counter, actualCounter, rindex, err
+	return candidate, new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), candidateInfo.TotalQuantity, counter, actualCounter, rindex, err
 }
 
 // GetCandidateStake candidate delegate stake
@@ -487,6 +504,9 @@ func (dpos *Dpos) GetVoterStake(state *state.StateDB, epcho uint64, voter string
 	voterInfo, err := sys.GetVoter(epcho, voter, candidate)
 	if err != nil {
 		return big.NewInt(0), err
+	}
+	if voterInfo == nil {
+		return big.NewInt(0), nil
 	}
 	return new(big.Int).Mul(voterInfo.Quantity, sys.config.unitStake()), nil
 }

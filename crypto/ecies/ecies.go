@@ -256,16 +256,20 @@ func Encrypt(rand io.Reader, pub *PublicKey, m, s1, s2 []byte) (ct []byte, err e
 			return
 		}
 	}
+	// 1. R = r * G
 	R, err := GenerateKey(rand, pub.Curve, params)
 	if err != nil {
 		return
 	}
 
 	hash := params.Hash()
+	// 2. S = Px; (Px, Py) = r * Kb
+	//    z = S
 	z, err := R.GenerateShared(pub, params.KeyLen, params.KeyLen)
 	if err != nil {
 		return
 	}
+	// 3. Ke || Km = KDF(S, 32)
 	K, err := concatKDF(hash, z, s1, params.KeyLen+params.KeyLen)
 	if err != nil {
 		return
@@ -273,16 +277,18 @@ func Encrypt(rand io.Reader, pub *PublicKey, m, s1, s2 []byte) (ct []byte, err e
 	Ke := K[:params.KeyLen]
 	Km := K[params.KeyLen:]
 	hash.Write(Km)
-	Km = hash.Sum(nil)
+	Km = hash.Sum(nil) // part of KDF???
 	hash.Reset()
-
+	// 4. c = AES(Ke, iv, m); iv = rand
+	//    em = iv || c
 	em, err := symEncrypt(rand, params, Ke, m)
 	if err != nil || len(em) <= params.BlockSize {
 		return
 	}
-
+	// 5. d = MAC(Km, iv || c)
 	d := messageTag(params.Hash, Km, em, s2)
 
+	// 6. R || iv || c || d
 	Rb := elliptic.Marshal(pub.Curve, R.PublicKey.X, R.PublicKey.Y)
 	ct = make([]byte, len(Rb)+len(em)+len(d))
 	copy(ct, Rb)
@@ -338,12 +344,13 @@ func (prv *PrivateKey) Decrypt(c, s1, s2 []byte) (m []byte, err error) {
 		err = ErrInvalidCurve
 		return
 	}
-
+	// 1. S = Px; (Px, Py) = r * K(B) = k(B) * R
+	//    e = S
 	z, err := prv.GenerateShared(R, params.KeyLen, params.KeyLen)
 	if err != nil {
 		return
 	}
-
+	// 2. Ke || Km = KDF(S, 32)
 	K, err := concatKDF(hash, z, s1, params.KeyLen+params.KeyLen)
 	if err != nil {
 		return
@@ -354,13 +361,14 @@ func (prv *PrivateKey) Decrypt(c, s1, s2 []byte) (m []byte, err error) {
 	hash.Write(Km)
 	Km = hash.Sum(nil)
 	hash.Reset()
-
+	// 3. d = MAC(Km, iv || c)
+	//    iv || c == em == c[mStart:mEnd]
 	d := messageTag(params.Hash, Km, c[mStart:mEnd], s2)
 	if subtle.ConstantTimeCompare(c[mEnd:], d) != 1 {
 		err = ErrInvalidMessage
 		return
 	}
-
+	// 4. m = AES(Ke, iv || c)
 	m, err = symDecrypt(params, Ke, c[mStart:mEnd])
 	return
 }

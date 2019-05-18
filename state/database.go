@@ -24,10 +24,6 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-const (
-	kvCacheSize = 100000
-)
-
 var MaxTrieCacheGen = uint16(120)
 
 //Database cache db exported

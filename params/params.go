@@ -20,43 +20,17 @@ import "math/big"
 
 const (
 	// GenesisGasLimit Gas limit of the Genesis block.
-	GenesisGasLimit uint64 = 100000000
+	GenesisGasLimit uint64 = 30000000
 	// MinGasLimit Minimum the gas limit may ever be.
 	MinGasLimit uint64 = 5000
 	// GasLimitBoundDivisor The bound divisor of the gas limit, used in update calculations.
 	GasLimitBoundDivisor uint64 = 1024
 	// MaximumExtraDataSize Maximum size extra data may be after Genesis.
 	MaximumExtraDataSize uint64 = 32 + 65
-	// ActionGas Per action not creating a contract. NOTE: Not payable on data of calls between transactions.
-	ActionGas uint64 = 21000
-	// ActionGasContractCreation Per action that creates a contract. NOTE: Not payable on data of calls between transactions.
-	ActionGasContractCreation uint64 = 53000
-	// TxDataNonZeroGas Per byte of data attached to a transaction that is not equal to zero. NOTE:Not payable on data of calls between transactions.
-	TxDataNonZeroGas uint64 = 68
-	// TxDataZeroGas Per byte of data attached to a transaction that equals zero. NOTE: Not payable on data of calls between transactions.
-	TxDataZeroGas uint64 = 4
 
-	//VM const
-
-	CallValueTransferGas uint64 = 9000  // Paid for CALL when the value transfer is non-zero.
-	QuadCoeffDiv         uint64 = 512   // Divisor for the quadratic particle of the memory cost equation.
-	SstoreSetGas         uint64 = 20000 // Once per SLOAD operation.
-	LogDataGas           uint64 = 8     // Per byte in a LOG* operation's data.
-	CallStipend          uint64 = 2300  // Free gas given at beginning of call.
-
-	Sha3Gas         uint64 = 30    // Once per SHA3 operation.
-	Sha3WordGas     uint64 = 6     // Once per word of the SHA3 operation's data.
-	SstoreResetGas  uint64 = 5000  // Once per SSTORE operation if the zeroness changes from zero.
-	JumpdestGas     uint64 = 1     // Refunded gas, once per SSTORE operation if the zeroness changes to zero.
 	EpochDuration   uint64 = 30000 // Duration between proof-of-work epochs.
-	CreateDataGas   uint64 = 200   //
 	CallCreateDepth uint64 = 1024  // Maximum depth of call/create stack.
-	LogGas          uint64 = 375   // Per LOG* operation.
-	CopyGas         uint64 = 3     //
 	StackLimit      uint64 = 1024  // Maximum size of VM stack allowed.
-	LogTopicGas     uint64 = 375   // Multiplied by the * of the LOG*, per LOG transaction. e.g. LOG0 incurs 0 * c_txLogTopicGas, LOG4 incurs 4 * c_txLogTopicGas.
-	CreateGas       uint64 = 32000 // Once per CREATE operation & contract-creation transaction.
-	MemoryGas       uint64 = 3     // Times the address of the (highest referenced byte in memory + 1). NOTE: referencing happens on read, write and in instructions such as RETURN and CALL.
 
 	MaxCodeSize uint64 = 24576     // Maximum bytecode to permit for a contract
 	MaxTxSize   uint64 = 32 * 1024 // Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
