@@ -18,6 +18,7 @@ package vm
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -1257,6 +1258,8 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	//
 	var ret = make([]byte, retSize.Int64()*32)
 	var datalen int
+	var ecdsapubkey *ecdsa.PublicKey
+	var ecdsaprikey *ecdsa.PrivateKey
 	var err error
 
 	//consume gas per byte
@@ -1271,7 +1274,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 	if i == 0 {
 		//Encrypt
-		ecdsapubkey, err := crypto.UnmarshalPubkey(key)
+		ecdsapubkey, err = crypto.UnmarshalPubkey(key)
 		if err == nil {
 			eciespubkey := ecies.ImportECDSAPublic(ecdsapubkey)
 			ret, err = ecies.Encrypt(rand.Reader, eciespubkey, data, nil, nil)
@@ -1285,7 +1288,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		}
 
 	} else if i == 1 {
-		ecdsaprikey, err := crypto.ToECDSA(key)
+		ecdsaprikey, err = crypto.ToECDSA(key)
 		//
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)

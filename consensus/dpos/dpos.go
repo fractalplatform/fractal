@@ -474,6 +474,10 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index 
 		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
+	if candidateInfo == nil {
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+	}
+
 	counter := candidateInfo.Counter
 	actualCounter := candidateInfo.ActualCounter
 	if prevCandidateInfo != nil {
