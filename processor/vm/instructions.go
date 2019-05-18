@@ -904,7 +904,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
 	if value.Sign() != 0 {
-		gas += params.CallStipend
+		gas += evm.interpreter.gasTable.CallStipend
 	}
 
 	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, evm.AssetID, gas, value, args, nil)
@@ -955,7 +955,7 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
 	if value.Sign() != 0 {
-		gas += params.CallStipend
+		gas += evm.interpreter.gasTable.CallStipend
 	}
 	// todo
 	action := types.NewAction(types.CallContract, contract.Name(), toName, 0, evm.AssetID, gas, value, args, nil)
@@ -1527,7 +1527,7 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(action.AssetID())
 		assetName = common.Name(assetInfo.GetAssetName())
 	}
-	evm.distributeAssetGas(int64(params.CallValueTransferGas-params.CallStipend), assetName, contract.Name())
+	evm.distributeAssetGas(int64(evm.interpreter.gasTable.CallValueTransferGas-evm.interpreter.gasTable.CallStipend), assetName, contract.Name())
 
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())

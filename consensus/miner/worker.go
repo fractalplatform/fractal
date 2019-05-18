@@ -382,8 +382,8 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			return fmt.Errorf("mined block timestamp %v missing --- signal", work.currentHeader.Time.Int64())
 		default:
 		}
-		if work.currentGasPool.Gas() < params.ActionGas {
-			log.Debug("Not enough gas for further transactions", "have", work.currentGasPool, "want", params.ActionGas)
+		if work.currentGasPool.Gas() < params.GasTableInstanse.ActionGas {
+			log.Debug("Not enough gas for further transactions", "have", work.currentGasPool, "want", params.GasTableInstanse.ActionGas)
 			break
 		}
 

@@ -151,15 +151,12 @@ var emptyCodeHash = crypto.Keccak256Hash(nil)
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
 func run(evm *EVM, contract *Contract, input []byte) ([]byte, error) {
-	//if contract.CodeAddr != nil {
-	//	precompiles := PrecompiledContractsHomestead
-	//	if evm.ChainConfig().IsByzantium(evm.BlockNumber) {
-	//		precompiles = PrecompiledContractsByzantium
-	//	}
-	//	if p := precompiles[*contract.CodeAddr]; p != nil {
-	//		return RunPrecompiledContract(p, input, contract)
-	//	}
-	//}
+	// if contract.CodeAddr != nil {
+	// 	precompiles = PrecompiledContractsByzantium
+	// }
+	// if p := precompiles[*contract.CodeAddr]; p != nil {
+	// 	return RunPrecompiledContract(p, input, contract)
+	// }
 	return evm.interpreter.Run(contract, input)
 }
 
@@ -169,7 +166,12 @@ func (evm *EVM) Cancel() {
 	atomic.StoreInt32(&evm.abort, 1)
 }
 
+func (evm *EVM) GetCurrentGasTable() params.GasTable {
+	return evm.interpreter.GetGasTable()
+}
+
 func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
+	gasTable := evm.GetCurrentGasTable()
 	toAcct, err := evm.AccountDB.GetAccountByName(action.Recipient())
 	if err != nil {
 		return 0
@@ -182,7 +184,7 @@ func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 	}
 	_, err = toAcct.GetBalanceByID(action.AssetID())
 	if err == accountmanager.ErrAccountAssetNotExist {
-		return params.CallValueTransferGas
+		return gasTable.CallValueTransferGas
 	}
 	return 0
 }
@@ -324,7 +326,8 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 
 	evm.distributeContractGas(runGas, contractName, caller.Name())
 
-	callValueGas := int64(params.CallValueTransferGas - params.CallStipend)
+	gasTable := evm.GetCurrentGasTable()
+	callValueGas := int64(gasTable.CallValueTransferGas - gasTable.CallStipend)
 	if action.Value().Sign() != 0 && callValueGas > 0 {
 		evm.distributeAssetGas(callValueGas, assetName, caller.Name())
 	}
@@ -594,7 +597,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// be stored due to not enough gas set an error and let it be handled
 	// by the error checking condition below.
 	if err == nil && !maxCodeSizeExceeded {
-		createDataGas := uint64(len(ret)) * params.CreateDataGas
+		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
 			acct, err := evm.AccountDB.GetAccountByName(contractName)
 			if err != nil {

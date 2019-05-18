@@ -640,7 +640,7 @@ func NewFrontierInstructionSet() [256]operation {
 		},
 		JUMPDEST: {
 			execute:       opJumpdest,
-			gasCost:       constGasFunc(params.JumpdestGas),
+			gasCost:       gasJumpDest,
 			validateStack: makeStackFunc(0, 0),
 			valid:         true,
 		},

@@ -190,12 +190,12 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 				ObjectType: params.AssetFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
 				dGas := vm.DistributeGas{
-					Value:  int64(params.ActionGas * assetFounderRatio / 100),
+					Value:  int64(evm.GetCurrentGasTable().ActionGas * assetFounderRatio / 100),
 					TypeID: params.AssetFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
 				dGas := vm.DistributeGas{
-					Value:  int64(params.ActionGas * assetFounderRatio / 100),
+					Value:  int64(evm.GetCurrentGasTable().ActionGas * assetFounderRatio / 100),
 					TypeID: params.AssetFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 				evm.FounderGasMap[key] = dGas
