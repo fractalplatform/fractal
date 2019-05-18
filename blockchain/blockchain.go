@@ -639,10 +639,10 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				state, timestamp := bc.triegc.Pop()
 				log.Debug("Memory trie", "number", state.(WriteStateToDB).Number, "sizegc", sizegc, "timestamp", -timestamp)
 
-				if bc.statePruningClean == false {
+				if !bc.statePruningClean {
 					bc.triegc.Push(state, timestamp)
 					for !bc.triegc.Empty() {
-						state, timestamp = bc.triegc.Pop()
+						state, _ = bc.triegc.Pop()
 						log.Debug("Tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", state.(WriteStateToDB).Number)
 						if err := triedb.Commit(state.(WriteStateToDB).Root, true); err != nil {
 							return false, err

@@ -30,12 +30,11 @@ import (
 
 type Storage map[common.Hash]common.Hash
 
-func (self Storage) Copy() Storage {
+func (s Storage) Copy() Storage {
 	cpy := make(Storage)
-	for key, value := range self {
+	for key, value := range s {
 		cpy[key] = value
 	}
-
 	return cpy
 }
 

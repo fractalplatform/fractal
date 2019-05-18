@@ -140,12 +140,12 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 
 	number := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
 	if number == nil {
-		return newcfg, dposConfig(newcfg), common.Hash{}, fmt.Errorf("missing block number for head header hash")
+		return newcfg, dposConfig(newcfg), common.Hash{}, errors.New("missing block number for head header hash")
 	}
 
 	storedcfg := rawdb.ReadChainConfig(db, stored)
 	if storedcfg == nil {
-		return newcfg, dposConfig(newcfg), common.Hash{}, fmt.Errorf("Found genesis block without chain config")
+		return newcfg, dposConfig(newcfg), common.Hash{}, errors.New("Found genesis block without chain config")
 	}
 	am.SetAccountNameConfig(&am.Config{
 		AccountNameLevel:     storedcfg.AccountNameCfg.Level,

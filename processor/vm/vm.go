@@ -537,7 +537,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 
 	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
 		return nil, 0, err
-	} else if b == true {
+	} else if b {
 		return nil, 0, ErrContractCodeCollision
 	}
 

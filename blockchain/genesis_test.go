@@ -124,7 +124,7 @@ func TestSetupGenesis(t *testing.T) {
 
 		bts, _ := json.Marshal(config)
 		wbts, _ := json.Marshal(test.wantConfig)
-		if bytes.Compare(bts, wbts) != 0 {
+		if !bytes.Equal(bts, wbts) {
 			t.Errorf("%s:\n 2 returned %v\nwant     %v", test.name, config, test.wantConfig)
 		}
 

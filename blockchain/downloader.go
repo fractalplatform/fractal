@@ -642,7 +642,6 @@ func (task *downloadTask) Do() {
 		}
 	}
 	task.blocks = blocks
-	return
 }
 
 type stack struct {

@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	assetRegExp       = regexp.MustCompile("^([a-z][a-z0-9]{1,15})(?:\\.([a-z0-9]{1,8})){0,1}$")
+	assetRegExp       = regexp.MustCompile(`^([a-z][a-z0-9]{1,15})(?:\\.([a-z0-9]{1,8})){0,1}$`)
 	assetManagerName  = "assetAccount"
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
@@ -163,16 +163,13 @@ func (a *Asset) getAssetCount() (uint64, error) {
 func (a *Asset) InitAssetCount() {
 	_, err := a.getAssetCount()
 	if err == ErrAssetCountNotExist {
-		var assetID uint64
-		assetID = 0
-		//store assetCount
+		var assetID uint64 //store assetCount
 		b, err := rlp.EncodeToBytes(&assetID)
 		if err != nil {
 			panic(err)
 		}
 		a.sdb.Put(assetManagerName, assetCountPrefix, b)
 	}
-	return
 }
 
 //GetAllAssetObject get all asset
@@ -280,7 +277,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 
 //IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
-	assetId, err := a.GetAssetIdByName(assetName)
+	_, err := a.GetAssetIdByName(assetName)
 	if err != nil && err != ErrAssetNotExist {
 		return 0, err
 	}
@@ -293,11 +290,7 @@ func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amoun
 	if err != nil {
 		return 0, err
 	}
-	assetId, err = a.addNewAssetObject(ao)
-	if err != nil {
-		return 0, err
-	}
-	return assetId, nil
+	return a.addNewAssetObject(ao)
 }
 
 //DestroyAsset destroy asset
@@ -353,16 +346,14 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 	}
 
 	//check AddIssue > UpperLimit
-	var AddIssue *big.Int
-	AddIssue = new(big.Int).Add(asset.GetAssetAddIssue(), amount)
+	AddIssue := new(big.Int).Add(asset.GetAssetAddIssue(), amount)
 	if asset.GetUpperLimit().Cmp(big.NewInt(0)) > 0 && AddIssue.Cmp(asset.GetUpperLimit()) > 0 {
 		return ErrUpperLimit
 	}
 	asset.SetAssetAddIssue(AddIssue)
 
 	//check Amount > UpperLimit
-	var total *big.Int
-	total = new(big.Int).Add(asset.GetAssetAmount(), amount)
+	total := new(big.Int).Add(asset.GetAssetAmount(), amount)
 	if asset.GetUpperLimit().Cmp(big.NewInt(0)) > 0 && total.Cmp(asset.GetUpperLimit()) > 0 {
 		return ErrUpperLimit
 	}

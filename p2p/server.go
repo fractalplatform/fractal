@@ -713,9 +713,7 @@ running:
 			// This channel is used by RemoveTrustedPeer to remove an enode
 			// from the trusted node set.
 			srv.log.Trace("Removing trusted node", "node", n)
-			if _, ok := trusted[n.ID()]; ok {
-				delete(trusted, n.ID())
-			}
+			delete(trusted, n.ID())
 			// Unmark any already-connected peer as trusted
 			if p, ok := peers[n.ID()]; ok {
 				p.rw.set(trustedConn, false)
@@ -754,9 +752,7 @@ running:
 				p.Disconnect(DiscBadNode)
 			}
 		case n := <-srv.removeBad:
-			if _, ok := badNodes[n.ID()]; ok {
-				delete(badNodes, n.ID())
-			}
+			delete(badNodes, n.ID())
 			if p, ok := peers[n.ID()]; ok {
 				p.rw.set(badNodeConn, false)
 			}

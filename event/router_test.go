@@ -73,7 +73,7 @@ func BenchmarkSubscribe(t *testing.B) {
 		var channel1 chan *Event
 		var start = time.Now()
 		sub := Subscribe(station1, channel1, P2PRouterTestString, "")
-		duration := time.Now().Sub(start)
+		duration := time.Since(start)
 		StationUnregister(station1)
 		sub.Unsubscribe()
 		if duration > maxTime {
@@ -83,7 +83,7 @@ func BenchmarkSubscribe(t *testing.B) {
 			minTime = duration
 		}
 		totalTime += duration.Nanoseconds()
-		if time.Now().Sub(testTime) > 15*time.Second {
+		if time.Since(testTime) > 15*time.Second {
 			break
 		}
 	}
