@@ -30,7 +30,7 @@
 			"activatedMinQuantity": 100,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
-			"candidateScheduleSize": 15,
+			"candidateScheduleSize": 21,
 			"backupScheduleSize": 0,
 			"epchoInterval": 21600000,
 			"freezeEpchoSize": 3,
