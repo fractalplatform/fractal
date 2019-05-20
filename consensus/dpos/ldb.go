@@ -399,9 +399,12 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 func (db *LDB) GetCandidateInfoByTime(candidate string, timestamp uint64) (*CandidateInfo, error) {
 	key := strings.Join([]string{CandidateKeyPrefix, candidate}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
-	if val == nil || err != nil {
+	if err != nil || val == nil {
 		return nil, err
 	}
+	// if len(val) == 0 {
+	// 	return nil, nil
+	// }
 	candidateInfo := &CandidateInfo{}
 	if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
 		return nil, err

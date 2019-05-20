@@ -18,6 +18,7 @@ package vm
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -1255,6 +1256,8 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	//
 	var ret = make([]byte, retSize.Int64()*32)
 	var datalen int
+	var ecdsapubkey *ecdsa.PublicKey
+	var ecdsaprikey *ecdsa.PrivateKey
 	var err error
 
 	//consume gas per byte
@@ -1268,7 +1271,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 	if i == 0 {
 		//Encrypt
-		ecdsapubkey, err := crypto.UnmarshalPubkey(key)
+		ecdsapubkey, err = crypto.UnmarshalPubkey(key)
 		if err == nil {
 			eciespubkey := ecies.ImportECDSAPublic(ecdsapubkey)
 			ret, err = ecies.Encrypt(rand.Reader, eciespubkey, data, nil, nil)
@@ -1280,7 +1283,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 			}
 		}
 	} else if i == 1 {
-		ecdsaprikey, err := crypto.ToECDSA(key)
+		ecdsaprikey, err = crypto.ToECDSA(key)
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)
@@ -1493,8 +1496,8 @@ func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name, objec
 			return errEnc
 		}
 
-		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload, nil)
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "withdrawfee", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
+		action := types.NewAction(types.Transfer, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload, nil)
+		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transfer", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 	return err

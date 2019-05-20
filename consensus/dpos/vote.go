@@ -501,18 +501,20 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 		index := n - 1
 		candidate := ppstate.ActivatedCandidateSchedule[index]
 		if index >= sys.config.CandidateScheduleSize {
-			h := pstate.OffCandidateNumber[index-sys.config.CandidateScheduleSize]
-			i := pstate.OffCandidateSchedule[index-sys.config.CandidateScheduleSize]
-			cnt := counter(h-1, i)
-			if _, ok := roldcandidates[i]; !ok {
-				roldcandidates[i] = []string{}
-			} else {
-				for _, c := range roldcandidates[index] {
-					cnt -= oldcandidates[c]
+			if index-sys.config.CandidateScheduleSize < uint64(len(pstate.OffCandidateNumber)) {
+				h := pstate.OffCandidateNumber[index-sys.config.CandidateScheduleSize]
+				i := pstate.OffCandidateSchedule[index-sys.config.CandidateScheduleSize]
+				cnt := counter(h-1, i)
+				if _, ok := roldcandidates[i]; !ok {
+					roldcandidates[i] = []string{}
+				} else {
+					for _, c := range roldcandidates[index] {
+						cnt -= oldcandidates[c]
+					}
 				}
+				roldcandidates[i] = append(roldcandidates[i], candidate)
+				oldcandidates[candidate] += cnt
 			}
-			roldcandidates[i] = append(roldcandidates[i], candidate)
-			oldcandidates[candidate] += cnt
 		} else {
 			cnt := counter(ppstate.Number, index)
 			if _, ok := roldcandidates[index]; ok {
@@ -545,7 +547,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 			candidateInfo.Counter += cnt
 		}
 		if !candidateInfo.invalid() && (!pstate.Dpos || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0) {
-			if uint64(len(activatedCandidateSchedule)) <= n {
+			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
 				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
 			}

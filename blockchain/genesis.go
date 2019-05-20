@@ -199,7 +199,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			continue
 		}
 		if _, err := enode.ParseV4(node); err != nil {
-			panic(fmt.Sprintf("genesis bootnodes err: %v in %v", err, node))
+			log.Warn("genesis bootnodes prase failed", "err", err, "node", node)
 		}
 	}
 
