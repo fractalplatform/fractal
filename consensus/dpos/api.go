@@ -197,6 +197,11 @@ func (api *API) ValidCandidatesByNumber(number uint64) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	return api.ValidCandidatesByEpcho(epcho)
+}
+
+// ValidCandidatesByEpcho valid candidates
+func (api *API) ValidCandidatesByEpcho(epcho uint64) (interface{}, error) {
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
@@ -288,4 +293,40 @@ func (dpos *Dpos) APIs(chain consensus.IChainReader) []rpc.API {
 			Public: true,
 		},
 	}
+}
+
+// GetActivedCandidateSize get actived candidate size
+func (api *API) GetActivedCandidateSize(epcho uint64) (uint64, error) {
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
+	if err != nil {
+		return 0, err
+	}
+	return api.dpos.GetActivedCandidateSize(state, epcho)
+}
+
+// GetActivedCandidate get actived candidate info
+func (api *API) GetActivedCandidate(epcho uint64, index uint64) (string, *big.Int, *big.Int, uint64, uint64, uint64, error) {
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
+	if err != nil {
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+	}
+	return api.dpos.GetActivedCandidate(state, epcho, index)
+}
+
+// GetCandidateStake candidate delegate stake
+func (api *API) GetCandidateStake(epcho uint64, candidate string) (*big.Int, error) {
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	return api.dpos.GetDelegatedByTime(state, candidate, api.dpos.config.epochTimeStamp(epcho))
+}
+
+// GetVoterStake voter stake
+func (api *API) GetVoterStake(epcho uint64, voter string, candidate string) (*big.Int, error) {
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	return api.dpos.GetVoterStake(state, epcho, voter, candidate)
 }
