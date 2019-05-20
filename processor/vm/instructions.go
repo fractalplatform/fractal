@@ -18,6 +18,7 @@ package vm
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -1068,31 +1069,31 @@ func opGetCandidateNum(pc *uint64, evm *EVM, contract *Contract, memory *Memory,
 
 // opGetCandidate
 func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	nameOffset, nameSize, index, epochID := stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	index, epochID := stack.pop(), stack.pop()
 	id := epochID.Uint64()
 	i := index.Uint64()
 	//
-	name, stake, counter, actualCounter, replace, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
-	nameBytes := []byte(name)
-	datalen := len(nameBytes)
-	if uint64(datalen) > nameSize.Uint64()*32 {
-		err = errors.New("out of space")
+	name, stake, totalVote, counter, actualCounter, replace, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
+	//
+	if err == nil {
+		id, err := evm.AccountDB.GetAccountIDByName(common.Name(name))
+		if err == nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
+			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
+			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
+			stack.push(evm.interpreter.intPool.get().SetUint64(totalVote.Uint64()))
+			stack.push(evm.interpreter.intPool.get().Set(stake))
+			stack.push(evm.interpreter.intPool.get().SetUint64(id))
+			return nil, nil
+		}
 	}
-	if err != nil {
-		stack.push(evm.interpreter.intPool.getZero())
-		stack.push(evm.interpreter.intPool.getZero())
-		stack.push(evm.interpreter.intPool.getZero())
-		stack.push(evm.interpreter.intPool.getZero())
-		stack.push(evm.interpreter.intPool.getZero())
-		//don't copy
-	} else {
-		stack.push(evm.interpreter.intPool.get().SetUint64(replace))
-		stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
-		stack.push(evm.interpreter.intPool.get().SetUint64(counter))
-		stack.push(evm.interpreter.intPool.get().Set(stake))
-		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(datalen)))
-		memory.Set(nameOffset.Uint64(), uint64(datalen), nameBytes)
-	}
+
+	stack.push(evm.interpreter.intPool.getZero())
+	stack.push(evm.interpreter.intPool.getZero())
+	stack.push(evm.interpreter.intPool.getZero())
+	stack.push(evm.interpreter.intPool.getZero())
+	stack.push(evm.interpreter.intPool.getZero())
+	stack.push(evm.interpreter.intPool.getZero())
 	return nil, nil
 }
 
@@ -1257,6 +1258,8 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	//
 	var ret = make([]byte, retSize.Int64()*32)
 	var datalen int
+	var ecdsapubkey *ecdsa.PublicKey
+	var ecdsaprikey *ecdsa.PrivateKey
 	var err error
 
 	//consume gas per byte
@@ -1271,7 +1274,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 	if i == 0 {
 		//Encrypt
-		ecdsapubkey, err := crypto.UnmarshalPubkey(key)
+		ecdsapubkey, err = crypto.UnmarshalPubkey(key)
 		if err == nil {
 			eciespubkey := ecies.ImportECDSAPublic(ecdsapubkey)
 			ret, err = ecies.Encrypt(rand.Reader, eciespubkey, data, nil, nil)
@@ -1285,7 +1288,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		}
 
 	} else if i == 1 {
-		ecdsaprikey, err := crypto.ToECDSA(key)
+		ecdsaprikey, err = crypto.ToECDSA(key)
 		//
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)

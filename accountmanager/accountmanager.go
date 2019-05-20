@@ -1164,6 +1164,14 @@ func (am *AccountManager) IssueAsset(asset IssueAsset, number uint64) (uint64, e
 		asset.Founder = asset.Owner
 	}
 
+	// check asset contract
+	if len(asset.Contract) > 0 {
+		if !asset.Contract.IsValid(acctRegExp) {
+			return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
+		}
+	}
+
+	// check asset name is not account name
 	name := common.StrToName(asset.AssetName)
 	accountID, _ := am.GetAccountIDByName(name)
 	if accountID > 0 {

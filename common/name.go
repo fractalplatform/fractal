@@ -22,8 +22,20 @@ import (
 	"strings"
 )
 
+const maxNameLength int = 31
+const isNameLengthLimit bool = true
+
 // Name represents the account name
 type Name string
+
+func CheckNameLength(s string) bool {
+	if isNameLengthLimit {
+		if len(s) > maxNameLength {
+			return false
+		}
+	}
+	return true
+}
 
 // StrToName  returns Name with string of s.
 func StrToName(s string) Name {
@@ -62,11 +74,18 @@ func (n *Name) SetString(s string) {
 
 // IsValid verifies whether a string can represent a valid name or not.
 func (n Name) IsValid(reg *regexp.Regexp) bool {
+	if !CheckNameLength(n.String()) {
+		return false
+	}
 	return reg.MatchString(n.String())
 }
 
 // IsChildren name children
 func (n Name) IsChildren(name Name, reg *regexp.Regexp) bool {
+	if !CheckNameLength(name.String()) {
+		return false
+	}
+
 	if strings.Compare(n.String(), name.String()) == 0 {
 		return false
 	}

@@ -199,7 +199,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			continue
 		}
 		if _, err := enode.ParseV4(node); err != nil {
-			panic(fmt.Sprintf("genesis bootnodes err: %v in %v", err, node))
+			log.Warn("genesis bootnodes prase failed", "err", err, "node", node)
 		}
 	}
 
@@ -542,7 +542,7 @@ func DefaultGenesisCandidates() []*GenesisCandidate {
 // DefaultGenesisAssets returns the ft net genesis assets.
 func DefaultGenesisAssets() []*GenesisAsset {
 	supply := new(big.Int)
-	supply.SetString("100000000000000000000000000000", 10)
+	supply.SetString("10000000000000000000000000000", 10)
 	return []*GenesisAsset{
 		&GenesisAsset{
 			Name:       params.DefaultChainconfig.SysToken,
