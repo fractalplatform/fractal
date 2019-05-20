@@ -490,7 +490,7 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index 
 		rindex = gstate.OffCandidateSchedule[index-dpos.config.CandidateScheduleSize]
 	}
 
-	return candidate, new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), candidateInfo.TotalQuantity, counter, actualCounter, rindex, err
+	return candidate, new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), new(big.Int).Mul(candidateInfo.TotalQuantity, sys.config.unitStake()), counter, actualCounter, rindex, err
 }
 
 // GetCandidateStake candidate delegate stake

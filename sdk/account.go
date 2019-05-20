@@ -18,7 +18,6 @@ package sdk
 
 import (
 	"crypto/ecdsa"
-	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -82,7 +81,6 @@ func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas
 	}
 	payload, _ := rlp.EncodeToBytes(newacct)
 	action := types.NewAction(types.CreateAccount, acc.name, to, nonce, id, gas, value, payload, nil)
-	fmt.Println(action.Type(), "----------------------")
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
