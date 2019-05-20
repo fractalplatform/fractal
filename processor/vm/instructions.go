@@ -1078,12 +1078,12 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	if err == nil {
 		id, err := evm.AccountDB.GetAccountIDByName(common.Name(name))
 		if err == nil {
-			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
-			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
-			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
-			stack.push(evm.interpreter.intPool.get().SetUint64(totalVote.Uint64()))
-			stack.push(evm.interpreter.intPool.get().Set(stake))
 			stack.push(evm.interpreter.intPool.get().SetUint64(id))
+			stack.push(evm.interpreter.intPool.get().Set(stake))
+			stack.push(evm.interpreter.intPool.get().SetUint64(totalVote.Uint64()))
+			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
+			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
+			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
 			return nil, nil
 		}
 	}

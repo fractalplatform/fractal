@@ -305,12 +305,23 @@ func (api *API) GetActivedCandidateSize(epcho uint64) (uint64, error) {
 }
 
 // GetActivedCandidate get actived candidate info
-func (api *API) GetActivedCandidate(epcho uint64, index uint64) (string, *big.Int, *big.Int, uint64, uint64, uint64, error) {
+func (api *API) GetActivedCandidate(epcho uint64, index uint64) (interface{}, error) {
 	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
 	if err != nil {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+		return nil, err
 	}
-	return api.dpos.GetActivedCandidate(state, epcho, index)
+	candidate, delegated, voted, scounter, acounter, rindex, err := api.dpos.GetActivedCandidate(state, epcho, index)
+	if err != nil {
+		return nil, err
+	}
+	ret := map[string]interface{}{}
+	ret["candidate"] = candidate
+	ret["delegatedStake"] = delegated
+	ret["votedStake"] = voted
+	ret["shouldCount"] = scounter
+	ret["actualCount"] = acounter
+	ret["replaceIndex"] = rindex
+	return ret, nil
 }
 
 // GetCandidateStake candidate delegate stake
