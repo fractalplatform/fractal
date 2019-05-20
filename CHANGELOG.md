@@ -1,4 +1,9 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.14] - 2019-05-20
+### Fixed
+- [GENESIS] fix genesis bootnodes prase failed not start node
+
+
 ## [0.0.13] - 2019-05-18
 ### Add
 - [GPO] add add gas price oracle unit test 
@@ -91,6 +96,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.14]: https://github.com/fractalplatform/fractal/compare/v0.0.13...v0.0.14
 [0.0.13]: https://github.com/fractalplatform/fractal/compare/v0.0.12...v0.0.13
 [0.0.12]: https://github.com/fractalplatform/fractal/compare/v0.0.11...v0.0.12
 [0.0.11]: https://github.com/fractalplatform/fractal/compare/v0.0.10...v0.0.11

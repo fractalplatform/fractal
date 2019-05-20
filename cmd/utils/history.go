@@ -41,6 +41,10 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.14 - 2019-05-20",
+		`### Fixed
+- [GENESIS] fix genesis bootnodes prase failed not start node
+`,
 		"0.0.13 - 2019-05-18",
 		`### Add
 - [GPO] add add gas price oracle unit test 
