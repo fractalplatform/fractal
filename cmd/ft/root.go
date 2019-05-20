@@ -77,7 +77,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		if err := registerService(node); err != nil {
-			log.Error("ft start node failed.", "err", err)
+			log.Error("ft register service failed.", "err", err)
 			return
 		}
 
