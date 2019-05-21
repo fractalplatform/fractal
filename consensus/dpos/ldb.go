@@ -19,7 +19,7 @@ package dpos
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
+	"fmt"
 	"math/big"
 	"sort"
 	"strings"
@@ -74,6 +74,31 @@ func NewLDB(db IDatabase) (*LDB, error) {
 		IDatabase: db,
 	}
 	return ldb, nil
+}
+
+// SetCandidateByEpcho update candidate info
+func (db *LDB) SetCandidateByEpcho(epcho uint64, candidate *CandidateInfo) error {
+	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epcho, candidate.Name)}, Separator)
+	if val, err := rlp.EncodeToBytes(candidate); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetCandidateByEpcho update candidate info
+func (db *LDB) GetCandidateByEpcho(epcho uint64, candidate string) (*CandidateInfo, error) {
+	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epcho, candidate)}, Separator)
+	candidateInfo := &CandidateInfo{}
+	if val, err := db.Get(key); err != nil {
+		return nil, err
+	} else if val == nil {
+		return nil, nil
+	} else if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
+		return nil, err
+	}
+	return candidateInfo, nil
 }
 
 // SetCandidate update candidate info
@@ -388,7 +413,7 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, errors.New("GlobalState not exist")
+		return nil, nil
 	} else if err := rlp.DecodeBytes(val, gstate); err != nil {
 		return nil, err
 	}

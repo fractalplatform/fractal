@@ -21,7 +21,6 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -552,6 +551,11 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
 			}
 		}
+		if pstate.Epcho != pstate.PreEpcho {
+			if err := sys.SetCandidateByEpcho(pepcho, candidateInfo); err != nil {
+				return err
+			}
+		}
 		candidateInfo.TotalQuantity = candidateInfo.Quantity
 		if err := sys.SetCandidate(candidateInfo); err != nil {
 			return err
@@ -631,7 +635,6 @@ func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, e
 			timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
 		}
 		bquantity, err := sys.GetBalanceByTime(voter, timestamp)
-		log.Debug("GetAvailableQuantity Sanpshot", "epcho", gstate.Epcho, "time", timestamp, "name", voter, "q", bquantity, "error", err)
 		if err != nil {
 			return nil, err
 		}
