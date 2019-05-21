@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	acctRegExp          = regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$`)
+	acctRegExp          = regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
 	accountNameIDPrefix = "accountNameId"

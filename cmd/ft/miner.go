@@ -90,7 +90,7 @@ var setCoinbaseCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := common.Name(args[0])
-		if !name.IsValid(regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$`)) {
+		if !name.IsValid(regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)) {
 			jww.ERROR.Println("valid name: " + name)
 			return
 		}

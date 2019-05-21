@@ -39,7 +39,7 @@ func TestValidateName(t *testing.T) {
 		{"longnamelongnamelongnamelongname", false},
 	}
 
-	reg := regexp.MustCompile(`^[a-z][a-z0-9]{6,16}(\\.[a-z][a-z0-9]{0,16}){0,2}$`)
+	reg := regexp.MustCompile(`^[a-z][a-z0-9]{6,16}(\.[a-z][a-z0-9]{0,16}){0,2}$`)
 	for _, test := range tests {
 		if result := StrToName(test.str).IsValid(reg); result != test.exp {
 			t.Errorf("IsValidAccountName(%s) == %v; expected %v, len:%v",
@@ -90,7 +90,7 @@ func TestNameUnmarshalJSON(t *testing.T) {
 }
 
 func TestIsChildren(t *testing.T) {
-	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$`)
+	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 
 	type fields struct {
 		from Name
@@ -116,7 +116,7 @@ func TestIsChildren(t *testing.T) {
 		// {"longnamelongnamelongnamelongname", false},
 	}
 
-	//eg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\\.[a-z][a-z0-9]{0,16}){0,2}$")
+	//eg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\.[a-z][a-z0-9]{0,16}){0,2}$")
 	for _, tt := range tests {
 
 		if result := tt.fields.from.IsChildren(tt.fields.acct, tt.fields.reg); result != tt.exp {

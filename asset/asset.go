@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	assetRegExp       = regexp.MustCompile(`^([a-z][a-z0-9]{1,15})(?:\\.([a-z0-9]{1,8})){0,1}$`)
+	assetRegExp       = regexp.MustCompile(`^([a-z][a-z0-9]{1,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 	assetManagerName  = "assetAccount"
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
