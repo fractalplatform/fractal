@@ -41,6 +41,17 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.15 - 2019-05-21",
+		`### Changed
+- [VM] change withdraw type to transfer
+### Add
+- [P2P] add flow control,some quit channel
+- [P2p] periodic remove the worst peer if peer connections is full, but default is disabled.
+- [RPC] add dpos rpc api for info by epcho
+### Fixed
+- [DPOS] fix bug when dpos started
+- [ALL] fixs some bugs
+`,
 		"0.0.14 - 2019-05-20",
 		`### Fixed
 - [GENESIS] fix genesis bootnodes prase failed not start node
