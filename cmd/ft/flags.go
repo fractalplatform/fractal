@@ -499,7 +499,7 @@ func addFlags(flags *flag.FlagSet) {
 		&ftCfgInstance.NodeCfg.P2PConfig.PeerPeriod,
 		"p2p_peerperiod",
 		ftCfgInstance.NodeCfg.P2PConfig.PeerPeriod,
-		"Disconnect the worst peer every 'p2p_peerperiod' ms",
+		"Disconnect the worst peer every 'p2p_peerperiod' ms(if peer count equal p2p_maxpeers), 0 means disable.",
 	)
 	viper.BindPFlag("ftservice.p2p.dialratio", flags.Lookup("p2p_peerperiod"))
 
