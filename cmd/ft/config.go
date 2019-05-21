@@ -75,6 +75,7 @@ func defaultP2pConfig() *p2p.Config {
 		MaxPeers:   10,
 		Name:       "Fractal-P2P",
 		ListenAddr: ":2018",
+		PeerPeriod: 5 * 60 * 1000,
 	}
 	return cfg
 }

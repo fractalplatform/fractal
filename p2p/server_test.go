@@ -366,15 +366,34 @@ func TestServerBadNodes(t *testing.T) {
 
 	c := newconn(badID)
 	if err := srv.checkpoint(c, srv.posthandshake); err != nil {
-		t.Error("wrong error for insert:", err)
+		t.Fatal("wrong error for posthandshake:", err)
 	}
-	srv.AddBadNode(c.node)
+
+	c = newconn(badID)
+	srv.AddBadNode(c.node, nil)
 	if err := srv.checkpoint(c, srv.posthandshake); err != DiscBadNode {
-		t.Error("wrong error for insert:", err)
+		t.Fatal("wrong error for posthandshake:", err)
 	}
+
+	c = newconn(badID)
 	srv.AddTrustedPeer(c.node)
 	if err := srv.checkpoint(c, srv.posthandshake); err != nil {
-		t.Error("wrong error for insert:", err)
+		t.Fatal("wrong error for posthandshake:", err)
+	}
+
+	c = newconn(badID)
+	srv.RemoveBadNode(c.node)
+	srv.RemoveTrustedPeer(c.node)
+	endtime := time.Now().Add(time.Second)
+	srv.AddBadNode(c.node, &endtime)
+	if err := srv.checkpoint(c, srv.posthandshake); err != DiscBadNode {
+		t.Fatal("wrong error for posthandshake:", err)
+	}
+
+	time.Sleep(2 * time.Second)
+	c = newconn(badID)
+	if err := srv.checkpoint(c, srv.posthandshake); err != nil {
+		t.Fatal("wrong error for posthandshake:", err)
 	}
 }
 

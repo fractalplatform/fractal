@@ -3,34 +3,39 @@ package event
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type stationEval struct {
-	eval      map[string]*evaluate
-	mutex     sync.RWMutex
-	highest   Station
-	highscore uint64
-	highMutex sync.RWMutex
+	eval  map[string]*evaluate
+	mutex sync.RWMutex
 }
 
 type evaluate struct {
 	cpu    uint64
-	netin  uint64
 	netout uint64
+	thread int64
+	netin  uint64
 	ack    uint64
+	acknum uint64
 	err    uint64
 }
 
+// higher score , poorer quality
 func (e *evaluate) score() uint64 {
-	s := e.err*10e9 + e.cpu*10e6 + e.ack
+	s := e.err + e.cpu/uint64(time.Millisecond) + e.ack/uint64(time.Second)/(e.acknum+1) + uint64(e.thread) + 1000
 	if e.netin > e.netout {
 		return s * e.netin / (e.netout + 1)
 	}
 	return s * e.netout / (e.netin + 1)
 }
 
-func (e *evaluate) addCPU(us uint64) uint64 {
-	return atomic.AddUint64(&e.cpu, us)
+func (e *evaluate) addThread(c int64) uint64 {
+	return uint64(atomic.AddInt64(&e.thread, c))
+}
+
+func (e *evaluate) addCPU(dur time.Duration) time.Duration {
+	return time.Duration(atomic.AddUint64(&e.cpu, uint64(dur)))
 }
 
 func (e *evaluate) addNetIn(pkg uint64) uint64 {
@@ -40,12 +45,12 @@ func (e *evaluate) addNetOut(pkg uint64) uint64 {
 	return atomic.AddUint64(&e.netout, pkg)
 }
 
-func (e *evaluate) addAck(us uint64) uint64 {
-	return atomic.AddUint64(&e.ack, us)
+func (e *evaluate) addAck(dur time.Duration) (uint64, time.Duration) {
+	return atomic.AddUint64(&e.acknum, 1), time.Duration(atomic.AddUint64(&e.ack, uint64(dur)))
 }
 
-func (e *evaluate) addErr() uint64 {
-	return atomic.AddUint64(&e.ack, 1)
+func (e *evaluate) addErr(n uint64) uint64 {
+	return atomic.AddUint64(&e.err, n)
 }
 
 func (e *evaluate) resetCPU() {
@@ -77,113 +82,146 @@ func (se *stationEval) register(s Station) {
 	se.mutex.Unlock()
 }
 
-/*
-func (se *stationEval) knockOut(){
-	a := sync.Map
-
-}*/
-
 func (se *stationEval) unregister(s Station) {
 	id := s.Name()[:8]
 	se.mutex.Lock()
 	delete(se.eval, id)
 	se.mutex.Unlock()
-	se.delete(s)
 }
 
-func (se *stationEval) delete(s Station) {
-
-	se.highMutex.Lock()
-	if se.highest != nil && se.highest.Name()[:8] == s.Name()[:8] {
-		se.highest = nil
+func (se *stationEval) getWorst() Station {
+	se.mutex.RLock()
+	score := uint64(0)
+	wid := ""
+	for id, e := range se.eval {
+		if e.score() >= score {
+			wid = id
+		}
 	}
-	se.highMutex.Unlock()
-}
-
-func (se *stationEval) updateTop(s Station, score uint64) {
-	if score <= se.highscore {
-		return
-	}
-	se.highMutex.Lock()
-	if se.highest == nil || s.Name()[:8] != se.highest.Name()[:8] {
-		se.highscore = score
-		se.highest = s
-	}
-	se.highMutex.Unlock()
-}
-
-func (se *stationEval) getHighest() Station {
-	se.highMutex.RLock()
-	defer se.highMutex.RUnlock()
-	return se.highest
+	se.mutex.RUnlock()
+	return GetStationByName(wid)
 }
 
 func (se *stationEval) addNetIn(s Station, pkg uint64) uint64 {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	defer se.updateTop(s, e.score())
+	if e == nil {
+		return 0
+	}
 	return e.addNetIn(pkg)
 }
 func (se *stationEval) addNetOut(s Station, pkg uint64) uint64 {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	defer se.updateTop(s, e.score())
+	if e == nil {
+		return 0
+	}
 	return e.addNetOut(pkg)
 }
 
-func (se *stationEval) addCPU(s Station, us uint64) uint64 {
+func (se *stationEval) addCPU(s Station, dur time.Duration) time.Duration {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	defer se.updateTop(s, e.score())
-	return e.addCPU(us)
+	if e == nil {
+		return 0
+	}
+	return e.addCPU(dur)
 }
 
-func (se *stationEval) addAck(s Station, us uint64) uint64 {
+func (se *stationEval) addAck(s Station, dur time.Duration) (uint64, time.Duration) {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	defer se.updateTop(s, e.score())
-	return e.addAck(us)
+	if e == nil {
+		return 0, 0
+	}
+	return e.addAck(dur)
 }
-func (se *stationEval) addErr(s Station) uint64 {
+func (se *stationEval) addErr(s Station, n uint64) uint64 {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	defer se.updateTop(s, e.score())
-	return e.addErr()
+	if e == nil {
+		return 0
+	}
+	return e.addErr(n)
+}
+func (se *stationEval) addThread(s Station, c int64) uint64 {
+	se.mutex.RLock()
+	e := se.eval[s.Name()[:8]]
+	se.mutex.RUnlock()
+	if e == nil {
+		return 0
+	}
+	return e.addThread(c)
 }
 
-func (se *stationEval) cpu(s Station) uint64 {
+func (se *stationEval) cpu(s Station) time.Duration {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	return e.cpu
+	if e == nil {
+		return 0
+	}
+	return time.Duration(e.cpu)
 }
 func (se *stationEval) netin(s Station) uint64 {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
+	if e == nil {
+		return 0
+	}
 	return e.netin
 }
 func (se *stationEval) netout(s Station) uint64 {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
+	if e == nil {
+		return 0
+	}
 	return e.netout
 }
-func (se *stationEval) ack(s Station) uint64 {
+func (se *stationEval) ack(s Station) (uint64, time.Duration) {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
-	return e.ack
+	if e == nil {
+		return 0, 0
+	}
+	return e.acknum, time.Duration(e.ack)
 }
 
 func (se *stationEval) err(s Station) uint64 {
 	se.mutex.RLock()
 	e := se.eval[s.Name()[:8]]
 	se.mutex.RUnlock()
+	if e == nil {
+		return 0
+	}
 	return e.err
+}
+
+func (se *stationEval) thread(s Station) uint64 {
+	se.mutex.RLock()
+	e := se.eval[s.Name()[:8]]
+	se.mutex.RUnlock()
+	if e == nil {
+		return 0
+	}
+	return uint64(e.thread)
+}
+
+func (se *stationEval) score(s Station) uint64 {
+	se.mutex.RLock()
+	e := se.eval[s.Name()[:8]]
+	se.mutex.RUnlock()
+	if e == nil {
+		return 0
+	}
+	return e.score()
 }

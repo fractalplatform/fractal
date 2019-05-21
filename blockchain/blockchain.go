@@ -497,7 +497,7 @@ func (bc *BlockChain) Stop() {
 			log.Error("Dangling trie nodes after full cleanup")
 		}
 	}
-
+	bc.station.Stop()
 	log.Info("Blockchain manager stopped")
 }
 

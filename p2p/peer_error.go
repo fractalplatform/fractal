@@ -87,7 +87,7 @@ var discReasonToString = [...]string{
 	DiscUnexpectedIdentity:  "unexpected identity",
 	DiscSelf:                "connected to self",
 	DiscReadTimeout:         "read timeout",
-	DiscBadNode:             "peer is in balcklist",
+	DiscBadNode:             "peer was added in the balcklist at least 1 minute",
 	DiscSubprotocolError:    "subprotocol error",
 	DiscDDOS:                "DDOS Defense",
 }

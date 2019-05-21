@@ -130,12 +130,20 @@ type Config struct {
 	// If NoDial is true, the server will not dial any peers.
 	NoDial bool `mapstructure:"p2p-nodial"`
 
+	// Disconnect the worst peer ervery PeerPeriod ms.
+	PeerPeriod int `mapstructure:"p2p-peerperiod"`
+
 	// If EnableMsgEvents is set then the server will emit PeerEvents
 	// whenever a message is sent to or received from a peer
 	EnableMsgEvents bool
 
 	// Logger is a custom logger to use with the p2p.Server.
 	Logger log.Logger
+}
+
+type badNode struct {
+	node    *enode.Node
+	endtime int64
 }
 
 // Server manages all peer connections.
@@ -169,7 +177,7 @@ type Server struct {
 	removestatic  chan *enode.Node
 	addtrusted    chan *enode.Node
 	removetrusted chan *enode.Node
-	addBad        chan *enode.Node
+	addBad        chan *badNode
 	removeBad     chan *enode.Node
 	posthandshake chan *conn
 	addpeer       chan *conn
@@ -180,7 +188,7 @@ type Server struct {
 }
 
 type peerOpFunc func(map[enode.ID]*Peer)
-type badOpFunc func(map[enode.ID]*enode.Node)
+type badOpFunc func(map[enode.ID]*badNode)
 
 type peerDrop struct {
 	*Peer
@@ -309,10 +317,10 @@ func (srv *Server) BadNodes() []*enode.Node {
 	// Note: We'd love to put this function into a variable but
 	// that seems to cause a weird compiler error in some
 	// environments.
-	case srv.badNodeOp <- func(nodes map[enode.ID]*enode.Node) {
+	case srv.badNodeOp <- func(nodes map[enode.ID]*badNode) {
 		ns = make([]*enode.Node, 0, len(nodes))
 		for _, n := range nodes {
-			ns = append(ns, n)
+			ns = append(ns, n.node)
 		}
 	}:
 		<-srv.badNodeOpDone
@@ -325,7 +333,7 @@ func (srv *Server) BadNodes() []*enode.Node {
 func (srv *Server) BadNodesCount() int {
 	var count int
 	select {
-	case srv.badNodeOp <- func(nodes map[enode.ID]*enode.Node) { count = len(nodes) }:
+	case srv.badNodeOp <- func(nodes map[enode.ID]*badNode) { count = len(nodes) }:
 		<-srv.badNodeOpDone
 	case <-srv.quit:
 	}
@@ -343,9 +351,13 @@ func (srv *Server) AddPeer(node *enode.Node) {
 }
 
 // AddBadNode add the node to the blacklist
-func (srv *Server) AddBadNode(node *enode.Node) {
+func (srv *Server) AddBadNode(node *enode.Node, endtime *time.Time) {
+	var timestamp int64
+	if endtime != nil {
+		timestamp = endtime.Unix()
+	}
 	select {
-	case srv.addBad <- node:
+	case srv.addBad <- &badNode{node, timestamp}:
 	case <-srv.quit:
 	}
 }
@@ -553,7 +565,7 @@ func (srv *Server) Start() (err error) {
 	srv.peerOp = make(chan peerOpFunc)
 	srv.peerOpDone = make(chan struct{})
 
-	srv.addBad = make(chan *enode.Node)
+	srv.addBad = make(chan *badNode)
 	srv.removeBad = make(chan *enode.Node)
 	srv.badNodeOp = make(chan badOpFunc)
 	srv.badNodeOpDone = make(chan struct{})
@@ -634,7 +646,7 @@ func (srv *Server) run(dialstate dialer) {
 	defer srv.loopWG.Done()
 	var (
 		peers        = make(map[enode.ID]*Peer)
-		badNodes     = make(map[enode.ID]*enode.Node)
+		badNodes     = make(map[enode.ID]*badNode)
 		inboundCount = 0
 		trusted      = make(map[enode.ID]bool, len(srv.TrustedNodes))
 		taskdone     = make(chan task, maxActiveDialTasks)
@@ -675,6 +687,18 @@ func (srv *Server) run(dialstate dialer) {
 			nt := dialstate.newTasks(len(runningTasks)+len(queuedTasks), peers, time.Now())
 			queuedTasks = append(queuedTasks, startTasks(nt)...)
 		}
+	}
+
+	isBadNode := func(id enode.ID) bool {
+		n := badNodes[id]
+		if n == nil {
+			return false
+		}
+		if n.endtime > 0 && n.endtime < time.Now().Unix() {
+			delete(badNodes, id)
+			return false
+		}
+		return true
 	}
 
 running:
@@ -719,6 +743,12 @@ running:
 			// Unmark any already-connected peer as trusted
 			if p, ok := peers[n.ID()]; ok {
 				p.rw.set(trustedConn, false)
+				if isBadNode(n.ID()) {
+					p.rw.set(badNodeConn, true)
+					p.Disconnect(DiscBadNode)
+				} else {
+					p.rw.set(badNodeConn, false)
+				}
 			}
 		case op := <-srv.peerOp:
 			// This channel is used by Peers and PeerCount.
@@ -738,7 +768,7 @@ running:
 				// Ensure that the trusted flag is set before checking against MaxPeers.
 				c.flags |= trustedConn
 			}
-			if badNodes[c.node.ID()] != nil {
+			if isBadNode(c.node.ID()) {
 				c.flags |= badNodeConn
 			}
 			// TODO: track in-progress inbound node IDs (pre-Peer) to avoid dialing them.
@@ -748,10 +778,15 @@ running:
 				break running
 			}
 		case n := <-srv.addBad:
-			badNodes[n.ID()] = n
+			badNodes[n.node.ID()] = n
 			srv.log.Info("Add bad node", "node", n)
-			if p, ok := peers[n.ID()]; ok {
-				p.Disconnect(DiscBadNode)
+			if p, ok := peers[n.node.ID()]; ok {
+				if isBadNode(n.node.ID()) {
+					p.rw.set(badNodeConn, true)
+					if !p.rw.is(trustedConn) {
+						p.Disconnect(DiscBadNode)
+					}
+				}
 			}
 		case n := <-srv.removeBad:
 			if _, ok := badNodes[n.ID()]; ok {

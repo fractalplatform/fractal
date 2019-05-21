@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 )
 
 // ProtoAdaptor used to send out event
@@ -40,10 +41,13 @@ type Router struct {
 }
 
 var router *Router
+var routerMutex sync.RWMutex
 
 // InitRouter init router.
 func init() {
+	routerMutex.Lock()
 	router = New()
+	routerMutex.Unlock()
 }
 
 // New returns an initialized Router instance.
@@ -58,7 +62,9 @@ func New() *Router {
 
 // Reset ntended for testing。
 func Reset() {
+	routerMutex.Lock()
 	router = New()
+	routerMutex.Unlock()
 }
 
 // Event is including normal event and p2p event
@@ -90,7 +96,7 @@ const (
 	DelPeerNotify                                  // 1026 emit when remote peer disconnected
 	DisconectCtrl                                  // 1027 emit if needed to let remote peer disconnect
 	NewPeerPassedNotify                            // 1028 emit when remote peer had same chain ID and genesis block
-	AddPeerToBlacklist                             // 1029 add peer to blacklist
+	OneMinuteLimited                               // 1029 add peer to blacklist
 	NewMinedEv                                     // 1030 emit when new block was mined
 	NewTxs                                         // 1031 emit when new transactions needed to broadcast
 	EndSize
@@ -153,7 +159,11 @@ func bindTypeToCode(typecode int, data interface{}) {
 }
 
 // GetStationByName retrun Station by Station's name
-func GetStationByName(name string) Station { return router.GetStationByName(name) }
+func GetStationByName(name string) Station {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.GetStationByName(name)
+}
 func (router *Router) GetStationByName(name string) Station {
 	router.stationMutex.RLock()
 	defer router.stationMutex.RUnlock()
@@ -161,18 +171,26 @@ func (router *Router) GetStationByName(name string) Station {
 }
 
 // StationRegister register 'Station' to Router
-func StationRegister(station Station) { router.StationRegister(station) }
+func StationRegister(station Station) {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	router.StationRegister(station)
+}
 func (router *Router) StationRegister(station Station) {
 	router.stationMutex.Lock()
 	router.stations[station.Name()] = station
 	router.stationMutex.Unlock()
-	if station.IsRemote() {
+	if station.IsRemote() && !station.IsBroadcast() {
 		router.eval.register(station)
 	}
 }
 
 // StationUnregister unregister 'Station'
-func StationUnregister(station Station) { router.StationUnregister(station) }
+func StationUnregister(station Station) {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	router.StationUnregister(station)
+}
 func (router *Router) StationUnregister(station Station) {
 	router.stationMutex.Lock()
 	delete(router.stations, station.Name())
@@ -211,6 +229,8 @@ func (router *Router) bindChannelToTypecode(typecode int, channel chan *Event) S
 
 // Subscribe .
 func Subscribe(station Station, channel chan *Event, typecode int, data interface{}) Subscription {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.Subscribe(station, channel, typecode, data)
 }
 func (router *Router) Subscribe(station Station, channel chan *Event, typecode int, data interface{}) Subscription {
@@ -228,7 +248,11 @@ func (router *Router) Subscribe(station Station, channel chan *Event, typecode i
 }
 
 // AdaptorRegister register P2P interface to Router
-func AdaptorRegister(adaptor ProtoAdaptor) { router.AdaptorRegister(adaptor) }
+func AdaptorRegister(adaptor ProtoAdaptor) {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	router.AdaptorRegister(adaptor)
+}
 func (router *Router) AdaptorRegister(adaptor ProtoAdaptor) {
 	router.unnamedMutex.Lock()
 	defer router.unnamedMutex.Unlock()
@@ -243,7 +267,11 @@ func SendTo(from, to Station, typecode int, data interface{}) int {
 }
 
 // SendEvent send event
-func SendEvent(e *Event) (nsent int) { return router.SendEvent(e) }
+func SendEvent(e *Event) (nsent int) {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.SendEvent(e)
+}
 func (router *Router) SendEvent(e *Event) (nsent int) {
 
 	//if e.Typecode >= EndSize || (typeList[e.Typecode] != nil && reflect.TypeOf(e.Data) != typeList[e.Typecode]) {
@@ -301,36 +329,79 @@ func GetDDosLimit(t int) int {
 }
 
 func AddNetIn(s Station, pkg uint64) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.addNetIn(s, pkg)
 }
 func AddNetOut(s Station, pkg uint64) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.addNetOut(s, pkg)
 }
 
-func AddCPU(s Station, us uint64) uint64 {
-	return router.eval.addCPU(s, us)
+func AddCPU(s Station, dur time.Duration) time.Duration {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.addCPU(s, dur)
 }
 
-func AddAck(s Station, us uint64) uint64 {
-	return router.eval.addAck(s, us)
+func AddAck(s Station, dur time.Duration) (uint64, time.Duration) {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.addAck(s, dur)
 }
-func AddErr(s Station) uint64 {
-	return router.eval.addErr(s)
+func AddErr(s Station, n uint64) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.addErr(s, n)
+}
+func AddThread(s Station, c int64) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.addThread(s, c)
 }
 
-func CPU(s Station) uint64 {
+func CPU(s Station) time.Duration {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.cpu(s)
 }
 func NetIn(s Station) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.netin(s)
 }
 func NetOut(s Station) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.netout(s)
 }
-func Ack(s Station) uint64 {
+func Ack(s Station) (uint64, time.Duration) {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.ack(s)
 }
 
 func Err(s Station) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
 	return router.eval.err(s)
+}
+
+func Thread(s Station) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.thread(s)
+}
+
+func Score(s Station) uint64 {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.score(s)
+}
+
+func WorstStation() Station {
+	routerMutex.RLock()
+	defer routerMutex.RUnlock()
+	return router.eval.getWorst()
 }

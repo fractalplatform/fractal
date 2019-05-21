@@ -64,11 +64,14 @@ type Downloader struct {
 	remotes         *simpleHeap //map[string]*stationStatus
 	remotesMutex    sync.RWMutex
 	blockchain      *BlockChain
+	quit            chan struct{}
+	loopWG          sync.WaitGroup
 	downloading     int32
 	downloadTrigger chan struct{}
 	// bloom           HashBloom
 	maxNumber   uint64
 	knownBlocks mapset.Set
+	subs        []router.Subscription
 }
 
 // NewDownloader .
@@ -77,16 +80,27 @@ func NewDownloader(chain *BlockChain) *Downloader {
 		station:    router.NewLocalStation("downloader", nil),
 		statusCh:   make(chan *router.Event),
 		blockchain: chain,
+		quit:       make(chan struct{}),
 		remotes: &simpleHeap{cmp: func(a, b interface{}) int {
 			ra, rb := a.(*stationStatus), b.(*stationStatus)
 			return rb.getStatus().TD.Cmp(ra.getStatus().TD)
 		}},
 		downloadTrigger: make(chan struct{}, 1),
 		knownBlocks:     mapset.NewSet(),
+		subs:            make([]router.Subscription, 0, 2),
 	}
+	dl.loopWG.Add(2)
 	go dl.syncstatus()
 	go dl.loop()
 	return dl
+}
+
+func (dl *Downloader) Stop() {
+	close(dl.quit)
+	for _, sub := range dl.subs {
+		sub.Unsubscribe()
+	}
+	dl.loopWG.Wait()
 }
 
 func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
@@ -114,36 +128,42 @@ func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
 }
 
 func (dl *Downloader) syncstatus() {
-	router.Subscribe(nil, dl.statusCh, router.P2PNewBlockHashesMsg, &NewBlockHashesData{})
-	router.Subscribe(nil, dl.statusCh, router.NewMinedEv, NewMinedBlockEvent{})
+	defer dl.loopWG.Done()
+	sub1 := router.Subscribe(nil, dl.statusCh, router.P2PNewBlockHashesMsg, &NewBlockHashesData{})
+	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, NewMinedBlockEvent{})
+	dl.subs = append(dl.subs, sub1, sub2)
 	for {
-		e := <-dl.statusCh
-		// NewMinedEv
-		if e.Typecode == router.NewMinedEv {
-			block := e.Data.(NewMinedBlockEvent).Block
-			for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
-				dl.knownBlocks.Pop()
+		select {
+		case <-dl.quit:
+			return
+		case e := <-dl.statusCh:
+			// NewMinedEv
+			if e.Typecode == router.NewMinedEv {
+				block := e.Data.(NewMinedBlockEvent).Block
+				for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
+					dl.knownBlocks.Pop()
+				}
+				dl.knownBlocks.Add(block.Hash())
+				dl.broadcastStatus(&NewBlockHashesData{
+					Hash:      block.Hash(),
+					Number:    block.NumberU64(),
+					TD:        dl.blockchain.GetTd(block.Hash(), block.NumberU64()),
+					Completed: true,
+				})
+				continue
 			}
-			dl.knownBlocks.Add(block.Hash())
-			dl.broadcastStatus(&NewBlockHashesData{
-				Hash:      block.Hash(),
-				Number:    block.NumberU64(),
-				TD:        dl.blockchain.GetTd(block.Hash(), block.NumberU64()),
-				Completed: true,
-			})
-			continue
-		}
-		// NewBlockHashesMsg
-		hashdata := e.Data.(*NewBlockHashesData)
-		if hashdata.Completed {
-			dl.updateStationStatus(e.From.Name(), hashdata)
-		}
+			// NewBlockHashesMsg
+			hashdata := e.Data.(*NewBlockHashesData)
+			if hashdata.Completed {
+				dl.updateStationStatus(e.From.Name(), hashdata)
+			}
 
-		head := dl.blockchain.CurrentBlock()
-		if hashdata.TD.Cmp(dl.blockchain.GetTd(head.Hash(), head.NumberU64())) > 0 {
-			dl.loopStart()
-			hashdata.Completed = false
-			dl.broadcastStatus(hashdata)
+			head := dl.blockchain.CurrentBlock()
+			if hashdata.TD.Cmp(dl.blockchain.GetTd(head.Hash(), head.NumberU64())) > 0 {
+				dl.loopStart()
+				hashdata.Completed = false
+				dl.broadcastStatus(hashdata)
+			}
 		}
 	}
 }
@@ -237,7 +257,7 @@ func waitEvent(errch chan struct{}, ch chan *router.Event, timeout time.Duration
 func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.Duration, errch chan struct{}) (*router.Event, error) {
 	start := time.Now()
 	defer func() {
-		router.AddAck(e.To, uint64(time.Since(start)/time.Microsecond))
+		router.AddAck(e.To, time.Since(start))
 	}()
 	ch := make(chan *router.Event)
 	sub := router.Subscribe(e.From, ch, recvCode, recvType)
@@ -442,7 +462,8 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	n, err := dl.assignDownloadTask(hashes, numbers)
 	status.ancestor = n
 	if err != nil {
-		log.Warn(fmt.Sprint("Insert error:", n, err))
+		log.Warn("Insert error:", "number:", n, "error", err)
+		router.AddErr(status.station, uint64(numbers[len(numbers)-1]-n))
 	}
 
 	head = dl.blockchain.CurrentBlock()
@@ -467,6 +488,7 @@ func (dl *Downloader) loopStart() {
 }
 
 func (dl *Downloader) loop() {
+	defer dl.loopWG.Done()
 	download := func() {
 		//for status := dl.bestStation(); dl.download(status); {
 		for status := dl.bestStation(); dl.multiplexDownload(status); {
@@ -475,6 +497,8 @@ func (dl *Downloader) loop() {
 	timer := time.NewTimer(10 * time.Second)
 	for {
 		select {
+		case <-dl.quit:
+			return
 		case <-dl.downloadTrigger:
 			download()
 			timer.Stop()
@@ -574,12 +598,11 @@ type downloadTask struct {
 }
 
 func (task *downloadTask) Do() {
-
 	defer func() {
 		task.errorTotal++
 		task.result <- task
 		if len(task.blocks) == 0 {
-			router.AddErr(task.worker.station)
+			router.AddErr(task.worker.station, 1)
 		}
 	}()
 	latestStatus := task.worker.getStatus()
