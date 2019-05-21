@@ -139,15 +139,10 @@ func (c *Contract) Value() *big.Int {
 	return c.value
 }
 
-// SetCode sets the code to the contract
-func (c *Contract) SetCode(hash common.Hash, code []byte) {
-	c.Code = code
-	c.CodeHash = hash
-}
-
 // SetCallCode sets the code of the contract and name of the backing dataobject
 func (c *Contract) SetCallCode(name *common.Name, hash common.Hash, code []byte) {
 	c.Code = code
 	c.CodeHash = hash
 	c.CodeName = name
+
 }

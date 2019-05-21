@@ -89,7 +89,7 @@ var (
 		GetSnapshotTime: 200,
 		GetAssetAmount:  200,
 		SnapBalance:     200,
-		IssueAsset:      200,
+		IssueAsset:      10000000,
 		DestroyAsset:    200,
 		AddAsset:        200,
 		GetAccountID:    200,

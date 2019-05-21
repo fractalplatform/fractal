@@ -453,25 +453,29 @@ func (dpos *Dpos) GetActivedCandidateSize(state *state.StateDB, epcho uint64) (u
 }
 
 // GetActivedCandidate get actived candidate info
-func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index uint64) (string, *big.Int, uint64, uint64, uint64, error) {
+func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index uint64) (string, *big.Int, *big.Int, uint64, uint64, uint64, error) {
 	sys := NewSystem(state, dpos.config)
 	gstate, err := sys.GetState(epcho)
 	if err != nil {
-		return "", big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 	if index >= uint64(len(gstate.ActivatedCandidateSchedule)) {
-		return "", big.NewInt(0), 0, 0, 0, fmt.Errorf("out of index")
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, fmt.Errorf("out of index")
 	}
 
 	candidate := gstate.ActivatedCandidateSchedule[index]
 	prevCandidateInfo, err := sys.GetCandidateInfoByTime(candidate, dpos.config.epochTimeStamp(gstate.PreEpcho))
 	if err != nil {
-		return "", big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
 	candidateInfo, err := sys.GetCandidateInfoByTime(candidate, dpos.config.epochTimeStamp(gstate.Epcho))
 	if err != nil {
-		return "", big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+	}
+
+	if candidateInfo == nil {
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
 	counter := candidateInfo.Counter
@@ -486,7 +490,7 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index 
 		rindex = gstate.OffCandidateSchedule[index-dpos.config.CandidateScheduleSize]
 	}
 
-	return candidate, new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), counter, actualCounter, rindex, err
+	return candidate, new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), new(big.Int).Mul(candidateInfo.TotalQuantity, sys.config.unitStake()), counter, actualCounter, rindex, err
 }
 
 // GetCandidateStake candidate delegate stake
