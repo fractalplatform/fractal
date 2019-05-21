@@ -81,6 +81,7 @@ type TxPool struct {
 	beats                 map[common.Name]time.Time // Last heartbeat from each known account
 	all                   *txLookup                 // All transactions to allow lookups
 	priced                *txPricedList
+	station               *TxpoolStation
 
 	mu sync.RWMutex
 	wg sync.WaitGroup // for shutdown sync
@@ -123,7 +124,7 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 	// Subscribe feeds from blockchain
 	tp.chainHeadSub = event.Subscribe(nil, tp.chainHeadCh, event.ChainHeadEv, &types.Block{})
 
-	NewTxpoolStation(tp)
+	tp.station = NewTxpoolStation(tp)
 	// Start the feed loop and return
 	tp.wg.Add(1)
 	go tp.loop()
@@ -320,6 +321,7 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 // Stop terminates the transaction tp.
 func (tp *TxPool) Stop() {
 	// Unsubscribe subscriptions registered from blockchain
+	tp.station.Stop()
 	tp.chainHeadSub.Unsubscribe()
 	tp.wg.Wait()
 

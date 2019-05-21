@@ -18,15 +18,15 @@ package node
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 
-	"net"
-	"strings"
-
 	"github.com/ethereum/go-ethereum/log"
+	router "github.com/fractalplatform/fractal/event"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/utils/filelock"
@@ -107,7 +107,7 @@ func (n *Node) Start() error {
 
 	// Initialize the p2p server. This creates the node key and
 	// discovery databases.
-
+	router.Reset()
 	n.config.P2PConfig.PrivateKey = n.config.NodeKey()
 	n.config.P2PConfig.Logger = n.log
 	n.config.P2PConfig.BootstrapNodes = n.config.BootNodes()

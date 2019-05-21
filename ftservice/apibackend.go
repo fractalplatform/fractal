@@ -362,7 +362,7 @@ func (b *APIBackend) BadNodes() []string {
 func (b *APIBackend) AddBadNode(url string) error {
 	node, err := enode.ParseV4(url)
 	if err == nil {
-		b.ftservice.p2pServer.AddBadNode(node)
+		b.ftservice.p2pServer.AddBadNode(node, nil)
 	}
 	return err
 }
