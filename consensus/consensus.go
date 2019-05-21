@@ -106,6 +106,8 @@ type IEngine interface {
 
 	GetPrevEpoch(state *state.StateDB, epoch uint64) (pecho uint64, err error)
 
+	GetNextEpoch(state *state.StateDB, epoch uint64) (necho uint64, err error)
+
 	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
 
 	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)

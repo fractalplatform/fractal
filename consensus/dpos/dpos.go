@@ -432,7 +432,7 @@ func (dpos *Dpos) GetLatestEpoch(state *state.StateDB) (epoch uint64, err error)
 	return sys.GetLastestEpcho()
 }
 
-// GetPrevEpcho get pre epcho
+// GetPrevEpoch get pre epcho
 func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
 	sys := NewSystem(state, dpos.config)
 	gstate, err := sys.GetState(epoch)
@@ -440,6 +440,28 @@ func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, erro
 		return 0, err
 	}
 	return gstate.PreEpcho, nil
+}
+
+// GetNextEpoch get next epcho
+func (dpos *Dpos) GetNextEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
+	sys := NewSystem(state, dpos.config)
+	latest, err := sys.GetLastestEpcho()
+	if err != nil {
+		return 0, err
+	}
+	for {
+		epoch++
+		if epoch >= latest {
+			return 0, fmt.Errorf("overflow")
+		}
+		gstate, err := sys.GetState(epoch)
+		if err != nil {
+			return 0, err
+		}
+		if gstate != nil {
+			return gstate.Epcho, nil
+		}
+	}
 }
 
 // GetActivedCandidateSize get actived candidate size
@@ -464,18 +486,21 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epcho uint64, index 
 	}
 
 	candidate := gstate.ActivatedCandidateSchedule[index]
-	prevCandidateInfo, err := sys.GetCandidateInfoByTime(candidate, dpos.config.epochTimeStamp(gstate.PreEpcho))
+	prevCandidateInfo, err := sys.GetCandidateByEpcho(gstate.PreEpcho, candidate)
 	if err != nil {
 		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
-	candidateInfo, err := sys.GetCandidateInfoByTime(candidate, dpos.config.epochTimeStamp(gstate.Epcho))
+	candidateInfo, err := sys.GetCandidateByEpcho(gstate.Epcho, candidate)
 	if err != nil {
 		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
 	}
 
+	if prevCandidateInfo == nil {
+		prevCandidateInfo = &CandidateInfo{}
+	}
 	if candidateInfo == nil {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+		candidateInfo = &CandidateInfo{}
 	}
 
 	counter := candidateInfo.Counter

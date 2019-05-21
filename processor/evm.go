@@ -86,6 +86,8 @@ type EngineContext interface {
 
 	GetPrevEpoch(state *state.StateDB, epoch uint64) (peoch uint64, err error)
 
+	GetNextEpoch(state *state.StateDB, epoch uint64) (neoch uint64, err error)
+
 	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
 
 	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
@@ -113,6 +115,7 @@ func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header
 		//Engine: chain,
 		GetLatestEpoch:          chain.GetLatestEpoch,
 		GetPrevEpoch:            chain.GetPrevEpoch,
+		GetNextEpoch:            chain.GetNextEpoch,
 		GetActivedCandidateSize: chain.GetActivedCandidateSize,
 		GetActivedCandidate:     chain.GetActivedCandidate,
 		GetVoterStake:           chain.GetVoterStake,
