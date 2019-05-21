@@ -162,9 +162,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		if a.data.From != a.data.To {
 			return fmt.Errorf("Receipt should is %v", a.data.From)
 		}
-		break
 	case CallContract:
-		break
 	//account
 	case CreateAccount:
 		fallthrough
@@ -176,7 +174,6 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		if a.data.To.String() != conf.AccountName {
 			return fmt.Errorf("Receipt should is %v", conf.AccountName)
 		}
-		break
 	//asset
 	case IncreaseAsset:
 		fallthrough
@@ -190,9 +187,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		if a.data.To.String() != conf.AssetName {
 			return fmt.Errorf("Receipt should is %v", conf.AssetName)
 		}
-		break
 	case Transfer:
-		break
 	//dpos
 	case RegCandidate:
 		fallthrough

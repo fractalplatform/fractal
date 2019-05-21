@@ -112,10 +112,7 @@ func NewAccount(accountName common.Name, founderName common.Name, pubkey common.
 
 //HaveCode check account have code
 func (a *Account) HaveCode() bool {
-	if a.GetCodeSize() == 0 {
-		return false
-	}
-	return true
+	return a.GetCodeSize() != 0
 }
 
 // IsEmpty check account empty
@@ -274,7 +271,7 @@ func (a *Account) GetCodeHash() (common.Hash, error) {
 //GetBalanceByID get balance by asset id
 func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	p, find := a.binarySearch(assetID)
-	if find == true {
+	if find {
 		return a.Balances[p].Balance, nil
 	}
 
@@ -289,7 +286,7 @@ func (a *Account) GetBalancesList() []*AssetBalance {
 
 //GetAllBalances get all balance list
 func (a *Account) GetAllBalances() (map[uint64]*big.Int, error) {
-	var ba = make(map[uint64]*big.Int, 0)
+	var ba = make(map[uint64]*big.Int)
 	for _, ab := range a.Balances {
 		ba[ab.AssetID] = ab.Balance
 	}
@@ -353,7 +350,6 @@ func (a *Account) AddNewAssetByAssetID(assetID uint64, amount *big.Int) {
 			}
 		}
 	}
-	return
 }
 
 //SetBalance set amount to balance

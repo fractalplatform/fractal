@@ -36,11 +36,6 @@ type ForkConfig struct {
 	Forkpercentage uint64
 }
 
-var defaultForkConfig = &ForkConfig{
-	ForkBlockNum:   10000,
-	Forkpercentage: 80,
-}
-
 // ForkInfo store in state db.
 type ForkInfo struct {
 	CurForkID          uint64

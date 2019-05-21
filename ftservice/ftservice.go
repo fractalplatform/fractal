@@ -18,7 +18,6 @@ package ftservice
 
 import (
 	"math/big"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
@@ -49,8 +48,6 @@ type FtService struct {
 	engine       consensus.IEngine
 	miner        *miner.Miner
 	p2pServer    *adaptor.ProtoAdaptor
-	gasPrice     *big.Int
-	lock         sync.RWMutex // Protects the variadic fields (e.g. gas price)
 	APIBackend   *APIBackend
 }
 

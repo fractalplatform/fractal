@@ -345,18 +345,16 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		if err != nil {
 			return nil, fmt.Errorf("seal block, err: %v", err)
 		}
-		var logs []*types.Log
 		for _, r := range work.currentReceipts {
 			for _, l := range r.Logs {
 				l.BlockHash = block.Hash()
 			}
-			logs = append(logs, r.Logs...)
 		}
 		for _, log := range work.currentState.Logs() {
 			log.BlockHash = block.Hash()
 		}
 
-		if bytes.Compare(block.ParentHash().Bytes(), worker.CurrentHeader().Hash().Bytes()) != 0 {
+		if !bytes.Equal(block.ParentHash().Bytes(), worker.CurrentHeader().Hash().Bytes()) {
 			return nil, fmt.Errorf("old parent hash")
 		}
 		if _, err := worker.WriteBlockWithState(block, work.currentReceipts, work.currentState); err != nil {

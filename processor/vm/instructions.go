@@ -457,7 +457,6 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	name := []byte(ast.GetAssetName())
 	datalen := len(name)
 	if uint64(datalen) > retSize.Uint64()*32 {
-		err = errors.New("out of space")
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
@@ -1239,7 +1238,6 @@ func opDeductGas(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 		contract.Gas = contract.Gas - amount
 		stack.push(evm.interpreter.intPool.get().SetUint64(contract.Gas))
 	} else {
-		//errors.New("gas insufficient")
 		contract.Gas = 0
 		stack.push(evm.interpreter.intPool.getZero())
 	}
@@ -1266,7 +1264,6 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte {
 		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte
 	} else {
-		//errors.New("gas insufficient")
 		contract.Gas = 0
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
@@ -1284,12 +1281,9 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 					err = errors.New("Encrypt error")
 				}
 			}
-
 		}
-
 	} else if i == 1 {
 		ecdsaprikey, err = crypto.ToECDSA(key)
-		//
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)

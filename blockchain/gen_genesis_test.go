@@ -40,7 +40,7 @@ func TestGenGenesis(t *testing.T) {
 		t.Fatal(fmt.Sprintf("genesis marshal --- %v", err))
 	}
 
-	if bytes.Compare(j, nj) != 0 {
+	if !bytes.Equal(j, nj) {
 		t.Fatal(fmt.Sprintf("genesis mismatch --- %v", err))
 	}
 }

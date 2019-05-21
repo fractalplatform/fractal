@@ -17,6 +17,7 @@
 package snapshot
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -144,7 +145,7 @@ func (sn *SnapshotManager) GetSnapshotMsg(account string, key string, time uint6
 	db := sn.stateDB.Database().GetDB()
 	snapshotInfo := rawdb.ReadSnapshot(db, snapshotBlock)
 	if snapshotInfo == nil {
-		return nil, fmt.Errorf("Not snapshot info, rawdb not exist.")
+		return nil, errors.New("Not snapshot info, rawdb not exist")
 	}
 
 	dbCache := sn.stateDB.Database()
@@ -184,7 +185,7 @@ func (sn *SnapshotManager) GetSnapshotState(time uint64) (*state.StateDB, error)
 	db := sn.stateDB.Database().GetDB()
 	snapshotInfo := rawdb.ReadSnapshot(db, snapshotBlock)
 	if snapshotInfo == nil {
-		return nil, fmt.Errorf("Not snapshot info, rawdb not exist.")
+		return nil, errors.New("Not snapshot info, rawdb not exist")
 	}
 
 	dbCache := sn.stateDB.Database()

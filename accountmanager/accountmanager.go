@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	acctRegExp          = regexp.MustCompile("^([a-z][a-z0-9]{6,15})(?:\\.([a-z0-9]{1,8})){0,1}$")
+	acctRegExp          = regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
 	accountNameIDPrefix = "accountNameId"
@@ -159,7 +159,6 @@ func (am *AccountManager) InitAccountCounter() {
 		}
 		am.sdb.Put(acctManagerName, counterPrefix, b)
 	}
-	return
 }
 
 //getAccountCounter get account counter cur value
@@ -465,7 +464,7 @@ func (am *AccountManager) SetAccount(acct *Account) error {
 	if acct == nil {
 		return ErrAccountIsNil
 	}
-	if acct.IsDestroyed() == true {
+	if acct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
 	b, err := rlp.EncodeToBytes(acct)
@@ -546,7 +545,7 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			return fmt.Errorf("exceed max sign length, want most %d, actual is %d", params.MaxSignLength, len(pubs))
 		}
 
-		recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor, 0)}
+		recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor)}
 		for i, pub := range pubs {
 			index := action.GetSignIndex(uint64(i))
 			if uint64(len(index)) > params.MaxSignDepth {
@@ -558,7 +557,7 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			}
 		}
 
-		authorVersion := make(map[common.Name]common.Hash, 0)
+		authorVersion := make(map[common.Name]common.Hash)
 		for name, acctAuthor := range recoverRes.acctAuthors {
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
@@ -688,7 +687,7 @@ func (am *AccountManager) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, 
 
 // GetAllAssetbyAssetId get accout asset and subAsset Info
 func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
-	var ba = make(map[uint64]*big.Int, 0)
+	var ba = make(map[uint64]*big.Int)
 
 	b, err := acct.GetBalanceByID(assetId)
 	if err != nil {
@@ -1239,7 +1238,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 			internalActions = append(internalActions, internalAction)
 		}
-		break
 	case types.UpdateAccount:
 		var acct UpdataAccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
@@ -1250,7 +1248,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.UpdateAccount(action.Sender(), &acct); err != nil {
 			return nil, err
 		}
-		break
 	case types.UpdateAccountAuthor:
 		var acctAuth AccountAuthorAction
 		err := rlp.DecodeBytes(action.Data(), &acctAuth)
@@ -1260,7 +1257,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.UpdateAccountAuthor(action.Sender(), &acctAuth); err != nil {
 			return nil, err
 		}
-		break
 	case types.IssueAsset:
 		var asset IssueAsset
 		err := rlp.DecodeBytes(action.Data(), &asset)
@@ -1275,7 +1271,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.Owner, 0, assetID, 0, asset.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
-		break
 	case types.IncreaseAsset:
 		var inc IncAsset
 		err := rlp.DecodeBytes(action.Data(), &inc)
@@ -1291,8 +1286,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
-		break
-
 	case types.DestroyAsset:
 		// var asset asset.AssetObject
 		// err := rlp.DecodeBytes(action.Data(), &asset)
@@ -1309,7 +1302,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), common.Name(accountManagerContext.ChainConfig.ChainName), 0, action.AssetID(), 0, action.Value(), nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
-		break
 	case types.UpdateAsset:
 		var asset UpdateAsset
 		err := rlp.DecodeBytes(action.Data(), &asset)
@@ -1330,7 +1322,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder); err != nil {
 			return nil, err
 		}
-		break
 	case types.SetAssetOwner:
 		var asset UpdateAssetOwner
 		err := rlp.DecodeBytes(action.Data(), &asset)
@@ -1348,9 +1339,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.AssetID, asset.Owner); err != nil {
 			return nil, err
 		}
-		break
 	case types.Transfer:
-		break
 	default:
 		return nil, ErrUnkownTxType
 	}

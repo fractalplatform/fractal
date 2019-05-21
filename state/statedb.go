@@ -213,7 +213,7 @@ func (s *StateDB) get(key string) ([]byte, error) {
 	}
 
 	// replay transaction
-	if s.stateTrace == true {
+	if s.stateTrace {
 		errInfo := fmt.Sprintf("No value when trace.")
 		err := errors.New(errInfo)
 		s.setError(err)
@@ -365,7 +365,7 @@ func (s *StateDB) Finalise() {
 
 	for key := range s.dirtySet {
 		value, exsit := s.writeSet[key]
-		if exsit == false {
+		if !exsit {
 			panic("WriteSet is invalid when commit")
 		}
 		//update the value to trie
