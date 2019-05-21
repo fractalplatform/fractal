@@ -1043,7 +1043,7 @@ func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	if id == 0 {
 		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
 	} else {
-		num, err = evm.Context.GetPrevEpoch(evm.StateDB, id)
+		num, err = evm.Context.GetNextEpoch(evm.StateDB, id)
 	}
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1079,7 +1079,7 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		if err == nil {
 			stack.push(evm.interpreter.intPool.get().SetUint64(id))
 			stack.push(evm.interpreter.intPool.get().Set(stake))
-			stack.push(evm.interpreter.intPool.get().SetUint64(totalVote.Uint64()))
+			stack.push(evm.interpreter.intPool.get().Set(totalVote))
 			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
 			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
 			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
