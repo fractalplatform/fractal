@@ -1036,15 +1036,24 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 //multi-asset
 // opGetEpoch get epoch
 func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	epochID := stack.pop()
-	id := epochID.Uint64()
+	epochID, arg := stack.pop(), stack.pop()
+	t := arg.Uint64()
+	ID := epochID.Uint64()
 	var num uint64
 	var err error
-	if id == 0 {
+	if t == 0 {
+		//get latest epoch
 		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
+	} else if t == 1 {
+		//get pre epoch
+		num, err = evm.Context.GetPrevEpoch(evm.StateDB, ID)
+	} else if t == 2 {
+		//get next epoch
+		num, err = evm.Context.GetNextEpoch(evm.StateDB, ID)
 	} else {
-		num, err = evm.Context.GetNextEpoch(evm.StateDB, id)
+		err = errors.New("type error")
 	}
+
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
