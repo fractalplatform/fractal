@@ -1,8 +1,25 @@
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package protoadaptor
 
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -29,7 +46,9 @@ type ProtoAdaptor struct {
 	peerMangaer
 	event   chan *router.Event
 	station router.Station
+	loopWG  sync.WaitGroup
 	quit    chan struct{}
+	subs    []router.Subscription
 }
 
 // NewProtoAdaptor return new ProtoAdaptor
@@ -45,6 +64,7 @@ func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 		event:   make(chan *router.Event),
 		station: router.NewLocalStation("p2p", nil),
 		quit:    make(chan struct{}),
+		subs:    make([]router.Subscription, 0, 2),
 	}
 	adaptor.peerMangaer.station = router.NewBroadcastStation("broadcast", &adaptor.peerMangaer)
 	adaptor.Server.Config.Protocols = adaptor.Protocols()
@@ -55,25 +75,41 @@ func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 func (adaptor *ProtoAdaptor) Start() error {
 	router.StationRegister(adaptor.peerMangaer.station)
 	router.AdaptorRegister(adaptor)
-	router.Subscribe(nil, adaptor.event, router.DisconectCtrl, nil)
-	router.Subscribe(nil, adaptor.event, router.AddPeerToBlacklist, nil)
+	sub1 := router.Subscribe(nil, adaptor.event, router.DisconectCtrl, nil)
+	sub2 := router.Subscribe(nil, adaptor.event, router.OneMinuteLimited, nil)
+	adaptor.subs = append(adaptor.subs, sub1, sub2)
+	adaptor.loopWG.Add(1)
 	go adaptor.adaptorEvent()
 	return adaptor.Server.Start()
 }
 
 func (adaptor *ProtoAdaptor) adaptorEvent() {
+	defer adaptor.loopWG.Done()
+	timer := time.NewTimer(time.Second)
+	if adaptor.PeerPeriod == 0 || adaptor.MaxPeers == 0 {
+		timer.Stop()
+	}
 	for {
 		select {
 		case <-adaptor.quit:
+			close(adaptor.event)
 			return
+		case <-timer.C:
+			if adaptor.PeerCount() == adaptor.MaxPeers {
+				peer := router.WorstStation().Data().(*remotePeer)
+				endtime := time.Now().Add(time.Minute)
+				adaptor.Server.AddBadNode(peer.peer.Node(), &endtime) // AddBadNode also disconnect the peer
+			}
+			timer.Reset(time.Duration(adaptor.PeerPeriod) * time.Millisecond)
 		case e := <-adaptor.event:
 			switch e.Typecode {
 			case router.DisconectCtrl:
 				peer := e.Data.(router.Station).Data().(*remotePeer)
 				peer.peer.Disconnect(p2p.DiscSubprotocolError)
-			case router.AddPeerToBlacklist:
+			case router.OneMinuteLimited:
 				peer := e.Data.(router.Station).Data().(*remotePeer)
-				adaptor.Server.AddBadNode(peer.peer.Node()) // AddBadNode also disconnect the peer
+				endtime := time.Now().Add(time.Minute)
+				adaptor.Server.AddBadNode(peer.peer.Node(), &endtime) // AddBadNode also disconnect the peer
 			}
 		}
 	}
@@ -108,11 +144,11 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
-
-		ret := checkDDOS(monitor, e)
-		if ret {
-			router.SendTo(nil, nil, router.AddPeerToBlacklist, e.From)
-			return fmt.Errorf("DDos %x", e.From.Name())
+		router.AddNetIn(station, 1)
+		if checkDDOS(monitor, e) {
+			router.SendTo(nil, nil, router.OneMinuteLimited, e.From)
+			log.Warn("DDos defense", "peer", remote.peer.String(), "typecode", e.Typecode, "count", monitor[e.Typecode][1])
+			return p2p.DiscDDOS
 		}
 		router.SendEvent(e)
 	}
@@ -157,7 +193,11 @@ func (adaptor *ProtoAdaptor) Protocols() []p2p.Protocol {
 // Stop .
 func (adaptor *ProtoAdaptor) Stop() {
 	close(adaptor.quit)
+	for _, sub := range adaptor.subs {
+		sub.Unsubscribe()
+	}
 	adaptor.Server.Stop()
+	adaptor.loopWG.Wait()
 	log.Info("P2P networking stopped")
 }
 
@@ -175,6 +215,7 @@ func (adaptor *ProtoAdaptor) msgSend(e *router.Event) error {
 	if err != nil {
 		return err
 	}
+	router.AddNetOut(e.To, 1)
 	return p2p.Send(e.To.Data().(*remotePeer).ws, 0, pack)
 }
 
@@ -188,10 +229,10 @@ func (adaptor *ProtoAdaptor) msgBroadcast(e *router.Event) {
 	}
 
 	send := func(peer *remotePeer) {
+		//router.AddNetOut(x,1)
 		p2p.Send(peer.ws, 0, pack)
 	}
 	if e.To.Data() != nil {
-		pack.To = "" // if sendto 'broadcast' station, remote will broadcast again, and dead loop (-_-)
 		e.To.Data().(*peerMangaer).mapActivePeer(send)
 		return
 	}
