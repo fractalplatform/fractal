@@ -39,6 +39,8 @@ type (
 	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
 	//GetPrevEpcho
 	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
+	//GetNextEpoch
+	GetNextEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
 	//GetActivedCandidateSize
 	GetActivedCandidateSizeFunc func(state *state.StateDB, epoch uint64) (size uint64, err error)
 	//GetActivedCandidate
@@ -60,6 +62,7 @@ type Context struct {
 	//
 	GetLatestEpoch          GetLatestEpochFunc
 	GetPrevEpoch            GetPrevEpochFunc
+	GetNextEpoch            GetNextEpochFunc
 	GetActivedCandidateSize GetActivedCandidateSizeFunc
 	GetActivedCandidate     GetActivedCandidateFunc
 	GetVoterStake           GetVoterStakeFunc
@@ -537,7 +540,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 
 	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
 		return nil, 0, err
-	} else if b == true {
+	} else if b {
 		return nil, 0, ErrContractCodeCollision
 	}
 

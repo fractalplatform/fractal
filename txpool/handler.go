@@ -19,6 +19,7 @@ package txpool
 import (
 	"encoding/binary"
 	"math/big"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -174,6 +175,9 @@ type TxpoolStation struct {
 	peers      map[string]*peerInfo
 	cache      *txsCache
 	delayedTxs []*types.Transaction
+	quit       chan struct{}
+	loopWG     sync.WaitGroup
+	subs       []router.Subscription
 }
 
 // NewTxpoolStation create a new TxpoolStation
@@ -183,11 +187,14 @@ func NewTxpoolStation(txpool *TxPool) *TxpoolStation {
 		txpool: txpool,
 		peers:  make(map[string]*peerInfo),
 		cache:  &txsCache{},
+		quit:   make(chan struct{}),
+		subs:   make([]router.Subscription, 4),
 	}
-	router.Subscribe(nil, station.txChan, router.P2PTxMsg, []*TransactionWithPath{}) // recive txs form remote
-	router.Subscribe(nil, station.txChan, router.NewPeerPassedNotify, nil)           // new peer is handshake completed
-	router.Subscribe(nil, station.txChan, router.DelPeerNotify, new(string))         // new peer is handshake completed
-	router.Subscribe(nil, station.txChan, router.NewTxs, []*types.Transaction{})     // NewTxs recived , prepare to broadcast
+	station.subs[0] = router.Subscribe(nil, station.txChan, router.P2PTxMsg, []*TransactionWithPath{}) // recive txs form remote
+	station.subs[1] = router.Subscribe(nil, station.txChan, router.NewPeerPassedNotify, nil)           // new peer is handshake completed
+	station.subs[2] = router.Subscribe(nil, station.txChan, router.DelPeerNotify, new(string))         // new peer is handshake completed
+	station.subs[3] = router.Subscribe(nil, station.txChan, router.NewTxs, []*types.Transaction{})     // NewTxs recived , prepare to broadcast
+	station.loopWG.Add(1)
 	go station.handleMsg()
 	return station
 }
@@ -258,37 +265,48 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 		return
 	}
 
+	s.loopWG.Add(1)
 	go func() {
 		for peerInfo, txs := range sendTask {
 			router.SendTo(nil, peerInfo.peer, router.P2PTxMsg, txs)
 			peerInfo.setIdle()
 		}
+		s.loopWG.Done()
 	}()
 }
 
 func (s *TxpoolStation) handleMsg() {
+	defer s.loopWG.Done()
 	for {
-		e := <-s.txChan
-		switch e.Typecode {
-		case router.NewTxs:
-			txs := e.Data.([]*types.Transaction)
-			s.broadcast(txs)
-		case router.P2PTxMsg:
-			txs := e.Data.([]*TransactionWithPath)
-			//fmt.Printf("bloom:%x\n", *txs[0].Bloom)
-			rawTxs := s.addTxs(txs, e.From.Name())
-			if len(rawTxs) > 0 {
-				go s.txpool.AddRemotes(rawTxs)
-			}
-		case router.NewPeerPassedNotify:
-			newpeer := &peerInfo{peer: e.From, idle: 1}
-			s.peers[e.From.Name()] = newpeer
-			s.delayedTxs = s.delayedTxs[:0]
-			s.syncTransactions(newpeer)
-		case router.DelPeerNotify:
-			delete(s.peers, e.From.Name())
-			if len(s.peers) == 0 {
+		select {
+		case <-s.quit:
+			return
+		case e := <-s.txChan:
+			switch e.Typecode {
+			case router.NewTxs:
+				txs := e.Data.([]*types.Transaction)
+				s.broadcast(txs)
+			case router.P2PTxMsg:
+				txs := e.Data.([]*TransactionWithPath)
+				//fmt.Printf("bloom:%x\n", *txs[0].Bloom)
+				rawTxs := s.addTxs(txs, e.From.Name())
+				if len(rawTxs) > 0 {
+					s.loopWG.Add(1)
+					go func() {
+						s.txpool.AddRemotes(rawTxs)
+						s.loopWG.Done()
+					}()
+				}
+			case router.NewPeerPassedNotify:
+				newpeer := &peerInfo{peer: e.From, idle: 1}
+				s.peers[e.From.Name()] = newpeer
 				s.delayedTxs = s.delayedTxs[:0]
+				s.syncTransactions(newpeer)
+			case router.DelPeerNotify:
+				delete(s.peers, e.From.Name())
+				if len(s.peers) == 0 {
+					s.delayedTxs = s.delayedTxs[:0]
+				}
 			}
 		}
 	}
@@ -307,8 +325,18 @@ func (s *TxpoolStation) syncTransactions(peer *peerInfo) {
 		peer.setIdle()
 		return
 	}
+	s.loopWG.Add(1)
 	go func() {
 		router.SendTo(nil, peer.peer, router.P2PTxMsg, txs)
 		peer.setIdle()
+		s.loopWG.Done()
 	}()
+}
+
+func (s *TxpoolStation) Stop() {
+	close(s.quit)
+	for _, sub := range s.subs {
+		sub.Unsubscribe()
+	}
+	s.loopWG.Wait()
 }

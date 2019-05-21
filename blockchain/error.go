@@ -31,8 +31,6 @@ var (
 	errReorgSystemBlock = errors.New("not reorg system block")
 
 	errGenesisNoConfig = errors.New("genesis has no chain configuration")
-
-	errGenesisNoDpos = errors.New("genesis has no dpos configuration")
 )
 
 // GenesisMismatchError is raised when trying to overwrite an existing

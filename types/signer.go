@@ -92,7 +92,7 @@ func StoreAuthorCache(a *Action, authorVersion map[common.Name]common.Hash) {
 }
 
 func GetAuthorCache(a *Action) map[common.Name]common.Hash {
-	authorVersion := make(map[common.Name]common.Hash, 0)
+	authorVersion := make(map[common.Name]common.Hash)
 	if ac := a.author.Load(); ac != nil {
 		aCache := ac.(map[common.Name]common.Hash)
 		for name, version := range aCache {

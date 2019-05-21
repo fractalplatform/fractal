@@ -70,7 +70,8 @@ const (
 	DiscSelf
 	DiscReadTimeout
 	DiscBadNode
-	DiscSubprotocolError = 0x10
+	DiscSubprotocolError DiscReason = 0x10 + iota
+	DiscDDOS
 )
 
 var discReasonToString = [...]string{
@@ -86,8 +87,9 @@ var discReasonToString = [...]string{
 	DiscUnexpectedIdentity:  "unexpected identity",
 	DiscSelf:                "connected to self",
 	DiscReadTimeout:         "read timeout",
-	DiscBadNode:             "peer is in balcklist",
+	DiscBadNode:             "peer was added in the balcklist at least 1 minute",
 	DiscSubprotocolError:    "subprotocol error",
+	DiscDDOS:                "DDOS Defense",
 }
 
 func (d DiscReason) String() string {

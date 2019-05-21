@@ -457,7 +457,6 @@ func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	name := []byte(ast.GetAssetName())
 	datalen := len(name)
 	if uint64(datalen) > retSize.Uint64()*32 {
-		err = errors.New("out of space")
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
@@ -1044,7 +1043,7 @@ func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	if id == 0 {
 		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
 	} else {
-		num, err = evm.Context.GetPrevEpoch(evm.StateDB, id)
+		num, err = evm.Context.GetNextEpoch(evm.StateDB, id)
 	}
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1078,12 +1077,12 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	if err == nil {
 		id, err := evm.AccountDB.GetAccountIDByName(common.Name(name))
 		if err == nil {
-			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
-			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
-			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
-			stack.push(evm.interpreter.intPool.get().SetUint64(totalVote.Uint64()))
-			stack.push(evm.interpreter.intPool.get().Set(stake))
 			stack.push(evm.interpreter.intPool.get().SetUint64(id))
+			stack.push(evm.interpreter.intPool.get().Set(stake))
+			stack.push(evm.interpreter.intPool.get().Set(totalVote))
+			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
+			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
+			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
 			return nil, nil
 		}
 	}
@@ -1239,7 +1238,6 @@ func opDeductGas(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 		contract.Gas = contract.Gas - amount
 		stack.push(evm.interpreter.intPool.get().SetUint64(contract.Gas))
 	} else {
-		//errors.New("gas insufficient")
 		contract.Gas = 0
 		stack.push(evm.interpreter.intPool.getZero())
 	}
@@ -1266,7 +1264,6 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte {
 		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte
 	} else {
-		//errors.New("gas insufficient")
 		contract.Gas = 0
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
@@ -1284,12 +1281,9 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 					err = errors.New("Encrypt error")
 				}
 			}
-
 		}
-
 	} else if i == 1 {
 		ecdsaprikey, err = crypto.ToECDSA(key)
-		//
 		if err == nil {
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)
@@ -1502,8 +1496,8 @@ func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name, objec
 			return errEnc
 		}
 
-		action := types.NewAction(types.WithdrawFee, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload, nil)
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "withdrawfee", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
+		action := types.NewAction(types.Transfer, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload, nil)
+		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transfer", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 	return err

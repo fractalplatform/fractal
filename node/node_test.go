@@ -35,7 +35,6 @@ var (
 )
 
 func TestNodeLifeCycle(t *testing.T) {
-
 	// Create a temporary folder to use as the data directory
 	dir, err := ioutil.TempDir("", "")
 	if err != nil {

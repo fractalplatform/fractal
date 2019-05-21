@@ -232,8 +232,7 @@ func (of *ObjectFee) binarySearch(assetID uint64) (int64, bool) {
 
 func (of *ObjectFee) addAssetFee(assetID uint64, value *big.Int) {
 	index, find := of.binarySearch(assetID)
-
-	if find == true {
+	if find {
 		assetFee := of.AssetFees[index]
 		assetFee.addFee(value)
 		return

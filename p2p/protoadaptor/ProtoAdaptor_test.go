@@ -17,37 +17,35 @@
 package protoadaptor
 
 import (
-	"sync"
+	"crypto/ecdsa"
+	"net"
+	"testing"
+	"time"
 
-	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/p2p"
 )
 
-type peerMangaer struct {
-	activePeers map[[8]byte]*remotePeer
-	station     router.Station
-	mutex       sync.RWMutex
-}
-
-func (pm *peerMangaer) addActivePeer(peer *remotePeer) {
-	var key [8]byte
-	copy(key[:], peer.peer.ID().Bytes()[:8])
-	pm.mutex.Lock()
-	pm.activePeers[key] = peer
-	pm.mutex.Unlock()
-}
-
-func (pm *peerMangaer) delActivePeer(peer *remotePeer) {
-	var key [8]byte
-	copy(key[:], peer.peer.ID().Bytes()[:8])
-	pm.mutex.Lock()
-	delete(pm.activePeers, key)
-	pm.mutex.Unlock()
-}
-
-func (pm *peerMangaer) mapActivePeer(handler func(*remotePeer)) {
-	pm.mutex.RLock()
-	for _, peer := range pm.activePeers {
-		handler(peer)
+func newkey() *ecdsa.PrivateKey {
+	key, err := crypto.GenerateKey()
+	if err != nil {
+		panic("couldn't generate key: " + err.Error())
 	}
-	pm.mutex.RUnlock()
+	return key
+}
+func TestPeerPeriod(t *testing.T) {
+	config := &p2p.Config{
+		Name:       "test",
+		MaxPeers:   10,
+		ListenAddr: "127.0.0.1:0",
+		PrivateKey: newkey(),
+	}
+	srv := NewProtoAdaptor(config)
+	srv.Start()
+	defer srv.Stop()
+	conn, err := net.DialTimeout("tcp", srv.ListenAddr, 5*time.Second)
+	if err != nil {
+		t.Fatalf("could not dial: %v", err)
+	}
+	defer conn.Close()
 }
