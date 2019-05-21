@@ -324,13 +324,14 @@ func (api *API) GetActivedCandidate(epcho uint64, index uint64) (interface{}, er
 	return ret, nil
 }
 
-// GetCandidateStake candidate delegate stake
-func (api *API) GetCandidateStake(epcho uint64, candidate string) (*big.Int, error) {
+// GetCandidateByEpcho candidate info
+func (api *API) GetCandidateByEpcho(epcho uint64, candidate string) (interface{}, error) {
 	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
 	if err != nil {
 		return big.NewInt(0), err
 	}
-	return api.dpos.GetDelegatedByTime(state, candidate, api.dpos.config.epochTimeStamp(epcho))
+	sys := NewSystem(state, api.dpos.config)
+	return sys.GetCandidateByEpcho(epcho, candidate)
 }
 
 // GetVoterStake voter stake

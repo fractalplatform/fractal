@@ -1044,7 +1044,7 @@ func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	if id == 0 {
 		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
 	} else {
-		num, err = evm.Context.GetPrevEpoch(evm.StateDB, id)
+		num, err = evm.Context.GetNextEpoch(evm.StateDB, id)
 	}
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())

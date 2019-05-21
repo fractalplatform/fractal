@@ -39,6 +39,8 @@ type (
 	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
 	//GetPrevEpcho
 	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
+	//GetNextEpoch
+	GetNextEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
 	//GetActivedCandidateSize
 	GetActivedCandidateSizeFunc func(state *state.StateDB, epoch uint64) (size uint64, err error)
 	//GetActivedCandidate
@@ -60,6 +62,7 @@ type Context struct {
 	//
 	GetLatestEpoch          GetLatestEpochFunc
 	GetPrevEpoch            GetPrevEpochFunc
+	GetNextEpoch            GetNextEpochFunc
 	GetActivedCandidateSize GetActivedCandidateSizeFunc
 	GetActivedCandidate     GetActivedCandidateFunc
 	GetVoterStake           GetVoterStakeFunc
