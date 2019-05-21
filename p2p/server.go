@@ -60,29 +60,29 @@ type Config struct {
 	PrivateKey *ecdsa.PrivateKey
 
 	// NetworkID is ID of network
-	NetworkID uint `mapstructure:"p2p-networkdID"`
+	NetworkID uint `mapstructure:"networkdID"`
 
 	// MaxPeers is the maximum number of peers that can be
 	// connected. It must be greater than zero.
-	MaxPeers int `mapstructure:"p2p-maxpeers"`
+	MaxPeers int `mapstructure:"maxpeers"`
 
 	// MaxPendingPeers is the maximum number of peers that can be pending in the
 	// handshake phase, counted separately for inbound and outbound connections.
 	// Zero defaults to preset values.
-	MaxPendingPeers int `mapstructure:"p2p-maxpendpeers"`
+	MaxPendingPeers int `mapstructure:"maxpendpeers"`
 
 	// DialRatio controls the ratio of inbound to dialed connections.
 	// Example: a DialRatio of 2 allows 1/2 of connections to be dialed.
 	// Setting DialRatio to zero defaults it to 3.
-	DialRatio int `mapstructure:"p2p-dialratio"`
+	DialRatio int `mapstructure:"dialratio"`
 
 	// NoDiscovery can be used to disable the peer discovery mechanism.
 	// Disabling is useful for protocol debugging (manual topology).
-	NoDiscovery bool `mapstructure:"p2p-nodiscover"`
+	NoDiscovery bool `mapstructure:"nodiscover"`
 
 	// Name sets the node name of this server.
 	// Use common.MakeName to create a name that follows existing conventions.
-	Name string `mapstructure:"p2p-nodename"`
+	Name string `mapstructure:"nodename"`
 
 	// BootstrapNodes are used to establish connectivity
 	// with the rest of the network.
@@ -99,11 +99,11 @@ type Config struct {
 	// Connectivity can be restricted to certain IP networks.
 	// If this option is set to a non-nil value, only hosts which match one of the
 	// IP networks contained in the list are considered.
-	NetRestrict *netutil.Netlist `mapstructure:"p2p-badIP"`
+	NetRestrict *netutil.Netlist `mapstructure:"badIP"`
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
-	NodeDatabase string `mapstructure:"p2p-nodedb"`
+	NodeDatabase string `mapstructure:"nodedb"`
 
 	// Protocols should contain the protocols supported
 	// by the server. Matching protocols are launched for
@@ -116,7 +116,7 @@ type Config struct {
 	// If the port is zero, the operating system will pick a port. The
 	// ListenAddr field will be updated with the actual address when
 	// the server is started.
-	ListenAddr string `mapstructure:"p2p-listenaddr"`
+	ListenAddr string `mapstructure:"listenaddr"`
 
 	// If set to a non-nil value, the given NAT port mapper
 	// is used to make the listening port available to the
@@ -128,10 +128,10 @@ type Config struct {
 	Dialer NodeDialer
 
 	// If NoDial is true, the server will not dial any peers.
-	NoDial bool `mapstructure:"p2p-nodial"`
+	NoDial bool `mapstructure:"nodial"`
 
 	// Disconnect the worst peer ervery PeerPeriod ms.
-	PeerPeriod int `mapstructure:"p2p-peerperiod"`
+	PeerPeriod int `mapstructure:"peerperiod"`
 
 	// If EnableMsgEvents is set then the server will emit PeerEvents
 	// whenever a message is sent to or received from a peer
