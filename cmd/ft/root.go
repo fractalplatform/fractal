@@ -51,7 +51,7 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		if viper.ConfigFileUsed() != "" {
-			err = viperUmarshalConfig()
+			err = viper.Unmarshal(ftCfgInstance)
 		}
 		ftCfgInstance.LogCfg.Setup()
 		if errNoConfigFile != "" {
@@ -89,14 +89,6 @@ var RootCmd = &cobra.Command{
 		node.Wait()
 		debug.Exit()
 	},
-}
-
-func viperUmarshalConfig() error {
-	err := viper.Unmarshal(ftCfgInstance)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func makeNode() (*node.Node, error) {
