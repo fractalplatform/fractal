@@ -193,27 +193,8 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	pepcho := dpos.config.epoch(parent.Time.Uint64())
 	epcho := dpos.config.epoch(header.Time.Uint64())
 	if pepcho != epcho {
-		counter := func(from uint64, index uint64) uint64 {
-			if header.Number.Uint64() <= 1 {
-				return 0
-			}
-			if from == 0 {
-				from = 1
-			}
-			timestamp := header.Time.Uint64() - chain.GetHeaderByNumber(from).Time.Uint64()
-			m := (timestamp / dpos.config.mepochInterval()) * dpos.config.BlockFrequency
-			n := timestamp % dpos.config.mepochInterval()
-			offset := n / (dpos.config.blockInterval() * dpos.config.BlockFrequency)
-			if index < offset {
-				m += dpos.config.BlockFrequency
-			} else if index == offset {
-				n = n % (dpos.config.blockInterval() * dpos.config.BlockFrequency)
-				m += n / dpos.config.blockInterval()
-			}
-			return m
-		}
 		log.Debug("UpdateElectedCandidates", "prev", pepcho, "curr", epcho, "number", parent.Number.Uint64(), "time", parent.Time.Uint64())
-		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64(), counter)
+		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64())
 	}
 	return nil
 }
@@ -225,14 +206,14 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		return types.NewBlock(header, txs, receipts), nil
 	}
 	sys := NewSystem(state, dpos.config)
+	latest, err := sys.GetState(LastEpcho)
+	if err != nil {
+		return nil, err
+	}
 	parent := chain.GetHeaderByHash(header.ParentHash)
 	counter := int64(0)
 	if parent.Number.Uint64() > 0 && (dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval()) {
 		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
-			latest, err := sys.GetState(LastEpcho)
-			if err != nil {
-				return nil, err
-			}
 			latest.TakeOver = true
 			if err := sys.SetState(latest); err != nil {
 				return nil, err
@@ -245,11 +226,68 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		return nil, err
 	} else if candidate != nil {
 		candidate.ActualCounter++
+		if latest.TakeOver {
+			candidate.Counter++
+		} else if header.Number.Uint64() == 1 {
+			n := header.Time.Uint64() % (dpos.config.blockInterval() * dpos.config.BlockFrequency)
+			candidate.Counter += dpos.config.BlockFrequency - n/dpos.config.blockInterval()
+		} else {
+			coffset := dpos.config.getoffset(header.Time.Uint64())
+			poffset := dpos.config.getoffset(parent.Time.Uint64())
+			if coffset != poffset {
+				pstate, err := sys.GetState(latest.PreEpcho)
+				if err != nil {
+					return nil, err
+				}
+				candidate.Counter += dpos.config.BlockFrequency
+				if coffset < poffset {
+					coffset += dpos.config.CandidateScheduleSize
+				}
+				for coffset--; coffset != poffset; coffset-- {
+					name := pstate.ActivatedCandidateSchedule[coffset]
+					replace := false
+					for index, roffset := range pstate.OffCandidateSchedule {
+						if roffset == coffset {
+							replace = true
+							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(index)]
+							break
+						}
+					}
+					pcandidate, err := sys.GetCandidate(name)
+					if err != nil {
+						return nil, err
+					}
+					pcandidate.Counter += dpos.config.BlockFrequency
+					if err := sys.SetCandidate(pcandidate); err != nil {
+						return nil, err
+					}
+
+					if !replace {
+						// replace
+						opcandidate, err := sys.GetCandidateByEpcho(pstate.Epcho, name)
+						if err != nil {
+							return nil, err
+						}
+						acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
+						scnt := pcandidate.Counter - opcandidate.Counter
+						if scnt-acnt > scnt/2 && uint64(len(pstate.OffCandidateSchedule)) <= dpos.config.BackupScheduleSize {
+							pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, coffset)
+							if err := sys.SetState(pstate); err != nil {
+								return nil, err
+							}
+						}
+					}
+				}
+			}
+		}
 		if err := sys.SetCandidate(candidate); err != nil {
 			return nil, err
 		}
 	}
 
+	if minter := dpos.config.mepochInterval(); parent.Time.Uint64()/minter != header.Time.Uint64()/minter {
+
+	}
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
 	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
@@ -395,6 +433,12 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return err
 	}
 	offset := dpos.config.getoffset(timestamp)
+	for index, roffset := range pstate.OffCandidateSchedule {
+		if roffset == offset {
+			offset = dpos.config.CandidateScheduleSize + uint64(index)
+			break
+		}
+	}
 	if pstate == nil || offset >= uint64(len(pstate.ActivatedCandidateSchedule)) || strings.Compare(pstate.ActivatedCandidateSchedule[offset], candidate) != 0 {
 		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCandidate, candidate, pstate.ActivatedCandidateSchedule, offset, pstate.Epcho)
 	}
@@ -426,7 +470,7 @@ func (dpos *Dpos) GetDelegatedByTime(state *state.StateDB, candidate string, tim
 	return new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), nil
 }
 
-// GetLatestEpcho get latest epcho
+// GetLatestEpoch get latest epcho
 func (dpos *Dpos) GetLatestEpoch(state *state.StateDB) (epoch uint64, err error) {
 	sys := NewSystem(state, dpos.config)
 	return sys.GetLastestEpcho()
@@ -438,6 +482,9 @@ func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, erro
 	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return 0, err
+	}
+	if gstate == nil {
+		return 0, fmt.Errorf("not found")
 	}
 	return gstate.PreEpcho, nil
 }
