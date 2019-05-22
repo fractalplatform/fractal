@@ -502,7 +502,7 @@ func (dpos *Dpos) GetNextEpoch(state *state.StateDB, epoch uint64) (uint64, erro
 			return 0, fmt.Errorf("overflow")
 		}
 		gstate, err := sys.GetState(epoch)
-		if err != nil {
+		if err != nil && !strings.Contains(err.Error(), "not found") {
 			return 0, err
 		}
 		if gstate != nil {
