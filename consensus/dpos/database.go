@@ -124,7 +124,7 @@ type CandidateInfo struct {
 	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
 	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
 	Number        uint64        `json:"number"`        // timestamp
-	Counter       uint64        `json:"counter"`
+	Counter       uint64        `json:"shouldCounter"`
 	ActualCounter uint64        `json:"actualCounter"`
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
