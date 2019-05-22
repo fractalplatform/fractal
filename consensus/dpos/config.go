@@ -145,7 +145,7 @@ func (cfg *Config) nextslot(timestamp uint64) uint64 {
 }
 
 func (cfg *Config) getoffset(timestamp uint64) uint64 {
-	offset := uint64(timestamp) % cfg.mepochInterval()
+	offset := uint64(timestamp) % cfg.epochInterval() % cfg.mepochInterval()
 	offset /= cfg.blockInterval() * cfg.BlockFrequency
 	return offset
 }
@@ -156,4 +156,8 @@ func (cfg *Config) epoch(timestamp uint64) uint64 {
 
 func (cfg *Config) epochTimeStamp(epcho uint64) uint64 {
 	return (epcho-1)*cfg.epochInterval() + cfg.ReferenceTime
+}
+
+func (cfg *Config) maxMissing() uint64 {
+	return cfg.epochInterval() / cfg.blockInterval() / cfg.CandidateScheduleSize / 3
 }
