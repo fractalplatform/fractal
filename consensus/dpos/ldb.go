@@ -413,7 +413,7 @@ func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, nil
+		return nil, fmt.Errorf("epcho not found")
 	} else if err := rlp.DecodeBytes(val, gstate); err != nil {
 		return nil, err
 	}
