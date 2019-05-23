@@ -1,13 +1,21 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
+	"os"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/asset"
+	"github.com/fractalplatform/fractal/consensus/dpos"
+	colorable "github.com/mattn/go-colorable"
+	isatty "github.com/mattn/go-isatty"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -47,61 +55,180 @@ func init() {
 	for i := uint64(0); i < chainCfg.SysTokenDecimals; i++ {
 		decimals = new(big.Int).Mul(decimals, big.NewInt(10))
 	}
+
+	usecolor := (isatty.IsTerminal(os.Stderr.Fd()) || isatty.IsCygwinTerminal(os.Stderr.Fd())) && os.Getenv("TERM") != "dumb"
+	output := io.Writer(os.Stderr)
+	if usecolor {
+		output = colorable.NewColorableStderr()
+	}
+	ostream := log.StreamHandler(output, log.TerminalFormat(usecolor))
+	glogger := log.NewGlogHandler(ostream)
+	// logging
+	log.PrintOrigins(false)
+	glogger.Verbosity(log.LvlDebug)
+	log.Root().SetHandler(glogger)
 }
 
-func runTx(api *sdk.API, tx *TTX) error {
+func runTx(api *sdk.API, tx *TTX, indent int) error {
 	priv, err := crypto.HexToECDSA(tx.Priv)
 	if err != nil {
+		log.Error(strings.Repeat("*", indent), "hex priv err", err)
 		return err
 	}
-	fmt.Println(tx.Priv)
-	act := sdk.NewAccount(api, common.StrToName(tx.From), priv, chainCfg.SysTokenID, math.MaxInt64, true, chainCfg.ChainID)
+	act := sdk.NewAccount(api, common.StrToName(tx.From), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+
 	var hash common.Hash
-	var err1 error
 	switch strings.ToLower(tx.Type) {
 	case "createaccount":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
-			act := &accountmanager.CreateAccountAction{}
+			arg := &accountmanager.CreateAccountAction{}
 			bts, _ := json.Marshal(tx.Payload)
-			if err := json.Unmarshal(bts, act); err != nil {
+			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
-			tx.Payload = act
+			tx.Payload = arg
 		}
-		hash, err1 = act.CreateAccount(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.CreateAccountAction))
+		hash, err = act.CreateAccount(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.CreateAccountAction))
 	case "updateaccount":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
-			act := &accountmanager.UpdataAccountAction{}
+			arg := &accountmanager.UpdataAccountAction{}
 			bts, _ := json.Marshal(tx.Payload)
-			if err := json.Unmarshal(bts, act); err != nil {
+			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
-			tx.Payload = act
+			tx.Payload = arg
 		}
-		hash, err1 = act.UpdateAccount(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdataAccountAction))
-	case "UpdateAccountAuthor":
+		hash, err = act.UpdateAccount(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdataAccountAction))
+	case "updateaccountauthor":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
-			act := &accountmanager.AccountAuthorAction{}
+			arg := &accountmanager.AccountAuthorAction{}
 			bts, _ := json.Marshal(tx.Payload)
-			if err := json.Unmarshal(bts, act); err != nil {
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = arg
+		}
+		hash, err = act.UpdateAccountAuthor(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.AccountAuthorAction))
+	case "transfer":
+		hash, err = act.Transfer(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+	case "issueasset":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &accountmanager.IssueAsset{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = arg
+		}
+		hash, err = act.IssueAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.IssueAsset))
+	case "updateasset":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &accountmanager.UpdateAsset{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = arg
+		}
+		hash, err = act.UpdateAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdateAsset))
+	case "increaseasset":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &accountmanager.IncAsset{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = arg
+		}
+		hash, err = act.IncreaseAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.IncAsset))
+	case "destroyasset":
+		hash, err = act.DestroyAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+	case "setassetowner":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &asset.AssetObject{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = arg
+		}
+		hash, err = act.SetAssetOwner(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*asset.AssetObject))
+	case "regcandidate":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &dpos.RegisterCandidate{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = arg
+		}
+		hash, err = act.RegCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.RegisterCandidate))
+	case "updatecandidate":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &dpos.UpdateCandidate{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
 			tx.Payload = act
 		}
-		hash, err1 = act.UpdateAccountAuthor(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.AccountAuthorAction))
+		hash, err = act.UpdateCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.UpdateCandidate))
+	case "unregcandidate":
+		hash, err = act.UnRegCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+	case "refundcandidate":
+		hash, err = act.RefundCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+	case "votecandidate":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &dpos.VoteCandidate{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = act
+		}
+		hash, err = act.VoteCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.VoteCandidate))
+	case "kickedcandidate":
+		switch tx.Payload.(type) {
+		case map[string]interface{}:
+			arg := &dpos.KickedCandidate{}
+			bts, _ := json.Marshal(tx.Payload)
+			if err := json.Unmarshal(bts, arg); err != nil {
+				return err
+			}
+			tx.Payload = act
+		}
+		hash, err = act.KickedCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.KickedCandidate))
+	case "exittakeOver":
+		hash, err = act.ExitTakeOver(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
 	default:
+		err = fmt.Errorf("unsupport type %v", tx.Type)
 	}
-	if tx.Succeed == (err1 == nil) {
-		return fmt.Errorf("mismatch %v - %v", hash.String(), tx)
+	if bytes.Compare(hash.Bytes(), common.Hash{}.Bytes()) == 0 {
+		log.Error(strings.Repeat("*", indent), "txpool err", err, "tx", tx)
+		return fmt.Errorf("txpool error %v", err)
 	}
-	if len(tx.Contain) > 0 && !strings.Contains(err1.Error(), tx.Contain) {
-		return fmt.Errorf("mismatch %v - %v", hash.String(), tx)
+	if tx.Succeed != (err == nil) {
+		log.Error(strings.Repeat("*", indent), "succeed mismatch", err, "tx", tx)
+		return fmt.Errorf("succeed mismatch %v", err)
 	}
+	if len(tx.Contain) > 0 && !strings.Contains(err.Error(), tx.Contain) {
+		log.Error(strings.Repeat("*", indent), "contain mismatch", err, "tx", tx)
+		return fmt.Errorf("contain mismatch %v", err)
+	}
+	log.Info(strings.Repeat("*", indent), "hash", hash.String())
+	indent++
 	for _, ctx := range tx.Childs {
-		return runTx(api, ctx)
+		return runTx(api, ctx, indent)
 	}
 	return nil
 }
@@ -109,14 +236,17 @@ func runTx(api *sdk.API, tx *TTX) error {
 func main() {
 	total := 0
 	failed := 0
+
+	indent := 0
 	txs := []*TTX{}
 	for index, tx := range txs {
+		log.Info(strings.Repeat("*", indent), "index", index)
+		err := runTx(api, tx, indent)
+
 		total++
-		err := runTx(api, tx)
 		if err != nil {
 			failed++
 		}
-		fmt.Println(fmt.Sprintf("%5d %v", index, err))
 	}
-	fmt.Println("total", total, "failed", failed)
+	log.Info("result", "total", total, "failed", failed)
 }

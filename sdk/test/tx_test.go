@@ -13,7 +13,7 @@ import (
 )
 
 func TestTx(t *testing.T) {
-	priv1, _ := crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	priv1 := sdk.GenerateKey()
 	priv2 := sdk.GenerateKey()
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -24,8 +24,8 @@ func TestTx(t *testing.T) {
 		AssetID: chainCfg.SysTokenID,
 		Value:   100,
 		Payload: &accountmanager.CreateAccountAction{
-			AccountName: "sdktest002",
-			Founder:     "sdktest002",
+			AccountName: "sdktest005",
+			Founder:     "sdktest005",
 			PublicKey:   common.BytesToPubKey(crypto.FromECDSAPub(&priv1.PublicKey)),
 			Description: "descr sdktest001",
 		},
@@ -34,29 +34,26 @@ func TestTx(t *testing.T) {
 			&TTX{
 				Priv:    hex.EncodeToString(crypto.FromECDSA(priv1)),
 				Type:    "createaccount",
-				From:    chainCfg.SysName,
+				From:    "sdktest005",
 				To:      chainCfg.AccountName,
 				Gas:     1000000,
 				AssetID: chainCfg.SysTokenID,
-				Value:   100,
+				Value:   10,
 				Payload: &accountmanager.CreateAccountAction{
 					AccountName: "sdktest002",
 					Founder:     "sdktest002",
 					PublicKey:   common.BytesToPubKey(crypto.FromECDSAPub(&priv2.PublicKey)),
 					Description: "descr sdktest002",
 				},
+				Succeed: true,
 			},
 		},
-	}
-
-	if err := runTx(api, tx); err != nil {
-		panic(err)
 	}
 
 	cjson, _ := json.Marshal(tx)
 	ttx := &TTX{}
 	json.Unmarshal(cjson, ttx)
-	if err := runTx(api, ttx); err != nil {
+	if err := runTx(api, ttx, 0); err != nil {
 		panic(err)
 	}
 }
