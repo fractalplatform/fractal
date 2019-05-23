@@ -31,7 +31,7 @@ func (acc *Account) utilReceipt(hash common.Hash, timeout int64) error {
 	for {
 		select {
 		case <-ticker.C:
-			r, _ := acc.api.TransactionReceiptByHash(hash)
+			r, _ := acc.api.GetTransactionReceiptByHash(hash)
 			if r != nil && r.BlockNumber > 0 {
 				if len(r.ActionResults[0].Error) > 0 {
 					return fmt.Errorf(r.ActionResults[0].Error)

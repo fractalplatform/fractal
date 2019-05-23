@@ -270,7 +270,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 						}
 						acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
 						scnt := pcandidate.Counter - opcandidate.Counter
-						if scnt-acnt > scnt/2 && uint64(len(pstate.OffCandidateSchedule)) <= dpos.config.BackupScheduleSize {
+						if scnt-acnt > dpos.config.maxMissing() && uint64(len(pstate.OffCandidateSchedule)) <= dpos.config.BackupScheduleSize {
 							pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, coffset)
 							if err := sys.SetState(pstate); err != nil {
 								return nil, err
