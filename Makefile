@@ -67,7 +67,7 @@ commit_hash:
 .PHONY: build_workspace
 build_workspace:
 	@[ -d ${FT_DIR} ] || mkdir -p ${FT_DIR}
-	@[ -d ${FT_DIR}/fractal ] || ln -s ${REPO} ${FT_DIR}
+	@[ -d ${FT_DIR}/fractal ] || ln -s ${REPO} ${FT_DIR}/fractal
 
 # build all targets 
 .PHONY: all
