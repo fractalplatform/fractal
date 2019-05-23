@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	colorable "github.com/mattn/go-colorable"
 	isatty "github.com/mattn/go-isatty"
@@ -26,7 +25,6 @@ import (
 
 var (
 	api      = sdk.NewAPI("http://127.0.0.1:8545")
-	decimals = big.NewInt(1)
 	chainCfg *params.ChainConfig
 )
 
@@ -37,7 +35,7 @@ type TTX struct {
 	To      string      `json:"to,omitempty"`
 	Gas     uint64      `json:"gas,omitempty"`
 	AssetID uint64      `json:"id,omitempty"`
-	Value   uint64      `json:"value,omitempty"`
+	Value   *big.Int    `json:"value,omitempty"`
 	Payload interface{} `json:"payload,omitempty"`
 	Succeed bool        `json:"succeed,omitempty"`
 	Contain string      `json:"contain,omitempty"`
@@ -52,9 +50,6 @@ func init() {
 		panic(fmt.Sprintf("init err %v", err))
 	}
 	chainCfg = cfg
-	for i := uint64(0); i < chainCfg.SysTokenDecimals; i++ {
-		decimals = new(big.Int).Mul(decimals, big.NewInt(10))
-	}
 
 	usecolor := (isatty.IsTerminal(os.Stderr.Fd()) || isatty.IsCygwinTerminal(os.Stderr.Fd())) && os.Getenv("TERM") != "dumb"
 	output := io.Writer(os.Stderr)
@@ -89,7 +84,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.CreateAccount(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.CreateAccountAction))
+		hash, err = act.CreateAccount(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.CreateAccountAction))
 	case "updateaccount":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -100,7 +95,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.UpdateAccount(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdataAccountAction))
+		hash, err = act.UpdateAccount(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdataAccountAction))
 	case "updateaccountauthor":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -111,9 +106,9 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.UpdateAccountAuthor(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.AccountAuthorAction))
+		hash, err = act.UpdateAccountAuthor(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.AccountAuthorAction))
 	case "transfer":
-		hash, err = act.Transfer(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+		hash, err = act.Transfer(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas)
 	case "issueasset":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -124,7 +119,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.IssueAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.IssueAsset))
+		hash, err = act.IssueAsset(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.IssueAsset))
 	case "updateasset":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -135,7 +130,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.UpdateAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdateAsset))
+		hash, err = act.UpdateAsset(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdateAsset))
 	case "increaseasset":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -146,20 +141,20 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.IncreaseAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.IncAsset))
+		hash, err = act.IncreaseAsset(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.IncAsset))
 	case "destroyasset":
-		hash, err = act.DestroyAsset(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+		hash, err = act.DestroyAsset(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas)
 	case "setassetowner":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
-			arg := &asset.AssetObject{}
+			arg := &accountmanager.UpdateAssetOwner{}
 			bts, _ := json.Marshal(tx.Payload)
 			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.SetAssetOwner(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*asset.AssetObject))
+		hash, err = act.SetAssetOwner(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*accountmanager.UpdateAssetOwner))
 	case "regcandidate":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -170,7 +165,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = arg
 		}
-		hash, err = act.RegCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.RegisterCandidate))
+		hash, err = act.RegCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.RegisterCandidate))
 	case "updatecandidate":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -181,11 +176,11 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = act
 		}
-		hash, err = act.UpdateCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.UpdateCandidate))
+		hash, err = act.UpdateCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.UpdateCandidate))
 	case "unregcandidate":
-		hash, err = act.UnRegCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+		hash, err = act.UnRegCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas)
 	case "refundcandidate":
-		hash, err = act.RefundCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+		hash, err = act.RefundCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas)
 	case "votecandidate":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -196,7 +191,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = act
 		}
-		hash, err = act.VoteCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.VoteCandidate))
+		hash, err = act.VoteCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.VoteCandidate))
 	case "kickedcandidate":
 		switch tx.Payload.(type) {
 		case map[string]interface{}:
@@ -207,9 +202,9 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			}
 			tx.Payload = act
 		}
-		hash, err = act.KickedCandidate(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas, tx.Payload.(*dpos.KickedCandidate))
+		hash, err = act.KickedCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.KickedCandidate))
 	case "exittakeOver":
-		hash, err = act.ExitTakeOver(common.StrToName(tx.To), new(big.Int).Mul(big.NewInt(int64(tx.Value)), decimals), tx.AssetID, tx.Gas)
+		hash, err = act.ExitTakeOver(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas)
 	default:
 		err = fmt.Errorf("unsupport type %v", tx.Type)
 	}
