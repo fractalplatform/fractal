@@ -44,6 +44,10 @@ var (
 	gas  = uint64(30000000)
 	name = GenerateAccountName("sdktest", 8)
 	priv = syspriv
+
+	astname   = GenerateAccountName("sdkasset", 8)
+	astsymbol = "sas"
+	astamount = big.NewInt(100000000000)
 )
 
 func init() {
@@ -104,27 +108,66 @@ func TestUpdateAccountAuthor(t *testing.T) {
 
 func TestIssueAsset(t *testing.T) {
 	Convey("IssueAsset", t, func() {
-		//TODO
+		hash, err := sysAct.IssueAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.IssueAsset{
+			AssetName: astname,
+			Symbol:    astsymbol,
+			Amount:    new(big.Int).Mul(astamount, decimals),
+			Decimals:  chainCfg.SysTokenDecimals,
+			Founder:   common.StrToName(chainCfg.SysName),
+			Owner:     common.StrToName(chainCfg.SysName),
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 	})
 }
 func TestUpdateAsset(t *testing.T) {
-	Convey("IssueAsset", t, func() {
-		//TODO
+	Convey("UpdateAsset", t, func() {
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
+
+		hash, err := sysAct.UpdateAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAsset{
+			AssetID: ast.AssetId,
+			Founder: common.StrToName(chainCfg.SysName),
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 	})
 }
 func TestSetAssetOwner(t *testing.T) {
 	Convey("SetAssetOwner", t, func() {
-		//TODO
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
+
+		hash, err := sysAct.SetAssetOwner(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAssetOwner{
+			AssetID: ast.AssetId,
+			Owner:   common.StrToName(chainCfg.SysName),
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 	})
 }
 func TestDestroyAsset(t *testing.T) {
-	Convey("IssueAsset", t, func() {
-		//TODO
+	Convey("DestroyAsset", t, func() {
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
+
+		hash, err := sysAct.DestroyAsset(common.StrToName(chainCfg.AssetName), new(big.Int).Mul(astamount, decimals), ast.AssetId, gas)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 	})
 }
 func TestIncreaseAsset(t *testing.T) {
 	Convey("IncreaseAsset", t, func() {
-		//TODO
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
+
+		hash, err := sysAct.IncreaseAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.IncAsset{
+			AssetId: ast.AssetId,
+			Amount:  new(big.Int).Mul(astamount, decimals),
+			To:      common.StrToName(chainCfg.SysName),
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 	})
 }
 func TestTransfer(t *testing.T) {

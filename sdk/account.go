@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/crypto"
@@ -475,7 +474,7 @@ func (acc *Account) DestroyAsset(to common.Name, value *big.Int, id uint64, gas 
 }
 
 // SetAssetOwner update asset owner
-func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas uint64, asset *asset.AssetObject) (hash common.Hash, err error) {
+func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas uint64, asset *accountmanager.UpdateAssetOwner) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
