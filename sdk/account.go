@@ -169,6 +169,56 @@ func (acc *Account) UpdateAccount(to common.Name, value *big.Int, id uint64, gas
 	return
 }
 
+// UpdateAccountAuthor update accout
+func (acc *Account) UpdateAccountAuthor(to common.Name, value *big.Int, id uint64, gas uint64, newacct *accountmanager.AccountAuthorAction) (hash common.Hash, err error) {
+	nonce := acc.nonce
+	if nonce == math.MaxUint64 {
+		nonce, err = acc.api.AccountNonce(acc.name.String())
+		if err != nil {
+			return
+		}
+	}
+
+	bts, _ := rlp.EncodeToBytes(newacct)
+	action := types.NewAction(types.UpdateAccountAuthor, acc.name, to, nonce, id, gas, value, bts, nil)
+	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	if err != nil {
+		return
+	}
+	rawtx, _ := rlp.EncodeToBytes(tx)
+	checked := acc.checked || acc.nonce == math.MaxUint64
+	var checkedfunc func() error
+	if checked {
+		// before
+		checkedfunc, err = acc.checkUpdateAccount(action)
+		if err != nil {
+			return
+		}
+	}
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if checked {
+		//after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+		err = checkedfunc()
+		if err != nil {
+			return
+		}
+	}
+
+	if acc.nonce != math.MaxUint64 {
+		acc.nonce++
+	}
+	return
+}
+
 // Transfer transfer tokens
 func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
 	nonce := acc.nonce
@@ -601,6 +651,56 @@ func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, ga
 	if checked {
 		// before
 		checkedfunc, err = acc.chekUnregProdoucer(action)
+		if err != nil {
+			return
+		}
+	}
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if checked {
+		// after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+		err = checkedfunc()
+		if err != nil {
+			return
+		}
+	}
+
+	if acc.nonce != math.MaxUint64 {
+		acc.nonce++
+	}
+	return
+}
+
+// RefundCandidate refund cadiate
+func (acc *Account) RefundCandidate(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
+	nonce := acc.nonce
+	if nonce == math.MaxUint64 {
+		nonce, err = acc.api.AccountNonce(acc.name.String())
+		if err != nil {
+			return
+		}
+	}
+
+	action := types.NewAction(types.RefundCandidate, acc.name, to, nonce, id, gas, value, nil, nil)
+	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	if err != nil {
+		panic(err)
+	}
+	rawtx, _ := rlp.EncodeToBytes(tx)
+	checked := acc.checked || acc.nonce == math.MaxUint64
+	var checkedfunc func() error
+	if checked {
+		// before
+		checkedfunc, err = acc.chekRefoundProdoucer(action)
 		if err != nil {
 			return
 		}

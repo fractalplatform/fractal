@@ -17,7 +17,6 @@
 package sdk
 
 import (
-	"fmt"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -25,59 +24,49 @@ import (
 
 func TestAccountIsExist(t *testing.T) {
 	Convey("account_accountIsExist", t, func() {
-		api := NewAPI(rpchost)
-		existed, err := api.AccountIsExist(systemaccount)
-		fmt.Printf("====> %v\n", existed)
+		existed, err := api.AccountIsExist(chainCfg.SysName)
 		So(err, ShouldBeNil)
 		So(existed, ShouldBeTrue)
 	})
 }
 func TestAccountInfo(t *testing.T) {
 	Convey("account_getAccountByName", t, func() {
-		api := NewAPI(rpchost)
-		acct, err := api.AccountInfo(systemaccount)
-		fmt.Printf("====> %v\n", acct)
+		acct, err := api.AccountInfo(chainCfg.SysName)
 		So(err, ShouldBeNil)
 		So(acct, ShouldNotBeNil)
 	})
 }
 func TestAccountCode(t *testing.T) {
 	Convey("account_getCode", t, func() {
-		api := NewAPI(rpchost)
-		code, err := api.AccountCode(systemaccount)
+		code, err := api.AccountCode(chainCfg.SysName)
 		So(err, ShouldNotBeNil)
 		So(code, ShouldBeEmpty)
 	})
 }
 func TestAccountNonce(t *testing.T) {
 	Convey("account_getNonce", t, func() {
-		api := NewAPI(rpchost)
-		nonce, err := api.AccountNonce(systemaccount)
+		nonce, err := api.AccountNonce(chainCfg.SysName)
 		So(err, ShouldBeNil)
 		So(nonce, ShouldNotBeNil)
 	})
 }
 func TestAssetInfoByName(t *testing.T) {
 	Convey("account_getAssetInfoByName", t, func() {
-		api := NewAPI(rpchost)
-		asset, err := api.AssetInfoByName(systemassetname)
+		asset, err := api.AssetInfoByName(chainCfg.SysToken)
 		So(err, ShouldBeNil)
 		So(asset, ShouldNotBeNil)
 	})
 }
 func TestAssetInfoByID(t *testing.T) {
 	Convey("account_getAssetInfoByID", t, func() {
-		api := NewAPI(rpchost)
-		asset, err := api.AssetInfoByID(systemassetid)
+		asset, err := api.AssetInfoByID(chainCfg.SysTokenID)
 		So(err, ShouldBeNil)
 		So(asset, ShouldNotBeNil)
 	})
 }
 func TestBalanceByAssetID(t *testing.T) {
 	Convey("account_getAccountBalanceByID", t, func() {
-		api := NewAPI(rpchost)
-		balance, err := api.BalanceByAssetID(systemaccount, systemassetid, 0)
-		fmt.Printf("=====> %v : %v\n", balance, err)
+		balance, err := api.BalanceByAssetID(chainCfg.SysName, chainCfg.SysTokenID, 0)
 		So(err, ShouldBeNil)
 		So(balance, ShouldNotBeNil)
 	})
