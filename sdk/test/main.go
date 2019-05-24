@@ -32,6 +32,7 @@ var (
 
 // TTX
 type TTX struct {
+	Comment string      `json:"comment,omitempty"`
 	Type    string      `json:"type,omitempty"`
 	From    string      `json:"from,omitempty"`
 	To      string      `json:"to,omitempty"`
@@ -210,10 +211,6 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 	default:
 		err = fmt.Errorf("unsupport type %v", tx.Type)
 	}
-	if bytes.Compare(hash.Bytes(), common.Hash{}.Bytes()) == 0 {
-		log.Error(strings.Repeat("*", indent), "txpool err", err, "tx", tx)
-		return fmt.Errorf("txpool error %v", err)
-	}
 	if tx.Succeed != (err == nil) {
 		log.Error(strings.Repeat("*", indent), "succeed mismatch", err, "tx", tx)
 		return fmt.Errorf("succeed mismatch %v", err)
@@ -222,10 +219,16 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 		log.Error(strings.Repeat("*", indent), "contain mismatch", err, "tx", tx)
 		return fmt.Errorf("contain mismatch %v", err)
 	}
-	log.Info(strings.Repeat("*", indent), "hash", hash.String())
+	if tx.Succeed && bytes.Compare(hash.Bytes(), common.Hash{}.Bytes()) == 0 {
+		log.Error(strings.Repeat("*", indent), "txpool err", err, "tx", tx)
+		return fmt.Errorf("txpool error %v", err)
+	}
+	log.Info(strings.Repeat("*", indent), "hash", hash.String(), "comment", tx.Comment)
 	indent++
 	for _, ctx := range tx.Childs {
-		return runTx(api, ctx, indent)
+		if err := runTx(api, ctx, indent); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -250,7 +253,7 @@ func main() {
 			failed := 0
 			indent := 0
 			for index, tx := range txs {
-				log.Info(strings.Repeat("*", indent), "index", index)
+				log.Info(strings.Repeat("*", indent), "file", fi.Name(), "index", index)
 				err := runTx(api, tx, indent)
 
 				total++
