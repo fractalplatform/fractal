@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"math/big"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -203,7 +205,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			tx.Payload = act
 		}
 		hash, err = act.KickedCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.KickedCandidate))
-	case "exittakeOver":
+	case "exittakeover":
 		hash, err = act.ExitTakeOver(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas)
 	default:
 		err = fmt.Errorf("unsupport type %v", tx.Type)
@@ -229,19 +231,34 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 }
 
 func main() {
-	total := 0
-	failed := 0
+	rd, err := ioutil.ReadDir("./testcase")
+	if err != nil {
+		panic(err)
+	}
+	for _, fi := range rd {
+		if !fi.IsDir() {
+			bts, err := ioutil.ReadFile(path.Join("./testcase", fi.Name()))
+			if err != nil {
+				panic(err)
+			}
+			txs := []*TTX{}
+			if err := json.Unmarshal(bts, &txs); err != nil {
+				panic(err)
+			}
 
-	indent := 0
-	txs := []*TTX{}
-	for index, tx := range txs {
-		log.Info(strings.Repeat("*", indent), "index", index)
-		err := runTx(api, tx, indent)
+			total := 0
+			failed := 0
+			indent := 0
+			for index, tx := range txs {
+				log.Info(strings.Repeat("*", indent), "index", index)
+				err := runTx(api, tx, indent)
 
-		total++
-		if err != nil {
-			failed++
+				total++
+				if err != nil {
+					failed++
+				}
+			}
+			log.Info("result", "file", fi.Name(), "total", total, "failed", failed)
 		}
 	}
-	log.Info("result", "total", total, "failed", failed)
 }

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/consensus/dpos"
@@ -10,13 +10,13 @@ import (
 	"github.com/fractalplatform/fractal/common"
 )
 
-func sampleCreateAccount() string {
+func sampleCreateAccount() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
 		Type:    "createaccount",
 		From:    chainCfg.SysName,
 		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
 		Value:   new(big.Int).Mul(big.NewInt(100), big.NewInt(1e18)),
 		Payload: &accountmanager.CreateAccountAction{
@@ -28,16 +28,15 @@ func sampleCreateAccount() string {
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+	return tx
 }
-func sampleUpdateAccount() string {
+func sampleUpdateAccount() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
 		Type:    "updateaccount",
 		From:    "sampleact",
 		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
 		Value:   big.NewInt(0),
 		Payload: &accountmanager.UpdataAccountAction{
@@ -46,18 +45,18 @@ func sampleUpdateAccount() string {
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleUpdateAccountAuthor() string {
+func sampleUpdateAccountAuthor() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
 		Type:    "updateaccountauthor",
 		From:    "sampleact",
 		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
+		Value:   big.NewInt(0),
 		Payload: &accountmanager.AccountAuthorAction{
 			Threshold:             1,
 			UpdateAuthorThreshold: 2,
@@ -88,18 +87,18 @@ func sampleUpdateAccountAuthor() string {
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleIssueAsset() string {
+func sampleIssueAsset() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
+		Type:    "issueasset",
 		From:    "sampleact",
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		To:      chainCfg.AssetName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
+		Value:   big.NewInt(0),
 		Payload: &accountmanager.IssueAsset{
 			AssetName:   "sampleast",
 			Symbol:      "sast",
@@ -114,18 +113,18 @@ func sampleIssueAsset() string {
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleUpdateAsset() string {
+func sampleUpdateAsset() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Type:    "updateasset",
+		From:    "sampleact",
+		To:      chainCfg.AssetName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value:   new(big.Int).Mul(big.NewInt(100), big.NewInt(1e18)),
+		Value:   big.NewInt(0),
 		Payload: &accountmanager.UpdateAsset{
 			AssetID: 1,
 			Founder: "sampleact",
@@ -133,18 +132,18 @@ func sampleUpdateAsset() string {
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleSetAssetOwner() string {
+func sampleSetAssetOwner() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Type:    "setassetowner",
+		From:    "sampleact",
+		To:      chainCfg.AssetName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value:   new(big.Int).Mul(big.NewInt(100), big.NewInt(1e18)),
+		Value:   big.NewInt(0),
 		Payload: &accountmanager.UpdateAssetOwner{
 			AssetID: 1,
 			Owner:   "sampleact",
@@ -152,164 +151,176 @@ func sampleSetAssetOwner() string {
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleDestroyAsset() string {
+func sampleDestroyAsset() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Type:    "destroyasset",
+		From:    "sampleact",
+		To:      chainCfg.AssetName,
+		Gas:     30000000,
 		AssetID: 1,
 		Value:   new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18)),
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleIncreaseAsset() string {
+func sampleIncreaseAsset() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Type:    "increaseasset",
+		From:    "sampleact",
+		To:      chainCfg.AssetName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value:   new(big.Int).Mul(big.NewInt(100), big.NewInt(1e18)),
+		Value:   big.NewInt(0),
 		Payload: &accountmanager.IncAsset{
 			AssetId: 1,
 			Amount:  new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18)),
+			To:      "sampleact",
 		},
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleTransfer() string {
+func sampleTransfer() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
 		Type:    "transfer",
 		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		To:      "sampleact",
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
 		Value:   new(big.Int).Mul(big.NewInt(100), big.NewInt(1e18)),
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleRegCandidate() string {
+func sampleRegCandidate() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
+		Type:    "regcandidate",
 		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		To:      chainCfg.DposName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
-		Payload: &dpos.RegisterCandidate{},
+		Value:   big.NewInt(0),
+		Payload: &dpos.RegisterCandidate{
+			URL: fmt.Sprintf("www.xxxxxx.com"),
+		},
+		Succeed: false,
+		Childs:  []*TTX{},
+	}
+
+	return tx
+}
+func sampleUpdateCandidate() *TTX {
+	tx := &TTX{
+		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+		Type:    "updatecandidate",
+		From:    chainCfg.SysName,
+		To:      chainCfg.DposName,
+		Gas:     30000000,
+		AssetID: chainCfg.SysTokenID,
+		Value:   big.NewInt(0),
+		Payload: &dpos.UpdateCandidate{
+			URL: fmt.Sprintf("www.xxxxxx.com"),
+		},
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleUpdateCandidate() string {
+func sampleUnRegCandidate() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		Type:    "unregcandidate",
+		From:    "sampleact",
+		To:      chainCfg.DposName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
-		Payload: &dpos.UpdateCandidate{},
+		Value:   big.NewInt(0),
+		Succeed: false,
+		Childs:  []*TTX{},
+	}
+
+	return tx
+}
+func sampleRefundCandidate() *TTX {
+	tx := &TTX{
+		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+		Type:    "refundcandidate",
+		From:    chainCfg.SysName,
+		To:      chainCfg.DposName,
+		Gas:     30000000,
+		AssetID: chainCfg.SysTokenID,
+		Value:   big.NewInt(0),
+		Succeed: false,
+		Childs:  []*TTX{},
+	}
+
+	return tx
+}
+func sampleVoteCandidate() *TTX {
+	tx := &TTX{
+		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+		Type:    "votecandidate",
+		From:    chainCfg.SysName,
+		To:      chainCfg.DposName,
+		Gas:     30000000,
+		AssetID: chainCfg.SysTokenID,
+		Value:   big.NewInt(0),
+		Payload: &dpos.VoteCandidate{
+			Candidate: chainCfg.SysName,
+			Stake:     new(big.Int).Mul(big.NewInt(1000), big.NewInt(1e18)),
+		},
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleUnRegCandidate() string {
+func sampleKickedCandidate() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
+		Type:    "kickedcandidate",
 		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		To:      chainCfg.DposName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
+		Value:   big.NewInt(0),
+		Payload: &dpos.KickedCandidate{
+			Candidates: []string{
+				"candidate",
+			},
+		},
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
-func sampleRefundCandidate() string {
+func sampleExitTakeOver() *TTX {
 	tx := &TTX{
 		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
+		Type:    "exittakeover",
 		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
+		To:      chainCfg.DposName,
+		Gas:     30000000,
 		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
+		Value:   big.NewInt(0),
 		Succeed: true,
 		Childs:  []*TTX{},
 	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
-}
-func sampleVoteCandidate() string {
-	tx := &TTX{
-		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
-		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
-		Payload: &dpos.VoteCandidate{},
-		Succeed: true,
-		Childs:  []*TTX{},
-	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
-}
-func sampleKickedCandidate() string {
-	tx := &TTX{
-		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
-		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
-		Payload: &dpos.KickedCandidate{},
-		Succeed: true,
-		Childs:  []*TTX{},
-	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
-}
-func sampleExitTakeOver() string {
-	tx := &TTX{
-		Priv:    "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		Type:    "transfer",
-		From:    chainCfg.SysName,
-		To:      chainCfg.AccountName,
-		Gas:     1000000,
-		AssetID: chainCfg.SysTokenID,
-		Value: big.NewInt(0),
-		Succeed: true,
-		Childs:  []*TTX{},
-	}
-	bts, _ := json.Marshal(tx)
-	return string(bts)
+
+	return tx
 }
