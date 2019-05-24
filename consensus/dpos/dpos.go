@@ -240,42 +240,62 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 					return nil, err
 				}
 				candidate.Counter += dpos.config.BlockFrequency
-				if coffset < poffset {
-					coffset += dpos.config.CandidateScheduleSize
-				}
-				for coffset--; coffset != poffset; coffset-- {
-					name := pstate.ActivatedCandidateSchedule[coffset]
-					replace := false
-					for index, roffset := range pstate.OffCandidateSchedule {
-						if roffset == coffset {
-							replace = true
-							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(index)]
+				timestamp := header.Time.Uint64()
+				if header.Time.Uint64()-parent.Time.Uint64() != dpos.config.blockInterval() {
+					epcho := dpos.config.epoch(parent.Time.Uint64())
+					for ; ; timestamp = header.Time.Uint64() - dpos.config.blockInterval() {
+						if dpos.config.epoch(timestamp) == epcho {
+							if offset := dpos.config.getoffset(timestamp); offset != coffset {
+								coffset = offset + 1
+							}
 							break
 						}
 					}
-					pcandidate, err := sys.GetCandidate(name)
-					if err != nil {
-						return nil, err
+				}
+				if dpos.config.epoch(timestamp) == dpos.config.epoch(parent.Time.Uint64()) {
+					if coffset < poffset {
+						coffset += dpos.config.CandidateScheduleSize
 					}
-					pcandidate.Counter += dpos.config.BlockFrequency
-					if err := sys.SetCandidate(pcandidate); err != nil {
-						return nil, err
-					}
-
-					if !replace {
-						// replace
-						opcandidate, err := sys.GetCandidateByEpcho(pstate.Epcho, name)
-						if err != nil {
-							return nil, err
-						}
-						acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
-						scnt := pcandidate.Counter - opcandidate.Counter
-						if scnt-acnt > dpos.config.maxMissing() && uint64(len(pstate.OffCandidateSchedule)) <= dpos.config.BackupScheduleSize {
-							pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, coffset)
-							if err := sys.SetState(pstate); err != nil {
+					log.Info("candidate replace yes or not", "prev offset", poffset, "next offset", coffset, "num", header.Number)
+					for coffset--; coffset != poffset; coffset-- {
+						index := coffset % dpos.config.CandidateScheduleSize
+						if index < uint64(len(pstate.ActivatedCandidateSchedule)) {
+							name := pstate.ActivatedCandidateSchedule[index]
+							replace := false
+							for index, roffset := range pstate.OffCandidateSchedule {
+								if roffset == coffset {
+									replace = true
+									name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(index)]
+									break
+								}
+							}
+							pcandidate, err := sys.GetCandidate(name)
+							if err != nil {
 								return nil, err
 							}
+							pcandidate.Counter += dpos.config.BlockFrequency
+							if err := sys.SetCandidate(pcandidate); err != nil {
+								return nil, err
+							}
+
+							if !replace {
+								// replace
+								opcandidate, err := sys.GetCandidateByEpcho(pstate.Epcho, name)
+								if err != nil {
+									return nil, err
+								}
+								acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
+								scnt := pcandidate.Counter - opcandidate.Counter
+								log.Info("candidate replace", "prev should", opcandidate.Counter, "prev actual", opcandidate.ActualCounter, "next should", pcandidate.Counter, "next actual", pcandidate.ActualCounter, "max", dpos.config.maxMissing(), "num", header.Number)
+								if scnt-acnt > dpos.config.maxMissing() && uint64(len(pstate.OffCandidateSchedule)) < uint64(len(pstate.ActivatedCandidateSchedule))-dpos.config.CandidateScheduleSize {
+									pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, coffset)
+									if err := sys.SetState(pstate); err != nil {
+										return nil, err
+									}
+								}
+							}
 						}
+
 					}
 				}
 			}
