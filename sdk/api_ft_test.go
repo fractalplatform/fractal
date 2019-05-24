@@ -25,13 +25,11 @@ import (
 
 func TestGetCurrentBlock(t *testing.T) {
 	Convey("ft_getCurrentBlock", t, func() {
-		api := NewAPI(rpchost)
 		block, err := api.GetCurrentBlock(false)
 		So(err, ShouldBeNil)
 		So(block, ShouldNotBeNil)
 	})
 	Convey("ft_getCurrentBlock", t, func() {
-		api := NewAPI(rpchost)
 		block, err := api.GetCurrentBlock(true)
 		So(err, ShouldBeNil)
 		So(block, ShouldNotBeNil)
@@ -40,7 +38,6 @@ func TestGetCurrentBlock(t *testing.T) {
 
 func TestGetBlockByHash(t *testing.T) {
 	Convey("ft_getBlockByHash", t, func() {
-		api := NewAPI(rpchost)
 		block, err := api.GetCurrentBlock(false)
 		So(err, ShouldBeNil)
 		hash := common.HexToHash(block["hash"].(string))
@@ -52,7 +49,6 @@ func TestGetBlockByHash(t *testing.T) {
 
 func TestGetBlockByNumber(t *testing.T) {
 	Convey("ft_getBlockByNumber", t, func() {
-		api := NewAPI(rpchost)
 		block, err := api.GetCurrentBlock(false)
 		So(err, ShouldBeNil)
 		block, err = api.GetBlockByNumber((int64(block["number"].(float64))), false)
@@ -62,7 +58,6 @@ func TestGetBlockByNumber(t *testing.T) {
 }
 func TestGetTransactionByHash(t *testing.T) {
 	Convey("ft_getTransactionByHash", t, func() {
-		api := NewAPI(rpchost)
 		block, err := api.GetCurrentBlock(false)
 		So(err, ShouldBeNil)
 		for _, hash := range block["transactions"].([]interface{}) {
@@ -74,7 +69,6 @@ func TestGetTransactionByHash(t *testing.T) {
 }
 func TestGetTransactionReceiptByHash(t *testing.T) {
 	Convey("ft_getTransactionReceipt", t, func() {
-		api := NewAPI(rpchost)
 		block, err := api.GetCurrentBlock(false)
 		So(err, ShouldBeNil)
 		for _, hash := range block["transactions"].([]interface{}) {
@@ -87,7 +81,6 @@ func TestGetTransactionReceiptByHash(t *testing.T) {
 }
 func TestFTGasPrice(t *testing.T) {
 	Convey("ft_gasPrice", t, func() {
-		api := NewAPI(rpchost)
 		gasprice, err := api.GasPrice()
 		So(err, ShouldBeNil)
 		So(gasprice, ShouldNotBeNil)
@@ -96,7 +89,6 @@ func TestFTGasPrice(t *testing.T) {
 
 func TestGetChainConfig(t *testing.T) {
 	Convey("ft_chainConfig", t, func() {
-		api := NewAPI(rpchost)
 		cfg, err := api.GetChainConfig()
 		So(err, ShouldBeNil)
 		So(cfg, ShouldNotBeNil)
