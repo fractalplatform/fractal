@@ -292,9 +292,7 @@ func (a *Account) GetAllBalances() (map[uint64]*big.Int, error) {
 
 // BinarySearch binary search
 func (a *Account) binarySearch(assetID uint64) (int64, bool) {
-	if len(a.Balances) == 0 {
-		return 0, false
-	}
+
 	low := int64(0)
 	high := int64(len(a.Balances)) - 1
 	for low <= high {
@@ -325,26 +323,13 @@ func (a *Account) AddNewAssetByAssetID(assetID uint64, amount *big.Int) {
 		} else {
 			//insert
 			if a.Balances[p].AssetID < assetID {
-				//insert back
+				//insert after p
 				p = p + 1
-				tail := append([]*AssetBalance{}, a.Balances[p:]...)
-				a.Balances = append(a.Balances[:p], newAssetBalance(assetID, amount))
-				a.Balances = append(a.Balances, tail...)
-			} else {
-				//insert front
-				if len(a.Balances) > 1 {
-					if a.Balances[p].AssetID < assetID {
-						p = p + 1
-					}
-					tail := append([]*AssetBalance{}, a.Balances[p:]...)
-					a.Balances = append(a.Balances[:p], newAssetBalance(assetID, amount))
-					a.Balances = append(a.Balances, tail...)
-				} else {
-					tail := append([]*AssetBalance{}, a.Balances[p:]...)
-					a.Balances = append([]*AssetBalance{}, newAssetBalance(assetID, amount))
-					a.Balances = append(a.Balances, tail...)
-				}
 			}
+			tail := append([]*AssetBalance{}, a.Balances[p:]...)
+			a.Balances = append(a.Balances[:p], newAssetBalance(assetID, amount))
+			a.Balances = append(a.Balances, tail...)
+
 		}
 	}
 }

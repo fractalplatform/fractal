@@ -31,7 +31,7 @@ func (acc *Account) utilReceipt(hash common.Hash, timeout int64) error {
 	for {
 		select {
 		case <-ticker.C:
-			r, _ := acc.api.TransactionReceiptByHash(hash)
+			r, _ := acc.api.GetTransactionReceiptByHash(hash)
 			if r != nil && r.BlockNumber > 0 {
 				if len(r.ActionResults[0].Error) > 0 {
 					return fmt.Errorf(r.ActionResults[0].Error)
@@ -125,6 +125,14 @@ func (acc *Account) chekUpdateProdoucer(action *types.Action) (func() error, err
 }
 
 func (acc *Account) chekUnregProdoucer(action *types.Action) (func() error, error) {
+	// TODO
+	function := func() error {
+		return nil
+	}
+	return function, nil
+}
+
+func (acc *Account) chekRefoundProdoucer(action *types.Action) (func() error, error) {
 	// TODO
 	function := func() error {
 		return nil
