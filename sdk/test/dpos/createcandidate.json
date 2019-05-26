@@ -1,0 +1,113 @@
+[{
+    "comment": "index0 fractal.admin create account dpos0001 & transfer 1000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 1000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0001",
+        "founder": "dpos0001",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0001 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index1 fractal.admin create account dpos0002 & transfer 2000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 2000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0002",
+        "founder": "dpos0002",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0002 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index2 fractal.admin create account dpos0003 & transfer 3000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 3000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0003",
+        "founder": "dpos0003",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0003 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index3 fractal.admin create account dpos0004 & transfer 4000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 4000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0004",
+        "founder": "dpos0004",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0004 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index4 fractal.admin create account dpos0005 & transfer 5000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 5000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0005",
+        "founder": "dpos0005",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0005 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index5 fractal.admin create account dpos0006 & transfer 6000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 6000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0006",
+        "founder": "dpos0006",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0006 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index6 fractal.admin create account dpos0007 & transfer 7000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 7000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0007",
+        "founder": "dpos0007",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0007 account"
+    },
+    "succeed": true
+}
+]

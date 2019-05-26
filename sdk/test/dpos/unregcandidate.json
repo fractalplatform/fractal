@@ -1,0 +1,41 @@
+[{
+	"comment": "index0 dpos0001 unregcandidate & transfer 500000 ft",
+	"type": "unregcandidate",
+	"from": "dpos0007",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 500000000000000000000000,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": false
+},
+{
+	"comment": "index1 dpos0002 unregcandidate & transfer 1000000 ft",
+	"type": "unregcandidate",
+	"from": "dpos0006",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 1000000000000000000000000,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": false
+},
+{
+	"comment": "index0 dpos0001 unregcandidate & transfer 500000 ft",
+	"type": "unregcandidate",
+	"from": "dpos0001",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index1 dpos0002 unregcandidate & transfer 1000000 ft",
+	"type": "unregcandidate",
+	"from": "dpos0002",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+}
+]
