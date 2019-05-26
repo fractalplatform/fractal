@@ -47,6 +47,9 @@ var (
 	chainid         = big.NewInt(1)
 	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
 	tGas            = uint64(20000000)
+
+	AssetAbi = "./test/Asset.abi"
+	AssetBin = "./test/Asset.bin"
 )
 
 func TestAccount(t *testing.T) {
@@ -201,6 +204,7 @@ func TestDPOS(t *testing.T) {
 		So(hash, ShouldNotBeNil)
 	})
 }
+
 func TestManual(t *testing.T) {
 	SkipConvey("Manual", t, func() {
 		api := NewAPI(rpchost)
@@ -212,5 +216,116 @@ func TestManual(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
+	})
+}
+
+func createAccount(sysAcct *Account, api *API) (*Account, error) {
+	priv, pub := GenerateKey()
+	accountName := common.StrToName(GenerateAccountName("test", 8))
+	if _, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
+		AccountName: accountName,
+		PublicKey:   pub,
+	}); err != nil {
+		return nil, err
+	}
+	return NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid), nil
+}
+
+func TestContract(t *testing.T) {
+	Convey("Contract", t, func() {
+		api := NewAPI(rpchost)
+		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
+		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
+
+		// CreateAccount
+		acct, err := createAccount(sysAcct, api)
+		So(err, ShouldBeNil)
+
+		// deploy contract ./test/asset.sol
+		input, err := formCreateContractInput(AssetAbi, AssetBin)
+		So(err, ShouldBeNil)
+		hash, err := acct.CreateContract(systemassetid, tGas, input)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+
+		// issue asset in contract
+		assetName := GenerateAccountName("test", 8)
+		input, err = formIssueAssetInput(AssetAbi, assetName+","+assetName+",10000000000,10,"+acct.name.String()+",20000000000,"+acct.name.String()+",,this is contracgt asset")
+		So(err, ShouldBeNil)
+		hash, err = acct.CallContract(systemassetid, tGas, input)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+		ast, err := api.AssetInfoByName(assetName)
+		So(err, ShouldBeNil)
+		So(ast.Owner, ShouldEqual, acct.name) // compare name
+
+		// increase asset in contract
+		accountInfo, err := api.AccountInfo(acct.name.String())
+		So(err, ShouldBeNil)
+		balance, err := accountInfo.GetBalanceByID(ast.AssetId)
+		So(err, ShouldBeNil)
+		increment := big.NewInt(100000)
+		input, err = formIncreaseAssetInput(AssetAbi, big.NewInt(int64(ast.GetAssetId())),
+			common.BigToAddress(big.NewInt(int64(accountInfo.AccountID))), increment)
+		So(err, ShouldBeNil)
+		hash, err = acct.CallContract(systemassetid, tGas, input)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+
+		newAsset, err := api.AssetInfoByName(assetName)
+		So(err, ShouldBeNil)
+		So(big.NewInt(0).Add(ast.Amount, increment), ShouldResemble, newAsset.Amount) // compare asset amount
+
+		newAccountInfo, err := api.AccountInfo(acct.name.String())
+		So(err, ShouldBeNil)
+		newBalance, err := newAccountInfo.GetBalanceByID(ast.AssetId)
+		So(err, ShouldBeNil)
+		So(big.NewInt(0).Add(balance, increment), ShouldResemble, newBalance) // compare account blanace
+
+		// transfer asset in contract
+		toAcct, err := createAccount(sysAcct, api)
+		So(err, ShouldBeNil)
+		toAcctInfo, err := api.AccountInfo(toAcct.name.String())
+		So(err, ShouldBeNil)
+		input, err = formTransferAssetInput(AssetAbi, big.NewInt(int64(ast.AssetId)), common.BigToAddress(big.NewInt(int64(toAcctInfo.AccountID))), big.NewInt(1))
+		So(err, ShouldBeNil)
+		hash, err = acct.CallContract(systemassetid, tGas, input)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+
+		sendAccountInfo, err := api.AccountInfo(acct.name.String())
+		So(err, ShouldBeNil)
+		senderBalance, err := sendAccountInfo.GetBalanceByID(ast.AssetId)
+		So(err, ShouldBeNil)
+		So(newBalance.Sub(newBalance, big.NewInt(1)), ShouldResemble, senderBalance) // compare sender blanace
+
+		recipientAccountInfo, err := api.AccountInfo(toAcct.name.String())
+		So(err, ShouldBeNil)
+		recipientBalance, err := recipientAccountInfo.GetBalanceByID(ast.AssetId)
+		So(err, ShouldBeNil)
+		So(big.NewInt(1), ShouldResemble, recipientBalance) // compare recipient blanace
+
+		// change asset owner in contract
+		input, err = formChangeAssetOwner(AssetAbi, common.BigToAddress(big.NewInt(int64(toAcctInfo.AccountID))), big.NewInt(int64(ast.AssetId))) //22168
+		So(err, ShouldBeNil)
+		hash, err = acct.CallContract(systemassetid, tGas, input)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+		newOwnerAsset, err := api.AssetInfoByName(assetName)
+		So(err, ShouldBeNil)
+		So(newOwnerAsset.Owner, ShouldEqual, toAcct.name) // compare asset owner
+
+		// destory asset in contract
+		input, err = formDestroyAsset(AssetAbi, big.NewInt(int64(ast.AssetId)), senderBalance)
+		So(err, ShouldBeNil)
+		hash, err = acct.CallContract(systemassetid, tGas, input)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+
+		destroyAccountInfo, err := api.AccountInfo(acct.name.String())
+		So(err, ShouldBeNil)
+		destroyBalance, err := destroyAccountInfo.GetBalanceByID(ast.AssetId)
+		So(err, ShouldBeNil)
+		So(big.NewInt(0), ShouldResemble, destroyBalance) // compare destory balance
 	})
 }
