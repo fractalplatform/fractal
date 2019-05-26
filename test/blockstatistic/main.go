@@ -59,7 +59,7 @@ func NumberFormatInt(str int64) string {
 }
 
 func main() {
-	_rpchost := flag.String("u", "http://192.168.2.13:8090", "RPC host地址")
+	_rpchost := flag.String("u", "http://192.168.2.11:3090", "RPC host地址")
 	_start := flag.Uint64("s", 1, "统计的起始高度")
 	_end := flag.Uint64("e", 0, "统计的结束高度")
 	_detail := flag.Bool("d", true, "是否显示区块细节情况")
@@ -85,7 +85,7 @@ func main() {
 		return (timestamp-chainCfg.ReferenceTime)/epchoInterval + 1
 	}
 	offsetFunc := func(timestamp uint64) uint64 {
-		offset := uint64(timestamp) % epchoInterval % mepchoInterval
+		offset := uint64(timestamp-blockInterval) % epchoInterval % mepchoInterval
 		offset /= blockInterval * chainCfg.DposCfg.BlockFrequency
 		return offset
 	}
@@ -110,14 +110,17 @@ func main() {
 
 		printDetails := func(timestamp int64, miner string, txs uint64, height uint64) {
 			if prevTime == blk.TimeStamp || epchoFunc(uint64(prevTime)) != epchoFunc(uint64(timestamp)) {
+				if epchoFunc(uint64(prevTime)) != epchoFunc(uint64(timestamp)) {
+					fmt.Printf("%5d(%05d-%ds-%s)", txs, height, timestamp/(int64(time.Second))%60, miner)
+				}
 				epcho := epchoFunc(uint64(prevTime))
+				vcandidates, err := api.DposValidCandidatesByNumber(blk.Height)
+				if err != nil {
+					panic(err)
+				}
 				fmt.Println("\n==========================周期==========================")
 				if height > 0 {
-					vcandidates, err := api.DposNextValidCandidatesByNumber(blk.Height)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Println(epcho, vcandidates["activatedCandidateSchedule"])
+					fmt.Println(blk.Height, epcho, vcandidates["activatedCandidateSchedule"])
 				} else {
 					fmt.Println(epcho)
 				}
@@ -127,7 +130,9 @@ func main() {
 			if prevTime == blk.TimeStamp || offset != offsetFunc(uint64(prevTime)) {
 				fmt.Printf("\n%03d%s:", offset, miner)
 			}
-			fmt.Printf("%5d(%05d-%ds)", txs, height, timestamp/(int64(time.Second))%60)
+			if prevTime == blk.TimeStamp || epchoFunc(uint64(prevTime)) == epchoFunc(uint64(timestamp)) {
+				fmt.Printf("%5d(%05d-%ds)", txs, height, timestamp/(int64(time.Second))%60)
+			}
 		}
 		if *_detail {
 			for blk.TimeStamp-prevTime >= 2*int64(blockInterval) {

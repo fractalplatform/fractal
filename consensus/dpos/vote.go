@@ -475,7 +475,7 @@ func (sys *System) onblock(epcho uint64, number uint64) error {
 }
 
 // UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64) error {
+func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64, miner string) error {
 	if pepcho > epcho {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -505,6 +505,9 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	activeTotalQuantity := big.NewInt(0)
 	totalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
+		if strings.Compare(candidateInfo.Name, miner) == 0 {
+			candidateInfo.Counter++
+		}
 		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
 		if !candidateInfo.invalid() && (!pstate.Dpos || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0) {
 			if uint64(len(activatedCandidateSchedule)) < n {

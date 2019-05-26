@@ -194,7 +194,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	epcho := dpos.config.epoch(header.Time.Uint64())
 	if pepcho != epcho {
 		log.Debug("UpdateElectedCandidates", "prev", pepcho, "curr", epcho, "number", parent.Number.Uint64(), "time", parent.Time.Uint64())
-		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64())
+		sys.UpdateElectedCandidates(pepcho, epcho, parent.Number.Uint64(), header.Coinbase.String())
 	}
 	return nil
 }
@@ -278,7 +278,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 								return nil, err
 							}
 
-							if !replace {
+							if !replace && header.Time.Uint64()%dpos.config.mepochInterval()%10 == 0 {
 								// replace
 								opcandidate, err := sys.GetCandidateByEpcho(pstate.Epcho, name)
 								if err != nil {
@@ -287,7 +287,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 								acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
 								scnt := pcandidate.Counter - opcandidate.Counter
 								log.Info("candidate replace", "prev should", opcandidate.Counter, "prev actual", opcandidate.ActualCounter, "next should", pcandidate.Counter, "next actual", pcandidate.ActualCounter, "max", dpos.config.maxMissing(), "num", header.Number)
-								if scnt-acnt > dpos.config.maxMissing() && uint64(len(pstate.OffCandidateSchedule)) < uint64(len(pstate.ActivatedCandidateSchedule))-dpos.config.CandidateScheduleSize {
+								if scnt-acnt > scnt/2 && uint64(len(pstate.OffCandidateSchedule)) < uint64(len(pstate.ActivatedCandidateSchedule))-dpos.config.CandidateScheduleSize {
 									pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, coffset)
 									if err := sys.SetState(pstate); err != nil {
 										return nil, err

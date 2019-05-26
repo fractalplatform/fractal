@@ -145,7 +145,7 @@ func (cfg *Config) nextslot(timestamp uint64) uint64 {
 }
 
 func (cfg *Config) getoffset(timestamp uint64) uint64 {
-	offset := uint64(timestamp) % cfg.epochInterval() % cfg.mepochInterval()
+	offset := uint64(timestamp-cfg.blockInterval()) % cfg.epochInterval() % cfg.mepochInterval()
 	offset /= cfg.blockInterval() * cfg.BlockFrequency
 	return offset
 }
