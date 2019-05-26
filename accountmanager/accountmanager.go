@@ -381,6 +381,9 @@ func (am *AccountManager) UpdateAccountAuthor(accountName common.Name, acctAuth 
 			return fmt.Errorf("invalid account author operation type %d", actionTy)
 		}
 	}
+	if uint64(len(acct.Authors)) > params.MaxAuthorNum {
+		return fmt.Errorf("account author lenght can not exceed %d", params.MaxAuthorNum)
+	}
 	acct.SetAuthorVersion()
 	return am.SetAccount(acct)
 }

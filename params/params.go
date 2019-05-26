@@ -61,6 +61,7 @@ var (
 const (
 	MaxSignDepth  = uint64(10)
 	MaxSignLength = uint64(50)
+	MaxAuthorNum  = uint64(10)
 )
 
 //type for fee
