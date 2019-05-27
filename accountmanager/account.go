@@ -117,10 +117,7 @@ func (a *Account) HaveCode() bool {
 
 // IsEmpty check account empty
 func (a *Account) IsEmpty() bool {
-	if a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0 {
-		return true
-	}
-	return false
+	return a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0
 }
 
 // GetName return account object name
