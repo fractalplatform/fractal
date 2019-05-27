@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	api      = sdk.NewAPI("http://127.0.0.1:8545")
+	api      = sdk.NewAPI("http://192.168.2.11:3090")
 	chainCfg *params.ChainConfig
 )
 
@@ -177,7 +177,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
-			tx.Payload = act
+			tx.Payload = arg
 		}
 		hash, err = act.UpdateCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.UpdateCandidate))
 	case "unregcandidate":
@@ -192,7 +192,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
-			tx.Payload = act
+			tx.Payload = arg
 		}
 		hash, err = act.VoteCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.VoteCandidate))
 	case "kickedcandidate":
@@ -203,7 +203,7 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 			if err := json.Unmarshal(bts, arg); err != nil {
 				return err
 			}
-			tx.Payload = act
+			tx.Payload = arg
 		}
 		hash, err = act.KickedCandidate(common.StrToName(tx.To), tx.Value, tx.AssetID, tx.Gas, tx.Payload.(*dpos.KickedCandidate))
 	case "exittakeover":
@@ -245,7 +245,9 @@ func main() {
 				panic(err)
 			}
 			txs := []*TTX{}
-			if err := json.Unmarshal(bts, &txs); err != nil {
+			d := json.NewDecoder(bytes.NewReader(bts))
+			d.UseNumber()
+			if err := d.Decode(&txs); err != nil {
 				panic(err)
 			}
 

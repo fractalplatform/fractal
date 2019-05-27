@@ -576,7 +576,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	}
 	tp.journalTx(from, tx)
 
-	log.Trace("Pooled new future transaction", "hash", hash, "from", from)
+	log.Trace("Pooled new future transaction", "hash", hash, "from", from, "replace", replace)
 	return replace, nil
 }
 
@@ -757,6 +757,7 @@ func (tp *TxPool) addTxsLocked(txs []*types.Transaction, local bool) []error {
 			dirty[from] = struct{}{}
 		}
 	}
+
 	// Only reprocess the internal state if something was actually added
 	if len(dirty) > 0 {
 		names := make([]common.Name, 0, len(dirty))
