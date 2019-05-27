@@ -895,7 +895,7 @@ func (acc *Account) CreateContract(id uint64, gas uint64, input []byte) (hash co
 	tx := types.NewTransaction(0, gasprice, action)
 	signer := types.MakeSigner(big.NewInt(1))
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -929,7 +929,7 @@ func (acc *Account) CallContract(id uint64, gas uint64, input []byte) (hash comm
 
 	signer := types.MakeSigner(big.NewInt(1))
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
