@@ -55,7 +55,7 @@ func MakeSigner(chainID *big.Int) Signer {
 	return NewSigner(chainID)
 }
 
-func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, keys []*KeyPair) error {
+func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, parentIndex uint64, keys []*KeyPair) error {
 	h := s.Hash(tx)
 	for _, key := range keys {
 		sig, err := crypto.Sign(h[:], key.priv)
@@ -68,6 +68,7 @@ func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, keys []*KeyPai
 			return err
 		}
 	}
+	a.WithParentIndex(parentIndex)
 	return nil
 }
 
@@ -133,7 +134,7 @@ func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
 		return nil, ErrInvalidchainID
 	}
 	var pubKeys []common.PubKey
-	for _, sign := range a.data.Sign {
+	for _, sign := range a.data.Sign.SignData {
 		V := new(big.Int).Sub(sign.V, s.chainIDMul)
 		V.Sub(V, big8)
 		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V)

@@ -272,7 +272,7 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 	tx := types.NewTransaction(uint64(1), big.NewInt(2), actions...)
 	keyPair := types.MakeKeyPair(fromprikey, []uint64{0})
 	for _, action := range actions {
-		err := types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{keyPair})
+		err := types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
 		}
@@ -295,7 +295,7 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 	tx1 := types.NewTransaction(uint64(1), big.NewInt(2), actions1...)
 	for _, action := range actions1 {
 		keyPair = types.MakeKeyPair(getCandidates()[action.Sender().String()].prikey, []uint64{0})
-		err := types.SignActionWithMultiKey(action, tx1, signer, []*types.KeyPair{keyPair})
+		err := types.SignActionWithMultiKey(action, tx1, signer, 0, []*types.KeyPair{keyPair})
 		if err != nil {
 			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
 		}

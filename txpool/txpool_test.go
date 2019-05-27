@@ -326,17 +326,17 @@ func TestTransactionDoubleNonce(t *testing.T) {
 
 	keyPair := types.MakeKeyPair(fkey, []uint64{0})
 	tx1 := newTx(big.NewInt(1), newAction(0, fname, tname, big.NewInt(100), 100000, nil))
-	if err := types.SignActionWithMultiKey(tx1.GetActions()[0], tx1, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
+	if err := types.SignActionWithMultiKey(tx1.GetActions()[0], tx1, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 
 	tx2 := newTx(big.NewInt(2), newAction(0, fname, tname, big.NewInt(100), 1000000, nil))
-	if err := types.SignActionWithMultiKey(tx2.GetActions()[0], tx2, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
+	if err := types.SignActionWithMultiKey(tx2.GetActions()[0], tx2, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 
 	tx3 := newTx(big.NewInt(1), newAction(0, fname, tname, big.NewInt(100), 1000000, nil))
-	if err := types.SignActionWithMultiKey(tx3.GetActions()[0], tx3, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
+	if err := types.SignActionWithMultiKey(tx3.GetActions()[0], tx3, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 

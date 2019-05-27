@@ -536,6 +536,10 @@ func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash
 	return acct.GetAuthorVersion(), nil
 }
 
+func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex uint64) (common.Name, error) {
+	return accountName, nil
+}
+
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
@@ -548,6 +552,11 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			return fmt.Errorf("exceed max sign length, want most %d, actual is %d", params.MaxSignLength, len(pubs))
 		}
 
+		parentIndex := action.GetSignParent()
+		signSender, err := am.getParentAccount(action.Sender(), parentIndex)
+		if err != nil {
+			return err
+		}
 		recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor)}
 		for i, pub := range pubs {
 			index := action.GetSignIndex(uint64(i))
@@ -555,7 +564,7 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 				return fmt.Errorf("exceed max sign depth, want most %d, actual is %d", params.MaxSignDepth, len(index))
 			}
 
-			if err := am.ValidSign(action.Sender(), pub, index, recoverRes); err != nil {
+			if err := am.ValidSign(signSender, pub, index, recoverRes); err != nil {
 				return err
 			}
 		}
@@ -567,7 +576,7 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 				count += weight
 			}
 			threshold := acctAuthor.threshold
-			if name.String() == action.Sender().String() && action.Type() == types.UpdateAccountAuthor {
+			if name.String() == signSender.String() && (action.Type() == types.UpdateAccountAuthor || signSender != action.Sender()) {
 				threshold = acctAuthor.updateAuthorThreshold
 			}
 			if count < threshold {
