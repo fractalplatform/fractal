@@ -22,205 +22,250 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/fractalplatform/fractal/consensus/dpos"
+	"github.com/fractalplatform/fractal/params"
+
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/params"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var (
-	// 	tAssetName   = "testasset"
-	// 	tAssetSymbol = "tat"
-	// 	tAmount      = new(big.Int).Mul(big.NewInt(1000000), big.NewInt(1e8))
-	// 	tDecimals    = uint64(8)
-	// 	tAssetID     uint64
-	rpchost         = "http://127.0.0.1:8545"
 	systemaccount   = params.DefaultChainconfig.SysName
 	accountaccount  = params.DefaultChainconfig.AccountName
 	dposaccount     = params.DefaultChainconfig.DposName
 	assetaccount    = params.DefaultChainconfig.AssetName
-	systemprivkey   = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
 	systemassetname = params.DefaultChainconfig.SysToken
 	systemassetid   = uint64(0)
 	chainid         = big.NewInt(1)
 	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
 	tGas            = uint64(20000000)
 
-	AssetAbi = "./test/Asset.abi"
-	AssetBin = "./test/Asset.bin"
+	AssetAbi   = "./test/Asset.abi"
+	AssetBin   = "./test/Asset.bin"
+	api        = NewAPI("http://127.0.0.1:8545")
+	syspriv, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	decimals   = big.NewInt(1)
+	chainCfg   *params.ChainConfig
+	sysAct     *Account
 )
 
-func TestAccount(t *testing.T) {
-	Convey("Account", t, func() {
-		api := NewAPI(rpchost)
-		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
-		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
-		// CreateAccount
-		priv, pub := GenerateKey()
-		accountName := common.StrToName(GenerateAccountName("test", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
-			AccountName: accountName,
+var (
+	val  = big.NewInt(100)
+	gas  = uint64(30000000)
+	name = GenerateAccountName("sdktest", 8)
+	priv = syspriv
+
+	astname   = GenerateAccountName("sdkasset", 8)
+	astsymbol = "sas"
+	astamount = big.NewInt(100000000000)
+)
+
+func init() {
+	cfg, err := api.GetChainConfig()
+	if err != nil {
+		panic(fmt.Sprintf("init err %v", err))
+	}
+	chainCfg = cfg
+	for i := uint64(0); i < chainCfg.SysTokenDecimals; i++ {
+		decimals = new(big.Int).Mul(decimals, big.NewInt(10))
+	}
+	sysAct = NewAccount(api, common.StrToName(chainCfg.SysName), syspriv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+}
+
+func TestCreateAccount(t *testing.T) {
+	Convey("CreateAccount", t, func() {
+		pub := common.BytesToPubKey(crypto.FromECDSAPub(&priv.PublicKey))
+		hash, err := sysAct.CreateAccount(common.StrToName(chainCfg.AccountName), new(big.Int).Mul(val, decimals), chainCfg.SysTokenID, gas, &accountmanager.CreateAccountAction{
+			AccountName: common.StrToName(name),
 			PublicKey:   pub,
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
-
-		// Transfer
-		hash, err = sysAcct.Transfer(accountName, tValue, systemassetid, tGas)
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
-		// UpdateAccount
-		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
-		// _, npub := GenerateKey()
-		hash, err = acct.UpdateAccount(common.StrToName(accountaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &accountmanager.UpdataAccountAction{
-			Founder: accountName,
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
-		// DestroyAccount
 	})
 }
 
-func TestAsset(t *testing.T) {
-	Convey("Asset", t, func() {
-		api := NewAPI(rpchost)
-		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
-		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
-		// CreateAccount
-		priv, pub := GenerateKey()
-		accountName := common.StrToName(GenerateAccountName("test", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
-			AccountName: accountName,
-			PublicKey:   pub,
+func TestUpdateAccount(t *testing.T) {
+	Convey("UpdateAccount", t, func() {
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.UpdateAccount(common.StrToName(chainCfg.AccountName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdataAccountAction{
+			Founder: common.StrToName(name),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
+	})
+}
 
-		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
-		assetname := common.StrToName(GenerateAccountName("asset", 2)).String()
-		// IssueAsset
-		ast1 := accountmanager.IssueAsset{
-			AssetName: assetname,
-			Symbol:    assetname[len(assetname)-4:],
-			Amount:    new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
-			Decimals:  18,
-			Owner:     accountName,
-			Founder:   accountName,
-			//AddIssue:   big.NewInt(0),
-			UpperLimit: big.NewInt(0),
-		}
-
-		hash, err = acct.IssueAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &ast1)
+func TestUpdateAccountAuthor(t *testing.T) {
+	Convey("UpdateAccountAuthor", t, func() {
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.UpdateAccountAuthor(common.StrToName(chainCfg.AccountName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.AccountAuthorAction{
+			Threshold:             1,
+			UpdateAuthorThreshold: 1,
+			AuthorActions: []*accountmanager.AuthorAction{
+				&accountmanager.AuthorAction{
+					ActionType: accountmanager.UpdateAuthor,
+					Author: &common.Author{
+						Owner:  act.Pubkey(),
+						Weight: 1,
+					},
+				},
+			},
+		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
+	})
+}
 
-		ast, _ := api.AssetInfoByName(assetname)
+func TestIssueAsset(t *testing.T) {
+	Convey("IssueAsset", t, func() {
+		hash, err := sysAct.IssueAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.IssueAsset{
+			AssetName: astname,
+			Symbol:    astsymbol,
+			Amount:    new(big.Int).Mul(astamount, decimals),
+			Decimals:  chainCfg.SysTokenDecimals,
+			Founder:   common.StrToName(chainCfg.SysName),
+			Owner:     common.StrToName(chainCfg.SysName),
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+	})
+}
+func TestUpdateAsset(t *testing.T) {
+	Convey("UpdateAsset", t, func() {
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
 
-		ast2 := accountmanager.UpdateAsset{
+		hash, err := sysAct.UpdateAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAsset{
 			AssetID: ast.AssetId,
-			Founder: accountName,
-
-			//UpperLimit: big.NewInt(0),
-		}
-
-		// acct.UpdateAsset()
-		hash, err = acct.UpdateAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &ast2)
+			Founder: common.StrToName(chainCfg.SysName),
+		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
+	})
+}
+func TestSetAssetOwner(t *testing.T) {
+	Convey("SetAssetOwner", t, func() {
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
+
+		hash, err := sysAct.SetAssetOwner(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAssetOwner{
+			AssetID: ast.AssetId,
+			Owner:   common.StrToName(chainCfg.SysName),
+		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
+	})
+}
+func TestDestroyAsset(t *testing.T) {
+	Convey("DestroyAsset", t, func() {
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
 
-		hash, err = acct.IncreaseAsset(common.StrToName(assetaccount), big.NewInt(0), systemassetid, tGas, &accountmanager.IncAsset{
-			Amount:  new(big.Int).Mul(big.NewInt(10000000), big.NewInt(1e18)),
-			To:      accountName,
+		hash, err := sysAct.DestroyAsset(common.StrToName(chainCfg.AssetName), new(big.Int).Mul(astamount, decimals), ast.AssetId, gas)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+	})
+}
+func TestIncreaseAsset(t *testing.T) {
+	Convey("IncreaseAsset", t, func() {
+		ast, err := api.AssetInfoByName(astname)
+		So(err, ShouldBeNil)
+
+		hash, err := sysAct.IncreaseAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.IncAsset{
 			AssetId: ast.AssetId,
+			Amount:  new(big.Int).Mul(astamount, decimals),
+			To:      common.StrToName(chainCfg.SysName),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
-		// acct.SetAssetOwner()
-		// acct.DestroyAsset()
+	})
+}
+func TestTransfer(t *testing.T) {
+	Convey("Transfer", t, func() {
+		hash, err := sysAct.Transfer(common.StrToName(name), val, chainCfg.SysTokenID, gas)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
 	})
 }
 
-func TestDPOS(t *testing.T) {
-	SkipConvey("DPOS", t, func() {
-		api := NewAPI(rpchost)
-		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
-		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
-		priv, pub := GenerateKey()
-		accountName := common.StrToName(GenerateAccountName("prod", 8))
-		hash, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
-			AccountName: accountName,
-			PublicKey:   pub,
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
-		priv2, pub2 := GenerateKey()
-		accountName2 := common.StrToName(GenerateAccountName("voter", 8))
-		hash, err = sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
-			AccountName: accountName2,
-			PublicKey:   pub2,
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
+func TestRegCandidate(t *testing.T) {
+	SkipConvey("RegCandidate", t, func() {
 		// RegCandidate
-		acct := NewAccount(api, accountName, priv, systemassetid, math.MaxUint64, true, chainid)
-		acct2 := NewAccount(api, accountName2, priv2, systemassetid, math.MaxUint64, true, chainid)
-		hash, err = acct.RegCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.RegisterCandidate{
-			URL: fmt.Sprintf("www.%s.com", accountName.String()),
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.RegCandidate(common.StrToName(chainCfg.DposName), new(big.Int).Mul(new(big.Int).Div(val, big.NewInt(4)), decimals), chainCfg.SysTokenID, gas, &dpos.RegisterCandidate{
+			URL: fmt.Sprintf("www.%s.com", name),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
-
-		// VoteCandidate
-		hash, err = acct2.VoteCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCandidate{
-			Candidate: accountName.String(),
+	})
+}
+func TestUpdateCandidate(t *testing.T) {
+	SkipConvey("UpdateCandidate", t, func() {
+		// UpdateCandidate
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.UpdateCandidate(common.StrToName(chainCfg.DposName), new(big.Int).Mul(new(big.Int).Div(val, big.NewInt(4)), decimals), chainCfg.SysTokenID, gas, &dpos.UpdateCandidate{
+			URL: fmt.Sprintf("www.%s.com", name),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
-
-		// VoteCandidate
-		hash, err = acct2.VoteCandidate(common.StrToName(dposaccount), new(big.Int).Div(tValue, big.NewInt(3)), systemassetid, tGas, &dpos.VoteCandidate{
-			Candidate: systemaccount,
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
-		hash, err = sysAcct.KickedCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCandidate{
-			Candidates: []string{accountName.String()},
-		})
-		So(err, ShouldBeNil)
-		So(hash, ShouldNotBeNil)
-
+	})
+}
+func TestUnRegCandidate(t *testing.T) {
+	SkipConvey("UnRegCandidate", t, func() {
 		// UnRegCandidate
-		hash, err = acct.UnRegCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas)
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.UnRegCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, gas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 	})
 }
 
-func TestManual(t *testing.T) {
-	SkipConvey("Manual", t, func() {
-		api := NewAPI(rpchost)
-		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
-		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
-
-		hash, err := sysAcct.KickedCandidate(common.StrToName(dposaccount), new(big.Int).Mul(tValue, big.NewInt(0)), systemassetid, tGas, &dpos.KickedCandidate{
-			Candidates: []string{"ftcandidate1", "ftcandidate2", "ftcandidate3"},
+func TestRefundCandidate(t *testing.T) {
+	SkipConvey("RefundCandidate", t, func() {
+		// RefundCandidate
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.RefundCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, gas)
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+	})
+}
+func TestVoteCandidate(t *testing.T) {
+	SkipConvey("VoteCandidate", t, func() {
+		// VoteCandidate
+		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+		hash, err := act.VoteCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, gas, &dpos.VoteCandidate{
+			Candidate: chainCfg.SysName,
+			Stake:     new(big.Int).Mul(new(big.Int).Div(val, big.NewInt(4)), decimals),
 		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+	})
+}
+func TestKickedCandidate(t *testing.T) {
+	SkipConvey("KickedCandidate", t, func() {
+		// KickedCandidate
+		hash, err := sysAct.KickedCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, gas, &dpos.KickedCandidate{
+			Candidates: []string{name},
+		})
+		So(err, ShouldBeNil)
+		So(hash, ShouldNotBeNil)
+	})
+}
+
+func TestExitTakeOver(t *testing.T) {
+	SkipConvey("ExitTakeOver", t, func() {
+		// ExitTakeOver
+		hash, err := sysAct.ExitTakeOver(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, gas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 	})
 }
 
 func createAccount(sysAcct *Account, api *API) (*Account, error) {
-	priv, pub := GenerateKey()
+	priv := GenerateKey()
+	pub := common.BytesToPubKey(crypto.FromECDSAPub(&priv.PublicKey))
 	accountName := common.StrToName(GenerateAccountName("test", 8))
 	if _, err := sysAcct.CreateAccount(common.StrToName(accountaccount), tValue, systemassetid, tGas, &accountmanager.CreateAccountAction{
 		AccountName: accountName,
@@ -233,9 +278,7 @@ func createAccount(sysAcct *Account, api *API) (*Account, error) {
 
 func TestContract(t *testing.T) {
 	Convey("Contract", t, func() {
-		api := NewAPI(rpchost)
-		var systempriv, _ = crypto.HexToECDSA(systemprivkey)
-		sysAcct := NewAccount(api, common.StrToName(systemaccount), systempriv, systemassetid, math.MaxUint64, true, chainid)
+		sysAcct := NewAccount(api, common.StrToName(systemaccount), syspriv, systemassetid, math.MaxUint64, true, chainid)
 
 		// CreateAccount
 		acct, err := createAccount(sysAcct, api)

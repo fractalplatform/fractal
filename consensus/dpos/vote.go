@@ -475,7 +475,7 @@ func (sys *System) onblock(epcho uint64, number uint64) error {
 }
 
 // UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64, counter func(from uint64, index uint64) uint64) error {
+func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64, miner string) error {
 	if pepcho > epcho {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -487,42 +487,6 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	// not is first & no changes
 	if pstate.Epcho != pstate.PreEpcho && pepcho == epcho {
 		return nil
-	}
-
-	// old  actived candidates
-	oldcandidates := map[string]uint64{}
-	roldcandidates := map[uint64][]string{}
-	ppstate, err := sys.GetState(pstate.PreEpcho)
-	if err != nil {
-		return err
-	}
-	for n := uint64(len(ppstate.ActivatedCandidateSchedule)); n > 0; n-- {
-		index := n - 1
-		candidate := ppstate.ActivatedCandidateSchedule[index]
-		if index >= sys.config.CandidateScheduleSize {
-			if index-sys.config.CandidateScheduleSize < uint64(len(pstate.OffCandidateNumber)) {
-				h := pstate.OffCandidateNumber[index-sys.config.CandidateScheduleSize]
-				i := pstate.OffCandidateSchedule[index-sys.config.CandidateScheduleSize]
-				cnt := counter(h-1, i)
-				if _, ok := roldcandidates[i]; !ok {
-					roldcandidates[i] = []string{}
-				} else {
-					for _, c := range roldcandidates[index] {
-						cnt -= oldcandidates[c]
-					}
-				}
-				roldcandidates[i] = append(roldcandidates[i], candidate)
-				oldcandidates[candidate] += cnt
-			}
-		} else {
-			cnt := counter(ppstate.Number, index)
-			if _, ok := roldcandidates[index]; ok {
-				for _, c := range roldcandidates[index] {
-					cnt -= oldcandidates[c]
-				}
-			}
-			oldcandidates[candidate] += cnt
-		}
 	}
 
 	candidateInfoArray, err := sys.GetCandidates()
@@ -541,10 +505,10 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	activeTotalQuantity := big.NewInt(0)
 	totalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
-		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
-		if cnt, ok := oldcandidates[candidateInfo.Name]; ok {
-			candidateInfo.Counter += cnt
+		if strings.Compare(candidateInfo.Name, miner) == 0 {
+			candidateInfo.Counter++
 		}
+		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
 		if !candidateInfo.invalid() && (!pstate.Dpos || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0) {
 			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)

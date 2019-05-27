@@ -1,0 +1,263 @@
+[{
+    "comment": "index0 fractal.admin create account ctest001 & transfer 100 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001",
+        "founder": "ctest001",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index1 fractal.admin create account ctest001 & transfer 100 ft,alreay exist",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001",
+        "founder": "ctest001",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index2 fractal.admin create account 1ctest001, first char invalid",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "1ctest001",
+        "founder": "1ctest001",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "1ctest001 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index3 fractal.admin create account ctest, too short",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest",
+        "founder": "ctest",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index4 fractal.admin create account ctest001ctest001ctest001, too length",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001ctest001ctest001",
+        "founder": "ctest001ctest001ctest001",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001ctest001ctest001 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index5 fractal.admin create account ctest001c1, funder ctest001c2 not exist",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c1",
+        "founder": "ctest001c2",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001c1 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index6 fractal.admin create account ctest001c1, no funder",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c1",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001c1 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index7 fractal.admin create account ctest001c2, no publickey",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c2",
+        "description": "ctest001c2 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "index8 fractal.admin create account ctest001c3, over descript",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c3",
+        "description": "ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3  ctest001c3 ctest001c3ctest001c3ctest001c3 ctest001c3 account ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3  ctest001c3 ctest001c3ctest001c3ctest001c3 ctest001c3 accountctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3  ctest001c3 ctest001c3ctest001c3ctest001c3 ctest001c3 account ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3  ctest001c3 ctest001c3ctest001c3ctest001c3 ctest001c3 accountctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3  ctest001c3 ctest001c3ctest001c3ctest001c3 ctest001c3 account ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3 ctest001c3  ctest001c3 ctest001c3ctest001c3ctest001c3 ctest001c3 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index9 fractal.admin create account ctest001c3, no descript",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c3"
+    },
+    "succeed": true
+},
+{
+    "comment": "index10 fractal.admin create account ctest001c4 & transfer 100 ft, wrong asset id",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "id":1,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c4",
+        "founder": "ctest001c4",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001c4 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index11 fractal.admin create account ctest001c4 & transfer 100 ft, wrong to",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "ctest001",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c4",
+        "founder": "ctest001c4",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001c4 account"
+    },
+    "succeed": false
+},
+{
+    "comment": "index12 fractal.admin create account, no payload",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+    },
+    "succeed": false
+},
+{
+    "comment": "index13 fractal.admin create account ctest001c5 & tranfer 100 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 100000000000000000000,
+    "payload": {
+        "accountName": "ctest001c5",
+        "founder": "ctest001c5",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "ctest001c5 account"
+    },
+    "succeed": true,
+    "childs": [{
+            "comment": "ctest001c5 create account ctest001c6 & tranfer 1 ft",
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "type": "createaccount",
+            "from": "ctest001c5",
+            "to": "fractal.account",
+            "gas": 30000000,
+            "value": 1000000000000000000,
+            "payload": {
+                "accountName": "ctest001c6",
+                "founder": "ctest001c6",
+                "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+                "description": "ctest001c6 account"
+            },
+            "succeed": true
+        },
+        {
+            "comment": "ctest001c5 create account ctest001c7 & tranfer 1 ft & founder ctest001c5",
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "type": "createaccount",
+            "from": "ctest001c5",
+            "to": "fractal.account",
+            "gas": 30000000,
+            "value": 1000000000000000000,
+            "payload": {
+                "accountName": "ctest001c7",
+                "founder": "ctest001c5",
+                "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+                "description": "ctest001c7 account"
+            },
+            "succeed": true
+        },
+        {
+            "comment": "ctest001c5 create account ctest001c8 & tranfer 100 ft, not enough",
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "type": "createaccount",
+            "from": "ctest001c5",
+            "to": "fractal.account",
+            "gas": 30000000,
+            "value": 100000000000000000000,
+            "payload": {
+                "accountName": "ctest001c8",
+                "founder": "ctest001c8",
+                "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+                "description": "ctest001c8 account"
+            },
+            "succeed": false
+        }
+    ]
+}
+]

@@ -27,58 +27,65 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// SendRawTransaction send tx
+// SendRawTransaction send signed tx
 func (api *API) SendRawTransaction(rawTx []byte) (common.Hash, error) {
 	hash := new(common.Hash)
 	err := api.client.Call(hash, "ft_sendRawTransaction", hexutil.Bytes(rawTx))
 	return *hash, err
 }
 
-// CurrentBlock current block info
-func (api *API) CurrentBlock(fullTx bool) (map[string]interface{}, error) {
+// GetCurrentBlock get current block info
+func (api *API) GetCurrentBlock(fullTx bool) (map[string]interface{}, error) {
 	block := map[string]interface{}{}
 	err := api.client.Call(&block, "ft_getCurrentBlock", fullTx)
 	return block, err
 }
 
-// BlockByHash block info
-func (api *API) BlockByHash(hash common.Hash, fullTx bool) (map[string]interface{}, error) {
+// GetBlockByHash get block info
+func (api *API) GetBlockByHash(hash common.Hash, fullTx bool) (map[string]interface{}, error) {
 	block := map[string]interface{}{}
 	err := api.client.Call(&block, "ft_getBlockByHash", hash, fullTx)
 	return block, err
 }
 
-// BlockByNumber block info
-func (api *API) BlockByNumber(number int64, fullTx bool) (map[string]interface{}, error) {
+// GetBlockByNumber get block info
+func (api *API) GetBlockByNumber(number int64, fullTx bool) (map[string]interface{}, error) {
 	block := map[string]interface{}{}
 	err := api.client.Call(&block, "ft_getBlockByNumber", rpc.BlockNumber(number), fullTx)
 	return block, err
 }
 
-// TransactionByHash tx info
-func (api *API) TransactionByHash(hash common.Hash) (*types.RPCTransaction, error) {
+// GetTransactionByHash get tx info by hash
+func (api *API) GetTransactionByHash(hash common.Hash) (*types.RPCTransaction, error) {
 	tx := &types.RPCTransaction{}
 	err := api.client.Call(tx, "ft_getTransactionByHash", hash)
 	return tx, err
 }
 
-// TransactionReceiptByHash tx info
-func (api *API) TransactionReceiptByHash(hash common.Hash) (*types.RPCReceipt, error) {
+// GetTransactionReceiptByHash get tx info by hash
+func (api *API) GetTransactionReceiptByHash(hash common.Hash) (*types.RPCReceipt, error) {
 	receipt := &types.RPCReceipt{}
 	err := api.client.Call(receipt, "ft_getTransactionReceipt", hash)
 	return receipt, err
 }
 
-// GasPrice gas price
+// GasPrice get gas price
 func (api *API) GasPrice() (*big.Int, error) {
 	gasprice := big.NewInt(0)
 	err := api.client.Call(gasprice, "ft_gasPrice")
 	return gasprice, err
 }
 
-// ChainConfig chain config
-func (api *API) ChainConfig() (*params.ChainConfig, error) {
+// GetChainConfig get chain config
+func (api *API) GetChainConfig() (*params.ChainConfig, error) {
 	cfg := &params.ChainConfig{}
 	err := api.client.Call(cfg, "ft_getChainConfig")
 	return cfg, err
 }
+
+// // GetGenesis get chain config
+// func (api *API) GetGenesis() (*params.ChainConfig, error) {
+// 	cfg := &params.ChainConfig{}
+// 	err := api.client.Call(cfg, "ft_getGenesis")
+// 	return cfg, err
+// }
