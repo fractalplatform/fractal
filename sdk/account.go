@@ -87,11 +87,12 @@ func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas
 	action := types.NewAction(types.CreateAccount, acc.name, to, nonce, id, gas, value, payload, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
 	rawtx, _ := rlp.EncodeToBytes(tx)
+
 	checked := acc.checked || acc.nonce == math.MaxUint64
 	var checkedfunc func() error
 	if checked {
@@ -137,7 +138,7 @@ func (acc *Account) UpdateAccount(to common.Name, value *big.Int, id uint64, gas
 	action := types.NewAction(types.UpdateAccount, acc.name, to, nonce, id, gas, value, bts, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -187,7 +188,7 @@ func (acc *Account) UpdateAccountAuthor(to common.Name, value *big.Int, id uint6
 	action := types.NewAction(types.UpdateAccountAuthor, acc.name, to, nonce, id, gas, value, bts, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -237,7 +238,7 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 	action := types.NewAction(types.Transfer, acc.name, to, nonce, id, gas, value, nil, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -287,7 +288,7 @@ func (acc *Account) IssueAsset(to common.Name, value *big.Int, id uint64, gas ui
 	action := types.NewAction(types.IssueAsset, acc.name, to, nonce, id, gas, value, payload, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -341,7 +342,7 @@ func (acc *Account) UpdateAsset(to common.Name, value *big.Int, id uint64, gas u
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -392,7 +393,7 @@ func (acc *Account) IncreaseAsset(to common.Name, value *big.Int, id uint64, gas
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -442,7 +443,7 @@ func (acc *Account) DestroyAsset(to common.Name, value *big.Int, id uint64, gas 
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -493,7 +494,7 @@ func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -544,7 +545,7 @@ func (acc *Account) RegCandidate(to common.Name, value *big.Int, id uint64, gas 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -595,7 +596,7 @@ func (acc *Account) UpdateCandidate(to common.Name, value *big.Int, id uint64, g
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -645,7 +646,7 @@ func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, ga
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		panic(err)
 	}
@@ -695,7 +696,7 @@ func (acc *Account) RefundCandidate(to common.Name, value *big.Int, id uint64, g
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		panic(err)
 	}
@@ -746,7 +747,7 @@ func (acc *Account) VoteCandidate(to common.Name, value *big.Int, id uint64, gas
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		panic(err)
 	}
@@ -797,7 +798,7 @@ func (acc *Account) KickedCandidate(to common.Name, value *big.Int, id uint64, g
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -846,7 +847,7 @@ func (acc *Account) ExitTakeOver(to common.Name, value *big.Int, id uint64, gas 
 	action := types.NewAction(types.ExitTakeOver, acc.name, to, nonce, id, gas, value, nil, nil)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -894,7 +895,7 @@ func (acc *Account) CreateContract(id uint64, gas uint64, input []byte) (hash co
 	tx := types.NewTransaction(0, gasprice, action)
 	signer := types.MakeSigner(big.NewInt(1))
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -928,7 +929,7 @@ func (acc *Account) CallContract(id uint64, gas uint64, input []byte) (hash comm
 
 	signer := types.MakeSigner(big.NewInt(1))
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, signer, []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}

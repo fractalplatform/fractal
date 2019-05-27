@@ -60,7 +60,7 @@ var (
 	bNonce = uint64(0)
 	cNonce = uint64(0)
 
-	assetID  = uint64(1)
+	assetID  = uint64(0)
 	nonce    = uint64(0)
 	gasLimit = uint64(2000000)
 )
@@ -91,7 +91,7 @@ func generateAccount() {
 	acc = common.Name(fmt.Sprintf("accountc%d", nonce))
 
 	key := types.MakeKeyPair(privateKey, []uint64{0})
-	acct := &accountmanager.AccountAction{
+	acct := &accountmanager.CreateAccountAction{
 		AccountName: aca,
 		Founder:     aca,
 		PublicKey:   pubKey_a,
@@ -99,7 +99,7 @@ func generateAccount() {
 	b, _ := rlp.EncodeToBytes(acct)
 	sendTransferTx(types.CreateAccount, from, to, nonce, assetID, balance, b, []*types.KeyPair{key})
 
-	acct = &accountmanager.AccountAction{
+	acct = &accountmanager.CreateAccountAction{
 		AccountName: acb,
 		Founder:     acb,
 		PublicKey:   pubKey_b,
@@ -107,7 +107,7 @@ func generateAccount() {
 	b, _ = rlp.EncodeToBytes(acct)
 	sendTransferTx(types.CreateAccount, from, to, nonce+1, assetID, balance, b, []*types.KeyPair{key})
 
-	acct = &accountmanager.AccountAction{
+	acct = &accountmanager.CreateAccountAction{
 		AccountName: acc,
 		Founder:     acc,
 		PublicKey:   pubKey_c,
@@ -160,7 +160,16 @@ func addAuthorsForAca() {
 	a_author_3 := common.NewAuthor(a_author_3_pub, 400)
 	a_authorAct_3 := &accountmanager.AuthorAction{0, a_author_3}
 
-	action := &accountmanager.AccountAuthorAction{1000, 0, []*accountmanager.AuthorAction{a_authorAct_0, a_authorAct_1, a_authorAct_2, a_authorAct_3}}
+	authorAction := make([]*accountmanager.AuthorAction, 0)
+	authorAction = append(authorAction, a_authorAct_0, a_authorAct_1, a_authorAct_2, a_authorAct_3)
+	// for i := 0; i < 7; i++ {
+	// 	priv, _ := crypto.GenerateKey()
+	// 	addr := crypto.PubkeyToAddress(priv.PublicKey)
+	// 	a := common.NewAuthor(addr, 400)
+	// 	aact := &accountmanager.AuthorAction{0, a}
+	// 	authorAction = append(authorAction, aact)
+	// }
+	action := &accountmanager.AccountAuthorAction{1000, 0, authorAction}
 	input, err := rlp.EncodeToBytes(action)
 	if err != nil {
 		jww.INFO.Println("addAuthors for accounta error ... ", err)
@@ -230,7 +239,15 @@ func transferFromA2B() {
 }
 
 func modifyAUpdateAUthorThreshold() {
+	key_1_0 := types.MakeKeyPair(b_author_0_priv, []uint64{1, 0})
+	key_1_1_0 := types.MakeKeyPair(c_author_0_priv, []uint64{1, 1, 0})
+	key_1_1_1 := types.MakeKeyPair(c_author_1_priv, []uint64{1, 1, 1})
+	key_1_1_2 := types.MakeKeyPair(c_author_2_priv, []uint64{1, 1, 2})
 	key_2 := types.MakeKeyPair(a_author_2_priv, []uint64{2})
+	key_3 := types.MakeKeyPair(a_author_3_priv, []uint64{3})
+	key_1_2 := types.MakeKeyPair(b_author_2_priv, []uint64{1, 2})
+	key_0 := types.MakeKeyPair(a_author_0_priv, []uint64{0})
+
 	action := &accountmanager.AccountAuthorAction{0, 2, []*accountmanager.AuthorAction{}}
 	input, err := rlp.EncodeToBytes(action)
 	if err != nil {
@@ -239,7 +256,7 @@ func modifyAUpdateAUthorThreshold() {
 	}
 
 	aNonce++
-	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_2})
+	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2, key_0})
 }
 
 func main() {
@@ -270,10 +287,10 @@ func main() {
 func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair) {
 	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, nil)
 	gasprice, _ := testcommon.GasPrice()
-	tx := types.NewTransaction(1, gasprice, action)
+	tx := types.NewTransaction(0, gasprice, action)
 
 	signer := types.MakeSigner(big.NewInt(1))
-	err := types.SignActionWithMultiKey(action, tx, signer, keys)
+	err := types.SignActionWithMultiKey(action, tx, signer, 0, keys)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
 	}
