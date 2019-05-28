@@ -108,6 +108,8 @@ ftservice:
     globalqueue: 2048
     # Maximum amount of time non-executable transaction are queued
     lifetime: 1h
+    # Maximum amount of time  executable transaction are resended
+    resendtime: 1h
   # gas price oracle
   gpo:
     # Number of recent blocks to check for gas prices

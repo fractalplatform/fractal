@@ -75,10 +75,10 @@
 			"revisionTime": "2019-05-16T23:13:50Z"
 		},
 		{
-			"checksumSHA1": "KSRJC/V4LkGTakqzakXY/Ces0sw=",
+			"checksumSHA1": "0VxficZgIBvfw/sJCnQWWcaulps=",
 			"path": "github.com/ethereum/go-ethereum/log",
-			"revision": "2f855bfa2893ad0e0fbb0072d317340385091868",
-			"revisionTime": "2019-05-16T23:13:50Z"
+			"revision": "4e0c1a1a6b97ad062d79c7c8717273cc51f0111c",
+			"revisionTime": "2019-05-26T16:15:05Z"
 		},
 		{
 			"checksumSHA1": "IfDucP2AWAj+1uW+ho6NEEDG7nk=",
@@ -249,12 +249,6 @@
 			"revisionTime": "2019-04-24T07:51:23Z"
 		},
 		{
-			"checksumSHA1": "qR7D38Zmn9TPUvGn64k+r0+Kq1c=",
-			"path": "github.com/mattn/go-runewidth",
-			"revision": "703b5e6b11ae25aeb2af9ebb5d5fdf8fa2575211",
-			"revisionTime": "2018-12-18T00:06:49Z"
-		},
-		{
 			"checksumSHA1": "J+g0oZePWp2zSIISD2dZZKTxmgg=",
 			"path": "github.com/mitchellh/mapstructure",
 			"revision": "3536a929edddb9a5b34bd6861dc4a9647cb459fe",
@@ -289,12 +283,6 @@
 			"path": "github.com/pelletier/go-toml",
 			"revision": "728039f679cbcd4f6a54e080d2219a4c4928c546",
 			"revisionTime": "2019-04-30T03:50:10Z"
-		},
-		{
-			"checksumSHA1": "yECMFHjNDJ5Tb/FKNE6IMupFjIM=",
-			"path": "github.com/peterh/liner",
-			"revision": "6f820f8f90ce9482ffbd40bb15f9ea9932f4942d",
-			"revisionTime": "2019-03-05T03:26:35Z"
 		},
 		{
 			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",

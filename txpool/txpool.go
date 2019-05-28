@@ -35,8 +35,9 @@ import (
 )
 
 var (
-	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
-	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
+	evictionInterval    = 3 * time.Minute  // Time interval to check for evictable transactions
+	statsReportInterval = 10 * time.Second // Time interval to report transaction pool stats
+	resendTxInterval    = 10 * time.Second // Time interval to resend transaction
 )
 
 const (
@@ -123,7 +124,6 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 
 	// Subscribe feeds from blockchain
 	tp.chainHeadSub = event.Subscribe(nil, tp.chainHeadCh, event.ChainHeadEv, &types.Block{})
-
 	tp.station = NewTxpoolStation(tp)
 	// Start the feed loop and return
 	tp.wg.Add(1)
@@ -145,6 +145,9 @@ func (tp *TxPool) loop() {
 
 	evict := time.NewTicker(evictionInterval)
 	defer evict.Stop()
+
+	resend := time.NewTicker(resendTxInterval)
+	defer resend.Stop()
 
 	journal := time.NewTicker(tp.config.Rejournal)
 	defer journal.Stop()
@@ -178,7 +181,6 @@ func (tp *TxPool) loop() {
 				log.Debug("Transaction pool status report", "executable", pending, "queued", queued, "stales", stales)
 				prevPending, prevQueued, prevStales = pending, queued, stales
 			}
-
 			// Handle inactive account transaction eviction
 		case <-evict.C:
 			tp.mu.Lock()
@@ -191,6 +193,21 @@ func (tp *TxPool) loop() {
 				if time.Since(tp.beats[name]) > tp.config.Lifetime {
 					for _, tx := range tp.queue[name].Flatten() {
 						tp.removeTx(tx.Hash(), true)
+					}
+				}
+			}
+			tp.mu.Unlock()
+			// Handle inactive account transaction resend
+		case <-resend.C:
+			tp.mu.Lock()
+			for name := range tp.pending {
+				if time.Since(tp.beats[name]) > tp.config.ResendTime {
+					if txs := tp.pending[name].Flatten(); len(txs) != 0 {
+						events := []*event.Event{
+							{Typecode: event.NewTxs, Data: txs},
+						}
+						go event.SendEvents(events)
+						log.Debug("resend account transactions", "name", name, "txlen", len(txs))
 					}
 				}
 			}
