@@ -21,12 +21,13 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 )
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(action *types.Action) (uint64, error) {
+func IntrinsicGas(accountDB *accountmanager.AccountManager, action *types.Action) (uint64, error) {
 	// Bump the required gas by the amount of transactional data
 	gasTable := params.GasTableInstanse
 	dataGasFunc := func(data []byte) (uint64, error) {
@@ -54,12 +55,32 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 		return gas, nil
 	}
 
+	receiptGasFunc := func(action *types.Action) uint64 {
+		toAcct, err := accountDB.GetAccountByName(action.Recipient())
+		if err != nil {
+			return 0
+		}
+		if toAcct == nil {
+			return 0
+		}
+		if toAcct.IsDestroyed() {
+			return 0
+		}
+		_, err = toAcct.GetBalanceByID(action.AssetID())
+		if err == accountmanager.ErrAccountAssetNotExist {
+			return gasTable.CallValueTransferGas
+		}
+		return 0
+	}
+
 	var gas uint64
 
 	if action.Type() == types.CreateContract || action.Type() == types.CreateAccount {
 		gas += gasTable.ActionGasCreation
 	} else if action.Type() == types.IssueAsset {
 		gas += gasTable.ActionGasIssueAsset
+	} else if action.Type() == types.CallContract {
+		gas += gasTable.ActionGasCallContract
 	} else {
 		gas += gasTable.ActionGas
 	}
@@ -80,6 +101,9 @@ func IntrinsicGas(action *types.Action) (uint64, error) {
 		gas += (uint64(len(action.GetSign()) - 1)) * gasTable.SignGas
 	}
 
+	if action.Value().Sign() != 0 {
+		gas += receiptGasFunc(action)
+	}
 	return gas, nil
 }
 

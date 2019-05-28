@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -117,10 +116,7 @@ func (a *Account) HaveCode() bool {
 
 // IsEmpty check account empty
 func (a *Account) IsEmpty() bool {
-	if a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0 {
-		return true
-	}
-	return false
+	return a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0
 }
 
 // GetName return account object name
@@ -274,8 +270,6 @@ func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	if find {
 		return a.Balances[p].Balance, nil
 	}
-
-	log.Debug("get balance by ID", "err", ErrAccountAssetNotExist, "account", a.AcctName, "asset", assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
 

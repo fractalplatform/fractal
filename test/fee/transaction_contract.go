@@ -72,7 +72,7 @@ var (
 	issueAssetID   = int64(1)
 	contract_a_ID  = int64(4105)
 	nonce          = uint64(0)
-	gasLimit       = uint64(2000000)
+	gasLimit       = uint64(20000000)
 )
 
 func input(abifile string, method string, params ...interface{}) (string, error) {
@@ -281,10 +281,8 @@ func transferAssetByContractFromA2B() {
 	}
 
 	key_0 := types.MakeKeyPair(a_author_0_priv, []uint64{0})
-	for i := 0; i < 200; i++ {
-		aNonce++
-		sendTransferTx(types.CallContract, normal_a, contract_a, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
-	}
+	aNonce++
+	sendTransferTx(types.CallContract, normal_a, contract_a, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_0})
 }
 
 func deployWithDrawContract() {
@@ -351,7 +349,7 @@ func main() {
 
 	b, _ := testcommon.GetAccountBalanceByID(contract_a, 0)
 	fmt.Println("balance ", b)
-	withdrawFee()
+	//	withdrawFee()
 
 	time.Sleep(10 * time.Second)
 
@@ -365,7 +363,7 @@ func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetI
 	tx := types.NewTransaction(0, gasprice, action)
 
 	signer := types.MakeSigner(big.NewInt(1))
-	err := types.SignActionWithMultiKey(action, tx, signer, keys)
+	err := types.SignActionWithMultiKey(action, tx, signer, 0, keys)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
 	}

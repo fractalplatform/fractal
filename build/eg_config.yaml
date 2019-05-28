@@ -66,7 +66,7 @@ node:
     # The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.
     networkid: 1
     # The name sets the p2p node name of this server
-    name: “Fractal-P2P”
+    name: "Fractal-P2P"
     # Maximum number of network peers
     maxpeers: 10
     # Maximum number of pending connection attempts
@@ -108,6 +108,8 @@ ftservice:
     globalqueue: 2048
     # Maximum amount of time non-executable transaction are queued
     lifetime: 1h
+    # Maximum amount of time  executable transaction are resended
+    resendtime: 1h
   # gas price oracle
   gpo:
     # Number of recent blocks to check for gas prices
@@ -140,3 +142,5 @@ ftservice:
     influxdbnamespace: "fractal/"
   # flag for db to store contrat internal transaction log
   contractlog: false
+  # flag for enable/disable state pruning.
+  statepruning: false
