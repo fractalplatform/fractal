@@ -355,18 +355,19 @@ func (a *Account) SubBalanceByID(assetID uint64, value *big.Int) error {
 }
 
 //AddBalanceByID add balance by assetID
-func (a *Account) AddBalanceByID(assetID uint64, value *big.Int) error {
+func (a *Account) AddBalanceByID(assetID uint64, value *big.Int) (bool, error) {
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
+	isNew := false
 	p, find := a.binarySearch(assetID)
 	if !find {
 		a.AddNewAssetByAssetID(p, assetID, value)
+		isNew = true
 	} else {
 		a.Balances[p].Balance = new(big.Int).Add(a.Balances[p].Balance, value)
-
 	}
-	return nil
+	return isNew,nil
 }
 
 //EnoughAccountBalance check account have enough asset balance
