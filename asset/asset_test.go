@@ -447,7 +447,7 @@ func TestAsset_IncreaseAsset(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{"nilname", fields{astdb}, args{common.Name(""), 1, big.NewInt(2)}, true},
-		{"wrongid", fields{astdb}, args{common.Name("11"), 0, big.NewInt(2)}, true},
+		{"wrongid", fields{astdb}, args{common.Name("11"), 0, big.NewInt(2)}, false},
 		{"wrongamount", fields{astdb}, args{common.Name("11"), 0, big.NewInt(-2)}, true},
 		{"normal", fields{astdb}, args{common.Name("a123456789aeee"), 1, big.NewInt(50)}, false},
 	}
@@ -478,7 +478,7 @@ func TestAsset_SetAssetNewOwner(t *testing.T) {
 	}{
 		// TODO: Add test cases
 		{"nilname", fields{astdb}, args{common.Name(""), 1, common.Name("")}, true},
-		{"wrongid", fields{astdb}, args{common.Name("11"), 0, common.Name("")}, true},
+		{"wrongid", fields{astdb}, args{common.Name("11"), 0, common.Name("")}, false},
 		{"wrongamount", fields{astdb}, args{common.Name("11"), 123, common.Name("")}, true},
 		{"normal", fields{astdb}, args{common.Name("a123456789aeee"), 1, common.Name("a123456789afff")}, false},
 	}
@@ -510,7 +510,7 @@ func TestAsset_UpdateAsset(t *testing.T) {
 	}{
 		// TODO: Add test cases
 		{"nilname", fields{astdb}, args{common.Name(""), 1, common.Name(""), common.Name("")}, true},
-		{"wrongassetid", fields{astdb}, args{common.Name("11"), 0, common.Name(""), common.Name("")}, true},
+		{"wrongassetid", fields{astdb}, args{common.Name("11"), 0, common.Name(""), common.Name("")}, false},
 		{"wrongamount", fields{astdb}, args{common.Name("11"), 123, common.Name(""), common.Name("")}, true},
 		{"nilfounder", fields{astdb}, args{common.Name("a123456789afff"), 1, common.Name("a123456789aeee"), common.Name("")}, false},
 		{"normal", fields{astdb}, args{common.Name("a123456789afff"), 1, common.Name("a123456789afff"), common.Name("a123456789afff")}, false},
