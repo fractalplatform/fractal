@@ -34,6 +34,7 @@ import (
 
 var defaultgenesisBlockHash = common.HexToHash("0x3d5c966175f7e7d5c26baa9617398567196c2a07117ab7d74d93bda52bffa3be")
 
+
 func TestDefaultGenesisBlock(t *testing.T) {
 	block, _ := DefaultGenesis().ToBlock(nil)
 	if block.Hash() != defaultgenesisBlockHash {
@@ -54,6 +55,7 @@ func TestSetupGenesis(t *testing.T) {
 		oldcustomg = customg
 
 		oldcustomghash = common.HexToHash("d241b9a2606d35ec8d9cc74f6a154317e28beb7d25610ec8ac682b708135730b")
+
 	)
 	customg.Config.ChainID = big.NewInt(5)
 	oldcustomg.Config = customg.Config.Copy()

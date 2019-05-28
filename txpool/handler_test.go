@@ -146,11 +146,11 @@ func TestP2PTxMsg(t *testing.T) {
 
 	txs := []*TransactionWithPath{
 		&TransactionWithPath{
-			Tx:    transaction(0, fname, tname, 100000, fkey),
+			Tx:    transaction(0, fname, tname, 109000, fkey),
 			Bloom: &types.Bloom{},
 		},
 		&TransactionWithPath{
-			Tx:    transaction(1, fname, tname, 100000, fkey),
+			Tx:    transaction(1, fname, tname, 109000, fkey),
 			Bloom: &types.Bloom{},
 		},
 	}

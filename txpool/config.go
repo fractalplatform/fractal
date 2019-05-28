@@ -36,7 +36,8 @@ type Config struct {
 	AccountQueue uint64 `mapstructure:"accountqueue"` // Maximum number of non-executable transaction slots permitted per account
 	GlobalQueue  uint64 `mapstructure:"globalqueue"`  // Maximum number of non-executable transaction slots for all accounts
 
-	Lifetime time.Duration `mapstructure:"lifetime"` // Maximum amount of time non-executable transaction are queued
+	Lifetime   time.Duration `mapstructure:"lifetime"`   // Maximum amount of time non-executable transaction are queued
+	ResendTime time.Duration `mapstructure:"resendtime"` // Maximum amount of time  executable transaction are resended
 
 	GasAssetID uint64
 }
@@ -52,6 +53,7 @@ var DefaultTxPoolConfig = &Config{
 	AccountQueue: 1280,
 	GlobalQueue:  4096,
 	Lifetime:     3 * time.Hour,
+	ResendTime:   10 * time.Minute,
 }
 
 // check checks the provided user configurations and changes anything that's
