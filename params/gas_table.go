@@ -72,10 +72,11 @@ type GasTable struct {
 var (
 	// GasTable contain the gas re-prices
 	GasTableInstanse = GasTable{
-		ActionGas:           100000,
-		ActionGasCreation:   500000,
-		ActionGasIssueAsset: 10000000,
-		SignGas:             50000,
+		ActionGas:             100000,
+		ActionGasCallContract: 200000,
+		ActionGasCreation:     500000,
+		ActionGasIssueAsset:   10000000,
+		SignGas:               50000,
 
 		ExtcodeSize: 700,
 		ExtcodeCopy: 700,

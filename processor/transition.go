@@ -178,7 +178,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	}
 	st.refundGas()
 
-	st.distributeGas()
+	st.distributeGas(intrinsicGas)
 
 	if err := st.distributeFee(); err != nil {
 		return ret, st.gasUsed(), true, err, vmerr
@@ -186,7 +186,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 
-func (st *StateTransition) distributeGas() {
+func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 	switch st.action.Type() {
 	case types.Transfer:
 		assetInfo, _ := st.evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
@@ -210,24 +210,8 @@ func (st *StateTransition) distributeGas() {
 	case types.CreateContract:
 		fallthrough
 	case types.CallContract:
-		var totalGas int64
-		for _, gas := range st.evm.FounderGasMap {
-			totalGas += gas.Value
-		}
-
-		key := vm.DistributeKey{ObjectName: st.evm.Coinbase,
-			ObjectType: params.CoinbaseFeeType}
-		if _, ok := st.evm.FounderGasMap[key]; !ok {
-			st.evm.FounderGasMap[key] = vm.DistributeGas{
-				Value:  int64(st.gasUsed()) - totalGas,
-				TypeID: params.CoinbaseFeeType}
-		} else {
-			dGas := vm.DistributeGas{
-				Value:  int64(st.gasUsed()) - totalGas,
-				TypeID: params.CoinbaseFeeType}
-			dGas.Value = st.evm.FounderGasMap[key].Value + dGas.Value
-			st.evm.FounderGasMap[key] = dGas
-		}
+		st.distributeToContract(st.action.Recipient(), intrinsicGas)
+		return
 	case types.CreateAccount:
 		fallthrough
 	case types.UpdateAccount:
@@ -236,6 +220,7 @@ func (st *StateTransition) distributeGas() {
 		fallthrough
 	case types.UpdateAccountAuthor:
 		st.distributeToSystemAccount(common.Name(st.chainConfig.AccountName))
+		return
 	case types.IncreaseAsset:
 		fallthrough
 	case types.IssueAsset:
@@ -246,6 +231,7 @@ func (st *StateTransition) distributeGas() {
 		fallthrough
 	case types.UpdateAsset:
 		st.distributeToSystemAccount(common.Name(st.chainConfig.AssetName))
+		return
 	case types.RegCandidate:
 		fallthrough
 	case types.UpdateCandidate:
@@ -260,7 +246,38 @@ func (st *StateTransition) distributeGas() {
 		fallthrough
 	case types.ExitTakeOver:
 		st.distributeToSystemAccount(common.Name(st.chainConfig.DposName))
+		return
 	}
+}
+
+func (st *StateTransition) distributeToContract(name common.Name, intrinsicGas uint64) {
+	contractFounderRation := st.chainConfig.ChargeCfg.ContractRatio
+	key := vm.DistributeKey{ObjectName: name,
+		ObjectType: params.ContractFeeType}
+	contractGas := int64(intrinsicGas * contractFounderRation / 100)
+	fmt.Println("intrinsicGas ", intrinsicGas, contractGas)
+	if _, ok := st.evm.FounderGasMap[key]; !ok {
+		st.evm.FounderGasMap[key] = vm.DistributeGas{
+			Value:  contractGas,
+			TypeID: params.ContractFeeType}
+	} else {
+		dGas := vm.DistributeGas{
+			Value:  contractGas,
+			TypeID: params.ContractFeeType}
+		dGas.Value = st.evm.FounderGasMap[key].Value + dGas.Value
+		st.evm.FounderGasMap[key] = dGas
+	}
+
+	var totalGas int64
+	for _, gas := range st.evm.FounderGasMap {
+		totalGas += gas.Value
+	}
+
+	key = vm.DistributeKey{ObjectName: st.evm.Coinbase,
+		ObjectType: params.CoinbaseFeeType}
+	st.evm.FounderGasMap[key] = vm.DistributeGas{
+		Value:  int64(st.gasUsed()) - totalGas,
+		TypeID: params.CoinbaseFeeType}
 }
 
 func (st *StateTransition) distributeToSystemAccount(name common.Name) {
