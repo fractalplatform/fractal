@@ -299,8 +299,12 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *bi
 		return ErrAccountNameNull
 	}
 	if amount.Sign() < 0 {
-		return ErrAssetAmountZero
+		return ErrNegativeAmount
 	}
+	if amount.Sign() == 0 {
+		return nil
+	}
+
 	asset, err := a.GetAssetObjectById(assetId)
 	if err != nil {
 		return err
@@ -331,8 +335,11 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
-	if amount.Sign() <= 0 {
-		return ErrAssetAmountZero
+	if amount.Sign() < 0 {
+		return ErrNegativeAmount
+	}
+	if amount.Sign() == 0 {
+		return nil
 	}
 	asset, err := a.GetAssetObjectById(assetId)
 	if err != nil {
@@ -482,4 +489,30 @@ func (a *Asset) HasAccess(assetID uint64, names ...common.Name) bool {
 		return true
 	}
 	return false
+}
+
+func (a *Asset) IncStats(assetID uint64) error {
+	assetObj, _ := a.GetAssetObjectById(assetID)
+	count := assetObj.GetAssetStats()
+	count++
+	assetObj.SetAssetStats(count)
+	err := a.SetAssetObject(assetObj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Asset) CheckOwner(fromName common.Name, assetID uint64) error {
+	assetObj, err := a.GetAssetObjectById(assetID)
+	if err != nil {
+		return err
+	}
+
+	if assetObj.GetAssetOwner() != fromName {
+		if !a.IsValidOwner(fromName, assetObj.GetAssetName()) {
+			return ErrOwnerMismatch
+		}
+	}
+	return nil
 }

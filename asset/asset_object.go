@@ -100,8 +100,8 @@ func (ao *AssetObject) GetAssetStats() uint64 {
 	return ao.Stats
 }
 
-func (ao *AssetObject) SetAssetStats() {
-	ao.Stats = ao.Stats + 1
+func (ao *AssetObject) SetAssetStats(count uint64) {
+	ao.Stats = count
 }
 
 func (ao *AssetObject) GetSymbol() string {

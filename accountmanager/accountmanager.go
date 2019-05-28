@@ -537,7 +537,22 @@ func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash
 }
 
 func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex uint64) (common.Name, error) {
-	return accountName, nil
+	if parentIndex == 0 {
+		return accountName, nil
+	}
+
+	list := common.FindStringSubmatch(acctRegExp, accountName.String())
+	if parentIndex > uint64(len(list)-1) {
+		return common.Name(""), fmt.Errorf("invalid index, %s , %d", accountName.String(), parentIndex)
+	}
+
+	level := uint64(len(list)) - parentIndex
+	an := list[0]
+	for i := uint64(1); i < level; i++ {
+		an = an + "." + list[i]
+	}
+
+	return common.Name(an), nil
 }
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
@@ -1135,9 +1150,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	val, err = toAcct.GetBalanceByID(assetID)
 	if err == ErrAccountAssetNotExist {
 		toAcct.AddNewAssetByAssetID(assetID, value)
-		assetObj, _ := am.GetAssetInfoByID(assetID)
-		assetObj.SetAssetStats()
-		err := am.ast.SetAssetObject(assetObj)
+		err := am.ast.IncStats(assetID)
 		if err != nil {
 			return err
 		}
@@ -1148,10 +1161,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if err = am.SetAccount(fromAcct); err != nil {
 		return err
 	}
-	if err = am.SetAccount(toAcct); err != nil {
-		return err
-	}
-	return nil
+	return am.SetAccount(toAcct)
 }
 
 //
@@ -1211,16 +1221,8 @@ func (am *AccountManager) IssueAsset(asset IssueAsset, number uint64) (uint64, e
 
 //IncAsset2Acct increase asset and add amount to accout balance
 func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int) error {
-	// check owner
-	assetObj, err := am.GetAssetInfoByID(assetID)
-	if err != nil {
+	if err := am.ast.CheckOwner(fromName, assetID); err != nil {
 		return err
-	}
-
-	if assetObj.GetAssetOwner() != fromName {
-		if !am.ast.IsValidOwner(fromName, assetObj.GetAssetName()) {
-			return ErrAssetOwnerInvaild
-		}
 	}
 
 	if err := am.ast.IncreaseAsset(fromName, assetID, amount); err != nil {
@@ -1381,16 +1383,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			}
 		}
 
-		// check owner
-		assetObj, err := am.GetAssetInfoByID(asset.AssetID)
-		if err != nil {
+		if err := am.ast.CheckOwner(action.Sender(), asset.AssetID); err != nil {
 			return nil, err
-		}
-
-		if assetObj.GetAssetOwner() != action.Sender() {
-			if !am.ast.IsValidOwner(action.Sender(), assetObj.GetAssetName()) {
-				return nil, ErrAssetOwnerInvaild
-			}
 		}
 
 		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder); err != nil {
