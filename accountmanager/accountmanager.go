@@ -963,7 +963,7 @@ func (am *AccountManager) AddAccountBalanceByID(accountName common.Name, assetID
 		return ErrAmountValueInvalid
 	}
 
-	err = acct.AddBalanceByID(assetID, value)
+	_, err = acct.AddBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
