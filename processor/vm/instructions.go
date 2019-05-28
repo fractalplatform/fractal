@@ -903,17 +903,18 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 
 	var ret []byte
 	var err error
+	var acct *accountmanager.Account
+	//var acct *accountmanager.Account
 	if p := PrecompiledContracts[userID]; p != nil {
 		ret, err = RunPrecompiledContract(p, args, contract)
 	} else {
-		acct, err := evm.AccountDB.GetAccountById(userID)
+		acct, err = evm.AccountDB.GetAccountById(userID)
 		if err != nil || acct == nil {
 			stack.push(evm.interpreter.intPool.getZero())
 			return nil, nil
 		}
 		toName := acct.GetName()
 		action := types.NewAction(types.CallContract, contract.Name(), toName, 0, evm.AssetID, gas, value, args, nil)
-
 		var returnGas uint64
 		ret, returnGas, err = evm.Call(contract, action, gas)
 		contract.Gas += returnGas

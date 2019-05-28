@@ -256,7 +256,6 @@ func (st *StateTransition) distributeToContract(name common.Name, intrinsicGas u
 	key := vm.DistributeKey{ObjectName: name,
 		ObjectType: params.ContractFeeType}
 	contractGas := int64(intrinsicGas * contractFounderRation / 100)
-	fmt.Println("intrinsicGas ", intrinsicGas, contractGas)
 	if _, ok := st.evm.FounderGasMap[key]; !ok {
 		st.evm.FounderGasMap[key] = vm.DistributeGas{
 			Value:  contractGas,
