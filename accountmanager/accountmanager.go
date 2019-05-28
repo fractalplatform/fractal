@@ -990,7 +990,7 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return ErrAmountValueInvalid
 	}
 
-	err = acct.AddBalanceByID(assetID, value)
+	_, err = acct.AddBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
@@ -1147,11 +1147,11 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 		return ErrAccountIsDestroy
 	}
 	//add to account balance
-  bNew, err := toAcct.AddBalanceByID(assetID, value)
+	bNew, err := toAcct.AddBalanceByID(assetID, value)
 	if err != nil {
 		return err
-  }
-  if bNew {
+	}
+	if bNew {
 		err := am.ast.IncStats(assetID)
 		if err != nil {
 			return err
