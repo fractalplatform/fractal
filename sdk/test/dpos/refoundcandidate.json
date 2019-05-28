@@ -1,6 +1,6 @@
 [{
-	"comment": "index0 dpos0007 unregcandidate",
-	"type": "unregcandidate",
+	"comment": "index0 dpos0007 refundcandidate",
+	"type": "refundcandidate",
 	"from": "dpos0007",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -9,8 +9,8 @@
 	"succeed": true
 },
 {
-	"comment": "index1 dpos0006 unregcandidate",
-	"type": "unregcandidate",
+	"comment": "index1 dpos0006 refundcandidate",
+	"type": "refundcandidate",
 	"from": "dpos0006",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -19,8 +19,8 @@
 	"succeed": true
 },
 {
-	"comment": "index2 dpos0005 unregcandidate",
-	"type": "unregcandidate",
+	"comment": "index0 dpos0005 refundcandidate",
+	"type": "refundcandidate",
 	"from": "dpos0005",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -29,8 +29,8 @@
 	"succeed": true
 },
 {
-	"comment": "index3 dpos0004 unregcandidate",
-	"type": "unregcandidate",
+	"comment": "index1 dpos0004 refundcandidate",
+	"type": "refundcandidate",
 	"from": "dpos0004",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -39,8 +39,8 @@
 	"succeed": true
 },
 {
-	"comment": "index4 dpos0003 unregcandidate",
-	"type": "unregcandidate",
+	"comment": "index0 dpos0003 refundcandidate",
+	"type": "refundcandidate",
 	"from": "dpos0003",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -49,8 +49,8 @@
 	"succeed": true
 },
 {
-	"comment": "index5 dpos0002 unregcandidate & transfer 1000000 ft",
-	"type": "unregcandidate",
+	"comment": "index1 dpos0002 refundcandidate & transfer 1000000 ft",
+	"type": "refundcandidate",
 	"from": "dpos0002",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -59,8 +59,8 @@
 	"succeed": true
 },
 {
-	"comment": "index6 dpos0001 unregcandidate",
-	"type": "unregcandidate",
+	"comment": "index0 dpos0001 refundcandidate",
+	"type": "refundcandidate",
 	"from": "dpos0001",
 	"to": "fractal.dpos",
 	"gas": 30000000,
@@ -69,8 +69,8 @@
 	"succeed": true
 },
 {
-	"comment": "index7 dpos0001 unregcandidate, not exist",
-	"type": "unregcandidate",
+	"comment": "index1 dpos0001 refundcandidate, not exist",
+	"type": "refundcandidate",
 	"from": "dpos0001",
 	"to": "fractal.dpos",
 	"gas": 30000000,
