@@ -152,6 +152,7 @@ func addAssetAndAccount() error {
 
 	tests := []args{
 		// TODO: Add test cases.
+		{"assettest.asset0", "s0", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset1", "s1", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset2", "s2", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset3", "s3", big.NewInt(0), 2, tname, tname},

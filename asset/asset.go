@@ -492,11 +492,15 @@ func (a *Asset) HasAccess(assetID uint64, names ...common.Name) bool {
 }
 
 func (a *Asset) IncStats(assetID uint64) error {
-	assetObj, _ := a.GetAssetObjectById(assetID)
+	assetObj, err := a.GetAssetObjectById(assetID)
+	if err != nil {
+		return err
+	}
 	count := assetObj.GetAssetStats()
-	count++
+	count = count + 1
 	assetObj.SetAssetStats(count)
-	err := a.SetAssetObject(assetObj)
+
+	err = a.SetAssetObject(assetObj)
 	if err != nil {
 		return err
 	}

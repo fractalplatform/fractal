@@ -41,7 +41,7 @@ func Test_newAssetObject(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(999999)}, &AssetObject{0, 0, "ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(2), big.NewInt(999999), common.Name(""), ""}, false},
+		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(999999)}, &AssetObject{0, 0, 0, "ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(2), big.NewInt(999999), common.Name(""), ""}, false},
 		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
 		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
 		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999)}, nil, true},
