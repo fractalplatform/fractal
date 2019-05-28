@@ -1025,25 +1025,25 @@ func (am *AccountManager) GetCode(accountName common.Name) ([]byte, error) {
 	return acct.GetCode()
 }
 
-////
-//func (am *AccountManager) SetCode(accountName common.Name, code []byte) (bool, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return false, err
-//	}
-//	if acct == nil {
-//		return false, ErrAccountNotExist
-//	}
-//	err = acct.SetCode(code)
-//	if err != nil {
-//		return false, err
-//	}
-//	err = am.SetAccount(acct)
-//	if err != nil {
-//		return false, err
-//	}
-//	return true, nil
-//}
+//SetCode set contract code
+func (am *AccountManager) SetCode(accountName common.Name, code []byte) (bool, error) {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return false, err
+	}
+	if acct == nil {
+		return false, ErrAccountNotExist
+	}
+	err = acct.SetCode(code)
+	if err != nil {
+		return false, err
+	}
+	err = am.SetAccount(acct)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
 //
 //GetCodeSize get code size
