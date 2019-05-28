@@ -55,6 +55,7 @@ genesis = "./test/genesis.json"
     accountqueue=1024
     globalqueue=2048
     lifetime=3600000000000
+    resendtime=3600000000000
   [ftservice.gpo]
     blocks=30
     percentile=50

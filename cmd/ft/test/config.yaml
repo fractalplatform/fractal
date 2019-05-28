@@ -53,6 +53,7 @@ ftservice:
     accountqueue: 1024
     globalqueue: 2048
     lifetime: 1h
+    resendtime: 1h
   gpo:
     blocks: 30
     percentile: 50
