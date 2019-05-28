@@ -494,10 +494,12 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 		return err
 	}
 	// is dpos
+	isdpos := false
 	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
 	if !pstate.Dpos && pstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
 		uint64(len(candidateInfoArray)) >= n {
 		pstate.Dpos = true
+		isdpos = true
 	}
 
 	// clear
@@ -505,7 +507,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	activeTotalQuantity := big.NewInt(0)
 	totalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
-		if strings.Compare(candidateInfo.Name, miner) == 0 {
+		if isdpos && strings.Compare(candidateInfo.Name, miner) == 0 {
 			candidateInfo.Counter++
 		}
 		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
