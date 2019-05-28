@@ -19,9 +19,8 @@ package main
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 func readAndUnmarshal(t *testing.T, file string) *ftConfig {
