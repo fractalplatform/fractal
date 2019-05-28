@@ -186,6 +186,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		worker.quitWork = nil
 		worker.quitWorkRW.Unlock()
 	}()
+	log.Info("mint block", "timestamp", timestamp)
 	cdpos := worker.Engine().(*dpos.Dpos)
 	header := worker.CurrentHeader()
 	state, err := worker.StateAt(header.Root)
