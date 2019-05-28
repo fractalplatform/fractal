@@ -192,8 +192,8 @@ func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) 
 	}
 }
 
-// AccountIDIsExist check account is exist by ID.
-func (am *AccountManager) AccountIDIsExist(accountID uint64) (bool, error) {
+// AccountIsExistByID check account is exist by ID.
+func (am *AccountManager) AccountIsExistByID(accountID uint64) (bool, error) {
 	//check is exist
 	account, err := am.GetAccountById(accountID)
 	if err != nil {
@@ -963,7 +963,7 @@ func (am *AccountManager) AddAccountBalanceByID(accountName common.Name, assetID
 		return ErrAmountValueInvalid
 	}
 
-	err = acct.AddBalanceByID(assetID, value)
+	_, err = acct.AddBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
@@ -990,7 +990,7 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return ErrAmountValueInvalid
 	}
 
-	err = acct.AddBalanceByID(assetID, value)
+	_, err = acct.AddBalanceByID(assetID, value)
 	if err != nil {
 		return err
 	}
@@ -1025,25 +1025,25 @@ func (am *AccountManager) GetCode(accountName common.Name) ([]byte, error) {
 	return acct.GetCode()
 }
 
-////
-//func (am *AccountManager) SetCode(accountName common.Name, code []byte) (bool, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return false, err
-//	}
-//	if acct == nil {
-//		return false, ErrAccountNotExist
-//	}
-//	err = acct.SetCode(code)
-//	if err != nil {
-//		return false, err
-//	}
-//	err = am.SetAccount(acct)
-//	if err != nil {
-//		return false, err
-//	}
-//	return true, nil
-//}
+//SetCode set contract code
+func (am *AccountManager) SetCode(accountName common.Name, code []byte) (bool, error) {
+	acct, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return false, err
+	}
+	if acct == nil {
+		return false, ErrAccountNotExist
+	}
+	err = acct.SetCode(code)
+	if err != nil {
+		return false, err
+	}
+	err = am.SetAccount(acct)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
 
 //
 //GetCodeSize get code size
@@ -1133,7 +1133,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
-
+	//sub from account balance
 	fromAcct.SetBalance(assetID, new(big.Int).Sub(val, value))
 	//check to account
 	toAcct, err := am.GetAccountByName(toAccount)
@@ -1146,35 +1146,29 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if toAcct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
-
-	val, err = toAcct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		toAcct.AddNewAssetByAssetID(assetID, value)
+	//add to account balance
+	bNew, err := toAcct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
+	}
+	if bNew {
 		err := am.ast.IncStats(assetID)
 		if err != nil {
 			return err
 		}
-	} else {
-		toAcct.SetBalance(assetID, new(big.Int).Add(val, value))
 	}
-
 	if err = am.SetAccount(fromAcct); err != nil {
 		return err
 	}
 	return am.SetAccount(toAcct)
 }
 
-//
-func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
+//IssueAsset issue asset
+func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
+	//check owner valid
 	if !am.ast.IsValidOwner(fromName, asset.AssetName) {
 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 	}
-
-	return am.IssueAsset(asset, number)
-}
-
-//IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset IssueAsset, number uint64) (uint64, error) {
 	//check owner
 	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
@@ -1300,8 +1294,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-
-		assetID, err := am.IssueAnyAsset(action.Sender(), issueAsset, number)
+		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number)
 		if err != nil {
 			return nil, err
 		}
