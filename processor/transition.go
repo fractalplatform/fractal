@@ -96,7 +96,8 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.action.Gas()
 	st.initialGas = st.action.Gas()
-	err = st.account.SubAccountBalanceByID(st.from, st.assetID, mgval)
+	err = st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
+	//err = st.account.SubAccountBalanceByID(st.from, st.assetID, mgval)
 	if err != nil {
 		return err
 	}
@@ -299,7 +300,6 @@ func (st *StateTransition) distributeToSystemAccount(name common.Name) {
 }
 
 func (st *StateTransition) distributeFee() error {
-	totalFee := big.NewInt(0)
 	fm := feemanager.NewFeeManager(st.evm.StateDB, st.evm.AccountDB)
 
 	for key, gas := range st.evm.FounderGasMap {
@@ -309,23 +309,14 @@ func (st *StateTransition) distributeFee() error {
 			if err != nil {
 				return fmt.Errorf("record fee err(%v), key:%v,assetID:%d", err, key, st.assetID)
 			}
-			totalFee.Add(totalFee, value)
 		}
 	}
-	st.account.AddAccountBalanceByID(common.Name(st.chainConfig.FeeName), st.assetID, totalFee)
 	return nil
 }
 
 func (st *StateTransition) refundGas() {
-	//st.gas += st.evm.StateDB.GetRefund()
-
-	// Return remaining gas, exchanged at the original rate.
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-	st.account.AddAccountBalanceByID(st.from, st.assetID, remaining)
-	//st.account.AddAccountBalanceByID(st.from, st.assetID, remaining)
-
-	// Also return remaining gas to the block gas counter so it is
-	// available for the next message.
+	st.account.TransferAsset(common.Name(st.chainConfig.FeeName), st.from, st.assetID, remaining)
 	st.gp.AddGas(st.gas)
 }
 
