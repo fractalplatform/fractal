@@ -537,7 +537,26 @@ func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash
 }
 
 func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex uint64) (common.Name, error) {
-	return accountName, nil
+	if parentIndex == 0 {
+		return accountName, nil
+	}
+
+	name := common.FindStringSubmatch(acctRegExp, accountName.String())
+	if parentIndex > uint64(len(name)-1) {
+		return common.Name(""), fmt.Errorf("invalid index, %s , %d", accountName.String(), parentIndex)
+	}
+
+	var an string
+	level := uint64(len(name)) - parentIndex
+	for i := uint64(0); i < level; i++ {
+		if i == 0 {
+			an = name[i]
+		} else {
+			an = an + "." + name[i]
+		}
+	}
+
+	return common.Name(an), nil
 }
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
