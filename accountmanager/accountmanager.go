@@ -537,7 +537,22 @@ func (am *AccountManager) GetAuthorVersion(accountName common.Name) (common.Hash
 }
 
 func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex uint64) (common.Name, error) {
-	return accountName, nil
+	if parentIndex == 0 {
+		return accountName, nil
+	}
+
+	list := common.FindStringSubmatch(acctRegExp, accountName.String())
+	if parentIndex > uint64(len(list)-1) {
+		return common.Name(""), fmt.Errorf("invalid index, %s , %d", accountName.String(), parentIndex)
+	}
+
+	level := uint64(len(list)) - parentIndex
+	an := list[0]
+	for i := uint64(1); i < level; i++ {
+		an = an + "." + list[i]
+	}
+
+	return common.Name(an), nil
 }
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
@@ -1132,9 +1147,15 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 		return ErrAccountIsDestroy
 	}
 	//add to account balance
-	err = toAcct.AddBalanceByID(assetID, value)
+  bNew, err := toAcct.AddBalanceByID(assetID, value)
 	if err != nil {
 		return err
+  }
+  if bNew {
+		err := am.ast.IncStats(assetID)
+		if err != nil {
+			return err
+		}
 	}
 	if err = am.SetAccount(fromAcct); err != nil {
 		return err
@@ -1189,15 +1210,19 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 	}
 
 	//add the asset to owner
-	return assetID, am.AddAccountBalanceByName(asset.Owner, asset.AssetName, asset.Amount)
+	return assetID, nil
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
 func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int) error {
+	if err := am.ast.CheckOwner(fromName, assetID); err != nil {
+		return err
+	}
+
 	if err := am.ast.IncreaseAsset(fromName, assetID, amount); err != nil {
 		return err
 	}
-	return am.AddAccountBalanceByID(toName, assetID, amount)
+	return nil
 }
 
 //Process account action
@@ -1264,17 +1289,31 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 	case types.IssueAsset:
-		var asset IssueAsset
-		err := rlp.DecodeBytes(action.Data(), &asset)
+		var issueAsset IssueAsset
+		err := rlp.DecodeBytes(action.Data(), &issueAsset)
+		if err != nil {
+			return nil, err
+		}
+		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number)
 		if err != nil {
 			return nil, err
 		}
 
-		assetID, err := am.IssueAsset(action.Sender(), asset, number)
-		if err != nil {
+		if err := am.AddAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), assetID, issueAsset.Amount); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), asset.Owner, 0, assetID, 0, asset.Amount, nil, nil)
+
+		// if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), assetID, issueAsset.Amount); err != nil {
+		// 	return nil, err
+		// }
+		// actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), 0, assetID, 0, issueAsset.Amount, nil, nil)
+		// internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		// internalActions = append(internalActions, internalAction)
+
+		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, assetID, issueAsset.Amount); err != nil {
+			return nil, err
+		}
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, 0, assetID, 0, issueAsset.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 	case types.IncreaseAsset:
@@ -1286,10 +1325,30 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		// if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
 		// 	return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
 		// }
-		if err = am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
+
+		if inc.Amount.Cmp(big.NewInt(0)) < 0 {
+			return nil, ErrNegativeAmount
+		}
+
+		// if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), inc.AssetId, inc.Amount); err != nil {
+		// 	return nil, err
+		// }
+		// actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), 0, inc.AssetId, 0, inc.Amount, nil, nil)
+		// internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		// internalActions = append(internalActions, internalAction)
+
+		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
+
+		if err := am.AddAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), inc.AssetId, inc.Amount); err != nil {
+			return nil, err
+		}
+
+		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, inc.AssetId, inc.Amount); err != nil {
+			return nil, err
+		}
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 	case types.DestroyAsset:
@@ -1325,6 +1384,10 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			}
 		}
 
+		if err := am.ast.CheckOwner(action.Sender(), asset.AssetID); err != nil {
+			return nil, err
+		}
+
 		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder); err != nil {
 			return nil, err
 		}
@@ -1340,6 +1403,11 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 		if acct == nil {
 			return nil, ErrAccountNotExist
+		}
+
+		// check owner
+		if err := am.ast.CheckOwner(action.Sender(), asset.AssetID); err != nil {
+			return nil, err
 		}
 
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.AssetID, asset.Owner); err != nil {
