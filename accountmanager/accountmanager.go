@@ -1405,15 +1405,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 
 		// check owner
-		assetObj, err := am.GetAssetInfoByID(asset.AssetID)
-		if err != nil {
+		if err := am.ast.CheckOwner(action.Sender(), asset.AssetID); err != nil {
 			return nil, err
-		}
-
-		if assetObj.GetAssetOwner() != action.Sender() {
-			if !am.ast.IsValidOwner(action.Sender(), assetObj.GetAssetName()) {
-				return nil, ErrAssetOwnerInvaild
-			}
 		}
 
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.AssetID, asset.Owner); err != nil {
