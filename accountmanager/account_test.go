@@ -750,7 +750,7 @@ func TestAccount_AddBalanceByID(t *testing.T) {
 			Suicide:  tt.fields.Suicide,
 			Destroy:  tt.fields.Destroy,
 		}
-		if err := a.AddBalanceByID(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
+		if _, err := a.AddBalanceByID(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.AddBalanceByID() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
