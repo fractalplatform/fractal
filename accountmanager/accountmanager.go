@@ -580,7 +580,7 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 				threshold = acctAuthor.updateAuthorThreshold
 			}
 			if count < threshold {
-				return fmt.Errorf("account %s want threshold %d, but actual is %d", name, acctAuthor.threshold, count)
+				return fmt.Errorf("account %s want threshold %d, but actual is %d", name, threshold, count)
 			}
 			authorVersion[name] = acctAuthor.version
 		}

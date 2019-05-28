@@ -473,7 +473,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		intrGas, err := IntrinsicGas(action)
+		intrGas, err := IntrinsicGas(tp.curAccountManager, action)
 		if err != nil {
 			return err
 		}

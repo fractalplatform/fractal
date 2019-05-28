@@ -162,13 +162,7 @@ func addAuthorsForAca() {
 
 	authorAction := make([]*accountmanager.AuthorAction, 0)
 	authorAction = append(authorAction, a_authorAct_0, a_authorAct_1, a_authorAct_2, a_authorAct_3)
-	// for i := 0; i < 7; i++ {
-	// 	priv, _ := crypto.GenerateKey()
-	// 	addr := crypto.PubkeyToAddress(priv.PublicKey)
-	// 	a := common.NewAuthor(addr, 400)
-	// 	aact := &accountmanager.AuthorAction{0, a}
-	// 	authorAction = append(authorAction, aact)
-	// }
+
 	action := &accountmanager.AccountAuthorAction{1000, 0, authorAction}
 	input, err := rlp.EncodeToBytes(action)
 	if err != nil {

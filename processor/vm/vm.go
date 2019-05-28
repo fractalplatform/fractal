@@ -169,6 +169,9 @@ func (evm *EVM) GetCurrentGasTable() params.GasTable {
 
 func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 	gasTable := evm.GetCurrentGasTable()
+	if action.Value().Sign() == 0 {
+		return 0
+	}
 	toAcct, err := evm.AccountDB.GetAccountByName(action.Recipient())
 	if err != nil {
 		return 0

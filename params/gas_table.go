@@ -18,12 +18,13 @@ package params
 
 // GasTable organizes gas prices for different phases.
 type GasTable struct {
-	ActionGas           uint64
-	ActionGasCreation   uint64
-	ActionGasIssueAsset uint64
-	SignGas             uint64
-	TxDataNonZeroGas    uint64
-	TxDataZeroGas       uint64
+	ActionGas             uint64
+	ActionGasCallContract uint64
+	ActionGasCreation     uint64
+	ActionGasIssueAsset   uint64
+	SignGas               uint64
+	TxDataNonZeroGas      uint64
+	TxDataZeroGas         uint64
 
 	ExtcodeSize          uint64
 	ExtcodeCopy          uint64
