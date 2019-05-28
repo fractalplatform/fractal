@@ -1386,15 +1386,16 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		from    common.Name
 		fields  fields
 		args    args
 		wantErr bool
 	}{
 		//
-		{"ownernotexist", fields{sdb, ast}, args{ast1}, true},
-		{"foundernotexist", fields{sdb, ast}, args{ast3}, true},
-		{"ownerexist", fields{sdb, ast}, args{ast2}, false},
-		{"detaillegal", fields{sdb, ast}, args{ast4}, true},
+		{"ownernotexist", common.Name(""), fields{sdb, ast}, args{ast1}, true},
+		{"foundernotexist", common.Name(""), fields{sdb, ast}, args{ast3}, true},
+		{"ownerexist", common.Name(""), fields{sdb, ast}, args{ast2}, false},
+		{"detaillegal", common.Name(""), fields{sdb, ast}, args{ast4}, true},
 	}
 
 	for _, tt := range tests {
@@ -1414,7 +1415,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			Contract:    tt.args.asset.GetContract(),
 			Description: tt.args.asset.GetAssetDescription(),
 		}
-		if _, err := am.IssueAsset(asset, blockNumber); (err != nil) != tt.wantErr {
+		if _, err := am.IssueAsset(tt.from, asset, blockNumber); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1911,7 +1912,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
@@ -1983,7 +1984,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())

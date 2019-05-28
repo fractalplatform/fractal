@@ -192,8 +192,8 @@ func (am *AccountManager) AccountIsExist(accountName common.Name) (bool, error) 
 	}
 }
 
-// AccountIDIsExist check account is exist by ID.
-func (am *AccountManager) AccountIDIsExist(accountID uint64) (bool, error) {
+// AccountIsExistByID check account is exist by ID.
+func (am *AccountManager) AccountIsExistByID(accountID uint64) (bool, error) {
 	//check is exist
 	account, err := am.GetAccountById(accountID)
 	if err != nil {
@@ -1118,7 +1118,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
-
+	//sub from account balance
 	fromAcct.SetBalance(assetID, new(big.Int).Sub(val, value))
 	//check to account
 	toAcct, err := am.GetAccountByName(toAccount)
@@ -1131,11 +1131,10 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	if toAcct.IsDestroyed() {
 		return ErrAccountIsDestroy
 	}
-	val, err = toAcct.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		toAcct.AddNewAssetByAssetID(assetID, value)
-	} else {
-		toAcct.SetBalance(assetID, new(big.Int).Add(val, value))
+	//add to account balance
+	err = toAcct.AddBalanceByID(assetID, value)
+	if err != nil {
+		return err
 	}
 	if err = am.SetAccount(fromAcct); err != nil {
 		return err
@@ -1143,17 +1142,12 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
-//
-func (am *AccountManager) IssueAnyAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
+//IssueAsset issue asset
+func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
+	//check owner valid
 	if !am.ast.IsValidOwner(fromName, asset.AssetName) {
 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 	}
-
-	return am.IssueAsset(asset, number)
-}
-
-//IssueAsset issue asset
-func (am *AccountManager) IssueAsset(asset IssueAsset, number uint64) (uint64, error) {
 	//check owner
 	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
@@ -1276,7 +1270,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		assetID, err := am.IssueAnyAsset(action.Sender(), asset, number)
+		assetID, err := am.IssueAsset(action.Sender(), asset, number)
 		if err != nil {
 			return nil, err
 		}

@@ -541,6 +541,7 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 		Destroy   bool
 	}
 	type args struct {
+		p       int64
 		assetID uint64
 		amount  *big.Int
 	}
@@ -567,7 +568,7 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 
 	d := make([]*AssetBalance, 0)
 	d = append(d, asset0)
-	d = append(d, asset1)
+	//d = append(d, asset1)
 	d = append(d, asset2)
 	d = append(d, asset3)
 	d = append(d, asset5)
@@ -589,24 +590,21 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 		value    *big.Int
 	}{
 		// [2]
-		{"emptyappend", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{2, big.NewInt(3)}, 2, 0, true, big.NewInt(3)},
+		{"emptyappend", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{0, 2, big.NewInt(3)}, 2, 0, true, big.NewInt(3)},
 		// [2]
-		{"appendnotexist", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{2, big.NewInt(3)}, 0, 0, false, big.NewInt(3)},
+		{"appendnotexist", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{0, 2, big.NewInt(3)}, 0, 0, false, big.NewInt(3)},
 		// [0] 1
-		{"headinsert1", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, a, false, false}, args{0, big.NewInt(32)}, 0, 0, true, big.NewInt(32)},
+		{"headinsert1", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, a, false, false}, args{0, 0, big.NewInt(32)}, 0, 0, true, big.NewInt(32)},
 		// 1 [3]
-		{"append", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{3, big.NewInt(10)}, 3, 1, true, big.NewInt(10)},
-		// 1
-		// {"1append", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{2, big.NewInt(2)}, 1, true, big.NewInt(2)},
+		{"append", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{0, 3, big.NewInt(10)}, 3, 1, true, big.NewInt(10)},
 		// [0] 1 2 3
-		{"headinsert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, c, false, false}, args{0, big.NewInt(10)}, 0, 0, true, big.NewInt(10)},
-		// {"tailinsert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, c, false, false}, args{3, big.NewInt(10)}, 2, true, big.NewInt(10)},
-		// 0 1 [2] 3 5
-		{"2insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, d, false, false}, args{2, big.NewInt(9)}, 5, 4, true, big.NewInt(20)},
+		{"headinsert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, c, false, false}, args{0, 0, big.NewInt(10)}, 0, 0, true, big.NewInt(10)},
+		// 0 [1] 2 3 5
+		{"2insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, d, false, false}, args{0, 1, big.NewInt(9)}, 1, 1, true, big.NewInt(9)},
+		// 0 2 3 [4] 5
+		{"4insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, d, false, false}, args{2, 4, big.NewInt(1)}, 4, 3, true, big.NewInt(1)},
 		// 0 1 2 3 [4] 5
-		{"4insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, d, false, false}, args{4, big.NewInt(1)}, 4, 4, true, big.NewInt(1)},
-		// 0 1 2 3 [4] 5
-		{"4insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, e, false, false}, args{4, big.NewInt(2)}, 5, 5, true, big.NewInt(20)},
+		{"4insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, e, false, false}, args{3, 4, big.NewInt(2)}, 5, 5, true, big.NewInt(20)},
 	}
 
 	for _, tt := range tests {
@@ -620,7 +618,8 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 			Suicide:  tt.fields.Suicide,
 			Destroy:  tt.fields.Destroy,
 		}
-		a.AddNewAssetByAssetID(tt.args.assetID, tt.args.amount)
+
+		a.AddNewAssetByAssetID(tt.args.p, tt.args.assetID, tt.args.amount)
 		got, got1 := a.binarySearch(tt.id)
 		if got != tt.position {
 			t.Errorf("%q. Account.AddNewAssetByAssetID() got = %v, want %v", tt.name, got, tt.position)
