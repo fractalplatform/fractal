@@ -114,6 +114,7 @@ func (n *Name) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// FindStringSubmatch reutrn segment
 func FindStringSubmatch(reg *regexp.Regexp, name string) (ret []string) {
 	list := reg.FindStringSubmatch(name)
 	for i := 1; i < len(list); i++ {

@@ -298,7 +298,7 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetId uint64, amount *bi
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
-	if amount.Sign() <= 0 {
+	if amount.Sign() < 0 {
 		return ErrAssetAmountZero
 	}
 	asset, err := a.GetAssetObjectById(assetId)
@@ -341,9 +341,9 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetId uint64, amount *b
 	if asset == nil {
 		return ErrAssetNotExist
 	}
-	if asset.GetAssetOwner() != accountName {
-		return ErrOwnerMismatch
-	}
+	// if asset.GetAssetOwner() != accountName {
+	// 	return ErrOwnerMismatch
+	// }
 
 	//check AddIssue > UpperLimit
 	AddIssue := new(big.Int).Add(asset.GetAssetAddIssue(), amount)
@@ -378,9 +378,9 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName
 	if asset == nil {
 		return ErrAssetNotExist
 	}
-	if asset.GetAssetOwner() != accountName {
-		return ErrOwnerMismatch
-	}
+	// if asset.GetAssetOwner() != accountName {
+	// 	return ErrOwnerMismatch
+	// }
 
 	asset.SetAssetFounder(founderName)
 	return a.SetAssetObject(asset)
@@ -398,9 +398,9 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 	if asset == nil {
 		return ErrAssetNotExist
 	}
-	if asset.GetAssetOwner() != accountName {
-		return ErrOwnerMismatch
-	}
+	// if asset.GetAssetOwner() != accountName {
+	// 	return ErrOwnerMismatch
+	// }
 	asset.SetAssetOwner(newOwner)
 	return a.SetAssetObject(asset)
 }
@@ -427,6 +427,7 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // 	return a.SetAssetObject(asset)
 // }
 
+// IsValidOwner check parent owner valid
 func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
 	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {
