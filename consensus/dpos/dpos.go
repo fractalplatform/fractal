@@ -512,7 +512,9 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 			// first take over
 			return nil
 		}
-		return ErrTooMuchRreversible
+		if parent.Number.Uint64() >= dpos.config.CandidateScheduleSize*dpos.config.BlockFrequency {
+			return ErrTooMuchRreversible
+		}
 	}
 
 	pstate, err := sys.GetState(gstate.PreEpcho)
