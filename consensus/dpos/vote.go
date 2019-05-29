@@ -493,65 +493,56 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	if err != nil {
 		return err
 	}
-	// is dpos
-	isdpos := false
 	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
-	if !pstate.Dpos && pstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
-		uint64(len(candidateInfoArray)) >= n {
-		pstate.Dpos = true
-		isdpos = true
-	}
-
-	// clear
 	activatedCandidateSchedule := []string{}
-	activeTotalQuantity := big.NewInt(0)
+	activatedTotalQuantity := big.NewInt(0)
 	totalQuantity := big.NewInt(0)
+	quantity := big.NewInt(0)
+	cnt := uint64(0)
+	ntotalQuantity := big.NewInt(0)
 	for _, candidateInfo := range candidateInfoArray {
-		if isdpos && strings.Compare(candidateInfo.Name, miner) == 0 {
+		if pstate.Dpos && strings.Compare(candidateInfo.Name, miner) == 0 {
 			candidateInfo.Counter++
-		}
-		totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.Quantity)
-		if !candidateInfo.invalid() && (!pstate.Dpos || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0) {
-			if uint64(len(activatedCandidateSchedule)) < n {
-				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-				activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.TotalQuantity)
-			}
 		}
 		if pstate.Epcho != pstate.PreEpcho {
 			if err := sys.SetCandidateByEpcho(pepcho, candidateInfo); err != nil {
 				return err
 			}
 		}
+
+		if !candidateInfo.invalid() {
+			if pstate.Dpos {
+				if candidateInfo.Number == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+					continue
+				}
+			} else {
+				if candidateInfo.Number != 0 && strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0 {
+					continue
+				}
+			}
+			if uint64(len(activatedCandidateSchedule)) < n {
+				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+				activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+			}
+			totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.TotalQuantity)
+			quantity = new(big.Int).Add(quantity, candidateInfo.Quantity)
+			cnt++
+		}
+
+		// clear vote quantity
 		candidateInfo.TotalQuantity = candidateInfo.Quantity
+		ntotalQuantity = new(big.Int).Add(ntotalQuantity, candidateInfo.TotalQuantity)
 		if err := sys.SetCandidate(candidateInfo); err != nil {
 			return err
 		}
 	}
 
+	if !pstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
+		cnt >= n {
+		pstate.Dpos = true
+	}
+
 	if !pstate.Dpos {
-		if pstate.Epcho != pstate.PreEpcho {
-			ppstate, err := sys.GetState(pstate.PreEpcho)
-			if err != nil {
-				return err
-			}
-			candidates := map[string]bool{}
-			activeTotalQuantity = big.NewInt(0)
-			activatedCandidateSchedule = []string{}
-			for _, candidate := range ppstate.ActivatedCandidateSchedule {
-				candidateInfo, err := sys.GetCandidate(candidate)
-				if err != nil {
-					return err
-				}
-				if candidateInfo == nil || candidateInfo.invalid() {
-					continue
-				}
-				if _, ok := candidates[candidate]; !ok {
-					candidates[candidateInfo.Name] = true
-					activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-					activeTotalQuantity = new(big.Int).Add(activeTotalQuantity, candidateInfo.Quantity)
-				}
-			}
-		}
 		if init := len(activatedCandidateSchedule); init > 0 {
 			index := 0
 			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
@@ -561,7 +552,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 		}
 	}
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
-	pstate.ActivatedTotalQuantity = activeTotalQuantity
+	pstate.ActivatedTotalQuantity = activatedTotalQuantity
 	pstate.Number = number
 	if err := sys.SetState(pstate); err != nil {
 		return err
@@ -572,7 +563,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 			Epcho:                  epcho,
 			PreEpcho:               pstate.Epcho,
 			ActivatedTotalQuantity: big.NewInt(0),
-			TotalQuantity:          new(big.Int).SetBytes(totalQuantity.Bytes()),
+			TotalQuantity:          new(big.Int).SetBytes(ntotalQuantity.Bytes()),
 			OffCandidateNumber:     []uint64{},
 			OffCandidateSchedule:   []uint64{},
 			TakeOver:               pstate.TakeOver,

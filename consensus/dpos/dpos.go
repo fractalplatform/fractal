@@ -193,6 +193,17 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	pepcho := dpos.config.epoch(parent.Time.Uint64())
 	epcho := dpos.config.epoch(header.Time.Uint64())
 
+	candidate, err := sys.GetCandidate(header.Coinbase.String())
+	if err != nil {
+		return err
+	}
+	if candidate != nil {
+		candidate.ActualCounter++
+		if err := sys.SetCandidate(candidate); err != nil {
+			return err
+		}
+	}
+
 	if pepcho != epcho {
 		if parent.Number.Uint64() > 0 {
 			gstate, err := sys.GetState(LastEpcho)
@@ -267,7 +278,6 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	if err != nil {
 		return nil, err
 	} else if candidate != nil {
-		candidate.ActualCounter++
 		if latest.TakeOver {
 			candidate.Counter++
 		} else if header.Number.Uint64() == 1 {
@@ -502,7 +512,9 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 			// first take over
 			return nil
 		}
-		return ErrTooMuchRreversible
+		if parent.Number.Uint64() >= dpos.config.CandidateScheduleSize*dpos.config.BlockFrequency {
+			return ErrTooMuchRreversible
+		}
 	}
 
 	pstate, err := sys.GetState(gstate.PreEpcho)
