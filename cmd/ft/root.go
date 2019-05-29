@@ -103,7 +103,7 @@ func makeNode() (*node.Node, error) {
 		}
 		defer file.Close()
 
-		genesis := new(blockchain.Genesis)
+		genesis := blockchain.DefaultGenesis()
 		if err := json.NewDecoder(file).Decode(genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
 		}

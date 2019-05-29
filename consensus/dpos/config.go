@@ -24,50 +24,51 @@ import (
 
 // DefaultConfig configures
 var DefaultConfig = &Config{
-	MaxURLLen:             512,
-	UnitStake:             big.NewInt(1000),
-	CandidateMinQuantity:  big.NewInt(10),
-	VoterMinQuantity:      big.NewInt(1),
-	ActivatedMinQuantity:  big.NewInt(100),
-	BlockInterval:         3000,
-	BlockFrequency:        6,
-	CandidateScheduleSize: 3,
-	BackupScheduleSize:    0,
-	EpchoInterval:         540000,
-	FreezeEpchoSize:       3,
-	AccountName:           "ftsystemdpos",
-	SystemName:            "ftsystemio",
-	SystemURL:             "www.fractalproject.com",
-	ExtraBlockReward:      big.NewInt(1),
-	BlockReward:           big.NewInt(5),
-	Decimals:              18,
-	AssetID:               1,
-	ReferenceTime:         1555776000000 * uint64(time.Millisecond), // 2019-04-21 00:00:00
+	MaxURLLen:                     512,
+	UnitStake:                     big.NewInt(1000),
+	CandidateMinQuantity:          big.NewInt(10),
+	CandidateAvailableMinQuantity: big.NewInt(10),
+	VoterMinQuantity:              big.NewInt(1),
+	ActivatedMinQuantity:          big.NewInt(100),
+	BlockInterval:                 3000,
+	BlockFrequency:                6,
+	CandidateScheduleSize:         3,
+	BackupScheduleSize:            0,
+	EpchoInterval:                 540000,
+	FreezeEpchoSize:               3,
+	AccountName:                   "ftsystemdpos",
+	SystemName:                    "ftsystemio",
+	SystemURL:                     "www.fractalproject.com",
+	ExtraBlockReward:              big.NewInt(1),
+	BlockReward:                   big.NewInt(5),
+	Decimals:                      18,
+	AssetID:                       1,
+	ReferenceTime:                 1555776000000 * uint64(time.Millisecond), // 2019-04-21 00:00:00
 }
 
 // Config dpos configures
 type Config struct {
 	// consensus fileds
-	MaxURLLen             uint64   `json:"maxURLLen"`            // url length
-	UnitStake             *big.Int `json:"unitStake"`            // state unit
-	CandidateMinQuantity  *big.Int `json:"candidateMinQuantity"` // min quantity
-	VoterMinQuantity      *big.Int `json:"voterMinQuantity"`     // min quantity
-	ActivatedMinQuantity  *big.Int `json:"activatedMinQuantity"` // min active quantity
-	BlockInterval         uint64   `json:"blockInterval"`
-	BlockFrequency        uint64   `json:"blockFrequency"`
-	CandidateScheduleSize uint64   `json:"candidateScheduleSize"`
-	BackupScheduleSize    uint64   `json:"backupScheduleSize"`
-	EpchoInterval         uint64   `json:"epchoInterval"`
-	FreezeEpchoSize       uint64   `json:"freezeEpchoSize"`
-	AccountName           string   `json:"accountName"`
-	SystemName            string   `json:"systemName"`
-	SystemURL             string   `json:"systemURL"`
-	ExtraBlockReward      *big.Int `json:"extraBlockReward"`
-	BlockReward           *big.Int `json:"blockReward"`
-	InitCandidateSchedule []string `json:"initCandidateSchedule"`
-	Decimals              uint64   `json:"decimals"`
-	AssetID               uint64   `json:"assetID"`
-	ReferenceTime         uint64   `json:"referenceTime"`
+	MaxURLLen                     uint64   `json:"maxURLLen"`                     // url length
+	UnitStake                     *big.Int `json:"unitStake"`                     // state unit
+	CandidateMinQuantity          *big.Int `json:"candidateMinQuantity"`          // min quantity
+	CandidateAvailableMinQuantity *big.Int `json:"candidateAvailableMinQuantity"` // min quantity
+	VoterMinQuantity              *big.Int `json:"voterMinQuantity"`              // min quantity
+	ActivatedMinQuantity          *big.Int `json:"activatedMinQuantity"`          // min active quantity
+	BlockInterval                 uint64   `json:"blockInterval"`
+	BlockFrequency                uint64   `json:"blockFrequency"`
+	CandidateScheduleSize         uint64   `json:"candidateScheduleSize"`
+	BackupScheduleSize            uint64   `json:"backupScheduleSize"`
+	EpchoInterval                 uint64   `json:"epchoInterval"`
+	FreezeEpchoSize               uint64   `json:"freezeEpchoSize"`
+	AccountName                   string   `json:"accountName"`
+	SystemName                    string   `json:"systemName"`
+	SystemURL                     string   `json:"systemURL"`
+	ExtraBlockReward              *big.Int `json:"extraBlockReward"`
+	BlockReward                   *big.Int `json:"blockReward"`
+	Decimals                      uint64   `json:"decimals"`
+	AssetID                       uint64   `json:"assetID"`
+	ReferenceTime                 uint64   `json:"referenceTime"`
 
 	// cache files
 	decimal     atomic.Value

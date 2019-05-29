@@ -49,7 +49,7 @@ func init() {
 // the zero'd block (i.e. genesis) or will fail hard if it can't succeed.
 func initGenesis() error {
 	// Make sure we have a valid genesis JSON
-	genesis := new(blockchain.Genesis)
+	genesis := blockchain.DefaultGenesis()
 	if len(ftCfgInstance.GenesisFile) != 0 {
 		file, err := os.Open(ftCfgInstance.GenesisFile)
 		if err != nil {

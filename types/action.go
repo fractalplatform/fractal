@@ -212,7 +212,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		fallthrough
 	case ExitTakeOver:
 		if a.data.To.String() != conf.DposName {
-			return fmt.Errorf("Receipt should is %v", conf.AssetName)
+			return fmt.Errorf("Receipt should is %v", conf.DposName)
 		}
 		if a.data.AssetID != conf.SysTokenID {
 			return fmt.Errorf("Asset id should is %v", conf.SysTokenID)
