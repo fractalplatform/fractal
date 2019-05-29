@@ -101,7 +101,11 @@ func (s *stateDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, err
 	if err != nil {
 		return big.NewInt(0), err
 	}
-	return accountDB.GetBalanceByTime(common.StrToName(name), s.assetid, 1, timestamp)
+	balance, err := accountDB.GetBalanceByTime(common.StrToName(name), s.assetid, 1, timestamp)
+	if err == accountmanager.ErrAccountNotExist {
+		return big.NewInt(0), nil
+	}
+	return balance, err
 }
 
 // Genesis dpos genesis store
