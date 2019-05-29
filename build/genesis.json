@@ -25,8 +25,10 @@
 		"dposParams": {
 			"maxURLLen": 512,
 			"unitStake": 1000,
+			"candidateAvailableMinQuantity": 10,
 			"candidateMinQuantity": 10,
 			"voterMinQuantity": 1,
+			"activatedMinCandidate": 3,
 			"activatedMinQuantity": 100,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
@@ -57,7 +59,7 @@
 	}, {
 		"name": "fractal.asset",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	},{
+	}, {
 		"name": "fractal.dpos",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
