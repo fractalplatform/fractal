@@ -1166,7 +1166,7 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 //IssueAsset issue asset
 func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
 	//check owner valid
-	if !am.ast.IsValidOwner(fromName, asset.AssetName) {
+	if !am.ast.IsValidSubAssetOwner(fromName, asset.AssetName) {
 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 	}
 	//check owner

@@ -1442,7 +1442,7 @@ func TestAccountManager_IncAsset2Acct(t *testing.T) {
 		//
 		{"over upperlimit", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, big.NewInt(11999)}, true},
 		{"accountexist", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name("a123456789aeee"), 1, big.NewInt(10)}, false},
-		{"notexist", fields{sdb, ast}, args{common.Name("a0123456789ziz"), common.Name("a123456789aeef"), 1, big.NewInt(1)}, false},
+		{"notexist", fields{sdb, ast}, args{common.Name("a0123456789ziz"), common.Name("a123456789aeef"), 1, big.NewInt(1)}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -2034,7 +2034,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"increase", fields{sdb, ast}, args{action1}, false},
+		{"increase", fields{sdb, ast}, args{action1}, true},
 		{"updateasset", fields{sdb, ast}, args{action2}, true},
 	}
 
