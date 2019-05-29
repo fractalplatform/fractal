@@ -514,6 +514,11 @@ func (a *Asset) CheckOwner(fromName common.Name, assetID uint64) error {
 	}
 
 	if assetObj.GetAssetOwner() != fromName {
+		assetNames := common.FindStringSubmatch(assetRegExp, assetObj.GetAssetName())
+		if len(assetNames) < 2 {
+			return ErrOwnerMismatch
+		}
+
 		if !a.IsValidOwner(fromName, assetObj.GetAssetName()) {
 			return ErrOwnerMismatch
 		}
