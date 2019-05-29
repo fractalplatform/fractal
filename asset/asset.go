@@ -434,8 +434,16 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 // 	return a.SetAssetObject(asset)
 // }
 
+func (a *Asset) IsValidMainAsset(assetName string) bool {
+	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	if len(assetNames) < 2 {
+		return true
+	}
+	return false
+}
+
 // IsValidOwner check parent owner valid
-func (a *Asset) IsValidOwner(fromName common.Name, assetName string) bool {
+func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) bool {
 	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {
 		return true
@@ -514,12 +522,11 @@ func (a *Asset) CheckOwner(fromName common.Name, assetID uint64) error {
 	}
 
 	if assetObj.GetAssetOwner() != fromName {
-		assetNames := common.FindStringSubmatch(assetRegExp, assetObj.GetAssetName())
-		if len(assetNames) < 2 {
+		if a.IsValidMainAsset(assetObj.GetAssetName()) {
 			return ErrOwnerMismatch
 		}
 
-		if !a.IsValidOwner(fromName, assetObj.GetAssetName()) {
+		if !a.IsValidSubAssetOwner(fromName, assetObj.GetAssetName()) {
 			return ErrOwnerMismatch
 		}
 	}
