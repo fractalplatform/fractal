@@ -517,6 +517,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	quantity := big.NewInt(0)
 	cnt := uint64(0)
 	ntotalQuantity := big.NewInt(0)
+	candidates := []*CandidateInfo{}
 	for _, candidateInfo := range candidateInfoArray {
 		if pstate.Dpos && strings.Compare(candidateInfo.Name, miner) == 0 {
 			candidateInfo.Counter++
@@ -527,13 +528,11 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 
 		if !candidateInfo.invalid() {
 			if pstate.Dpos {
-				if candidateInfo.Number == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+				if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 					continue
 				}
-			} else {
-				if candidateInfo.Number != 0 && strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0 {
-					continue
-				}
+			} else if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+				candidates = append(candidates, candidateInfo)
 			}
 			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
@@ -558,6 +557,15 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	}
 
 	if !pstate.Dpos {
+		activatedTotalQuantity = big.NewInt(0)
+		activatedCandidateSchedule = []string{}
+		for index, candidateInfo := range candidates {
+			if uint64(index) >= n {
+				break
+			}
+			activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+			activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+		}
 		if init := len(activatedCandidateSchedule); init > 0 {
 			index := 0
 			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
