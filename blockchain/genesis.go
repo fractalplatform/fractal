@@ -44,8 +44,9 @@ import (
 
 // GenesisAccount is an account in the state of the genesis block.
 type GenesisAccount struct {
-	Name   string        `json:"name,omitempty"`
-	PubKey common.PubKey `json:"pubKey,omitempty"`
+	Name    string        `json:"name,omitempty"`
+	Founder string        `json:"founder,omitempty"`
+	PubKey  common.PubKey `json:"pubKey,omitempty"`
 }
 
 // GenesisCandidate is an cadicate in the state of the genesis block.
@@ -239,6 +240,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		}
 		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
+			Founder:     common.StrToName(account.Founder),
 			PublicKey:   account.PubKey,
 		}
 		payload, _ := rlp.EncodeToBytes(act)
@@ -512,24 +514,29 @@ func DefaultGenesis() *Genesis {
 func DefaultGenesisAccounts() []*GenesisAccount {
 	return []*GenesisAccount{
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.SysName,
-			PubKey: common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
+			Name:    params.DefaultChainconfig.SysName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.AccountName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.AccountName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.AssetName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.AssetName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.DposName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.DposName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.FeeName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.FeeName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 	}
 }
