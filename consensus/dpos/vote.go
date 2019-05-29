@@ -77,9 +77,12 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 	if err != nil {
 		return err
 	}
-	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
-		return fmt.Errorf("invalid vote stake %v(insufficient) %v > %v", candidate, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
-	} else if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
+
+	sub := new(big.Int).Sub(quantity, q)
+	if sub.Sign() == -1 {
+		sub = big.NewInt(0)
+	}
+	if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
 		return err
 	}
 
@@ -145,9 +148,11 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 		if err != nil {
 			return err
 		}
-		if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
-			return fmt.Errorf("invalid vote stake %v(insufficient) %v < %v", candidate, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
-		} else if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
+		sub := new(big.Int).Sub(quantity, q)
+		if sub.Sign() == -1 {
+			sub = big.NewInt(0)
+		}
+		if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
 			return err
 		}
 	}
