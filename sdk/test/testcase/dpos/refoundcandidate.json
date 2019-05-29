@@ -1,0 +1,94 @@
+[{
+    "comment": "fractal.admin create account candidate0005 & transfer 1000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 1000000000000000000000000,
+    "payload": {
+        "accountName": "candidate0005",
+        "founder": "candidate0005",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "candidate0005 account"
+    },
+    "succeed": true
+},
+{
+    "comment": "candidate0005 refundcandidate, not exist",
+    "type": "refundcandidate",
+    "from": "candidate0005",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 0,
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": false,
+    "contain": "not exist"
+},
+{
+    "comment": "candidate0005 regcandidate & transfer 10000 ft",
+    "type": "regcandidate",
+    "from": "candidate0005",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 10000000000000000000000,
+    "payload": {
+        "URL": "www.xxxxxx.com"
+    },
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": true
+}, {
+    "comment": "candidate0005 refundcandidate, wrong receipt",
+    "type": "refundcandidate",
+    "from": "candidate0005",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 0,
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": false,
+    "contain": "fractal.dpos"
+},
+{
+    "comment": "candidate0005 refundcandidate & transfer 10000 ft, not zero",
+    "type": "unregcandidate",
+    "from": "candidate0005",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 10000000000000000000000,
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": false,
+    "contain": "zero"
+},
+{
+    "comment": "candidate0005 refundcandidate, not unregcandidate",
+    "type": "refundcandidate",
+    "from": "candidate0005",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 0,
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": false,
+    "contain": "not in freeze"
+},
+{
+    "comment": "candidate0005 unregcandidate & transfer 0 ft",
+    "type": "unregcandidate",
+    "from": "candidate0005",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 0,
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": true
+},
+{
+    "comment": "candidate0005 refundcandidate, not unregcandidate",
+    "type": "refundcandidate",
+    "from": "candidate0005",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 0,
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "succeed": false,
+    "contain": "freeze period"
+}
+]

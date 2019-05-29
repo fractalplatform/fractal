@@ -28,7 +28,7 @@ var DefaultConfig = &Config{
 	UnitStake:                     big.NewInt(1000),
 	CandidateMinQuantity:          big.NewInt(10),
 	CandidateAvailableMinQuantity: big.NewInt(10),
-	VoterMinQuantity:              big.NewInt(1),
+	VoterMinQuantity:              big.NewInt(2),
 	ActivatedMinCandidate:         3,
 	ActivatedMinQuantity:          big.NewInt(100),
 	BlockInterval:                 3000,

@@ -50,7 +50,7 @@ func NewSystem(state *state.StateDB, config *Config) *System {
 func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
-		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
+		return fmt.Errorf("invalid url (too long, max %v)", sys.config.MaxURLLen)
 	}
 
 	// stake validity
@@ -115,7 +115,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
-		return fmt.Errorf("invalid url %v(too long, max %v)", url, sys.config.MaxURLLen)
+		return fmt.Errorf("invalid url (too long, max %v)", sys.config.MaxURLLen)
 	}
 
 	// stake validity
@@ -135,6 +135,9 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	}
 	if prod == nil {
 		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
+	}
+	if prod.Type != Normal {
+		return fmt.Errorf("not in normal %v", candidate)
 	}
 
 	// if q.Sign() != 0 && q.Cmp(prod.Quantity) == -1 {
@@ -196,7 +199,7 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64)
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalide candidate %v", candidate)
+		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
 	}
 	if prod.Type != Normal {
 		return fmt.Errorf("not in normal %v", candidate)
@@ -256,7 +259,7 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalide candidate %v", candidate)
+		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
 	}
 	if prod.Type != Freeze {
 		return fmt.Errorf("not in freeze %v", candidate)
@@ -331,7 +334,10 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return err
 	}
 	if prod == nil {
-		return fmt.Errorf("invalid candidate %v", candidate)
+		return fmt.Errorf("invalid candidate %v(not exist)", candidate)
+	}
+	if prod.Type != Normal {
+		return fmt.Errorf("not in normal %v", candidate)
 	}
 
 	gstate, err := sys.GetState(epcho)
