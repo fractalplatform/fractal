@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	api      = sdk.NewAPI("http://192.168.2.11:3090")
+	api      = sdk.NewAPI("http://127.0.0.1:8545")
 	chainCfg *params.ChainConfig
 )
 
@@ -67,10 +67,10 @@ func init() {
 	log.Root().SetHandler(glogger)
 }
 
-func runTx(api *sdk.API, tx *TTX, indent int) error {
+func runTx(api *sdk.API, tx *TTX, file string) error {
 	priv, err := crypto.HexToECDSA(tx.Priv)
 	if err != nil {
-		log.Error(strings.Repeat("*", indent), "hex priv err", err)
+		log.Error(file, "hex priv err", err)
 		return err
 	}
 	act := sdk.NewAccount(api, common.StrToName(tx.From), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
@@ -212,21 +212,20 @@ func runTx(api *sdk.API, tx *TTX, indent int) error {
 		err = fmt.Errorf("unsupport type %v", tx.Type)
 	}
 	if tx.Succeed != (err == nil) {
-		log.Error(strings.Repeat("*", indent), "succeed mismatch", err, "tx", tx)
+		log.Error(file, "succeed mismatch", err, "comment", tx.Comment)
 		return fmt.Errorf("succeed mismatch %v", err)
 	}
 	if len(tx.Contain) > 0 && !strings.Contains(err.Error(), tx.Contain) {
-		log.Error(strings.Repeat("*", indent), "contain mismatch", err, "tx", tx)
+		log.Error(file, "contain mismatch", err, "except", tx.Contain, "comment", tx.Comment)
 		return fmt.Errorf("contain mismatch %v", err)
 	}
 	if tx.Succeed && bytes.Compare(hash.Bytes(), common.Hash{}.Bytes()) == 0 {
-		log.Error(strings.Repeat("*", indent), "txpool err", err, "tx", tx)
+		log.Error(file, "txpool err", err, "comment", tx.Comment)
 		return fmt.Errorf("txpool error %v", err)
 	}
-	log.Info(strings.Repeat("*", indent), "hash", hash.String(), "comment", tx.Comment)
-	indent++
+	log.Info(file, "hash", hash.String(), "comment", tx.Comment)
 	for _, ctx := range tx.Childs {
-		if err := runTx(api, ctx, indent); err != nil {
+		if err := runTx(api, ctx, file); err != nil {
 			return err
 		}
 	}
@@ -238,9 +237,13 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	run("./testcase", rd)
+}
+
+func run(dir string, rd []os.FileInfo) {
 	for _, fi := range rd {
 		if !fi.IsDir() {
-			bts, err := ioutil.ReadFile(path.Join("./testcase", fi.Name()))
+			bts, err := ioutil.ReadFile(path.Join(dir, fi.Name()))
 			if err != nil {
 				panic(err)
 			}
@@ -251,19 +254,15 @@ func main() {
 				panic(err)
 			}
 
-			total := 0
-			failed := 0
-			indent := 0
-			for index, tx := range txs {
-				log.Info(strings.Repeat("*", indent), "file", fi.Name(), "index", index)
-				err := runTx(api, tx, indent)
-
-				total++
-				if err != nil {
-					failed++
-				}
+			for _, tx := range txs {
+				runTx(api, tx, path.Join(dir, fi.Name()))
 			}
-			log.Info("result", "file", fi.Name(), "total", total, "failed", failed)
+		} else {
+			crd, err := ioutil.ReadDir(path.Join(dir, fi.Name()))
+			if err != nil {
+				panic(err)
+			}
+			run(path.Join(dir, fi.Name()), crd)
 		}
 	}
 }
