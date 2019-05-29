@@ -29,6 +29,7 @@ var DefaultConfig = &Config{
 	CandidateMinQuantity:          big.NewInt(10),
 	CandidateAvailableMinQuantity: big.NewInt(10),
 	VoterMinQuantity:              big.NewInt(1),
+	ActivatedMinCandidate:         3,
 	ActivatedMinQuantity:          big.NewInt(100),
 	BlockInterval:                 3000,
 	BlockFrequency:                6,
@@ -54,7 +55,8 @@ type Config struct {
 	CandidateMinQuantity          *big.Int `json:"candidateMinQuantity"`          // min quantity
 	CandidateAvailableMinQuantity *big.Int `json:"candidateAvailableMinQuantity"` // min quantity
 	VoterMinQuantity              *big.Int `json:"voterMinQuantity"`              // min quantity
-	ActivatedMinQuantity          *big.Int `json:"activatedMinQuantity"`          // min active quantity
+	ActivatedMinCandidate         uint64   `json:"activatedMinCandidate"`
+	ActivatedMinQuantity          *big.Int `json:"activatedMinQuantity"` // min active quantity
 	BlockInterval                 uint64   `json:"blockInterval"`
 	BlockFrequency                uint64   `json:"blockFrequency"`
 	CandidateScheduleSize         uint64   `json:"candidateScheduleSize"`

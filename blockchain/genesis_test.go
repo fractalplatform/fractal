@@ -32,7 +32,7 @@ import (
 	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0x6228fd4acdbac46f1adb416d5ddd9be1402e13d7c70de1468710284ba19d70f4")
+var defaultgenesisBlockHash = common.HexToHash("0x68d30569539b31f10a739e9772f9b62d8ee85e63885d74446b40fce04e5e8560")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block, _ := DefaultGenesis().ToBlock(nil)
@@ -43,7 +43,7 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x35e82b473aab3a4a1e2e50118b50e714b70cab70406f4ba3518c7937037bc247")
+		customghash = common.HexToHash("0xe76c5877fca9f043314c8ea529e199142fbf71d36b29faacf4500779392d9e74")
 
 		customg = Genesis{
 			Config:          params.DefaultChainconfig.Copy(),
@@ -53,7 +53,7 @@ func TestSetupGenesis(t *testing.T) {
 		}
 		oldcustomg = customg
 
-		oldcustomghash = common.HexToHash("a8618253eb9e88ab651234e25910492b2f23526e28dbab0d771e34beb12cea82")
+		oldcustomghash = common.HexToHash("3f27fcb4e7df111d644e595f91155e37093b658fdebc7d4b6f9dcb20d4b7b1e8")
 	)
 	customg.Config.ChainID = big.NewInt(5)
 	oldcustomg.Config = customg.Config.Copy()

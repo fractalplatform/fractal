@@ -61,19 +61,21 @@ type FrokedConfig struct {
 }
 
 type DposConfig struct {
-	MaxURLLen             uint64   `json:"maxURLLen"`            // url length
-	UnitStake             *big.Int `json:"unitStake"`            // state unit
-	CandidateMinQuantity  *big.Int `json:"candidateMinQuantity"` // min quantity
-	VoterMinQuantity      *big.Int `json:"voterMinQuantity"`     // min quantity
-	ActivatedMinQuantity  *big.Int `json:"activatedMinQuantity"` // min active quantity
-	BlockInterval         uint64   `json:"blockInterval"`
-	BlockFrequency        uint64   `json:"blockFrequency"`
-	CandidateScheduleSize uint64   `json:"candidateScheduleSize"`
-	BackupScheduleSize    uint64   `json:"backupScheduleSize"`
-	EpchoInterval         uint64   `json:"epchoInterval"`
-	FreezeEpchoSize       uint64   `json:"freezeEpchoSize"`
-	ExtraBlockReward      *big.Int `json:"extraBlockReward"`
-	BlockReward           *big.Int `json:"blockReward"`
+	MaxURLLen                     uint64   `json:"maxURLLen"` // url length
+	UnitStake                     *big.Int `json:"unitStake"` // state unit
+	CandidateAvailableMinQuantity *big.Int `json:"candidateAvailableMinQuantity"`
+	CandidateMinQuantity          *big.Int `json:"candidateMinQuantity"` // min quantity
+	VoterMinQuantity              *big.Int `json:"voterMinQuantity"`     // min quantity
+	ActivatedMinCandidate         uint64   `json:"activatedMinCandidate"`
+	ActivatedMinQuantity          *big.Int `json:"activatedMinQuantity"` // min active quantity
+	BlockInterval                 uint64   `json:"blockInterval"`
+	BlockFrequency                uint64   `json:"blockFrequency"`
+	CandidateScheduleSize         uint64   `json:"candidateScheduleSize"`
+	BackupScheduleSize            uint64   `json:"backupScheduleSize"`
+	EpchoInterval                 uint64   `json:"epchoInterval"`
+	FreezeEpchoSize               uint64   `json:"freezeEpchoSize"`
+	ExtraBlockReward              *big.Int `json:"extraBlockReward"`
+	BlockReward                   *big.Int `json:"blockReward"`
 }
 
 var DefaultChainconfig = &ChainConfig{
@@ -100,19 +102,21 @@ var DefaultChainconfig = &ChainConfig{
 		Forkpercentage: 80,
 	},
 	DposCfg: &DposConfig{
-		MaxURLLen:             512,
-		UnitStake:             big.NewInt(1000),
-		CandidateMinQuantity:  big.NewInt(10),
-		VoterMinQuantity:      big.NewInt(1),
-		ActivatedMinQuantity:  big.NewInt(100),
-		BlockInterval:         3000,
-		BlockFrequency:        6,
-		CandidateScheduleSize: 3,
-		BackupScheduleSize:    0,
-		EpchoInterval:         540000,
-		FreezeEpchoSize:       3,
-		ExtraBlockReward:      big.NewInt(1),
-		BlockReward:           big.NewInt(5),
+		MaxURLLen:                     512,
+		UnitStake:                     big.NewInt(1000),
+		CandidateAvailableMinQuantity: big.NewInt(10),
+		CandidateMinQuantity:          big.NewInt(10),
+		VoterMinQuantity:              big.NewInt(1),
+		ActivatedMinCandidate:         3,
+		ActivatedMinQuantity:          big.NewInt(100),
+		BlockInterval:                 3000,
+		BlockFrequency:                6,
+		CandidateScheduleSize:         3,
+		BackupScheduleSize:            0,
+		EpchoInterval:                 540000,
+		FreezeEpchoSize:               3,
+		ExtraBlockReward:              big.NewInt(1),
+		BlockReward:                   big.NewInt(5),
 	},
 	SnapshotInterval: 180000,
 	SysName:          "fractal.admin",

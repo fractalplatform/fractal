@@ -548,7 +548,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	}
 
 	if !pstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
-		cnt >= n {
+		cnt >= n && cnt >= sys.config.ActivatedMinCandidate {
 		pstate.Dpos = true
 	}
 
