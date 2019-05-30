@@ -57,7 +57,7 @@
     "value": 10000000000000000000000,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
-    "contain": "zero"
+    "contain": "is zero"
 },
 {
     "comment": "candidate0005 refundcandidate, not unregcandidate",
@@ -81,7 +81,7 @@
     "succeed": true
 },
 {
-    "comment": "candidate0005 refundcandidate, not unregcandidate",
+    "comment": "candidate0005 refundcandidate, freeze period",
     "type": "refundcandidate",
     "from": "candidate0005",
     "to": "fractal.dpos",

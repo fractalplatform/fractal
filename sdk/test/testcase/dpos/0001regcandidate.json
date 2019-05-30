@@ -57,7 +57,7 @@
     "contain": "insufficient"
 },
 {
-    "comment": "candidate0001 regcandidate & transfer 10000 ft, insufficient value",
+    "comment": "candidate0001 regcandidate & transfer 1000 ft, insufficient value",
     "type": "regcandidate",
     "from": "candidate0001",
     "to": "fractal.dpos",

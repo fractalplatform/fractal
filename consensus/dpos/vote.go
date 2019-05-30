@@ -352,8 +352,8 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 	if err != nil {
 		return err
 	}
-	if bquantity.Cmp(sys.config.CandidateAvailableMinQuantity) == -1 {
-		return fmt.Errorf("invalid candidate %v,(insufficient available quantity %v < %v)", candidate, bquantity, sys.config.CandidateAvailableMinQuantity)
+	if s := new(big.Int).Mul(sys.config.unitStake(), sys.config.CandidateAvailableMinQuantity); bquantity.Cmp(s) == -1 {
+		return fmt.Errorf("invalid candidate %v,(insufficient available quantity %v < %v)", candidate, bquantity, s)
 	}
 
 	// stake validity

@@ -42,8 +42,8 @@ var (
 	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
 	tGas            = uint64(20000000)
 
-	AssetAbi   = "./test/Asset.abi"
-	AssetBin   = "./test/Asset.bin"
+	AssetAbi   = "./test/contract/Asset.abi"
+	AssetBin   = "./test/contract/Asset.bin"
 	api        = NewAPI("http://127.0.0.1:8545")
 	syspriv, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 	decimals   = big.NewInt(1)
