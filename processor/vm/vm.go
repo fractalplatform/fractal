@@ -169,6 +169,9 @@ func (evm *EVM) GetCurrentGasTable() params.GasTable {
 
 func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 	gasTable := evm.GetCurrentGasTable()
+	if action.Value().Sign() == 0 {
+		return 0
+	}
 	toAcct, err := evm.AccountDB.GetAccountByName(action.Recipient())
 	if err != nil {
 		return 0
@@ -280,12 +283,15 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		snapshot = evm.StateDB.Snapshot()
 	)
 
-	receiptGas := evm.CheckReceipt(action)
-	if gas < receiptGas {
-		return nil, gas, ErrInsufficientBalance
-	} else {
-		gas -= receiptGas
+	if evm.depth != 0 {
+		receiptGas := evm.CheckReceipt(action)
+		if gas < receiptGas {
+			return nil, gas, ErrInsufficientBalance
+		} else {
+			gas -= receiptGas
+		}
 	}
+
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
 		return nil, gas, err
 	}
@@ -340,7 +346,6 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	}
 	actualUsedGas := gas - contract.Gas
 	evm.distributeGasByScale(actualUsedGas, runGas)
-
 	return ret, contract.Gas, err
 }
 
@@ -544,12 +549,6 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 		return nil, 0, ErrContractCodeCollision
 	}
 
-	receiptGas := evm.CheckReceipt(action)
-	if gas < receiptGas {
-		return nil, gas, ErrInsufficientBalance
-	} else {
-		gas -= receiptGas
-	}
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		return nil, gas, err
@@ -571,21 +570,6 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	start := time.Now()
 
 	ret, err = run(evm, contract, nil)
-	runGas := gas - contract.Gas
-
-	contratFounderRatio := evm.chainConfig.ChargeCfg.ContractRatio
-	if runGas > 0 && len(contractName.String()) > 0 {
-		key := DistributeKey{ObjectName: contractName,
-			ObjectType: params.ContractFeeType}
-		if _, ok := evm.FounderGasMap[key]; !ok {
-			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
-			evm.FounderGasMap[key] = dGas
-		} else {
-			dGas := DistributeGas{int64(runGas * contratFounderRatio / 100), params.ContractFeeType}
-			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
-			evm.FounderGasMap[key] = dGas
-		}
-	}
 
 	// check whether the max code size has been exceeded
 	maxCodeSizeExceeded := len(ret) > int(params.MaxCodeSize)
@@ -596,13 +580,9 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			acct, err := evm.AccountDB.GetAccountByName(contractName)
-			if err != nil {
+			if _, err := evm.AccountDB.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
-			acct.SetCode(ret)
-			evm.AccountDB.SetAccount(acct)
-			//evm.AccountDB.SetCode(contractName, ret)
 		} else {
 			err = ErrCodeStoreOutOfGas
 		}
@@ -624,6 +604,8 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if evm.vmConfig.Debug && evm.depth == 0 {
 		evm.vmConfig.Tracer.CaptureEnd(ret, gas-contract.Gas, time.Since(start), err)
 	}
+
+	evm.distributeContractGas(gas-contract.Gas, contractName, contractName)
 	return ret, contract.Gas, err
 }
 

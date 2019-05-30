@@ -44,8 +44,9 @@ import (
 
 // GenesisAccount is an account in the state of the genesis block.
 type GenesisAccount struct {
-	Name   string        `json:"name,omitempty"`
-	PubKey common.PubKey `json:"pubKey,omitempty"`
+	Name    string        `json:"name,omitempty"`
+	Founder string        `json:"founder,omitempty"`
+	PubKey  common.PubKey `json:"pubKey,omitempty"`
 }
 
 // GenesisCandidate is an cadicate in the state of the genesis block.
@@ -79,25 +80,27 @@ type Genesis struct {
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 	return &dpos.Config{
-		MaxURLLen:             cfg.DposCfg.MaxURLLen,
-		UnitStake:             cfg.DposCfg.UnitStake,
-		CandidateMinQuantity:  cfg.DposCfg.CandidateMinQuantity,
-		VoterMinQuantity:      cfg.DposCfg.VoterMinQuantity,
-		ActivatedMinQuantity:  cfg.DposCfg.ActivatedMinQuantity,
-		BlockInterval:         cfg.DposCfg.BlockInterval,
-		BlockFrequency:        cfg.DposCfg.BlockFrequency,
-		CandidateScheduleSize: cfg.DposCfg.CandidateScheduleSize,
-		BackupScheduleSize:    cfg.DposCfg.BackupScheduleSize,
-		EpchoInterval:         cfg.DposCfg.EpchoInterval,
-		FreezeEpchoSize:       cfg.DposCfg.FreezeEpchoSize,
-		AccountName:           cfg.DposName,
-		SystemName:            cfg.SysName,
-		SystemURL:             cfg.ChainURL,
-		ExtraBlockReward:      cfg.DposCfg.ExtraBlockReward,
-		BlockReward:           cfg.DposCfg.BlockReward,
-		Decimals:              cfg.SysTokenDecimals,
-		AssetID:               cfg.SysTokenID,
-		ReferenceTime:         cfg.ReferenceTime,
+		MaxURLLen:                     cfg.DposCfg.MaxURLLen,
+		UnitStake:                     cfg.DposCfg.UnitStake,
+		CandidateAvailableMinQuantity: cfg.DposCfg.CandidateAvailableMinQuantity,
+		CandidateMinQuantity:          cfg.DposCfg.CandidateMinQuantity,
+		VoterMinQuantity:              cfg.DposCfg.VoterMinQuantity,
+		ActivatedMinCandidate:         cfg.DposCfg.ActivatedMinCandidate,
+		ActivatedMinQuantity:          cfg.DposCfg.ActivatedMinQuantity,
+		BlockInterval:                 cfg.DposCfg.BlockInterval,
+		BlockFrequency:                cfg.DposCfg.BlockFrequency,
+		CandidateScheduleSize:         cfg.DposCfg.CandidateScheduleSize,
+		BackupScheduleSize:            cfg.DposCfg.BackupScheduleSize,
+		EpchoInterval:                 cfg.DposCfg.EpchoInterval,
+		FreezeEpchoSize:               cfg.DposCfg.FreezeEpchoSize,
+		AccountName:                   cfg.DposName,
+		SystemName:                    cfg.SysName,
+		SystemURL:                     cfg.ChainURL,
+		ExtraBlockReward:              cfg.DposCfg.ExtraBlockReward,
+		BlockReward:                   cfg.DposCfg.BlockReward,
+		Decimals:                      cfg.SysTokenDecimals,
+		AssetID:                       cfg.SysTokenID,
+		ReferenceTime:                 cfg.ReferenceTime,
 	}
 }
 
@@ -239,6 +242,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		}
 		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
+			Founder:     common.StrToName(account.Founder),
 			PublicKey:   account.PubKey,
 		}
 		payload, _ := rlp.EncodeToBytes(act)
@@ -358,7 +362,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64()); err != nil {
+	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64(), ""); err != nil {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
@@ -512,24 +516,29 @@ func DefaultGenesis() *Genesis {
 func DefaultGenesisAccounts() []*GenesisAccount {
 	return []*GenesisAccount{
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.SysName,
-			PubKey: common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
+			Name:    params.DefaultChainconfig.SysName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.AccountName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.AccountName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.AssetName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.AssetName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.DposName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.DposName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.FeeName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.FeeName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 	}
 }

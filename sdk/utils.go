@@ -21,7 +21,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 )
 
@@ -42,7 +41,7 @@ func GenerateAccountName(namePrefix string, addStrLen int) string {
 }
 
 // GenerateKey generate pubkey and privkey
-func GenerateKey() (*ecdsa.PrivateKey, common.PubKey) {
+func GenerateKey() *ecdsa.PrivateKey {
 	prikey, _ := crypto.GenerateKey()
-	return prikey, common.BytesToPubKey(crypto.FromECDSAPub(&prikey.PublicKey))
+	return prikey
 }

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -117,10 +116,7 @@ func (a *Account) HaveCode() bool {
 
 // IsEmpty check account empty
 func (a *Account) IsEmpty() bool {
-	if a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0 {
-		return true
-	}
-	return false
+	return a.GetCodeSize() == 0 && len(a.Balances) == 0 && a.Nonce == 0
 }
 
 // GetName return account object name
@@ -178,10 +174,12 @@ func (a *Account) SetNonce(nonce uint64) {
 	a.Nonce = nonce
 }
 
+//GetAuthorVersion get author version
 func (a *Account) GetAuthorVersion() common.Hash {
 	return a.AuthorVersion
 }
 
+//SetAuthorVersion set author version
 func (a *Account) SetAuthorVersion() {
 	a.AuthorVersion = types.RlpHash([]interface{}{
 		a.Authors,
@@ -274,8 +272,6 @@ func (a *Account) GetBalanceByID(assetID uint64) (*big.Int, error) {
 	if find {
 		return a.Balances[p].Balance, nil
 	}
-
-	log.Debug("get balance by ID", "err", ErrAccountAssetNotExist, "account", a.AcctName, "asset", assetID)
 	return big.NewInt(0), ErrAccountAssetNotExist
 }
 
@@ -295,9 +291,7 @@ func (a *Account) GetAllBalances() (map[uint64]*big.Int, error) {
 
 // BinarySearch binary search
 func (a *Account) binarySearch(assetID uint64) (int64, bool) {
-	if len(a.Balances) == 0 {
-		return 0, false
-	}
+
 	low := int64(0)
 	high := int64(len(a.Balances)) - 1
 	for low <= high {
@@ -317,38 +311,19 @@ func (a *Account) binarySearch(assetID uint64) (int64, bool) {
 }
 
 //AddNewAssetByAssetID add a new asset to balance list
-func (a *Account) AddNewAssetByAssetID(assetID uint64, amount *big.Int) {
-	p, find := a.binarySearch(assetID)
-	if find {
-		a.Balances[p].Balance = amount
+func (a *Account) AddNewAssetByAssetID(p int64, assetID uint64, amount *big.Int) {
+	//append
+	if len(a.Balances) == 0 || ((a.Balances[p].AssetID < assetID) && (p+1 == int64(len(a.Balances)))) {
+		a.Balances = append(a.Balances, newAssetBalance(assetID, amount))
 	} else {
-		//append
-		if len(a.Balances) == 0 || ((a.Balances[p].AssetID < assetID) && (p+1 == int64(len(a.Balances)))) {
-			a.Balances = append(a.Balances, newAssetBalance(assetID, amount))
-		} else {
-			//insert
-			if a.Balances[p].AssetID < assetID {
-				//insert back
-				p = p + 1
-				tail := append([]*AssetBalance{}, a.Balances[p:]...)
-				a.Balances = append(a.Balances[:p], newAssetBalance(assetID, amount))
-				a.Balances = append(a.Balances, tail...)
-			} else {
-				//insert front
-				if len(a.Balances) > 1 {
-					if a.Balances[p].AssetID < assetID {
-						p = p + 1
-					}
-					tail := append([]*AssetBalance{}, a.Balances[p:]...)
-					a.Balances = append(a.Balances[:p], newAssetBalance(assetID, amount))
-					a.Balances = append(a.Balances, tail...)
-				} else {
-					tail := append([]*AssetBalance{}, a.Balances[p:]...)
-					a.Balances = append([]*AssetBalance{}, newAssetBalance(assetID, amount))
-					a.Balances = append(a.Balances, tail...)
-				}
-			}
+		//insert
+		if a.Balances[p].AssetID < assetID {
+			//insert after p
+			p = p + 1
 		}
+		tail := append([]*AssetBalance{}, a.Balances[p:]...)
+		a.Balances = append(a.Balances[:p], newAssetBalance(assetID, amount))
+		a.Balances = append(a.Balances, tail...)
 	}
 }
 
@@ -362,40 +337,44 @@ func (a *Account) SetBalance(assetID uint64, amount *big.Int) error {
 	return asset.ErrAssetNotExist
 }
 
+//SubBalanceByID sub balance by assetID
 func (a *Account) SubBalanceByID(assetID uint64, value *big.Int) error {
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-	val, err := a.GetBalanceByID(assetID)
-	if err != nil {
-		return err
+	p, find := a.binarySearch(assetID)
+	if !find {
+		return ErrAccountAssetNotExist
 	}
+	val := a.Balances[p].Balance
 	if val.Cmp(big.NewInt(0)) < 0 || val.Cmp(value) < 0 {
 		return ErrInsufficientBalance
 	}
-	a.SetBalance(assetID, new(big.Int).Sub(val, value))
+	a.Balances[p].Balance = new(big.Int).Sub(val, value)
 	return nil
 }
 
-//AddAccountBalanceByID add balance by assetID
-func (a *Account) AddBalanceByID(assetID uint64, value *big.Int) error {
+//AddBalanceByID add balance by assetID
+func (a *Account) AddBalanceByID(assetID uint64, value *big.Int) (bool, error) {
 	if value.Cmp(big.NewInt(0)) < 0 {
-		return ErrAmountValueInvalid
+		return false, ErrAmountValueInvalid
 	}
-	val, err := a.GetBalanceByID(assetID)
-	if err == ErrAccountAssetNotExist {
-		a.AddNewAssetByAssetID(assetID, value)
+	isNew := false
+	p, find := a.binarySearch(assetID)
+	if !find {
+		a.AddNewAssetByAssetID(p, assetID, value)
+		isNew = true
 	} else {
-		a.SetBalance(assetID, new(big.Int).Add(val, value))
+		a.Balances[p].Balance = new(big.Int).Add(a.Balances[p].Balance, value)
 	}
-	return nil
+	return isNew, nil
 }
 
+//EnoughAccountBalance check account have enough asset balance
 func (a *Account) EnoughAccountBalance(assetID uint64, value *big.Int) error {
 	if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrAmountValueInvalid
 	}
-
 	val, err := a.GetBalanceByID(assetID)
 	if err != nil {
 		return err

@@ -51,7 +51,7 @@ var RootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		if viper.ConfigFileUsed() != "" {
-			err = viperUmarshalConfig()
+			err = viper.Unmarshal(ftCfgInstance)
 		}
 		ftCfgInstance.LogCfg.Setup()
 		if errNoConfigFile != "" {
@@ -91,14 +91,6 @@ var RootCmd = &cobra.Command{
 	},
 }
 
-func viperUmarshalConfig() error {
-	err := viper.Unmarshal(ftCfgInstance)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func makeNode() (*node.Node, error) {
 	// set miner config
 	SetupMetrics()
@@ -111,7 +103,7 @@ func makeNode() (*node.Node, error) {
 		}
 		defer file.Close()
 
-		genesis := new(blockchain.Genesis)
+		genesis := blockchain.DefaultGenesis()
 		if err := json.NewDecoder(file).Decode(genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
 		}

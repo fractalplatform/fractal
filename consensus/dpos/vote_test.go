@@ -224,27 +224,27 @@ func TestCandidateVote(t *testing.T) {
 			panic(fmt.Sprintf("VoteCandidate invalid candidate %v mismatch", err))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index)); !strings.Contains(err.Error(), "non divisibility") {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index)); !strings.Contains(err.Error(), "not in normal") {
 			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big0, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
-			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
-		}
+		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big0, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+		// 	panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
+		// }
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
-			panic(fmt.Sprintf("VoteCandidate --- %v", err))
-		}
+		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+		// 	panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		// }
 
-		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big1, DefaultConfig.VoterMinQuantity)) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big0, DefaultConfig.VoterMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
-			panic(fmt.Sprintf("VoteCandidate --- %v", err))
-		}
+		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+		// 	panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		// }
 
-		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big2, DefaultConfig.VoterMinQuantity)) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big0, DefaultConfig.VoterMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		} else if candidateInfo.Type != Freeze {
 			panic(fmt.Sprintf("GetCandidate  type mismatch"))

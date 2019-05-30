@@ -1,0 +1,81 @@
+[{
+	"comment": "index0 dpos0007 refundcandidate",
+	"type": "refundcandidate",
+	"from": "dpos0007",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index1 dpos0006 refundcandidate",
+	"type": "refundcandidate",
+	"from": "dpos0006",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index0 dpos0005 refundcandidate",
+	"type": "refundcandidate",
+	"from": "dpos0005",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index1 dpos0004 refundcandidate",
+	"type": "refundcandidate",
+	"from": "dpos0004",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index0 dpos0003 refundcandidate",
+	"type": "refundcandidate",
+	"from": "dpos0003",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index1 dpos0002 refundcandidate & transfer 1000000 ft",
+	"type": "refundcandidate",
+	"from": "dpos0002",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index0 dpos0001 refundcandidate",
+	"type": "refundcandidate",
+	"from": "dpos0001",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": true
+},
+{
+	"comment": "index1 dpos0001 refundcandidate, not exist",
+	"type": "refundcandidate",
+	"from": "dpos0001",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+	"succeed": false
+}
+]

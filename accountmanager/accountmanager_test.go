@@ -162,6 +162,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
 		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a123456789aeeefgp"), common.Name(""), *pubkey}, true},
 		{"creategensisAccount", fields{sdb, ast}, args{common.Name("fractal.account"), common.Name(""), *pubkey}, false},
+		{"creategensisAccount", fields{sdb, ast}, args{common.Name("fractal.asset"), common.Name(""), *pubkey}, false},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -1386,15 +1387,16 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 
 	tests := []struct {
 		name    string
+		from    common.Name
 		fields  fields
 		args    args
 		wantErr bool
 	}{
 		//
-		{"ownernotexist", fields{sdb, ast}, args{ast1}, true},
-		{"foundernotexist", fields{sdb, ast}, args{ast3}, true},
-		{"ownerexist", fields{sdb, ast}, args{ast2}, false},
-		{"detaillegal", fields{sdb, ast}, args{ast4}, true},
+		{"ownernotexist", common.Name(""), fields{sdb, ast}, args{ast1}, true},
+		{"foundernotexist", common.Name(""), fields{sdb, ast}, args{ast3}, true},
+		{"ownerexist", common.Name(""), fields{sdb, ast}, args{ast2}, false},
+		{"detaillegal", common.Name(""), fields{sdb, ast}, args{ast4}, true},
 	}
 
 	for _, tt := range tests {
@@ -1414,7 +1416,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			Contract:    tt.args.asset.GetContract(),
 			Description: tt.args.asset.GetAssetDescription(),
 		}
-		if _, err := am.IssueAsset(asset, blockNumber); (err != nil) != tt.wantErr {
+		if _, err := am.IssueAsset(tt.from, asset, blockNumber); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1911,9 +1913,10 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
+	am.AddAccountBalanceByName(asset1.Owner, asset1.AssetName, asset1.Amount)
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
 
 	type fields struct {
@@ -1938,7 +1941,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 	}
 	val, err := acctm.GetAccountBalanceByID(common.Name("a123456789aeee"), ast1.AssetId, 0)
 	if err != nil {
-		t.Error("TransferAsset GetAccountBalanceByID err")
+		t.Errorf("TransferAsset GetAccountBalanceByID err = %v", err)
 	}
 	if val.Cmp(big.NewInt(1000)) != 0 {
 		t.Errorf("TransferAsset GetAccountBalanceByID val=%v", val)
@@ -1983,7 +1986,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())

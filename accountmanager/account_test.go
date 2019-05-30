@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/crypto"
 )
 
 func Test_newAssetBalance(t *testing.T) {
@@ -479,6 +480,17 @@ func TestAccount_binarySearch(t *testing.T) {
 	type args struct {
 		assetID uint64
 	}
+
+	pubkey, _ := GeneragePubKey()
+	asset1 := newAssetBalance(1, big.NewInt(20))
+	asset2 := newAssetBalance(2, big.NewInt(20))
+	asset3 := newAssetBalance(3, big.NewInt(20))
+
+	b := make([]*AssetBalance, 0)
+	b = append(b, asset1)
+	b = append(b, asset2)
+	b = append(b, asset3)
+	//
 	tests := []struct {
 		name   string
 		fields fields
@@ -486,7 +498,14 @@ func TestAccount_binarySearch(t *testing.T) {
 		want   int64
 		want1  bool
 	}{
-		// TODO: Add test cases.
+		//test cases.
+		{"empty", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{21}, 0, false},
+		{"notfind", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{21}, 2, false},
+		{"notfind2", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{4}, 2, false},
+		{"notfind3", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{0}, 0, false},
+		{"find", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{2}, 1, true},
+		{"find2", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{1}, 0, true},
+		{"find3", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{3}, 2, true},
 	}
 	for _, tt := range tests {
 		a := &Account{
@@ -522,15 +541,70 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 		Destroy   bool
 	}
 	type args struct {
+		p       int64
 		assetID uint64
 		amount  *big.Int
 	}
+
+	pubkey, _ := GeneragePubKey()
+	asset0 := newAssetBalance(0, big.NewInt(20))
+	asset1 := newAssetBalance(1, big.NewInt(20))
+	asset2 := newAssetBalance(2, big.NewInt(20))
+	asset3 := newAssetBalance(3, big.NewInt(20))
+	asset5 := newAssetBalance(5, big.NewInt(20))
+	// 1
+	a := make([]*AssetBalance, 0)
+	a = append(a, asset1)
+	// 1
+	b := make([]*AssetBalance, 0)
+	b = append(b, asset1)
+	// b = append(b, asset2)
+	//b = append(b, asset3)
+
+	c := make([]*AssetBalance, 0)
+	c = append(c, asset1)
+	c = append(c, asset2)
+	c = append(c, asset3)
+
+	d := make([]*AssetBalance, 0)
+	d = append(d, asset0)
+	//d = append(d, asset1)
+	d = append(d, asset2)
+	d = append(d, asset3)
+	d = append(d, asset5)
+	// 0 1 2 3 5
+	e := make([]*AssetBalance, 0)
+	e = append(e, asset0)
+	e = append(e, asset1)
+	e = append(e, asset2)
+	e = append(e, asset3)
+	e = append(e, asset5)
+	//
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name     string
+		fields   fields
+		args     args
+		id       uint64
+		position int64
+		find     bool
+		value    *big.Int
 	}{
-		// TODO: Add test cases.
+		// [2]
+		{"emptyappend", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{0, 2, big.NewInt(3)}, 2, 0, true, big.NewInt(3)},
+		// [2]
+		{"appendnotexist", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, nil, false, false}, args{0, 2, big.NewInt(3)}, 0, 0, false, big.NewInt(3)},
+		// [0] 1
+		{"headinsert1", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, a, false, false}, args{0, 0, big.NewInt(32)}, 0, 0, true, big.NewInt(32)},
+		// 1 [3]
+		{"append", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, b, false, false}, args{0, 3, big.NewInt(10)}, 3, 1, true, big.NewInt(10)},
+		// [0] 1 2 3
+		{"headinsert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, c, false, false}, args{0, 0, big.NewInt(10)}, 0, 0, true, big.NewInt(10)},
+		// 0 [1] 2 3 5
+		{"2insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, d, false, false}, args{0, 1, big.NewInt(9)}, 1, 1, true, big.NewInt(9)},
+		// 0 2 3 [4] 5
+		{"4insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, d, false, false}, args{2, 4, big.NewInt(1)}, 4, 3, true, big.NewInt(1)},
+		// 0 1 2 3 [4] 5
+		{"4insert", fields{common.Name("aaabbb1982"), 1, pubkey, nil, crypto.Keccak256Hash(nil), 0, e, false, false}, args{3, 4, big.NewInt(2)}, 5, 5, true, big.NewInt(20)},
 	}
 
 	for _, tt := range tests {
@@ -544,7 +618,18 @@ func TestAccount_AddNewAssetByAssetID(t *testing.T) {
 			Suicide:  tt.fields.Suicide,
 			Destroy:  tt.fields.Destroy,
 		}
-		a.AddNewAssetByAssetID(tt.args.assetID, tt.args.amount)
+
+		a.AddNewAssetByAssetID(tt.args.p, tt.args.assetID, tt.args.amount)
+		got, got1 := a.binarySearch(tt.id)
+		if got != tt.position {
+			t.Errorf("%q. Account.AddNewAssetByAssetID() got = %v, want %v", tt.name, got, tt.position)
+		}
+		if got1 != tt.find {
+			t.Errorf("%q. Account.AddNewAssetByAssetID() got1 position = %v, want %v", tt.name, got1, tt.find)
+		}
+		if a.Balances[got].Balance.Cmp(tt.value) != 0 {
+			t.Errorf("%q. Account.AddNewAssetByAssetID() balance = %v, want %v", tt.name, a.Balances[got].Balance, tt.value)
+		}
 	}
 }
 
@@ -665,7 +750,7 @@ func TestAccount_AddBalanceByID(t *testing.T) {
 			Suicide:  tt.fields.Suicide,
 			Destroy:  tt.fields.Destroy,
 		}
-		if err := a.AddBalanceByID(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
+		if _, err := a.AddBalanceByID(tt.args.assetID, tt.args.value); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Account.AddBalanceByID() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}

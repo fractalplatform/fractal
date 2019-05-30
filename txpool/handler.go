@@ -32,7 +32,7 @@ const (
 	maxKonwnTxs      = 32
 	txsSendDelay     = 50 * time.Millisecond
 	txsSendThreshold = 32
-	cacheBits        = 12
+	cacheBits        = 1
 	cacheSize        = 1 << cacheBits
 	cacheMask        = cacheSize - 1
 )

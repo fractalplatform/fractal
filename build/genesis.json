@@ -25,8 +25,10 @@
 		"dposParams": {
 			"maxURLLen": 512,
 			"unitStake": 1000,
+			"candidateAvailableMinQuantity": 10,
 			"candidateMinQuantity": 10,
 			"voterMinQuantity": 1,
+			"activatedMinCandidate": 3,
 			"activatedMinQuantity": 100,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
@@ -50,21 +52,26 @@
 	"difficulty": 131072,
 	"allocAccounts": [{
 		"name": "fractal.admin",
+		"founder": "fractal.admin",
 		"pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
 	}, {
 		"name": "fractal.account",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.asset",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	},{
+	}, {
 		"name": "fractal.dpos",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.fee",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}],
-	"allocCadidates": [],
+	"allocCandidates": [],
 	"allocAssets": [{
 		"name": "ftoken",
 		"symbol": "ft",
