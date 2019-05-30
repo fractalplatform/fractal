@@ -50,7 +50,9 @@ type StateTransition struct {
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EngineContext) *StateTransition {
+func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM,
+	action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64,
+	config *params.ChainConfig, engine EngineContext) *StateTransition {
 	return &StateTransition{
 		engine:      engine,
 		from:        action.Sender(),
@@ -65,8 +67,11 @@ func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM, a
 }
 
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
-func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM, action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64, config *params.ChainConfig, engine EngineContext) ([]byte, uint64, bool, error, error) {
-	return NewStateTransition(accountDB, evm, action, gp, gasPrice, assetID, config, engine).TransitionDb()
+func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM,
+	action *types.Action, gp *common.GasPool, gasPrice *big.Int,
+	assetID uint64, config *params.ChainConfig, engine EngineContext) ([]byte, uint64, bool, error, error) {
+	return NewStateTransition(accountDB, evm, action, gp, gasPrice,
+		assetID, config, engine).TransitionDb()
 }
 
 func (st *StateTransition) useGas(amount uint64) error {
@@ -84,7 +89,6 @@ func (st *StateTransition) preCheck() error {
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
 	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
-	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID)
 	if err != nil {
 		return err
 	}
@@ -96,19 +100,14 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.action.Gas()
 	st.initialGas = st.action.Gas()
-	err = st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
-	//err = st.account.SubAccountBalanceByID(st.from, st.assetID, mgval)
-	if err != nil {
-		return err
-	}
-	//st.account.SubAccountBalanceByID(st.from, st.assetID, mgval)
-	return nil
+	return st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
 // TransitionDb will transition the state by applying the current message and
 // returning the result including the the used gas. It returns an error if it
 // failed. An error indicates a consensus issue.
-func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bool, err error, vmerr error) {
+func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bool,
+	err error, vmerr error) {
 	if err = st.preCheck(); err != nil {
 		return
 	}
@@ -148,7 +147,8 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.KickedCandidate:
 		fallthrough
 	case actionType == types.ExitTakeOver:
-		internalLogs, err := st.engine.ProcessAction(st.evm.Context.BlockNumber.Uint64(), st.evm.ChainConfig(), st.evm.StateDB, st.action)
+		internalLogs, err := st.engine.ProcessAction(st.evm.Context.BlockNumber.Uint64(),
+			st.evm.ChainConfig(), st.evm.StateDB, st.action)
 		vmerr = err
 		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
 	default:
