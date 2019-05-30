@@ -73,9 +73,6 @@ type ChainContext interface {
 }
 
 type EngineContext interface {
-	// Author retrieves the name of the account that minted the given
-	// block, which may be different from the header's coinbase if a consensus
-	// engine is based on signatures.
 	Author(header *types.Header) (common.Name, error)
 
 	ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
@@ -110,9 +107,8 @@ func NewEVMContext(sender common.Name, to common.Name, assetID uint64, gasPrice 
 		beneficiary = *author
 	}
 	return vm.Context{
-		GetHash:            GetHashFn(header, chain),
-		GetDelegatedByTime: chain.GetDelegatedByTime,
-		//Engine: chain,
+		GetHash:                 GetHashFn(header, chain),
+		GetDelegatedByTime:      chain.GetDelegatedByTime,
 		GetLatestEpoch:          chain.GetLatestEpoch,
 		GetPrevEpoch:            chain.GetPrevEpoch,
 		GetNextEpoch:            chain.GetNextEpoch,

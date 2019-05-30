@@ -75,6 +75,16 @@ type IChainReader interface {
 	ForkUpdate(block *types.Block, statedb *state.StateDB) error
 }
 
+// IValidator implements consensus validator.
+type IValidator interface {
+	// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
+	// that a new block should have.
+	CalcDifficulty(chain IChainReader, time uint64, parent *types.Header) *big.Int
+
+	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
+	VerifySeal(chain IChainReader, header *types.Header) error
+}
+
 // IEngine is an algorithm agnostic consensus engine.
 type IEngine interface {
 	// Author retrieves the name of the account that minted the given block
@@ -88,13 +98,6 @@ type IEngine interface {
 
 	// Seal generates a new block for the given input block with the local miner's seal place on top.
 	Seal(chain IChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error)
-
-	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
-	VerifySeal(chain IChainReader, header *types.Header) error
-
-	// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
-	// that a new block should have.
-	CalcDifficulty(chain IChainReader, time uint64, parent *types.Header) *big.Int
 
 	Engine() IEngine
 
@@ -117,6 +120,8 @@ type IEngine interface {
 	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 
 	IAPI
+
+	IValidator
 }
 
 // ITxProcessor is an Processor.

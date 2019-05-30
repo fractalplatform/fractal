@@ -54,22 +54,15 @@ type (
 // Context provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
 type Context struct {
-	// GetHash returns the hash corresponding to n
-	GetHash GetHashFunc
-
-	// GetDelegatedByTime returns the delegated balance
-	GetDelegatedByTime GetDelegatedByTimeFunc
-	//
+	GetHash                 GetHashFunc
+	GetDelegatedByTime      GetDelegatedByTimeFunc
 	GetLatestEpoch          GetLatestEpochFunc
 	GetPrevEpoch            GetPrevEpochFunc
 	GetNextEpoch            GetNextEpochFunc
 	GetActivedCandidateSize GetActivedCandidateSizeFunc
 	GetActivedCandidate     GetActivedCandidateFunc
 	GetVoterStake           GetVoterStakeFunc
-	// Engine EgnineContext
-
-	//GetHeaderByNumber
-	GetHeaderByNumber GetHeaderByNumberFunc
+	GetHeaderByNumber       GetHeaderByNumberFunc
 
 	// Message information
 	Origin    common.Name // Provides information for ORIGIN

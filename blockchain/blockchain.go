@@ -17,7 +17,6 @@
 package blockchain
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -109,7 +108,6 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	blockCache, _ := lru.New(blockCacheLimit)
 	futureBlocks, _ := lru.New(maxFutureBlocks)
 	badBlocks, _ := lru.New(badBlockLimit)
-
 	bc := &BlockChain{
 		chainConfig:       chainConfig,
 		statePruning:      statePruning,
@@ -586,7 +584,6 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	batch := bc.db.NewBatch()
 	rawdb.WriteBlock(batch, block)
 
-	log.Debug("Tiredb commit memory", "number", block.NumberU64())
 	root, err := state.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
 		return false, err
@@ -684,7 +681,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	if reorg {
 		// Reorganise the chain if the parent is not the head block
 		if block.ParentHash() != currentBlock.Hash() {
-			if err := bc.reorgChain(currentBlock, block, batch); err != nil {
+			if err = bc.reorgChain(currentBlock, block, batch); err != nil {
 				if err == errReorgSystemBlock {
 					goto Target
 				}
@@ -713,8 +710,7 @@ Target:
 	}
 
 	bc.futureBlocks.Remove(block.Hash())
-
-	return isCanon, nil
+	return isCanon, err
 }
 
 // StatePruning enale/disable state pruning
@@ -786,10 +782,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 		}
 		switch {
 		case err == processor.ErrKnownBlock:
-			if bc.CurrentBlock().NumberU64() >= block.NumberU64() {
-				stats.ignored++
-				continue
-			}
+			stats.ignored++
+			continue
 		case err == processor.ErrFutureBlock:
 			max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
 			if block.Time().Cmp(max) > 0 {
@@ -954,7 +948,7 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 	// Ensure the user sees large reorgs
 	if len(oldChain) > 0 && len(newChain) > 0 {
 		if oldChain[len(oldChain)-1].NumberU64() <= bc.IrreversibleNumber() {
-			log.Warn("Do not accept other candidate fork the system chain", "hash", newBlock.Hash(), "coinbase", newBlock.Coinbase())
+			log.Warn("Do not accept other candidate fork the system chain", "num", oldChain[len(oldChain)-1].NumberU64(), "hash", oldChain[len(oldChain)-1].Hash(), "Irreversible", bc.IrreversibleNumber(), "coinbase", newBlock.Coinbase())
 			return errReorgSystemBlock
 		}
 
@@ -978,7 +972,6 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 	for _, tx := range diff {
 		rawdb.DeleteTxLookupEntry(batch, tx.Hash())
 	}
-
 	return nil
 }
 
@@ -1015,19 +1008,18 @@ func (bc *BlockChain) addBadBlock(block *types.Block) {
 // reportBlock logs a bad block error.
 func (bc *BlockChain) reportBlock(block *types.Block, receipts []*types.Receipt, err error) {
 	bc.addBadBlock(block)
-	chainCfgBytes, _ := json.MarshalIndent(bc.chainConfig, " ", "  ")
 	log.Error(fmt.Sprintf(`
 ########## BAD BLOCK #########
 
 Error: %v
-
-Chain config: %v
-
 Number: %v
 Hash: %v
+PreHash: %v
+State: %v
+ReceiptHash: %v
 
 ##############################
-`, err, string(chainCfgBytes), block.NumberU64(), block.Hash().Hex()))
+`, err, block.NumberU64(), block.Hash().Hex(), block.ParentHash().Hex(), block.Root().Hex(), block.ReceiptHash().Hex()))
 }
 
 // GetBlockNumber retrieves the block number belonging to the given hash from the cache or database

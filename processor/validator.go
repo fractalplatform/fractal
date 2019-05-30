@@ -34,12 +34,12 @@ var allowedFutureBlockTime = 15 * time.Second
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	bc     ChainContext      // Canonical block chain
-	engine consensus.IEngine // Consensus engine used for validating
+	bc     ChainContext         // Canonical block chain
+	engine consensus.IValidator // Consensus engine used for validating
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(blockchain ChainContext, engine consensus.IEngine) *BlockValidator {
+func NewBlockValidator(blockchain ChainContext, engine consensus.IValidator) *BlockValidator {
 	validator := &BlockValidator{
 		engine: engine,
 		bc:     blockchain,
@@ -57,7 +57,6 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	}
 
 	number := header.Number.Uint64()
-
 	parent := v.bc.GetHeader(header.ParentHash, number-1)
 	if parent == nil {
 		return errParentBlock
