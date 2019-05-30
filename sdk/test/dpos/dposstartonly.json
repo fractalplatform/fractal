@@ -1,0 +1,140 @@
+[{
+    "comment": "fractal.admin create account dpos0001 & transfer 1000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 1000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0001",
+        "founder": "dpos0001",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0001 account"
+    },
+    "succeed": true,
+    "childs": [{
+        "comment": "dpos0001 regcandidate & transfer 20000 ft",
+        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+        "type": "regcandidate",
+        "from": "dpos0001",
+        "to": "fractal.dpos",
+        "gas": 30000000,
+        "value": 20000000000000000000000,
+        "payload": {
+            "URL": "www.xxxxxx.com"
+        },
+        "succeed": true,
+        "childs": [{
+            "comment": "dpos0001 updatecandidate & transfer 10000 ft",
+            "type": "updatecandidate",
+            "from": "dpos0001",
+            "to": "fractal.dpos",
+            "gas": 30000000,
+            "value": 10000000000000000000000,
+            "payload": {
+                "URL": "www.dpos0009.com"
+            },
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "succeed": true
+        }]
+    }]
+},
+{
+    "comment": "fractal.admin create account dpos0002 & transfer 2000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 2000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0002",
+        "founder": "dpos0002",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0002 account"
+    },
+    "succeed": true,
+    "childs": [{
+        "comment": "dpos0002 regcandidate & transfer 10000 ft",
+        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+        "type": "regcandidate",
+        "from": "dpos0002",
+        "to": "fractal.dpos",
+        "gas": 30000000,
+        "value": 10000000000000000000000,
+        "payload": {
+            "URL": "www.xxxxxx.com"
+        },
+        "succeed": true,
+        "childs": [{
+            "comment": "dpos0002 updatecandidate & transfer 20000 ft",
+            "type": "updatecandidate",
+            "from": "dpos0002",
+            "to": "fractal.dpos",
+            "gas": 30000000,
+            "value": 20000000000000000000000,
+            "payload": {
+                "URL": "www.dpos0009.com"
+            },
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "succeed": true
+        }]
+    }]
+},
+{
+    "comment": "fractal.admin create account dpos0003 & transfer 3000000 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "createaccount",
+    "from": "fractal.admin",
+    "to": "fractal.account",
+    "gas": 30000000,
+    "value": 3000000000000000000000000,
+    "payload": {
+        "accountName": "dpos0003",
+        "founder": "dpos0003",
+        "publicKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "description": "dpos0003 account"
+    },
+    "succeed": true,
+    "childs": [{
+        "comment": "dpos0003 regcandidate & transfer 30000 ft",
+        "type": "regcandidate",
+        "from": "dpos0003",
+        "to": "fractal.dpos",
+        "gas": 30000000,
+        "value": 30000000000000000000000,
+        "payload": {
+            "URL": "www.xxxxxx.com"
+        },
+        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+        "succeed": true,
+        "childs": [{
+            "comment": "dpos0002 updatecandidate & transfer 5000 ft",
+            "type": "updatecandidate",
+            "from": "dpos0002",
+            "to": "fractal.dpos",
+            "gas": 30000000,
+            "value": 5000000000000000000000,
+            "payload": {
+                "URL": "www.dpos0009.com"
+            },
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "succeed": true
+        },
+        {
+            "comment": "dpos0002 updatecandidate & transfer 5000 ft",
+            "type": "updatecandidate",
+            "from": "dpos0002",
+            "to": "fractal.dpos",
+            "gas": 30000000,
+            "value": 5000000000000000000000,
+            "payload": {
+                "URL": "www.dpos0009.com"
+            },
+            "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+            "succeed": true
+        }]
+    }]
+}
+]

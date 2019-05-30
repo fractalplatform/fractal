@@ -240,14 +240,14 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64)
 	// 	return err
 	// }
 
-	// gstate, err := sys.GetState(epcho)
-	// if err != nil {
-	// 	return err
-	// }
-	// gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	// if err := sys.SetState(gstate); err != nil {
-	// 	return err
-	// }
+	gstate, err := sys.GetState(epcho)
+	if err != nil {
+		return err
+	}
+	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	if err := sys.SetState(gstate); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -319,10 +319,10 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64
 		return err
 	}
 
-	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	if err := sys.SetState(gstate); err != nil {
-		return err
-	}
+	// gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	// if err := sys.SetState(gstate); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -416,6 +416,9 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string, number uint64
 	if prod == nil || err != nil {
 		return err
 	}
+	if prod.Type == Black {
+		return nil
+	}
 
 	// db
 	stake := new(big.Int).Mul(prod.Quantity, sys.config.unitStake())
@@ -443,19 +446,20 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string, number uint64
 	// 	}
 	// }
 
-	prod.TotalQuantity = big.NewInt(0)
-	prod.Number = number
-	prod.Type = Black
-	if err := sys.SetCandidate(prod); err != nil {
-		return err
+	if !prod.invalid() {
+		gstate, err := sys.GetState(epcho)
+		if err != nil {
+			return err
+		}
+		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+		if err := sys.SetState(gstate); err != nil {
+			return err
+		}
 	}
 
-	gstate, err := sys.GetState(epcho)
-	if err != nil {
-		return err
-	}
-	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	return sys.SetState(gstate)
+	prod.Number = number
+	prod.Type = Black
+	return sys.SetCandidate(prod)
 }
 
 // ExitTakeOver system exit take over
@@ -525,9 +529,6 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	ntotalQuantity := big.NewInt(0)
 	candidates := []*CandidateInfo{}
 	for _, candidateInfo := range candidateInfoArray {
-		if pstate.Dpos && strings.Compare(candidateInfo.Name, miner) == 0 {
-			candidateInfo.Counter++
-		}
 		if err := sys.SetCandidateByEpcho(pepcho, candidateInfo); err != nil {
 			return err
 		}
@@ -539,6 +540,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 				}
 			} else if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 				candidates = append(candidates, candidateInfo)
+				continue
 			}
 			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
@@ -551,7 +553,9 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 
 		// clear vote quantity
 		candidateInfo.TotalQuantity = candidateInfo.Quantity
-		ntotalQuantity = new(big.Int).Add(ntotalQuantity, candidateInfo.TotalQuantity)
+		if !candidateInfo.invalid() {
+			ntotalQuantity = new(big.Int).Add(ntotalQuantity, candidateInfo.TotalQuantity)
+		}
 		if err := sys.SetCandidate(candidateInfo); err != nil {
 			return err
 		}
@@ -560,6 +564,17 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	if !pstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
 		cnt >= n && cnt >= sys.config.ActivatedMinCandidate {
 		pstate.Dpos = true
+		candidateInfo, err := sys.GetCandidate(miner)
+		if err != nil {
+			return err
+		}
+		candidateInfo.Counter++
+		if err := sys.SetCandidateByEpcho(pepcho, candidateInfo); err != nil {
+			return err
+		}
+		if err := sys.SetCandidate(candidateInfo); err != nil {
+			return err
+		}
 	}
 
 	if !pstate.Dpos {
