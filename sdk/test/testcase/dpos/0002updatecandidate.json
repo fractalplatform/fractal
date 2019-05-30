@@ -115,7 +115,7 @@
     "from": "candidate0002",
     "to": "fractal.dpos",
     "gas": 30000000,
-    "value": 10000000000000000000000,
+    "value": 1000000000000000000000,
     "payload": {
         "URL": "www.candidate0002.com"
     },
