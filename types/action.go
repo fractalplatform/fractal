@@ -64,6 +64,7 @@ const (
 	SetAssetOwner
 	// UpdateAsset update asset
 	UpdateAsset
+	UpdateAssetContract
 	// Transfer repesents transfer asset action.
 	Transfer
 )

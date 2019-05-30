@@ -100,6 +100,11 @@ type UpdateAssetOwner struct {
 	Owner   common.Name `json:"owner"`
 }
 
+type UpdateAssetContract struct {
+	AssetID  uint64      `json:"assetId,omitempty"`
+	Contract common.Name `json:"contract"`
+}
+
 //AccountManager represents account management model.
 type AccountManager struct {
 	sdb *state.StateDB
@@ -1169,6 +1174,16 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
+func (am *AccountManager) CheckAssetContract(contract common.Name, onwer common.Name, from ...common.Name) bool {
+	from = append(from, onwer)
+	for _, name := range from {
+		if name == contract {
+			return true
+		}
+	}
+	return false
+}
+
 //IssueAsset issue asset
 func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
 	//check owner valid
@@ -1310,6 +1325,12 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
+		fromAccountExtra = append(fromAccountExtra, action.Sender())
+
+		if !am.CheckAssetContract(issueAsset.Contract, issueAsset.Owner, fromAccountExtra...) && issueAsset.Amount.Sign() != 0 {
+			return nil, ErrAmountNotZero
+		}
+
 		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number)
 		if err != nil {
 			return nil, err
@@ -1319,7 +1340,6 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		fromAccountExtra = append(fromAccountExtra, action.Sender())
 		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, assetID, issueAsset.Amount, fromAccountExtra...); err != nil {
 			return nil, err
 		}
@@ -1414,6 +1434,31 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.ast.SetAssetNewOwner(action.Sender(), asset.AssetID, asset.Owner); err != nil {
 			return nil, err
 		}
+	case types.UpdateAssetContract:
+		var assetContract UpdateAssetContract
+		err := rlp.DecodeBytes(action.Data(), &assetContract)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(assetContract.Contract) != 0 {
+			acct, err := am.GetAccountByName(assetContract.Contract)
+			if err != nil {
+				return nil, err
+			}
+			if acct == nil {
+				return nil, ErrAccountNotExist
+			}
+		}
+
+		if err := am.ast.CheckOwner(action.Sender(), assetContract.AssetID); err != nil {
+			return nil, err
+		}
+
+		if err := am.ast.SetAssetNewContract(assetContract.AssetID, assetContract.Contract); err != nil {
+			return nil, err
+		}
+
 	case types.Transfer:
 	default:
 		return nil, ErrUnkownTxType
