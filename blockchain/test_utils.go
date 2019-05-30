@@ -265,11 +265,11 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 	var actions []*types.Action
 	for i := 0; i < len(getCandidates()); i++ {
 		amount := new(big.Int).Mul(delegateValue, big.NewInt(2))
-		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCandidates()[syscandidatePrefix+strconv.Itoa(i)].name), nonce, uint64(1), uint64(210000), amount, nil, nil)
+		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCandidates()[syscandidatePrefix+strconv.Itoa(i)].name), nonce, uint64(0), uint64(210000), amount, nil, nil)
 		actions = append(actions, action)
 		nonce++
 	}
-	tx := types.NewTransaction(uint64(1), big.NewInt(2), actions...)
+	tx := types.NewTransaction(uint64(0), big.NewInt(2), actions...)
 	keyPair := types.MakeKeyPair(fromprikey, []uint64{0})
 	for _, action := range actions {
 		err := types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{keyPair})
@@ -288,11 +288,11 @@ func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, s
 			URL: url,
 		}
 		payload, _ := rlp.EncodeToBytes(arg)
-		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(1), uint64(210000), delegateValue, payload, nil)
+		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(0), uint64(210000), delegateValue, payload, nil)
 		actions1 = append(actions1, action)
 	}
 
-	tx1 := types.NewTransaction(uint64(1), big.NewInt(2), actions1...)
+	tx1 := types.NewTransaction(uint64(0), big.NewInt(2), actions1...)
 	for _, action := range actions1 {
 		keyPair = types.MakeKeyPair(getCandidates()[action.Sender().String()].prikey, []uint64{0})
 		err := types.SignActionWithMultiKey(action, tx1, signer, 0, []*types.KeyPair{keyPair})

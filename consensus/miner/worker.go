@@ -324,10 +324,16 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		return nil, fmt.Errorf("prepare header for mining, err: %v", err)
 	}
 
+	start := time.Now()
 	pending, err := worker.Pending()
 	if err != nil {
 		return nil, fmt.Errorf("got error when fetch pending transactions, err: %v", err)
 	}
+	var txsLen int
+	for _, txs := range pending {
+		txsLen = txsLen + len(txs)
+	}
+	log.Debug("worker get pending txs from txpool", "len", txsLen, "since", time.Since(start))
 
 	txs := types.NewTransactionsByPriceAndNonce(pending)
 	if err := worker.commitTransactions(work, txs, dpos.BlockInterval()); err != nil {
