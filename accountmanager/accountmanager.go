@@ -1174,8 +1174,8 @@ func (am *AccountManager) TransferAsset(fromAccount common.Name, toAccount commo
 	return am.SetAccount(toAcct)
 }
 
-func (am *AccountManager) CheckAssetContract(contract common.Name, onwer common.Name, from ...common.Name) bool {
-	from = append(from, onwer)
+func (am *AccountManager) CheckAssetContract(contract common.Name, owner common.Name, from ...common.Name) bool {
+	from = append(from, owner)
 	for _, name := range from {
 		if name == contract {
 			return true
@@ -1327,8 +1327,10 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 		fromAccountExtra = append(fromAccountExtra, action.Sender())
 
-		if !am.CheckAssetContract(issueAsset.Contract, issueAsset.Owner, fromAccountExtra...) && issueAsset.Amount.Sign() != 0 {
-			return nil, ErrAmountNotZero
+		if len(issueAsset.Contract) != 0 {
+			if !am.CheckAssetContract(issueAsset.Contract, issueAsset.Owner, fromAccountExtra...) && issueAsset.Amount.Sign() != 0 {
+				return nil, ErrAmountMustBeZero
+			}
 		}
 
 		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number)

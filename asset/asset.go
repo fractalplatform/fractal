@@ -489,7 +489,7 @@ func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) boo
 		}
 
 		if assetObj.GetAssetOwner() == fromName {
-			log.Debug("Asset create", "name", an, "onwer", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
+			log.Debug("Asset create", "name", an, "owner", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
 			return true
 		}
 	}
