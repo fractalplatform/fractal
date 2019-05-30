@@ -581,7 +581,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			if _, err := evm.AccountDB.SetCode(contractName, ret); err != nil {
+			if _, err = evm.AccountDB.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
 		} else {
