@@ -64,9 +64,9 @@ const (
 	SetAssetOwner
 	// UpdateAsset update asset
 	UpdateAsset
-	UpdateAssetContract
 	// Transfer repesents transfer asset action.
 	Transfer
+	UpdateAssetContract
 )
 
 const (
@@ -193,12 +193,14 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		fallthrough
 	case SetAssetOwner:
 		fallthrough
+	case UpdateAssetContract:
+		fallthrough
 	case UpdateAsset:
 		if a.data.To.String() != conf.AssetName {
 			return fmt.Errorf("Receipt should is %v", conf.AssetName)
 		}
 	case Transfer:
-	//dpos
+		//dpos
 	case RegCandidate:
 		fallthrough
 	case UpdateCandidate:
