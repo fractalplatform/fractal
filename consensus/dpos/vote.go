@@ -560,6 +560,17 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	if !pstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
 		cnt >= n && cnt >= sys.config.ActivatedMinCandidate {
 		pstate.Dpos = true
+		candidateInfo, err := sys.GetCandidate(miner)
+		if err != nil {
+			return err
+		}
+		candidateInfo.Counter++
+		if err := sys.SetCandidateByEpcho(pepcho, candidateInfo); err != nil {
+			return err
+		}
+		if err := sys.SetCandidate(candidateInfo); err != nil {
+			return err
+		}
 	}
 
 	if !pstate.Dpos {
