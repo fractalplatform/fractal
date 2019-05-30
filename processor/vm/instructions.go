@@ -573,6 +573,19 @@ func opOrigin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	return nil, nil
 }
 
+func opRecipient(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	if acct, err := evm.AccountDB.GetAccountByName(evm.Recipient); err == nil {
+		if acct != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
+		} else {
+			stack.push(evm.interpreter.intPool.getZero())
+		}
+	} else {
+		stack.push(evm.interpreter.intPool.getZero())
+	}
+	return nil, nil
+}
+
 func opCaller(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	if acct, err := evm.AccountDB.GetAccountByName(contract.Caller()); err == nil {
 		if acct != nil {
