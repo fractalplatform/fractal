@@ -1,5 +1,5 @@
 [{
-	"comment": "index0 dpos0001 updatecandidate & transfer 0 ft",
+	"comment": "dpos0001 updatecandidate & transfer 0 ft",
 	"type": "updatecandidate",
 	"from": "dpos0001",
 	"to": "fractal.dpos",
@@ -9,84 +9,5 @@
 		"URL": "www.dpos0001.com"
 	},
 	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index1 dpos0002 updatecandidate & transfer 0 ft",
-	"type": "updatecandidate",
-	"from": "dpos0002",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 0,
-	"payload": {
-		"URL": "www.dpos0002.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index2 dpos0003 updatecandidate & transfer 1000 ft",
-	"type": "updatecandidate",
-	"from": "dpos0003",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1000000000000000000000,
-	"payload": {
-		"URL": "www.dpos0003.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index3 dpos0004 updatecandidate & transfer 1000 ft",
-	"type": "updatecandidate",
-	"from": "dpos0004",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1000000000000000000000,
-	"payload": {
-		"URL": "www.dpos0004.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index4 dpos0005 updatecandidate & transfer 1000 ft",
-	"type": "updatecandidate",
-	"from": "dpos0005",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1000000000000000000000,
-	"payload": {
-		"URL": "www.dpos0005.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index5 dpos0006 updatecandidate & transfer 1000 ft",
-	"type": "updatecandidate",
-	"from": "dpos0006",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1000000000000000000000,
-	"payload": {
-		"URL": "www.dpos0006.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index6 dpos0007 updatecandidate & transfer 1000 ft",
-	"type": "updatecandidate",
-	"from": "dpos0007",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1000000000000000000000,
-	"payload": {
-		"URL": "www.dpos0007.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-}
-]
+	"succeed": true
+}]

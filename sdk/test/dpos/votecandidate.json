@@ -1,114 +1,14 @@
-[
-    {
-        "comment": "index0 dpos0001 votecandidate dpos0001 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0001",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0001",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }, 
-    {
-        "comment": "index1 dpos0002 votecandidate dpos0002 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0002",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0002",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }, 
-    {
-        "comment": "index2 dpos0003 votecandidate dpos0003 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0003",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0003",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }, 
-    {
-        "comment": "index3 dpos0004 votecandidate dpos0004 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0004",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0004",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }, 
-    {
-        "comment": "index4 dpos0005 votecandidate dpos0005 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0005",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0005",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }, 
-    {
-        "comment": "index5 dpos0006 votecandidate dpos0006 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0006",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0006",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }, 
-    {
-        "comment": "index6 dpos0007 votecandidate dpos0007 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0007",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0007",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    },
-    {
-        "comment": "index7 dpos0001 votecandidate dpos0007 & transfer 1000 ft",
-        "type": "votecandidate",
-        "from": "dpos0001",
-        "to": "fractal.dpos",
-        "gas": 30000000,
-        "value": 0,
-        "payload": {
-            "Candidate": "dpos0007",
-            "Stake": 1000000000000000000000
-        },
-        "succeed": true,
-        "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
-    }
-]
+[{
+	"comment": "dpos0001 votecandidate dpos0001 & transfer 1000 ft",
+	"type": "votecandidate",
+	"from": "dpos0001",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"payload": {
+		"Candidate": "dpos0001",
+		"Stake": 1000000000000000000000
+	},
+	"succeed": true,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
+}]

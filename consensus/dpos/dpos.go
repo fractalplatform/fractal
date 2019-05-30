@@ -287,9 +287,11 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		} else if header.Number.Uint64() == 1 {
 			n := (header.Time.Uint64() - dpos.config.blockInterval()) % (dpos.config.blockInterval() * dpos.config.BlockFrequency)
 			candidate.Counter += dpos.config.BlockFrequency - n/dpos.config.blockInterval()
+			log.Debug("replace finalize", "candidate", candidate.Name, "should", candidate.Counter, "actual", candidate.ActualCounter, "number", header.Number)
 		} else {
 			if coffset != poffset {
 				candidate.Counter += dpos.config.BlockFrequency
+				log.Debug("replace finalize", "candidate", candidate.Name, "should", candidate.Counter, "actual", candidate.ActualCounter, "number", header.Number)
 			}
 
 			epcho := latest.Epcho
