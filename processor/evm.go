@@ -98,7 +98,7 @@ type EvmContext struct {
 }
 
 // NewEVMContext creates a new context for use in the EVM.
-func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *common.Name) vm.Context {
+func NewEVMContext(sender common.Name, to common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *common.Name) vm.Context {
 	// If we don't have an explicit author (i.e. not mining), extract from the header
 	var beneficiary common.Name
 	if author == nil {
@@ -117,6 +117,7 @@ func NewEVMContext(sender common.Name, assetID uint64, gasPrice *big.Int, header
 		GetVoterStake:           chain.GetVoterStake,
 		GetHeaderByNumber:       chain.GetHeaderByNumber,
 		Origin:                  sender,
+		Recipient:               to,
 		AssetID:                 assetID,
 		Coinbase:                beneficiary,
 		BlockNumber:             new(big.Int).Set(header.Number),

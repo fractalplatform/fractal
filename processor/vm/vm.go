@@ -65,10 +65,11 @@ type Context struct {
 	GetHeaderByNumber       GetHeaderByNumberFunc
 
 	// Message information
-	Origin   common.Name // Provides information for ORIGIN
-	From     common.Name // Provides information for ORIGIN
-	AssetID  uint64      // provides assetId
-	GasPrice *big.Int    // Provides information for GASPRICE
+	Origin    common.Name // Provides information for ORIGIN
+	Recipient common.Name
+	From      common.Name // Provides information for ORIGIN
+	AssetID   uint64      // provides assetId
+	GasPrice  *big.Int    // Provides information for GASPRICE
 
 	// Block information
 	Coinbase    common.Name // Provides information for COINBASE
@@ -573,7 +574,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			if _, err := evm.AccountDB.SetCode(contractName, ret); err != nil {
+			if _, err = evm.AccountDB.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
 		} else {
