@@ -1251,13 +1251,16 @@ func (am *AccountManager) Process(accountManagerContext *types.AccountManagerCon
 func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
+	fromAccountExtra := make([]common.Name, 1)
+	fromAccountExtra = append(fromAccountExtra, accountManagerContext.FromAccountExtra...)
+
 	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
 		return nil, err
 	}
 
 	var internalActions []*types.InternalAction
 	//transfer
-	if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+	if err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), fromAccountExtra...); err != nil {
 		return nil, err
 	}
 
@@ -1275,7 +1278,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		}
 
 		if action.Value().Cmp(big.NewInt(0)) > 0 {
-			if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, action.AssetID(), action.Value()); err != nil {
+			if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, action.AssetID(), action.Value(), fromAccountExtra...); err != nil {
 				return nil, err
 			}
 			actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AccountName), acct.AccountName, 0, action.AssetID(), 0, action.Value(), nil, nil)
@@ -1316,14 +1319,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		// if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), assetID, issueAsset.Amount); err != nil {
-		// 	return nil, err
-		// }
-		// actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), 0, assetID, 0, issueAsset.Amount, nil, nil)
-		// internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		// internalActions = append(internalActions, internalAction)
-
-		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, assetID, issueAsset.Amount, action.Sender()); err != nil {
+		fromAccountExtra = append(fromAccountExtra, action.Sender())
+		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, assetID, issueAsset.Amount, fromAccountExtra...); err != nil {
 			return nil, err
 		}
 		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, 0, assetID, 0, issueAsset.Amount, nil, nil)
@@ -1335,20 +1332,10 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err != nil {
 			return nil, err
 		}
-		// if !am.ast.HasAccess(inc.AssetId, action.Sender()) {
-		// 	return nil, fmt.Errorf("no permissions of asset %v", inc.AssetId)
-		// }
 
 		if inc.Amount.Cmp(big.NewInt(0)) < 0 {
 			return nil, ErrNegativeAmount
 		}
-
-		// if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), inc.AssetId, inc.Amount); err != nil {
-		// 	return nil, err
-		// }
-		// actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), 0, inc.AssetId, 0, inc.Amount, nil, nil)
-		// internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
-		// internalActions = append(internalActions, internalAction)
 
 		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
 			return nil, err
@@ -1358,7 +1345,8 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, inc.AssetId, inc.Amount, action.Sender()); err != nil {
+		fromAccountExtra = append(fromAccountExtra, action.Sender())
+		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, inc.AssetId, inc.Amount, fromAccountExtra...); err != nil {
 			return nil, err
 		}
 		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
