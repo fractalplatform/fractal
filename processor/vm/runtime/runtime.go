@@ -106,7 +106,7 @@ func NewEnv(cfg *Config) *vm.EVM {
 		GetLatestEpoch: func(state *state.StateDB) (epoch uint64, err error) {
 			return 1, nil
 		},
-		//GetPrevEpcho
+		//GetPrevEpoch
 		GetPrevEpoch: func(state *state.StateDB, epoch uint64) (peoch uint64, err error) {
 			return 2, nil
 		},

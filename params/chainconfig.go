@@ -72,8 +72,8 @@ type DposConfig struct {
 	BlockFrequency                uint64   `json:"blockFrequency"`
 	CandidateScheduleSize         uint64   `json:"candidateScheduleSize"`
 	BackupScheduleSize            uint64   `json:"backupScheduleSize"`
-	EpchoInterval                 uint64   `json:"epchoInterval"`
-	FreezeEpchoSize               uint64   `json:"freezeEpchoSize"`
+	EpochInterval                 uint64   `json:"epochInterval"`
+	FreezeEpochSize               uint64   `json:"freezeEpochSize"`
 	ExtraBlockReward              *big.Int `json:"extraBlockReward"`
 	BlockReward                   *big.Int `json:"blockReward"`
 }
@@ -113,8 +113,8 @@ var DefaultChainconfig = &ChainConfig{
 		BlockFrequency:                6,
 		CandidateScheduleSize:         3,
 		BackupScheduleSize:            0,
-		EpchoInterval:                 540000,
-		FreezeEpchoSize:               3,
+		EpochInterval:                 540000,
+		FreezeEpochSize:               3,
 		ExtraBlockReward:              big.NewInt(1),
 		BlockReward:                   big.NewInt(5),
 	},

@@ -35,9 +35,9 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
 	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
-	//GetLatestEpchoFunc
+	//GetLatestEpochFunc
 	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
-	//GetPrevEpcho
+	//GetPrevEpoch
 	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
 	//GetNextEpoch
 	GetNextEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)

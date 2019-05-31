@@ -89,7 +89,7 @@ func makeSystemCandidatesAndTime(parentTime uint64, genesis *Genesis) ([]string,
 		baseCandidates = getCandidates()
 	)
 	dcfg := dposConfig(genesis.Config)
-	for i := uint64(0); i < (dcfg.EpchoInterval/dcfg.BlockInterval*dcfg.BlockFrequency)+1; i++ {
+	for i := uint64(0); i < (dcfg.EpochInterval/dcfg.BlockInterval*dcfg.BlockFrequency)+1; i++ {
 		for j := 0; j < len(baseCandidates); j++ {
 			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
 				candidates = append(candidates, genesis.Config.SysName)

@@ -36,83 +36,6 @@ func TestDposIrreversible(t *testing.T) {
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposCandidate(t *testing.T) {
-	Convey("dpos_candidate", t, func() {
-		info, err := api.DposCandidate(chainCfg.SysName)
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposCandidates(t *testing.T) {
-	Convey("dpos_candidates", t, func() {
-		info, err := api.DposCandidates(true)
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposVotersByVoter(t *testing.T) {
-	Convey("dpos_votersByVoter", t, func() {
-		info, err := api.DposVotersByVoter(chainCfg.SysName, true)
-		So(err, ShouldBeNil)
-		_ = info
-		//So(info, ShouldNotBeEmpty)
-	})
-}
-
-func TestDposVotersByVoterByNumber(t *testing.T) {
-	Convey("dpos_votersByVoterByNumber", t, func() {
-		info, err := api.DposVotersByVoterByNumber(0, chainCfg.SysName, true)
-		So(err, ShouldBeNil)
-		_ = info
-		//So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposVotersByCandidate(t *testing.T) {
-	Convey("dpos_votersByCandidate", t, func() {
-		info, err := api.DposVotersByCandidate(chainCfg.SysName, true)
-		So(err, ShouldBeNil)
-		_ = info
-		//So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposVotersByCandidateByNumber(t *testing.T) {
-	Convey("dpos_votersByCandidateByNumber", t, func() {
-		info, err := api.DposVotersByCandidateByNumber(0, chainCfg.SysName, true)
-		So(err, ShouldBeNil)
-		_ = info
-		//So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposAvailableStake(t *testing.T) {
-	SkipConvey("dpos_availableStake", t, func() {
-		info, err := api.DposAvailableStake(chainCfg.SysName)
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-
-func TestDposAvailableStakebyNumber(t *testing.T) {
-	SkipConvey("dpos_availableStakeByNumber", t, func() {
-		info, err := api.DposAvailableStakeByNumber(0, chainCfg.SysName)
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-
-func TestDposValidCandidates(t *testing.T) {
-	Convey("dpos_validCandidates", t, func() {
-		info, err := api.DposValidCandidates()
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposValidCandidatesByNumber(t *testing.T) {
-	Convey("dpos_validCandidatesByNumber", t, func() {
-		info, err := api.DposValidCandidatesByNumber(0)
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
 
 func TestDposNextValidCandidates(t *testing.T) {
 	Convey("dpos_nextValidCandidates", t, func() {
@@ -121,9 +44,79 @@ func TestDposNextValidCandidates(t *testing.T) {
 		So(info, ShouldNotBeEmpty)
 	})
 }
-func TestDposNextValidCandidatesByNumber(t *testing.T) {
-	Convey("dpos_nextValidCandidatesByNumber", t, func() {
-		info, err := api.DposNextValidCandidatesByNumber(0)
+
+func TestDposEpoch(t *testing.T) {
+	Convey("dpos_epoch", t, func() {
+		info, err := api.DposEpoch(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposNextEpoch(t *testing.T) {
+	SkipConvey("dpos_nextEpoch", t, func() {
+		info, err := api.DposNextEpoch(1)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposPrevEpoch(t *testing.T) {
+	Convey("dpos_prevEpoch", t, func() {
+		info, err := api.DposPrevEpoch(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposCandidate(t *testing.T) {
+	Convey("dpos_candidate", t, func() {
+		info, err := api.DposCandidate(0, chainCfg.SysName)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposCandidatesSize(t *testing.T) {
+	Convey("dpos_candidatesSize", t, func() {
+		info, err := api.DposCandidatesSize(0)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposCandidates(t *testing.T) {
+	Convey("dpos_candidates", t, func() {
+		info, err := api.DposCandidates(0, true)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+func TestDposVotersByVoter(t *testing.T) {
+	Convey("dpos_votersByVoter", t, func() {
+		info, err := api.DposVotersByVoter(0, chainCfg.SysName, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposVotersByCandidate(t *testing.T) {
+	Convey("dpos_votersByCandidate", t, func() {
+		info, err := api.DposVotersByCandidate(0, chainCfg.SysName, true)
+		So(err, ShouldBeNil)
+		_ = info
+		//So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposAvailableStake(t *testing.T) {
+	SkipConvey("dpos_availableStake", t, func() {
+		info, err := api.DposAvailableStake(0, chainCfg.SysName)
+		So(err, ShouldBeNil)
+		So(info, ShouldNotBeEmpty)
+	})
+}
+
+func TestDposValidCandidates(t *testing.T) {
+	Convey("dpos_validCandidates", t, func() {
+		info, err := api.DposValidCandidates(0)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})
@@ -131,14 +124,7 @@ func TestDposNextValidCandidatesByNumber(t *testing.T) {
 
 func TestDposSnapShotTime(t *testing.T) {
 	Convey("dpos_snapShotTime", t, func() {
-		info, err := api.DposSnapShotTime()
-		So(err, ShouldBeNil)
-		So(info, ShouldNotBeEmpty)
-	})
-}
-func TestDposSnapShotTimeByNumber(t *testing.T) {
-	Convey("dpos_snapShotTimeByNumber", t, func() {
-		info, err := api.DposSnapShotTimeByNumber(0)
+		info, err := api.DposSnapShotTime(0)
 		So(err, ShouldBeNil)
 		So(info, ShouldNotBeEmpty)
 	})
