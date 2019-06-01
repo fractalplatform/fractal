@@ -230,6 +230,8 @@ func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 		fallthrough
 	case types.SetAssetOwner:
 		fallthrough
+	case types.UpdateAssetContract:
+		fallthrough
 	case types.UpdateAsset:
 		st.distributeToSystemAccount(common.Name(st.chainConfig.AssetName))
 		return
