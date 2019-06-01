@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	api      = sdk.NewAPI("http://127.0.0.1:8545")
+	api      *sdk.API
 	chainCfg *params.ChainConfig
 )
 
@@ -48,7 +48,7 @@ type TTX struct {
 	Childs  []*TTX      `json:"childs,omitempty"`
 }
 
-func init() {
+func Init() {
 	// init chain config & decimals
 	cfg, err := api.GetChainConfig()
 	if err != nil {
@@ -239,6 +239,7 @@ func main() {
 	_dirfile := flag.String("d", "./testcase", "目录名/文件名")
 	flag.Parse()
 	api = sdk.NewAPI(*_rpchost)
+	Init()
 	f, _ := os.Stat(*_dirfile)
 	if f.IsDir() {
 		rd, err := ioutil.ReadDir(*_dirfile)
