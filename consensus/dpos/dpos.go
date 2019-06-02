@@ -202,12 +202,14 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 		if err != nil {
 			return err
 		}
-		if pepoch != epoch {
-			candidate.Counter++
-		}
-		candidate.ActualCounter++
-		if err := sys.SetCandidate(candidate); err != nil {
-			return err
+		if candidate != nil {
+			if pepoch != epoch {
+				candidate.Counter++
+			}
+			candidate.ActualCounter++
+			if err := sys.SetCandidate(candidate); err != nil {
+				return err
+			}
 		}
 	}
 
