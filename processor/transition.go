@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
@@ -304,7 +305,14 @@ func (st *StateTransition) distributeToSystemAccount(name common.Name) {
 func (st *StateTransition) distributeFee() error {
 	fm := feemanager.NewFeeManager(st.evm.StateDB, st.evm.AccountDB)
 
-	for key, gas := range st.evm.FounderGasMap {
+	var keys vm.DistributeKeys
+	for key, _ := range st.evm.FounderGasMap {
+		keys = append(keys, key)
+	}
+	sort.Sort(keys)
+
+	for _, key := range keys {
+		gas := st.evm.FounderGasMap[key]
 		if gas.Value > 0 {
 			value := new(big.Int).Mul(st.gasPrice, big.NewInt(gas.Value))
 			err := fm.RecordFeeInSystem(key.ObjectName.String(), gas.TypeID, st.assetID, value)
@@ -313,6 +321,7 @@ func (st *StateTransition) distributeFee() error {
 			}
 		}
 	}
+
 	return nil
 }
 
