@@ -126,6 +126,20 @@ type DistributeKey struct {
 	ObjectName common.Name
 	ObjectType uint64
 }
+type DistributeKeys []DistributeKey
+
+func (keys DistributeKeys) Len() int {
+	return len(keys)
+}
+func (keys DistributeKeys) Less(i, j int) bool {
+	if keys[i].ObjectName == keys[j].ObjectName {
+		return keys[i].ObjectType < keys[j].ObjectType
+	}
+	return keys[i].ObjectName < keys[j].ObjectName
+}
+func (keys DistributeKeys) Swap(i, j int) {
+	keys[i], keys[j] = keys[j], keys[i]
+}
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
 // only ever be used *once*.
