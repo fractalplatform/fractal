@@ -81,7 +81,7 @@ func NewLDB(db IDatabase) (*LDB, error) {
 func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 	if candidate.ActualCounter > candidate.Counter {
 		candidate.Counter = candidate.ActualCounter
-		log.Warn("shoulder counter calc err", "candidate", candidate.Name, "should", candidate.Counter, "actual", candidate.Counter, "epoch", candidate.Epoch)
+		log.Error("shoulder counter calc err", "candidate", candidate.Name, "should", candidate.Counter, "actual", candidate.Counter, "epoch", candidate.Epoch)
 	}
 	if candidate.Name != CandidateHead && len(candidate.PrevKey) == 0 && len(candidate.NextKey) == 0 {
 		head, err := db.GetCandidate(candidate.Epoch, CandidateHead)
