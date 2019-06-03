@@ -226,6 +226,7 @@ const (
 	GETCANDIDATENUM        = 0xd1
 	GETCANDIDATE           = 0xd2
 	GETVOTERSTAKE          = 0xd3
+	RECIPIENT              = 0xd4
 )
 
 const (
@@ -409,6 +410,7 @@ var opCodeToString = map[OpCode]string{
 	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
 	CRYPTOCALC:    "CRYPTOCALC",
+	RECIPIENT:     "RECIPIENT",
 	//add end
 	STATICCALL:   "STATICCALL",
 	REVERT:       "REVERT",
@@ -568,6 +570,7 @@ var stringToOp = map[string]OpCode{
 	"CALLCODE":       CALLCODE,
 	"REVERT":         REVERT,
 	"SELFDESTRUCT":   SELFDESTRUCT,
+	"RECIPIENT":      RECIPIENT,
 }
 
 func StringToOp(str string) OpCode {

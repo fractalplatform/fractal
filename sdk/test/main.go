@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"math/big"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -26,7 +28,7 @@ import (
 )
 
 var (
-	api      = sdk.NewAPI("http://127.0.0.1:8545")
+	api      *sdk.API
 	chainCfg *params.ChainConfig
 )
 
@@ -46,7 +48,7 @@ type TTX struct {
 	Childs  []*TTX      `json:"childs,omitempty"`
 }
 
-func init() {
+func Init() {
 	// init chain config & decimals
 	cfg, err := api.GetChainConfig()
 	if err != nil {
@@ -212,15 +214,15 @@ func runTx(api *sdk.API, tx *TTX, file string) error {
 		err = fmt.Errorf("unsupport type %v", tx.Type)
 	}
 	if tx.Succeed != (err == nil) {
-		log.Error(file, "succeed mismatch", err, "comment", tx.Comment)
+		log.Error(file, "hash", hash.String(), "succeed mismatch", err, "comment", tx.Comment)
 		return fmt.Errorf("succeed mismatch %v", err)
 	}
 	if len(tx.Contain) > 0 && !strings.Contains(err.Error(), tx.Contain) {
-		log.Error(file, "contain mismatch", err, "except", tx.Contain, "comment", tx.Comment)
+		log.Error(file, "hash", hash.String(), "contain mismatch", err, "except", tx.Contain, "comment", tx.Comment)
 		return fmt.Errorf("contain mismatch %v", err)
 	}
 	if tx.Succeed && bytes.Compare(hash.Bytes(), common.Hash{}.Bytes()) == 0 {
-		log.Error(file, "txpool err", err, "comment", tx.Comment)
+		log.Error(file, "hash", hash.String(), "txpool err", err, "comment", tx.Comment)
 		return fmt.Errorf("txpool error %v", err)
 	}
 	log.Info(file, "hash", hash.String(), "comment", tx.Comment)
@@ -233,11 +235,22 @@ func runTx(api *sdk.API, tx *TTX, file string) error {
 }
 
 func main() {
-	rd, err := ioutil.ReadDir("./testcase")
-	if err != nil {
-		panic(err)
+	_rpchost := flag.String("u", "http://127.0.0.1:8545", "RPC地址")
+	_dirfile := flag.String("d", "./testcase", "目录名/文件名")
+	flag.Parse()
+	api = sdk.NewAPI(*_rpchost)
+	Init()
+	f, _ := os.Stat(*_dirfile)
+	if f.IsDir() {
+		rd, err := ioutil.ReadDir(*_dirfile)
+		if err != nil {
+			panic(err)
+		}
+		run(*_dirfile, rd)
+	} else {
+		rd := []os.FileInfo{f}
+		run(filepath.Dir(*_dirfile), rd)
 	}
-	run("./testcase", rd)
 }
 
 func run(dir string, rd []os.FileInfo) {

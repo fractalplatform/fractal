@@ -145,5 +145,18 @@
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
     "contain": "not in normal"
+},
+{
+    "comment": "fractal.admin kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, kickedcandidate after kickedcandidate",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "kickedcandidate",
+    "from": "fractal.admin",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 0,
+    "payload": {
+        "Candidates": ["candidate0006", "candidate0007"]
+    },
+    "succeed": true
 }
 ]

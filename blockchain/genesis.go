@@ -91,8 +91,8 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		BlockFrequency:                cfg.DposCfg.BlockFrequency,
 		CandidateScheduleSize:         cfg.DposCfg.CandidateScheduleSize,
 		BackupScheduleSize:            cfg.DposCfg.BackupScheduleSize,
-		EpchoInterval:                 cfg.DposCfg.EpchoInterval,
-		FreezeEpchoSize:               cfg.DposCfg.FreezeEpchoSize,
+		EpochInterval:                 cfg.DposCfg.EpochInterval,
+		FreezeEpochSize:               cfg.DposCfg.FreezeEpochSize,
 		AccountName:                   cfg.DposName,
 		SystemName:                    cfg.SysName,
 		SystemURL:                     cfg.ChainURL,
@@ -351,8 +351,10 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	g.Config.SysTokenDecimals = assetInfo.Decimals
 
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
+	epoch, _ := sys.GetLastestEpoch()
 	for _, candidate := range g.AllocCandidates {
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
+			Epoch:         epoch,
 			Name:          candidate.Name,
 			URL:           candidate.URL,
 			Quantity:      big.NewInt(0),
@@ -362,7 +364,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64(), ""); err != nil {
+	if err := sys.UpdateElectedCandidates(epoch, epoch, number.Uint64(), ""); err != nil {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
@@ -394,7 +396,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Difficulty: g.Difficulty,
-		Coinbase:   common.StrToName(g.Config.SysName),
+		Coinbase:   common.StrToName(g.Config.ChainName),
 		Root:       root,
 	}
 

@@ -31,68 +31,90 @@ type API struct {
 	chain consensus.IChainReader
 }
 
-// Info get dpos info
+// Info get dpos config info
 func (api *API) Info() interface{} {
 	return api.dpos.config
 }
 
-// IrreversibleRet result
-type IrreversibleRet struct {
-	ProposedIrreversible uint64 `json:"proposedIrreversible"`
-	BftIrreversible      uint64 `json:"bftIrreversible"`
-	Reversible           uint64 `json:"reversible"`
-}
-
 // Irreversible get irreversible info
 func (api *API) Irreversible() interface{} {
-	ret := &IrreversibleRet{}
-	ret.Reversible = api.chain.CurrentHeader().Number.Uint64()
-	ret.ProposedIrreversible = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
-	ret.BftIrreversible = api.dpos.CalcBFTIrreversible()
+	ret := map[string]interface{}{}
+	ret["reversible"] = api.chain.CurrentHeader().Number.Uint64()
+	ret["proposedIrreversible"] = api.dpos.CalcProposedIrreversible(api.chain, nil, false)
+	ret["bftIrreversible"] = api.dpos.CalcBFTIrreversible()
 	return ret
 }
 
-// Candidate get candidate info of dpos
-func (api *API) Candidate(name string) (interface{}, error) {
+// NextValidCandidates next valid candidates
+func (api *API) NextValidCandidates() (interface{}, error) {
+	epoch, err := api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	if err != nil {
+		return nil, err
+	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	if prod, err := sys.GetCandidate(name); err != nil {
-		return nil, err
-	} else if prod != nil {
-		return prod, err
-	}
-	return nil, nil
+	return sys.GetState(epoch)
 }
 
-// CandidateByHeight get candidate info of dpos
-func (api *API) CandidateByHeight(height uint64, name string) (interface{}, error) {
-	sys, err := api.system()
-	if err != nil {
-		return nil, err
-	}
-	epcho, err := api.epcho(height)
-	if err != nil {
-		return nil, err
-	}
-	return sys.GetCandidateInfoByTime(name, api.dpos.config.epochTimeStamp(epcho))
+// Epoch get epoch number by height
+func (api *API) Epoch(height uint64) (uint64, error) {
+	return api.epoch(height)
 }
 
-// Candidates all candidates info
-func (api *API) Candidates(detail bool) (interface{}, error) {
+// PrevEpoch get prev epoch number by epoch
+func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
+	if err != nil {
+		return 0, err
+	}
+	return api.dpos.GetPrevEpoch(state, epoch)
+}
+
+// NextEpoch get next epoch number by epoch
+func (api *API) NextEpoch(epoch uint64) (uint64, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
+	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
+	if err != nil {
+		return 0, err
+	}
+	return api.dpos.GetNextEpoch(state, epoch)
+}
+
+// CandidatesSize get candidates size
+func (api *API) CandidatesSize(epoch uint64) (uint64, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
+	sys, err := api.system()
+	if err != nil {
+		return 0, err
+	}
+	return sys.CandidatesSize(epoch)
+}
+
+// Candidates get all candidates info
+func (api *API) Candidates(epoch uint64, detail bool) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	candidates, err := sys.GetCandidates()
-	if err != nil || len(candidates) == 0 {
+	candidates, err := sys.GetCandidates(epoch)
+	if err != nil {
 		return nil, err
 	}
 	if detail {
 		return candidates, nil
 	}
-
 	names := make([]string, 0, len(candidates))
 	for _, candidate := range candidates {
 		names = append(names, candidate.Name)
@@ -100,30 +122,34 @@ func (api *API) Candidates(detail bool) (interface{}, error) {
 	return names, nil
 }
 
-// VotersByCandidate get voters info of candidate
-func (api *API) VotersByCandidate(candidate string, detail bool) (interface{}, error) {
-	number := api.chain.CurrentHeader().Number.Uint64()
-	return api.VotersByCandidateByNumber(number, candidate, detail)
-}
-
-// VotersByCandidateByNumber get voters info of candidate
-func (api *API) VotersByCandidateByNumber(number uint64, candidate string, detail bool) (interface{}, error) {
+// Candidate get candidate info
+func (api *API) Candidate(epoch uint64, name string) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	epcho, err := api.epcho(number)
+	return sys.GetCandidate(epoch, name)
+}
+
+// VotersByCandidate get voters info of candidate
+func (api *API) VotersByCandidate(epoch uint64, candidate string, detail bool) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
+	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	voters, err := sys.GetVotersByCandidate(epcho, candidate)
+	voters, err := sys.GetVotersByCandidate(epoch, candidate)
 	if err != nil {
 		return nil, err
 	}
 	if detail {
 		return voters, nil
 	}
-
 	names := make([]string, 0, len(voters))
 	for _, voter := range voters {
 		names = append(names, voter.Name)
@@ -132,137 +158,85 @@ func (api *API) VotersByCandidateByNumber(number uint64, candidate string, detai
 }
 
 // VotersByVoter get voters info of voter
-func (api *API) VotersByVoter(voter string, detail bool) (interface{}, error) {
-	number := api.chain.CurrentHeader().Number.Uint64()
-	return api.VotersByVoterByNumber(number, voter, detail)
-}
-
-// VotersByVoterByNumber get voters info of voter
-func (api *API) VotersByVoterByNumber(number uint64, voter string, detail bool) (interface{}, error) {
+func (api *API) VotersByVoter(epoch uint64, voter string, detail bool) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	epcho, err := api.epcho(number)
-	if err != nil {
-		return nil, err
-	}
-	voters, err := sys.GetVotersByVoter(epcho, voter)
+	voters, err := sys.GetVotersByVoter(epoch, voter)
 	if err != nil {
 		return nil, err
 	}
 	if detail {
 		return voters, nil
 	}
-
-	candidates := []string{}
+	candidates := make([]string, 0, len(voters))
 	for _, voter := range voters {
 		candidates = append(candidates, voter.Candidate)
 	}
 	return candidates, nil
 }
 
-// AvailableStake get available stake
-func (api *API) AvailableStake(voter string) (*big.Int, error) {
-	number := api.chain.CurrentHeader().Number.Uint64()
-	return api.AvailableStakeByNumber(number, voter)
-}
-
-// AvailableStakeByNumber get available stake
-func (api *API) AvailableStakeByNumber(number uint64, voter string) (*big.Int, error) {
+// AvailableStake get available stake that can vote candidate
+func (api *API) AvailableStake(epoch uint64, voter string) (*big.Int, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	epcho, err := api.epcho(number)
-	if err != nil {
-		return nil, err
-	}
-	q, err := sys.getAvailableQuantity(epcho, voter)
+	q, err := sys.getAvailableQuantity(epoch, voter)
 	if err != nil {
 		return nil, err
 	}
 	return new(big.Int).Mul(q, sys.config.unitStake()), nil
 }
 
-// ValidCandidates current valid candidates
-func (api *API) ValidCandidates() (interface{}, error) {
-	number := api.chain.CurrentHeader().Number.Uint64()
-	return api.ValidCandidatesByNumber(number)
-}
-
-// ValidCandidatesByNumber valid candidates
-func (api *API) ValidCandidatesByNumber(number uint64) (interface{}, error) {
-	epcho, err := api.epcho(number)
-	if err != nil {
-		return nil, err
-	}
-	return api.ValidCandidatesByEpcho(epcho)
-}
-
-// ValidCandidatesByEpcho valid candidates
-func (api *API) ValidCandidatesByEpcho(epcho uint64) (interface{}, error) {
-	sys, err := api.system()
-	if err != nil {
-		return nil, err
-	}
-	gstate, err := sys.GetState(epcho)
-	if err != nil {
-		return nil, err
-	}
-	return sys.GetState(gstate.PreEpcho)
-}
-
-// NextValidCandidates current valid candidates
-func (api *API) NextValidCandidates() (interface{}, error) {
-	number := api.chain.CurrentHeader().Number.Uint64()
-	return api.NextValidCandidatesByNumber(number)
-}
-
-// NextValidCandidatesByNumber current valid candidates
-func (api *API) NextValidCandidatesByNumber(number uint64) (interface{}, error) {
-	epcho, err := api.epcho(number)
-	if err != nil {
-		return nil, err
+// ValidCandidates get valid candidates
+func (api *API) ValidCandidates(epoch uint64) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	return sys.GetState(epcho)
-}
-
-// SnapShotTime get snapshort
-func (api *API) SnapShotTime() (interface{}, error) {
-	number := api.chain.CurrentHeader().Number.Uint64()
-	return api.SnapShotTimeByNumber(number)
-}
-
-// SnapShotTimeByNumber get snapshort by number
-func (api *API) SnapShotTimeByNumber(number uint64) (interface{}, error) {
-	epcho, err := api.epcho(number)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return nil, err
+	}
+	return sys.GetState(gstate.PreEpoch)
+}
+
+// SnapShotTime get snapshot timestamp
+func (api *API) SnapShotTime(epoch uint64) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
-	timestamp := sys.config.epochTimeStamp(epcho)
-	gstate, err := sys.GetState(epcho)
+	timestamp := sys.config.epochTimeStamp(epoch)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return nil, err
 	}
-	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
-		timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
+	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
 	}
 	res := map[string]interface{}{}
+	res["epoch"] = epoch
 	res["timestamp"] = timestamp
 	res["time"] = time.Unix(int64(timestamp/uint64(time.Second)), int64(timestamp%uint64(time.Second)))
 	return res, nil
 }
 
-func (api *API) epcho(number uint64) (uint64, error) {
+func (api *API) epoch(number uint64) (uint64, error) {
 	header := api.chain.GetHeaderByNumber(number)
 	if header == nil {
 		return 0, fmt.Errorf("not found number %v", number)
@@ -296,25 +270,32 @@ func (dpos *Dpos) APIs(chain consensus.IChainReader) []rpc.API {
 }
 
 // GetActivedCandidateSize get actived candidate size
-func (api *API) GetActivedCandidateSize(epcho uint64) (uint64, error) {
+func (api *API) GetActivedCandidateSize(epoch uint64) (uint64, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
 	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
 	if err != nil {
 		return 0, err
 	}
-	return api.dpos.GetActivedCandidateSize(state, epcho)
+	return api.dpos.GetActivedCandidateSize(state, epoch)
 }
 
 // GetActivedCandidate get actived candidate info
-func (api *API) GetActivedCandidate(epcho uint64, index uint64) (interface{}, error) {
+func (api *API) GetActivedCandidate(epoch uint64, index uint64) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
 	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
 	if err != nil {
 		return nil, err
 	}
-	candidate, delegated, voted, scounter, acounter, rindex, err := api.dpos.GetActivedCandidate(state, epcho, index)
+	candidate, delegated, voted, scounter, acounter, rindex, err := api.dpos.GetActivedCandidate(state, epoch, index)
 	if err != nil {
 		return nil, err
 	}
 	ret := map[string]interface{}{}
+	ret["epoch"] = epoch
 	ret["candidate"] = candidate
 	ret["delegatedStake"] = delegated
 	ret["votedStake"] = voted
@@ -322,23 +303,4 @@ func (api *API) GetActivedCandidate(epcho uint64, index uint64) (interface{}, er
 	ret["actualCount"] = acounter
 	ret["replaceIndex"] = rindex
 	return ret, nil
-}
-
-// GetCandidateByEpcho candidate info
-func (api *API) GetCandidateByEpcho(epcho uint64, candidate string) (interface{}, error) {
-	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
-	if err != nil {
-		return big.NewInt(0), err
-	}
-	sys := NewSystem(state, api.dpos.config)
-	return sys.GetCandidateByEpcho(epcho, candidate)
-}
-
-// GetVoterStake voter stake
-func (api *API) GetVoterStake(epcho uint64, voter string, candidate string) (*big.Int, error) {
-	state, err := api.chain.StateAt(api.chain.CurrentHeader().Root)
-	if err != nil {
-		return big.NewInt(0), err
-	}
-	return api.dpos.GetVoterStake(state, epcho, voter, candidate)
 }

@@ -412,6 +412,19 @@ func (a *Asset) SetAssetNewOwner(accountName common.Name, assetId uint64, newOwn
 	return a.SetAssetObject(asset)
 }
 
+func (a *Asset) SetAssetNewContract(assetID uint64, contract common.Name) error {
+	assetObj, err := a.GetAssetObjectById(assetID)
+	if err != nil {
+		return err
+	}
+	if assetObj == nil {
+		return ErrAssetNotExist
+	}
+
+	assetObj.SetAssetContract(contract)
+	return a.SetAssetObject(assetObj)
+}
+
 //SetAssetFounder asset founder
 // func (a *Asset) SetAssetFounder(accountName common.Name, assetId uint64, founderName common.Name) error {
 // 	if accountName == "" {
@@ -476,7 +489,7 @@ func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) boo
 		}
 
 		if assetObj.GetAssetOwner() == fromName {
-			log.Debug("Asset create", "name", an, "onwer", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
+			log.Debug("Asset create", "name", an, "owner", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
 			return true
 		}
 	}

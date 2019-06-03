@@ -16,10 +16,14 @@
 
 package types
 
-import "github.com/fractalplatform/fractal/params"
+import (
+	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
+)
 
 type AccountManagerContext struct {
-	Action      *Action
-	ChainConfig *params.ChainConfig
-	Number      uint64
+	Action           *Action
+	ChainConfig      *params.ChainConfig
+	Number           uint64
+	FromAccountExtra []common.Name
 }

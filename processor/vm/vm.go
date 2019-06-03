@@ -35,9 +35,9 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
 	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
-	//GetLatestEpchoFunc
+	//GetLatestEpochFunc
 	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
-	//GetPrevEpcho
+	//GetPrevEpoch
 	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
 	//GetNextEpoch
 	GetNextEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
@@ -54,28 +54,22 @@ type (
 // Context provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
 type Context struct {
-	// GetHash returns the hash corresponding to n
-	GetHash GetHashFunc
-
-	// GetDelegatedByTime returns the delegated balance
-	GetDelegatedByTime GetDelegatedByTimeFunc
-	//
+	GetHash                 GetHashFunc
+	GetDelegatedByTime      GetDelegatedByTimeFunc
 	GetLatestEpoch          GetLatestEpochFunc
 	GetPrevEpoch            GetPrevEpochFunc
 	GetNextEpoch            GetNextEpochFunc
 	GetActivedCandidateSize GetActivedCandidateSizeFunc
 	GetActivedCandidate     GetActivedCandidateFunc
 	GetVoterStake           GetVoterStakeFunc
-	// Engine EgnineContext
-
-	//GetHeaderByNumber
-	GetHeaderByNumber GetHeaderByNumberFunc
+	GetHeaderByNumber       GetHeaderByNumberFunc
 
 	// Message information
-	Origin   common.Name // Provides information for ORIGIN
-	From     common.Name // Provides information for ORIGIN
-	AssetID  uint64      // provides assetId
-	GasPrice *big.Int    // Provides information for GASPRICE
+	Origin    common.Name // Provides information for ORIGIN
+	Recipient common.Name
+	From      common.Name // Provides information for ORIGIN
+	AssetID   uint64      // provides assetId
+	GasPrice  *big.Int    // Provides information for GASPRICE
 
 	// Block information
 	Coinbase    common.Name // Provides information for COINBASE
@@ -131,6 +125,20 @@ type DistributeGas struct {
 type DistributeKey struct {
 	ObjectName common.Name
 	ObjectType uint64
+}
+type DistributeKeys []DistributeKey
+
+func (keys DistributeKeys) Len() int {
+	return len(keys)
+}
+func (keys DistributeKeys) Less(i, j int) bool {
+	if keys[i].ObjectName == keys[j].ObjectName {
+		return keys[i].ObjectType < keys[j].ObjectType
+	}
+	return keys[i].ObjectName < keys[j].ObjectName
+}
+func (keys DistributeKeys) Swap(i, j int) {
+	keys[i], keys[j] = keys[j], keys[i]
 }
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
@@ -580,7 +588,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			if _, err := evm.AccountDB.SetCode(contractName, ret); err != nil {
+			if _, err = evm.AccountDB.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
 		} else {

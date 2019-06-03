@@ -85,14 +85,6 @@ func (bg *BlockGenerator) TxNonce(name common.Name) uint64 {
 	return a.GetNonce()
 }
 
-type chainContext struct {
-	*BlockChain
-}
-
-func (cc *chainContext) Author(header *types.Header) (common.Name, error) {
-	return header.Coinbase, nil
-}
-
 // AddTxWithChain adds a transaction to the generated block.
 func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
 	if bg.gasPool == nil {
@@ -110,6 +102,7 @@ func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
 	bg.receipts = append(bg.receipts, receipt)
 }
 
+// CurrentHeader return current header
 func (bg *BlockGenerator) CurrentHeader() *types.Header {
 	return bg.parent.Head
 }

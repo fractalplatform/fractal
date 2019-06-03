@@ -47,8 +47,8 @@ func TestCandiate(t *testing.T) {
 	_ = sys
 	for index, candidate := range candidates {
 		if err := db.SetState(&GlobalState{
-			Epcho:         uint64(index),
-			PreEpcho:      uint64(index),
+			Epoch:         uint64(index),
+			PreEpoch:      uint64(index),
 			TotalQuantity: big.NewInt(0),
 		}); err != nil {
 			panic(fmt.Errorf("SetState --- %v", err))
@@ -69,11 +69,12 @@ func TestCandiate(t *testing.T) {
 			panic(fmt.Sprintf("RegCandidate %v", err))
 		}
 
-		if ncandidates, _ := sys.GetCandidates(); len(ncandidates) != index+1 {
+		if ncandidates, _ := sys.GetCandidates(uint64(index)); len(ncandidates) != 1 {
+			fmt.Println(len(ncandidates), 1)
 			panic(fmt.Sprintf("GetCandidates mismatch"))
 		}
 
-		if candidateInfo, _ := sys.GetCandidate(candidate); candidateInfo.Quantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 || candidateInfo.TotalQuantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(uint64(index), candidate); candidateInfo.Quantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 || candidateInfo.TotalQuantity.Cmp(DefaultConfig.CandidateMinQuantity) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		}
 
@@ -89,11 +90,11 @@ func TestCandiate(t *testing.T) {
 			panic(fmt.Sprintf("UpdateCandidate %v", err))
 		}
 
-		if ncandidates, _ := sys.GetCandidates(); len(ncandidates) != index+1 {
+		if ncandidates, _ := sys.GetCandidates(uint64(index)); len(ncandidates) != 1 {
 			panic(fmt.Sprintf("GetCandidates num mismatch"))
 		}
 
-		if candidateInfo, _ := sys.GetCandidate(candidate); candidateInfo.Quantity.Cmp(new(big.Int).Mul(big3, DefaultConfig.CandidateMinQuantity)) != 0 || candidateInfo.TotalQuantity.Cmp(new(big.Int).Mul(big3, DefaultConfig.CandidateMinQuantity)) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(uint64(index), candidate); candidateInfo.Quantity.Cmp(new(big.Int).Mul(big3, DefaultConfig.CandidateMinQuantity)) != 0 || candidateInfo.TotalQuantity.Cmp(new(big.Int).Mul(big3, DefaultConfig.CandidateMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate quantity mismatch"))
 		}
 
@@ -106,10 +107,10 @@ func TestCandiate(t *testing.T) {
 		}
 
 		// if err := sys.RefundCandidate(uint64(index), candidate, uint64(index)); err == nil {
-		// 	panic(fmt.Sprintf("UnregCandidate %v", err))
+		// 	panic(fmt.Sprintf("RefundCandidate %v", err))
 		// }
 
-		if ncandidates, _ := sys.GetCandidates(); len(ncandidates) == 0 {
+		if ncandidates, _ := sys.GetCandidates(uint64(index)); len(ncandidates) != 1 {
 			panic(fmt.Sprintf("UnregCandidate %v mismatch", err))
 		}
 	}
@@ -131,8 +132,8 @@ func TestVote(t *testing.T) {
 
 	for index, candidate := range candidates {
 		if err := db.SetState(&GlobalState{
-			Epcho:         uint64(index),
-			PreEpcho:      uint64(index),
+			Epoch:         uint64(index),
+			PreEpoch:      uint64(index),
 			TotalQuantity: big.NewInt(0),
 		}); err != nil {
 			panic(fmt.Errorf("SetState --- %v", err))
@@ -168,7 +169,7 @@ func TestVote(t *testing.T) {
 			panic(fmt.Sprintf("VoteCandidate --- %v", err))
 		}
 
-		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big1, DefaultConfig.VoterMinQuantity)) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(uint64(index), candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big1, DefaultConfig.VoterMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		}
 
@@ -176,7 +177,7 @@ func TestVote(t *testing.T) {
 			panic(fmt.Sprintf("VoteCandidate --- %v", err))
 		}
 
-		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big2, DefaultConfig.VoterMinQuantity)) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(uint64(index), candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big2, DefaultConfig.VoterMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		} else if candidateInfo.Type != Normal {
 			panic(fmt.Sprintf("GetCandidate  type mismatch"))
@@ -199,8 +200,8 @@ func TestCandidateVote(t *testing.T) {
 
 	for index, candidate := range candidates {
 		if err := db.SetState(&GlobalState{
-			Epcho:         uint64(index),
-			PreEpcho:      uint64(index),
+			Epoch:         uint64(index),
+			PreEpoch:      uint64(index),
 			TotalQuantity: big.NewInt(0),
 		}); err != nil {
 			panic(fmt.Errorf("SetState --- %v", err))
@@ -211,9 +212,9 @@ func TestCandidateVote(t *testing.T) {
 		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); err != nil {
 			panic(fmt.Sprintf("RegCandidate %v", err))
 		}
-		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index)); err != nil {
-			panic(fmt.Sprintf("UnregCandidate %v", err))
-		}
+		// if err := sys.UnregCandidate(uint64(index), candidate, uint64(index)); err != nil {
+		// 	panic(fmt.Sprintf("UnregCandidate %v", err))
+		// }
 	}
 
 	for index, voter := range voters {
@@ -224,29 +225,29 @@ func TestCandidateVote(t *testing.T) {
 			panic(fmt.Sprintf("VoteCandidate invalid candidate %v mismatch", err))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index)); !strings.Contains(err.Error(), "not in normal") {
-			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
-		}
-
-		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big0, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index)); !strings.Contains(err.Error(), "not in normal") {
 		// 	panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
 		// }
 
-		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
-		// 	panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+		// 	panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
 		// }
 
-		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big0, DefaultConfig.VoterMinQuantity)) != 0 {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+			panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		}
+
+		if candidateInfo, _ := sys.GetCandidate(uint64(index), candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big1, DefaultConfig.VoterMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		}
 
-		// if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
-		// 	panic(fmt.Sprintf("VoteCandidate --- %v", err))
-		// }
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+			panic(fmt.Sprintf("VoteCandidate --- %v", err))
+		}
 
-		if candidateInfo, _ := sys.GetCandidate(candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big0, DefaultConfig.VoterMinQuantity)) != 0 {
+		if candidateInfo, _ := sys.GetCandidate(uint64(index), candidates[index]); new(big.Int).Sub(candidateInfo.TotalQuantity, candidateInfo.Quantity).Cmp(new(big.Int).Mul(big2, DefaultConfig.VoterMinQuantity)) != 0 {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
-		} else if candidateInfo.Type != Freeze {
+		} else if candidateInfo.Type != Normal {
 			panic(fmt.Sprintf("GetCandidate  type mismatch"))
 		}
 	}

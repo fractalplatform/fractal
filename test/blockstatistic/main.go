@@ -79,13 +79,13 @@ func main() {
 		*_end = curblk.Height
 	}
 	blockInterval := chainCfg.DposCfg.BlockInterval * uint64(time.Millisecond)
-	mepchoInterval := blockInterval * chainCfg.DposCfg.BlockFrequency * chainCfg.DposCfg.CandidateScheduleSize
-	epchoInterval := chainCfg.DposCfg.EpchoInterval * uint64(time.Millisecond)
-	epchoFunc := func(timestamp uint64) uint64 {
-		return (timestamp-chainCfg.ReferenceTime)/epchoInterval + 1
+	mepochInterval := blockInterval * chainCfg.DposCfg.BlockFrequency * chainCfg.DposCfg.CandidateScheduleSize
+	epochInterval := chainCfg.DposCfg.EpochInterval * uint64(time.Millisecond)
+	epochFunc := func(timestamp uint64) uint64 {
+		return (timestamp-chainCfg.ReferenceTime)/epochInterval + 1
 	}
 	offsetFunc := func(timestamp uint64) uint64 {
-		offset := uint64(timestamp-blockInterval) % epchoInterval % mepchoInterval
+		offset := uint64(timestamp-blockInterval) % epochInterval % mepochInterval
 		offset /= blockInterval * chainCfg.DposCfg.BlockFrequency
 		return offset
 	}
@@ -109,20 +109,20 @@ func main() {
 		totalBlockSize += blk.Size
 
 		printDetails := func(timestamp int64, miner string, txs uint64, height uint64) {
-			if prevTime == blk.TimeStamp || epchoFunc(uint64(prevTime)) != epchoFunc(uint64(timestamp)) {
-				if epchoFunc(uint64(prevTime)) != epchoFunc(uint64(timestamp)) {
+			if prevTime == blk.TimeStamp || epochFunc(uint64(prevTime)) != epochFunc(uint64(timestamp)) {
+				if epochFunc(uint64(prevTime)) != epochFunc(uint64(timestamp)) {
 					fmt.Printf("%5d(%05d-%ds-%s)", txs, height, timestamp/(int64(time.Second))%60, miner)
 				}
-				epcho := epchoFunc(uint64(prevTime))
-				vcandidates, err := api.DposValidCandidatesByNumber(blk.Height)
+				epoch := epochFunc(uint64(timestamp))
+				vcandidates, err := api.DposValidCandidates(epoch)
 				if err != nil {
 					panic(err)
 				}
 				fmt.Println("\n==========================周期==========================")
 				if height > 0 {
-					fmt.Println(blk.Height, epcho, vcandidates["activatedCandidateSchedule"])
+					fmt.Println(blk.Height, epoch, vcandidates["activatedCandidateSchedule"])
 				} else {
-					fmt.Println(epcho)
+					fmt.Println(epoch)
 				}
 				fmt.Println("==========================周期==========================")
 			}
@@ -130,8 +130,12 @@ func main() {
 			if prevTime == blk.TimeStamp || offset != offsetFunc(uint64(prevTime)) {
 				fmt.Printf("\n%03d%s:", offset, miner)
 			}
-			if prevTime == blk.TimeStamp || epchoFunc(uint64(prevTime)) == epchoFunc(uint64(timestamp)) {
-				fmt.Printf("%5d(%05d-%ds)", txs, height, timestamp/(int64(time.Second))%60)
+			if prevTime == blk.TimeStamp || epochFunc(uint64(prevTime)) == epochFunc(uint64(timestamp)) {
+				if height == 0 {
+					fmt.Printf("%5d(*****-%ds)", txs, timestamp/(int64(time.Second))%60)
+				} else {
+					fmt.Printf("%5d(%05d-%ds)", txs, height, timestamp/(int64(time.Second))%60)
+				}
 			}
 		}
 		if *_detail {

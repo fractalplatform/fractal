@@ -111,6 +111,7 @@ func TestLDBCandidate(t *testing.T) {
 
 	for index, candidate := range candidates {
 		candidateInfo := &CandidateInfo{
+			Epoch:         uint64(index),
 			Name:          candidate,
 			URL:           fmt.Sprintf("www.%v.com", candidate),
 			Quantity:      big.NewInt(0),
@@ -119,63 +120,63 @@ func TestLDBCandidate(t *testing.T) {
 		if err := db.SetCandidate(candidateInfo); err != nil {
 			panic(fmt.Errorf("SetCandidate --- %v", err))
 		}
-		if nCandidateInfo, err := db.GetCandidate(candidate); err != nil {
+		if nCandidateInfo, err := db.GetCandidate(uint64(index), candidate); err != nil {
 			panic(fmt.Errorf("GetCandidate --- %v", err))
 		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
 			panic(fmt.Errorf("GetCandidate mismatch"))
 		}
-		if nCandidates, err := db.GetCandidates(); err != nil {
+		if nCandidates, err := db.GetCandidates(uint64(index)); err != nil {
 			panic(fmt.Errorf("GetCandidates --- %v", err))
-		} else if len(nCandidates) != index+1 {
+		} else if len(nCandidates) != 1 {
 			panic(fmt.Errorf("GetCandidates mismatch"))
 		}
-		if size, err := db.CandidatesSize(); err != nil {
+		if size, err := db.CandidatesSize(uint64(index)); err != nil {
 			panic(fmt.Errorf("CandidatesSize --- %v", err))
-		} else if size != uint64(index+1) {
+		} else if size != 1 {
 			panic(fmt.Errorf("CandidatesSize mismatch"))
 		}
 	}
 
-	for _, candidate := range candidates {
-		candidateInfo, _ := db.GetCandidate(candidate)
+	for index, candidate := range candidates {
+		candidateInfo, _ := db.GetCandidate(uint64(index), candidate)
 		if err := db.SetCandidate(candidateInfo); err != nil {
 			panic(fmt.Errorf("Redo SetCandidate --- %v", err))
 		}
-		if nCandidateInfo, err := db.GetCandidate(candidate); err != nil {
+		if nCandidateInfo, err := db.GetCandidate(uint64(index), candidate); err != nil {
 			panic(fmt.Errorf("Redo GetCandidate --- %v", err))
 		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
 			panic(fmt.Errorf("Redo GetCandidate mismatch"))
 		}
-		if nCandidates, err := db.GetCandidates(); err != nil {
+		if nCandidates, err := db.GetCandidates(uint64(index)); err != nil {
 			panic(fmt.Errorf("Redo GetCandidates --- %v", err))
-		} else if len(nCandidates) != len(candidates) {
+		} else if len(nCandidates) != 1 {
 			panic(fmt.Errorf("Redo GetCandidates mismatch"))
 		}
-		if size, err := db.CandidatesSize(); err != nil {
+		if size, err := db.CandidatesSize(uint64(index)); err != nil {
 			panic(fmt.Errorf("Redo CandidatesSize --- %v", err))
-		} else if size != uint64(len(candidates)) {
+		} else if size != 1 {
 			panic(fmt.Errorf("Redo CandidatesSize mismatch"))
 		}
 	}
 
 	for index, candidate := range candidates {
-		if err := db.DelCandidate(candidate); err != nil {
+		if err := db.DelCandidate(uint64(index), candidate); err != nil {
 			panic(fmt.Errorf("DelCandidate --- %v", err))
 		}
-		if nCandidateInfo, err := db.GetCandidate(candidate); err != nil {
+		if nCandidateInfo, err := db.GetCandidate(uint64(index), candidate); err != nil {
 			panic(fmt.Errorf("Del GetCandidate --- %v", err))
 		} else if nCandidateInfo != nil {
 			panic(fmt.Errorf("Del GetCandidate mismatch"))
 		}
 
-		if nCandidates, err := db.GetCandidates(); err != nil {
+		if nCandidates, err := db.GetCandidates(uint64(index)); err != nil {
 			panic(fmt.Errorf("Del GetCandidates --- %v", err))
-		} else if len(nCandidates) != len(candidates)-index-1 {
+		} else if len(nCandidates) != 0 {
 			panic(fmt.Errorf("Del GetCandidates mismatch"))
 		}
-		if size, err := db.CandidatesSize(); err != nil {
+		if size, err := db.CandidatesSize(uint64(index)); err != nil {
 			panic(fmt.Errorf("Del CandidatesSize --- %v", err))
-		} else if size != uint64(len(candidates)-index-1) {
+		} else if size != 0 {
 			panic(fmt.Errorf("Del CandidatesSize mismatch"))
 		}
 	}
@@ -226,6 +227,7 @@ func TestLDBVoter(t *testing.T) {
 
 	for _, candidate := range candidates {
 		candidateInfo := &CandidateInfo{
+			Epoch:         0,
 			Name:          candidate,
 			URL:           fmt.Sprintf("www.%v.com", candidate),
 			Quantity:      big.NewInt(0),
@@ -236,96 +238,96 @@ func TestLDBVoter(t *testing.T) {
 		}
 	}
 
-	epcho := uint64(0)
+	epoch := uint64(0)
 	for index, voter := range voters {
 		voterInfo := &VoterInfo{
-			Epcho:     epcho,
+			Epoch:     epoch,
 			Name:      voter,
 			Candidate: candidates[0],
 			Quantity:  big.NewInt(int64(index)),
 			Number:    uint64(index),
 		}
-		if err := db.SetAvailableQuantity(epcho, voter, big.NewInt(int64(index))); err != nil {
+		if err := db.SetAvailableQuantity(epoch, voter, big.NewInt(int64(index))); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
 		if err := db.SetVoter(voterInfo); err != nil {
 			panic(fmt.Errorf("SetVoter --- %v", err))
 		}
-		if nvoterInfo, err := db.GetVoter(epcho, voter, candidates[0]); err != nil {
+		if nvoterInfo, err := db.GetVoter(epoch, voter, candidates[0]); err != nil {
 			panic(fmt.Errorf("GetVoter --- %v", err))
 		} else if !reflect.DeepEqual(voterInfo, nvoterInfo) {
 			panic(fmt.Errorf("GetVoter mismatch"))
 		}
-		if nCandidates, err := db.GetVotersByVoter(epcho, voter); err != nil {
+		if nCandidates, err := db.GetVotersByVoter(epoch, voter); err != nil {
 			panic(fmt.Errorf("GetVotersByVoter --- %v", err))
 		} else if len(nCandidates) != 1 {
 			panic(fmt.Errorf("GetVotersByVoter mismatch %v %v", len(nCandidates), index+1))
 		}
-		if nVoters, err := db.GetVotersByCandidate(epcho, candidates[0]); err != nil {
+		if nVoters, err := db.GetVotersByCandidate(epoch, candidates[0]); err != nil {
 			panic(fmt.Errorf("GetVotersByCandidate --- %v", err))
 		} else if len(nVoters) != index+1 {
 			panic(fmt.Errorf("GetVotersByCandidate mismatch"))
 		}
 	}
 
-	epcho++
+	epoch++
 	for index, candidate := range candidates {
 		voterInfo := &VoterInfo{
-			Epcho:     epcho,
+			Epoch:     epoch,
 			Name:      voters[0],
 			Candidate: candidate,
 			Quantity:  big.NewInt(int64(index)),
 			Number:    uint64(index),
 		}
-		if err := db.SetAvailableQuantity(epcho, voters[0], big.NewInt(int64(index))); err != nil {
+		if err := db.SetAvailableQuantity(epoch, voters[0], big.NewInt(int64(index))); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
 		if err := db.SetVoter(voterInfo); err != nil {
 			panic(fmt.Errorf("SetVoter --- %v", err))
 		}
-		if nvoterInfo, err := db.GetVoter(epcho, voters[0], candidate); err != nil {
+		if nvoterInfo, err := db.GetVoter(epoch, voters[0], candidate); err != nil {
 			panic(fmt.Errorf("GetVoter --- %v", err))
 		} else if !reflect.DeepEqual(voterInfo, nvoterInfo) {
 			panic(fmt.Errorf("GetVoter mismatch"))
 		}
-		if nCandidates, err := db.GetVotersByVoter(epcho, voters[0]); err != nil {
+		if nCandidates, err := db.GetVotersByVoter(epoch, voters[0]); err != nil {
 			panic(fmt.Errorf("GetVotersByVoter --- %v", err))
 		} else if len(nCandidates) != index+1 {
 			panic(fmt.Errorf("GetVotersByVoter mismatch %v %v", len(nCandidates), index+1))
 		}
-		if nVoters, err := db.GetVotersByCandidate(epcho, candidate); err != nil {
+		if nVoters, err := db.GetVotersByCandidate(epoch, candidate); err != nil {
 			panic(fmt.Errorf("GetVotersByCandidate --- %v", err))
 		} else if len(nVoters) != 1 {
 			panic(fmt.Errorf("GetVotersByCandidate mismatch"))
 		}
 	}
 
-	epcho++
+	epoch++
 	for index, candidate := range candidates {
 		voterInfo := &VoterInfo{
-			Epcho:     epcho,
+			Epoch:     epoch,
 			Name:      voters[index],
 			Candidate: candidate,
 			Quantity:  big.NewInt(int64(index)),
 			Number:    uint64(index),
 		}
-		if err := db.SetAvailableQuantity(epcho, voters[index], big.NewInt(int64(index))); err != nil {
+		if err := db.SetAvailableQuantity(epoch, voters[index], big.NewInt(int64(index))); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
 		if err := db.SetVoter(voterInfo); err != nil {
 			panic(fmt.Errorf("SetVoter --- %v", err))
 		}
-		if nvoterInfo, err := db.GetVoter(epcho, voters[index], candidate); err != nil {
+		if nvoterInfo, err := db.GetVoter(epoch, voters[index], candidate); err != nil {
 			panic(fmt.Errorf("GetVoter --- %v", err))
 		} else if !reflect.DeepEqual(voterInfo, nvoterInfo) {
 			panic(fmt.Errorf("GetVoter mismatch"))
 		}
-		if nCandidates, err := db.GetVotersByVoter(epcho, voters[index]); err != nil {
+		if nCandidates, err := db.GetVotersByVoter(epoch, voters[index]); err != nil {
 			panic(fmt.Errorf("GetVotersByVoter --- %v", err))
 		} else if len(nCandidates) != 1 {
 			panic(fmt.Errorf("GetVotersByVoter mismatch"))
 		}
-		if nVoters, err := db.GetVotersByCandidate(epcho, candidate); err != nil {
+		if nVoters, err := db.GetVotersByCandidate(epoch, candidate); err != nil {
 			panic(fmt.Errorf("GetVotersByCandidate --- %v", err))
 		} else if len(nVoters) != 1 {
 			panic(fmt.Errorf("GetVotersByCandidate mismatch"))
@@ -343,8 +345,8 @@ func TestLDBGlobalState(t *testing.T) {
 
 	for index := range candidates {
 		gstate := &GlobalState{
-			Epcho:                      uint64(index + 1),
-			PreEpcho:                   uint64(index),
+			Epoch:                      uint64(index + 1),
+			PreEpoch:                   uint64(index),
 			ActivatedTotalQuantity:     big.NewInt(0),
 			ActivatedCandidateSchedule: candidates[index:],
 			OffCandidateNumber:         []uint64{},
@@ -359,19 +361,19 @@ func TestLDBGlobalState(t *testing.T) {
 		} else if !reflect.DeepEqual(gstate, ngstate) {
 			panic(fmt.Errorf("GetState mismatch %v %v", gstate, ngstate))
 		}
-		if err := db.SetLastestEpcho(gstate.Epcho); err != nil {
-			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
-		} else if epcho, err := db.GetLastestEpcho(); err != nil {
-			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
-		} else if epcho != uint64(index+1) {
-			panic(fmt.Errorf("GetLastestEpcho mismatch"))
+		if err := db.SetLastestEpoch(gstate.Epoch); err != nil {
+			panic(fmt.Errorf("GetLastestEpoch --- %v", err))
+		} else if epoch, err := db.GetLastestEpoch(); err != nil {
+			panic(fmt.Errorf("GetLastestEpoch --- %v", err))
+		} else if epoch != uint64(index+1) {
+			panic(fmt.Errorf("GetLastestEpoch mismatch"))
 		}
 	}
 
 	for index := range candidates {
 		gstate := &GlobalState{
-			Epcho:                      uint64(index + 1),
-			PreEpcho:                   uint64(index),
+			Epoch:                      uint64(index + 1),
+			PreEpoch:                   uint64(index),
 			ActivatedTotalQuantity:     big.NewInt(0),
 			ActivatedCandidateSchedule: candidates[index:],
 			TotalQuantity:              big.NewInt(0),
@@ -386,12 +388,12 @@ func TestLDBGlobalState(t *testing.T) {
 		} else if !reflect.DeepEqual(gstate, ngstate) {
 			panic(fmt.Errorf("Redo GetState mismatch"))
 		}
-		if err := db.SetLastestEpcho(gstate.Epcho); err != nil {
-			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
-		} else if epcho, err := db.GetLastestEpcho(); err != nil {
-			panic(fmt.Errorf("GetLastestEpcho --- %v", err))
-		} else if epcho != uint64(index+1) {
-			panic(fmt.Errorf("GetLastestEpcho mismatch"))
+		if err := db.SetLastestEpoch(gstate.Epoch); err != nil {
+			panic(fmt.Errorf("GetLastestEpoch --- %v", err))
+		} else if epoch, err := db.GetLastestEpoch(); err != nil {
+			panic(fmt.Errorf("GetLastestEpoch --- %v", err))
+		} else if epoch != uint64(index+1) {
+			panic(fmt.Errorf("GetLastestEpoch mismatch"))
 		}
 	}
 }

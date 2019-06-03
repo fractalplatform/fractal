@@ -76,40 +76,16 @@ func NewLDB(db IDatabase) (*LDB, error) {
 	return ldb, nil
 }
 
-// SetCandidateByEpcho update candidate info
-func (db *LDB) SetCandidateByEpcho(epcho uint64, candidate *CandidateInfo) error {
-	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epcho, candidate.Name)}, Separator)
-	if val, err := rlp.EncodeToBytes(candidate); err != nil {
-		return err
-	} else if err := db.Put(key, val); err != nil {
-		return err
-	}
-	return nil
-}
-
-// GetCandidateByEpcho update candidate info
-func (db *LDB) GetCandidateByEpcho(epcho uint64, candidate string) (*CandidateInfo, error) {
-	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epcho, candidate)}, Separator)
-	candidateInfo := &CandidateInfo{}
-	if val, err := db.Get(key); err != nil {
-		return nil, err
-	} else if val == nil {
-		return nil, nil
-	} else if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
-		return nil, err
-	}
-	return candidateInfo, nil
-}
-
 // SetCandidate update candidate info
 func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 	if candidate.Name != CandidateHead && len(candidate.PrevKey) == 0 && len(candidate.NextKey) == 0 {
-		head, err := db.GetCandidate(CandidateHead)
+		head, err := db.GetCandidate(candidate.Epoch, CandidateHead)
 		if err != nil {
 			return err
 		}
 		if head == nil {
 			head = &CandidateInfo{
+				Epoch:   candidate.Epoch,
 				Name:    CandidateHead,
 				Counter: 0,
 			}
@@ -123,7 +99,7 @@ func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 		}
 
 		if len(candidate.NextKey) != 0 {
-			next, err := db.GetCandidate(candidate.NextKey)
+			next, err := db.GetCandidate(candidate.Epoch, candidate.NextKey)
 			if err != nil {
 				return err
 			}
@@ -133,7 +109,7 @@ func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 			}
 		}
 	}
-	key := strings.Join([]string{CandidateKeyPrefix, candidate.Name}, Separator)
+	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", candidate.Epoch, candidate.Name)}, Separator)
 	if val, err := rlp.EncodeToBytes(candidate); err != nil {
 		return err
 	} else if err := db.Put(key, val); err != nil {
@@ -143,8 +119,8 @@ func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 }
 
 // DelCandidate del candidate info
-func (db *LDB) DelCandidate(name string) error {
-	candidateInfo, err := db.GetCandidate(name)
+func (db *LDB) DelCandidate(epoch uint64, name string) error {
+	candidateInfo, err := db.GetCandidate(epoch, name)
 	if err != nil {
 		return err
 	}
@@ -152,7 +128,7 @@ func (db *LDB) DelCandidate(name string) error {
 		return nil
 	}
 
-	prev, err := db.GetCandidate(candidateInfo.PrevKey)
+	prev, err := db.GetCandidate(epoch, candidateInfo.PrevKey)
 	if err != nil {
 		return err
 	}
@@ -162,7 +138,7 @@ func (db *LDB) DelCandidate(name string) error {
 	}
 
 	if len(candidateInfo.NextKey) > 0 {
-		next, err := db.GetCandidate(candidateInfo.NextKey)
+		next, err := db.GetCandidate(epoch, candidateInfo.NextKey)
 		if err != nil {
 			return err
 		}
@@ -171,11 +147,11 @@ func (db *LDB) DelCandidate(name string) error {
 			return err
 		}
 	}
-	key := strings.Join([]string{CandidateKeyPrefix, name}, Separator)
+	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epoch, name)}, Separator)
 	if err := db.Delete(key); err != nil {
 		return err
 	}
-	head, err := db.GetCandidate(CandidateHead)
+	head, err := db.GetCandidate(epoch, CandidateHead)
 	if err != nil {
 		return err
 	}
@@ -184,8 +160,8 @@ func (db *LDB) DelCandidate(name string) error {
 }
 
 // GetCandidate get candidate info by name
-func (db *LDB) GetCandidate(name string) (*CandidateInfo, error) {
-	key := strings.Join([]string{CandidateKeyPrefix, name}, Separator)
+func (db *LDB) GetCandidate(epoch uint64, name string) (*CandidateInfo, error) {
+	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epoch, name)}, Separator)
 	candidateInfo := &CandidateInfo{}
 	if val, err := db.Get(key); err != nil {
 		return nil, err
@@ -198,9 +174,9 @@ func (db *LDB) GetCandidate(name string) (*CandidateInfo, error) {
 }
 
 // GetCandidates get all candidate info & sort
-func (db *LDB) GetCandidates() ([]*CandidateInfo, error) {
+func (db *LDB) GetCandidates(epoch uint64) ([]*CandidateInfo, error) {
 	// candidates
-	head, err := db.GetCandidate(CandidateHead)
+	head, err := db.GetCandidate(epoch, CandidateHead)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +187,7 @@ func (db *LDB) GetCandidates() ([]*CandidateInfo, error) {
 	candidateInfos := CandidateInfoArray{}
 	nextKey := head.NextKey
 	for len(nextKey) != 0 {
-		candidateInfo, err := db.GetCandidate(nextKey)
+		candidateInfo, err := db.GetCandidate(epoch, nextKey)
 		if err != nil {
 			return nil, err
 		}
@@ -223,8 +199,8 @@ func (db *LDB) GetCandidates() ([]*CandidateInfo, error) {
 }
 
 // CandidatesSize candidate len
-func (db *LDB) CandidatesSize() (uint64, error) {
-	head, err := db.GetCandidate(CandidateHead)
+func (db *LDB) CandidatesSize(epoch uint64) (uint64, error) {
+	head, err := db.GetCandidate(epoch, CandidateHead)
 	if err != nil {
 		return 0, err
 	}
@@ -235,14 +211,14 @@ func (db *LDB) CandidatesSize() (uint64, error) {
 }
 
 // SetAvailableQuantity set quantity
-func (db *LDB) SetAvailableQuantity(epcho uint64, voter string, quantity *big.Int) error {
-	head, err := db.GetVoter(epcho, voter, VoterHead)
+func (db *LDB) SetAvailableQuantity(epoch uint64, voter string, quantity *big.Int) error {
+	head, err := db.GetVoter(epoch, voter, VoterHead)
 	if err != nil {
 		return err
 	}
 	if head == nil {
 		head = &VoterInfo{
-			Epcho:           epcho,
+			Epoch:           epoch,
 			Name:            voter,
 			Candidate:       VoterHead,
 			NextKeyForVoter: "EOF",
@@ -253,8 +229,8 @@ func (db *LDB) SetAvailableQuantity(epcho uint64, voter string, quantity *big.In
 }
 
 // GetAvailableQuantity get quantity
-func (db *LDB) GetAvailableQuantity(epcho uint64, voter string) (*big.Int, error) {
-	head, err := db.GetVoter(epcho, voter, VoterHead)
+func (db *LDB) GetAvailableQuantity(epoch uint64, voter string) (*big.Int, error) {
+	head, err := db.GetVoter(epoch, voter, VoterHead)
 	if err != nil {
 		return nil, err
 	}
@@ -268,13 +244,13 @@ func (db *LDB) GetAvailableQuantity(epcho uint64, voter string) (*big.Int, error
 func (db *LDB) SetVoter(voter *VoterInfo) error {
 	if len(voter.NextKeyForVoter) == 0 && len(voter.NextKeyForCandidate) == 0 {
 		if voter.Candidate != VoterHead {
-			head, err := db.GetVoter(voter.Epcho, voter.Name, VoterHead)
+			head, err := db.GetVoter(voter.Epoch, voter.Name, VoterHead)
 			if err != nil {
 				return err
 			}
 			if head == nil {
 				head = &VoterInfo{
-					Epcho:           voter.Epcho,
+					Epoch:           voter.Epoch,
 					Name:            voter.Name,
 					Candidate:       VoterHead,
 					NextKeyForVoter: "EOF",
@@ -287,13 +263,13 @@ func (db *LDB) SetVoter(voter *VoterInfo) error {
 			}
 		}
 		if voter.Name != CandidateHead {
-			head, err := db.GetVoter(voter.Epcho, CandidateHead, voter.Candidate)
+			head, err := db.GetVoter(voter.Epoch, CandidateHead, voter.Candidate)
 			if err != nil {
 				return err
 			}
 			if head == nil {
 				head = &VoterInfo{
-					Epcho:               voter.Epcho,
+					Epoch:               voter.Epoch,
 					Name:                CandidateHead,
 					Candidate:           voter.Candidate,
 					NextKeyForCandidate: "EOF",
@@ -317,9 +293,9 @@ func (db *LDB) SetVoter(voter *VoterInfo) error {
 }
 
 // GetVoter voter info by name
-func (db *LDB) GetVoter(epcho uint64, voter string, candidate string) (*VoterInfo, error) {
+func (db *LDB) GetVoter(epoch uint64, voter string, candidate string) (*VoterInfo, error) {
 	vf := &VoterInfo{
-		Epcho:     epcho,
+		Epoch:     epoch,
 		Name:      voter,
 		Candidate: candidate,
 	}
@@ -336,8 +312,8 @@ func (db *LDB) GetVoter(epcho uint64, voter string, candidate string) (*VoterInf
 }
 
 // GetVotersByCandidate voters info by candidate
-func (db *LDB) GetVotersByCandidate(epcho uint64, candidate string) ([]*VoterInfo, error) {
-	head, err := db.GetVoter(epcho, CandidateHead, candidate)
+func (db *LDB) GetVotersByCandidate(epoch uint64, candidate string) ([]*VoterInfo, error) {
+	head, err := db.GetVoter(epoch, CandidateHead, candidate)
 	if err != nil {
 		return nil, err
 	}
@@ -362,8 +338,8 @@ func (db *LDB) GetVotersByCandidate(epcho uint64, candidate string) ([]*VoterInf
 }
 
 // GetVotersByVoter voters info by voter
-func (db *LDB) GetVotersByVoter(epcho uint64, voter string) ([]*VoterInfo, error) {
-	head, err := db.GetVoter(epcho, voter, VoterHead)
+func (db *LDB) GetVotersByVoter(epoch uint64, voter string) ([]*VoterInfo, error) {
+	head, err := db.GetVoter(epoch, voter, VoterHead)
 	if err != nil {
 		return nil, err
 	}
@@ -389,7 +365,7 @@ func (db *LDB) GetVotersByVoter(epcho uint64, voter string) ([]*VoterInfo, error
 
 // SetState set global state info
 func (db *LDB) SetState(gstate *GlobalState) error {
-	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(gstate.Epcho))}, Separator)
+	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(gstate.Epoch))}, Separator)
 	if val, err := rlp.EncodeToBytes(gstate); err != nil {
 		return err
 	} else if err := db.Put(key, val); err != nil {
@@ -399,21 +375,21 @@ func (db *LDB) SetState(gstate *GlobalState) error {
 }
 
 // GetState get state info
-func (db *LDB) GetState(epcho uint64) (*GlobalState, error) {
-	if epcho == LastEpcho {
+func (db *LDB) GetState(epoch uint64) (*GlobalState, error) {
+	if epoch == LastEpoch {
 		var err error
-		epcho, err = db.GetLastestEpcho()
+		epoch, err = db.GetLastestEpoch()
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(epcho))}, Separator)
+	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(epoch))}, Separator)
 	gstate := &GlobalState{}
 	if val, err := db.Get(key); err != nil {
 		return nil, err
 	} else if val == nil {
-		return nil, fmt.Errorf("epcho not found")
+		return nil, fmt.Errorf("epoch not found")
 	} else if err := rlp.DecodeBytes(val, gstate); err != nil {
 		return nil, err
 	}
@@ -437,14 +413,14 @@ func (db *LDB) GetCandidateInfoByTime(candidate string, timestamp uint64) (*Cand
 	return candidateInfo, nil
 }
 
-// SetLastestEpcho set latest epcho
-func (db *LDB) SetLastestEpcho(epcho uint64) error {
+// SetLastestEpoch set latest epoch
+func (db *LDB) SetLastestEpoch(epoch uint64) error {
 	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
-	return db.Put(lkey, uint64tobytes(epcho))
+	return db.Put(lkey, uint64tobytes(epoch))
 }
 
-// GetLastestEpcho get latest epcho
-func (db *LDB) GetLastestEpcho() (uint64, error) {
+// GetLastestEpoch get latest epoch
+func (db *LDB) GetLastestEpoch() (uint64, error) {
 	lkey := strings.Join([]string{StateKeyPrefix, LastestStateKey}, Separator)
 	if val, err := db.Get(lkey); err != nil {
 		return 0, err

@@ -47,7 +47,7 @@ func NewSystem(state *state.StateDB, config *Config) *System {
 }
 
 // RegCandidate  register a candidate
-func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stake *big.Int, number uint64) error {
+func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url (too long, max %v)", sys.config.MaxURLLen)
@@ -64,7 +64,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 	}
 
 	// name validity
-	prod, err := sys.GetCandidate(candidate)
+	prod, err := sys.GetCandidate(epoch, candidate)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 	}
 
 	// quantity validity
-	quantity, err := sys.getAvailableQuantity(epcho, candidate)
+	quantity, err := sys.getAvailableQuantity(epoch, candidate)
 	if err != nil {
 		return err
 	}
@@ -82,12 +82,13 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 	if sub.Sign() == -1 {
 		sub = big.NewInt(0)
 	}
-	if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
+	if err := sys.SetAvailableQuantity(epoch, candidate, sub); err != nil {
 		return err
 	}
 
 	// db
 	prod = &CandidateInfo{
+		Epoch:         epoch,
 		Name:          candidate,
 		URL:           url,
 		Quantity:      big.NewInt(0),
@@ -100,7 +101,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 		return err
 	}
 
-	gstate, err := sys.GetState(epcho)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return err
 	}
@@ -112,7 +113,7 @@ func (sys *System) RegCandidate(epcho uint64, candidate string, url string, stak
 }
 
 // UpdateCandidate  update a candidate
-func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, nstake *big.Int, number uint64) error {
+func (sys *System) UpdateCandidate(epoch uint64, candidate string, url string, nstake *big.Int, number uint64) error {
 	// url validity
 	if uint64(len(url)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url (too long, max %v)", sys.config.MaxURLLen)
@@ -129,7 +130,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	// }
 
 	// name validity
-	prod, err := sys.GetCandidate(candidate)
+	prod, err := sys.GetCandidate(epoch, candidate)
 	if err != nil {
 		return err
 	}
@@ -147,7 +148,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 	// q = new(big.Int).Sub(q, prod.Quantity)
 	// quantity validity
 	if q.Sign() == 1 {
-		quantity, err := sys.getAvailableQuantity(epcho, candidate)
+		quantity, err := sys.getAvailableQuantity(epoch, candidate)
 		if err != nil {
 			return err
 		}
@@ -155,7 +156,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 		if sub.Sign() == -1 {
 			sub = big.NewInt(0)
 		}
-		if err := sys.SetAvailableQuantity(epcho, candidate, sub); err != nil {
+		if err := sys.SetAvailableQuantity(epoch, candidate, sub); err != nil {
 			return err
 		}
 	}
@@ -180,7 +181,7 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 		return err
 	}
 
-	gstate, err := sys.GetState(epcho)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return err
 	}
@@ -192,9 +193,9 @@ func (sys *System) UpdateCandidate(epcho uint64, candidate string, url string, n
 }
 
 // UnregCandidate  unregister a candidate
-func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64) error {
+func (sys *System) UnregCandidate(epoch uint64, candidate string, number uint64) error {
 	// name validity
-	prod, err := sys.GetCandidate(candidate)
+	prod, err := sys.GetCandidate(epoch, candidate)
 	if err != nil {
 		return err
 	}
@@ -221,18 +222,18 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64)
 	// 	Action: action.NewRPCAction(0),
 	// })
 
-	// voters, err := sys.GetVoters(epcho, prod.Name)
+	// voters, err := sys.GetVoters(epoch, prod.Name)
 	// if err != nil {
 	// 	return err
 	// }
 	// for _, voter := range voters {
-	// 	if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+	// 	if voterInfo, err := sys.GetVoter(epoch, voter, candidate); err != nil {
 	// 		return err
 	// 	} else if err := sys.DelVoter(voterInfo); err != nil {
 	// 		return err
-	// 	} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+	// 	} else if quantity, err := sys.GetAvailableQuantity(epoch, voter); err != nil {
 	// 		return err
-	// 	} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+	// 	} else if err := sys.SetAvailableQuantity(epoch, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
 	// 		return err
 	// 	}
 	// }
@@ -240,21 +241,21 @@ func (sys *System) UnregCandidate(epcho uint64, candidate string, number uint64)
 	// 	return err
 	// }
 
-	// gstate, err := sys.GetState(epcho)
-	// if err != nil {
-	// 	return err
-	// }
-	// gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	// if err := sys.SetState(gstate); err != nil {
-	// 	return err
-	// }
+	gstate, err := sys.GetState(epoch)
+	if err != nil {
+		return err
+	}
+	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	if err := sys.SetState(gstate); err != nil {
+		return err
+	}
 	return nil
 }
 
 // RefundCandidate  refund a candidate
-func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64) error {
+func (sys *System) RefundCandidate(epoch uint64, candidate string, number uint64) error {
 	// name validity
-	prod, err := sys.GetCandidate(candidate)
+	prod, err := sys.GetCandidate(epoch, candidate)
 	if err != nil {
 		return err
 	}
@@ -265,15 +266,15 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64
 		return fmt.Errorf("not in freeze %v", candidate)
 	}
 
-	gstate, err := sys.GetState(epcho)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return err
 	}
 
 	freeze := uint64(0)
-	tepcho := gstate.PreEpcho
-	for i := uint64(0); i < sys.config.FreezeEpchoSize+1; i++ {
-		tstate, err := sys.GetState(tepcho)
+	tepoch := gstate.PreEpoch
+	for i := uint64(0); i < sys.config.FreezeEpochSize+1; i++ {
+		tstate, err := sys.GetState(tepoch)
 		if err != nil {
 			return err
 		}
@@ -284,10 +285,10 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64
 			break
 		}
 		freeze++
-		tepcho = tstate.PreEpcho
+		tepoch = tstate.PreEpoch
 	}
-	if freeze < sys.config.FreezeEpchoSize {
-		return fmt.Errorf("%v freeze period %v has not arrived %v", candidate, freeze, sys.config.FreezeEpchoSize)
+	if freeze < sys.config.FreezeEpochSize {
+		return fmt.Errorf("%v freeze period %v has not arrived %v", candidate, freeze, sys.config.FreezeEpochSize)
 	}
 
 	// db
@@ -300,36 +301,36 @@ func (sys *System) RefundCandidate(epcho uint64, candidate string, number uint64
 		Action: action.NewRPCAction(0),
 	})
 
-	// voters, err := sys.GetVoters(epcho, prod.Name)
+	// voters, err := sys.GetVoters(epoch, prod.Name)
 	// if err != nil {
 	// 	return err
 	// }
 	// for _, voter := range voters {
-	// 	if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+	// 	if voterInfo, err := sys.GetVoter(epoch, voter, candidate); err != nil {
 	// 		return err
 	// 	} else if err := sys.DelVoter(voterInfo); err != nil {
 	// 		return err
-	// 	} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+	// 	} else if quantity, err := sys.GetAvailableQuantity(epoch, voter); err != nil {
 	// 		return err
-	// 	} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+	// 	} else if err := sys.SetAvailableQuantity(epoch, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
 	// 		return err
 	// 	}
 	// }
-	if err := sys.DelCandidate(prod.Name); err != nil {
+	if err := sys.DelCandidate(epoch, prod.Name); err != nil {
 		return err
 	}
 
-	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	if err := sys.SetState(gstate); err != nil {
-		return err
-	}
+	// gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+	// if err := sys.SetState(gstate); err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
 // VoteCandidate vote a candidate
-func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, stake *big.Int, number uint64) error {
+func (sys *System) VoteCandidate(epoch uint64, voter string, candidate string, stake *big.Int, number uint64) error {
 	// candidate validity
-	prod, err := sys.GetCandidate(candidate)
+	prod, err := sys.GetCandidate(epoch, candidate)
 	if err != nil {
 		return err
 	}
@@ -340,13 +341,13 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 		return fmt.Errorf("not in normal %v", candidate)
 	}
 
-	gstate, err := sys.GetState(epcho)
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return err
 	}
-	timestamp := sys.config.epochTimeStamp(epcho)
-	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
-		timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
+	timestamp := sys.config.epochTimeStamp(epoch)
+	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
 	}
 	bquantity, err := sys.GetBalanceByTime(candidate, timestamp)
 	if err != nil {
@@ -367,24 +368,24 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 	}
 
 	// quantity validity
-	quantity, err := sys.getAvailableQuantity(epcho, voter)
+	quantity, err := sys.getAvailableQuantity(epoch, voter)
 	if err != nil {
 		return err
 	}
 	if sub := new(big.Int).Sub(quantity, q); sub.Sign() == -1 {
 		return fmt.Errorf("invalid vote stake %v(insufficient) %v < %v", voter, new(big.Int).Mul(quantity, sys.config.unitStake()), new(big.Int).Mul(q, sys.config.unitStake()))
-	} else if err := sys.SetAvailableQuantity(epcho, voter, sub); err != nil {
+	} else if err := sys.SetAvailableQuantity(epoch, voter, sub); err != nil {
 		return err
 	}
 
 	// db
-	voterInfo, err := sys.GetVoter(epcho, voter, candidate)
+	voterInfo, err := sys.GetVoter(epoch, voter, candidate)
 	if err != nil {
 		return err
 	}
 	if voterInfo == nil {
 		voterInfo = &VoterInfo{
-			Epcho:     epcho,
+			Epoch:     epoch,
 			Name:      voter,
 			Candidate: candidate,
 			Quantity:  big.NewInt(0),
@@ -410,11 +411,14 @@ func (sys *System) VoteCandidate(epcho uint64, voter string, candidate string, s
 }
 
 // KickedCandidate kicked
-func (sys *System) KickedCandidate(epcho uint64, candidate string, number uint64) error {
+func (sys *System) KickedCandidate(epoch uint64, candidate string, number uint64) error {
 	// name validity
-	prod, err := sys.GetCandidate(candidate)
+	prod, err := sys.GetCandidate(epoch, candidate)
 	if prod == nil || err != nil {
 		return err
+	}
+	if prod.Type == Black {
+		return nil
 	}
 
 	// db
@@ -427,40 +431,41 @@ func (sys *System) KickedCandidate(epcho uint64, candidate string, number uint64
 		Action: action.NewRPCAction(0),
 	})
 
-	// voters, err := sys.GetVoters(epcho, prod.Name)
+	// voters, err := sys.GetVoters(epoch, prod.Name)
 	// if err != nil {
 	// 	return err
 	// }
 	// for _, voter := range voters {
-	// 	if voterInfo, err := sys.GetVoter(epcho, voter, candidate); err != nil {
+	// 	if voterInfo, err := sys.GetVoter(epoch, voter, candidate); err != nil {
 	// 		return err
 	// 	} else if err := sys.DelVoter(voterInfo); err != nil {
 	// 		return err
-	// 	} else if quantity, err := sys.GetAvailableQuantity(epcho, voter); err != nil {
+	// 	} else if quantity, err := sys.GetAvailableQuantity(epoch, voter); err != nil {
 	// 		return err
-	// 	} else if err := sys.SetAvailableQuantity(epcho, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
+	// 	} else if err := sys.SetAvailableQuantity(epoch, voter, new(big.Int).Add(quantity, voterInfo.Quantity)); err != nil {
 	// 		return err
 	// 	}
 	// }
 
-	prod.TotalQuantity = big.NewInt(0)
-	prod.Number = number
-	prod.Type = Black
-	if err := sys.SetCandidate(prod); err != nil {
-		return err
+	if !prod.invalid() {
+		gstate, err := sys.GetState(epoch)
+		if err != nil {
+			return err
+		}
+		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
+		if err := sys.SetState(gstate); err != nil {
+			return err
+		}
 	}
 
-	gstate, err := sys.GetState(epcho)
-	if err != nil {
-		return err
-	}
-	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	return sys.SetState(gstate)
+	prod.Number = number
+	prod.Type = Black
+	return sys.SetCandidate(prod)
 }
 
 // ExitTakeOver system exit take over
-func (sys *System) ExitTakeOver(epcho uint64) error {
-	gstate, err := sys.GetState(epcho)
+func (sys *System) ExitTakeOver(epoch uint64) error {
+	gstate, err := sys.GetState(epoch)
 	if err != nil {
 		return err
 	}
@@ -468,51 +473,22 @@ func (sys *System) ExitTakeOver(epcho uint64) error {
 	return sys.SetState(gstate)
 }
 
-func (sys *System) onblock(epcho uint64, number uint64) error {
-	pepcho, err := sys.GetLastestEpcho()
-	if err != nil {
-		return err
-	}
-	if pepcho == epcho {
-		return nil
-	}
-
-	if pepcho > epcho {
-		panic(err)
-	}
-
-	pState, err := sys.GetState(pepcho)
-	if err != nil {
-		return err
-	}
-	gstate := &GlobalState{
-		Epcho:                  epcho,
-		PreEpcho:               pepcho,
-		ActivatedTotalQuantity: big.NewInt(0),
-		TotalQuantity:          new(big.Int).SetBytes(pState.TotalQuantity.Bytes()),
-		TakeOver:               pState.TakeOver,
-		Dpos:                   pState.Dpos,
-		Number:                 number,
-	}
-	return sys.SetState(gstate)
-}
-
 // UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number uint64, miner string) error {
-	if pepcho > epcho {
+func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number uint64, miner string) error {
+	if pepoch > epoch {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
-	pstate, err := sys.GetState(pepcho)
+	pstate, err := sys.GetState(pepoch)
 	if err != nil {
 		return err
 	}
 
 	// not is first & no changes
-	if pstate.Epcho != pstate.PreEpcho && pepcho == epcho {
+	if pstate.Epoch != pstate.PreEpoch && pepoch == epoch {
 		return nil
 	}
 
-	candidateInfoArray, err := sys.GetCandidates()
+	candidateInfoArray, err := sys.GetCandidates(pepoch)
 	if err != nil {
 		return err
 	}
@@ -525,11 +501,17 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	ntotalQuantity := big.NewInt(0)
 	candidates := []*CandidateInfo{}
 	for _, candidateInfo := range candidateInfoArray {
-		if pstate.Dpos && strings.Compare(candidateInfo.Name, miner) == 0 {
-			candidateInfo.Counter++
-		}
-		if err := sys.SetCandidateByEpcho(pepcho, candidateInfo); err != nil {
-			return err
+		if pepoch != epoch {
+			// clear vote quantity
+			tcandidateInfo := candidateInfo.copy()
+			tcandidateInfo.Epoch = epoch
+			tcandidateInfo.TotalQuantity = tcandidateInfo.Quantity
+			if !tcandidateInfo.invalid() {
+				ntotalQuantity = new(big.Int).Add(ntotalQuantity, tcandidateInfo.TotalQuantity)
+			}
+			if err := sys.SetCandidate(tcandidateInfo); err != nil {
+				return err
+			}
 		}
 
 		if !candidateInfo.invalid() {
@@ -539,6 +521,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 				}
 			} else if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 				candidates = append(candidates, candidateInfo)
+				continue
 			}
 			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
@@ -547,13 +530,6 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 			totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.TotalQuantity)
 			quantity = new(big.Int).Add(quantity, candidateInfo.Quantity)
 			cnt++
-		}
-
-		// clear vote quantity
-		candidateInfo.TotalQuantity = candidateInfo.Quantity
-		ntotalQuantity = new(big.Int).Add(ntotalQuantity, candidateInfo.TotalQuantity)
-		if err := sys.SetCandidate(candidateInfo); err != nil {
-			return err
 		}
 	}
 
@@ -587,10 +563,10 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 		return err
 	}
 
-	if pepcho != epcho {
+	if pepoch != epoch {
 		gstate := &GlobalState{
-			Epcho:                  epcho,
-			PreEpcho:               pstate.Epcho,
+			Epoch:                  epoch,
+			PreEpoch:               pstate.Epoch,
 			ActivatedTotalQuantity: big.NewInt(0),
 			TotalQuantity:          new(big.Int).SetBytes(ntotalQuantity.Bytes()),
 			OffCandidateNumber:     []uint64{},
@@ -598,7 +574,7 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 			TakeOver:               pstate.TakeOver,
 			Dpos:                   pstate.Dpos,
 		}
-		if err := sys.SetLastestEpcho(epcho); err != nil {
+		if err := sys.SetLastestEpoch(epoch); err != nil {
 			return err
 		}
 		return sys.SetState(gstate)
@@ -606,19 +582,19 @@ func (sys *System) UpdateElectedCandidates(pepcho uint64, epcho uint64, number u
 	return nil
 }
 
-func (sys *System) getAvailableQuantity(epcho uint64, voter string) (*big.Int, error) {
-	q, err := sys.GetAvailableQuantity(epcho, voter)
+func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, error) {
+	q, err := sys.GetAvailableQuantity(epoch, voter)
 	if err != nil {
 		return nil, err
 	}
 	if q == nil {
-		timestamp := sys.config.epochTimeStamp(epcho)
-		gstate, err := sys.GetState(epcho)
+		timestamp := sys.config.epochTimeStamp(epoch)
+		gstate, err := sys.GetState(epoch)
 		if err != nil {
 			return nil, err
 		}
-		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpcho {
-			timestamp = sys.config.epochTimeStamp(gstate.PreEpcho)
+		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
 		}
 		bquantity, err := sys.GetBalanceByTime(voter, timestamp)
 		if err != nil {

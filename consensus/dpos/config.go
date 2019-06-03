@@ -35,8 +35,8 @@ var DefaultConfig = &Config{
 	BlockFrequency:                6,
 	CandidateScheduleSize:         3,
 	BackupScheduleSize:            0,
-	EpchoInterval:                 540000,
-	FreezeEpchoSize:               3,
+	EpochInterval:                 540000,
+	FreezeEpochSize:               3,
 	AccountName:                   "ftsystemdpos",
 	SystemName:                    "ftsystemio",
 	SystemURL:                     "www.fractalproject.com",
@@ -61,8 +61,8 @@ type Config struct {
 	BlockFrequency                uint64   `json:"blockFrequency"`
 	CandidateScheduleSize         uint64   `json:"candidateScheduleSize"`
 	BackupScheduleSize            uint64   `json:"backupScheduleSize"`
-	EpchoInterval                 uint64   `json:"epchoInterval"`
-	FreezeEpchoSize               uint64   `json:"freezeEpchoSize"`
+	EpochInterval                 uint64   `json:"epochInterval"`
+	FreezeEpochSize               uint64   `json:"freezeEpochSize"`
 	AccountName                   string   `json:"accountName"`
 	SystemName                    string   `json:"systemName"`
 	SystemURL                     string   `json:"systemURL"`
@@ -124,7 +124,7 @@ func (cfg *Config) epochInterval() uint64 {
 	if epochInter := cfg.epochInter.Load(); epochInter != nil {
 		return epochInter.(uint64)
 	}
-	epochInter := cfg.EpchoInterval * uint64(time.Millisecond)
+	epochInter := cfg.EpochInterval * uint64(time.Millisecond)
 	cfg.epochInter.Store(epochInter)
 	return epochInter
 }
@@ -157,10 +157,15 @@ func (cfg *Config) epoch(timestamp uint64) uint64 {
 	return (timestamp-cfg.ReferenceTime)/cfg.epochInterval() + 1
 }
 
-func (cfg *Config) epochTimeStamp(epcho uint64) uint64 {
-	return (epcho-1)*cfg.epochInterval() + cfg.ReferenceTime
+func (cfg *Config) epochTimeStamp(epoch uint64) uint64 {
+	return (epoch-1)*cfg.epochInterval() + cfg.ReferenceTime
 }
 
-func (cfg *Config) maxMissing() uint64 {
-	return cfg.epochInterval() / cfg.blockInterval() / cfg.CandidateScheduleSize / 3
+func (cfg *Config) shouldCounter(ftimestamp, ttimestamp uint64) uint64 {
+	ptimestamp := cfg.blockInterval() * cfg.BlockFrequency
+	n := (ftimestamp - cfg.blockInterval()) % cfg.epochInterval() % ptimestamp
+	if ftimestamp+ptimestamp < ttimestamp {
+		return cfg.BlockFrequency - n/cfg.blockInterval()
+	}
+	return (ttimestamp - ftimestamp) / cfg.blockInterval()
 }

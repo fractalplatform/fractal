@@ -1,119 +1,13 @@
-[
-	{
-		"comment": "index0 dpos0001 regcandidate & transfer 0 ft",
-		"type": "regcandidate",
-		"from": "dpos0001",
-		"to": "fractal.dpos",
-		"gas": 30000000,
-		"value": 0,
-		"payload": {
-			"URL": "www.xxxxxx.com"
-		},
-		"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		"succeed": false
-	},
-	{
-		"comment": "index0 dpos0001 regcandidate & transfer 0 ft",
-		"type": "regcandidate",
-		"from": "dpos0001",
-		"to": "fractal.dpos",
-		"gas": 30000000,
-		"value": 1111,
-		"payload": {
-			"URL": "www.xxxxxx.com"
-		},
-		"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-		"succeed": false
-	},
-	{
-	"comment": "index0 dpos0001 regcandidate & transfer 500000 ft",
+[{
+	"comment": "dpos0001 regcandidate & transfer 10000 ft",
 	"type": "regcandidate",
 	"from": "dpos0001",
 	"to": "fractal.dpos",
 	"gas": 30000000,
-	"value": 500000000000000000000000,
+	"value": 10000000000000000000000,
 	"payload": {
-		"URL": "www.xxxxxx.com"
+		"URL": "www.dpos0001.com"
 	},
 	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index1 dpos0002 regcandidate & transfer 1000000 ft",
-	"type": "regcandidate",
-	"from": "dpos0002",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1000000000000000000000000,
-	"payload": {
-		"URL": "www.xxxxxx.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index2 dpos0003 regcandidate & transfer 1500000 ft",
-	"type": "regcandidate",
-	"from": "dpos0003",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 1500000000000000000000000,
-	"payload": {
-		"URL": "www.xxxxxx.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index3 dpos0004 regcandidate & transfer 2000000 ft",
-	"type": "regcandidate",
-	"from": "dpos0004",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 2000000000000000000000000,
-	"payload": {
-		"URL": "www.xxxxxx.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index4 dpos0005 regcandidate & transfer 2500000 ft",
-	"type": "regcandidate",
-	"from": "dpos0005",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 2500000000000000000000000,
-	"payload": {
-		"URL": "www.xxxxxx.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index5 dpos0006 regcandidate & transfer 3000000 ft",
-	"type": "regcandidate",
-	"from": "dpos0006",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 3000000000000000000000000,
-	"payload": {
-		"URL": "www.xxxxxx.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-},
-{
-	"comment": "index6 dpos0007 regcandidate & transfer 3000000 ft",
-	"type": "regcandidate",
-	"from": "dpos0007",
-	"to": "fractal.dpos",
-	"gas": 30000000,
-	"value": 3500000000000000000000000,
-	"payload": {
-		"URL": "www.xxxxxx.com"
-	},
-	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
-    "succeed": true
-}
-]
+	"succeed": true
+}]

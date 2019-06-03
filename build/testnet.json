@@ -34,8 +34,8 @@
 			"blockFrequency": 6,
 			"candidateScheduleSize": 21,
 			"backupScheduleSize": 0,
-			"epchoInterval": 21600000,
-			"freezeEpchoSize": 3,
+			"epochInterval": 21600000,
+			"freezeEpochSize": 3,
 			"extraBlockReward": 1,
 			"blockReward": 5
 		},

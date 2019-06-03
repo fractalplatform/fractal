@@ -122,7 +122,12 @@ func NewByzantiumInstructionSet() [256]operation {
 		valid:         true,
 		returns:       true,
 	}
-
+	instructionSet[RECIPIENT] = operation{
+		execute:       opRecipient,
+		gasCost:       constGasFunc(GasQuickStep),
+		validateStack: makeStackFunc(0, 1),
+		valid:         true,
+	}
 	instructionSet[GETACCOUNTTIME] = operation{
 		execute:       opGetAccountTime,
 		gasCost:       gasGetAccountTime,
