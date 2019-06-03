@@ -260,7 +260,9 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName common.Name, ca
 func (evm *EVM) distributeGasByScale(actualUsedGas uint64, runGas uint64) {
 	if evm.depth == 0 && actualUsedGas != runGas {
 		for key, gas := range evm.FounderGasMap {
-			v := DistributeGas{int64((float64(gas.Value) / float64(runGas)) * float64(actualUsedGas)), gas.TypeID}
+			mulGas := new(big.Int).Mul(big.NewInt(gas.Value), big.NewInt(int64(actualUsedGas)))
+			divgas := new(big.Int).Div(mulGas, big.NewInt(int64(runGas)))
+			v := DistributeGas{divgas.Int64(), gas.TypeID}
 			evm.FounderGasMap[key] = v
 		}
 	}
