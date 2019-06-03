@@ -197,24 +197,20 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	parent := chain.GetHeaderByHash(header.ParentHash)
 	pepoch := dpos.config.epoch(parent.Time.Uint64())
 	epoch := dpos.config.epoch(header.Time.Uint64())
-	if header.Number.Uint64() != 1 {
-		candidate, err := sys.GetCandidate(pepoch, header.Coinbase.String())
-		if err != nil {
-			return err
-		}
-		if pepoch != epoch {
-			candidate.Counter++
-		}
+	candidate, err := sys.GetCandidate(pepoch, header.Coinbase.String())
+	if err != nil {
+		return err
+	}
+	if candidate != nil {
 		candidate.ActualCounter++
 		if err := sys.SetCandidate(candidate); err != nil {
 			return err
 		}
 	}
-
 	if pepoch != epoch {
 		timestamp := parent.Time.Uint64() + dpos.config.blockInterval()
 		if timestamp < header.Time.Uint64() && parent.Number.Uint64() > 0 {
-			etimestamp := sys.config.epochTimeStamp(pepoch + 1)
+			etimestamp := sys.config.epochTimeStamp(pepoch+1) + sys.config.blockInterval()
 			if header.Time.Uint64() < etimestamp {
 				etimestamp = header.Time.Uint64()
 			}
@@ -259,18 +255,6 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 		log.Debug("UpdateElectedCandidates", "prev", pepoch, "curr", epoch, "number", parent.Number.Uint64(), "time", parent.Time.Uint64())
 		sys.UpdateElectedCandidates(pepoch, epoch, parent.Number.Uint64(), header.Coinbase.String())
 	}
-	if header.Number.Uint64() == 1 {
-		candidate, err := sys.GetCandidate(epoch, header.Coinbase.String())
-		if err != nil {
-			return err
-		}
-		if candidate != nil {
-			candidate.ActualCounter++
-			if err := sys.SetCandidate(candidate); err != nil {
-				return err
-			}
-		}
-	}
 	return nil
 }
 
@@ -298,7 +282,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 
 	coffset := dpos.config.getoffset(header.Time.Uint64())
 	poffset := dpos.config.getoffset(parent.Time.Uint64())
-	etimestamp := sys.config.epochTimeStamp(latest.Epoch + 1)
+	etimestamp := sys.config.epochTimeStamp(latest.Epoch+1) + sys.config.blockInterval()
 	candidate, err := sys.GetCandidate(latest.Epoch, header.Coinbase.String())
 	if err != nil {
 		return nil, err
@@ -315,7 +299,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			}
 
 			epoch := latest.Epoch
-			timestamp := dpos.config.epochTimeStamp(epoch)
+			timestamp := dpos.config.epochTimeStamp(epoch) + sys.config.blockInterval()
 			if timestamp < parent.Time.Uint64() {
 				timestamp = parent.Time.Uint64()
 			}
