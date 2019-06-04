@@ -234,7 +234,7 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 		txSend := 0
 		tx := txObj.Tx
 		s.cache.ttlCheck(tx)
-		var skipedPeers map[string]*peerInfo
+		skipedPeers := make(map[string]*peerInfo, len(s.peers))
 		for name, peerInfo := range s.peers {
 			if txSend > 3 {
 				break
