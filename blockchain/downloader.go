@@ -408,7 +408,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	}
 	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor+1, status.errCh)
 	if err != nil {
-		log.Debug(fmt.Sprint("ancestor err", err))
+		log.Warn("ancestor err", "err", err)
 		return false
 	}
 	downloadStart := ancestor + 1
@@ -468,7 +468,12 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	status.ancestor = n
 	if err != nil {
 		log.Warn("Insert error:", "number:", n, "error", err)
-		router.AddErr(status.station, uint64(numbers[len(numbers)-1]-n))
+		failedNum := numbers[len(numbers)-1] - n
+		router.AddErr(status.station, failedNum)
+		if failedNum > 32 {
+			log.Warn("Disconnect because Insert error:", "station:", fmt.Sprintf("%x", status.station.Name()), "failedNum", failedNum)
+			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
+		}
 	}
 
 	head = dl.blockchain.CurrentBlock()
@@ -515,7 +520,7 @@ func (dl *Downloader) loop() {
 }
 
 func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64) (uint64, error) {
-	log.Debug(fmt.Sprint("assingDownloadTask:", len(hashes), len(numbers), numbers))
+	log.Debug("assingDownloadTask:", "hashesLen", len(hashes), "numbersLen", len(numbers), "numbers", numbers)
 	workers := &simpleHeap{cmp: dl.remotes.cmp}
 	dl.remotesMutex.RLock()
 	workers.data = append(workers.data, dl.remotes.data...)
@@ -603,14 +608,18 @@ type downloadTask struct {
 }
 
 func (task *downloadTask) Do() {
+	latestStatus := task.worker.getStatus()
 	defer func() {
-		task.errorTotal++
 		task.result <- task
-		if len(task.blocks) == 0 {
+		diff := latestStatus.Number - task.endNumber
+		if latestStatus.Number < task.endNumber {
+			diff = task.endNumber - latestStatus.Number
+		}
+		if len(task.blocks) == 0 && diff > 16 {
+			task.errorTotal++
 			router.AddErr(task.worker.station, 1)
 		}
 	}()
-	latestStatus := task.worker.getStatus()
 	if latestStatus.Number < task.endNumber {
 		return
 	}
