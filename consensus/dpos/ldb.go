@@ -397,8 +397,8 @@ func (db *LDB) GetState(epoch uint64) (*GlobalState, error) {
 }
 
 // GetCandidateInfoByTime candidate info
-func (db *LDB) GetCandidateInfoByTime(candidate string, timestamp uint64) (*CandidateInfo, error) {
-	key := strings.Join([]string{CandidateKeyPrefix, candidate}, Separator)
+func (db *LDB) GetCandidateInfoByTime(epoch uint64, candidate string, timestamp uint64) (*CandidateInfo, error) {
+	key := strings.Join([]string{CandidateKeyPrefix, fmt.Sprintf("0x%x_%s", epoch, candidate)}, Separator)
 	val, err := db.GetSnapshot(key, timestamp)
 	if err != nil || val == nil {
 		return nil, err
