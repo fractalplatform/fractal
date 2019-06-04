@@ -1,10 +1,16 @@
 ### Changed
-- [VM] change withdraw type to transfer
+- [MAKEFILE] fixed bug of target build_workspace
+- [ACCOUNT] account author lenght should not exceed 10
+- [VM] modify gas distribution
 ### Add
-- [P2P] add flow control,some quit channel
-- [P2p] periodic remove the worst peer if peer connections is full, but default is disabled.
-- [RPC] add dpos rpc api for info by epcho
+- [DPOS] add min available quantity of candidate for vote 
+- [CMD] add read yaml and toml test 
+- [SDK] add sdk contract test
+- [TYPES] support parentIndex when sign
+- [TXPOOL] add txpool resend pending txs
 ### Fixed
-- [DPOS] fix bug when dpos started
+- [P2P] broadcast txs to atleast 3 peers 
+- [BLOCKCHAIN] downloader disconnected peers which has to much wrong blocks
+- [DPOS] fix calc should counter of candidate
 - [ALL] fixs some bugs
 
