@@ -122,7 +122,7 @@ func SetAccountNameConfig(config *Config) bool {
 	}
 
 	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{%v,%v})", config.MainAccountNameMinLength-1, config.MainAccountNameMaxLength-1)
-	for i := 0; i < int(config.AccountNameLevel); i++ {
+	for i := 1; i < int(config.AccountNameLevel); i++ {
 		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{%v,%v})){0,1}", config.SubAccountNameMinLength, config.SubAccountNameMaxLength)
 	}
 

@@ -26,16 +26,4 @@ type Config struct {
 	SubAssetNameMaxLength  uint64 `json:"subAssetNameMaxLength"`
 }
 
-// DefaultAssetNameConf return asset config
-func DefaultAssetNameConf() *Config {
-	return &Config{
-		AssetNameLevel:         1,
-		AssetNameLength:        31,
-		MainAssetNameMinLength: 2,
-		MainAssetNameMaxLength: 16,
-		SubAssetNameMinLength:  1,
-		SubAssetNameMaxLength:  8,
-	}
-}
-
 const MaxDescriptionLength uint64 = 255
