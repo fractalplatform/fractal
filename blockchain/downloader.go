@@ -74,7 +74,7 @@ type Downloader struct {
 	subs        []router.Subscription
 }
 
-// NewDownloader .
+// NewDownloader create a new downloader
 func NewDownloader(chain *BlockChain) *Downloader {
 	dl := &Downloader{
 		station:    router.NewLocalStation("downloader", nil),
@@ -95,10 +95,15 @@ func NewDownloader(chain *BlockChain) *Downloader {
 	return dl
 }
 
+// Stop stop the downloader
 func (dl *Downloader) Stop() {
 	close(dl.quit)
 	for _, sub := range dl.subs {
 		sub.Unsubscribe()
+	}
+	for _, v := range dl.remotes.data {
+		status := v.(*stationStatus)
+		close(status.errCh)
 	}
 	dl.loopWG.Wait()
 }
