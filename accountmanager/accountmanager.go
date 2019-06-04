@@ -265,7 +265,7 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 		}
 	}
 	//check name valid
-	if !accountName.IsValid(acctRegExp) {
+	if !accountName.IsValid(acctRegExp, accountNameLength) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
 	//check is exist
