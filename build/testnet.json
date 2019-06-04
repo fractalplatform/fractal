@@ -1,7 +1,7 @@
 {
 	"config": {
-		"bootnodes": ["fnode://1eff962a4db4f6d15e2361eafdcbd8ae448c9d9327334f8bc0a7026f3c6d123a20c240ab19fe8ffda5c0da10ede7171eff257961a35ef6bdff0441c6b9b875f6@boot.fractalproject.com:30000","fnode://e6fee5646cb00b6cb7f9a7741af7280a63712f8b60ad1edef5f0d3e8d9e7708869be44b8c4981d35f94c260708f992f5a58e93a8e40abdb1ec6d08f91da136fc@boot.fractalproject.com:30001"],
-		"chainId": 45,
+		"bootnodes": ["fnode://7f06dd5bf47453e153272ff32e45c110c050ae43481e0b684cb7aac240bfeb80c92592b3afc133fcdb37a16356cb5d0ded5ff973fbb0dc8d6dda9962da1ba861@boot.t.ft.im:30000","fnode://cb49ad1ea7fd8e351603404394eb568a0c163195be4faf5730d609bf939fefb2105dec9e54828ade3623a92614c9d8a14a98030d2d2b7edd63896b36c6a42a5f@boot.t.ft.im:30001"],
+		"chainId": 100,
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
 		"accountParams": {
@@ -30,20 +30,20 @@
 		},
 		"dposParams": {
 			"maxURLLen": 512,
-			"unitStake": 1000,
-			"candidateAvailableMinQuantity": 10,
-			"candidateMinQuantity": 10,
+			"unitStake": 1,
+			"candidateAvailableMinQuantity": 3000000,
+			"candidateMinQuantity": 500000,
 			"voterMinQuantity": 1,
-			"activatedMinCandidate": 3,
-			"activatedMinQuantity": 100,
+			"activatedMinCandidate": 28,
+			"activatedMinQuantity": 1350000000,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
 			"candidateScheduleSize": 21,
-			"backupScheduleSize": 0,
-			"epochInterval": 21600000,
-			"freezeEpochSize": 3,
-			"extraBlockReward": 1,
-			"blockReward": 5
+			"backupScheduleSize": 7,
+			"epochInterval": 604800000,
+			"freezeEpochSize": 2,
+			"extraBlockReward": 0,
+			"blockReward": 0
 		},
 		"snapshotInterval": 3600000,
 		"systemName": "fractal.admin",
@@ -55,11 +55,11 @@
 	},
 	"timestamp": 1555776000000,
 	"gasLimit": 30000000,
-	"difficulty": 131072,
+	"difficulty": 1,
 	"allocAccounts": [{
 		"name": "fractal.admin",
 		"founder": "fractal.admin",
-		"pubKey": "0x04474da0e3024d2089888dd60b7cdd79784725c4074f207b09dd7caa63a5b6ceb226b7141f4720c921003b54be581c84a05072c2d4752a1f5fae698684753424c5"
+		"pubKey": "0x045f8f01767c4467921591bdf18f18e851fa34d17cefe9ea02b06859b6b9f13053f5250a1a7da28b7b702b5bec3706be4c32731ba784a3bf2258e698ec6d14d63d"
 	}, {
 		"name": "fractal.account",
 		"founder": "fractal.admin",
