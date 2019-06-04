@@ -261,10 +261,10 @@ func TestTransactionChainFork(t *testing.T) {
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 		newmanager, _ := am.NewAccountManager(statedb)
 
-		if err := newmanager.CreateAccount(fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
+		if err := newmanager.CreateAccount(common.Name("fractal"), fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
+		if err := newmanager.CreateAccount(common.Name("fractal"), tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
 		asset := asset.NewAsset(statedb)
@@ -307,10 +307,10 @@ func TestTransactionDoubleNonce(t *testing.T) {
 		statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 		newmanager, _ := am.NewAccountManager(statedb)
 
-		if err := newmanager.CreateAccount(fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
+		if err := newmanager.CreateAccount(common.Name("fractal"), fname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
+		if err := newmanager.CreateAccount(common.Name("fractal"), tname, common.Name(""), 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
 		asset := asset.NewAsset(statedb)
