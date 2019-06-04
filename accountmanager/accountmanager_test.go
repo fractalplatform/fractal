@@ -62,7 +62,7 @@ func getAccountManager() *AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, *pubkey, "")
+	am.CreateAccount(common.Name("fractal.admin"), common.Name("systestname"), common.Name(""), 0, *pubkey, "")
 	return am
 }
 
@@ -91,7 +91,7 @@ func TestSDB(t *testing.T) {
 
 }
 func TestNN(t *testing.T) {
-	if err := acctm.CreateAccount(common.Name("a123asdf2"), common.Name(""), 0, *new(common.PubKey), ""); err != nil {
+	if err := acctm.CreateAccount(common.Name("fractal.admin"), common.Name("a123asdf2"), common.Name(""), 0, *new(common.PubKey), ""); err != nil {
 		t.Errorf("err create account\n")
 	}
 	_, err := acctm.GetAccountBalanceByID(common.Name("a123asdf2"), 1, 0)
@@ -145,6 +145,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 
 	pubkey3, _ := GeneragePubKey()
 	type args struct {
+		fromName    common.Name
 		accountName common.Name
 		founderName common.Name
 		pubkey      common.PubKey
@@ -156,20 +157,26 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"createAccount", fields{sdb, ast}, args{common.Name("a111222332a"), common.Name(""), pubkey3}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeee"), common.Name(""), *pubkey2}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("a123456789aeed"), common.Name(""), *pubkey}, false},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("a123456789aeeefgp"), common.Name(""), *pubkey}, true},
-		{"creategensisAccount", fields{sdb, ast}, args{common.Name("fractal.account"), common.Name(""), *pubkey}, false},
-		{"creategensisAccount", fields{sdb, ast}, args{common.Name("fractal.asset"), common.Name(""), *pubkey}, false},
+		{"createAccount", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("a111222332a"), common.Name(""), pubkey3}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("a123456789aeee"), common.Name(""), *pubkey2}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("a123456789aeed"), common.Name(""), *pubkey}, false},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("a123456789aeeefgp"), common.Name(""), *pubkey}, true},
+		{"creategensisAccount", fields{sdb, ast}, args{common.Name("fractal"), common.Name("fractal.account"), common.Name(""), *pubkey}, false},
+		{"creategensisAccount1", fields{sdb, ast}, args{common.Name("fractal"), common.Name("fractal.asset"), common.Name(""), *pubkey}, false},
+		{"createinvalidAccount0", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("\ttesttestf1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount1", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("testtestf1.."), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount2", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("fractal.account"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount3", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("fractal.admin.1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount4", fields{sdb, ast}, args{common.Name("fractal.admin"), common.Name("fractal.admin.12"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount5", fields{sdb, ast}, args{common.Name("fractal"), common.Name("fractal.admin1234"), common.Name(""), *pubkey}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.CreateAccount(tt.args.accountName, tt.args.founderName, 0, tt.args.pubkey, ""); (err != nil) != tt.wantErr {
+		if err := am.CreateAccount(tt.args.fromName, tt.args.accountName, tt.args.founderName, 0, tt.args.pubkey, ""); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -178,7 +185,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	err := am1.CreateAccount(common.Name("aaaadddd"), common.Name("a111222332a"), 0, *pubkey, "")
+	err := am1.CreateAccount(common.Name("fractal.admin"), common.Name("aaaadddd"), common.Name("a111222332a"), 0, *pubkey, "")
 	if err != nil {
 		t.Errorf("create acct err:%v", err)
 	}
@@ -320,7 +327,7 @@ func TestAccountManager_SetAccount(t *testing.T) {
 		acct *Account
 	}
 	pubkey2 := new(common.PubKey)
-	acctm.CreateAccount(common.Name("a123456789"), common.Name(""), 0, *pubkey2, "")
+	acctm.CreateAccount(common.Name("fractal.admin"), common.Name("a123456789"), common.Name(""), 0, *pubkey2, "")
 	ac, _ := acctm.GetAccountByName(common.Name("a123456789"))
 
 	tests := []struct {
@@ -1116,7 +1123,7 @@ func TestAccountManager_GetCode(t *testing.T) {
 	}
 	pubkey2 := new(common.PubKey)
 	acct, _ := acctm.GetAccountByName(common.Name("a123456789aeee"))
-	acctm.CreateAccount(common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, *pubkey2, "")
+	acctm.CreateAccount(common.Name("fractal.admin"), common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, *pubkey2, "")
 	acct.SetCode([]byte("abcde123456789"))
 	acctm.SetAccount(acct)
 	//t.Logf("EnoughAccountBalance asset id=%v : val=%v\n", 1, val)

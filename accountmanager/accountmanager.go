@@ -242,23 +242,15 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-//CreateAnyAccount include create sub account
-func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
+//CreateAccount create account
+func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
+	//check parent
 	if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
 		if !fromName.IsChildren(accountName, acctRegExp) {
 			return ErrAccountInvaid
 		}
 	}
-
-	if err := am.CreateAccount(accountName, founderName, number, pubkey, detail); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-//CreateAccount create account
-func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
+	//check name valid
 	if !accountName.IsValid(acctRegExp) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
@@ -1288,7 +1280,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.CreateAnyAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Description); err != nil {
+		if err := am.CreateAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Description); err != nil {
 			return nil, err
 		}
 
