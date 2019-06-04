@@ -180,7 +180,6 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 			t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
-
 	am1 := &AccountManager{
 		sdb: sdb,
 		ast: ast,
