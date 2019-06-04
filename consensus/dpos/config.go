@@ -162,9 +162,8 @@ func (cfg *Config) epochTimeStamp(epoch uint64) uint64 {
 }
 
 func (cfg *Config) shouldCounter(ftimestamp, ttimestamp uint64) uint64 {
-	ptimestamp := cfg.blockInterval() * cfg.BlockFrequency
-	n := (ftimestamp - cfg.blockInterval()) % cfg.epochInterval() % ptimestamp
-	if ftimestamp+ptimestamp < ttimestamp {
+	if ptimestamp := cfg.blockInterval() * cfg.BlockFrequency; ftimestamp+ptimestamp < ttimestamp {
+		n := (ftimestamp - cfg.blockInterval()) % cfg.epochInterval() % ptimestamp
 		return cfg.BlockFrequency - n/cfg.blockInterval()
 	}
 	return (ttimestamp - ftimestamp) / cfg.blockInterval()

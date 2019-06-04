@@ -50,9 +50,12 @@ type ChargeConfig struct {
 }
 
 type NameConfig struct {
-	Level     uint64 `json:"level"`
-	Length    uint64 `json:"length"`
-	SubLength uint64 `json:"subLength"`
+	Level         uint64 `json:"level"`
+	AllLength     uint64 `json:"alllength"`
+	MainMinLength uint64 `json:"mainminlength"`
+	MainMaxLength uint64 `json:"mainmaxlength"`
+	SubMinLength  uint64 `json:"subminLength"`
+	SubMaxLength  uint64 `json:"submaxLength"`
 }
 
 type FrokedConfig struct {
@@ -84,14 +87,20 @@ var DefaultChainconfig = &ChainConfig{
 	ChainName: "fractal",
 	ChainURL:  "https://fractalproject.com",
 	AccountNameCfg: &NameConfig{
-		Level:     0,
-		Length:    16,
-		SubLength: 8,
+		Level:         1,
+		AllLength:     31,
+		MainMinLength: 7,
+		MainMaxLength: 16,
+		SubMinLength:  2,
+		SubMaxLength:  8,
 	},
 	AssetNameCfg: &NameConfig{
-		Level:     1,
-		Length:    16,
-		SubLength: 8,
+		Level:         2,
+		AllLength:     31,
+		MainMinLength: 2,
+		MainMaxLength: 16,
+		SubMinLength:  1,
+		SubMaxLength:  8,
 	},
 	ChargeCfg: &ChargeConfig{
 		AssetRatio:    80,
