@@ -146,9 +146,9 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		}
 		router.AddNetIn(station, 1)
 		if checkDDOS(monitor, e) {
-			router.SendTo(nil, nil, router.OneMinuteLimited, e.From)
-			log.Warn("DDos defense", "peer", remote.peer.String(), "typecode", e.Typecode, "count", monitor[e.Typecode][1])
-			return p2p.DiscDDOS
+			//router.SendTo(nil, nil, router.OneMinuteLimited, e.From)
+			log.Warn("DDos defense -", "peer", remote.peer.String(), "typecode", e.Typecode, "count", monitor[e.Typecode][1])
+			//return p2p.DiscDDOS
 		}
 		router.SendEvent(e)
 	}
