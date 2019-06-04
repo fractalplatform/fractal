@@ -26,16 +26,4 @@ type Config struct {
 	SubAccountNameMaxLength  uint64 `json:"subAccountNameMaxLength"`
 }
 
-// DefaultAccountNameConf return account config
-func DefaultAccountNameConf() *Config {
-	return &Config{
-		AccountNameLevel:         0,
-		AccountNameMaxLength:     31,
-		MainAccountNameMinLength: 7,
-		MainAccountNameMaxLength: 16,
-		SubAccountNameMinLength:  2,
-		SubAccountNameMaxLength:  0,
-	}
-}
-
 const MaxDescriptionLength uint64 = 255
