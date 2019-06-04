@@ -63,14 +63,6 @@ Operating a private network see:[Private Network](https://github.com/fractalplat
 
 [Fractal Official Website](https://fractalproject.com/)
 
-[白皮书](https://fractalproject.com/fractal-technical-whitepaper.pdf)
-
-[技术白皮书](https://fractalproject.com/fractal-technical-whitepaper.pdf)
-
-[White Paper](https://fractalproject.com/fractal-technical-whitepaper-en.pdf)
-
-[Technical White Paper](https://fractalproject.com/fractal-technical-whitepaper-en.pdf)
-
 [Fractal Blog](https://fractalproject.com/blog.html)
 
 
