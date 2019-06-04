@@ -35,6 +35,7 @@ import (
 
 var (
 	acctRegExp          = regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
+	accountNameLength   = uint64(31)
 	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
 	accountNameIDPrefix = "accountNameId"
@@ -112,9 +113,17 @@ type AccountManager struct {
 }
 
 func SetAccountNameConfig(config *Config) bool {
-	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{6,%v})", config.AccountNameLength-1)
+	if config.AccountNameLevel < 1 || config.AccountNameMaxLength < config.MainAccountNameMinLength || config.MainAccountNameMinLength >= config.MainAccountNameMaxLength {
+		panic("account name level config error 1")
+	}
+
+	if config.AccountNameLevel > 1 && (config.SubAccountNameMinLength < 1 || config.SubAccountNameMinLength >= config.SubAccountNameMaxLength) {
+		panic("account name level config error 2")
+	}
+
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{%v,%v})", config.MainAccountNameMinLength-1, config.MainAccountNameMaxLength-1)
 	for i := 0; i < int(config.AccountNameLevel); i++ {
-		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{1,%v})){0,1}", config.SubAccountNameLength)
+		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{%v,%v})){0,1}", config.SubAccountNameMinLength, config.SubAccountNameMaxLength)
 	}
 
 	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
@@ -122,10 +131,15 @@ func SetAccountNameConfig(config *Config) bool {
 		panic(err)
 	}
 	acctRegExp = regexp
+	accountNameLength = config.AccountNameMaxLength
 	return true
 }
 func GetAcountNameRegExp() *regexp.Regexp {
 	return acctRegExp
+}
+
+func GetAcountNameLength() uint64 {
+	return accountNameLength
 }
 
 //SetAcctMangerName  set the global account manager name
@@ -245,7 +259,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 //CreateAnyAccount include create sub account
 func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
 	if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
-		if !fromName.IsChildren(accountName, acctRegExp) {
+		if !fromName.IsChildren(accountName, acctRegExp, accountNameLength) {
 			return ErrAccountInvaid
 		}
 	}
@@ -259,7 +273,7 @@ func (am *AccountManager) CreateAnyAccount(fromName common.Name, accountName com
 
 //CreateAccount create account
 func (am *AccountManager) CreateAccount(accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
-	if !accountName.IsValid(acctRegExp) {
+	if !accountName.IsValid(acctRegExp, accountNameLength) {
 		return fmt.Errorf("account %s is invalid", accountName.String())
 	}
 	//check is exist
@@ -744,7 +758,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 			return nil, err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
 			ba[id] = balance
 		}
 	}
@@ -777,7 +791,7 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 			return big.NewInt(0), err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
 			ba = ba.Add(ba, balance)
 		}
 	}
@@ -1213,7 +1227,7 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 
 	// check asset contract
 	if len(asset.Contract) > 0 {
-		if !asset.Contract.IsValid(acctRegExp) {
+		if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
 			return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
 		}
 		f, err := am.GetAccountByName(asset.Contract)
@@ -1341,12 +1355,15 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.AddAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), assetID, issueAsset.Amount); err != nil {
 			return nil, err
 		}
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), 0, assetID, 0, issueAsset.Amount, nil, nil)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 
 		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, assetID, issueAsset.Amount, fromAccountExtra...); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, 0, assetID, 0, issueAsset.Amount, nil, nil)
-		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		actionX = types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), issueAsset.Owner, 0, assetID, 0, issueAsset.Amount, nil, nil)
+		internalAction = &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 	case types.IncreaseAsset:
 		var inc IncAsset
@@ -1366,20 +1383,18 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 		if err := am.AddAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), inc.AssetId, inc.Amount); err != nil {
 			return nil, err
 		}
+		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.ChainName), common.Name(accountManagerContext.ChainConfig.AssetName), 0, inc.AssetId, 0, inc.Amount, nil, nil)
+		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		internalActions = append(internalActions, internalAction)
 
 		fromAccountExtra = append(fromAccountExtra, action.Sender())
 		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, inc.AssetId, inc.Amount, fromAccountExtra...); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
-		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
+		actionX = types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
+		internalAction = &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 	case types.DestroyAsset:
-		// var asset asset.AssetObject
-		// err := rlp.DecodeBytes(action.Data(), &asset)
-		// if err != nil {
-		// 	return err
-		// }
 		if err := am.SubAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), action.AssetID(), action.Value()); err != nil {
 			return nil, err
 		}

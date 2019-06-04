@@ -18,17 +18,23 @@ package accountmanager
 
 // Config Account Level
 type Config struct {
-	AccountNameLevel     uint64 `json:"accountNameLevel"`
-	AccountNameLength    uint64 `json:"accountNameLength"`
-	SubAccountNameLength uint64 `json:"subAccountNameLength"`
+	AccountNameLevel         uint64 `json:"accountNameLevel"`
+	AccountNameMaxLength     uint64 `json:"accountNameMaxLength"`
+	MainAccountNameMinLength uint64 `json:"mainAccountNameMinLength"`
+	MainAccountNameMaxLength uint64 `json:"mainAccountNameMaxLength"`
+	SubAccountNameMinLength  uint64 `json:"subAccountNameMinLength"`
+	SubAccountNameMaxLength  uint64 `json:"subAccountNameMaxLength"`
 }
 
 // DefaultAccountNameConf return account config
 func DefaultAccountNameConf() *Config {
 	return &Config{
-		AccountNameLevel:     0,
-		AccountNameLength:    16,
-		SubAccountNameLength: 0,
+		AccountNameLevel:         0,
+		AccountNameMaxLength:     31,
+		MainAccountNameMinLength: 7,
+		MainAccountNameMaxLength: 16,
+		SubAccountNameMinLength:  2,
+		SubAccountNameMaxLength:  0,
 	}
 }
 

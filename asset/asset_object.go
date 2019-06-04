@@ -52,10 +52,10 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 			return nil, ErrNewAssetObject
 		}
 	}
-	if !common.StrToName(assetName).IsValid(assetRegExp) {
+	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
 		return nil, ErrNewAssetObject
 	}
-	if !common.StrToName(symbol).IsValid(assetRegExp) {
+	if !common.StrToName(symbol).IsValid(assetRegExp, assetNameLength) {
 		return nil, ErrNewAssetObject
 	}
 	if uint64(len(description)) > MaxDescriptionLength {

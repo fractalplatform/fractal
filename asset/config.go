@@ -18,17 +18,23 @@ package asset
 
 // Config Asset name level
 type Config struct {
-	AssetNameLevel     uint64 `json:"assetNameLevel"`
-	AssetNameLength    uint64 `json:"assetNameLength"`
-	SubAssetNameLength uint64 `json:"subAssetNameLength"`
+	AssetNameLevel         uint64 `json:"assetNameLevel"`
+	AssetNameLength        uint64 `json:"assetNameLength"`
+	MainAssetNameMinLength uint64 `json:"mainAssetNameMinLength"`
+	MainAssetNameMaxLength uint64 `json:"mainAssetNameMaxLength"`
+	SubAssetNameMinLength  uint64 `json:"subAssetNameMinLength"`
+	SubAssetNameMaxLength  uint64 `json:"subAssetNameMaxLength"`
 }
 
 // DefaultAssetNameConf return asset config
 func DefaultAssetNameConf() *Config {
 	return &Config{
-		AssetNameLevel:     0,
-		AssetNameLength:    16,
-		SubAssetNameLength: 0,
+		AssetNameLevel:         1,
+		AssetNameLength:        31,
+		MainAssetNameMinLength: 2,
+		MainAssetNameMaxLength: 16,
+		SubAssetNameMinLength:  1,
+		SubAssetNameMaxLength:  8,
 	}
 }
 

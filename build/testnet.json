@@ -5,14 +5,20 @@
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
 		"accountParams": {
-			"level": 0,
-			"length": 16,
-			"subLength": 8
+			"level": 3,
+			"alllength":31,
+			"mainminlength": 7,
+			"mainmaxlength": 16,
+			"subminlength":2,
+			"submaxlength":16
 		},
 		"assetParams": {
-			"level": 2,
-			"length": 16,
-			"subLength": 8
+			"level": 3,
+			"alllength":31,
+			"mainminlength": 2,
+			"mainmaxlength": 16,
+			"subminlength":1,
+			"submaxlength":8
 		},
 		"chargeParams": {
 			"assetRatio": 80,

@@ -151,14 +151,20 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		return newcfg, dposConfig(newcfg), common.Hash{}, errors.New("Found genesis block without chain config")
 	}
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     storedcfg.AccountNameCfg.Level,
-		AccountNameLength:    storedcfg.AccountNameCfg.Length,
-		SubAccountNameLength: storedcfg.AccountNameCfg.SubLength,
+		AccountNameLevel:         storedcfg.AccountNameCfg.Level,
+		AccountNameMaxLength:     storedcfg.AccountNameCfg.AllLength,
+		MainAccountNameMinLength: storedcfg.AccountNameCfg.MainMinLength,
+		MainAccountNameMaxLength: storedcfg.AccountNameCfg.MainMaxLength,
+		SubAccountNameMinLength:  storedcfg.AccountNameCfg.SubMinLength,
+		SubAccountNameMaxLength:  storedcfg.AccountNameCfg.SubMaxLength,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLength:    storedcfg.AssetNameCfg.Length,
-		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
-		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
+		AssetNameLevel:         storedcfg.AssetNameCfg.Level,
+		AssetNameLength:        storedcfg.AssetNameCfg.AllLength,
+		MainAssetNameMinLength: storedcfg.AssetNameCfg.MainMinLength,
+		MainAssetNameMaxLength: storedcfg.AssetNameCfg.MainMaxLength,
+		SubAssetNameMinLength:  storedcfg.AssetNameCfg.SubMinLength,
+		SubAssetNameMaxLength:  storedcfg.AssetNameCfg.SubMaxLength,
 	})
 	am.SetAcctMangerName(common.StrToName(storedcfg.AccountName))
 	at.SetAssetMangerName(common.StrToName(storedcfg.AssetName))
@@ -175,14 +181,20 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	detailTx := &types.DetailTx{}
 	var internals []*types.DetailAction
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     1,
-		AccountNameLength:    16,
-		SubAccountNameLength: 8,
+		AccountNameLevel:         2,
+		AccountNameMaxLength:     31,
+		MainAccountNameMinLength: 7,
+		MainAccountNameMaxLength: 16,
+		SubAccountNameMinLength:  2,
+		SubAccountNameMaxLength:  16,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:     1,
-		AssetNameLength:    16,
-		SubAssetNameLength: 8,
+		AssetNameLevel:         2,
+		AssetNameLength:        31,
+		MainAssetNameMinLength: 2,
+		MainAssetNameMaxLength: 16,
+		SubAssetNameMinLength:  1,
+		SubAssetNameMaxLength:  8,
 	})
 	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
 	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
@@ -318,14 +330,20 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     g.Config.AccountNameCfg.Level,
-		AccountNameLength:    g.Config.AccountNameCfg.Length,
-		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+		AccountNameLevel:         g.Config.AccountNameCfg.Level,
+		AccountNameMaxLength:     g.Config.AccountNameCfg.AllLength,
+		MainAccountNameMinLength: g.Config.AccountNameCfg.MainMinLength,
+		MainAccountNameMaxLength: g.Config.AccountNameCfg.MainMaxLength,
+		SubAccountNameMinLength:  g.Config.AccountNameCfg.SubMinLength,
+		SubAccountNameMaxLength:  g.Config.AccountNameCfg.SubMaxLength,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLength:    g.Config.AssetNameCfg.Length,
-		AssetNameLevel:     g.Config.AssetNameCfg.Level,
-		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+		AssetNameLevel:         g.Config.AssetNameCfg.Level,
+		AssetNameLength:        g.Config.AssetNameCfg.AllLength,
+		MainAssetNameMinLength: g.Config.AssetNameCfg.MainMinLength,
+		MainAssetNameMaxLength: g.Config.AssetNameCfg.MainMaxLength,
+		SubAssetNameMinLength:  g.Config.AssetNameCfg.SubMinLength,
+		SubAssetNameMaxLength:  g.Config.AssetNameCfg.SubMaxLength,
 	})
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
 		panic(fmt.Sprintf("system is not exist %v", err))
