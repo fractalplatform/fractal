@@ -347,6 +347,14 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("ftservice.txpool.lifetime", flags.Lookup("txpool_lifetime"))
 
+	flags.DurationVar(
+		&ftCfgInstance.FtServiceCfg.TxPool.ResendTime,
+		"txpool_resendtime",
+		ftCfgInstance.FtServiceCfg.TxPool.ResendTime,
+		"Maximum amount of time  executable transaction are resended",
+	)
+	viper.BindPFlag("ftservice.txpool.resendtime", flags.Lookup("txpool_resendtime"))
+
 	// miner
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.Miner.Start,

@@ -126,7 +126,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			ChainContext:  p.bc,
 			EngineContext: p.engine,
 		}
-		context := NewEVMContext(action.Sender(), assetID, tx.GasPrice(), header, evmcontext, author)
+		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)
 
 		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, assetID, config, p.engine)

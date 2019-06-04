@@ -17,22 +17,26 @@
 package sdk
 
 import (
+	"bytes"
 	"crypto/ecdsa"
+	"fmt"
+	"io/ioutil"
 	"math"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/utils/abi"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
-	timeout = int64(time.Second) * 10
+	timeout = int64(time.Second) * 7
 )
 
 // Account account object
@@ -83,11 +87,12 @@ func (acc *Account) CreateAccount(to common.Name, value *big.Int, id uint64, gas
 	action := types.NewAction(types.CreateAccount, acc.name, to, nonce, id, gas, value, payload, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
 	rawtx, _ := rlp.EncodeToBytes(tx)
+
 	checked := acc.checked || acc.nonce == math.MaxUint64
 	var checkedfunc func() error
 	if checked {
@@ -133,7 +138,57 @@ func (acc *Account) UpdateAccount(to common.Name, value *big.Int, id uint64, gas
 	action := types.NewAction(types.UpdateAccount, acc.name, to, nonce, id, gas, value, bts, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
+	if err != nil {
+		return
+	}
+	rawtx, _ := rlp.EncodeToBytes(tx)
+	checked := acc.checked || acc.nonce == math.MaxUint64
+	var checkedfunc func() error
+	if checked {
+		// before
+		checkedfunc, err = acc.checkUpdateAccount(action)
+		if err != nil {
+			return
+		}
+	}
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if checked {
+		//after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+		err = checkedfunc()
+		if err != nil {
+			return
+		}
+	}
+
+	if acc.nonce != math.MaxUint64 {
+		acc.nonce++
+	}
+	return
+}
+
+// UpdateAccountAuthor update accout
+func (acc *Account) UpdateAccountAuthor(to common.Name, value *big.Int, id uint64, gas uint64, newacct *accountmanager.AccountAuthorAction) (hash common.Hash, err error) {
+	nonce := acc.nonce
+	if nonce == math.MaxUint64 {
+		nonce, err = acc.api.AccountNonce(acc.name.String())
+		if err != nil {
+			return
+		}
+	}
+
+	bts, _ := rlp.EncodeToBytes(newacct)
+	action := types.NewAction(types.UpdateAccountAuthor, acc.name, to, nonce, id, gas, value, bts, nil)
+	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -183,7 +238,7 @@ func (acc *Account) Transfer(to common.Name, value *big.Int, id uint64, gas uint
 	action := types.NewAction(types.Transfer, acc.name, to, nonce, id, gas, value, nil, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -233,7 +288,7 @@ func (acc *Account) IssueAsset(to common.Name, value *big.Int, id uint64, gas ui
 	action := types.NewAction(types.IssueAsset, acc.name, to, nonce, id, gas, value, payload, nil)
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -287,7 +342,7 @@ func (acc *Account) UpdateAsset(to common.Name, value *big.Int, id uint64, gas u
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -338,7 +393,7 @@ func (acc *Account) IncreaseAsset(to common.Name, value *big.Int, id uint64, gas
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -388,7 +443,7 @@ func (acc *Account) DestroyAsset(to common.Name, value *big.Int, id uint64, gas 
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -425,7 +480,7 @@ func (acc *Account) DestroyAsset(to common.Name, value *big.Int, id uint64, gas 
 }
 
 // SetAssetOwner update asset owner
-func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas uint64, asset *asset.AssetObject) (hash common.Hash, err error) {
+func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas uint64, asset *accountmanager.UpdateAssetOwner) (hash common.Hash, err error) {
 	nonce := acc.nonce
 	if nonce == math.MaxUint64 {
 		nonce, err = acc.api.AccountNonce(acc.name.String())
@@ -439,7 +494,7 @@ func (acc *Account) SetAssetOwner(to common.Name, value *big.Int, id uint64, gas
 	tx := types.NewTransaction(acc.feeid, acc.gasprice, []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -490,7 +545,7 @@ func (acc *Account) RegCandidate(to common.Name, value *big.Int, id uint64, gas 
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -541,7 +596,7 @@ func (acc *Account) UpdateCandidate(to common.Name, value *big.Int, id uint64, g
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -591,7 +646,7 @@ func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, ga
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		panic(err)
 	}
@@ -601,6 +656,56 @@ func (acc *Account) UnRegCandidate(to common.Name, value *big.Int, id uint64, ga
 	if checked {
 		// before
 		checkedfunc, err = acc.chekUnregProdoucer(action)
+		if err != nil {
+			return
+		}
+	}
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if checked {
+		// after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+		err = checkedfunc()
+		if err != nil {
+			return
+		}
+	}
+
+	if acc.nonce != math.MaxUint64 {
+		acc.nonce++
+	}
+	return
+}
+
+// RefundCandidate refund cadiate
+func (acc *Account) RefundCandidate(to common.Name, value *big.Int, id uint64, gas uint64) (hash common.Hash, err error) {
+	nonce := acc.nonce
+	if nonce == math.MaxUint64 {
+		nonce, err = acc.api.AccountNonce(acc.name.String())
+		if err != nil {
+			return
+		}
+	}
+
+	action := types.NewAction(types.RefundCandidate, acc.name, to, nonce, id, gas, value, nil, nil)
+	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
+	if err != nil {
+		panic(err)
+	}
+	rawtx, _ := rlp.EncodeToBytes(tx)
+	checked := acc.checked || acc.nonce == math.MaxUint64
+	var checkedfunc func() error
+	if checked {
+		// before
+		checkedfunc, err = acc.chekRefoundProdoucer(action)
 		if err != nil {
 			return
 		}
@@ -642,7 +747,7 @@ func (acc *Account) VoteCandidate(to common.Name, value *big.Int, id uint64, gas
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		panic(err)
 	}
@@ -693,7 +798,7 @@ func (acc *Account) KickedCandidate(to common.Name, value *big.Int, id uint64, g
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
 
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -742,7 +847,7 @@ func (acc *Account) ExitTakeOver(to common.Name, value *big.Int, id uint64, gas 
 	action := types.NewAction(types.ExitTakeOver, acc.name, to, nonce, id, gas, value, nil, nil)
 	tx := types.NewTransaction(acc.feeid, big.NewInt(1e10), []*types.Action{action}...)
 	key := types.MakeKeyPair(acc.priv, []uint64{0})
-	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), []*types.KeyPair{key})
+	err = types.SignActionWithMultiKey(action, tx, types.NewSigner(acc.chainID), 0, []*types.KeyPair{key})
 	if err != nil {
 		return
 	}
@@ -776,4 +881,154 @@ func (acc *Account) ExitTakeOver(to common.Name, value *big.Int, id uint64, gas 
 		acc.nonce++
 	}
 	return
+}
+
+// CreateContract create and send contract transaction
+func (acc *Account) CreateContract(id uint64, gas uint64, input []byte) (hash common.Hash, err error) {
+	acc.nonce, err = acc.api.AccountNonce(acc.name.String())
+	if err != nil {
+		return
+	}
+
+	action := types.NewAction(types.CreateContract, acc.name, acc.name, acc.nonce, id, gas, nil, input, nil)
+	gasprice := big.NewInt(1)
+	tx := types.NewTransaction(0, gasprice, action)
+	signer := types.MakeSigner(big.NewInt(1))
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	err = types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{key})
+	if err != nil {
+		return
+	}
+
+	rawtx, _ := rlp.EncodeToBytes(tx)
+
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if acc.checked {
+		//after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+// CallContract call contract transaction
+func (acc *Account) CallContract(id uint64, gas uint64, input []byte) (hash common.Hash, err error) {
+	acc.nonce, err = acc.api.AccountNonce(acc.name.String())
+	if err != nil {
+		return
+	}
+
+	action := types.NewAction(types.CallContract, acc.name, acc.name, acc.nonce, id, gas, nil, input, nil)
+	gasprice := big.NewInt(1)
+	tx := types.NewTransaction(0, gasprice, action)
+
+	signer := types.MakeSigner(big.NewInt(1))
+	key := types.MakeKeyPair(acc.priv, []uint64{0})
+	err = types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{key})
+	if err != nil {
+		return
+	}
+
+	rawtx, err := rlp.EncodeToBytes(tx)
+	if err != nil {
+		return
+	}
+
+	checked := acc.checked || acc.nonce == math.MaxUint64
+	hash, err = acc.api.SendRawTransaction(rawtx)
+	if err != nil {
+		return
+	}
+	if checked {
+		//after
+		err = acc.utilReceipt(hash, timeout)
+		if err != nil {
+			return
+		}
+	}
+
+	if acc.nonce != math.MaxUint64 {
+		acc.nonce++
+	}
+	return
+}
+
+func input(abifile string, method string, params ...interface{}) (string, error) {
+	var abicode string
+	hexcode, err := ioutil.ReadFile(abifile)
+	if err != nil {
+		fmt.Printf("Could not load code from file: %v\n", err)
+		return "", err
+	}
+	abicode = string(bytes.TrimRight(hexcode, "\n"))
+	parsed, err := abi.JSON(strings.NewReader(abicode))
+	if err != nil {
+		fmt.Println("abi.json error ", err)
+		return "", err
+	}
+	input, err := parsed.Pack(method, params...)
+	if err != nil {
+		fmt.Println("parsed.pack error ", err)
+		return "", err
+	}
+	return common.Bytes2Hex(input), nil
+}
+
+func formCreateContractInput(abifile string, binfile string) ([]byte, error) {
+	hexcode, err := ioutil.ReadFile(binfile)
+	if err != nil {
+		return nil, err
+	}
+	code := common.Hex2Bytes(string(bytes.TrimRight(hexcode, "\n")))
+	createInput, err := input(abifile, "")
+	if err != nil {
+		return nil, err
+	}
+	createCode := append(code, common.Hex2Bytes(createInput)...)
+	return createCode, nil
+}
+
+func formIssueAssetInput(abifile string, desc string) ([]byte, error) {
+	issueAssetInput, err := input(abifile, "issue", desc)
+	if err != nil {
+		return nil, err
+	}
+	return common.Hex2Bytes(issueAssetInput), nil
+}
+
+func formIncreaseAssetInput(abifile string, assetID *big.Int, to common.Address, value *big.Int) ([]byte, error) {
+	increaseAssetInput, err := input(abifile, "increase", assetID, to, value)
+	if err != nil {
+		return nil, err
+	}
+	return common.Hex2Bytes(increaseAssetInput), nil
+}
+
+func formTransferAssetInput(abifile string, assetID *big.Int, toAddr common.Address, value *big.Int) ([]byte, error) {
+	transferAssetInput, err := input(abifile, "transfer", assetID, toAddr, value)
+	if err != nil {
+		return nil, err
+	}
+	return common.Hex2Bytes(transferAssetInput), nil
+}
+
+func formChangeAssetOwner(abifile string, newOwner common.Address, assetID *big.Int) ([]byte, error) {
+	changeOwnerInput, err := input(abifile, "changeowner", newOwner, assetID)
+	if err != nil {
+		return nil, err
+	}
+	return common.Hex2Bytes(changeOwnerInput), nil
+}
+
+func formDestroyAsset(abifile string, assetID, value *big.Int) ([]byte, error) {
+	destroyAssetInput, err := input(abifile, "destroy", assetID, value)
+	if err != nil {
+		return nil, err
+	}
+	return common.Hex2Bytes(destroyAssetInput), nil
 }

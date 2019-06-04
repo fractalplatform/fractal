@@ -5,14 +5,20 @@
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
 		"accountParams": {
-			"level": 0,
-			"length": 16,
-			"subLength": 8
+			"level": 3,
+			"alllength":31,
+			"mainminlength": 7,
+			"mainmaxlength": 16,
+			"subminlength":2,
+			"submaxlength":16
 		},
 		"assetParams": {
-			"level": 2,
-			"length": 16,
-			"subLength": 8
+			"level": 3,
+			"alllength":31,
+			"mainminlength": 2,
+			"mainmaxlength": 16,
+			"subminlength":1,
+			"submaxlength":8
 		},
 		"chargeParams": {
 			"assetRatio": 80,
@@ -25,15 +31,17 @@
 		"dposParams": {
 			"maxURLLen": 512,
 			"unitStake": 1000,
+			"candidateAvailableMinQuantity": 10,
 			"candidateMinQuantity": 10,
 			"voterMinQuantity": 1,
+			"activatedMinCandidate": 3,
 			"activatedMinQuantity": 100,
 			"blockInterval": 3000,
 			"blockFrequency": 6,
 			"candidateScheduleSize": 3,
 			"backupScheduleSize": 0,
-			"epchoInterval": 10800000,
-			"freezeEpchoSize": 3,
+			"epochInterval": 10800000,
+			"freezeEpochSize": 3,
 			"extraBlockReward": 1,
 			"blockReward": 5
 		},
@@ -50,21 +58,26 @@
 	"difficulty": 131072,
 	"allocAccounts": [{
 		"name": "fractal.admin",
+		"founder": "fractal.admin",
 		"pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
 	}, {
 		"name": "fractal.account",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.asset",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-	},{
+	}, {
 		"name": "fractal.dpos",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.fee",
+		"founder": "fractal.admin",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}],
-	"allocCadidates": [],
+	"allocCandidates": [],
 	"allocAssets": [{
 		"name": "ftoken",
 		"symbol": "ft",

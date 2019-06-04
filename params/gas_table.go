@@ -18,12 +18,13 @@ package params
 
 // GasTable organizes gas prices for different phases.
 type GasTable struct {
-	ActionGas           uint64
-	ActionGasCreation   uint64
-	ActionGasIssueAsset uint64
-	SignGas             uint64
-	TxDataNonZeroGas    uint64
-	TxDataZeroGas       uint64
+	ActionGas             uint64
+	ActionGasCallContract uint64
+	ActionGasCreation     uint64
+	ActionGasIssueAsset   uint64
+	SignGas               uint64
+	TxDataNonZeroGas      uint64
+	TxDataZeroGas         uint64
 
 	ExtcodeSize          uint64
 	ExtcodeCopy          uint64
@@ -71,10 +72,11 @@ type GasTable struct {
 var (
 	// GasTable contain the gas re-prices
 	GasTableInstanse = GasTable{
-		ActionGas:           100000,
-		ActionGasCreation:   500000,
-		ActionGasIssueAsset: 10000000,
-		SignGas:             50000,
+		ActionGas:             100000,
+		ActionGasCallContract: 200000,
+		ActionGasCreation:     500000,
+		ActionGasIssueAsset:   10000000,
+		SignGas:               50000,
 
 		ExtcodeSize: 700,
 		ExtcodeCopy: 700,
@@ -108,7 +110,7 @@ var (
 		QuadCoeffDiv:         512,
 		SstoreSetGas:         20000,
 		LogDataGas:           8,
-		CallStipend:          2300,
+		CallStipend:          0,
 
 		Sha3Gas:        30,
 		Sha3WordGas:    6,

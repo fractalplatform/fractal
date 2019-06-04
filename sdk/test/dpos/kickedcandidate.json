@@ -1,0 +1,13 @@
+[{
+    "comment": "fractal.admin kickedcandidate dpos0001 & transfer 0 ft",
+    "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
+    "type": "kickedcandidate",
+    "from": "fractal.admin",
+    "to": "fractal.dpos",
+    "gas": 30000000,
+    "value": 0,
+    "payload": {
+        "Candidates": ["dpos0001","dpos0002"]
+    },
+    "succeed": true
+}]

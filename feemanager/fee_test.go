@@ -57,8 +57,8 @@ func getAccountManager() *accountmanager.AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("systestname"), common.Name(""), 0, *pubkey, "")
-	am.CreateAccount(common.Name("fractal.fee"), common.Name(""), 0, *pubkey, "")
+	am.CreateAccount(common.Name("fractal.admin"), common.Name("systestname"), common.Name(""), 0, *pubkey, "")
+	am.CreateAccount(common.Name("fractal"), common.Name("fractal.fee"), common.Name(""), 0, *pubkey, "")
 	return am
 }
 
@@ -152,13 +152,14 @@ func addAssetAndAccount() error {
 
 	tests := []args{
 		// TODO: Add test cases.
+		{"assettest.asset0", "s0", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset1", "s1", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset2", "s2", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset3", "s3", big.NewInt(0), 2, tname, tname},
 		{"assettest.asset4", "s4", big.NewInt(0), 2, tname, tname},
 	}
 
-	if err := acctm.CreateAccount(tname, tname, 0, *pubKey, ""); err != nil {
+	if err := acctm.CreateAccount(common.Name("testtest"), tname, tname, 0, *pubKey, ""); err != nil {
 		return err
 	}
 

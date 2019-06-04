@@ -75,7 +75,7 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 	}
-	epcho, err := sys.GetLastestEpcho()
+	epoch, err := sys.GetLastestEpoch()
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
+		if err := sys.RegCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
@@ -93,16 +93,16 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(epcho, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
+		if err := sys.UpdateCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:
-		err := sys.UnregCandidate(epcho, action.Sender().String(), number)
+		err := sys.UnregCandidate(epoch, action.Sender().String(), number)
 		if err != nil {
 			return nil, err
 		}
 	case types.RefundCandidate:
-		err := sys.RefundCandidate(epcho, action.Sender().String(), number)
+		err := sys.RefundCandidate(epoch, action.Sender().String(), number)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +111,7 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCandidate(epcho, action.Sender().String(), arg.Candidate, arg.Stake, number); err != nil {
+		if err := sys.VoteCandidate(epoch, action.Sender().String(), arg.Candidate, arg.Stake, number); err != nil {
 			return nil, err
 		}
 	case types.KickedCandidate:
@@ -123,7 +123,7 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 		for _, cadicate := range arg.Candidates {
-			if err := sys.KickedCandidate(epcho, cadicate, number); err != nil {
+			if err := sys.KickedCandidate(epoch, cadicate, number); err != nil {
 				return nil, err
 			}
 		}
@@ -131,7 +131,7 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
-		if err := sys.ExitTakeOver(epcho); err != nil {
+		if err := sys.ExitTakeOver(epoch); err != nil {
 			return nil, err
 		}
 	default:

@@ -26,19 +26,16 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// LastEpcho latest
-var LastEpcho = uint64(math.MaxUint64)
+// LastEpoch latest
+var LastEpoch = uint64(math.MaxUint64)
 
 // IDB dpos database
 type IDB interface {
 	SetCandidate(*CandidateInfo) error
-	DelCandidate(string) error
-	GetCandidate(string) (*CandidateInfo, error)
-	GetCandidates() ([]*CandidateInfo, error)
-	CandidatesSize() (uint64, error)
-
-	SetCandidateByEpcho(uint64, *CandidateInfo) error
-	GetCandidateByEpcho(uint64, string) (*CandidateInfo, error)
+	DelCandidate(uint64, string) error
+	GetCandidate(uint64, string) (*CandidateInfo, error)
+	GetCandidates(uint64) ([]*CandidateInfo, error)
+	CandidatesSize(uint64) (uint64, error)
 
 	SetAvailableQuantity(uint64, string, *big.Int) error
 	GetAvailableQuantity(uint64, string) (*big.Int, error)
@@ -50,13 +47,13 @@ type IDB interface {
 
 	SetState(*GlobalState) error
 	GetState(uint64) (*GlobalState, error)
-	SetLastestEpcho(uint64) error
-	GetLastestEpcho() (uint64, error)
+	SetLastestEpoch(uint64) error
+	GetLastestEpoch() (uint64, error)
 
 	Undelegate(string, *big.Int) (*types.Action, error)
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
-	GetCandidateInfoByTime(name string, timestamp uint64) (*CandidateInfo, error)
+	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
 }
 
 type CandidateType uint64
@@ -119,16 +116,31 @@ func (t *CandidateType) UnmarshalJSON(data []byte) error {
 
 // CandidateInfo info
 type CandidateInfo struct {
+	Epoch         uint64        `json:"epoch"`
 	Name          string        `json:"name"`          // candidate name
 	URL           string        `json:"url"`           // candidate url
 	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
 	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
 	Number        uint64        `json:"number"`        // timestamp
-	Counter       uint64        `json:"counter"`
+	Counter       uint64        `json:"shouldCounter"`
 	ActualCounter uint64        `json:"actualCounter"`
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
 	NextKey       string        `json:"-"`
+}
+
+func (candidateInfo *CandidateInfo) copy() *CandidateInfo {
+	return &CandidateInfo{
+		Epoch:         candidateInfo.Epoch,
+		Name:          candidateInfo.Name,
+		URL:           candidateInfo.URL,
+		Quantity:      candidateInfo.Quantity,
+		TotalQuantity: candidateInfo.TotalQuantity,
+		Number:        candidateInfo.Number,
+		Counter:       candidateInfo.Counter,
+		ActualCounter: candidateInfo.ActualCounter,
+		Type:          candidateInfo.Type,
+	}
 }
 
 func (candidateInfo *CandidateInfo) invalid() bool {
@@ -137,7 +149,7 @@ func (candidateInfo *CandidateInfo) invalid() bool {
 
 // VoterInfo info
 type VoterInfo struct {
-	Epcho               uint64   `json:"epcho"`
+	Epoch               uint64   `json:"epoch"`
 	Name                string   `json:"name"`      // voter name
 	Candidate           string   `json:"candidate"` // candidate approved by this voter
 	Quantity            *big.Int `json:"quantity"`  // stake approved by this voter
@@ -147,21 +159,21 @@ type VoterInfo struct {
 }
 
 func (voter *VoterInfo) key() string {
-	return fmt.Sprintf("0x%x_%s_%s", voter.Epcho, voter.Name, voter.Candidate)
+	return fmt.Sprintf("0x%x_%s_%s", voter.Epoch, voter.Name, voter.Candidate)
 }
 
 func (voter *VoterInfo) ckey() string {
-	return fmt.Sprintf("0x%x_%s", voter.Epcho, voter.Candidate)
+	return fmt.Sprintf("0x%x_%s", voter.Epoch, voter.Candidate)
 }
 
 func (voter *VoterInfo) vkey() string {
-	return fmt.Sprintf("0x%x_%s", voter.Epcho, voter.Name)
+	return fmt.Sprintf("0x%x_%s", voter.Epoch, voter.Name)
 }
 
 // GlobalState dpos state
 type GlobalState struct {
-	Epcho                      uint64   `json:"epcho"`                      // epcho
-	PreEpcho                   uint64   `json:"preEpcho"`                   // epcho
+	Epoch                      uint64   `json:"epoch"`                      // epoch
+	PreEpoch                   uint64   `json:"preEpoch"`                   // epoch
 	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
 	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
 	OffCandidateSchedule       []uint64 `json:"offCandidateSchedule"`       // activated backup candidates

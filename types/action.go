@@ -66,6 +66,7 @@ const (
 	UpdateAsset
 	// Transfer repesents transfer asset action.
 	Transfer
+	UpdateAssetContract
 )
 
 const (
@@ -93,6 +94,11 @@ const (
 	WithdrawFee ActionType = 0x500 + iota
 )
 
+type Signature struct {
+	ParentIndex uint64
+	SignData    []*SignData
+}
+
 type SignData struct {
 	V     *big.Int
 	R     *big.Int
@@ -111,7 +117,7 @@ type actionData struct {
 	Payload  []byte
 	Remark   []byte
 
-	Sign []*SignData
+	Sign *Signature
 }
 
 // Action represents an entire action in the transaction.
@@ -138,7 +144,7 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		Amount:   new(big.Int),
 		Payload:  payload,
 		Remark:   remark,
-		Sign:     make([]*SignData, 0),
+		Sign:     &Signature{0, make([]*SignData, 0)},
 	}
 	if amount != nil {
 		data.Amount.Set(amount)
@@ -147,11 +153,15 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 }
 
 func (a *Action) GetSignIndex(i uint64) []uint64 {
-	return a.data.Sign[i].Index
+	return a.data.Sign.SignData[i].Index
 }
 
 func (a *Action) GetSign() []*SignData {
-	return a.data.Sign
+	return a.data.Sign.SignData
+}
+
+func (a *Action) GetSignParent() uint64 {
+	return a.data.Sign.ParentIndex
 }
 
 // Check the validity of all fields
@@ -183,12 +193,14 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		fallthrough
 	case SetAssetOwner:
 		fallthrough
+	case UpdateAssetContract:
+		fallthrough
 	case UpdateAsset:
 		if a.data.To.String() != conf.AssetName {
 			return fmt.Errorf("Receipt should is %v", conf.AssetName)
 		}
 	case Transfer:
-	//dpos
+		//dpos
 	case RegCandidate:
 		fallthrough
 	case UpdateCandidate:
@@ -203,7 +215,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		fallthrough
 	case ExitTakeOver:
 		if a.data.To.String() != conf.DposName {
-			return fmt.Errorf("Receipt should is %v", conf.AssetName)
+			return fmt.Errorf("Receipt should is %v", conf.DposName)
 		}
 		if a.data.AssetID != conf.SysTokenID {
 			return fmt.Errorf("Asset id should is %v", conf.SysTokenID)
@@ -275,7 +287,7 @@ func (a *Action) DecodeRLP(s *rlp.Stream) error {
 
 // ChainID returns which chain id this action was signed for (if at all)
 func (a *Action) ChainID() *big.Int {
-	return deriveChainID(a.data.Sign[0].V)
+	return deriveChainID(a.data.Sign.SignData[0].V)
 }
 
 // Hash hashes the RLP encoding of action.
@@ -294,8 +306,13 @@ func (a *Action) WithSignature(signer Signer, sig []byte, index []uint64) error 
 	if err != nil {
 		return err
 	}
-	a.data.Sign = append(a.data.Sign, &SignData{R: r, S: s, V: v, Index: index})
+	a.data.Sign.SignData = append(a.data.Sign.SignData, &SignData{R: r, S: s, V: v, Index: index})
 	return nil
+}
+
+// WithSignature returns a new transaction with the given signature.
+func (a *Action) WithParentIndex(parentIndex uint64) {
+	a.data.Sign.ParentIndex = parentIndex
 }
 
 // RPCAction represents a action that will serialize to the RPC representation of a action.

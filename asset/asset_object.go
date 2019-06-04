@@ -24,6 +24,7 @@ import (
 type AssetObject struct {
 	AssetId     uint64      `json:"assetId"`
 	Number      uint64      `json:"number"`
+	Stats       uint64      `json:"stats"`
 	AssetName   string      `json:"assetName"`
 	Symbol      string      `json:"symbol"`
 	Amount      *big.Int    `json:"amount"`
@@ -51,10 +52,10 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 			return nil, ErrNewAssetObject
 		}
 	}
-	if !common.StrToName(assetName).IsValid(assetRegExp) {
+	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
 		return nil, ErrNewAssetObject
 	}
-	if !common.StrToName(symbol).IsValid(assetRegExp) {
+	if !common.StrToName(symbol).IsValid(assetRegExp, assetNameLength) {
 		return nil, ErrNewAssetObject
 	}
 	if uint64(len(description)) > MaxDescriptionLength {
@@ -64,6 +65,7 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 	ao := AssetObject{
 		AssetId:     0,
 		Number:      number,
+		Stats:       0,
 		AssetName:   assetName,
 		Symbol:      symbol,
 		Amount:      amount,
@@ -92,6 +94,14 @@ func (ao *AssetObject) GetAssetNumber() uint64 {
 
 func (ao *AssetObject) SetAssetNumber(number uint64) {
 	ao.Number = number
+}
+
+func (ao *AssetObject) GetAssetStats() uint64 {
+	return ao.Stats
+}
+
+func (ao *AssetObject) SetAssetStats(count uint64) {
+	ao.Stats = count
 }
 
 func (ao *AssetObject) GetSymbol() string {

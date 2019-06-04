@@ -1,0 +1,14 @@
+[{
+	"comment": "dpos0001 votecandidate dpos0001 & transfer 1000 ft",
+	"type": "votecandidate",
+	"from": "dpos0001",
+	"to": "fractal.dpos",
+	"gas": 30000000,
+	"value": 0,
+	"payload": {
+		"Candidate": "dpos0001",
+		"Stake": 1000000000000000000000
+	},
+	"succeed": true,
+	"priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
+}]

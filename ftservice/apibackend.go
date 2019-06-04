@@ -228,7 +228,7 @@ func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.Blo
 	return stateDb, header, err
 }
 
-func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error) {
+func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, to common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error) {
 	account.AddAccountBalanceByID(from, assetID, math.MaxBig256)
 	vmError := func() error { return nil }
 
@@ -237,7 +237,7 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 		EngineContext: b.ftservice.Engine(),
 	}
 
-	context := processor.NewEVMContext(from, assetID, gasPrice, header, evmcontext, nil)
+	context := processor.NewEVMContext(from, to, assetID, gasPrice, header, evmcontext, nil)
 	return vm.NewEVM(context, account, state, b.ChainConfig(), vmCfg), vmError, nil
 }
 

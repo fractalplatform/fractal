@@ -34,7 +34,7 @@ func TestSigningMultiKey(t *testing.T) {
 		pubs = append(pubs, common.BytesToPubKey(exp))
 	}
 	signer := NewSigner(big.NewInt(1))
-	if err := SignActionWithMultiKey(testTx.GetActions()[0], testTx, signer, keys); err != nil {
+	if err := SignActionWithMultiKey(testTx.GetActions()[0], testTx, signer, 0, keys); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,7 +67,7 @@ func TestChainID(t *testing.T) {
 
 	signer := NewSigner(big.NewInt(1))
 	keyPair := MakeKeyPair(key, []uint64{0})
-	if err := SignActionWithMultiKey(testAction, testTx, signer, []*KeyPair{keyPair}); err != nil {
+	if err := SignActionWithMultiKey(testAction, testTx, signer, 0, []*KeyPair{keyPair}); err != nil {
 		t.Fatal(err)
 	}
 

@@ -35,8 +35,9 @@ import (
 )
 
 var (
-	evictionInterval    = time.Minute     // Time interval to check for evictable transactions
-	statsReportInterval = 8 * time.Second // Time interval to report transaction pool stats
+	evictionInterval    = 15 * time.Minute // Time interval to check for evictable transactions
+	statsReportInterval = 10 * time.Second // Time interval to report transaction pool stats
+	resendTxInterval    = time.Minute      // Time interval to resend transaction
 )
 
 const (
@@ -123,7 +124,6 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 
 	// Subscribe feeds from blockchain
 	tp.chainHeadSub = event.Subscribe(nil, tp.chainHeadCh, event.ChainHeadEv, &types.Block{})
-
 	tp.station = NewTxpoolStation(tp)
 	// Start the feed loop and return
 	tp.wg.Add(1)
@@ -145,6 +145,9 @@ func (tp *TxPool) loop() {
 
 	evict := time.NewTicker(evictionInterval)
 	defer evict.Stop()
+
+	resend := time.NewTicker(resendTxInterval)
+	defer resend.Stop()
 
 	journal := time.NewTicker(tp.config.Rejournal)
 	defer journal.Stop()
@@ -178,7 +181,6 @@ func (tp *TxPool) loop() {
 				log.Debug("Transaction pool status report", "executable", pending, "queued", queued, "stales", stales)
 				prevPending, prevQueued, prevStales = pending, queued, stales
 			}
-
 			// Handle inactive account transaction eviction
 		case <-evict.C:
 			tp.mu.Lock()
@@ -191,6 +193,21 @@ func (tp *TxPool) loop() {
 				if time.Since(tp.beats[name]) > tp.config.Lifetime {
 					for _, tx := range tp.queue[name].Flatten() {
 						tp.removeTx(tx.Hash(), true)
+					}
+				}
+			}
+			tp.mu.Unlock()
+			// Handle inactive account transaction resend
+		case <-resend.C:
+			tp.mu.Lock()
+			for name := range tp.pending {
+				if time.Since(tp.beats[name]) > tp.config.ResendTime {
+					if txs := tp.pending[name].Flatten(); len(txs) != 0 {
+						events := []*event.Event{
+							{Typecode: event.NewTxs, Data: txs},
+						}
+						go event.SendEvents(events)
+						log.Debug("resend account transactions", "name", name, "txlen", len(txs))
 					}
 				}
 			}
@@ -473,7 +490,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		intrGas, err := IntrinsicGas(action)
+		intrGas, err := IntrinsicGas(tp.curAccountManager, action)
 		if err != nil {
 			return err
 		}
@@ -576,7 +593,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	}
 	tp.journalTx(from, tx)
 
-	log.Trace("Pooled new future transaction", "hash", hash, "from", from)
+	log.Trace("Pooled new future transaction", "hash", hash, "from", from, "replace", replace)
 	return replace, nil
 }
 
@@ -757,6 +774,7 @@ func (tp *TxPool) addTxsLocked(txs []*types.Transaction, local bool) []error {
 			dirty[from] = struct{}{}
 		}
 	}
+
 	// Only reprocess the internal state if something was actually added
 	if len(dirty) > 0 {
 		names := make([]common.Name, 0, len(dirty))

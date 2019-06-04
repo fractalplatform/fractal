@@ -86,7 +86,7 @@ func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa
 func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
 	tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
 	keyPair := types.MakeKeyPair(key, []uint64{0})
-	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), []*types.KeyPair{keyPair}); err != nil {
+	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
 		panic(err)
 	}
 	return tx
@@ -99,7 +99,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if err := m.CreateAccount(name, common.Name(""), 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
+		if err := m.CreateAccount(common.Name("fractal.admin"), name, common.Name(""), 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
 			t.Fatal(err)
 		}
 	}

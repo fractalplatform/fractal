@@ -82,10 +82,6 @@ func newWorker(consensus consensus.IConsensus) *Worker {
 
 // update keeps track of events.
 func (worker *Worker) update() {
-	txsCh := make(chan *event.Event, txChanSize)
-	txsSub := event.Subscribe(nil, txsCh, event.NewTxs, []*types.Transaction{})
-	defer txsSub.Unsubscribe()
-
 	chainHeadCh := make(chan *event.Event, chainHeadChanSize)
 	chainHeadSub := event.Subscribe(nil, chainHeadCh, event.ChainHeadEv, &types.Block{})
 	defer chainHeadSub.Unsubscribe()
@@ -105,21 +101,6 @@ out:
 					worker.quitWorkRW.Unlock()
 				}
 			}
-		case ev := <-txsCh:
-			// Apply transactions to the pending state if we're not mining.
-			if atomic.LoadInt32(&worker.mining) == 0 {
-				worker.wg.Wait()
-				txs := make(map[common.Name][]*types.Transaction)
-				for _, tx := range ev.Data.([]*types.Transaction) {
-					action := tx.GetActions()[0]
-					from := action.Sender()
-					txs[from] = append(txs[from], tx)
-				}
-				worker.commitTransactions(worker.currentWork, types.NewTransactionsByPriceAndNonce(txs), math.MaxUint64)
-			}
-			// System stopped
-		case <-txsSub.Err():
-			break out
 		case <-chainHeadSub.Err():
 			break out
 		}
@@ -186,6 +167,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		worker.quitWork = nil
 		worker.quitWorkRW.Unlock()
 	}()
+
 	cdpos := worker.Engine().(*dpos.Dpos)
 	header := worker.CurrentHeader()
 	state, err := worker.StateAt(header.Root)
@@ -323,10 +305,16 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		return nil, fmt.Errorf("prepare header for mining, err: %v", err)
 	}
 
+	start := time.Now()
 	pending, err := worker.Pending()
 	if err != nil {
 		return nil, fmt.Errorf("got error when fetch pending transactions, err: %v", err)
 	}
+	var txsLen int
+	for _, txs := range pending {
+		txsLen = txsLen + len(txs)
+	}
+	log.Debug("worker get pending txs from txpool", "len", txsLen, "since", time.Since(start))
 
 	txs := types.NewTransactionsByPriceAndNonce(pending)
 	if err := worker.commitTransactions(work, txs, dpos.BlockInterval()); err != nil {

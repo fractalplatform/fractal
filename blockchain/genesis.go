@@ -44,8 +44,9 @@ import (
 
 // GenesisAccount is an account in the state of the genesis block.
 type GenesisAccount struct {
-	Name   string        `json:"name,omitempty"`
-	PubKey common.PubKey `json:"pubKey,omitempty"`
+	Name    string        `json:"name,omitempty"`
+	Founder string        `json:"founder,omitempty"`
+	PubKey  common.PubKey `json:"pubKey,omitempty"`
 }
 
 // GenesisCandidate is an cadicate in the state of the genesis block.
@@ -79,25 +80,27 @@ type Genesis struct {
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 	return &dpos.Config{
-		MaxURLLen:             cfg.DposCfg.MaxURLLen,
-		UnitStake:             cfg.DposCfg.UnitStake,
-		CandidateMinQuantity:  cfg.DposCfg.CandidateMinQuantity,
-		VoterMinQuantity:      cfg.DposCfg.VoterMinQuantity,
-		ActivatedMinQuantity:  cfg.DposCfg.ActivatedMinQuantity,
-		BlockInterval:         cfg.DposCfg.BlockInterval,
-		BlockFrequency:        cfg.DposCfg.BlockFrequency,
-		CandidateScheduleSize: cfg.DposCfg.CandidateScheduleSize,
-		BackupScheduleSize:    cfg.DposCfg.BackupScheduleSize,
-		EpchoInterval:         cfg.DposCfg.EpchoInterval,
-		FreezeEpchoSize:       cfg.DposCfg.FreezeEpchoSize,
-		AccountName:           cfg.DposName,
-		SystemName:            cfg.SysName,
-		SystemURL:             cfg.ChainURL,
-		ExtraBlockReward:      cfg.DposCfg.ExtraBlockReward,
-		BlockReward:           cfg.DposCfg.BlockReward,
-		Decimals:              cfg.SysTokenDecimals,
-		AssetID:               cfg.SysTokenID,
-		ReferenceTime:         cfg.ReferenceTime,
+		MaxURLLen:                     cfg.DposCfg.MaxURLLen,
+		UnitStake:                     cfg.DposCfg.UnitStake,
+		CandidateAvailableMinQuantity: cfg.DposCfg.CandidateAvailableMinQuantity,
+		CandidateMinQuantity:          cfg.DposCfg.CandidateMinQuantity,
+		VoterMinQuantity:              cfg.DposCfg.VoterMinQuantity,
+		ActivatedMinCandidate:         cfg.DposCfg.ActivatedMinCandidate,
+		ActivatedMinQuantity:          cfg.DposCfg.ActivatedMinQuantity,
+		BlockInterval:                 cfg.DposCfg.BlockInterval,
+		BlockFrequency:                cfg.DposCfg.BlockFrequency,
+		CandidateScheduleSize:         cfg.DposCfg.CandidateScheduleSize,
+		BackupScheduleSize:            cfg.DposCfg.BackupScheduleSize,
+		EpochInterval:                 cfg.DposCfg.EpochInterval,
+		FreezeEpochSize:               cfg.DposCfg.FreezeEpochSize,
+		AccountName:                   cfg.DposName,
+		SystemName:                    cfg.SysName,
+		SystemURL:                     cfg.ChainURL,
+		ExtraBlockReward:              cfg.DposCfg.ExtraBlockReward,
+		BlockReward:                   cfg.DposCfg.BlockReward,
+		Decimals:                      cfg.SysTokenDecimals,
+		AssetID:                       cfg.SysTokenID,
+		ReferenceTime:                 cfg.ReferenceTime,
 	}
 }
 
@@ -148,14 +151,20 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 		return newcfg, dposConfig(newcfg), common.Hash{}, errors.New("Found genesis block without chain config")
 	}
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     storedcfg.AccountNameCfg.Level,
-		AccountNameLength:    storedcfg.AccountNameCfg.Length,
-		SubAccountNameLength: storedcfg.AccountNameCfg.SubLength,
+		AccountNameLevel:         storedcfg.AccountNameCfg.Level,
+		AccountNameMaxLength:     storedcfg.AccountNameCfg.AllLength,
+		MainAccountNameMinLength: storedcfg.AccountNameCfg.MainMinLength,
+		MainAccountNameMaxLength: storedcfg.AccountNameCfg.MainMaxLength,
+		SubAccountNameMinLength:  storedcfg.AccountNameCfg.SubMinLength,
+		SubAccountNameMaxLength:  storedcfg.AccountNameCfg.SubMaxLength,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLength:    storedcfg.AssetNameCfg.Length,
-		AssetNameLevel:     storedcfg.AssetNameCfg.Level,
-		SubAssetNameLength: storedcfg.AssetNameCfg.SubLength,
+		AssetNameLevel:         storedcfg.AssetNameCfg.Level,
+		AssetNameLength:        storedcfg.AssetNameCfg.AllLength,
+		MainAssetNameMinLength: storedcfg.AssetNameCfg.MainMinLength,
+		MainAssetNameMaxLength: storedcfg.AssetNameCfg.MainMaxLength,
+		SubAssetNameMinLength:  storedcfg.AssetNameCfg.SubMinLength,
+		SubAssetNameMaxLength:  storedcfg.AssetNameCfg.SubMaxLength,
 	})
 	am.SetAcctMangerName(common.StrToName(storedcfg.AccountName))
 	at.SetAssetMangerName(common.StrToName(storedcfg.AssetName))
@@ -172,14 +181,20 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	detailTx := &types.DetailTx{}
 	var internals []*types.DetailAction
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     1,
-		AccountNameLength:    16,
-		SubAccountNameLength: 8,
+		AccountNameLevel:         2,
+		AccountNameMaxLength:     31,
+		MainAccountNameMinLength: 7,
+		MainAccountNameMaxLength: 16,
+		SubAccountNameMinLength:  2,
+		SubAccountNameMaxLength:  16,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:     1,
-		AssetNameLength:    16,
-		SubAssetNameLength: 8,
+		AssetNameLevel:         2,
+		AssetNameLength:        31,
+		MainAssetNameMinLength: 2,
+		MainAssetNameMaxLength: 16,
+		SubAssetNameMinLength:  1,
+		SubAssetNameMaxLength:  8,
 	})
 	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
 	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
@@ -239,6 +254,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		}
 		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
+			Founder:     common.StrToName(account.Founder),
 			PublicKey:   account.PubKey,
 		}
 		payload, _ := rlp.EncodeToBytes(act)
@@ -314,14 +330,20 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:     g.Config.AccountNameCfg.Level,
-		AccountNameLength:    g.Config.AccountNameCfg.Length,
-		SubAccountNameLength: g.Config.AccountNameCfg.SubLength,
+		AccountNameLevel:         g.Config.AccountNameCfg.Level,
+		AccountNameMaxLength:     g.Config.AccountNameCfg.AllLength,
+		MainAccountNameMinLength: g.Config.AccountNameCfg.MainMinLength,
+		MainAccountNameMaxLength: g.Config.AccountNameCfg.MainMaxLength,
+		SubAccountNameMinLength:  g.Config.AccountNameCfg.SubMinLength,
+		SubAccountNameMaxLength:  g.Config.AccountNameCfg.SubMaxLength,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLength:    g.Config.AssetNameCfg.Length,
-		AssetNameLevel:     g.Config.AssetNameCfg.Level,
-		SubAssetNameLength: g.Config.AssetNameCfg.SubLength,
+		AssetNameLevel:         g.Config.AssetNameCfg.Level,
+		AssetNameLength:        g.Config.AssetNameCfg.AllLength,
+		MainAssetNameMinLength: g.Config.AssetNameCfg.MainMinLength,
+		MainAssetNameMaxLength: g.Config.AssetNameCfg.MainMaxLength,
+		SubAssetNameMinLength:  g.Config.AssetNameCfg.SubMinLength,
+		SubAssetNameMaxLength:  g.Config.AssetNameCfg.SubMaxLength,
 	})
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
 		panic(fmt.Sprintf("system is not exist %v", err))
@@ -347,8 +369,10 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	g.Config.SysTokenDecimals = assetInfo.Decimals
 
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
+	epoch, _ := sys.GetLastestEpoch()
 	for _, candidate := range g.AllocCandidates {
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
+			Epoch:         epoch,
 			Name:          candidate.Name,
 			URL:           candidate.URL,
 			Quantity:      big.NewInt(0),
@@ -358,7 +382,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	if err := sys.UpdateElectedCandidates(dpos.LastEpcho, dpos.LastEpcho, number.Uint64(), nil); err != nil {
+	if err := sys.UpdateElectedCandidates(epoch, epoch, number.Uint64(), ""); err != nil {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
@@ -390,7 +414,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Difficulty: g.Difficulty,
-		Coinbase:   common.StrToName(g.Config.SysName),
+		Coinbase:   common.StrToName(g.Config.ChainName),
 		Root:       root,
 	}
 
@@ -512,24 +536,29 @@ func DefaultGenesis() *Genesis {
 func DefaultGenesisAccounts() []*GenesisAccount {
 	return []*GenesisAccount{
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.SysName,
-			PubKey: common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
+			Name:    params.DefaultChainconfig.SysName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.AccountName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.AccountName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.AssetName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.AssetName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.DposName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.DposName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 		&GenesisAccount{
-			Name:   params.DefaultChainconfig.FeeName,
-			PubKey: common.HexToPubKey(""),
+			Name:    params.DefaultChainconfig.FeeName,
+			Founder: params.DefaultChainconfig.SysName,
+			PubKey:  common.HexToPubKey(""),
 		},
 	}
 }
