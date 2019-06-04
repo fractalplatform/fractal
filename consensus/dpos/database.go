@@ -53,7 +53,7 @@ type IDB interface {
 	Undelegate(string, *big.Int) (*types.Action, error)
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
-	GetCandidateInfoByTime(name string, timestamp uint64) (*CandidateInfo, error)
+	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
 }
 
 type CandidateType uint64

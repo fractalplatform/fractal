@@ -562,7 +562,7 @@ func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 // GetDelegatedByTime get delegate of candidate
 func (dpos *Dpos) GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (*big.Int, error) {
 	sys := NewSystem(state, dpos.config)
-	candidateInfo, err := sys.GetCandidateInfoByTime(candidate, timestamp)
+	candidateInfo, err := sys.GetCandidateInfoByTime(sys.config.epoch(timestamp), candidate, timestamp)
 	if err != nil {
 		return big.NewInt(0), err
 	}
