@@ -32,7 +32,7 @@ const (
 	maxKonwnTxs      = 32
 	txsSendDelay     = 50 * time.Millisecond
 	txsSendThreshold = 32
-	cacheBits        = 1
+	cacheBits        = 12
 	cacheSize        = 1 << cacheBits
 	cacheMask        = cacheSize - 1
 )
@@ -203,9 +203,9 @@ func NewTxpoolStation(txpool *TxPool) *TxpoolStation {
 func (s *TxpoolStation) addTxs(txs []*TransactionWithPath, from string) []*types.Transaction {
 	rtxs := make([]*types.Transaction, 0, len(txs))
 	for _, tx := range txs {
-		if !s.cache.hadTx(tx.Tx) {
-			rtxs = append(rtxs, tx.Tx)
-		}
+		//		if !s.cache.hadTx(tx.Tx) {
+		rtxs = append(rtxs, tx.Tx)
+		//		}
 		s.cache.addTx(tx.Tx, tx.Bloom, from)
 	}
 	return rtxs
@@ -216,37 +216,47 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 		return
 	}
 	sendTask := make(map[*peerInfo][]*TransactionWithPath)
-	addToTask := func(txObj *TransactionWithPath) bool {
+	addToTask := func(name string, peerInfo *peerInfo, txObj *TransactionWithPath) bool {
+		tx := txObj.Tx
+		if _, ok := sendTask[peerInfo]; ok {
+			s.cache.addTx(tx, txObj.Bloom, name)
+			sendTask[peerInfo] = append(sendTask[peerInfo], txObj)
+			return true
+		}
+		if !peerInfo.trySetBusy() {
+			return false
+		}
+		s.cache.addTx(tx, txObj.Bloom, name)
+		sendTask[peerInfo] = []*TransactionWithPath{txObj}
+		return true
+	}
+	addToTaskAtLeast3 := func(txObj *TransactionWithPath) bool {
 		txSend := 0
-		retransmit := true // retransmit = true, if the tx don't send because of all peers were busy
 		tx := txObj.Tx
 		s.cache.ttlCheck(tx)
+		var skipedPeers map[string]*peerInfo
 		for name, peerInfo := range s.peers {
 			if txSend > 3 {
 				break
 			}
 			if s.cache.txHadPath(tx, name) {
-				retransmit = false
+				skipedPeers[name] = peerInfo
 				continue
 			}
-			if _, ok := sendTask[peerInfo]; ok {
-				s.cache.addTx(tx, nil, name)
-				sendTask[peerInfo] = append(sendTask[peerInfo], txObj)
+			if addToTask(name, peerInfo, txObj) {
 				txSend++
-				continue
 			}
-			if !peerInfo.trySetBusy() {
-				continue
+		}
+		for name, peerInfo := range skipedPeers {
+			if txSend >= 3 {
+				break
 			}
-			s.cache.addTx(tx, nil, name)
-			sendTask[peerInfo] = []*TransactionWithPath{txObj}
-			txSend++
+			if addToTask(name, peerInfo, txObj) {
+				txSend++
+			}
 		}
-		if txSend > 0 {
-			s.cache.copyTxBloom(tx, txObj.Bloom)
-			return false
-		}
-		return retransmit
+		s.cache.copyTxBloom(tx, txObj.Bloom)
+		return txSend == 0
 	}
 
 	oldTxs := s.delayedTxs[:]
@@ -255,7 +265,7 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 
 	for _, tx := range oldTxs {
 		txObj := &TransactionWithPath{Tx: tx, Bloom: &types.Bloom{}}
-		retransmit := addToTask(txObj)
+		retransmit := addToTaskAtLeast3(txObj)
 		if retransmit {
 			s.delayedTxs = append(s.delayedTxs, tx)
 		}
