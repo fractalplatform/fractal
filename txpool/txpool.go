@@ -35,9 +35,9 @@ import (
 )
 
 var (
-	evictionInterval    = 3 * time.Minute  // Time interval to check for evictable transactions
+	evictionInterval    = 15 * time.Minute // Time interval to check for evictable transactions
 	statsReportInterval = 10 * time.Second // Time interval to report transaction pool stats
-	resendTxInterval    = 10 * time.Second // Time interval to resend transaction
+	resendTxInterval    = time.Minute      // Time interval to resend transaction
 )
 
 const (
