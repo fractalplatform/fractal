@@ -53,7 +53,7 @@
 		"feeName": "fractal.fee",
 		"systemToken": "ftoken"
 	},
-	"timestamp": 1555776000000,
+	"timestamp": 1559620800000,
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{
