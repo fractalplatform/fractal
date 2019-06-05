@@ -285,6 +285,9 @@ func (sys *System) RefundCandidate(epoch uint64, candidate string, number uint64
 			break
 		}
 		freeze++
+		if tstate.Epoch == tstate.PreEpoch {
+			break
+		}
 		tepoch = tstate.PreEpoch
 	}
 	if freeze < sys.config.FreezeEpochSize {
