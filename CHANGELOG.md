@@ -1,4 +1,12 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.17] - 2019-06-05
+### Changed
+- [GENESIS] modify blockchain sys account name
+### Fixed
+- [BLOCKCHAIN] modify blockchain.HasState function
+- [RPC] fix GetDelegatedByTime rpc interface
+
+
 ## [0.0.16] - 2019-06-04
 ### Changed
 - [MAKEFILE] fixed bug of target build_workspace
@@ -126,6 +134,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.17]: https://github.com/fractalplatform/fractal/compare/v0.0.16...v0.0.17
 [0.0.16]: https://github.com/fractalplatform/fractal/compare/v0.0.15...v0.0.16
 [0.0.15]: https://github.com/fractalplatform/fractal/compare/v0.0.14...v0.0.15
 [0.0.14]: https://github.com/fractalplatform/fractal/compare/v0.0.13...v0.0.14

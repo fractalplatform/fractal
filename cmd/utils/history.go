@@ -41,6 +41,13 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.17 - 2019-06-05",
+		`### Changed
+- [GENESIS] modify blockchain sys account name
+### Fixed
+- [BLOCKCHAIN] modify blockchain.HasState function
+- [RPC] fix GetDelegatedByTime rpc interface
+`,
 		"0.0.16 - 2019-06-04",
 		`### Changed
 - [MAKEFILE] fixed bug of target build_workspace
