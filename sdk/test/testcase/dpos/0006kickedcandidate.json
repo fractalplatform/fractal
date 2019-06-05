@@ -1,8 +1,8 @@
 [{
-    "comment": "fractal.admin create account candidate0006 & transfer 1000000 ft",
+    "comment": "fractal.founder create account candidate0006 & transfer 1000000 ft",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "createaccount",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.account",
     "gas": 30000000,
     "value": 1000000000000000000000000,
@@ -42,10 +42,10 @@
     "contain": "no permission"
 },
 {
-    "comment": "fractal.admin kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, wrong receipt",
+    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, wrong receipt",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.account",
     "gas": 30000000,
     "value": 0,
@@ -56,10 +56,10 @@
     "contain": "fractal.dpos"
 },
 {
-    "comment": "fractal.admin kickedcandidate [candidate0006,candidate0007] & transfer 1000 ft, value zero",
+    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 1000 ft, value zero",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 1000000000000000000000,
@@ -70,10 +70,10 @@
     "contain": "is zero"
 },
 {
-    "comment": "fractal.admin kickedcandidate [candidate0006,candidate0007] & transfer 0 ft",
+    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 ft",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
@@ -132,9 +132,9 @@
     "succeed": false,
     "contain": "not in freeze"
 }, {
-    "comment": "fractal.admin votecandidate candidate0006 & transfer 2000 ft, votecandidate after kickedcandidate",
+    "comment": "fractal.founder votecandidate candidate0006 & transfer 2000 ft, votecandidate after kickedcandidate",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
@@ -147,10 +147,10 @@
     "contain": "not in normal"
 },
 {
-    "comment": "fractal.admin kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, kickedcandidate after kickedcandidate",
+    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, kickedcandidate after kickedcandidate",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,

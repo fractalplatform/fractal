@@ -46,7 +46,7 @@
 			"blockReward": 0
 		},
 		"snapshotInterval": 3600000,
-		"systemName": "fractal.admin",
+		"systemName": "fractal.founder",
 		"accountName": "fractal.account",
 		"assetName": "fractal.asset",
 		"dposName": "fractal.dpos",
@@ -57,24 +57,24 @@
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{
-		"name": "fractal.admin",
-		"founder": "fractal.admin",
+		"name": "fractal.founder",
+		"founder": "fractal.founder",
 		"pubKey": "0x045f8f01767c4467921591bdf18f18e851fa34d17cefe9ea02b06859b6b9f13053f5250a1a7da28b7b702b5bec3706be4c32731ba784a3bf2258e698ec6d14d63d"
 	}, {
 		"name": "fractal.account",
-		"founder": "fractal.admin",
+		"founder": "fractal.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.asset",
-		"founder": "fractal.admin",
+		"founder": "fractal.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.dpos",
-		"founder": "fractal.admin",
+		"founder": "fractal.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
 		"name": "fractal.fee",
-		"founder": "fractal.admin",
+		"founder": "fractal.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}],
 	"allocCandidates": [],
@@ -83,8 +83,8 @@
 		"symbol": "ft",
 		"amount": 10000000000000000000000000000,
 		"decimals": 18,
-		"founder": "fractal.admin",
-		"owner": "fractal.admin",
+		"founder": "fractal.founder",
+		"owner": "fractal.founder",
 		"upperLimit": 10000000000000000000000000000
 	}]
 }

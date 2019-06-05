@@ -57,7 +57,7 @@ func getAccountManager() *accountmanager.AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("fractal.admin"), common.Name("systestname"), common.Name(""), 0, *pubkey, "")
+	am.CreateAccount(common.Name("fractal.founder"), common.Name("systestname"), common.Name(""), 0, *pubkey, "")
 	am.CreateAccount(common.Name("fractal"), common.Name("fractal.fee"), common.Name(""), 0, *pubkey, "")
 	return am
 }

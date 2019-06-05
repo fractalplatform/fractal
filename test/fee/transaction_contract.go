@@ -37,10 +37,10 @@ import (
 )
 
 var (
-	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	adminAccount  = common.Name("fractal.admin")
-	accAccount    = common.Name("fractal.account")
-	feeAccount    = common.Name("fractal.fee")
+	privateKey, _  = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	founderAccount = common.Name("fractal.founder")
+	accAccount     = common.Name("fractal.account")
+	feeAccount     = common.Name("fractal.fee")
 
 	normal_a   = common.Name("normalaccta")
 	normal_b   = common.Name("normalacctb")
@@ -154,7 +154,7 @@ func formWithdrawContractFeeInput(abifile string, userId *big.Int) ([]byte, erro
 }
 
 func generateAccount() {
-	nonce, _ = testcommon.GetNonce(adminAccount)
+	nonce, _ = testcommon.GetNonce(founderAccount)
 	issueAssetID = int64(nonce/4 + 1)
 	contract_a_ID = int64(4105 + 4*nonce/4)
 
@@ -173,7 +173,7 @@ func generateAccount() {
 	c_author_0_priv = newPrivateKey_c
 	fmt.Println("priv_c ", hex.EncodeToString(crypto.FromECDSA(newPrivateKey_c)), " pubKey_c ", pubKey_c.String())
 
-	balance, _ := testcommon.GetAccountBalanceByID(adminAccount, assetID)
+	balance, _ := testcommon.GetAccountBalanceByID(founderAccount, assetID)
 	balance.Div(balance, big.NewInt(10))
 
 	normal_a = common.Name(fmt.Sprintf("normalaccta%d", nonce))
@@ -188,7 +188,7 @@ func generateAccount() {
 		PublicKey:   pubKey_a,
 	}
 	b, _ := rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, founderAccount, accAccount, nonce, assetID, balance, b, []*types.KeyPair{key})
 
 	acct = &accountmanager.CreateAccountAction{
 		AccountName: normal_b,
@@ -196,7 +196,7 @@ func generateAccount() {
 		PublicKey:   pubKey_b,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce+1, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, founderAccount, accAccount, nonce+1, assetID, balance, b, []*types.KeyPair{key})
 
 	acct = &accountmanager.CreateAccountAction{
 		AccountName: contract_a,
@@ -204,7 +204,7 @@ func generateAccount() {
 		PublicKey:   pubKey_c,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce+2, assetID, big.NewInt(1000000000000), b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, founderAccount, accAccount, nonce+2, assetID, big.NewInt(1000000000000), b, []*types.KeyPair{key})
 
 	acct = &accountmanager.CreateAccountAction{
 		AccountName: contract_b,
@@ -212,7 +212,7 @@ func generateAccount() {
 		PublicKey:   pubKey_c,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, adminAccount, accAccount, nonce+3, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, founderAccount, accAccount, nonce+3, assetID, balance, b, []*types.KeyPair{key})
 
 	for {
 		time.Sleep(10 * time.Second)
