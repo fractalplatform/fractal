@@ -563,7 +563,7 @@ func (dpos *Dpos) IsFirst(timestamp uint64) bool {
 func (dpos *Dpos) GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (*big.Int, error) {
 	sys := NewSystem(state, dpos.config)
 	candidateInfo, err := sys.GetCandidateInfoByTime(sys.config.epoch(timestamp), candidate, timestamp)
-	if err != nil {
+	if err != nil || candidateInfo == nil {
 		return big.NewInt(0), err
 	}
 	return new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), nil
@@ -598,7 +598,7 @@ func (dpos *Dpos) GetNextEpoch(state *state.StateDB, epoch uint64) (uint64, erro
 	for {
 		epoch++
 		if epoch > latest {
-			return 0, fmt.Errorf("overflow")
+			return 0, nil
 		}
 		gstate, err := sys.GetState(epoch)
 		if err != nil && !strings.Contains(err.Error(), "not found") {
