@@ -99,7 +99,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if err := m.CreateAccount(common.Name("fractal.admin"), name, common.Name(""), 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
+		if err := m.CreateAccount(common.Name("fractal.founder"), name, common.Name(""), 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
 			t.Fatal(err)
 		}
 	}

@@ -1,8 +1,8 @@
 [{
-    "comment": "fractal.admin create account candidate0004 & transfer 1000000 ft",
+    "comment": "fractal.founder create account candidate0004 & transfer 1000000 ft",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "createaccount",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.account",
     "gas": 30000000,
     "value": 1000000000000000000000000,
@@ -15,14 +15,14 @@
     "succeed": true
 },
 {
-    "comment": "fractal.admin votecandidate fractal.admin & transfer 1000 ft, wrong receipt",
+    "comment": "fractal.founder votecandidate fractal.founder & transfer 1000 ft, wrong receipt",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.account",
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "Candidate": "fractal.admin",
+        "Candidate": "fractal.founder",
         "Stake": 1000000000000000000000
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -30,9 +30,9 @@
     "contain": "fractal.dpos"
 },
 {
-    "comment": "fractal.admin votecandidate fractal.account & transfer 1000 ft, not exist",
+    "comment": "fractal.founder votecandidate fractal.account & transfer 1000 ft, not exist",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
@@ -45,14 +45,14 @@
     "contain": "not exist"
 },
 {
-    "comment": "fractal.admin votecandidate fractal.admin & transfer 1000 ft, value not zero",
+    "comment": "fractal.founder votecandidate fractal.founder & transfer 1000 ft, value not zero",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 1000000000000000000000,
     "payload": {
-        "Candidate": "fractal.admin",
+        "Candidate": "fractal.founder",
         "Stake": 1000000000000000000000
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -60,14 +60,14 @@
     "contain": "is zero"
 },
 {
-    "comment": "fractal.admin votecandidate fractal.admin & transfer 1000 ft, insufficient",
+    "comment": "fractal.founder votecandidate fractal.founder & transfer 1000 ft, insufficient",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "Candidate": "fractal.admin",
+        "Candidate": "fractal.founder",
         "Stake": 1000000000000000000000
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -75,14 +75,14 @@
     "contain": "insufficient"
 },
 {
-    "comment": "fractal.admin votecandidate fractal.admin & transfer 100000000000 ft, non divisibility",
+    "comment": "fractal.founder votecandidate fractal.founder & transfer 100000000000 ft, non divisibility",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "Candidate": "fractal.admin",
+        "Candidate": "fractal.founder",
         "Stake": 100000000000000000000000000000
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -90,14 +90,14 @@
     "contain": "invalid vote stake"
 },
 {
-    "comment": "fractal.admin votecandidate fractal.admin & transfer 1000 ft, non divisibility",
+    "comment": "fractal.founder votecandidate fractal.founder & transfer 1000 ft, non divisibility",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "Candidate": "fractal.admin",
+        "Candidate": "fractal.founder",
         "Stake": 1001000000000000000000
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -105,14 +105,14 @@
     "contain": "non divisibility"
 },
 {
-    "comment": "fractal.admin votecandidate fractal.admin & transfer 2000 ft",
+    "comment": "fractal.founder votecandidate fractal.founder & transfer 2000 ft",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "Candidate": "fractal.admin",
+        "Candidate": "fractal.founder",
         "Stake": 2000000000000000000000
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -132,9 +132,9 @@
     "succeed": true
 },
 {
-    "comment": "fractal.admin votecandidate candidate0004 & transfer 2000 ft",
+    "comment": "fractal.founder votecandidate candidate0004 & transfer 2000 ft",
     "type": "votecandidate",
-    "from": "fractal.admin",
+    "from": "fractal.founder",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,

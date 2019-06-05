@@ -128,7 +128,7 @@ var DefaultChainconfig = &ChainConfig{
 		BlockReward:                   big.NewInt(5),
 	},
 	SnapshotInterval: 180000,
-	SysName:          "fractal.admin",
+	SysName:          "fractal.founder",
 	AccountName:      "fractal.account",
 	AssetName:        "fractal.asset",
 	DposName:         "fractal.dpos",

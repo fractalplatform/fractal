@@ -59,7 +59,7 @@ ftservice:
     percentile: 50
   miner:
     start: true
-    name: "fractal.admin"
+    name: "fractal.founder"
     private: ["289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"]
     extra: "system"
   metrics:
