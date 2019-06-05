@@ -231,7 +231,6 @@ func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 
 	bc.currentBlock.Store(bc.genesisBlock)
 	bc.irreversibleNumber.Store(bc.genesisBlock.NumberU64())
-
 	return nil
 }
 
@@ -399,7 +398,8 @@ func (bc *BlockChain) HasBlock(hash common.Hash, number uint64) bool {
 
 // HasState checks if state trie is fully present in the database or not.
 func (bc *BlockChain) HasState(hash common.Hash) bool {
-	return rawdb.ReadBlockStateOut(bc.db, hash) != nil
+	_, err := state.New(hash, bc.stateCache)
+	return err == nil
 }
 
 // HasBlockAndState checks if a block and  state  is fully present  in the database or not.
@@ -408,7 +408,7 @@ func (bc *BlockChain) HasBlockAndState(hash common.Hash, number uint64) bool {
 	if block == nil {
 		return false
 	}
-	return bc.HasState(hash)
+	return bc.HasState(block.Root())
 }
 
 // GetBlock retrieves a block from the database by hash and number, caching it if found.
@@ -687,7 +687,6 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				}
 				return false, err
 			}
-
 		}
 
 		// Write the positional metadata for transaction/receipt lookups and preimages
