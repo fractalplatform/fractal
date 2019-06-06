@@ -70,7 +70,7 @@ func (n Name) IsValid(reg *regexp.Regexp, length uint64) bool {
 }
 
 // IsChildren name children
-func (n Name) IsChildren(name Name, reg *regexp.Regexp, length uint64) bool {
+func (n Name) IsChildren(name Name, length uint64) bool {
 	if uint64(len(n.String())) > length {
 		return false
 	}
