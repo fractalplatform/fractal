@@ -1237,6 +1237,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 func opGetAssetID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	Offset, Size := stack.pop(), stack.pop()
 	assetName := memory.Get(Offset.Int64(), Size.Int64())
+	assetName = bytes.TrimRight(assetName, "\x00")
 	name := string(assetName)
 	if asset, err := evm.AccountDB.GetAssetInfoByName(name); err == nil {
 		if asset != nil {
@@ -1256,16 +1257,17 @@ func opGetAssetID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	Offset, Size := stack.pop(), stack.pop()
 	accountName := memory.Get(Offset.Int64(), Size.Int64())
+	accountName = bytes.TrimRight(accountName, "\x00")
 	name := string(accountName)
 
 	if acct, err := evm.AccountDB.GetAccountByName(common.Name(name)); err == nil {
 		if acct != nil {
 			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
 		} else {
-			stack.push(big.NewInt(-1))
+			stack.push(evm.interpreter.intPool.getZero())
 		}
 	} else {
-		stack.push(big.NewInt(-1))
+		stack.push(evm.interpreter.intPool.getZero())
 	}
 
 	evm.interpreter.intPool.put(Offset, Size)
