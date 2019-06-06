@@ -1,4 +1,12 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.18] - 2019-06-06
+### Fixed
+- [ACCOUNT] modify children check function
+### Add
+- [CONTRACT] contract add getassetid api 
+- [MINER] fix should counter & add delay duration for miner
+
+
 ## [0.0.17] - 2019-06-05
 ### Changed
 - [GENESIS] modify blockchain sys account name
@@ -134,6 +142,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.18]: https://github.com/fractalplatform/fractal/compare/v0.0.17...v0.0.18
 [0.0.17]: https://github.com/fractalplatform/fractal/compare/v0.0.16...v0.0.17
 [0.0.16]: https://github.com/fractalplatform/fractal/compare/v0.0.15...v0.0.16
 [0.0.15]: https://github.com/fractalplatform/fractal/compare/v0.0.14...v0.0.15
