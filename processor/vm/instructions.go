@@ -1233,7 +1233,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	return nil, nil
 }
 
-// opGetAccountID get account ID by name
+// opGetAssetID get asset ID by name
 func opGetAssetID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	Offset, Size := stack.pop(), stack.pop()
 	assetName := memory.Get(Offset.Int64(), Size.Int64())
