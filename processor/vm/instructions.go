@@ -1360,6 +1360,7 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	offset, size := stack.pop(), stack.pop()
 	ret := memory.Get(offset.Int64(), size.Int64())
+	fmt.Println("===", ret)
 	ret = bytes.TrimRight(ret, "\x00")
 	desc := string(ret)
 
