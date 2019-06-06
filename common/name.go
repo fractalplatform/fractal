@@ -79,7 +79,7 @@ func (n Name) IsChildren(name Name, reg *regexp.Regexp, length uint64) bool {
 		return false
 	}
 
-	if strings.Contains(name.String(), n.String()) {
+	if strings.HasPrefix(name.String(), n.String()) {
 		parent := FindStringSubmatch(reg, n.String())
 		children := FindStringSubmatch(reg, name.String())
 		len := len(parent)
