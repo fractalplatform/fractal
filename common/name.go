@@ -70,20 +70,15 @@ func (n Name) IsValid(reg *regexp.Regexp, length uint64) bool {
 }
 
 // IsChildren name children
-func (n Name) IsChildren(name Name, reg *regexp.Regexp, length uint64) bool {
+func (n Name) IsChildren(name Name, length uint64) bool {
 	if uint64(len(n.String())) > length {
 		return false
 	}
 
-	if strings.Compare(n.String(), name.String()) == 0 {
-		return false
-	}
-
-	if strings.Contains(name.String(), n.String()) {
-		parent := FindStringSubmatch(reg, n.String())
-		children := FindStringSubmatch(reg, name.String())
-		len := len(parent)
-		return strings.Compare(parent[len-1], children[len-1]) == 0
+	if strings.HasPrefix(name.String(), n.String()) {
+		if len(name.String()) > len(n.String()) && name.String()[len(n.String())] == '.' {
+			return true
+		}
 	}
 	return false
 }
