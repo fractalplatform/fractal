@@ -54,11 +54,12 @@ const (
 type Worker struct {
 	consensus.IConsensus
 
-	mu       sync.Mutex
-	coinbase string
-	privKeys []*ecdsa.PrivateKey
-	pubKeys  [][]byte
-	extra    []byte
+	mu            sync.Mutex
+	delayDuration uint64
+	coinbase      string
+	privKeys      []*ecdsa.PrivateKey
+	pubKeys       [][]byte
+	extra         []byte
 
 	currentWork *Work
 
@@ -148,6 +149,7 @@ func (worker *Worker) mintLoop() {
 				log.Debug("next time coming, will be closing current work", "timestamp", worker.currentWork.currentHeader.Time)
 			}
 			worker.quitWorkRW.Unlock()
+			time.Sleep(time.Duration(worker.delayDuration))
 			quit := make(chan struct{})
 			worker.mintBlock(int64(dpos.Slot(uint64(now.UnixNano()))), quit)
 			timer.Reset(time.Duration(interval - (time.Now().UnixNano() % interval)))
@@ -184,7 +186,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		case dpos.ErrIllegalCandidateName:
 			fallthrough
 		case dpos.ErrIllegalCandidatePubKey:
-			log.Error("failed to mint the block", "timestamp", timestamp, "err", err)
+			log.Error("failed to mint the block", "timestamp", timestamp, "err", err, "candidate", worker.coinbase)
 		default:
 			log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
 		}
@@ -223,6 +225,12 @@ func (worker *Worker) stop() {
 	}
 	close(worker.quit)
 }
+func (worker *Worker) setDelayDuration(delay uint64) error {
+	worker.mu.Lock()
+	defer worker.mu.Unlock()
+	worker.delayDuration = delay
+	return nil
+}
 
 func (worker *Worker) setCoinbase(name string, privKeys []*ecdsa.PrivateKey) {
 	worker.mu.Lock()
@@ -257,7 +265,9 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		return nil, errors.New("mint the future block")
 	}
 	// if dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && timestamp-time.Now().UnixNano() >= int64(dpos.BlockInterval())/10 {
-	if parent.Number.Uint64() > 0 && dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && time.Now().UnixNano()-timestamp <= 2*int64(dpos.BlockInterval())/5 {
+	if parent.Number.Uint64() > 0 &&
+		parent.Time.Int64()+int64(dpos.BlockInterval()) < timestamp &&
+		time.Now().UnixNano()-timestamp <= 2*int64(dpos.BlockInterval())/5 {
 		return nil, errors.New("wait for last block arrived")
 	}
 
