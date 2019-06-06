@@ -47,6 +47,10 @@ func (api *API) SetCoinbase(name string, privKeys []string) error {
 	return api.miner.SetCoinbase(name, privKeys)
 }
 
+func (api *API) SetDelayDuration(delayDuration uint64) error {
+	return api.miner.SetDelayDuration(delayDuration)
+}
+
 func (api *API) SetExtra(extra string) error {
 	return api.miner.SetExtra([]byte(extra))
 }
