@@ -441,7 +441,7 @@ func opGetSnapshotTime(pc *uint64, evm *EVM, contract *Contract, memory *Memory,
 	return nil, nil
 }
 
-func opGetAssetAmount(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+func opGetAssetInfo(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	retOffset, retSize, time, assetID := stack.pop(), stack.pop(), stack.pop(), stack.pop()
 
 	astID := assetID.Uint64()
@@ -1233,12 +1233,34 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	return nil, nil
 }
 
+// opGetAssetID get asset ID by name
+func opGetAssetID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	Offset, Size := stack.pop(), stack.pop()
+	assetName := memory.Get(Offset.Int64(), Size.Int64())
+	assetName = bytes.TrimRight(assetName, "\x00")
+	name := string(assetName)
+	if asset, err := evm.AccountDB.GetAssetInfoByName(name); err == nil {
+		if asset != nil {
+			stack.push(evm.interpreter.intPool.get().SetUint64(asset.GetAssetId()))
+		} else {
+			stack.push(big.NewInt(-1))
+		}
+	} else {
+		stack.push(big.NewInt(-1))
+	}
+
+	evm.interpreter.intPool.put(Offset, Size)
+	return nil, nil
+}
+
 // opGetAccountID get account ID by name
 func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	account := stack.pop()
-	name := common.BigToName(account)
+	Offset, Size := stack.pop(), stack.pop()
+	accountName := memory.Get(Offset.Int64(), Size.Int64())
+	accountName = bytes.TrimRight(accountName, "\x00")
+	name := string(accountName)
 
-	if acct, err := evm.AccountDB.GetAccountByName(name); err == nil {
+	if acct, err := evm.AccountDB.GetAccountByName(common.Name(name)); err == nil {
 		if acct != nil {
 			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
 		} else {
@@ -1248,7 +1270,7 @@ func opGetAccountID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		stack.push(evm.interpreter.intPool.getZero())
 	}
 
-	evm.interpreter.intPool.put(account)
+	evm.interpreter.intPool.put(Offset, Size)
 	return nil, nil
 }
 

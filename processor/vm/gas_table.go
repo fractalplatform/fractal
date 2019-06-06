@@ -426,8 +426,8 @@ func gasBalanceex(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack
 	return gt.Balance, nil
 }
 
-func gasGetAssetAmount(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
-	return gt.GetAssetAmount, nil
+func gasGetAssetInfo(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	return gt.GetAssetInfo, nil
 }
 
 func gasSnapBalance(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
@@ -458,6 +458,11 @@ func gasAddAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack,
 func gasGetAccountID(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 
 	return gt.GetAccountID, nil
+}
+
+func gasGetAssetID(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+
+	return gt.GetAssetID, nil
 }
 
 func gasDestroyAsset(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
