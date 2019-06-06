@@ -51,6 +51,7 @@ type Config struct {
 // MinerConfig miner config
 type MinerConfig struct {
 	Start       bool     `mapstructure:"start"`
+	Delay       uint64   `mapstructure:"delay"`
 	Name        string   `mapstructure:"name"`
 	PrivateKeys []string `mapstructure:"private"`
 	ExtraData   string   `mapstructure:"extra"`

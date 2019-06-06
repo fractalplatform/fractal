@@ -232,7 +232,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 					for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
 						roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
 						if roffset == coffset {
-							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex)]
+							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
 							break
 						}
 					}
@@ -280,7 +280,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 					for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
 						roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
 						if roffset == uint64(index) {
-							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex)]
+							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
 							break
 						}
 					}

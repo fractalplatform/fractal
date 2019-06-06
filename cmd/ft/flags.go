@@ -364,6 +364,15 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("ftservice.miner.start", flags.Lookup("miner_start"))
 
+	// miner
+	flags.Uint64Var(
+		&ftCfgInstance.FtServiceCfg.Miner.Delay,
+		"miner_delay",
+		ftCfgInstance.FtServiceCfg.Miner.Delay,
+		"delay duration for miner",
+	)
+	viper.BindPFlag("ftservice.miner.delay", flags.Lookup("miner_delay"))
+
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.Miner.Name,
 		"miner_name",
