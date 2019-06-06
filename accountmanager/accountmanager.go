@@ -260,7 +260,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
 	//check parent
 	if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
-		if !fromName.IsChildren(accountName, acctRegExp, accountNameLength) {
+		if !fromName.IsChildren(accountName, accountNameLength) {
 			return ErrAccountInvaid
 		}
 	}
@@ -750,7 +750,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 			return nil, err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameLength()) {
 			ba[id] = balance
 		}
 	}
@@ -783,7 +783,7 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 			return big.NewInt(0), err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameLength()) {
 			ba = ba.Add(ba, balance)
 		}
 	}
