@@ -149,7 +149,7 @@ func (worker *Worker) mintLoop() {
 				log.Debug("next time coming, will be closing current work", "timestamp", worker.currentWork.currentHeader.Time)
 			}
 			worker.quitWorkRW.Unlock()
-			time.Sleep(time.Duration(worker.delayDuration))
+			time.Sleep(time.Duration(worker.delayDuration * uint64(time.Millisecond)))
 			quit := make(chan struct{})
 			worker.mintBlock(int64(dpos.Slot(uint64(now.UnixNano()))), quit)
 			timer.Reset(time.Duration(interval - (time.Now().UnixNano() % interval)))
