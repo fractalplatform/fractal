@@ -160,9 +160,9 @@ func NewByzantiumInstructionSet() [256]operation {
 		returns:       true,
 	}
 
-	instructionSet[ASSETAMOUNT] = operation{
-		execute:       opGetAssetAmount,
-		gasCost:       gasGetAssetAmount,
+	instructionSet[ASSETINFO] = operation{
+		execute:       opGetAssetInfo,
+		gasCost:       gasGetAssetInfo,
 		validateStack: makeStackFunc(2, 2),
 		valid:         true,
 		returns:       true,
@@ -212,6 +212,14 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[GETACCOUNTID] = operation{
 		execute:       opGetAccountID,
 		gasCost:       gasGetAccountID,
+		validateStack: makeStackFunc(1, 1),
+		valid:         true,
+		returns:       true,
+	}
+
+	instructionSet[GETASSETID] = operation{
+		execute:       opGetAssetID,
+		gasCost:       gasGetAssetID,
 		validateStack: makeStackFunc(1, 1),
 		valid:         true,
 		returns:       true,

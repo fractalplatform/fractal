@@ -161,12 +161,12 @@ func NewAccountManager(db *state.StateDB) (*AccountManager, error) {
 		ast: asset.NewAsset(db),
 	}
 
-	am.InitAccountCounter()
+	am.initAccountCounter()
 	return am, nil
 }
 
-//InitAccountCounter init account manage counter
-func (am *AccountManager) InitAccountCounter() {
+//initAccountCounter init account manage counter
+func (am *AccountManager) initAccountCounter() {
 	_, err := am.getAccountCounter()
 	if err == ErrCounterNotExist {
 		//var counterID uint64

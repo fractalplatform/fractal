@@ -206,7 +206,7 @@ const (
 	SETASSETOWNER        = 0xc2
 	BALANCEEX            = 0xc3
 	CALLEX               = 0xc4
-	ASSETAMOUNT          = 0xc5
+	ASSETINFO            = 0xc5
 	//snapshot num
 	SNAPSHOTTIME = 0xc6
 	SNAPBALANCE  = 0xc7
@@ -218,6 +218,7 @@ const (
 	CRYPTOCALC     = 0xcc
 	DEDUCTGAS      = 0xcd
 	WITHDRAWFEE    = 0xce
+	GETASSETID     = 0xcf
 )
 
 const (
@@ -406,7 +407,7 @@ var opCodeToString = map[OpCode]string{
 	ADDASSET:      "ADDASSET",
 	ISSUEASSET:    "ISSUEASSET",
 	SNAPSHOTTIME:  "SNAPSHOTTIME",
-	ASSETAMOUNT:   "ASSETAMOUNT",
+	ASSETINFO:     "ASSETINFO",
 	SNAPBALANCE:   "SNAPBALANCE",
 	CALLEX:        "CALLEX",
 	CRYPTOCALC:    "CRYPTOCALC",
