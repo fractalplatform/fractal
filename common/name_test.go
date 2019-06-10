@@ -18,6 +18,7 @@ package common
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"testing"
 )
@@ -38,10 +39,10 @@ func TestValidateName(t *testing.T) {
 		{"short", false},
 		{"longnamelongnamelongnamelongname", false},
 	}
-
+	length := uint64(31)
 	reg := regexp.MustCompile(`^[a-z][a-z0-9]{6,16}(\.[a-z][a-z0-9]{0,16}){0,2}$`)
 	for _, test := range tests {
-		if result := StrToName(test.str).IsValid(reg); result != test.exp {
+		if result := StrToName(test.str).IsValid(reg, length); result != test.exp {
 			t.Errorf("IsValidAccountName(%s) == %v; expected %v, len:%v",
 				test.str, result, test.exp, len(test.str))
 		}
@@ -90,6 +91,7 @@ func TestNameUnmarshalJSON(t *testing.T) {
 }
 
 func TestIsChildren(t *testing.T) {
+	length := uint64(31)
 	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 
 	type fields struct {
@@ -119,9 +121,50 @@ func TestIsChildren(t *testing.T) {
 	//eg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\.[a-z][a-z0-9]{0,16}){0,2}$")
 	for _, tt := range tests {
 
-		if result := tt.fields.from.IsChildren(tt.fields.acct, tt.fields.reg); result != tt.exp {
+		if result := tt.fields.from.IsChildren(tt.fields.acct, length); result != tt.exp {
 			t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
 
+		}
+	}
+}
+
+func TestIsChildren1(t *testing.T) {
+	length := uint64(31)
+	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{2,16})){0,1}(?:\.([a-z0-9]{2,16})){0,1}$`)
+
+	type fields struct {
+		from Name
+		acct Name
+		reg  *regexp.Regexp
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		exp    bool
+	}{
+		{"include1", fields{StrToName("abc5678.abc5678"), StrToName("abc4567.abc5678.abc5678"), acctRegExp}, false},
+		{"include2", fields{StrToName("abc4567.abc5678.abc5678"), StrToName("abc5678.abc5678"), acctRegExp}, false},
+		{"include3", fields{StrToName("abc4567.abc4567.abc4567"), StrToName("abc4567.abc4567.abc4567"), acctRegExp}, false},
+		{"include4", fields{StrToName("abc4567.abc4567"), StrToName("abc4567.abc5678"), acctRegExp}, false},
+		{"include5", fields{StrToName("abc4567"), StrToName("abc4567.abc"), acctRegExp}, true},
+		{"include6", fields{StrToName("abc4567"), StrToName("abc4567.abc4567"), acctRegExp}, true},
+		{"include7", fields{StrToName("abc4567"), StrToName("abc4567.a"), acctRegExp}, false},
+		{"include8", fields{StrToName("abc5678.abc5678"), StrToName("abc456.abc5678.abc5678"), acctRegExp}, false},
+		{"include9", fields{StrToName("abc5678.abc5678"), StrToName("abc4567.abc5678.abc5678"), acctRegExp}, false},
+		{"include10", fields{StrToName("abc4567"), StrToName("abc4567"), acctRegExp}, false},
+	}
+
+	for _, tt := range tests {
+		if len(FindStringSubmatch(tt.fields.reg, tt.fields.acct.String())) > 1 {
+			if result := tt.fields.from.IsChildren(tt.fields.acct, length); result != tt.exp {
+				t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
+			}
+		} else {
+			t.Log(fmt.Sprintf("%q, %v, want %v", tt.name, tt.fields.acct.String(), tt.exp))
+			if tt.exp == true {
+				t.Errorf("%q, want %v", tt.name, tt.exp)
+			}
 		}
 	}
 }

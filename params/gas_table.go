@@ -41,12 +41,13 @@ type GasTable struct {
 	SetOwner        uint64
 	GetAccountTime  uint64
 	GetSnapshotTime uint64
-	GetAssetAmount  uint64
+	GetAssetInfo    uint64
 	SnapBalance     uint64
 	IssueAsset      uint64
 	DestroyAsset    uint64
 	AddAsset        uint64
 	GetAccountID    uint64
+	GetAssetID      uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
 	DeductGas       uint64
@@ -89,12 +90,13 @@ var (
 		WithdrawFee:     700,
 		GetAccountTime:  200,
 		GetSnapshotTime: 200,
-		GetAssetAmount:  200,
+		GetAssetInfo:    200,
 		SnapBalance:     200,
 		IssueAsset:      10000000,
 		DestroyAsset:    200,
 		AddAsset:        200,
 		GetAccountID:    200,
+		GetAssetID:      200,
 		CryptoCalc:      20000,
 		CryptoByte:      1000,
 		DeductGas:       200,
@@ -110,7 +112,7 @@ var (
 		QuadCoeffDiv:         512,
 		SstoreSetGas:         20000,
 		LogDataGas:           8,
-		CallStipend:          2300,
+		CallStipend:          0,
 
 		Sha3Gas:        30,
 		Sha3WordGas:    6,

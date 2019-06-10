@@ -24,7 +24,7 @@ function release {
     notes="NOTES.md"
     echo "Building and releasing $tag..."
     echo "Building and pushing binaries"
-    [[ -e "$notes" ]] && goreleaser --release-notes "$notes" || goreleaser
+    [[ -e "$notes" ]] && goreleaser --release-notes "$notes" --rm-dist
 }
 
 # If passed argument try to use that as tag otherwise read from local repo

@@ -31,6 +31,7 @@ import (
 
 var (
 	assetRegExp       = regexp.MustCompile(`^([a-z][a-z0-9]{1,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
+	assetNameLength   = uint64(31)
 	assetManagerName  = "assetAccount"
 	assetCountPrefix  = "assetCount"
 	assetNameIdPrefix = "assetNameId"
@@ -42,9 +43,18 @@ type Asset struct {
 }
 
 func SetAssetNameConfig(config *Config) bool {
-	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{1,%v})", config.AssetNameLength-1)
-	for i := 0; i < int(config.AssetNameLevel); i++ {
-		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{1,%v})){0,1}", config.SubAssetNameLength)
+	if config.AssetNameLevel < 1 || config.AssetNameLength < config.MainAssetNameMinLength || config.MainAssetNameMinLength >= config.MainAssetNameMaxLength {
+		panic("asset name level config error")
+	}
+
+	if config.AssetNameLevel > 1 && (config.SubAssetNameMinLength < 1 || config.SubAssetNameMinLength >= config.SubAssetNameMaxLength) {
+		return false
+		panic("asset name level config error")
+	}
+
+	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{%v,%v})", config.MainAssetNameMinLength-1, config.MainAssetNameMaxLength-1)
+	for i := 1; i < int(config.AssetNameLevel); i++ {
+		regexpStr += fmt.Sprintf("(?:\\.([a-z0-9]{%v,%v})){0,1}", config.SubAssetNameMinLength, config.SubAssetNameMaxLength)
 	}
 
 	regexp, err := regexp.Compile(fmt.Sprintf("^%s$", regexpStr))
@@ -52,10 +62,16 @@ func SetAssetNameConfig(config *Config) bool {
 		panic(err)
 	}
 	assetRegExp = regexp
+	assetNameLength = config.AssetNameLength
 	return true
 }
+
 func GetAssetNameRegExp() *regexp.Regexp {
 	return assetRegExp
+}
+
+func GetAssetNameLength() uint64 {
+	return assetNameLength
 }
 
 //SetAssetMangerName  set the global asset manager name
@@ -462,7 +478,7 @@ func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) boo
 		return true
 	}
 
-	if !common.StrToName(assetName).IsValid(assetRegExp) {
+	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
 		return false
 	}
 

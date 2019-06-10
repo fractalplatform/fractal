@@ -140,6 +140,10 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 	return nil
 }
 
+func (miner *Miner) SetDelayDuration(delayDuration uint64) error {
+	return miner.worker.setDelayDuration(delayDuration)
+}
+
 // SetExtra extra data
 func (miner *Miner) SetExtra(extra []byte) error {
 	if uint64(len(extra)) > params.MaximumExtraDataSize-65 {

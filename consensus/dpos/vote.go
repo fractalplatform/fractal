@@ -273,9 +273,9 @@ func (sys *System) RefundCandidate(epoch uint64, candidate string, number uint64
 
 	freeze := uint64(0)
 	tepoch := gstate.PreEpoch
-	for i := uint64(0); i < sys.config.FreezeEpochSize+1; i++ {
+	for i := uint64(0); i < sys.config.FreezeEpochSize; i++ {
 		tstate, err := sys.GetState(tepoch)
-		if err != nil {
+		if err != nil && strings.Compare(err.Error(), "epoch not found") != 0 {
 			return err
 		}
 		if tstate == nil {
@@ -285,6 +285,9 @@ func (sys *System) RefundCandidate(epoch uint64, candidate string, number uint64
 			break
 		}
 		freeze++
+		if tstate.Epoch == tstate.PreEpoch {
+			break
+		}
 		tepoch = tstate.PreEpoch
 	}
 	if freeze < sys.config.FreezeEpochSize {

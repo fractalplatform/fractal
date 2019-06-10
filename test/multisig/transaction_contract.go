@@ -34,7 +34,7 @@ import (
 
 var (
 	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	from          = common.Name("fractal.admin")
+	from          = common.Name("fractal.founder")
 	to            = common.Name("fractal.account")
 	aca           = common.Name("accounta")
 	acb           = common.Name("accountb")

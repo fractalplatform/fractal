@@ -79,7 +79,7 @@ type Account struct {
 
 // NewAccount create a new account object.
 func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey, description string) (*Account, error) {
-	if !accountName.IsValid(acctRegExp) {
+	if !accountName.IsValid(acctRegExp, accountNameLength) {
 		return nil, ErrAccountNameInvalid
 	}
 

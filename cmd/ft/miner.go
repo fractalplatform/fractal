@@ -90,7 +90,7 @@ var setCoinbaseCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := common.Name(args[0])
-		if !name.IsValid(am.GetAcountNameRegExp()) {
+		if !name.IsValid(am.GetAcountNameRegExp(), am.GetAcountNameLength()) {
 			jww.ERROR.Println("valid name: " + name)
 			return
 		}
@@ -138,8 +138,19 @@ var setExtraCmd = &cobra.Command{
 	},
 }
 
+var setDelayCmd = &cobra.Command{
+	Use:   "setdelay <delay>",
+	Short: "Set the delay duration of the miner.",
+	Long:  `Set the delay duration of the miner.`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		clientCall(ipcEndpoint, nil, "miner_setDelay", parseUint64(args[0]))
+		printJSON(true)
+	},
+}
+
 func init() {
 	RootCmd.AddCommand(minerCmd)
-	minerCmd.AddCommand(startCmd, forceCmd, stopCmd, miningCmd, setCoinbaseCmd, setExtraCmd)
+	minerCmd.AddCommand(startCmd, forceCmd, stopCmd, miningCmd, setCoinbaseCmd, setExtraCmd, setDelayCmd)
 	minerCmd.PersistentFlags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
 }

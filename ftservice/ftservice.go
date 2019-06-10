@@ -114,6 +114,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	bcc.Processor = txProcessor
 	ftservice.miner = miner.NewMiner(bcc)
+	ftservice.miner.SetDelayDuration(config.Miner.Delay)
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
 	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
 	if config.Miner.Start {
@@ -123,7 +124,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	ftservice.APIBackend = &APIBackend{ftservice: ftservice}
 
 	ftservice.SetGasPrice(ftservice.TxPool().GasPrice())
-
 	return ftservice, nil
 }
 
