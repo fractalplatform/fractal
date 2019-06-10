@@ -30,6 +30,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	router "github.com/fractalplatform/fractal/event"
+	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -320,6 +321,8 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	if headNumber < 1 {
 		return 0, nil
 	}
+
+	log.Info("downloader findAncestor", "headNumber", headNumber, "searchStart", searchStart)
 	searchLength := headNumber - searchStart + 1 + 1
 	if searchLength > 32 {
 		searchLength = 32
@@ -332,13 +335,17 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 
 	for i, hash := range hashes {
 		if dl.blockchain.HasBlock(hash, headNumber-uint64(i)) {
+			log.Info("downloader findAncestor", "hash", hash.Hex(), "number", headNumber-uint64(i))
 			return headNumber - uint64(i), nil
 		}
 	}
 	headNumber -= uint64(len(hashes))
 	searchStart /= 2
+
+	log.Info("downloader findAncestor binary search start")
 	// binary search
 	for headNumber > 0 {
+		log.Info("downloader findAncestor binary:", "headNumber", headNumber, "searchStart", searchStart)
 		var err error
 		var luckResult uint64
 		searchLength := headNumber - searchStart + 1
@@ -360,6 +367,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 			hasBlock0 := dl.blockchain.HasBlock(hashes[0], targetNumber)
 			// maybe we're lucky
 			if len(hashes) == 2 && hasBlock0 && !dl.blockchain.HasBlock(hashes[1], targetNumber+1) {
+				log.Info("downloader findAncestor bins lucky", "targetNumber", targetNumber)
 				luckResult = targetNumber
 				return false // doesn't matter true or false
 			}
@@ -368,16 +376,20 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 			return !hasBlock0
 		})
 		if err != nil {
+			log.Info("downloader findAncestor bins err", "error", err)
 			return 0, err
 		}
 		if luckResult != 0 {
+			log.Info("downloader findAncestor bins luck", "luck", luckResult)
 			return luckResult, nil
 		}
 		if searchResult > 0 {
+			log.Info("downloader findAncestor bins ret", "searchResult", searchResult)
 			return uint64(searchResult) + searchStart - 1, nil
 		}
 		headNumber = searchStart - 1
 		searchStart /= 2
+		log.Info("downloader findAncestor binary-next:", "headNumber", headNumber, "searchStart", searchStart)
 	}
 	// genesis block are same
 	return 0, nil
@@ -398,6 +410,8 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		return false
 	}
 
+	log.Info("downloader station:", "node", adaptor.GetFnode(status.station))
+	log.Info("downloader statusTD x ", "Local", dl.blockchain.GetTd(head.Hash(), head.NumberU64()), "Number", head.NumberU64(), "R", statusTD, "Number", statusNumber)
 	stationSearch := router.NewLocalStation("downloaderSearch", nil)
 	router.StationRegister(stationSearch)
 	defer router.StationUnregister(stationSearch)
@@ -411,6 +425,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		log.Warn("ancestor err", "err", err)
 		return false
 	}
+	log.Info("downloader ancestro:", "ancestor", ancestor)
 	downloadStart := ancestor + 1
 	downloadAmount := statusNumber - ancestor
 	if downloadAmount == 0 {

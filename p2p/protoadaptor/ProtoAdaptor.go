@@ -115,6 +115,11 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 	}
 }
 
+func GetFnode(station router.Station) string {
+	remote := station.Data().(*remotePeer)
+	return remote.peer.Node().String()
+}
+
 func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) error {
 	remote := remotePeer{ws: ws, peer: peer}
 	log.Info("New remote station", "detail", remote.peer.String())
