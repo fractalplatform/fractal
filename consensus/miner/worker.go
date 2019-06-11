@@ -95,7 +95,7 @@ out:
 				if blk := ev.Data.(*types.Block); strings.Compare(blk.Coinbase().String(), worker.coinbase) != 0 {
 					worker.quitWorkRW.Lock()
 					if worker.quitWork != nil {
-						log.Debug("old parent hash coming, will be closing current work", "timestamp", worker.currentWork.currentHeader.Time)
+						log.Debug("old parent hash coming, will be closing current work")
 						close(worker.quitWork)
 						worker.quitWork = nil
 					}
@@ -146,7 +146,7 @@ func (worker *Worker) mintLoop() {
 			if worker.quitWork != nil {
 				close(worker.quitWork)
 				worker.quitWork = nil
-				log.Debug("next time coming, will be closing current work", "timestamp", worker.currentWork.currentHeader.Time)
+				log.Debug("next time coming, will be closing current work")
 			}
 			worker.quitWorkRW.Unlock()
 			time.Sleep(time.Duration(worker.delayDuration * uint64(time.Millisecond)))
