@@ -70,24 +70,27 @@ func main() {
 		voteQ := big.NewInt(0)
 		fmt.Printf("==========================%d==============================\n", epoch)
 		nthread := 10 * runtime.NumCPU()
+		if acctscnt < nthread {
+			nthread = acctscnt
+		}
 		wg := sync.WaitGroup{}
 		wg.Add(nthread)
 		for i := 0; i < nthread; i++ {
 			go func(index int) {
 				wg.Done()
 				for {
-					n := acctscnt/nthread + rand.Intn(acctscnt)%acctscnt
+					n := (acctscnt/nthread)*index + rand.Intn(acctscnt)%acctscnt
 					name := accts[n].AcctName
 					acct := sdk.NewAccount(api, name, priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
-					cnt := rand.Intn(5*index) + 1
+					cnt := rand.Intn(5) + 1
 					for stake := availableStake(api, epoch, name.String()); stake.Cmp(new(big.Int).Mul(unitStakeFunc(), chainCfg.DposCfg.VoterMinQuantity)) == 1; {
 						candidateInfo := candidates[rand.Intn(candidatescnt)]
 						if candidateInfo.Type != dpos.Normal {
 							continue
 						}
-						q := big.NewInt(int64(rand.Intn(10*index)) + chainCfg.DposCfg.VoterMinQuantity.Int64())
+						q := big.NewInt(int64(rand.Intn(100)) + chainCfg.DposCfg.VoterMinQuantity.Int64())
 						stake := new(big.Int).Mul(unitStakeFunc(), q)
-						hash, err := acct.VoteCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, 30000000, &dpos.VoteCandidate{
+						hash, err := acct.VoteCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, 500000, &dpos.VoteCandidate{
 							Candidate: candidateInfo.Name,
 							Stake:     stake,
 						})
