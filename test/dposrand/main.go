@@ -46,7 +46,10 @@ func main() {
 		if err != nil || acct.AccountID < 4097 {
 			break
 		}
-		if acct.AcctName.String() == chainCfg.DposName {
+		if acct.AcctName.String() == chainCfg.DposName ||
+			acct.AcctName.String() == chainCfg.AccountName ||
+			acct.AcctName.String() == chainCfg.AssetName ||
+			acct.AcctName.String() == chainCfg.FeeName {
 			continue
 		}
 		accts = append(accts, acct)
@@ -79,7 +82,7 @@ func main() {
 			go func(index int) {
 				wg.Done()
 				for {
-					n := (acctscnt/nthread)*index + rand.Intn(acctscnt)%acctscnt
+					n := (acctscnt/nthread)*index + rand.Intn(acctscnt/nthread)
 					name := accts[n].AcctName
 					acct := sdk.NewAccount(api, name, priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
 					cnt := rand.Intn(5) + 1
