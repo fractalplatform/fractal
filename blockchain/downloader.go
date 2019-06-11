@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,6 +41,22 @@ const (
 	maxKnownBlocks = 1024 // Maximum block hashes to keep in the known list (prevent DOS)
 )
 
+type errid int
+
+const (
+	other errid = iota
+	ioTimeout
+	ioClose
+	notFind
+	sizeNotEqual
+)
+
+// Error represent error by downloader
+type Error struct {
+	error
+	eid errid
+}
+
 type stationStatus struct {
 	station  router.Station
 	latest   unsafe.Pointer // *NewBlockHashesData
@@ -60,25 +75,23 @@ func (status *stationStatus) getStatus() *NewBlockHashesData {
 
 // Downloader for blockchain sync block.
 type Downloader struct {
-	station         router.Station
 	statusCh        chan *router.Event
 	remotes         *simpleHeap //map[string]*stationStatus
 	remotesMutex    sync.RWMutex
 	blockchain      *BlockChain
 	quit            chan struct{}
 	loopWG          sync.WaitGroup
-	downloading     int32
 	downloadTrigger chan struct{}
 	// bloom           HashBloom
-	maxNumber   uint64
-	knownBlocks mapset.Set
-	subs        []router.Subscription
+	maxNumber     uint64
+	knownBlocks   mapset.Set
+	subs          []router.Subscription
+	downloadCount uint64
 }
 
 // NewDownloader create a new downloader
 func NewDownloader(chain *BlockChain) *Downloader {
 	dl := &Downloader{
-		station:    router.NewLocalStation("downloader", nil),
 		statusCh:   make(chan *router.Event),
 		blockchain: chain,
 		quit:       make(chan struct{}),
@@ -248,19 +261,19 @@ func (dl *Downloader) bestStation() *stationStatus {
 	return dl.remotes.min().(*stationStatus)
 }
 
-func waitEvent(errch chan struct{}, ch chan *router.Event, timeout time.Duration) (*router.Event, error) {
+func waitEvent(errch chan struct{}, ch chan *router.Event, timeout time.Duration) (*router.Event, *Error) {
 	timer := time.After(timeout)
 	select {
 	case e := <-ch:
 		return e, nil
 	case <-timer:
-		return nil, errors.New("timeout")
+		return nil, &Error{errors.New("timeout"), ioTimeout}
 	case <-errch:
-		return nil, errors.New("channel closed")
+		return nil, &Error{errors.New("channel closed"), ioClose}
 	}
 }
 
-func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.Duration, errch chan struct{}) (*router.Event, error) {
+func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.Duration, errch chan struct{}) (*router.Event, *Error) {
 	start := time.Now()
 	defer func() {
 		router.AddAck(e.To, time.Since(start))
@@ -272,7 +285,7 @@ func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.D
 	return waitEvent(errch, ch, timeout)
 }
 
-func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByNumber, errch chan struct{}) ([]common.Hash, error) {
+func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByNumber, errch chan struct{}) ([]common.Hash, *Error) {
 	se := &router.Event{
 		From:     from,
 		To:       to,
@@ -284,10 +297,14 @@ func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByN
 	if err != nil {
 		return nil, err
 	}
-	return e.Data.([]common.Hash), nil
+	hashes := e.Data.([]common.Hash)
+	if len(hashes) != int(req.Amount) {
+		return hashes, &Error{fmt.Errorf("wrong size, expected %d got %d", req.Amount, len(hashes)), sizeNotEqual}
+	}
+	return hashes, nil
 }
 
-func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData, errch chan struct{}) ([]*types.Header, error) {
+func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData, errch chan struct{}) ([]*types.Header, *Error) {
 	se := &router.Event{
 		From:     from,
 		To:       to,
@@ -299,10 +316,14 @@ func getHeaders(from router.Station, to router.Station, req *getBlockHeadersData
 	if err != nil {
 		return nil, err
 	}
-	return e.Data.([]*types.Header), nil
+	headers := e.Data.([]*types.Header)
+	if len(headers) != int(req.Amount) {
+		return headers, &Error{fmt.Errorf("wrong size, expected %d got %d", req.Amount, len(headers)), sizeNotEqual}
+	}
+	return headers, nil
 }
 
-func getBlocks(from router.Station, to router.Station, req []common.Hash, errch chan struct{}) ([]*types.Body, error) {
+func getBlocks(from router.Station, to router.Station, req []common.Hash, errch chan struct{}) ([]*types.Body, *Error) {
 	se := &router.Event{
 		From:     from,
 		To:       to,
@@ -314,85 +335,57 @@ func getBlocks(from router.Station, to router.Station, req []common.Hash, errch 
 	if err != nil {
 		return nil, err
 	}
-	return e.Data.([]*types.Body), nil
+	bodies := e.Data.([]*types.Body)
+	if len(bodies) != len(req) {
+		return bodies, &Error{fmt.Errorf("wrong size, expected %d got %d", len(req), len(bodies)), sizeNotEqual}
+	}
+	return bodies, nil
 }
 
-func (dl *Downloader) findAncestor(from router.Station, to router.Station, headNumber uint64, searchStart uint64, errCh chan struct{}) (uint64, error) {
+func (dl *Downloader) findAncestor(from router.Station, to router.Station, headNumber uint64, preAncestor uint64, errCh chan struct{}) (uint64, *Error) {
 	if headNumber < 1 {
 		return 0, nil
 	}
+	find := func(headnu, length uint64) (uint64, *Error) {
+		hashes, err := getBlockHashes(from, to, &getBlcokHashByNumber{headNumber, length, 0, true}, errCh)
+		if err != nil {
+			return 0, err
+		}
 
-	log.Info("downloader findAncestor", "headNumber", headNumber, "searchStart", searchStart)
-	searchLength := headNumber - searchStart + 1 + 1
+		for i, hash := range hashes {
+			if dl.blockchain.HasBlock(hash, headnu-uint64(i)) {
+				log.Info("downloader findAncestor", "hash", hash.Hex(), "number", headnu-uint64(i))
+				return headnu - uint64(i), nil
+			}
+		}
+		return 0, &Error{errors.New("not find"), notFind}
+	}
+
+	irreversibleNumber := dl.blockchain.IrreversibleNumber()
+	log.Info("downloader findAncestor", "headNumber", headNumber, "preAncestor", preAncestor, "irreversibleNumber", irreversibleNumber)
+	if preAncestor < irreversibleNumber {
+		preAncestor = irreversibleNumber
+	}
+	searchLength := headNumber - preAncestor + 1
 	if searchLength > 32 {
 		searchLength = 32
 	}
-
-	hashes, err := getBlockHashes(from, to, &getBlcokHashByNumber{headNumber, searchLength, 0, true}, errCh)
-	if err != nil {
-		return 0, err
-	}
-
-	for i, hash := range hashes {
-		if dl.blockchain.HasBlock(hash, headNumber-uint64(i)) {
-			log.Info("downloader findAncestor", "hash", hash.Hex(), "number", headNumber-uint64(i))
-			return headNumber - uint64(i), nil
+	for headNumber >= irreversibleNumber {
+		ancestor, err := find(headNumber, searchLength)
+		log.Info("find err", "err", err)
+		if err == nil {
+			return ancestor, err
+		}
+		if err != nil && err.eid == notFind {
+			continue
+		}
+		headNumber -= searchLength
+		searchLength = headNumber - irreversibleNumber + 1
+		if searchLength > 32 {
+			searchLength = 32
 		}
 	}
-	headNumber -= uint64(len(hashes))
-	searchStart /= 2
-
-	log.Info("downloader findAncestor binary search start")
-	// binary search
-	for headNumber > 0 {
-		log.Info("downloader findAncestor binary:", "headNumber", headNumber, "searchStart", searchStart)
-		var err error
-		var luckResult uint64
-		searchLength := headNumber - searchStart + 1
-		searchResult := sort.Search(int(searchLength), func(n int) bool {
-			if err != nil || luckResult != 0 {
-				return false // doesn't matter true or false
-			}
-			targetNumber := uint64(n) + searchStart
-			var hashes []common.Hash
-
-			hashes, err = getBlockHashes(from, to, &getBlcokHashByNumber{targetNumber, 2, 0, false}, errCh)
-			if err != nil {
-				return false // doesn't matter true or false
-			}
-			if len(hashes) < 1 {
-				err = errors.New("wrong length of block hash")
-				return false // doesn't matter true or false
-			}
-			hasBlock0 := dl.blockchain.HasBlock(hashes[0], targetNumber)
-			// maybe we're lucky
-			if len(hashes) == 2 && hasBlock0 && !dl.blockchain.HasBlock(hashes[1], targetNumber+1) {
-				log.Info("downloader findAncestor bins lucky", "targetNumber", targetNumber)
-				luckResult = targetNumber
-				return false // doesn't matter true or false
-			}
-			// return false: move to right/high block
-			// return true:  move to left/low block
-			return !hasBlock0
-		})
-		if err != nil {
-			log.Info("downloader findAncestor bins err", "error", err)
-			return 0, err
-		}
-		if luckResult != 0 {
-			log.Info("downloader findAncestor bins luck", "luck", luckResult)
-			return luckResult, nil
-		}
-		if searchResult > 0 {
-			log.Info("downloader findAncestor bins ret", "searchResult", searchResult)
-			return uint64(searchResult) + searchStart - 1, nil
-		}
-		headNumber = searchStart - 1
-		searchStart /= 2
-		log.Info("downloader findAncestor binary-next:", "headNumber", headNumber, "searchStart", searchStart)
-	}
-	// genesis block are same
-	return 0, nil
+	return 0, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
 }
 
 func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
@@ -402,6 +395,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		log.Debug("status == nil")
 		return false
 	}
+	dl.downloadCount++
 	latestStatus := status.getStatus()
 	statusHash, statusNumber, statusTD := latestStatus.Hash, latestStatus.Number, latestStatus.TD
 	head := dl.blockchain.CurrentBlock()
@@ -412,7 +406,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 
 	log.Info("downloader station:", "node", adaptor.GetFnode(status.station))
 	log.Info("downloader statusTD x ", "Local", dl.blockchain.GetTd(head.Hash(), head.NumberU64()), "Number", head.NumberU64(), "R", statusTD, "Number", statusNumber)
-	stationSearch := router.NewLocalStation("downloaderSearch", nil)
+	stationSearch := router.NewLocalStation(fmt.Sprintf("downloaderSearch%d", dl.downloadCount), nil)
 	router.StationRegister(stationSearch)
 	defer router.StationUnregister(stationSearch)
 
@@ -420,9 +414,13 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	if headNumber > statusNumber {
 		headNumber = statusNumber
 	}
-	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor+1, status.errCh)
+	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
-		log.Warn("ancestor err", "err", err)
+		log.Warn("ancestor err", "err", err, "errid:", err.eid)
+		if err.eid == notFind {
+			log.Warn("Disconnect because ancestor not find:", "station:", fmt.Sprintf("%x", status.station.Name()))
+			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
+		}
 		return false
 	}
 	log.Info("downloader ancestro:", "ancestor", ancestor)
@@ -534,7 +532,7 @@ func (dl *Downloader) loop() {
 	}
 }
 
-func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64) (uint64, error) {
+func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64) (uint64, *Error) {
 	log.Debug("assingDownloadTask:", "hashesLen", len(hashes), "numbersLen", len(numbers), "numbers", numbers)
 	workers := &simpleHeap{cmp: dl.remotes.cmp}
 	dl.remotesMutex.RLock()
@@ -555,6 +553,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 			endNumber:   numbers[i],
 			endHash:     hashes[i],
 			result:      resultCh,
+			taskNo:      dl.downloadCount,
 		})
 	}
 	getReadyTask := func() *downloadTask {
@@ -605,7 +604,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 			return start - 1, nil
 		}
 		if index, err := dl.blockchain.InsertChain(blocks); err != nil {
-			return blocks[index].NumberU64() - 1, err
+			return blocks[index].NumberU64() - 1, &Error{err, other}
 		}
 	}
 	return numbers[len(numbers)-1], nil
@@ -620,6 +619,7 @@ type downloadTask struct {
 	blocks      []*types.Block     // result blocks, length == 0 means failed
 	errorTotal  int                // total error amount
 	result      chan *downloadTask // result channel
+	taskNo      uint64
 }
 
 func (task *downloadTask) Do() {
@@ -639,7 +639,7 @@ func (task *downloadTask) Do() {
 		return
 	}
 	remote := task.worker.station
-	station := router.NewLocalStation("dl"+remote.Name(), nil)
+	station := router.NewLocalStation(fmt.Sprintf("dl%d%s", task.taskNo, remote.Name()), nil)
 	router.StationRegister(station)
 	defer router.StationUnregister(station)
 
