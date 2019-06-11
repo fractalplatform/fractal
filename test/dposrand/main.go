@@ -72,7 +72,7 @@ func main() {
 		voteNum := 0
 		voteQ := big.NewInt(0)
 		fmt.Printf("==========================%d==============================\n", epoch)
-		nthread := 10 * runtime.NumCPU()
+		nthread := runtime.NumCPU()
 		if acctscnt < nthread {
 			nthread = acctscnt
 		}
