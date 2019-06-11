@@ -111,6 +111,7 @@ func NewDownloader(chain *BlockChain) *Downloader {
 
 // Stop stop the downloader
 func (dl *Downloader) Stop() {
+	log.Info("Downloader stopping...")
 	close(dl.quit)
 	for _, sub := range dl.subs {
 		sub.Unsubscribe()
@@ -120,6 +121,7 @@ func (dl *Downloader) Stop() {
 		close(status.errCh)
 	}
 	dl.loopWG.Wait()
+	log.Info("Downloader stopped.")
 }
 
 func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
