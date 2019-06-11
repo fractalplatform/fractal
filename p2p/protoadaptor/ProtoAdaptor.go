@@ -149,6 +149,9 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		if err != nil {
 			return err
 		}
+		if e.To == nil && len(pack.To) != 0 {
+			log.Warn("unknow station:", "to", pack.To)
+		}
 		router.AddNetIn(station, 1)
 		if checkDDOS(monitor, e) {
 			//router.SendTo(nil, nil, router.OneMinuteLimited, e.From)
