@@ -472,14 +472,14 @@ func (a *Asset) IsValidMainAsset(assetName string) bool {
 }
 
 // IsValidOwner check parent owner valid
-func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) bool {
+func (a *Asset) IsValidSubAsset(fromName common.Name, assetName string) (uint64, bool) {
 	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {
-		return true
+		return 0, false
 	}
 
 	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
-		return false
+		return 0, false
 	}
 
 	var an string
@@ -506,11 +506,11 @@ func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) boo
 
 		if assetObj.GetAssetOwner() == fromName {
 			log.Debug("Asset create", "name", an, "owner", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
-			return true
+			return assetId, true
 		}
 	}
 	log.Debug("Asset create failed", "account", fromName, "name", assetName)
-	return false
+	return 0, false
 }
 
 // HasAccess contract asset access
@@ -555,7 +555,7 @@ func (a *Asset) CheckOwner(fromName common.Name, assetID uint64) error {
 			return ErrOwnerMismatch
 		}
 
-		if !a.IsValidSubAssetOwner(fromName, assetObj.GetAssetName()) {
+		if _, isVaild := a.IsValidSubAsset(fromName, assetObj.GetAssetName()); !isVaild {
 			return ErrOwnerMismatch
 		}
 	}
