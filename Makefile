@@ -132,6 +132,6 @@ release: test check docs
 	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
 
 .PHONY: tmp_release
-tmp_release: test check 
+tmp_release: check 
 	@echo "Building and releasing"
 	@export GOPATH=${TEMP_GOPATH} && goreleaser --snapshot --rm-dist 

@@ -24,6 +24,9 @@ import (
 )
 
 var (
+	// ErrCanonicalKnownBlock is returned when a canonical block to import is already known locally.
+	ErrCanonicalKnownBlock = errors.New("canonical block already known")
+
 	// ErrKnownBlock is returned when a block to import is already known locally.
 	ErrKnownBlock = errors.New("block already known")
 
