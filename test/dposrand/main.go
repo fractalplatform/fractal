@@ -7,6 +7,8 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
+	"runtime"
+	"sync"
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
@@ -44,7 +46,10 @@ func main() {
 		if err != nil || acct.AccountID < 4097 {
 			break
 		}
-		if acct.AcctName.String() == chainCfg.DposName {
+		if acct.AcctName.String() == chainCfg.DposName ||
+			acct.AcctName.String() == chainCfg.AccountName ||
+			acct.AcctName.String() == chainCfg.AssetName ||
+			acct.AcctName.String() == chainCfg.FeeName {
 			continue
 		}
 		accts = append(accts, acct)
@@ -63,40 +68,60 @@ func main() {
 		}
 		candidates := getCandidates(api, epoch)
 		candidatescnt := len(candidates)
+		var rw sync.RWMutex
+		voteNum := 0
+		voteQ := big.NewInt(0)
 		fmt.Printf("==========================%d==============================\n", epoch)
-		for {
-			name := accts[rand.Intn(acctscnt)].AcctName
-			acct := sdk.NewAccount(api, name, priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
-			cnt := rand.Intn(5) + 1
-			for stake := availableStake(api, epoch, name.String()); stake.Cmp(new(big.Int).Mul(unitStakeFunc(), chainCfg.DposCfg.VoterMinQuantity)) == 1; {
-				candidateInfo := candidates[rand.Intn(candidatescnt)]
-				if candidateInfo.Type != dpos.Normal {
-					continue
-				}
-				q := big.NewInt(int64(rand.Intn(10)) + chainCfg.DposCfg.VoterMinQuantity.Int64())
-				stake := new(big.Int).Mul(unitStakeFunc(), q)
-				hash, err := acct.VoteCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, 30000000, &dpos.VoteCandidate{
-					Candidate: candidateInfo.Name,
-					Stake:     stake,
-				})
-				if *_detail {
-					fmt.Printf("%v ==> %v %v(%v), hash %v, err %v\n", name, candidateInfo.Name, stake, q, hash.String(), err)
-				}
-				if err != nil || getTxEpoch(api, hash) != epoch {
-					break
-				}
-				candidateInfo.TotalQuantity = new(big.Int).Add(candidateInfo.TotalQuantity, q)
-				cnt--
-				if cnt == 0 {
-					break
-				}
-			}
-			if tepoch := epochFunc(getCurrentBlockTimestamp(api)); epoch != tepoch {
-				break
-			}
+		nthread := runtime.NumCPU()
+		if acctscnt < nthread {
+			nthread = acctscnt
 		}
+		wg := sync.WaitGroup{}
+		wg.Add(nthread)
+		for i := 0; i < nthread; i++ {
+			go func(index int) {
+				wg.Done()
+				for {
+					n := (acctscnt/nthread)*index + rand.Intn(acctscnt/nthread)
+					name := accts[n].AcctName
+					acct := sdk.NewAccount(api, name, priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
+					cnt := rand.Intn(5) + 1
+					for stake := availableStake(api, epoch, name.String()); stake.Cmp(new(big.Int).Mul(unitStakeFunc(), chainCfg.DposCfg.VoterMinQuantity)) == 1; {
+						candidateInfo := candidates[rand.Intn(candidatescnt)]
+						if candidateInfo.Type != dpos.Normal {
+							continue
+						}
+						q := big.NewInt(int64(rand.Intn(100)) + chainCfg.DposCfg.VoterMinQuantity.Int64())
+						stake := new(big.Int).Mul(unitStakeFunc(), q)
+						hash, err := acct.VoteCandidate(common.StrToName(chainCfg.DposName), big.NewInt(0), chainCfg.SysTokenID, 500000, &dpos.VoteCandidate{
+							Candidate: candidateInfo.Name,
+							Stake:     stake,
+						})
+						if *_detail {
+							fmt.Printf("%04d: %v ==> %v %v(%v), hash %v, err %v\n", index, name, candidateInfo.Name, stake, q, hash.String(), err)
+						}
+						if err != nil || getTxEpoch(api, hash) != epoch {
+							break
+						}
+						rw.Lock()
+						voteNum++
+						voteQ = new(big.Int).Add(voteQ, q)
+						candidateInfo.TotalQuantity = new(big.Int).Add(candidateInfo.TotalQuantity, q)
+						rw.Unlock()
+						cnt--
+						if cnt == 0 {
+							break
+						}
+					}
+					if tepoch := epochFunc(getCurrentBlockTimestamp(api)); epoch != tepoch {
+						break
+					}
+				}
+			}(i)
+		}
+		wg.Wait()
 		bts, _ := json.Marshal(candidates)
-		fmt.Printf("%v result:\n %s\n", epoch, string(bts))
+		fmt.Printf("%v(%v:%v) result:\n %s\n", voteNum, voteQ, epoch, string(bts))
 		fmt.Printf("==========================END==============================\n")
 		prevEpoch = epoch
 	}

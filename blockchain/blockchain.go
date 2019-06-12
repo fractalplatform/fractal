@@ -624,8 +624,12 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 			// Find the next state trie we need to commit
 			chosen := bc.GetHeaderByNumber(current - bc.triesInMemory).Number.Uint64()
+
 			for !bc.triegc.Empty() {
+				sizegc := bc.triegc.Size()
 				stateRoot, number := bc.triegc.Pop()
+				log.Debug("Memory trie", "number", uint64(-number), "sizegc", sizegc)
+
 				if bc.stateCacheClean {
 					log.Debug("Refresh block cache tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number)
 					if err := triedb.Commit(stateRoot.(WriteStateToDB).Root, true); err != nil {
