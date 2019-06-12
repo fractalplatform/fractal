@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -83,10 +84,9 @@ type Downloader struct {
 	loopWG          sync.WaitGroup
 	downloadTrigger chan struct{}
 	// bloom           HashBloom
-	maxNumber     uint64
-	knownBlocks   mapset.Set
-	subs          []router.Subscription
-	downloadCount uint64
+	maxNumber   uint64
+	knownBlocks mapset.Set
+	subs        []router.Subscription
 }
 
 // NewDownloader create a new downloader
@@ -356,7 +356,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 
 		for i, hash := range hashes {
 			if dl.blockchain.HasBlock(hash, headnu-uint64(i)) {
-				log.Info("downloader findAncestor", "hash", hash.Hex(), "number", headnu-uint64(i))
+				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headnu-uint64(i))
 				return headnu - uint64(i), nil
 			}
 		}
@@ -364,7 +364,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	}
 
 	irreversibleNumber := dl.blockchain.IrreversibleNumber()
-	log.Info("downloader findAncestor", "headNumber", headNumber, "preAncestor", preAncestor, "irreversibleNumber", irreversibleNumber)
+	log.Debug("downloader findAncestor", "headNumber", headNumber, "preAncestor", preAncestor, "irreversibleNumber", irreversibleNumber)
 	if preAncestor < irreversibleNumber {
 		preAncestor = irreversibleNumber
 	}
@@ -374,7 +374,6 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	}
 	for headNumber >= irreversibleNumber {
 		ancestor, err := find(headNumber, searchLength)
-		log.Info("find err", "err", err)
 		if err == nil {
 			return ancestor, err
 		}
@@ -397,7 +396,6 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		log.Debug("status == nil")
 		return false
 	}
-	dl.downloadCount++
 	latestStatus := status.getStatus()
 	statusHash, statusNumber, statusTD := latestStatus.Hash, latestStatus.Number, latestStatus.TD
 	head := dl.blockchain.CurrentBlock()
@@ -406,9 +404,10 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		return false
 	}
 
-	log.Info("downloader station:", "node", adaptor.GetFnode(status.station))
-	log.Info("downloader statusTD x ", "Local", dl.blockchain.GetTd(head.Hash(), head.NumberU64()), "Number", head.NumberU64(), "R", statusTD, "Number", statusNumber)
-	stationSearch := router.NewLocalStation(fmt.Sprintf("downloaderSearch%d", dl.downloadCount), nil)
+	log.Debug("downloader station:", "node", adaptor.GetFnode(status.station))
+	log.Debug("downloader statusTD x ", "Local", dl.blockchain.GetTd(head.Hash(), head.NumberU64()), "Number", head.NumberU64(), "R", statusTD, "Number", statusNumber)
+	rand.Seed(time.Now().UnixNano())
+	stationSearch := router.NewLocalStation(fmt.Sprintf("downloaderSearch%d", rand.Int()), nil)
 	router.StationRegister(stationSearch)
 	defer router.StationUnregister(stationSearch)
 
@@ -425,7 +424,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		}
 		return false
 	}
-	log.Info("downloader ancestro:", "ancestor", ancestor)
+	log.Debug("downloader ancestro:", "ancestor", ancestor)
 	downloadStart := ancestor + 1
 	downloadAmount := statusNumber - ancestor
 	if downloadAmount == 0 {
@@ -555,7 +554,6 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 			endNumber:   numbers[i],
 			endHash:     hashes[i],
 			result:      resultCh,
-			taskNo:      dl.downloadCount,
 		})
 	}
 	getReadyTask := func() *downloadTask {
@@ -621,7 +619,6 @@ type downloadTask struct {
 	blocks      []*types.Block     // result blocks, length == 0 means failed
 	errorTotal  int                // total error amount
 	result      chan *downloadTask // result channel
-	taskNo      uint64
 }
 
 func (task *downloadTask) Do() {
@@ -641,7 +638,8 @@ func (task *downloadTask) Do() {
 		return
 	}
 	remote := task.worker.station
-	station := router.NewLocalStation(fmt.Sprintf("dl%d%s", task.taskNo, remote.Name()), nil)
+	rand.Seed(time.Now().UnixNano())
+	station := router.NewLocalStation(fmt.Sprintf("dl%d%s", rand.Int(), remote.Name()), nil)
 	router.StationRegister(station)
 	defer router.StationUnregister(station)
 
