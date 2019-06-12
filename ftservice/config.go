@@ -46,6 +46,8 @@ type Config struct {
 
 	StatePruning    bool `mapstructure:"statepruning"`
 	ContractLogFlag bool `mapstructure:"contractlog"`
+
+	BadHashs []string `mapstructure:"BadHashs"`
 }
 
 // MinerConfig miner config

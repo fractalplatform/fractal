@@ -31,6 +31,9 @@ var (
 	errReorgSystemBlock = errors.New("not reorg system block")
 
 	errGenesisNoConfig = errors.New("genesis has no chain configuration")
+
+	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
+	ErrBlacklistedHash = errors.New("blacklisted hash")
 )
 
 // GenesisMismatchError is raised when trying to overwrite an existing
