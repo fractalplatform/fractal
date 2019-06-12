@@ -639,7 +639,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				}
 
 				if uint64(-number) > chosen {
-					bc.triegc.Push(stateRoot, -number)
+					bc.triegc.Push(stateRoot, number)
 					break
 				}
 
