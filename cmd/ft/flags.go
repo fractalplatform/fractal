@@ -266,6 +266,24 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("ftservice.statepruning", flags.Lookup("statepruning_enable"))
 
+	// start number
+	flags.Uint64Var(
+		&ftCfgInstance.FtServiceCfg.StartNumber,
+		"start_number",
+		ftCfgInstance.FtServiceCfg.StartNumber,
+		"start chain with a specified block number.",
+	)
+	viper.BindPFlag("ftservice.startnumber", flags.Lookup("start_number"))
+
+	// add bad block hashs
+	flags.StringSliceVar(
+		&ftCfgInstance.FtServiceCfg.BadHashes,
+		"bad_hashes",
+		ftCfgInstance.FtServiceCfg.BadHashes,
+		"blockchain refuse bad block hashes",
+	)
+	viper.BindPFlag("ftservice.badhashes", flags.Lookup("bad_hashes"))
+
 	// txpool
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.TxPool.NoLocals,
