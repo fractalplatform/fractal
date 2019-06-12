@@ -954,8 +954,11 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 			return fmt.Errorf("reorg chain too much,dropNum %v, drop %v", oldChain[0].NumberU64(), len(oldChain))
 		}
 	} else {
-		log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(),
-			"oldhash", oldBlock.Hash(), "newnum", newBlock.Number(), "newhash", newBlock.Hash())
+		// len(oldchain) = 0 when start with a specified block number
+		if len(newChain) <= 0 {
+			log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(),
+				"oldhash", oldBlock.Hash(), "newnum", newBlock.Number(), "newhash", newBlock.Hash())
+		}
 	}
 
 	var addedTxs []*types.Transaction
