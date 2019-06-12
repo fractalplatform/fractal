@@ -101,7 +101,7 @@ type BlockChain struct {
 
 // NewBlockChain returns a fully initialised block chain using information　available in the database.
 func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chainConfig *params.ChainConfig,
-	badhashes []common.Hash, senderCacher TxSenderCacher) (*BlockChain, error) {
+	badhashes []string, startNumber uint64, senderCacher TxSenderCacher) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	headerCache, _ := lru.New(headerCacheLimit)
@@ -113,7 +113,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 
 	badhashesMap := make(map[common.Hash]bool)
 	for _, hash := range badhashes {
-		badhashesMap[hash] = true
+		badhashesMap[common.HexToHash(hash)] = true
 	}
 
 	bc := &BlockChain{
@@ -160,10 +160,22 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 			// make sure the headerByNumber (if present) is in our current canonical chain
 			if headerByNumber != nil && headerByNumber.Hash() == header.Hash() {
 				log.Error("Found bad hash, rewinding chain", "hash", hash)
-				bc.SetLastSnapshot(header.Number.Uint64() - 1)
-				log.Error("Chain rewind was successful, resuming normal operation")
+				if err := bc.SetLastSnapshot(bc.GetBlockByNumber(header.Number.Uint64() - 1)); err != nil {
+					log.Error("Chain rewind was failed", "err", err)
+					return nil, err
+				}
+				log.Warn("Chain rewind was successful, resuming normal operation", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
 			}
 		}
+	}
+
+	// Start chain with a specified block number
+	if startNumber != 0 && startNumber < bc.CurrentBlock().NumberU64() {
+		if err := bc.SetLastSnapshot(bc.GetBlockByNumber(startNumber)); err != nil {
+			log.Error("Start chain with a specified block number in was failed", "number", startNumber, "err", err)
+			return nil, err
+		}
+		log.Info("Start chain with a specified block number", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
 	}
 
 	bc.station = newBlockchainStation(bc, 0)
@@ -172,8 +184,26 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 }
 
 // SetLastSnapshot rewinds the local chain to a last snapshot.
-func (bc *BlockChain) SetLastSnapshot(number uint64) {
+func (bc *BlockChain) SetLastSnapshot(block *types.Block) error {
+	// Make sure the state associated with the block is available
+	if _, err := state.New(block.Root(), bc.stateCache); err != nil {
+		// Dangling block without a state associated, init from scratch
+		log.Warn("Head state missing, repairing chain", "number", block.Number(), "hash", block.Hash())
+		if err := bc.repair(&block); err != nil {
+			return err
+		}
+	}
+	// Everything seems to be fine, set as the head block
+	bc.currentBlock.Store(block)
 
+	// Restore the last known head header
+	currentHeader := block.Header()
+	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
+
+	// Restore the last known irreversible number
+	rawdb.WriteIrreversibleNumber(bc.db, block.NumberU64())
+	bc.irreversibleNumber.Store(block.NumberU64())
+	return nil
 }
 
 // loadLastBlock loads the last known chain from the database.
@@ -192,28 +222,13 @@ func (bc *BlockChain) loadLastBlock() error {
 		return bc.Reset()
 	}
 
-	// Make sure the state associated with the block is available
-	if _, err := state.New(currentBlock.Root(), bc.stateCache); err != nil {
-		// Dangling block without a state associated, init from scratch
-		log.Warn("Head state missing, repairing chain", "number", currentBlock.Number(), "hash", currentBlock.Hash())
-		if err := bc.repair(&currentBlock); err != nil {
-			return err
-		}
+	if err := bc.SetLastSnapshot(currentBlock); err != nil {
+		return err
 	}
 
-	// Everything seems to be fine, set as the head block
-	bc.currentBlock.Store(currentBlock)
-
-	// Restore the last known head header
-	currentHeader := currentBlock.Header()
-	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
-
+	currentBlock = bc.CurrentBlock()
 	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
-
-	// Restore the last known irreversible number
-	rawdb.WriteIrreversibleNumber(bc.db, currentBlock.NumberU64())
-	bc.irreversibleNumber.Store(currentBlock.NumberU64())
-	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "irreversible number", currentBlock.NumberU64())
+	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "irreversible", currentBlock.NumberU64())
 	return nil
 }
 
@@ -524,26 +539,7 @@ func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (e
 	return nil
 }
 
-func (bc *BlockChain) WriteSnapshotToState(block *types.Block, state *state.StateDB) error {
-	prevHeader := bc.GetHeaderByHash(block.ParentHash())
-
-	prevTime := prevHeader.Time.Uint64()
-	prevTimeFormat := prevTime / bc.snapshotInterval * bc.snapshotInterval
-
-	currentTime := block.Time().Uint64()
-	currentTimeFormat := currentTime / bc.snapshotInterval * bc.snapshotInterval
-
-	if prevTimeFormat != currentTimeFormat {
-		snapshotManager := snapshot.NewSnapshotManager(state)
-		err := snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: block.NumberU64(), BlockHash: block.ParentHash(), Timestamp: prevTimeFormat})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (bc *BlockChain) WriteSnapshotToDB(db rawdb.DatabaseWriter, root common.Hash, block *types.Block) {
+func (bc *BlockChain) writeSnapshotToDB(db rawdb.DatabaseWriter, root common.Hash, block *types.Block) {
 	snapshotInfo := types.SnapshotInfo{
 		Root: root,
 	}
@@ -600,7 +596,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 	if writeStateFlag {
 		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "time", block.Time().Uint64()/bc.snapshotInterval*bc.snapshotInterval)
-		bc.WriteSnapshotToDB(batch, root, block)
+		bc.writeSnapshotToDB(batch, root, block)
 	}
 
 	triedb := bc.stateCache.TrieDB()
