@@ -37,6 +37,13 @@ func (api *API) AccountInfo(name string) (*accountmanager.Account, error) {
 	return account, err
 }
 
+// AccountInfoByID get account by id
+func (api *API) AccountInfoByID(id uint64) (*accountmanager.Account, error) {
+	account := &accountmanager.Account{}
+	err := api.client.Call(account, "account_getAccountByID", id)
+	return account, err
+}
+
 // AccountCode get account code
 func (api *API) AccountCode(name string) ([]byte, error) {
 	code := []byte{}

@@ -16,6 +16,8 @@
 
 package sdk
 
+import "math/big"
+
 // DposInfo dpos info
 func (api *API) DposInfo() (map[string]interface{}, error) {
 	info := map[string]interface{}{}
@@ -101,10 +103,10 @@ func (api *API) DposVotersByVoter(epoch uint64, voter string, detail bool) (inte
 }
 
 // DposAvailableStake state info
-func (api *API) DposAvailableStake(epoch uint64, name string) (map[string]interface{}, error) {
-	info := map[string]interface{}{}
-	err := api.client.Call(&info, "dpos_availableStake", epoch, name)
-	return info, err
+func (api *API) DposAvailableStake(epoch uint64, name string) (*big.Int, error) {
+	stake := big.NewInt(0)
+	err := api.client.Call(&stake, "dpos_availableStake", epoch, name)
+	return stake, err
 }
 
 // DposSnapShotTime dpos snapshot time info
