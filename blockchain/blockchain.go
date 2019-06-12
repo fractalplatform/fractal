@@ -635,6 +635,10 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 						return false, err
 					}
 					triedb.Dereference(stateRoot.(WriteStateToDB).Root)
+
+					if bc.triegc.Empty() {
+						bc.statePruning = false
+					}
 					continue
 				}
 
@@ -709,7 +713,6 @@ func (bc *BlockChain) StatePruning(enable bool) (bool, uint64) {
 	log.Debug("Set State Pruning", "pruning", enable, "number", bc.CurrentBlock().NumberU64())
 	tmp := bc.statePruning
 	if enable {
-		bc.statePruning = true
 		bc.stateCacheClean = false
 	} else {
 		bc.statePruning = false
