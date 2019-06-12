@@ -100,6 +100,7 @@ func defaultMinerConfig() *ftservice.MinerConfig {
 		Name:        params.DefaultChainconfig.SysName,
 		PrivateKeys: []string{"289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"},
 		ExtraData:   "system",
+		Delay:       0,
 	}
 }
 

@@ -47,7 +47,7 @@ func (api *API) SetCoinbase(name string, privKeys []string) error {
 	return api.miner.SetCoinbase(name, privKeys)
 }
 
-func (api *API) SetDelayDuration(delayDuration uint64) error {
+func (api *API) SetDelay(delayDuration uint64) error {
 	return api.miner.SetDelayDuration(delayDuration)
 }
 

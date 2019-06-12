@@ -144,3 +144,7 @@ ftservice:
   contractlog: false
   # flag for enable/disable state pruning.
   statepruning: false
+  # blockchain refuse bad block hashes
+  badhashes: []
+  # start chain with a specified block number.
+  startnumber: 0

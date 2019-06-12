@@ -705,7 +705,7 @@ func (acc *Account) RefundCandidate(to common.Name, value *big.Int, id uint64, g
 	var checkedfunc func() error
 	if checked {
 		// before
-		checkedfunc, err = acc.chekRefoundProdoucer(action)
+		checkedfunc, err = acc.chekRefundProdoucer(action)
 		if err != nil {
 			return
 		}

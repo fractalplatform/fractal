@@ -46,11 +46,15 @@ type Config struct {
 
 	StatePruning    bool `mapstructure:"statepruning"`
 	ContractLogFlag bool `mapstructure:"contractlog"`
+
+	BadHashes   []string `mapstructure:"badhashes"`
+	StartNumber uint64   `mapstructure:"startnumber"`
 }
 
 // MinerConfig miner config
 type MinerConfig struct {
 	Start       bool     `mapstructure:"start"`
+	Delay       uint64   `mapstructure:"delay"`
 	Name        string   `mapstructure:"name"`
 	PrivateKeys []string `mapstructure:"private"`
 	ExtraData   string   `mapstructure:"extra"`

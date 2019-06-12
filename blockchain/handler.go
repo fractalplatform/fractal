@@ -91,7 +91,6 @@ func checkChainStatus(local *statusData, remote *statusData) error {
 }
 
 func (bs *BlockchainStation) handshake(e *router.Event) {
-	defer bs.loopWG.Done()
 	station := router.NewLocalStation("shake"+e.From.Name(), nil)
 	ch := make(chan *router.Event)
 	sub := router.Subscribe(station, ch, router.P2PStatusMsg, &statusData{})
@@ -129,7 +128,10 @@ func (bs *BlockchainStation) loop() {
 			switch e.Typecode {
 			case router.NewPeerNotify:
 				bs.loopWG.Add(1)
-				go bs.handshake(e)
+				go func() {
+					bs.handshake(e)
+					bs.loopWG.Done()
+				}()
 			case router.DelPeerNotify:
 				bs.loopWG.Add(1)
 				go func() {
@@ -143,7 +145,10 @@ func (bs *BlockchainStation) loop() {
 				}
 				router.AddThread(e.From, 1)
 				bs.loopWG.Add(1)
-				go bs.handleMsg(e)
+				go func() {
+					bs.handleMsg(e)
+					bs.loopWG.Done()
+				}()
 			}
 		}
 	}
@@ -156,7 +161,6 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 	defer func() {
 		router.AddCPU(e.From, time.Since(start))
 		router.AddThread(e.From, -1)
-		bs.loopWG.Done()
 	}()
 	switch e.Typecode {
 	case router.P2PGetStatus:
@@ -244,10 +248,12 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 }
 
 func (bs *BlockchainStation) Stop() {
+	log.Info("BlockchainHandler stopping...")
 	close(bs.quit)
 	for _, sub := range bs.subs {
 		sub.Unsubscribe()
 	}
 	bs.loopWG.Wait()
 	bs.downloader.Stop()
+	log.Info("BlockchainHandler stopped.")
 }

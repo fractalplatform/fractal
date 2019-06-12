@@ -503,6 +503,7 @@ func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number u
 	cnt := uint64(0)
 	ntotalQuantity := big.NewInt(0)
 	candidates := []*CandidateInfo{}
+	var sysCandidate *CandidateInfo
 	for _, candidateInfo := range candidateInfoArray {
 		if pepoch != epoch {
 			// clear vote quantity
@@ -523,7 +524,11 @@ func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number u
 					continue
 				}
 			} else if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-				candidates = append(candidates, candidateInfo)
+				if strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+					sysCandidate = candidateInfo
+				} else {
+					candidates = append(candidates, candidateInfo)
+				}
 				continue
 			}
 			if uint64(len(activatedCandidateSchedule)) < n {
@@ -544,8 +549,10 @@ func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number u
 	if !pstate.Dpos {
 		activatedTotalQuantity = big.NewInt(0)
 		activatedCandidateSchedule = []string{}
+		activatedCandidateSchedule = append(activatedCandidateSchedule, sysCandidate.Name)
+		activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, sysCandidate.TotalQuantity)
 		for index, candidateInfo := range candidates {
-			if uint64(index) >= n {
+			if uint64(index) >= n-1 {
 				break
 			}
 			activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)

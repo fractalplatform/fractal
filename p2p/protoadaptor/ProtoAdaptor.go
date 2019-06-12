@@ -115,6 +115,11 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 	}
 }
 
+func GetFnode(station router.Station) string {
+	remote := station.Data().(*remotePeer)
+	return remote.peer.Node().String()
+}
+
 func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) error {
 	remote := remotePeer{ws: ws, peer: peer}
 	log.Info("New remote station", "detail", remote.peer.String())
@@ -143,6 +148,9 @@ func (adaptor *ProtoAdaptor) adaptorLoop(peer *p2p.Peer, ws p2p.MsgReadWriter) e
 		e, err := pack2event(&pack, station)
 		if err != nil {
 			return err
+		}
+		if e.To == nil && len(pack.To) != 0 {
+			log.Warn("unknow station:", "to", pack.To)
 		}
 		router.AddNetIn(station, 1)
 		if checkDDOS(monitor, e) {
