@@ -127,7 +127,7 @@ tag_release: test check docs
 	@scripts/tag_release.sh
 
 .PHONY: release
-release: test check docs 
+release: check docs 
 	@scripts/is_checkout_dirty.sh || (echo "checkout is dirty so not releasing!" && exit 1)
 	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
 
