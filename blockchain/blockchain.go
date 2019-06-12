@@ -481,12 +481,12 @@ func (bc *BlockChain) Stop() {
 	if bc.statePruning {
 		triedb := bc.stateCache.TrieDB()
 		for !bc.triegc.Empty() {
-			state, number := bc.triegc.Pop()
-			log.Debug("Blockchain stop tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", -number)
-			if err := triedb.Commit(state.(WriteStateToDB).Root, false); err != nil {
-				log.Error("TBlockchain stop tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", -number, "err", err)
+			stateRoot, number := bc.triegc.Pop()
+			log.Debug("Blockchain stop tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number)
+			if err := triedb.Commit(stateRoot.(WriteStateToDB).Root, false); err != nil {
+				log.Error("TBlockchain stop tiredb commit db failed", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number, "err", err)
 			}
-			triedb.Dereference(state.(WriteStateToDB).Root)
+			triedb.Dereference(stateRoot.(WriteStateToDB).Root)
 		}
 
 		if size, _ := triedb.Size(); size != 0 {
@@ -714,8 +714,8 @@ func (bc *BlockChain) StatePruning(enable bool) (bool, uint64) {
 	tmp := bc.statePruning
 	if enable {
 		bc.stateCacheClean = false
+		bc.statePruning = true
 	} else {
-		bc.statePruning = false
 		bc.stateCacheClean = true
 	}
 	return tmp, bc.CurrentBlock().NumberU64()
