@@ -1193,9 +1193,15 @@ func (am *AccountManager) CheckAssetContract(contract common.Name, owner common.
 //IssueAsset issue asset
 func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
 	//check owner valid
-	if !am.ast.IsValidSubAssetOwner(fromName, asset.AssetName) {
-		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+	if !am.ast.IsValidMainAsset(asset.AssetName) {
+		parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
+		if !isValid {
+			return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+		}
+		assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+		asset.Decimals = assetObj.GetDecimals()
 	}
+
 	//check owner
 	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
