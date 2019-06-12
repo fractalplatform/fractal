@@ -113,7 +113,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		statePruning:     statePruning,
 		stateCacheClean:  false,
 		snapshotInterval: chainConfig.SnapshotInterval * uint64(time.Millisecond),
-		triesInMemory:    ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 3) + 2,
+		triesInMemory:    ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
 		triegc:           prque.New(nil),
 		vmConfig:         vmConfig,
 		db:               db,
@@ -340,8 +340,7 @@ func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	bc.currentBlock.Store(block)
 
 	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
-		log.Debug("--state SysName ->", "number", block.NumberU64())
-
+		log.Debug("state sys irreversible", "number", block.NumberU64())
 		rawdb.WriteIrreversibleNumber(batch, block.NumberU64())
 		bc.irreversibleNumber.Store(block.NumberU64())
 	}
@@ -483,9 +482,9 @@ func (bc *BlockChain) Stop() {
 		triedb := bc.stateCache.TrieDB()
 		for !bc.triegc.Empty() {
 			state, number := bc.triegc.Pop()
-			log.Debug("Blockchain stop tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", number)
+			log.Debug("Blockchain stop tiredb commit db", "root", state.(WriteStateToDB).Root.String(), "number", -number)
 			if err := triedb.Commit(state.(WriteStateToDB).Root, false); err != nil {
-				log.Error("TBlockchain stop tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", number, "err", err)
+				log.Error("TBlockchain stop tiredb commit db failed", "root", state.(WriteStateToDB).Root.String(), "number", -number, "err", err)
 			}
 			triedb.Dereference(state.(WriteStateToDB).Root)
 		}
@@ -631,7 +630,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 			for !bc.triegc.Empty() {
 				stateRoot, number := bc.triegc.Pop()
 				if bc.stateCacheClean {
-					log.Debug("Refresh block cache tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", number)
+					log.Debug("Refresh block cache tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number)
 					if err := triedb.Commit(stateRoot.(WriteStateToDB).Root, true); err != nil {
 						return false, err
 					}
@@ -640,18 +639,19 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				}
 
 				if uint64(-number) > chosen {
-					bc.triegc.Push(root, number)
+					bc.triegc.Push(stateRoot, -number)
 					break
 				}
 
 				if stateRoot.(WriteStateToDB).WriteDbFlag {
-					log.Debug("Snapshot block tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", number)
+					log.Debug("Snapshot block tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number)
 					if err := triedb.Commit(stateRoot.(WriteStateToDB).Root, true); err != nil {
-						log.Crit("Snapshot block tiredb commit db failed", "root", stateRoot.(WriteStateToDB).Root.String(), "number", number, "err", err)
+						log.Crit("Snapshot block tiredb commit db failed", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number, "err", err)
 					}
 				}
 
-				log.Debug("--state store ->", "number", uint64(number))
+				log.Debug("state store irreversible ", "number", uint64(-number))
+
 				rawdb.WriteIrreversibleNumber(batch, uint64(number))
 				bc.irreversibleNumber.Store(uint64(number))
 				triedb.Dereference(stateRoot.(WriteStateToDB).Root)
@@ -779,9 +779,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 			err = bc.Validator().ValidateBody(block)
 		}
 		switch {
-		case err == processor.ErrCanonicalKnownBlock:
-			stats.ignored++
-			continue
 		case err == processor.ErrKnownBlock:
 			stats.ignored++
 			continue
