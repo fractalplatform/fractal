@@ -259,7 +259,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 			candidate.ActualCounter++
 			if gstate.TakeOver {
 				candidate.Counter++
-			} else if dpos.config.getoffset(parent.Time.Uint64()) != dpos.config.getoffset(header.Time.Uint64()) ||
+			} else if /*dpos.config.getoffset(parent.Time.Uint64())*/ dpos.config.getoffset(header.Time.Uint64()-dpos.config.blockInterval()) != dpos.config.getoffset(header.Time.Uint64()) ||
 				strings.Compare(parent.Coinbase.String(), header.Coinbase.String()) != 0 {
 				etimestamp := sys.config.epochTimeStamp(gstate.Epoch+1) + 2*sys.config.blockInterval()
 				c := dpos.config.shouldCounter(header.Time.Uint64(), etimestamp)
