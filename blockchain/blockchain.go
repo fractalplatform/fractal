@@ -656,9 +656,8 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				}
 
 				log.Debug("state store irreversible ", "number", uint64(-number))
-
-				rawdb.WriteIrreversibleNumber(batch, uint64(number))
-				bc.irreversibleNumber.Store(uint64(number))
+				rawdb.WriteIrreversibleNumber(batch, uint64(-number))
+				bc.irreversibleNumber.Store(uint64(-number))
 				triedb.Dereference(stateRoot.(WriteStateToDB).Root)
 			}
 		}
