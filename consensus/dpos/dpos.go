@@ -414,7 +414,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				continue
 			}
 			mcnt := dpos.config.minBlockCnt()/2 + (scnt-acnt)*(scnt*100/(dpos.config.epochInterval()/dpos.config.mepochInterval()))/100
-			log.Debug("replace check", "num", header.Number, "mepoch", (header.Time.Uint64()-timestamp)/dpos.config.mepochInterval()+1, "allow missing", mcnt, "missing", scnt-acnt, "base", dpos.config.minBlockCnt()/2, "rate", scnt*100/(dpos.config.epochInterval()/dpos.config.mepochInterval()))
+			log.Debug("replace check", "num", header.Number, "mepoch", (header.Time.Uint64()-timestamp)/dpos.config.mepochInterval()+1, "allow missing", mcnt, "missing", scnt-acnt, "base", dpos.config.minBlockCnt()/2, "scnt", scnt, "acnt", dpos.config.epochInterval()/dpos.config.mepochInterval())
 			if scnt-acnt >= mcnt && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
 				pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, uint64(index))
 				log.Info("replace index", "acutal", acnt, "should", scnt, "allow missing", mcnt, "missing", scnt-acnt, "number", header.Number, "candidate", name, "rcandidate", pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule)-1)+dpos.config.CandidateScheduleSize])
