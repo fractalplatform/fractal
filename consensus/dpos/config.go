@@ -17,6 +17,7 @@
 package dpos
 
 import (
+	"fmt"
 	"math/big"
 	"sync/atomic"
 	"time"
@@ -35,7 +36,7 @@ var DefaultConfig = &Config{
 	BlockFrequency:                6,
 	CandidateScheduleSize:         3,
 	BackupScheduleSize:            0,
-	EpochInterval:                 540000,
+	EpochInterval:                 1080000,
 	FreezeEpochSize:               3,
 	AccountName:                   "ftsystemdpos",
 	SystemName:                    "ftsystemio",
@@ -167,4 +168,19 @@ func (cfg *Config) shouldCounter(ftimestamp, ttimestamp uint64) uint64 {
 		return cfg.BlockFrequency - n/cfg.blockInterval()
 	}
 	return (ttimestamp - ftimestamp) / cfg.blockInterval()
+}
+
+func (cfg *Config) minMEpoch() uint64 {
+	return 10
+}
+
+func (cfg *Config) minBlockCnt() uint64 {
+	return cfg.minMEpoch() * cfg.BlockFrequency * cfg.CandidateScheduleSize
+}
+
+func (cfg *Config) IsValid() error {
+	if minEpochInterval := 2 * cfg.minBlockCnt() * cfg.blockInterval(); cfg.epochInterval() < minEpochInterval {
+		return fmt.Errorf("epoch interval %v invalid (min epoch interval %v)", cfg.epochInterval(), minEpochInterval)
+	}
+	return nil
 }
