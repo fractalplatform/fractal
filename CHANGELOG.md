@@ -1,4 +1,19 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.20] - 2019-06-12
+### Fixed
+- [DOWNLOADER] fixed bug of find ancestor and use random station 
+- [BLOCKCHAIN] fixed blockchain irreversible number
+### Add
+- [DPOS] add thread test for rand vote candidate
+- [BLOCKCHAIN] add refuse bad block hashes
+- [BLOCKCHAIN] sync block with a specified block number
+
+
+## [0.0.19] - 2019-06-11
+### Fixed
+- [ASSET] modify subasset decimals
+
+
 ## [0.0.18] - 2019-06-06
 ### Fixed
 - [ACCOUNT] modify children check function
@@ -142,6 +157,8 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.20]: https://github.com/fractalplatform/fractal/compare/v0.0.19...v0.0.20
+[0.0.19]: https://github.com/fractalplatform/fractal/compare/v0.0.18...v0.0.19
 [0.0.18]: https://github.com/fractalplatform/fractal/compare/v0.0.17...v0.0.18
 [0.0.17]: https://github.com/fractalplatform/fractal/compare/v0.0.16...v0.0.17
 [0.0.16]: https://github.com/fractalplatform/fractal/compare/v0.0.15...v0.0.16

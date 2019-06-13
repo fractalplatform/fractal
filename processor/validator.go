@@ -50,7 +50,6 @@ func NewBlockValidator(blockchain ChainContext, engine consensus.IValidator) *Bl
 // ValidateHeader checks whether a header conforms to the consensus rules of the
 // stock engine.
 func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
-
 	// Short circuit if the header is known, or it's parent not
 	if v.bc.HasBlockAndState(header.Hash(), header.Number.Uint64()) {
 		return ErrKnownBlock

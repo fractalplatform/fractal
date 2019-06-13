@@ -127,11 +127,11 @@ tag_release: test check docs
 	@scripts/tag_release.sh
 
 .PHONY: release
-release: test check docs 
+release: check docs 
 	@scripts/is_checkout_dirty.sh || (echo "checkout is dirty so not releasing!" && exit 1)
 	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
 
 .PHONY: tmp_release
-tmp_release: test check 
+tmp_release: check 
 	@echo "Building and releasing"
 	@export GOPATH=${TEMP_GOPATH} && goreleaser --snapshot --rm-dist 

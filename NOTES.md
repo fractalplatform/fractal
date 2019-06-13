@@ -1,6 +1,8 @@
 ### Fixed
-- [ACCOUNT] modify children check function
+- [DOWNLOADER] fixed bug of find ancestor and use random station 
+- [BLOCKCHAIN] fixed blockchain irreversible number
 ### Add
-- [CONTRACT] contract add getassetid api 
-- [MINER] fix should counter & add delay duration for miner
+- [DPOS] add thread test for rand vote candidate
+- [BLOCKCHAIN] add refuse bad block hashes
+- [BLOCKCHAIN] sync block with a specified block number
 

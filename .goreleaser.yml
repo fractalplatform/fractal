@@ -24,7 +24,6 @@ builds:
      - linux
   goarch:
      - amd64
-     - 386
 - binary: ftfinder
   main: ./cmd/ftfinder
   goos:
@@ -33,7 +32,6 @@ builds:
      - linux
   goarch:
      - amd64
-     - 386
   env:
     - CGO_ENABLED=0
   ldflags:
@@ -45,7 +43,6 @@ archive:
     darwin: Darwin
     linux: Linux
     windows: Windows
-    386: i386
     amd64: x86_64
 checksum:
   name_template: 'checksums.txt'

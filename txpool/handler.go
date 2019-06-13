@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	router "github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/types"
@@ -344,9 +345,11 @@ func (s *TxpoolStation) syncTransactions(peer *peerInfo) {
 }
 
 func (s *TxpoolStation) Stop() {
+	log.Info("TxpoolHandler stopping...")
 	close(s.quit)
 	for _, sub := range s.subs {
 		sub.Unsubscribe()
 	}
 	s.loopWG.Wait()
+	log.Info("TxpoolHandler stopped.")
 }

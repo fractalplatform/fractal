@@ -77,7 +77,8 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	vmconfig := vm.Config{
 		ContractLogFlag: config.ContractLogFlag,
 	}
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, txpool.SenderCacher)
+
+	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, config.BadHashes, config.StartNumber, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
 	}
