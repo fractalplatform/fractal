@@ -77,6 +77,7 @@ type BlockChain struct {
 	irreversibleNumber atomic.Value // irreversible Number of the block chain
 
 	stateCache state.Database // State database to reuse between imports (contains state cache)
+	badHashes  map[common.Hash]bool
 
 	running       int32               // running must be called atomically
 	procInterrupt int32               // procInterrupt must be atomically called, interrupt signaler for block processing
@@ -99,7 +100,8 @@ type BlockChain struct {
 }
 
 // NewBlockChain returns a fully initialised block chain using information　available in the database.
-func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chainConfig *params.ChainConfig, senderCacher TxSenderCacher) (*BlockChain, error) {
+func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chainConfig *params.ChainConfig,
+	badhashes []string, startNumber uint64, senderCacher TxSenderCacher) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	headerCache, _ := lru.New(headerCacheLimit)
@@ -108,6 +110,12 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	blockCache, _ := lru.New(blockCacheLimit)
 	futureBlocks, _ := lru.New(maxFutureBlocks)
 	badBlocks, _ := lru.New(badBlockLimit)
+
+	badhashesMap := make(map[common.Hash]bool)
+	for _, hash := range badhashes {
+		badhashesMap[common.HexToHash(hash)] = true
+	}
+
 	bc := &BlockChain{
 		chainConfig:      chainConfig,
 		statePruning:     statePruning,
@@ -118,6 +126,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		vmConfig:         vmConfig,
 		db:               db,
 		stateCache:       state.NewDatabase(db),
+		badHashes:        badhashesMap,
 		quit:             make(chan struct{}),
 		bodyCache:        bodyCache,
 		headerCache:      headerCache,
@@ -142,9 +151,59 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	if err := bc.loadLastBlock(); err != nil {
 		return nil, err
 	}
+
+	// Check the current state of the block hashes and make sure that we do not have any of the bad blocks in our chain
+	for hash := range bc.badHashes {
+		if header := bc.GetHeaderByHash(hash); header != nil {
+			// get the canonical block corresponding to the offending header's number
+			headerByNumber := bc.GetHeaderByNumber(header.Number.Uint64())
+			// make sure the headerByNumber (if present) is in our current canonical chain
+			if headerByNumber != nil && headerByNumber.Hash() == header.Hash() {
+				log.Error("Found bad hash, rewinding chain", "hash", hash)
+				if err := bc.SetLastSnapshot(bc.GetBlockByNumber(header.Number.Uint64() - 1)); err != nil {
+					log.Error("Chain rewind was failed", "err", err)
+					return nil, err
+				}
+				log.Warn("Chain rewind was successful, resuming normal operation", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
+			}
+		}
+	}
+
+	// Start chain with a specified block number
+	if startNumber != 0 && startNumber < bc.CurrentBlock().NumberU64() {
+		if err := bc.SetLastSnapshot(bc.GetBlockByNumber(startNumber)); err != nil {
+			log.Error("Start chain with a specified block number in was failed", "number", startNumber, "err", err)
+			return nil, err
+		}
+		log.Info("Start chain with a specified block number", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
+	}
+
 	bc.station = newBlockchainStation(bc, 0)
 	go bc.update()
 	return bc, nil
+}
+
+// SetLastSnapshot rewinds the local chain to a last snapshot.
+func (bc *BlockChain) SetLastSnapshot(block *types.Block) error {
+	// Make sure the state associated with the block is available
+	if _, err := state.New(block.Root(), bc.stateCache); err != nil {
+		// Dangling block without a state associated, init from scratch
+		log.Warn("Head state missing, repairing chain", "number", block.Number(), "hash", block.Hash())
+		if err := bc.repair(&block); err != nil {
+			return err
+		}
+	}
+	// Everything seems to be fine, set as the head block
+	bc.currentBlock.Store(block)
+
+	// Restore the last known head header
+	currentHeader := block.Header()
+	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
+
+	// Restore the last known irreversible number
+	rawdb.WriteIrreversibleNumber(bc.db, block.NumberU64())
+	bc.irreversibleNumber.Store(block.NumberU64())
+	return nil
 }
 
 // loadLastBlock loads the last known chain from the database.
@@ -163,27 +222,13 @@ func (bc *BlockChain) loadLastBlock() error {
 		return bc.Reset()
 	}
 
-	// Make sure the state associated with the block is available
-	if _, err := state.New(currentBlock.Root(), bc.stateCache); err != nil {
-		// Dangling block without a state associated, init from scratch
-		log.Warn("Head state missing, repairing chain", "number", currentBlock.Number(), "hash", currentBlock.Hash())
-		if err := bc.repair(&currentBlock); err != nil {
-			return err
-		}
+	if err := bc.SetLastSnapshot(currentBlock); err != nil {
+		return err
 	}
 
-	// Everything seems to be fine, set as the head block
-	bc.currentBlock.Store(currentBlock)
-
-	// Restore the last known head header
-	currentHeader := currentBlock.Header()
-	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
+	currentBlock = bc.CurrentBlock()
 	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
-
-	// Restore the last known irreversible number
-	rawdb.WriteIrreversibleNumber(bc.db, currentBlock.NumberU64())
-	bc.irreversibleNumber.Store(currentBlock.NumberU64())
-	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "irreversible number", currentBlock.NumberU64())
+	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "irreversible", currentBlock.NumberU64())
 	return nil
 }
 
@@ -210,33 +255,6 @@ func (bc *BlockChain) repair(head **types.Block) error {
 
 // ResetWithGenesisBlock purges the entire blockchain, restoring it to the specified genesis state.
 func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
-	// Dump the entire block chain and purge the caches
-	if err := bc.SetHead(0); err != nil {
-		return err
-	}
-	bc.mu.Lock()
-	defer bc.mu.Unlock()
-
-	// Prepare the genesis block and reinitialise the chain
-	rawdb.WriteBlock(bc.db, genesis)
-	bc.genesisBlock = genesis
-	batch := bc.db.NewBatch()
-	bc.insert(batch, bc.genesisBlock)
-	if err := batch.Write(); err != nil {
-		return err
-	}
-
-	rawdb.WriteIrreversibleNumber(bc.db, bc.genesisBlock.NumberU64())
-
-	bc.currentBlock.Store(bc.genesisBlock)
-	bc.irreversibleNumber.Store(bc.genesisBlock.NumberU64())
-	return nil
-}
-
-// SetHead rewinds the local chain to a new head.
-func (bc *BlockChain) SetHead(head uint64) error {
-	log.Warn("Rewinding blockchain", "target", head)
-
 	bc.mu.Lock()
 	defer bc.mu.Unlock()
 
@@ -249,15 +267,13 @@ func (bc *BlockChain) SetHead(head uint64) error {
 	bc.blockCache.Purge()
 	bc.futureBlocks.Purge()
 
-	// If either blocks reached nil, reset to the genesis state
-	if currentBlock := bc.CurrentBlock(); currentBlock == nil {
-		bc.currentBlock.Store(bc.genesisBlock)
-	}
+	// Prepare the genesis block and reinitialise the chain
+	rawdb.WriteBlock(bc.db, genesis)
+	bc.genesisBlock = genesis
+	batch := bc.db.NewBatch()
+	bc.insert(batch, bc.genesisBlock)
 
-	currentBlock := bc.CurrentBlock()
-
-	rawdb.WriteHeadBlockHash(bc.db, currentBlock.Hash())
-	return bc.loadLastBlock()
+	return batch.Write()
 }
 
 // GasLimit returns the gas limit of the current HEAD block.
@@ -523,26 +539,7 @@ func (bc *BlockChain) WriteBlockWithoutState(block *types.Block, td *big.Int) (e
 	return nil
 }
 
-func (bc *BlockChain) WriteSnapshotToState(block *types.Block, state *state.StateDB) error {
-	prevHeader := bc.GetHeaderByHash(block.ParentHash())
-
-	prevTime := prevHeader.Time.Uint64()
-	prevTimeFormat := prevTime / bc.snapshotInterval * bc.snapshotInterval
-
-	currentTime := block.Time().Uint64()
-	currentTimeFormat := currentTime / bc.snapshotInterval * bc.snapshotInterval
-
-	if prevTimeFormat != currentTimeFormat {
-		snapshotManager := snapshot.NewSnapshotManager(state)
-		err := snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: block.NumberU64(), BlockHash: block.ParentHash(), Timestamp: prevTimeFormat})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (bc *BlockChain) WriteSnapshotToDB(db rawdb.DatabaseWriter, root common.Hash, block *types.Block) {
+func (bc *BlockChain) writeSnapshotToDB(db rawdb.DatabaseWriter, root common.Hash, block *types.Block) {
 	snapshotInfo := types.SnapshotInfo{
 		Root: root,
 	}
@@ -599,7 +596,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 	if writeStateFlag {
 		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "time", block.Time().Uint64()/bc.snapshotInterval*bc.snapshotInterval)
-		bc.WriteSnapshotToDB(batch, root, block)
+		bc.writeSnapshotToDB(batch, root, block)
 	}
 
 	triedb := bc.stateCache.TrieDB()
@@ -659,9 +656,8 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				}
 
 				log.Debug("state store irreversible ", "number", uint64(-number))
-
-				rawdb.WriteIrreversibleNumber(batch, uint64(number))
-				bc.irreversibleNumber.Store(uint64(number))
+				rawdb.WriteIrreversibleNumber(batch, uint64(-number))
+				bc.irreversibleNumber.Store(uint64(-number))
 				triedb.Dereference(stateRoot.(WriteStateToDB).Root)
 			}
 		}
@@ -781,6 +777,13 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 			log.Debug("Premature abort during blocks processing")
 			break
 		}
+
+		// If the header is a banned one, straight out abort
+		if bc.badHashes[block.Hash()] {
+			bc.reportBlock(block, nil, ErrBlacklistedHash)
+			return i, coalescedLogs, ErrBlacklistedHash
+		}
+
 		err := bc.validator.ValidateHeader(block.Header(), true)
 		if err == nil {
 			err = bc.Validator().ValidateBody(block)
@@ -950,8 +953,11 @@ func (bc *BlockChain) reorgChain(oldBlock, newBlock *types.Block, batch fdb.Batc
 			return fmt.Errorf("reorg chain too much,dropNum %v, drop %v", oldChain[0].NumberU64(), len(oldChain))
 		}
 	} else {
-		log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(),
-			"oldhash", oldBlock.Hash(), "newnum", newBlock.Number(), "newhash", newBlock.Hash())
+		// len(oldchain) = 0 when start with a specified block number
+		if len(newChain) <= 0 {
+			log.Error("Impossible reorg, please file an issue", "oldnum", oldBlock.Number(),
+				"oldhash", oldBlock.Hash(), "newnum", newBlock.Number(), "newhash", newBlock.Hash())
+		}
 	}
 
 	var addedTxs []*types.Transaction
