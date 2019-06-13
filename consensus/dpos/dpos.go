@@ -404,6 +404,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				pheader := chain.GetHeaderByHash(theader.ParentHash)
 				coffset := dpos.config.getoffset(theader.Time.Uint64())
 				poffset := dpos.config.getoffset(pheader.Time.Uint64())
+				exit := (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() != pmepoch
 				if ftimestamp := pheader.Time.Uint64() + dpos.config.blockInterval(); ftimestamp < theader.Time.Uint64() && poffset != coffset {
 					tpoffset := poffset
 					for toffset := dpos.config.getoffset(ftimestamp); toffset != coffset; ftimestamp += dpos.config.blockInterval() {
@@ -434,12 +435,12 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				}
 				if systemio := strings.Compare(theader.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
 					info.Counter++
-				} else if exit := (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() != pmepoch; exit || poffset != coffset ||
+				} else if exit || poffset != coffset ||
 					strings.Compare(pheader.Coinbase.String(), theader.Coinbase.String()) != 0 {
 					info.Counter += dpos.config.shouldCounter(theader.Time.Uint64(), ttimestamp)
-					if exit {
-						break
-					}
+				}
+				if exit {
+					break
 				}
 				theader = pheader
 			}
@@ -476,7 +477,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			if err := sys.SetState(pstate); err != nil {
 				return nil, err
 			}
-			log.Debug("replace check", "mepoch", mepoch, "elapsed", common.PrettyDuration(time.Now().Sub(t)), "result", fmt.Sprintf("%v", oldCandidates))
+			log.Debug("replace check", "mepoch", mepoch, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
 		}
 	}
 
