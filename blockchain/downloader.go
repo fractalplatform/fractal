@@ -377,8 +377,11 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 		if err == nil {
 			return ancestor, err
 		}
-		if err != nil && err.eid == notFind {
-			continue
+		if err != nil {
+			if err.eid == notFind {
+				continue
+			}
+			return 0, err
 		}
 		headNumber -= searchLength
 		searchLength = headNumber - irreversibleNumber + 1
