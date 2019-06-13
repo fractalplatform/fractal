@@ -269,48 +269,6 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 			if err := sys.SetCandidate(candidate); err != nil {
 				return err
 			}
-
-			if timestamp := dpos.config.epochTimeStamp(gstate.Epoch); (header.Time.Uint64()-timestamp)/dpos.config.mepochInterval()%10 == 9 &&
-				(header.Time.Uint64()-timestamp)/dpos.config.mepochInterval() != (parent.Time.Uint64()-timestamp)/dpos.config.mepochInterval() {
-				log.Debug("replace find", "timestamp", header.Time.Uint64(), "num", header.Number, "epoch", dpos.config.mepochInterval()%10)
-				for index, name := range pstate.ActivatedCandidateSchedule {
-					if uint64(index) >= dpos.config.CandidateScheduleSize {
-						break
-					}
-					for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
-						roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
-						if roffset == uint64(index) {
-							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
-							break
-						}
-					}
-					pcandidate, err := sys.GetCandidate(gstate.Epoch, name)
-					if err != nil {
-						return err
-					}
-
-					opcandidate, err := sys.GetCandidate(gstate.PreEpoch, name)
-					if err != nil {
-						return err
-					}
-					if opcandidate == nil {
-						continue
-					}
-					acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
-					scnt := pcandidate.Counter - opcandidate.Counter
-					if scnt < acnt {
-						log.Warn("replace over", "preva", opcandidate.ActualCounter, "prevs", opcandidate.Counter, "nexta", pcandidate.ActualCounter, "nexts", pcandidate.Counter, "acutal", acnt, "should", scnt, "missing", scnt-acnt, "number", header.Number, "candidate", name)
-						continue
-					}
-					if scnt-acnt > scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
-						pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, uint64(index))
-						log.Info("replace index", "acutal", acnt, "should", scnt, "missing", scnt-acnt, "number", header.Number, "candidate", name, "rcandidate", pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule)-1)+dpos.config.CandidateScheduleSize])
-					}
-				}
-				if err := sys.SetState(pstate); err != nil {
-					return err
-				}
-			}
 		}
 	}
 
@@ -412,6 +370,58 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		snapshotManager := snapshot.NewSnapshotManager(state)
 		err := snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: blk.NumberU64(), BlockHash: blk.ParentHash(), Timestamp: prevTimeFormat})
 		if err != nil {
+			return nil, err
+		}
+	}
+
+	gstate, err := sys.GetState(LastEpoch)
+	if err != nil {
+		return nil, err
+	}
+	pstate, err := sys.GetState(gstate.PreEpoch)
+	if err != nil {
+		return nil, err
+	}
+	if timestamp := dpos.config.epochTimeStamp(gstate.Epoch); (header.Time.Uint64()-timestamp)/dpos.config.mepochInterval()%10 == dpos.config.minMEpoch()-1 &&
+		(header.Time.Uint64()-timestamp)/dpos.config.mepochInterval() != (prevHeader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() {
+		log.Debug("replace find", "timestamp", header.Time.Uint64(), "num", header.Number, "epoch", dpos.config.mepochInterval()%10)
+		for index, name := range pstate.ActivatedCandidateSchedule {
+			if uint64(index) >= dpos.config.CandidateScheduleSize {
+				break
+			}
+			for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
+				roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
+				if roffset == uint64(index) {
+					name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
+					break
+				}
+			}
+			pcandidate, err := sys.GetCandidate(gstate.Epoch, name)
+			if err != nil {
+				return nil, err
+			}
+
+			opcandidate, err := sys.GetCandidate(gstate.PreEpoch, name)
+			if err != nil {
+				return nil, err
+			}
+			if opcandidate == nil {
+				continue
+			}
+			acnt := pcandidate.ActualCounter - opcandidate.ActualCounter
+			scnt := pcandidate.Counter - opcandidate.Counter
+			if scnt < acnt {
+				log.Warn("replace over", "preva", opcandidate.ActualCounter, "prevs", opcandidate.Counter, "nexta", pcandidate.ActualCounter, "nexts", pcandidate.Counter, "acutal", acnt, "should", scnt, "missing", scnt-acnt, "number", header.Number, "candidate", name)
+				continue
+			}
+			mcnt := dpos.config.minBlockCnt()/2 + (scnt-acnt)*(scnt*100/(dpos.config.epochInterval()/dpos.config.mepochInterval()))/100
+			log.Debug("replace check", "mepoch", (header.Time.Uint64()-timestamp)/dpos.config.mepochInterval()+1, "allow missing", mcnt, "base", dpos.config.minBlockCnt()/2, "rate", scnt*100/(dpos.config.epochInterval()/dpos.config.mepochInterval()))
+			if scnt-acnt >= mcnt && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
+				pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, uint64(index))
+				log.Info("replace index", "acutal", acnt, "should", scnt, "allow missing", mcnt, "missing", scnt-acnt, "number", header.Number, "candidate", name, "rcandidate", pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule)-1)+dpos.config.CandidateScheduleSize])
+			}
+		}
+		if err := sys.SetState(pstate); err != nil {
 			return nil, err
 		}
 	}
@@ -661,7 +671,9 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epoch uint64, index 
 		counter -= prevCandidateInfo.Counter
 		actualCounter -= prevCandidateInfo.ActualCounter
 	}
-
+	if counter < actualCounter {
+		counter = actualCounter
+	}
 	rindex := uint64(0)
 	if s := uint64(len(pstate.OffCandidateSchedule)); index >= dpos.config.CandidateScheduleSize && index-dpos.config.CandidateScheduleSize < s {
 		rindex = pstate.OffCandidateSchedule[index-dpos.config.CandidateScheduleSize] + 1
