@@ -21,7 +21,6 @@ import (
 	"math/big"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
@@ -30,12 +29,12 @@ import (
 )
 
 const (
-	maxKonwnTxs      = 32
-	txsSendDelay     = 50 * time.Millisecond
-	txsSendThreshold = 32
-	cacheBits        = 12
-	cacheSize        = 1 << cacheBits
-	cacheMask        = cacheSize - 1
+	//	maxKonwnTxs      = 32
+	//	txsSendDelay     = 50 * time.Millisecond
+	//	txsSendThreshold = 32
+	cacheBits = 12
+	cacheSize = 1 << cacheBits
+	cacheMask = cacheSize - 1
 )
 
 type peerInfo struct {
