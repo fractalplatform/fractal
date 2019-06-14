@@ -353,7 +353,6 @@ func (bc *BlockChain) StateAt(hash common.Hash) (*state.StateDB, error) {
 func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(batch, block.Hash())
-	bc.currentBlock.Store(block)
 
 	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
 		log.Debug("state sys irreversible", "number", block.NumberU64())
@@ -700,6 +699,10 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 	if err := batch.Write(); err != nil {
 		return false, err
+	}
+
+	if isCanon {
+		bc.currentBlock.Store(block)
 	}
 
 	bc.futureBlocks.Remove(block.Hash())
