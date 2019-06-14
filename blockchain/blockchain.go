@@ -45,7 +45,7 @@ import (
 const (
 	bodyCacheLimit      = 256
 	blockCacheLimit     = 256
-	headerCacheLimit    = 512
+	headerCacheLimit    = 1280
 	tdCacheLimit        = 1024
 	numberCacheLimit    = 2048
 	maxFutureBlocks     = 256
