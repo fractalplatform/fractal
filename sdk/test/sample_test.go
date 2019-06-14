@@ -30,7 +30,7 @@ func TestSample(t *testing.T) {
 	ioutil.WriteFile("sample.json", bts, 0666)
 
 	for _, tx := range txs {
-		if err := runTx(api, tx, 0); err != nil {
+		if err := runTx(api, tx, ""); err != nil {
 			panic(err)
 		}
 	}
