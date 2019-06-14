@@ -59,7 +59,7 @@ var setGasPriceCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var result bool
-		clientCall(ipcEndpoint, &result, "txpool_setGasPrice", parseUint64(args[0]))
+		clientCall(ipcEndpoint, &result, "txpool_setGasPrice", parseBigInt(args[0]))
 		printJSON(result)
 	},
 }

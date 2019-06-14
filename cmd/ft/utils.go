@@ -19,6 +19,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -166,4 +167,13 @@ func parseUint64(arg string) uint64 {
 		os.Exit(1)
 	}
 	return num
+}
+
+func parseBigInt(arg string) *big.Int {
+	price, ok := big.NewInt(0).SetString(arg, 10)
+	if !ok {
+		jww.ERROR.Printf("%v can not convert big.Int", arg)
+		os.Exit(1)
+	}
+	return price
 }
