@@ -17,8 +17,6 @@
 package rpc
 
 import (
-	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -147,10 +145,6 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 	blckNum, err := strconv.ParseInt(input, 10, 64)
 	if err != nil {
 		return err
-	}
-
-	if blckNum > math.MaxInt64 {
-		return fmt.Errorf("Blocknumber too high")
 	}
 
 	*bn = BlockNumber(blckNum)
