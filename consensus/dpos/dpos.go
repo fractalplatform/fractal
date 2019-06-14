@@ -380,8 +380,8 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 	if timestamp := dpos.config.epochTimeStamp(gstate.Epoch) + dpos.config.blockInterval(); prevHeader.Time.Uint64() >= timestamp {
 		pmepoch := (prevHeader.Time.Uint64() - timestamp) / dpos.config.mepochInterval()
 		if mepoch := (header.Time.Uint64() - timestamp) / dpos.config.mepochInterval(); pmepoch != mepoch &&
-			pmepoch%dpos.config.minMEpoch() == 0 &&
-			pmepoch > 0 {
+			mepoch%dpos.config.minMEpoch() == 0 &&
+			mepoch > 0 {
 			t := time.Now()
 			pstate, err := sys.GetState(gstate.PreEpoch)
 			if err != nil {
@@ -406,7 +406,11 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				exit := (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() != pmepoch
 				if ftimestamp := pheader.Time.Uint64() + dpos.config.blockInterval(); ftimestamp < theader.Time.Uint64() && poffset != coffset {
 					tpoffset := poffset
-					for toffset := dpos.config.getoffset(ftimestamp); toffset != coffset; ftimestamp += dpos.config.blockInterval() {
+					toffset := dpos.config.getoffset(ftimestamp)
+					for {
+						if toffset == coffset {
+							break
+						}
 						if toffset != tpoffset {
 							// missing
 							if toffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
@@ -429,6 +433,8 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 							info.Counter += dpos.config.shouldCounter(ftimestamp, theader.Time.Uint64())
 							tpoffset = toffset
 						}
+						ftimestamp += dpos.config.blockInterval()
+						toffset = dpos.config.getoffset(ftimestamp)
 					}
 					info.Counter += dpos.config.shouldCounter(ftimestamp, theader.Time.Uint64())
 				}
