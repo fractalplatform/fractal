@@ -84,8 +84,9 @@ type TxPool struct {
 	priced                *txPricedList
 	station               *TxpoolStation
 
-	mu sync.RWMutex
-	wg sync.WaitGroup // for shutdown sync
+	mu        sync.RWMutex
+	pendingWg sync.WaitGroup // for pending preferring
+	wg        sync.WaitGroup // for shutdown sync
 }
 
 // New creates a new transaction pool to gather, sort and filter inbound
@@ -419,6 +420,8 @@ func (tp *TxPool) Content() (map[common.Name][]*types.Transaction, map[common.Na
 // account and sorted by nonce. The returned transaction set is a copy and can be
 // freely modified by calling code.
 func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
+	tp.pendingWg.Add(1)
+	defer tp.pendingWg.Done()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 	pending := make(map[common.Name][]*types.Transaction)
@@ -504,7 +507,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 	// Make sure the transaction is signed properly
 	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
-		log.Error("account Manager reocver faild ", "err", err)
 		return ErrInvalidSender
 	}
 
@@ -712,6 +714,7 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 		}
 	}
 
+	tp.pendingWg.Wait()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
@@ -754,6 +757,8 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
 	if isErr {
 		return errs
 	}
+
+	tp.pendingWg.Wait()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
