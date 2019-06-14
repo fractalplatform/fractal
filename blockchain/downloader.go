@@ -375,12 +375,9 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	for headNumber >= irreversibleNumber {
 		ancestor, err := find(headNumber, searchLength)
 		if err == nil {
-			return ancestor, err
+			return ancestor, nil
 		}
-		if err != nil {
-			if err.eid == notFind {
-				continue
-			}
+		if err != nil && err.eid != notFind {
 			return 0, err
 		}
 		headNumber -= searchLength
@@ -430,7 +427,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	log.Debug("downloader ancestro:", "ancestor", ancestor)
 	downloadStart := ancestor + 1
 	downloadAmount := statusNumber - ancestor
-	if downloadAmount == 0 {
+	if downloadAmount == 0 { // maybe the status of remote has changed
 		log.Debug(fmt.Sprintf("Why-1?:number: head:%d headNumber:%d statusNumber: %d", head.NumberU64(), headNumber, statusNumber))
 		log.Debug(fmt.Sprintf("Why-2?:hash: head %x status %x", head.Hash(), statusHash))
 		log.Debug(fmt.Sprintf("Why-3?:td: head:%d status: %d", dl.blockchain.GetTd(head.Hash(), head.NumberU64()).Uint64(), statusTD.Uint64()))

@@ -79,7 +79,7 @@ type Genesis struct {
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
-	return &dpos.Config{
+	dcfg := &dpos.Config{
 		MaxURLLen:                     cfg.DposCfg.MaxURLLen,
 		UnitStake:                     cfg.DposCfg.UnitStake,
 		CandidateAvailableMinQuantity: cfg.DposCfg.CandidateAvailableMinQuantity,
@@ -102,6 +102,10 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		AssetID:                       cfg.SysTokenID,
 		ReferenceTime:                 cfg.ReferenceTime,
 	}
+	if err := dcfg.IsValid(); err != nil {
+		panic(err)
+	}
+	return dcfg
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
@@ -371,6 +375,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
 	epoch, _ := sys.GetLastestEpoch()
 	for _, candidate := range g.AllocCandidates {
+		if ok, err := accountManager.AccountIsExist(common.StrToName(candidate.Name)); !ok {
+			panic(fmt.Sprintf("candidate %v is not exist %v", candidate.Name, err))
+		}
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
 			Epoch:         epoch,
 			Name:          candidate.Name,
