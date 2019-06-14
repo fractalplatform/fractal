@@ -162,14 +162,6 @@ func (voter *VoterInfo) key() string {
 	return fmt.Sprintf("0x%x_%s_%s", voter.Epoch, voter.Name, voter.Candidate)
 }
 
-func (voter *VoterInfo) ckey() string {
-	return fmt.Sprintf("0x%x_%s", voter.Epoch, voter.Candidate)
-}
-
-func (voter *VoterInfo) vkey() string {
-	return fmt.Sprintf("0x%x_%s", voter.Epoch, voter.Name)
-}
-
 // GlobalState dpos state
 type GlobalState struct {
 	Epoch                      uint64   `json:"epoch"`                      // epoch

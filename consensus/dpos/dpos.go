@@ -37,18 +37,17 @@ import (
 )
 
 var (
-	errMissingSignature           = errors.New("extra-data 65 byte suffix signature missing")
-	errMismatchSignerAndValidator = errors.New("mismatch block signer and candidate")
-	errInvalidMintBlockTime       = errors.New("invalid time to mint the block")
-	errInvalidBlockCandidate      = errors.New("invalid block candidate")
-	errInvalidTimestamp           = errors.New("invalid timestamp")
-	ErrIllegalCandidateName       = errors.New("illegal candidate name")
-	ErrIllegalCandidatePubKey     = errors.New("illegal candidate pubkey")
-	ErrTooMuchRreversible         = errors.New("too much rreversible blocks")
-	ErrSystemTakeOver             = errors.New("system account take over")
-	errUnknownBlock               = errors.New("unknown block")
-	extraSeal                     = 65
-	timeOfGenesisBlock            int64
+	errMissingSignature       = errors.New("extra-data 65 byte suffix signature missing")
+	errInvalidMintBlockTime   = errors.New("invalid time to mint the block")
+	errInvalidBlockCandidate  = errors.New("invalid block candidate")
+	errInvalidTimestamp       = errors.New("invalid timestamp")
+	ErrIllegalCandidateName   = errors.New("illegal candidate name")
+	ErrIllegalCandidatePubKey = errors.New("illegal candidate pubkey")
+	ErrTooMuchRreversible     = errors.New("too much rreversible blocks")
+	ErrSystemTakeOver         = errors.New("system account take over")
+	errUnknownBlock           = errors.New("unknown block")
+	extraSeal                 = 65
+	timeOfGenesisBlock        int64
 )
 
 type stateDB struct {
@@ -477,7 +476,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			if err := sys.SetState(pstate); err != nil {
 				return nil, err
 			}
-			log.Debug("replace check", "mepoch", mepoch, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
+			log.Info("replace check", "mepoch", mepoch, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
 		}
 	}
 

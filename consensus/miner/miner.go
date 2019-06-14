@@ -147,7 +147,7 @@ func (miner *Miner) SetDelayDuration(delayDuration uint64) error {
 // SetExtra extra data
 func (miner *Miner) SetExtra(extra []byte) error {
 	if uint64(len(extra)) > params.MaximumExtraDataSize-65 {
-		err := fmt.Errorf("Extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize-65)
+		err := fmt.Errorf("extra exceeds max length. %d > %v", len(extra), params.MaximumExtraDataSize-65)
 		log.Warn("SetExtra", "error", err)
 		return err
 	}
