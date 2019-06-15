@@ -704,9 +704,10 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 
 	// If the transaction is already known, discard it
 	if tp.all.Get(tx.Hash()) != nil {
-		log.Trace("Discarding already known transaction", "hash", tx.Hash())
+		log.Error("Discarding already known transaction", "hash", tx.Hash())
 		return fmt.Errorf("known transaction: %x", tx.Hash())
 	}
+
 	// Cache senders in transactions before obtaining lock
 	for _, action := range tx.GetActions() {
 		_, err := types.RecoverMultiKey(tp.signer, action, tx)
@@ -735,43 +736,33 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
-	// Cache senders in transactions before obtaining lock
-	var (
-		errs  []error
-		isErr bool
-	)
+	var addedTxs []*types.Transaction
+
 	for _, tx := range txs {
 		// If the transaction is already known, discard it
 		if tp.all.Get(tx.Hash()) != nil {
 			log.Trace("Discarding already known transaction", "hash", tx.Hash())
-			errs = append(errs, fmt.Errorf("known transaction: %x", tx.Hash()))
-			isErr = true
 			continue
 		}
 
 		if err := tx.Check(tp.chain.Config()); err != nil {
-			errs = append(errs, fmt.Errorf(err.Error()+" hash %v", tx.Hash()))
-			isErr = true
+			log.Trace("add txs check ", "err", err, "hash", tx.Hash())
 			continue
 		}
+
 		for _, action := range tx.GetActions() {
-			_, err := types.RecoverMultiKey(tp.signer, action, tx)
-			if err != nil {
-				log.Error("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
-				errs = append(errs, err)
-				isErr = true
+			if _, err := types.RecoverMultiKey(tp.signer, action, tx); err != nil {
+				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
 			}
 		}
-	}
-	if isErr {
-		return errs
+		addedTxs = append(addedTxs, tx)
 	}
 
 	tp.pendingWg.Wait()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
-	return tp.addTxsLocked(txs, local)
+	return tp.addTxsLocked(addedTxs, local)
 }
 
 // addTxsLocked attempts to queue a batch of transactions if they are valid,
