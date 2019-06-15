@@ -1,4 +1,17 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.21] - 2019-06-15
+### Fixed
+- [DOWNLOADER] fixed bug that may casue dead loop 
+- [BLOCKCHAIN] fixed state store irreversible number bug
+- [DPOS] fixed replace rate for candiate
+### Removed
+- [TXPOOL] removed some unused variable in txpool/handler.go
+- [RPC] removed invalid code
+### Added
+- [TXPOOL] limited the amount of gorouting not greater 1024
+- [GENESIS] add use default block gaslimit and update genesis.json
+
+
 ## [0.0.20] - 2019-06-12
 ### Fixed
 - [DOWNLOADER] fixed bug of find ancestor and use random station 
@@ -157,6 +170,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.21]: https://github.com/fractalplatform/fractal/compare/v0.0.20...v0.0.21
 [0.0.20]: https://github.com/fractalplatform/fractal/compare/v0.0.19...v0.0.20
 [0.0.19]: https://github.com/fractalplatform/fractal/compare/v0.0.18...v0.0.19
 [0.0.18]: https://github.com/fractalplatform/fractal/compare/v0.0.17...v0.0.18

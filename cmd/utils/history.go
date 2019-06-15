@@ -41,6 +41,18 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.21 - 2019-06-15",
+		`### Fixed
+- [DOWNLOADER] fixed bug that may casue dead loop 
+- [BLOCKCHAIN] fixed state store irreversible number bug
+- [DPOS] fixed replace rate for candiate
+### Removed
+- [TXPOOL] removed some unused variable in txpool/handler.go
+- [RPC] removed invalid code
+### Added
+- [TXPOOL] limited the amount of gorouting not greater 1024
+- [GENESIS] add use default block gaslimit and update genesis.json
+`,
 		"0.0.20 - 2019-06-12",
 		`### Fixed
 - [DOWNLOADER] fixed bug of find ancestor and use random station 
