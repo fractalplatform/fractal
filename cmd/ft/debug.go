@@ -62,7 +62,7 @@ var cpuProfileCmd = &cobra.Command{
 	Long:  `Turns on CPU profiling for nsec seconds and writesprofile data to file.`,
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		clientCall(ipcEndpoint, nil, "debug_gcStats", args[0], parseUint64(args[1]))
+		clientCall(ipcEndpoint, nil, "debug_cpuProfile", args[0], parseUint64(args[1]))
 		printJSON(true)
 	},
 }

@@ -70,6 +70,6 @@ func (s *PrivateTxPoolAPI) Content() map[string]map[string]map[string]*types.RPC
 }
 
 // SetGasPrice set gas price
-func (s *PrivateTxPoolAPI) SetGasPrice(gasprice uint64) bool {
-	return s.b.SetGasPrice(big.NewInt(int64(gasprice)))
+func (s *PrivateTxPoolAPI) SetGasPrice(gasprice *big.Int) bool {
+	return s.b.SetGasPrice(gasprice)
 }
