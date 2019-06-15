@@ -391,7 +391,7 @@ func makeHeader(chain consensus.IChainReader, parent *types.Block, state *state.
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		Difficulty: engine.CalcDifficulty(chain, 0, parent.Header()),
-		GasLimit:   chain.CalcGasLimit(parent),
+		GasLimit:   params.BlockGasLimit,
 		Number:     new(big.Int).Add(parent.Number(), big.NewInt(1)),
 		Time:       big.NewInt(0),
 	}

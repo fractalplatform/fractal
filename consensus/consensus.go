@@ -58,9 +58,6 @@ type IChainReader interface {
 	// WriteBlockWithState writes the block and all associated state to the database.
 	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (bool, error)
 
-	// CalcGasLimit computes the gas limit of the next block after parent.
-	CalcGasLimit(parent *types.Block) uint64
-
 	// HasBlockAndState checks if a block and associated state trie is fully present
 	// in the database or not, caching it if present.
 	HasBlockAndState(hash common.Hash, number uint64) bool
