@@ -76,6 +76,7 @@ type Genesis struct {
 	AllocAccounts   []*GenesisAccount   `json:"allocAccounts,omitempty"`
 	AllocCandidates []*GenesisCandidate `json:"allocCandidates,omitempty"`
 	AllocAssets     []*GenesisAsset     `json:"allocAssets,omitempty"`
+	Remark          string              `json:"remark,omitempty"`
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
@@ -247,7 +248,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		0,
 		big.NewInt(0),
 		payload,
-		nil,
+		[]byte(g.Remark),
 	))
 
 	for _, account := range g.AllocAccounts {
@@ -531,7 +532,7 @@ func DefaultGenesis() *Genesis {
 	return &Genesis{
 		Config:          params.DefaultChainconfig,
 		Timestamp:       1555776000000, // 2019-04-21 00:00:00
-		GasLimit:        params.GenesisGasLimit,
+		GasLimit:        params.BlockGasLimit,
 		Difficulty:      params.GenesisDifficulty,
 		AllocAccounts:   DefaultGenesisAccounts(),
 		AllocCandidates: DefaultGenesisCandidates(),

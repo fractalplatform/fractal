@@ -53,9 +53,6 @@ type ChainContext interface {
 	// HasBlock checks if a block is fully present in the database or not.
 	HasBlock(hash common.Hash, number uint64) bool
 
-	// CalcGasLimit computes the gas limit of the next block after parent.
-	CalcGasLimit(parent *types.Block) uint64
-
 	// StateAt retrieves a block state from the database by hash.
 	StateAt(hash common.Hash) (*state.StateDB, error)
 
