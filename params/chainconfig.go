@@ -122,7 +122,7 @@ var DefaultChainconfig = &ChainConfig{
 		BlockFrequency:                6,
 		CandidateScheduleSize:         3,
 		BackupScheduleSize:            0,
-		EpochInterval:                 540000,
+		EpochInterval:                 1080000,
 		FreezeEpochSize:               3,
 		ExtraBlockReward:              big.NewInt(1),
 		BlockReward:                   big.NewInt(5),

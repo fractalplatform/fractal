@@ -76,10 +76,11 @@ type Genesis struct {
 	AllocAccounts   []*GenesisAccount   `json:"allocAccounts,omitempty"`
 	AllocCandidates []*GenesisCandidate `json:"allocCandidates,omitempty"`
 	AllocAssets     []*GenesisAsset     `json:"allocAssets,omitempty"`
+	Remark          string              `json:"remark,omitempty"`
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
-	return &dpos.Config{
+	dcfg := &dpos.Config{
 		MaxURLLen:                     cfg.DposCfg.MaxURLLen,
 		UnitStake:                     cfg.DposCfg.UnitStake,
 		CandidateAvailableMinQuantity: cfg.DposCfg.CandidateAvailableMinQuantity,
@@ -102,6 +103,10 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		AssetID:                       cfg.SysTokenID,
 		ReferenceTime:                 cfg.ReferenceTime,
 	}
+	if err := dcfg.IsValid(); err != nil {
+		panic(err)
+	}
+	return dcfg
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
@@ -243,7 +248,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		0,
 		big.NewInt(0),
 		payload,
-		nil,
+		[]byte(g.Remark),
 	))
 
 	for _, account := range g.AllocAccounts {
@@ -371,6 +376,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
 	epoch, _ := sys.GetLastestEpoch()
 	for _, candidate := range g.AllocCandidates {
+		if ok, err := accountManager.AccountIsExist(common.StrToName(candidate.Name)); !ok {
+			panic(fmt.Sprintf("candidate %v is not exist %v", candidate.Name, err))
+		}
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
 			Epoch:         epoch,
 			Name:          candidate.Name,
@@ -524,7 +532,7 @@ func DefaultGenesis() *Genesis {
 	return &Genesis{
 		Config:          params.DefaultChainconfig,
 		Timestamp:       1555776000000, // 2019-04-21 00:00:00
-		GasLimit:        params.GenesisGasLimit,
+		GasLimit:        params.BlockGasLimit,
 		Difficulty:      params.GenesisDifficulty,
 		AllocAccounts:   DefaultGenesisAccounts(),
 		AllocCandidates: DefaultGenesisCandidates(),

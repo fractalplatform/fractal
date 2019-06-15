@@ -45,7 +45,7 @@ import (
 
 const (
 	// txChanSize is the size of channel listening to NewTxsEvent.
-	txChanSize = 4096
+	// txChanSize = 4096
 	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
 	chainHeadChanSize = 10
 )
@@ -280,7 +280,7 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Number:     new(big.Int).Add(number, big.NewInt(1)),
-		GasLimit:   worker.calcGasLimit(pblk),
+		GasLimit:   params.BlockGasLimit,
 		Extra:      worker.extra,
 		Time:       big.NewInt(timestamp),
 		Difficulty: worker.CalcDifficulty(worker.IConsensus, uint64(timestamp), parent),
@@ -468,7 +468,7 @@ func (worker *Worker) calcGasLimit(parent *types.Block) uint64 {
 	if atomic.LoadInt32(&worker.mining) == 0 {
 		return math.MaxUint64
 	}
-	return worker.IConsensus.CalcGasLimit(parent)
+	return params.BlockGasLimit
 }
 
 type Work struct {

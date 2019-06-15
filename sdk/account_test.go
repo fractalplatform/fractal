@@ -32,15 +32,12 @@ import (
 )
 
 var (
-	systemaccount   = params.DefaultChainconfig.SysName
-	accountaccount  = params.DefaultChainconfig.AccountName
-	dposaccount     = params.DefaultChainconfig.DposName
-	assetaccount    = params.DefaultChainconfig.AssetName
-	systemassetname = params.DefaultChainconfig.SysToken
-	systemassetid   = uint64(0)
-	chainid         = big.NewInt(1)
-	tValue          = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
-	tGas            = uint64(20000000)
+	systemaccount  = params.DefaultChainconfig.SysName
+	accountaccount = params.DefaultChainconfig.AccountName
+	systemassetid  = uint64(0)
+	chainid        = big.NewInt(1)
+	tValue         = new(big.Int).Mul(big.NewInt(300000), big.NewInt(1e18))
+	tGas           = uint64(20000000)
 
 	AssetAbi   = "./test/contract/Asset.abi"
 	AssetBin   = "./test/contract/Asset.bin"

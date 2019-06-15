@@ -21,7 +21,6 @@ import (
 	"math/big"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
@@ -30,12 +29,12 @@ import (
 )
 
 const (
-	maxKonwnTxs      = 32
-	txsSendDelay     = 50 * time.Millisecond
-	txsSendThreshold = 32
-	cacheBits        = 12
-	cacheSize        = 1 << cacheBits
-	cacheMask        = cacheSize - 1
+	//	maxKonwnTxs      = 32
+	//	txsSendDelay     = 50 * time.Millisecond
+	//	txsSendThreshold = 32
+	cacheBits = 12
+	cacheSize = 1 << cacheBits
+	cacheMask = cacheSize - 1
 )
 
 type peerInfo struct {
@@ -171,25 +170,29 @@ func (c *txsCache) txHadPath(tx *types.Transaction, path string) bool {
 
 // TxpoolStation is responsible for transaction broadcasting and receiving
 type TxpoolStation struct {
-	txChan     chan *router.Event
-	txpool     *TxPool
-	peers      map[string]*peerInfo
-	cache      *txsCache
-	delayedTxs []*types.Transaction
-	quit       chan struct{}
-	loopWG     sync.WaitGroup
-	subs       []router.Subscription
+	txChan       chan *router.Event
+	txpool       *TxPool
+	peers        map[string]*peerInfo
+	cache        *txsCache
+	delayedTxs   []*types.Transaction
+	quit         chan struct{}
+	loopWG       sync.WaitGroup
+	maxGorouting int64
+	numGorouting int64
+	subs         []router.Subscription
 }
 
 // NewTxpoolStation create a new TxpoolStation
 func NewTxpoolStation(txpool *TxPool) *TxpoolStation {
 	station := &TxpoolStation{
-		txChan: make(chan *router.Event, 1024),
-		txpool: txpool,
-		peers:  make(map[string]*peerInfo),
-		cache:  &txsCache{},
-		quit:   make(chan struct{}),
-		subs:   make([]router.Subscription, 4),
+		txChan:       make(chan *router.Event, 1024),
+		txpool:       txpool,
+		peers:        make(map[string]*peerInfo),
+		cache:        &txsCache{},
+		maxGorouting: 1024,
+		numGorouting: 0,
+		quit:         make(chan struct{}),
+		subs:         make([]router.Subscription, 4),
 	}
 	station.subs[0] = router.Subscribe(nil, station.txChan, router.P2PTxMsg, []*TransactionWithPath{}) // recive txs form remote
 	station.subs[1] = router.Subscribe(nil, station.txChan, router.NewPeerPassedNotify, nil)           // new peer is handshake completed
@@ -298,6 +301,10 @@ func (s *TxpoolStation) handleMsg() {
 				txs := e.Data.([]*types.Transaction)
 				s.broadcast(txs)
 			case router.P2PTxMsg:
+				if atomic.LoadInt64(&s.numGorouting) >= s.maxGorouting {
+					continue
+				}
+				atomic.AddInt64(&s.numGorouting, 1)
 				txs := e.Data.([]*TransactionWithPath)
 				//fmt.Printf("bloom:%x\n", *txs[0].Bloom)
 				rawTxs := s.addTxs(txs, e.From.Name())
@@ -305,6 +312,7 @@ func (s *TxpoolStation) handleMsg() {
 					s.loopWG.Add(1)
 					go func() {
 						s.txpool.AddRemotes(rawTxs)
+						atomic.AddInt64(&s.numGorouting, -1)
 						s.loopWG.Done()
 					}()
 				}

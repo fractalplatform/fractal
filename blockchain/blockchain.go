@@ -45,7 +45,7 @@ import (
 const (
 	bodyCacheLimit      = 256
 	blockCacheLimit     = 256
-	headerCacheLimit    = 512
+	headerCacheLimit    = 1280
 	tdCacheLimit        = 1024
 	numberCacheLimit    = 2048
 	maxFutureBlocks     = 256
@@ -353,7 +353,6 @@ func (bc *BlockChain) StateAt(hash common.Hash) (*state.StateDB, error) {
 func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(batch, block.Hash())
-	bc.currentBlock.Store(block)
 
 	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
 		log.Debug("state sys irreversible", "number", block.NumberU64())
@@ -700,6 +699,10 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 	if err := batch.Write(); err != nil {
 		return false, err
+	}
+
+	if isCanon {
+		bc.currentBlock.Store(block)
 	}
 
 	bc.futureBlocks.Remove(block.Hash())
@@ -1203,35 +1206,4 @@ func (bc *BlockChain) ExportN(w io.Writer, first uint64, last uint64) error {
 		}
 	}
 	return nil
-}
-
-// CalcGasLimit computes the gas limit of the next block after parent.
-// This is miner strategy, not consensus protocol.
-func (bc *BlockChain) CalcGasLimit(parent *types.Block) uint64 {
-	// contrib = (parentGasUsed * 3 / 2) / 1024
-	contrib := (parent.GasUsed() + parent.GasUsed()/2) / params.GasLimitBoundDivisor
-
-	// decay = parentGasLimit / 1024 -1
-	decay := parent.GasLimit()/params.GasLimitBoundDivisor - 1
-
-	/*
-		strategy: gasLimit of block-to-mine is set based on parent's
-		gasUsed value.  if parentGasUsed > parentGasLimit * (2/3) then we
-		increase it, otherwise lower it (or leave it unchanged if it's right
-		at that usage) the amount increased/decreased depends on how far away
-		from parentGasLimit * (2/3) parentGasUsed is.
-	*/
-	limit := parent.GasLimit() - decay + contrib
-	if limit < params.MinGasLimit {
-		limit = params.MinGasLimit
-	}
-	// however, if we're now below the target (GenesisGasLimit) we increase the
-	// limit as much as we can (parentGasLimit / 1024 -1)
-	if limit < params.GenesisGasLimit {
-		limit = parent.GasLimit() + decay
-		if limit > params.GenesisGasLimit {
-			limit = params.GenesisGasLimit
-		}
-	}
-	return limit
 }

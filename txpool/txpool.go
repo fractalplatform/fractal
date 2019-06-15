@@ -84,8 +84,9 @@ type TxPool struct {
 	priced                *txPricedList
 	station               *TxpoolStation
 
-	mu sync.RWMutex
-	wg sync.WaitGroup // for shutdown sync
+	mu        sync.RWMutex
+	pendingWg sync.WaitGroup // for pending preferring
+	wg        sync.WaitGroup // for shutdown sync
 }
 
 // New creates a new transaction pool to gather, sort and filter inbound
@@ -419,6 +420,8 @@ func (tp *TxPool) Content() (map[common.Name][]*types.Transaction, map[common.Na
 // account and sorted by nonce. The returned transaction set is a copy and can be
 // freely modified by calling code.
 func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
+	tp.pendingWg.Add(1)
+	defer tp.pendingWg.Done()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 	pending := make(map[common.Name][]*types.Transaction)
@@ -504,7 +507,6 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 	// Make sure the transaction is signed properly
 	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
-		log.Error("account Manager reocver faild ", "err", err)
 		return ErrInvalidSender
 	}
 
@@ -528,12 +530,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 }
 
 func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
-	// If the transaction is already known, discard it
 	hash := tx.Hash()
-	if tp.all.Get(hash) != nil {
-		log.Trace("Discarding already known transaction", "hash", hash)
-		return false, fmt.Errorf("known transaction: %x", hash)
-	}
 	// If the transaction fails basic validation, discard it
 	if err := tp.validateTx(tx, local); err != nil {
 		log.Trace("Discarding invalid transaction", "hash", hash, "err", err)
@@ -704,6 +701,13 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 	if err := tx.Check(tp.chain.Config()); err != nil {
 		return err
 	}
+
+	// If the transaction is already known, discard it
+	if tp.all.Get(tx.Hash()) != nil {
+		log.Error("Discarding already known transaction", "hash", tx.Hash())
+		return fmt.Errorf("known transaction: %x", tx.Hash())
+	}
+
 	// Cache senders in transactions before obtaining lock
 	for _, action := range tx.GetActions() {
 		_, err := types.RecoverMultiKey(tp.signer, action, tx)
@@ -712,6 +716,7 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 		}
 	}
 
+	tp.pendingWg.Wait()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
@@ -731,33 +736,33 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
-	// Cache senders in transactions before obtaining lock
-	var (
-		errs  []error
-		isErr bool
-	)
+	var addedTxs []*types.Transaction
+
 	for _, tx := range txs {
-		if err := tx.Check(tp.chain.Config()); err != nil {
-			errs = append(errs, fmt.Errorf(err.Error()+" hash %v", tx.Hash()))
-			isErr = true
+		// If the transaction is already known, discard it
+		if tp.all.Get(tx.Hash()) != nil {
+			log.Trace("Discarding already known transaction", "hash", tx.Hash())
 			continue
 		}
+
+		if err := tx.Check(tp.chain.Config()); err != nil {
+			log.Trace("add txs check ", "err", err, "hash", tx.Hash())
+			continue
+		}
+
 		for _, action := range tx.GetActions() {
-			_, err := types.RecoverMultiKey(tp.signer, action, tx)
-			if err != nil {
-				log.Error("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
-				errs = append(errs, err)
-				isErr = true
+			if _, err := types.RecoverMultiKey(tp.signer, action, tx); err != nil {
+				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
 			}
 		}
+		addedTxs = append(addedTxs, tx)
 	}
-	if isErr {
-		return errs
-	}
+
+	tp.pendingWg.Wait()
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
-	return tp.addTxsLocked(txs, local)
+	return tp.addTxsLocked(addedTxs, local)
 }
 
 // addTxsLocked attempts to queue a batch of transactions if they are valid,
