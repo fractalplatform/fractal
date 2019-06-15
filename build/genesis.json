@@ -1,6 +1,9 @@
 {
 	"config": {
-		"bootnodes": ["fnode://a85ccab0374c60ddea0a63b521ae3f8475100ff4e116090d6798a8618ceea193f5b7deffc14627b2f61bc374336983f6a6c6ed979478590d49906e8ce6041a18@boot.m.ft.im:30000","fnode://ba045da51a0f49de01ab8395bc19ece3b76dde5c9e4b72b8cda4ccfd860b17ea7813e6f29d31e0390de7203c41c1ed96bb79dd91218ca684d34ec60a207fc076@boot.m.ft.im:30001"],
+		"bootnodes": ["fnode://a85ccab0374c60ddea0a63b521ae3f8475100ff4e116090d6798a8618ceea193f5b7deffc14627b2f61bc374336983f6a6c6ed979478590d49906e8ce6041a18@boot.m.ft.im:30000",
+			"fnode://9d18e8f043a1d2c06d87506cd968410a24db7cbca3c152e75a9e3850b9b737ec85da66c271ac9f703c61e5367d8922d39e145313ff7cb379d9c8d682a15f60dc@boot2.m.ft.im:30000",
+			"fnode://6629defca0f82ede9cb30d40a2ec6e8c56f51080ad49e9099eb960bed63829ee259bdec6c357d2b43ebdb621b1a54da268d35088bd9db80245936a58c299e1e6@boot3.m.ft.im:30000"
+		],
 		"chainId": 1,
 		"chainName": "fractal",
 		"chainUrl": "https://fractalproject.com",
