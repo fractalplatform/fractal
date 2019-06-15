@@ -530,12 +530,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 }
 
 func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
-	// If the transaction is already known, discard it
 	hash := tx.Hash()
-	if tp.all.Get(hash) != nil {
-		log.Trace("Discarding already known transaction", "hash", hash)
-		return false, fmt.Errorf("known transaction: %x", hash)
-	}
 	// If the transaction fails basic validation, discard it
 	if err := tp.validateTx(tx, local); err != nil {
 		log.Trace("Discarding invalid transaction", "hash", hash, "err", err)
@@ -706,6 +701,12 @@ func (tp *TxPool) addTx(tx *types.Transaction, local bool) error {
 	if err := tx.Check(tp.chain.Config()); err != nil {
 		return err
 	}
+
+	// If the transaction is already known, discard it
+	if tp.all.Get(tx.Hash()) != nil {
+		log.Trace("Discarding already known transaction", "hash", tx.Hash())
+		return fmt.Errorf("known transaction: %x", tx.Hash())
+	}
 	// Cache senders in transactions before obtaining lock
 	for _, action := range tx.GetActions() {
 		_, err := types.RecoverMultiKey(tp.signer, action, tx)
@@ -740,6 +741,14 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local bool) []error {
 		isErr bool
 	)
 	for _, tx := range txs {
+		// If the transaction is already known, discard it
+		if tp.all.Get(tx.Hash()) != nil {
+			log.Trace("Discarding already known transaction", "hash", tx.Hash())
+			errs = append(errs, fmt.Errorf("known transaction: %x", tx.Hash()))
+			isErr = true
+			continue
+		}
+
 		if err := tx.Check(tp.chain.Config()); err != nil {
 			errs = append(errs, fmt.Errorf(err.Error()+" hash %v", tx.Hash()))
 			isErr = true
