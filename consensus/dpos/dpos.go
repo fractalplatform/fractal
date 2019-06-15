@@ -403,7 +403,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				pheader := chain.GetHeaderByHash(theader.ParentHash)
 				coffset := dpos.config.getoffset(theader.Time.Uint64())
 				poffset := dpos.config.getoffset(pheader.Time.Uint64())
-				exit := (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() != pmepoch
+				exit := pheader.Time.Uint64() < timestamp || (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() < mepoch-dpos.config.minMEpoch()
 				if ftimestamp := pheader.Time.Uint64() + dpos.config.blockInterval(); ftimestamp < theader.Time.Uint64() && poffset != coffset {
 					tpoffset := poffset
 					toffset := dpos.config.getoffset(ftimestamp)
@@ -417,9 +417,10 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 								continue
 							}
 							tname := pstate.ActivatedCandidateSchedule[toffset]
-							for index, roffset := range pstate.OffCandidateSchedule {
+							for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
+								roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
 								if roffset == toffset {
-									tname = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(index)]
+									tname = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
 									break
 								}
 							}
