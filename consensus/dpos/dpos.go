@@ -387,8 +387,8 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			if err != nil {
 				return nil, err
 			}
-			ttimestamp := header.Time.Uint64()
 			oldCandidates := map[string]*CandidateInfo{}
+			eheader := header
 			for theader := prevHeader; ; {
 				name := theader.Coinbase.String()
 				info, ok := oldCandidates[name]
@@ -441,9 +441,11 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				}
 				if systemio := strings.Compare(theader.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
 					info.Counter++
+					eheader = theader
 				} else if exit || poffset != coffset ||
 					strings.Compare(pheader.Coinbase.String(), theader.Coinbase.String()) != 0 {
-					info.Counter += dpos.config.shouldCounter(theader.Time.Uint64(), ttimestamp)
+					info.Counter += dpos.config.shouldCounter(theader.Time.Uint64(), eheader.Time.Uint64())
+					eheader = theader
 				}
 				if exit {
 					break
@@ -484,6 +486,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 				return nil, err
 			}
 			log.Info("replace check", "mepoch", mepoch, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
+			log.Info("replace check", "result", fmt.Sprintf("%v", oldCandidates))
 		}
 	}
 
