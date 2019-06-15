@@ -417,9 +417,10 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 								continue
 							}
 							tname := pstate.ActivatedCandidateSchedule[toffset]
-							for index, roffset := range pstate.OffCandidateSchedule {
+							for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
+								roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
 								if roffset == toffset {
-									tname = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(index)]
+									tname = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
 									break
 								}
 							}
