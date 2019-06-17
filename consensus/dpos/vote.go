@@ -523,6 +523,12 @@ func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number u
 				if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 					continue
 				}
+				timestamp := sys.config.epochTimeStamp(epoch)
+				if bquantity, err := sys.GetBalanceByTime(candidateInfo.Name, timestamp); err != nil {
+					continue
+				} else if s := new(big.Int).Mul(sys.config.unitStake(), sys.config.CandidateAvailableMinQuantity); bquantity.Cmp(s) == -1 {
+					continue
+				}
 			} else if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 				if strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
 					sysCandidate = candidateInfo

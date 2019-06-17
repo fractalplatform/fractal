@@ -214,39 +214,27 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 			return err
 		}
 
-		//  pepoch missing
-		if timestamp := parent.Time.Uint64() + dpos.config.blockInterval(); timestamp < header.Time.Uint64() {
-			etimestamp := sys.config.epochTimeStamp(gstate.Epoch+1) + 2*sys.config.blockInterval()
-			if header.Time.Uint64() < etimestamp {
-				etimestamp = header.Time.Uint64()
+		// missing
+		for timestamp := parent.Time.Uint64() + dpos.config.blockInterval(); timestamp < header.Time.Uint64(); timestamp += dpos.config.blockInterval() {
+			coffset := dpos.config.getoffset(timestamp)
+			if coffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
+				continue
 			}
-			poffset := dpos.config.getoffset(parent.Time.Uint64())
-			for ; timestamp < etimestamp; timestamp += dpos.config.blockInterval() {
-				coffset := dpos.config.getoffset(timestamp)
-				if coffset != poffset {
-					if coffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
-						continue
-					}
-					name := pstate.ActivatedCandidateSchedule[coffset]
-					for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
-						roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
-						if roffset == coffset {
-							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
-							break
-						}
-					}
-					pcandidate, err := sys.GetCandidate(gstate.Epoch, name)
-					if err != nil {
-						return err
-					}
-					c := dpos.config.shouldCounter(timestamp, etimestamp)
-					pcandidate.Counter += c
-					log.Debug("should counter missing++", "add", c, "candidate", pcandidate.Name, "should", pcandidate.Counter, "actual", pcandidate.ActualCounter, "number", header.Number)
-					if err := sys.SetCandidate(pcandidate); err != nil {
-						return err
-					}
+			name := pstate.ActivatedCandidateSchedule[coffset]
+			for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
+				roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
+				if roffset == coffset {
+					name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
+					break
 				}
-				poffset = coffset
+			}
+			pcandidate, err := sys.GetCandidate(gstate.Epoch, name)
+			if err != nil {
+				return err
+			}
+			pcandidate.Counter++
+			if err := sys.SetCandidate(pcandidate); err != nil {
+				return err
 			}
 		}
 
@@ -256,15 +244,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 		}
 		if candidate != nil {
 			candidate.ActualCounter++
-			if gstate.TakeOver {
-				candidate.Counter++
-			} else if /*dpos.config.getoffset(parent.Time.Uint64())*/ dpos.config.getoffset(header.Time.Uint64()-dpos.config.blockInterval()) != dpos.config.getoffset(header.Time.Uint64()) ||
-				strings.Compare(parent.Coinbase.String(), header.Coinbase.String()) != 0 {
-				etimestamp := sys.config.epochTimeStamp(gstate.Epoch+1) + 2*sys.config.blockInterval()
-				c := dpos.config.shouldCounter(header.Time.Uint64(), etimestamp)
-				candidate.Counter += c
-				log.Debug("should counter ++", "add", c, "candidate", candidate.Name, "should", candidate.Counter, "actual", candidate.ActualCounter, "number", header.Number)
-			}
+			candidate.Counter++
 			if err := sys.SetCandidate(candidate); err != nil {
 				return err
 			}
@@ -274,48 +254,6 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 	if pepoch != epoch {
 		log.Debug("UpdateElectedCandidates", "prev", pepoch, "curr", epoch, "number", parent.Number.Uint64(), "time", parent.Time.Uint64())
 		sys.UpdateElectedCandidates(pepoch, epoch, parent.Number.Uint64(), header.Coinbase.String())
-		if timestamp := parent.Time.Uint64() + dpos.config.blockInterval(); parent.Number.Uint64() > 0 && timestamp < header.Time.Uint64() {
-			gstate, err := sys.GetState(LastEpoch)
-			if err != nil {
-				return err
-			}
-			pstate, err := sys.GetState(gstate.PreEpoch)
-			if err != nil {
-				return err
-			}
-			stimestamp := dpos.config.epochTimeStamp(gstate.Epoch) + sys.config.blockInterval()
-			if stimestamp < parent.Time.Uint64() {
-				stimestamp = parent.Time.Uint64()
-			}
-
-			poffset := dpos.config.getoffset(stimestamp)
-			for stimestamp += dpos.config.blockInterval(); stimestamp < header.Time.Uint64(); stimestamp += dpos.config.blockInterval() {
-				coffset := dpos.config.getoffset(stimestamp)
-				if coffset != poffset {
-					if coffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
-						continue
-					}
-					name := pstate.ActivatedCandidateSchedule[coffset]
-					for index, roffset := range pstate.OffCandidateSchedule {
-						if roffset == coffset {
-							name = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(index)]
-							break
-						}
-					}
-					pcandidate, err := sys.GetCandidate(gstate.Epoch, name)
-					if err != nil {
-						return err
-					}
-					c := dpos.config.shouldCounter(stimestamp, header.Time.Uint64())
-					pcandidate.Counter += c
-					log.Debug("should counter ++missing", "add", c, "candidate", pcandidate.Name, "should", pcandidate.Counter, "actual", pcandidate.ActualCounter, "number", header.Number)
-					if err := sys.SetCandidate(pcandidate); err != nil {
-						return err
-					}
-				}
-				poffset = coffset
-			}
-		}
 	}
 
 	if header.Number.Uint64() == 1 {
@@ -325,9 +263,7 @@ func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, tx
 		}
 		if candidate != nil {
 			candidate.ActualCounter++
-			c := dpos.config.shouldCounter(header.Time.Uint64(), sys.config.epochTimeStamp(epoch+1)+2*sys.config.blockInterval())
-			candidate.Counter += c
-			log.Debug("should counter ++", "add", c, "candidate", candidate.Name, "should", candidate.Counter, "actual", candidate.ActualCounter, "number", header.Number)
+			candidate.Counter++
 			if err := sys.SetCandidate(candidate); err != nil {
 				return err
 			}
@@ -387,7 +323,6 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 			if err != nil {
 				return nil, err
 			}
-			ttimestamp := header.Time.Uint64()
 			oldCandidates := map[string]*CandidateInfo{}
 			for theader := prevHeader; ; {
 				name := theader.Coinbase.String()
@@ -399,53 +334,33 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 					oldCandidates[name] = info
 				}
 				info.ActualCounter++
+				info.Counter++
 
+				// missing
 				pheader := chain.GetHeaderByHash(theader.ParentHash)
-				coffset := dpos.config.getoffset(theader.Time.Uint64())
-				poffset := dpos.config.getoffset(pheader.Time.Uint64())
-				exit := pheader.Time.Uint64() < timestamp || (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() < mepoch-dpos.config.minMEpoch()
-				if ftimestamp := pheader.Time.Uint64() + dpos.config.blockInterval(); ftimestamp < theader.Time.Uint64() && poffset != coffset {
-					tpoffset := poffset
+				for ftimestamp := pheader.Time.Uint64() + dpos.config.blockInterval(); ftimestamp < theader.Time.Uint64(); ftimestamp += dpos.config.blockInterval() {
 					toffset := dpos.config.getoffset(ftimestamp)
-					for {
-						if toffset == coffset {
+					if toffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
+						continue
+					}
+					tname := pstate.ActivatedCandidateSchedule[toffset]
+					for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
+						roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
+						if roffset == toffset {
+							tname = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
 							break
 						}
-						if toffset != tpoffset {
-							// missing
-							if toffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
-								continue
-							}
-							tname := pstate.ActivatedCandidateSchedule[toffset]
-							for rindex := len(pstate.OffCandidateSchedule); rindex > 0; rindex-- {
-								roffset := pstate.OffCandidateSchedule[uint64(rindex-1)]
-								if roffset == toffset {
-									tname = pstate.ActivatedCandidateSchedule[dpos.config.CandidateScheduleSize+uint64(rindex-1)]
-									break
-								}
-							}
-							info, ok := oldCandidates[tname]
-							if !ok {
-								info = &CandidateInfo{
-									Name: tname,
-								}
-								oldCandidates[tname] = info
-							}
-							info.Counter += dpos.config.shouldCounter(ftimestamp, theader.Time.Uint64())
-							tpoffset = toffset
-						}
-						ftimestamp += dpos.config.blockInterval()
-						toffset = dpos.config.getoffset(ftimestamp)
 					}
-					info.Counter += dpos.config.shouldCounter(ftimestamp, theader.Time.Uint64())
-				}
-				if systemio := strings.Compare(theader.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
+					info, ok := oldCandidates[tname]
+					if !ok {
+						info = &CandidateInfo{
+							Name: tname,
+						}
+						oldCandidates[tname] = info
+					}
 					info.Counter++
-				} else if exit || poffset != coffset ||
-					strings.Compare(pheader.Coinbase.String(), theader.Coinbase.String()) != 0 {
-					info.Counter += dpos.config.shouldCounter(theader.Time.Uint64(), ttimestamp)
 				}
-				if exit {
+				if exit := pheader.Time.Uint64() < timestamp || (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() < mepoch-dpos.config.minMEpoch(); exit {
 					break
 				}
 				theader = pheader

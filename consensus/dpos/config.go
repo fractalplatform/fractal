@@ -162,14 +162,6 @@ func (cfg *Config) epochTimeStamp(epoch uint64) uint64 {
 	return (epoch-1)*cfg.epochInterval() + cfg.ReferenceTime
 }
 
-func (cfg *Config) shouldCounter(ftimestamp, ttimestamp uint64) uint64 {
-	if ptimestamp := cfg.blockInterval() * cfg.BlockFrequency; ftimestamp+ptimestamp < ttimestamp {
-		n := (ftimestamp - cfg.blockInterval() - cfg.ReferenceTime) % cfg.epochInterval() % ptimestamp
-		return cfg.BlockFrequency - n/cfg.blockInterval()
-	}
-	return (ttimestamp - ftimestamp) / cfg.blockInterval()
-}
-
 func (cfg *Config) minMEpoch() uint64 {
 	return 10
 }
