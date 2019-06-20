@@ -31,6 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
@@ -59,11 +60,10 @@ type Backend interface {
 	GetBadBlocks(ctx context.Context) ([]*types.Block, error)
 	SetStatePruning(enable bool) (bool, uint64)
 
-	// TxPool API
+	// TxPool
+	TxPool() *txpool.TxPool
 	SendTx(ctx context.Context, signedTx *types.Transaction) error
-	GetPoolTransaction(txHash common.Hash) *types.Transaction
-	Stats() (pending int, queued int)
-	TxPoolContent() (map[common.Name][]*types.Transaction, map[common.Name][]*types.Transaction)
+
 	SetGasPrice(gasPrice *big.Int) bool
 
 	//Account API

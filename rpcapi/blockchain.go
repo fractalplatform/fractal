@@ -87,9 +87,10 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 		return tx.NewRPCTransaction(blockHash, blockNumber, index)
 	}
 	// No finalized transaction, try to retrieve it from the pool
-	if tx := s.b.GetPoolTransaction(hash); tx != nil {
+	if tx := s.b.TxPool().Get(hash); tx != nil {
 		return tx.NewRPCTransaction(common.Hash{}, 0, 0)
 	}
+
 	// Transaction unknown, return as such
 	return nil
 }

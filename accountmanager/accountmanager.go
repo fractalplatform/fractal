@@ -1278,7 +1278,7 @@ func (am *AccountManager) Process(accountManagerContext *types.AccountManagerCon
 func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
-	fromAccountExtra := make([]common.Name, 1)
+	fromAccountExtra := make([]common.Name, 0)
 	fromAccountExtra = append(fromAccountExtra, accountManagerContext.FromAccountExtra...)
 
 	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
