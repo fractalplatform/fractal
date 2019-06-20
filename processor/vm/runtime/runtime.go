@@ -103,12 +103,10 @@ func NewEnv(cfg *Config) *vm.EVM {
 		GetDelegatedByTime: func(*state.StateDB, string, uint64) (*big.Int, error) {
 			return big.NewInt(0), nil
 		},
-		GetLatestEpoch: func(state *state.StateDB) (epoch uint64, err error) {
-			return 1, nil
-		},
-		//GetPrevEpoch
-		GetPrevEpoch: func(state *state.StateDB, epoch uint64) (peoch uint64, err error) {
-			return 2, nil
+
+		//GetEpoch
+		GetEpoch: func(state *state.StateDB, t uint64, epoch uint64) (peoch uint64, time uint64, err error) {
+			return 2, 0, nil
 		},
 		//GetActivedCandidateSize
 		GetActivedCandidateSize: func(state *state.StateDB, epoch uint64) (size uint64, err error) {

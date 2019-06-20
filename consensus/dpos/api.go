@@ -65,6 +65,8 @@ func (api *API) Epoch(height uint64) (uint64, error) {
 
 // PrevEpoch get prev epoch number by epoch
 func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
+	var e uint64
+
 	if epoch == 0 {
 		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
@@ -72,11 +74,15 @@ func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return api.dpos.GetPrevEpoch(state, epoch)
+
+	e, _, err = api.dpos.GetEpoch(state, 1, epoch)
+	return e, err
 }
 
 // NextEpoch get next epoch number by epoch
 func (api *API) NextEpoch(epoch uint64) (uint64, error) {
+	var e uint64
+
 	if epoch == 0 {
 		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
@@ -84,7 +90,9 @@ func (api *API) NextEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return api.dpos.GetNextEpoch(state, epoch)
+
+	e, _, err = api.dpos.GetEpoch(state, 2, epoch)
+	return e, err
 }
 
 // CandidatesSize get candidates size
