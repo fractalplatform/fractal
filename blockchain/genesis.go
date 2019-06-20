@@ -77,6 +77,7 @@ type Genesis struct {
 	AllocCandidates []*GenesisCandidate `json:"allocCandidates,omitempty"`
 	AllocAssets     []*GenesisAsset     `json:"allocAssets,omitempty"`
 	Remark          string              `json:"remark,omitempty"`
+	ForkID          uint64              `json:"forkID,omitempty"`
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
@@ -395,8 +396,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	}
 
 	// init  fork controller
-	if err := initForkController(chainName.String(), statedb); err != nil {
-		panic(fmt.Sprintf("genesis init fork controller err %v", err))
+	if err := initForkController(chainName.String(), statedb, g.ForkID); err != nil {
+		panic(fmt.Sprintf("genesis init fork controller failed %v", err))
 	}
 
 	// snapshot
@@ -476,6 +477,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	receipts := []*types.Receipt{receipt}
 	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
+	block.Head.WithForkID(g.ForkID, g.ForkID)
 	batch := db.NewBatch()
 
 	// write snapshot to db
@@ -513,7 +515,6 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(db, block.Hash())
 	rawdb.WriteHeadHeaderHash(db, block.Hash())
-
 	rawdb.WriteChainConfig(db, block.Hash(), g.Config)
 	rawdb.WriteIrreversibleNumber(db, uint64(0))
 
