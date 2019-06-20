@@ -818,33 +818,35 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 			}
 		}
 
-		epoch := dpos.config.epoch(timestamp)
-		etimestamp := dpos.config.epochTimeStamp(epoch)
-		pmepoch := (parent.Time.Uint64() - etimestamp) / dpos.config.mepochInterval() / dpos.config.minMEpoch()
-		mepoch := (timestamp - etimestamp) / dpos.config.mepochInterval() / dpos.config.minMEpoch()
-		if pmepoch != mepoch && mepoch > 0 {
-			candidate, err := sys.GetCandidate(gstate.Epoch, tname)
-			if err != nil {
-				return err
-			}
-			for timestamp := timestamp - dpos.config.blockInterval(); (timestamp-etimestamp)/dpos.config.mepochInterval()/dpos.config.minMEpoch() != pmepoch; timestamp -= dpos.config.blockInterval() {
-				if dpos.config.getoffset(timestamp, 1) == offset {
-					candidate.Counter--
+		if fid > 1 {
+			epoch := dpos.config.epoch(timestamp)
+			etimestamp := dpos.config.epochTimeStamp(epoch)
+			pmepoch := (parent.Time.Uint64() - etimestamp) / dpos.config.mepochInterval() / dpos.config.minMEpoch()
+			mepoch := (timestamp - etimestamp) / dpos.config.mepochInterval() / dpos.config.minMEpoch()
+			if pmepoch != mepoch && mepoch > 0 {
+				candidate, err := sys.GetCandidate(gstate.Epoch, tname)
+				if err != nil {
+					return err
 				}
-			}
-			tcandidate, err := sys.GetActivatedCandidate(offset)
-			if err != nil {
-				return err
-			}
-			if strings.Compare(tcandidate.Name, tname) != 0 {
-				panic("not reached")
-			}
-			scnt := tcandidate.Counter - candidate.Counter
-			acnt := tcandidate.ActualCounter - candidate.Counter
-			if scnt >= acnt+scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
-				rname := pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize]
-				log.Info("replace index IsValidateCandidate", "epoch", epoch, "mepoch", mepoch, "candidate", tname, "scnt", scnt, "acnt", acnt, "rcandidate", rname)
-				tname = rname
+				for timestamp := timestamp - dpos.config.blockInterval(); (timestamp-etimestamp)/dpos.config.mepochInterval()/dpos.config.minMEpoch() != pmepoch; timestamp -= dpos.config.blockInterval() {
+					if dpos.config.getoffset(timestamp, 1) == offset {
+						candidate.Counter--
+					}
+				}
+				tcandidate, err := sys.GetActivatedCandidate(offset)
+				if err != nil {
+					return err
+				}
+				if strings.Compare(tcandidate.Name, tname) != 0 {
+					panic("not reached")
+				}
+				scnt := tcandidate.Counter - candidate.Counter
+				acnt := tcandidate.ActualCounter - candidate.Counter
+				if scnt >= acnt+scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
+					rname := pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize]
+					log.Info("replace index IsValidateCandidate", "epoch", epoch, "mepoch", mepoch, "candidate", tname, "scnt", scnt, "acnt", acnt, "rcandidate", rname)
+					tname = rname
+				}
 			}
 		}
 	}
