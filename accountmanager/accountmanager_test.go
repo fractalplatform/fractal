@@ -580,7 +580,7 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 		assetID     uint64
 	}
 	//asset ID = 0
-	acctm.ast.IssueAsset("ziz", blockNumber, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
+	acctm.ast.IssueAsset("ziz", blockNumber, 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
 	id, err := acctm.ast.GetAssetIdByName("ziz")
 	if err != nil {
 		t.Errorf("GetAssetIdByName ziz err")
@@ -1422,7 +1422,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			Contract:    tt.args.asset.GetContract(),
 			Description: tt.args.asset.GetAssetDescription(),
 		}
-		if _, err := am.IssueAsset(tt.from, asset, blockNumber); (err != nil) != tt.wantErr {
+		if _, err := am.IssueAsset(tt.from, asset, blockNumber, 0); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1919,7 +1919,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber, 0); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	am.AddAccountBalanceByName(asset1.Owner, asset1.AssetName, asset1.Amount)
@@ -1992,7 +1992,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber, 0); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())

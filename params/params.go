@@ -75,3 +75,7 @@ const (
 const (
 	MaxFeeResultCount = uint64(1000)
 )
+
+const (
+	ForkID1 = uint64(1) //ForkID1 account first name > 12, asset name contain account name
+)

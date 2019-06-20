@@ -1204,35 +1204,97 @@ func (am *AccountManager) CheckAssetContract(contract common.Name, owner common.
 	return false
 }
 
-//IssueAsset issue asset
-func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64, curForkID uint64) (uint64, error) {
-	//check owner valid
-	// if !am.ast.IsValidMainAsset(asset.AssetName) {
-	// 	parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
-	// 	if !isValid {
-	// 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
-	// 	}
-	// 	assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
-	// 	asset.Decimals = assetObj.GetDecimals()
-	// }
+func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo *IssueAsset) error {
+	var assetNames []string
+	var assetPrex string
 
-	if curForkID >= params.ForkID1 {
-
+	names := strings.Split(assetInfo.AssetName, ":")
+	if len(names) == 2 {
+		if !asset.IsAssetNameValid(common.StrToName(names[1])) {
+			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
+		}
+		assetNames = strings.Split(names[1], ".")
+		if len(assetNames) == 1 && names[0] != fromName.String() {
+			return fmt.Errorf("asset name not match from, name: %v, from:%v", assetInfo.AssetName, fromName)
+		}
+		assetPrex = names[0] + ":"
 	} else {
-		if common.StrToName(assetName).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
-			if len(strings.Split(asset.AssetName, ".")) > 1 {
-				parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
-				if !isValid {
-					return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
-				}
-				assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
-				asset.Decimals = assetObj.GetDecimals()
+		if !asset.IsAssetNameValid(common.StrToName(assetInfo.AssetName)) {
+			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
+		}
+		assetNames = strings.Split(assetInfo.AssetName, ".")
+		if len(assetNames) < 2 {
+			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
+		}
+		assetPrex = ""
+	}
+
+	if len(assetNames) == 1 {
+		return nil
+	}
+
+	//check sub asset owner
+	parentAassetID, isValid := am.ast.IsValidAssetOwner(fromName, assetPrex, assetNames)
+	if !isValid {
+		return fmt.Errorf("asset owner is invalid, name: %v", assetInfo.AssetName)
+	}
+	assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+	assetInfo.Decimals = assetObj.GetDecimals()
+
+	return nil
+}
+
+func (am *AccountManager) checkAssetInfoValid(fromName common.Name, assetInfo *IssueAsset) error {
+	if assetInfo.Owner == "" {
+		return ErrAssetOwnerInvaild
+	}
+
+	if assetInfo.Amount.Cmp(big.NewInt(0)) < 0 || assetInfo.UpperLimit.Cmp(big.NewInt(0)) < 0 {
+		return fmt.Errorf("asset amount or limit invalid, amount:%v,limit:%v", assetInfo.Amount, assetInfo.UpperLimit)
+	}
+
+	if assetInfo.UpperLimit.Cmp(big.NewInt(0)) > 0 {
+		if assetInfo.Amount.Cmp(assetInfo.UpperLimit) > 0 {
+			return fmt.Errorf("asset amount greater than limit, amount:%v,limit:%v", assetInfo.Amount, assetInfo.UpperLimit)
+		}
+	}
+
+	err := am.checkAssetNameAndOwner(fromName, assetInfo)
+	if err != nil {
+		return err
+	}
+
+	if !asset.IsAssetSymbolValid(common.StrToName(assetInfo.Symbol)) {
+		return fmt.Errorf("asset symbol invalid, symbol:%v", assetInfo.Symbol)
+	}
+	if uint64(len(assetInfo.Description)) > MaxDescriptionLength {
+		return fmt.Errorf("asset description invalid, description:%v", assetInfo.Description)
+	}
+
+	return nil
+}
+
+//IssueAsset issue asset
+func (am *AccountManager) IssueAsset(fromName common.Name, assetInfo IssueAsset, number uint64, curForkID uint64) (uint64, error) {
+	//check owner valid
+	if curForkID >= params.ForkID1 {
+		err := am.checkAssetInfoValid(fromName, &assetInfo)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		if asset.IsValidSubAssetName(assetInfo.AssetName) {
+			parentAassetID, isValid := am.ast.IsValidSubAssetOwner(fromName, assetInfo.AssetName)
+			if !isValid {
+				return 0, fmt.Errorf("account %s can not create %s", fromName, assetInfo.AssetName)
 			}
+			assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+			assetInfo.Decimals = assetObj.GetDecimals()
 		}
 	}
 
 	//check owner
-	acct, err := am.GetAccountByName(asset.Owner)
+	acct, err := am.GetAccountByName(assetInfo.Owner)
 	if err != nil {
 		return 0, err
 	}
@@ -1240,8 +1302,8 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 		return 0, ErrAccountNotExist
 	}
 	//check founder
-	if len(asset.Founder) > 0 {
-		f, err := am.GetAccountByName(asset.Founder)
+	if len(assetInfo.Founder) > 0 {
+		f, err := am.GetAccountByName(assetInfo.Founder)
 		if err != nil {
 			return 0, err
 		}
@@ -1249,15 +1311,15 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 			return 0, ErrAccountNotExist
 		}
 	} else {
-		asset.Founder = asset.Owner
+		assetInfo.Founder = assetInfo.Owner
 	}
 
 	// check asset contract
-	if len(asset.Contract) > 0 {
-		if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
-			return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
+	if len(assetInfo.Contract) > 0 {
+		if !assetInfo.Contract.IsValid(acctRegExp, accountNameLength) {
+			return 0, fmt.Errorf("account %s is invalid", assetInfo.Contract.String())
 		}
-		f, err := am.GetAccountByName(asset.Contract)
+		f, err := am.GetAccountByName(assetInfo.Contract)
 		if err != nil {
 			return 0, err
 		}
@@ -1267,13 +1329,15 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 	}
 
 	// check asset name is not account name
-	name := common.StrToName(asset.AssetName)
+	name := common.StrToName(assetInfo.AssetName)
 	accountID, _ := am.GetAccountIDByName(name)
 	if accountID > 0 {
 		return 0, ErrNameIsExist
 	}
 
-	assetID, err := am.ast.IssueAsset(asset.AssetName, number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Description)
+	assetID, err := am.ast.IssueAsset(assetInfo.AssetName, number, curForkID, assetInfo.Symbol,
+		assetInfo.Amount, assetInfo.Decimals, assetInfo.Founder, assetInfo.Owner,
+		assetInfo.UpperLimit, assetInfo.Contract, assetInfo.Description)
 	if err != nil {
 		return 0, err
 	}
