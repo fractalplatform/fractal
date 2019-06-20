@@ -145,5 +145,5 @@ func (cfg *ChainConfig) Copy() *ChainConfig {
 
 const (
 	// NextForkID is the id of next fork
-	NextForkID uint64 = 0
+	NextForkID uint64 = 1
 )
