@@ -37,6 +37,9 @@ type IDB interface {
 	GetCandidates(uint64) ([]*CandidateInfo, error)
 	CandidatesSize(uint64) (uint64, error)
 
+	SetActivatedCandidate(uint64, *CandidateInfo) error
+	GetActivatedCandidate(uint64) (*CandidateInfo, error)
+
 	SetAvailableQuantity(uint64, string, *big.Int) error
 	GetAvailableQuantity(uint64, string) (*big.Int, error)
 

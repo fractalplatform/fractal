@@ -19,8 +19,12 @@ package dpos
 import (
 	"fmt"
 	"math/big"
+	"sort"
 	"strings"
+	"time"
 
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -476,8 +480,8 @@ func (sys *System) ExitTakeOver(epoch uint64) error {
 	return sys.SetState(gstate)
 }
 
-// UpdateElectedCandidates update
-func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number uint64, miner string) error {
+// UpdateElectedCandidates0 update
+func (sys *System) UpdateElectedCandidates0(pepoch uint64, epoch uint64, number uint64, miner string) error {
 	if pepoch > epoch {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -592,6 +596,123 @@ func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number u
 	return nil
 }
 
+// UpdateElectedCandidates1 update
+func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number uint64, miner string) error {
+	if pepoch > epoch {
+		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
+	}
+	t := time.Now()
+	defer func() {
+		log.Info("UpdateElectedCandidates1", "pepoch", pepoch, "epoch", epoch, "number", number, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
+	}()
+	pstate, err := sys.GetState(pepoch)
+	if err != nil {
+		return err
+	}
+
+	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
+	candidateInfoArray, err := sys.GetCandidates(pepoch)
+	if err != nil {
+		return err
+	}
+	if pepoch != epoch {
+		totalQuantity := big.NewInt(0)
+		quantity := big.NewInt(0)
+		cnt := uint64(0)
+
+		tcandidateInfoArray := CandidateInfoArray{}
+		gstate := &GlobalState{
+			Epoch:                  epoch,
+			PreEpoch:               pepoch,
+			ActivatedTotalQuantity: big.NewInt(0),
+			TotalQuantity:          big.NewInt(0),
+			OffCandidateNumber:     []uint64{},
+			OffCandidateSchedule:   []uint64{},
+			TakeOver:               pstate.TakeOver,
+			Dpos:                   pstate.Dpos,
+			Number:                 number,
+		}
+		for _, candidateInfo := range candidateInfoArray {
+			// clear vote quantity
+			tcandidateInfo := candidateInfo.copy()
+			tcandidateInfo.Epoch = epoch
+			tcandidateInfo.TotalQuantity = tcandidateInfo.Quantity
+			if !tcandidateInfo.invalid() {
+				gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, tcandidateInfo.TotalQuantity)
+			}
+			if err := sys.SetCandidate(tcandidateInfo); err != nil {
+				return err
+			}
+			tcandidateInfoArray = append(tcandidateInfoArray, tcandidateInfo)
+			if !gstate.Dpos &&
+				!candidateInfo.invalid() &&
+				candidateInfo.Quantity.Sign() != 0 &&
+				strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0 {
+				totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.TotalQuantity)
+				quantity = new(big.Int).Add(quantity, candidateInfo.Quantity)
+				cnt++
+			}
+		}
+		if !gstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
+			cnt >= n && cnt >= sys.config.ActivatedMinCandidate {
+			gstate.Dpos = true
+		}
+
+		sort.Sort(tcandidateInfoArray)
+		candidateInfoArray = tcandidateInfoArray
+		pstate = gstate
+	}
+
+	activatedCandidateSchedule := []string{}
+	activatedTotalQuantity := big.NewInt(0)
+	if !pstate.Dpos {
+		sysCandidate, _ := sys.GetCandidate(epoch, sys.config.SystemName)
+		activatedCandidateSchedule = append(activatedCandidateSchedule, sysCandidate.Name)
+		activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, sysCandidate.TotalQuantity)
+	}
+	for _, candidateInfo := range candidateInfoArray {
+		if !candidateInfo.invalid() {
+			if pstate.Dpos {
+				if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+					continue
+				} else if candidateInfo.TotalQuantity.Cmp(candidateInfo.Quantity) == 0 {
+					timestamp := sys.config.epochTimeStamp(epoch)
+					if bquantity, err := sys.GetBalanceByTime(candidateInfo.Name, timestamp); err != nil {
+						continue
+					} else if s := new(big.Int).Mul(sys.config.unitStake(), sys.config.CandidateAvailableMinQuantity); bquantity.Cmp(s) == -1 {
+						continue
+					}
+				}
+			} else if candidateInfo.Quantity.Sign() != 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0 {
+				continue
+			}
+			if uint64(len(activatedCandidateSchedule)) < n {
+				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+				activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+			}
+		}
+	}
+
+	if !pstate.Dpos {
+		if init := len(activatedCandidateSchedule); init > 0 {
+			index := 0
+			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
+				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
+				index++
+			}
+		}
+	}
+
+	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+	pstate.ActivatedTotalQuantity = activatedTotalQuantity
+	if err := sys.SetState(pstate); err != nil {
+		return err
+	}
+	if err := sys.SetLastestEpoch(pstate.Epoch); err != nil {
+		return err
+	}
+	return nil
+}
 func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, error) {
 	q, err := sys.GetAvailableQuantity(epoch, voter)
 	if err != nil {

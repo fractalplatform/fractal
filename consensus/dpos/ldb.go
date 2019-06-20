@@ -46,6 +46,8 @@ var (
 	CandidateKeyPrefix = "p"
 	// CandidateHead all candidate key
 	CandidateHead = "s"
+	// ActivatedCandidateKeyPrefix candidateInfo
+	ActivatedCandidateKeyPrefix = "ap"
 
 	// VoterKeyPrefix voterInfo
 	VoterKeyPrefix = "v"
@@ -208,6 +210,31 @@ func (db *LDB) CandidatesSize(epoch uint64) (uint64, error) {
 		return 0, nil
 	}
 	return head.Counter, nil
+}
+
+// SetActivatedCandidate update activated candidate info
+func (db *LDB) SetActivatedCandidate(index uint64, candidate *CandidateInfo) error {
+	key := strings.Join([]string{ActivatedCandidateKeyPrefix, hex.EncodeToString(uint64tobytes(index))}, Separator)
+	if val, err := rlp.EncodeToBytes(candidate); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetActivatedCandidate get activated candidate info
+func (db *LDB) GetActivatedCandidate(index uint64) (*CandidateInfo, error) {
+	key := strings.Join([]string{ActivatedCandidateKeyPrefix, hex.EncodeToString(uint64tobytes(index))}, Separator)
+	candidateInfo := &CandidateInfo{}
+	if val, err := db.Get(key); err != nil {
+		return nil, err
+	} else if val == nil {
+		return nil, nil
+	} else if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
+		return nil, err
+	}
+	return candidateInfo, nil
 }
 
 // SetAvailableQuantity set quantity

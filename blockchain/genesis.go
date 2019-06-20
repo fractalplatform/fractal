@@ -390,7 +390,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	if err := sys.UpdateElectedCandidates(epoch, epoch, number.Uint64(), ""); err != nil {
+	if err := sys.UpdateElectedCandidates0(epoch, epoch, number.Uint64(), ""); err != nil {
 		panic(fmt.Sprintf("genesis create candidate err %v", err))
 	}
 
