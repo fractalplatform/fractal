@@ -523,7 +523,6 @@ func (a *Asset) IsValidAssetOwner(fromName common.Name, assetPrex string, assetN
 		if err != nil {
 			continue
 		}
-
 		assetObj, err := a.GetAssetObjectById(assetId)
 		if err != nil {
 			continue

@@ -267,6 +267,10 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 	if curForkID >= params.ForkID1 {
 		if !accountName.IsValid(acctRegExpFork1, accountNameLength) {
 			return fmt.Errorf("account %s is invalid", accountName.String())
+		} else {
+			if exist, _ := am.AccountIsExist(accountName); !exist {
+				return fmt.Errorf("account %s is invalid", accountName.String())
+			}
 		}
 	} else {
 		//check name valid
