@@ -35,12 +35,8 @@ type (
 	GetHashFunc func(uint64) common.Hash
 	// GetDelegatedByTimeFunc returns the delegated balance
 	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
-	//GetLatestEpochFunc
-	GetLatestEpochFunc func(state *state.StateDB) (epoch uint64, err error)
-	//GetPrevEpoch
-	GetPrevEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
-	//GetNextEpoch
-	GetNextEpochFunc func(state *state.StateDB, epoch uint64) (pecho uint64, err error)
+	//GetEpoch
+	GetEpochFunc func(state *state.StateDB, t uint64, curEpoch uint64) (epoch uint64, time uint64, err error)
 	//GetActivedCandidateSize
 	GetActivedCandidateSizeFunc func(state *state.StateDB, epoch uint64) (size uint64, err error)
 	//GetActivedCandidate
@@ -54,11 +50,11 @@ type (
 // Context provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
 type Context struct {
-	GetHash                 GetHashFunc
-	GetDelegatedByTime      GetDelegatedByTimeFunc
-	GetLatestEpoch          GetLatestEpochFunc
-	GetPrevEpoch            GetPrevEpochFunc
-	GetNextEpoch            GetNextEpochFunc
+	GetHash            GetHashFunc
+	GetDelegatedByTime GetDelegatedByTimeFunc
+	//GetLatestEpoch          GetLatestEpochFunc
+	//GetPrevEpoch            GetPrevEpochFunc
+	GetEpoch                GetEpochFunc
 	GetActivedCandidateSize GetActivedCandidateSizeFunc
 	GetActivedCandidate     GetActivedCandidateFunc
 	GetVoterStake           GetVoterStakeFunc
