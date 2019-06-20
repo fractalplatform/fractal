@@ -698,8 +698,14 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 		return errUnknownNode
 	}
 	target := enode.ID(crypto.Keccak256Hash(req.Target[:]))
+	var bot *node
 	t.mutex.Lock()
 	closest := t.closest(target, bucketSize).entries
+	if len(t.nursery) > 0 {
+		bot = t.nursery[0]
+		copy(t.nursery, t.nursery[1:])
+		t.nursery[len(t.nursery)-1] = bot
+	}
 	t.mutex.Unlock()
 
 	p := neighbors{
@@ -711,6 +717,9 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 	// Send neighbors in chunks with at most maxNeighbors per packet
 	// to stay below the 1280 byte limit.
 	for _, n := range closest {
+		if bot != nil && n.ID() == bot.ID() {
+			bot = nil
+		}
 		if netutil.CheckRelayIP(from.IP, n.IP()) == nil {
 			p.Nodes = append(p.Nodes, nodeToRPC(n))
 		}
@@ -719,6 +728,9 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 			p.Nodes = p.Nodes[:0]
 			sent = true
 		}
+	}
+	if bot != nil && netutil.CheckRelayIP(from.IP, bot.IP()) == nil {
+		p.Nodes = append(p.Nodes, nodeToRPC(bot))
 	}
 	if len(p.Nodes) > 0 || !sent {
 		t.send(from, neighborsPacket, &p)
