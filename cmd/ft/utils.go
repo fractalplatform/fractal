@@ -177,3 +177,10 @@ func parseBigInt(arg string) *big.Int {
 	}
 	return price
 }
+
+func parseBool(arg string) bool {
+	if arg == "true" {
+		return true
+	}
+	return false
+}
