@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
@@ -35,6 +36,7 @@ import (
 
 var (
 	acctRegExp          = regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
+	acctRegExpFork1     = regexp.MustCompile(`^([a-z][a-z0-9]{11,15})(\.([a-z0-9]{2,16})){0,2}$`)
 	accountNameLength   = uint64(31)
 	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
@@ -257,17 +259,25 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 }
 
 //CreateAccount create account
-func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
+func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, curForkID uint64, pubkey common.PubKey, detail string) error {
+	if curForkID >= params.ForkID1 {
+		if !accountName.IsValid(acctRegExpFork1, accountNameLength) {
+			return fmt.Errorf("account %s is invalid", accountName.String())
+		}
+	} else {
+		//check name valid
+		if !accountName.IsValid(acctRegExp, accountNameLength) {
+			return fmt.Errorf("account %s is invalid", accountName.String())
+		}
+	}
+
 	//check parent
-	if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
-		if !fromName.IsChildren(accountName, accountNameLength) {
+	if len(strings.Split(accountName.String(), ".")) > 1 {
+		if !fromName.IsChildren(accountName) {
 			return ErrAccountInvaid
 		}
 	}
-	//check name valid
-	if !accountName.IsValid(acctRegExp, accountNameLength) {
-		return fmt.Errorf("account %s is invalid", accountName.String())
-	}
+
 	//check is exist
 	accountID, err := am.GetAccountIDByName(accountName)
 	if err != nil {
@@ -552,7 +562,7 @@ func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex 
 		return accountName, nil
 	}
 
-	list := common.FindStringSubmatch(acctRegExp, accountName.String())
+	list := strings.Split(accountName.String(), ".")
 	if parentIndex > uint64(len(list)-1) {
 		return common.Name(""), fmt.Errorf("invalid index, %s , %d", accountName.String(), parentIndex)
 	}
@@ -750,7 +760,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 			return nil, err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameLength()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName())) {
 			ba[id] = balance
 		}
 	}
@@ -783,7 +793,7 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 			return big.NewInt(0), err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameLength()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName())) {
 			ba = ba.Add(ba, balance)
 		}
 	}
@@ -1278,7 +1288,8 @@ func (am *AccountManager) Process(accountManagerContext *types.AccountManagerCon
 func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
-	fromAccountExtra := make([]common.Name, 1)
+	curForkID := accountManagerContext.CurForkID
+	var fromAccountExtra []common.Name
 	fromAccountExtra = append(fromAccountExtra, accountManagerContext.FromAccountExtra...)
 
 	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
@@ -1300,7 +1311,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.CreateAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Description); err != nil {
+		if err := am.CreateAccount(action.Sender(), acct.AccountName, acct.Founder, number, curForkID, acct.PublicKey, acct.Description); err != nil {
 			return nil, err
 		}
 
@@ -1345,7 +1356,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			}
 		}
 
-		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number)
+		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number, curForkID)
 		if err != nil {
 			return nil, err
 		}

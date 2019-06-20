@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -91,7 +92,6 @@ func TestNameUnmarshalJSON(t *testing.T) {
 }
 
 func TestIsChildren(t *testing.T) {
-	length := uint64(31)
 	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 
 	type fields struct {
@@ -121,7 +121,7 @@ func TestIsChildren(t *testing.T) {
 	//eg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\.[a-z][a-z0-9]{0,16}){0,2}$")
 	for _, tt := range tests {
 
-		if result := tt.fields.from.IsChildren(tt.fields.acct, length); result != tt.exp {
+		if result := tt.fields.from.IsChildren(tt.fields.acct); result != tt.exp {
 			t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
 
 		}
@@ -129,7 +129,6 @@ func TestIsChildren(t *testing.T) {
 }
 
 func TestIsChildren1(t *testing.T) {
-	length := uint64(31)
 	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{2,16})){0,1}(?:\.([a-z0-9]{2,16})){0,1}$`)
 
 	type fields struct {
@@ -149,15 +148,15 @@ func TestIsChildren1(t *testing.T) {
 		{"include4", fields{StrToName("abc4567.abc4567"), StrToName("abc4567.abc5678"), acctRegExp}, false},
 		{"include5", fields{StrToName("abc4567"), StrToName("abc4567.abc"), acctRegExp}, true},
 		{"include6", fields{StrToName("abc4567"), StrToName("abc4567.abc4567"), acctRegExp}, true},
-		{"include7", fields{StrToName("abc4567"), StrToName("abc4567.a"), acctRegExp}, false},
+		{"include7", fields{StrToName("abc4567"), StrToName("abc4567.a"), acctRegExp}, true},
 		{"include8", fields{StrToName("abc5678.abc5678"), StrToName("abc456.abc5678.abc5678"), acctRegExp}, false},
 		{"include9", fields{StrToName("abc5678.abc5678"), StrToName("abc4567.abc5678.abc5678"), acctRegExp}, false},
 		{"include10", fields{StrToName("abc4567"), StrToName("abc4567"), acctRegExp}, false},
 	}
 
 	for _, tt := range tests {
-		if len(FindStringSubmatch(tt.fields.reg, tt.fields.acct.String())) > 1 {
-			if result := tt.fields.from.IsChildren(tt.fields.acct, length); result != tt.exp {
+		if len(strings.Split(tt.fields.acct.String(), ".")) > 1 {
+			if result := tt.fields.from.IsChildren(tt.fields.acct); result != tt.exp {
 				t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
 			}
 		} else {

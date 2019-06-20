@@ -25,5 +25,6 @@ type AccountManagerContext struct {
 	Action           *Action
 	ChainConfig      *params.ChainConfig
 	Number           uint64
+	CurForkID        uint64
 	FromAccountExtra []common.Name
 }

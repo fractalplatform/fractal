@@ -118,6 +118,7 @@ func NewEVMContext(sender common.Name, to common.Name, assetID uint64, gasPrice 
 		AssetID:                 assetID,
 		Coinbase:                beneficiary,
 		BlockNumber:             new(big.Int).Set(header.Number),
+		ForkID:                  header.CurForkID(),
 		Time:                    new(big.Int).Set(header.Time),
 		Difficulty:              new(big.Int).Set(header.Difficulty),
 		GasLimit:                header.GasLimit,
