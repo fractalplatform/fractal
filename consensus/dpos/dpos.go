@@ -660,6 +660,9 @@ func (dpos *Dpos) finalize1(chain consensus.IChainReader, header *types.Header, 
 				if err != nil {
 					return nil, err
 				}
+				if ptcandidate == nil {
+					continue
+				}
 				if ptcandidate.Name != tcandidate.Name {
 					panic("not reached")
 				}
@@ -837,15 +840,17 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 				if err != nil {
 					return err
 				}
-				if strings.Compare(tcandidate.Name, tname) != 0 {
-					panic("not reached")
-				}
-				scnt := tcandidate.Counter - candidate.Counter
-				acnt := tcandidate.ActualCounter - candidate.Counter
-				if scnt >= acnt+scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
-					rname := pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize]
-					log.Info("replace index IsValidateCandidate", "epoch", epoch, "mepoch", mepoch, "candidate", tname, "scnt", scnt, "acnt", acnt, "rcandidate", rname)
-					tname = rname
+				if tcandidate != nil {
+					if strings.Compare(tcandidate.Name, tname) != 0 {
+						panic("not reached")
+					}
+					scnt := tcandidate.Counter - candidate.Counter
+					acnt := tcandidate.ActualCounter - candidate.Counter
+					if scnt >= acnt+scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
+						rname := pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize]
+						log.Info("replace index IsValidateCandidate", "epoch", epoch, "mepoch", mepoch, "candidate", tname, "scnt", scnt, "acnt", acnt, "rcandidate", rname)
+						tname = rname
+					}
 				}
 			}
 		}
