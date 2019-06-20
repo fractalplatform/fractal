@@ -29,13 +29,13 @@ var txpoolCommand = &cobra.Command{
 }
 
 var contentCmd = &cobra.Command{
-	Use:   "content ",
+	Use:   "content <fullTx bool>",
 	Short: "Returns the transactions contained within the transaction pool.",
 	Long:  `Returns the transactions contained within the transaction pool.`,
-	Args:  cobra.NoArgs,
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		result := map[string]map[string]map[string]*types.RPCTransaction{}
-		clientCall(ipcEndpoint, &result, "txpool_content")
+		var result interface{}
+		clientCall(ipcEndpoint, &result, "txpool_content", parseBool(args[0]))
 		printJSON(result)
 	},
 }
@@ -64,8 +64,19 @@ var setGasPriceCmd = &cobra.Command{
 	},
 }
 
+var getTxCmd = &cobra.Command{
+	Use:   "gettx <txhashes string array> ",
+	Short: "returns the transaction for the given hash",
+	Long:  `returns the transaction for the given hash`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var result []*types.RPCTransaction
+		clientCall(ipcEndpoint, &result, "txpool_getPoolTransactions", args)
+		printJSONList(result)
+	},
+}
+
 func init() {
 	RootCmd.AddCommand(txpoolCommand)
-	txpoolCommand.AddCommand(contentCmd, statusCmd, setGasPriceCmd)
+	txpoolCommand.AddCommand(contentCmd, statusCmd, setGasPriceCmd, getTxCmd)
 	txpoolCommand.PersistentFlags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
 }

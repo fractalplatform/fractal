@@ -34,6 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
@@ -72,28 +73,8 @@ func (b *APIBackend) SendTx(ctx context.Context, signedTx *types.Transaction) er
 	return b.ftservice.txPool.AddLocal(signedTx)
 }
 
-func (b *APIBackend) GetPoolTransactions() ([]*types.Transaction, error) {
-	pending, err := b.ftservice.txPool.Pending()
-	if err != nil {
-		return nil, err
-	}
-	var txs []*types.Transaction
-	for _, batch := range pending {
-		txs = append(txs, batch...)
-	}
-	return txs, nil
-}
-
-func (b *APIBackend) GetPoolTransaction(hash common.Hash) *types.Transaction {
-	return b.ftservice.txPool.Get(hash)
-}
-
-func (b *APIBackend) Stats() (pending int, queued int) {
-	return b.ftservice.txPool.Stats()
-}
-
-func (b *APIBackend) TxPoolContent() (map[common.Name][]*types.Transaction, map[common.Name][]*types.Transaction) {
-	return b.ftservice.TxPool().Content()
+func (b *APIBackend) TxPool() *txpool.TxPool {
+	return b.ftservice.TxPool()
 }
 
 func (b *APIBackend) ChainDb() fdb.Database {

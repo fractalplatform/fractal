@@ -1053,25 +1053,14 @@ func opGetEpoch(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	epochID, arg := stack.pop(), stack.pop()
 	t := arg.Uint64()
 	ID := epochID.Uint64()
-	var num uint64
-	var err error
-	if t == 0 {
-		//get latest epoch
-		num, err = evm.Context.GetLatestEpoch(evm.StateDB)
-	} else if t == 1 {
-		//get pre epoch
-		num, err = evm.Context.GetPrevEpoch(evm.StateDB, ID)
-	} else if t == 2 {
-		//get next epoch
-		num, err = evm.Context.GetNextEpoch(evm.StateDB, ID)
-	} else {
-		err = errors.New("type error")
-	}
-
+	//get
+	num, epochTime, err := evm.Context.GetEpoch(evm.StateDB, t, ID)
 	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(num))
+		stack.push(evm.interpreter.intPool.get().SetUint64(epochTime))
 	}
 	return nil, nil
 }
