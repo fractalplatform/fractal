@@ -140,6 +140,10 @@ func GetAcountNameRegExp() *regexp.Regexp {
 	return acctRegExp
 }
 
+func GetAcountNameRegExpFork1() *regexp.Regexp {
+	return acctRegExpFork1
+}
+
 func GetAcountNameLength() uint64 {
 	return accountNameLength
 }
@@ -1201,15 +1205,30 @@ func (am *AccountManager) CheckAssetContract(contract common.Name, owner common.
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
+func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64, curForkID uint64) (uint64, error) {
 	//check owner valid
-	if !am.ast.IsValidMainAsset(asset.AssetName) {
-		parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
-		if !isValid {
-			return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+	// if !am.ast.IsValidMainAsset(asset.AssetName) {
+	// 	parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
+	// 	if !isValid {
+	// 		return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+	// 	}
+	// 	assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+	// 	asset.Decimals = assetObj.GetDecimals()
+	// }
+
+	if curForkID >= params.ForkID1 {
+
+	} else {
+		if common.StrToName(assetName).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
+			if len(strings.Split(asset.AssetName, ".")) > 1 {
+				parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
+				if !isValid {
+					return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+				}
+				assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+				asset.Decimals = assetObj.GetDecimals()
+			}
 		}
-		assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
-		asset.Decimals = assetObj.GetDecimals()
 	}
 
 	//check owner

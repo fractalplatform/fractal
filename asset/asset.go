@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
@@ -473,7 +474,11 @@ func (a *Asset) IsValidMainAsset(assetName string) bool {
 
 // IsValidOwner check parent owner valid
 func (a *Asset) IsValidSubAsset(fromName common.Name, assetName string) (uint64, bool) {
-	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	// assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	// if len(assetNames) < 2 {
+	// 	return 0, false
+	// }
+	assetNames := strings.Split(assetName, ".")
 	if len(assetNames) < 2 {
 		return 0, false
 	}
