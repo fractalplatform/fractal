@@ -76,11 +76,7 @@ type EngineContext interface {
 
 	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
 
-	GetLatestEpoch(state *state.StateDB) (epoch uint64, err error)
-
-	GetPrevEpoch(state *state.StateDB, epoch uint64) (peoch uint64, err error)
-
-	GetNextEpoch(state *state.StateDB, epoch uint64) (neoch uint64, err error)
+	GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epoch uint64, time uint64, err error)
 
 	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
 
@@ -106,9 +102,7 @@ func NewEVMContext(sender common.Name, to common.Name, assetID uint64, gasPrice 
 	return vm.Context{
 		GetHash:                 GetHashFn(header, chain),
 		GetDelegatedByTime:      chain.GetDelegatedByTime,
-		GetLatestEpoch:          chain.GetLatestEpoch,
-		GetPrevEpoch:            chain.GetPrevEpoch,
-		GetNextEpoch:            chain.GetNextEpoch,
+		GetEpoch:                chain.GetEpoch,
 		GetActivedCandidateSize: chain.GetActivedCandidateSize,
 		GetActivedCandidate:     chain.GetActivedCandidate,
 		GetVoterStake:           chain.GetVoterStake,
