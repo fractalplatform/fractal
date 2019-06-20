@@ -472,8 +472,16 @@ func (a *Asset) IsValidMainAsset(assetName string) bool {
 	return false
 }
 
+func (a *Asset) IsValidSubAssetName(assetName string) bool {
+	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	if len(assetNames) < 2 {
+		return true
+	}
+	return false
+}
+
 // IsValidOwner check parent owner valid
-func (a *Asset) IsValidSubAsset(fromName common.Name, assetName string) (uint64, bool) {
+func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) (uint64, bool) {
 	// assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	// if len(assetNames) < 2 {
 	// 	return 0, false
@@ -483,9 +491,9 @@ func (a *Asset) IsValidSubAsset(fromName common.Name, assetName string) (uint64,
 		return 0, false
 	}
 
-	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
-		return 0, false
-	}
+	// if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
+	// 	return 0, false
+	// }
 
 	var an string
 	for i := 0; i < len(assetNames)-1; i++ {

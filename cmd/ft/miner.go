@@ -21,7 +21,6 @@ import (
 	"io"
 	"os"
 
-	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/spf13/cobra"
@@ -90,10 +89,10 @@ var setCoinbaseCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := common.Name(args[0])
-		if !name.IsValid(am.GetAcountNameRegExp(), am.GetAcountNameLength()) {
-			jww.ERROR.Println("valid name: " + name)
-			return
-		}
+		// if !name.IsValid(am.GetAcountNameRegExp(), am.GetAcountNameLength()) {
+		// 	jww.ERROR.Println("valid name: " + name)
+		// 	return
+		// }
 		path := args[1]
 		_, err := os.Stat(path)
 		if os.IsNotExist(err) {
