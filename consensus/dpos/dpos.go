@@ -673,6 +673,9 @@ func (dpos *Dpos) GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epo
 				epoch = gstate.Epoch
 			}
 		}
+	} else if t == 3 {
+		//get current epoch time
+		epoch = curEpoch
 	} else {
 		err = errors.New("type error")
 	}
