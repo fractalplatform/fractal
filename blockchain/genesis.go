@@ -293,14 +293,31 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	astActions := []*types.Action{}
 	for _, asset := range g.AllocAssets {
 		pname := common.Name("")
-		slt := strings.Split(asset.Name, ".")
-		if len(slt) > 1 {
-			if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
-				panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
-			} else {
-				pname = ast.Owner
+
+		if g.ForkID >= params.ForkID1 {
+			names := strings.Split(asset.Name, ":")
+			if len(names) != 2 {
+				panic(fmt.Sprintf("asset name invalid %v", asset.Name))
+			}
+			slt := strings.Split(names[1], ".")
+			if len(slt) > 1 {
+				if ast, _ := accountManager.GetAssetInfoByName(names[0] + ":" + slt[0]); ast == nil {
+					panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
+				} else {
+					pname = ast.Owner
+				}
+			}
+		} else {
+			slt := strings.Split(asset.Name, ".")
+			if len(slt) > 1 {
+				if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
+					panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
+				} else {
+					pname = ast.Owner
+				}
 			}
 		}
+
 		ast := &am.IssueAsset{
 			AssetName:  asset.Name,
 			Symbol:     asset.Symbol,
