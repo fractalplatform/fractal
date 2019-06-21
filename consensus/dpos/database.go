@@ -19,22 +19,18 @@ package dpos
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"math/big"
 	"strings"
 
 	"github.com/fractalplatform/fractal/types"
 )
 
-// LastEpoch latest
-var LastEpoch = uint64(math.MaxUint64)
-
 // IDB dpos database
 type IDB interface {
 	SetCandidate(*CandidateInfo) error
 	DelCandidate(uint64, string) error
 	GetCandidate(uint64, string) (*CandidateInfo, error)
-	GetCandidates(uint64) ([]*CandidateInfo, error)
+	GetCandidates(uint64) (CandidateInfoArray, error)
 	CandidatesSize(uint64) (uint64, error)
 
 	SetActivatedCandidate(uint64, *CandidateInfo) error
@@ -186,15 +182,19 @@ func (prods CandidateInfoArray) Len() int {
 	return len(prods)
 }
 func (prods CandidateInfoArray) Less(i, j int) bool {
-	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
-	if val == 0 {
-		if prods[i].Number == prods[j].Number {
-			return strings.Compare(prods[i].Name, prods[j].Name) > 0
-		}
-		return prods[i].Number < prods[j].Number
-	}
-	return val > 0
+	return more(prods[i], prods[j])
 }
 func (prods CandidateInfoArray) Swap(i, j int) {
 	prods[i], prods[j] = prods[j], prods[i]
+}
+
+func more(frist *CandidateInfo, second *CandidateInfo) bool {
+	val := frist.TotalQuantity.Cmp(second.TotalQuantity)
+	if val == 0 {
+		if frist.Number == second.Number {
+			return strings.Compare(frist.Name, second.Name) > 0
+		}
+		return frist.Number < second.Number
+	}
+	return val > 0
 }

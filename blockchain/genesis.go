@@ -391,8 +391,14 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			panic(fmt.Sprintf("genesis create candidate err %v", err))
 		}
 	}
-	if err := sys.UpdateElectedCandidates0(epoch, epoch, number.Uint64(), ""); err != nil {
-		panic(fmt.Sprintf("genesis create candidate err %v", err))
+	if fid := g.ForkID; fid >= 1 {
+		if err := sys.UpdateElectedCandidates1(epoch, epoch, number.Uint64(), ""); err != nil {
+			panic(fmt.Sprintf("genesis create candidate err %v", err))
+		}
+	} else if fid >= 0 {
+		if err := sys.UpdateElectedCandidates0(epoch, epoch, number.Uint64(), ""); err != nil {
+			panic(fmt.Sprintf("genesis create candidate err %v", err))
+		}
 	}
 
 	// init  fork controller

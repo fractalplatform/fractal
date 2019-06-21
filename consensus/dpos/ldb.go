@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"sort"
 	"strings"
 
 	"github.com/fractalplatform/fractal/types"
@@ -176,7 +175,7 @@ func (db *LDB) GetCandidate(epoch uint64, name string) (*CandidateInfo, error) {
 }
 
 // GetCandidates get all candidate info & sort
-func (db *LDB) GetCandidates(epoch uint64) ([]*CandidateInfo, error) {
+func (db *LDB) GetCandidates(epoch uint64) (CandidateInfoArray, error) {
 	// candidates
 	head, err := db.GetCandidate(epoch, CandidateHead)
 	if err != nil {
@@ -196,7 +195,7 @@ func (db *LDB) GetCandidates(epoch uint64) ([]*CandidateInfo, error) {
 		nextKey = candidateInfo.NextKey
 		candidateInfos = append(candidateInfos, candidateInfo)
 	}
-	sort.Sort(candidateInfos)
+	// sort.Sort(candidateInfos)
 	return candidateInfos, nil
 }
 
@@ -403,14 +402,6 @@ func (db *LDB) SetState(gstate *GlobalState) error {
 
 // GetState get state info
 func (db *LDB) GetState(epoch uint64) (*GlobalState, error) {
-	if epoch == LastEpoch {
-		var err error
-		epoch, err = db.GetLastestEpoch()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(epoch))}, Separator)
 	gstate := &GlobalState{}
 	if val, err := db.Get(key); err != nil {

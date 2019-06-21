@@ -19,6 +19,7 @@ package dpos
 import (
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
 	"github.com/fractalplatform/fractal/consensus"
@@ -65,8 +66,6 @@ func (api *API) Epoch(height uint64) (uint64, error) {
 
 // PrevEpoch get prev epoch number by epoch
 func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
-	var e uint64
-
 	if epoch == 0 {
 		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
@@ -74,15 +73,12 @@ func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	e, _, err = api.dpos.GetEpoch(state, 1, epoch)
-	return e, err
+	pepoch, _, err := api.dpos.GetEpoch(state, 1, epoch)
+	return pepoch, err
 }
 
 // NextEpoch get next epoch number by epoch
 func (api *API) NextEpoch(epoch uint64) (uint64, error) {
-	var e uint64
-
 	if epoch == 0 {
 		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
@@ -90,9 +86,8 @@ func (api *API) NextEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	e, _, err = api.dpos.GetEpoch(state, 2, epoch)
-	return e, err
+	nepoch, _, err := api.dpos.GetEpoch(state, 2, epoch)
+	return nepoch, err
 }
 
 // CandidatesSize get candidates size
@@ -120,6 +115,7 @@ func (api *API) Candidates(epoch uint64, detail bool) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(candidates)
 	if detail {
 		return candidates, nil
 	}
