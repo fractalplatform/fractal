@@ -93,3 +93,15 @@ func (n *Name) UnmarshalJSON(data []byte) error {
 	*n = StrToName(input)
 	return nil
 }
+
+// FindStringSubmatch reutrn segment
+func FindStringSubmatch(reg *regexp.Regexp, name string) (ret []string) {
+	list := reg.FindStringSubmatch(name)
+	for i := 1; i < len(list); i++ {
+		if len(list[i]) == 0 {
+			continue
+		}
+		ret = append(ret, list[i])
+	}
+	return
+}

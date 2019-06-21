@@ -1214,7 +1214,7 @@ func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo
 
 	names := strings.Split(assetInfo.AssetName, ":")
 	if len(names) == 2 {
-		if !asset.IsAssetNameValid(common.StrToName(names[1])) {
+		if !common.StrToName(names[1]).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
 			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
 		}
 		assetNames = strings.Split(names[1], ".")
@@ -1223,7 +1223,7 @@ func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo
 		}
 		assetPrex = names[0] + ":"
 	} else {
-		if !asset.IsAssetNameValid(common.StrToName(assetInfo.AssetName)) {
+		if !common.StrToName(assetInfo.AssetName).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
 			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
 		}
 		assetNames = strings.Split(assetInfo.AssetName, ".")
@@ -1268,7 +1268,8 @@ func (am *AccountManager) checkAssetInfoValid(fromName common.Name, assetInfo *I
 		return err
 	}
 
-	if !asset.IsAssetSymbolValid(common.StrToName(assetInfo.Symbol)) {
+	//symbol use asset reg
+	if !common.StrToName(assetInfo.Symbol).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
 		return fmt.Errorf("asset symbol invalid, symbol:%v", assetInfo.Symbol)
 	}
 	if uint64(len(assetInfo.Description)) > MaxDescriptionLength {
@@ -1279,26 +1280,26 @@ func (am *AccountManager) checkAssetInfoValid(fromName common.Name, assetInfo *I
 }
 
 //IssueAsset issue asset
-func (am *AccountManager) IssueAsset(fromName common.Name, assetInfo IssueAsset, number uint64, curForkID uint64) (uint64, error) {
+func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64, curForkID uint64) (uint64, error) {
 	//check owner valid
 	if curForkID >= params.ForkID1 {
-		err := am.checkAssetInfoValid(fromName, &assetInfo)
+		err := am.checkAssetInfoValid(fromName, &asset)
 		if err != nil {
 			return 0, err
 		}
 	} else {
-		if asset.IsValidSubAssetNameBeforeFork(assetInfo.AssetName) {
-			parentAassetID, isValid := am.ast.IsValidSubAssetOwner(fromName, assetInfo.AssetName)
+		if !am.ast.IsValidMainAssetBeforeFork(asset.AssetName) {
+			parentAassetID, isValid := am.ast.IsValidSubAssetBeforeFork(fromName, asset.AssetName)
 			if !isValid {
-				return 0, fmt.Errorf("account %s can not create %s", fromName, assetInfo.AssetName)
+				return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 			}
 			assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
-			assetInfo.Decimals = assetObj.GetDecimals()
+			asset.Decimals = assetObj.GetDecimals()
 		}
 	}
 
 	//check owner
-	acct, err := am.GetAccountByName(assetInfo.Owner)
+	acct, err := am.GetAccountByName(asset.Owner)
 	if err != nil {
 		return 0, err
 	}
@@ -1306,8 +1307,8 @@ func (am *AccountManager) IssueAsset(fromName common.Name, assetInfo IssueAsset,
 		return 0, ErrAccountNotExist
 	}
 	//check founder
-	if len(assetInfo.Founder) > 0 {
-		f, err := am.GetAccountByName(assetInfo.Founder)
+	if len(asset.Founder) > 0 {
+		f, err := am.GetAccountByName(asset.Founder)
 		if err != nil {
 			return 0, err
 		}
@@ -1315,15 +1316,15 @@ func (am *AccountManager) IssueAsset(fromName common.Name, assetInfo IssueAsset,
 			return 0, ErrAccountNotExist
 		}
 	} else {
-		assetInfo.Founder = assetInfo.Owner
+		asset.Founder = asset.Owner
 	}
 
 	// check asset contract
-	if len(assetInfo.Contract) > 0 {
-		if !assetInfo.Contract.IsValid(acctRegExp, accountNameLength) {
-			return 0, fmt.Errorf("account %s is invalid", assetInfo.Contract.String())
+	if len(asset.Contract) > 0 {
+		if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
+			return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
 		}
-		f, err := am.GetAccountByName(assetInfo.Contract)
+		f, err := am.GetAccountByName(asset.Contract)
 		if err != nil {
 			return 0, err
 		}
@@ -1333,15 +1334,15 @@ func (am *AccountManager) IssueAsset(fromName common.Name, assetInfo IssueAsset,
 	}
 
 	// check asset name is not account name
-	name := common.StrToName(assetInfo.AssetName)
+	name := common.StrToName(asset.AssetName)
 	accountID, _ := am.GetAccountIDByName(name)
 	if accountID > 0 {
 		return 0, ErrNameIsExist
 	}
 
-	assetID, err := am.ast.IssueAsset(assetInfo.AssetName, number, curForkID, assetInfo.Symbol,
-		assetInfo.Amount, assetInfo.Decimals, assetInfo.Founder, assetInfo.Owner,
-		assetInfo.UpperLimit, assetInfo.Contract, assetInfo.Description)
+	assetID, err := am.ast.IssueAsset(asset.AssetName, number, curForkID, asset.Symbol,
+		asset.Amount, asset.Decimals, asset.Founder, asset.Owner,
+		asset.UpperLimit, asset.Contract, asset.Description)
 	if err != nil {
 		return 0, err
 	}

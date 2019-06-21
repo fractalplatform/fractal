@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/snapshot"
@@ -487,19 +488,54 @@ func IsMainAsset(assetName string) bool {
 	return false
 }
 
-// IsValidOriSubAssetName check sub asset name is valid before fork
-func IsValidSubAssetNameBeforeFork(assetName string) bool {
-	var assetNames []string
-
-	if !IsAssetNameValid(common.StrToName(assetName)) {
-		return false
-	}
-	assetNames = strings.Split(assetName, ".")
-
+func (a *Asset) IsValidMainAssetBeforeFork(assetName string) bool {
+	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {
-		return false
+		return true
 	}
-	return true
+	return false
+}
+
+// IsValidOwner check parent owner valid
+func (a *Asset) IsValidSubAssetBeforeFork(fromName common.Name, assetName string) (uint64, bool) {
+	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
+	if len(assetNames) < 2 {
+		return 0, false
+	}
+
+	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameLength) {
+		return 0, false
+	}
+
+	var an string
+	for i := 0; i < len(assetNames)-1; i++ {
+		if i == 0 {
+			an = assetNames[i]
+		} else {
+			an = an + "." + assetNames[i]
+		}
+
+		assetId, err := a.GetAssetIdByName(an)
+		if err != nil {
+			continue
+		}
+
+		assetObj, err := a.GetAssetObjectById(assetId)
+		if err != nil {
+			continue
+		}
+
+		if assetObj == nil {
+			continue
+		}
+
+		if assetObj.GetAssetOwner() == fromName {
+			log.Debug("Asset create", "name", an, "owner", assetObj.GetAssetOwner(), "fromName", fromName, "newName", assetName)
+			return assetId, true
+		}
+	}
+	log.Debug("Asset create failed", "account", fromName, "name", assetName)
+	return 0, false
 }
 
 func (a *Asset) IsValidAssetOwner(fromName common.Name, assetPrex string, assetNames []string) (uint64, bool) {
@@ -529,26 +565,6 @@ func (a *Asset) IsValidAssetOwner(fromName common.Name, assetPrex string, assetN
 		}
 	}
 	return 0, false
-}
-
-// IsValidSubAssetOwner check parent owner valid
-func (a *Asset) IsValidSubAssetOwner(fromName common.Name, assetName string) (uint64, bool) {
-	var assetNames []string
-	var assetPrex string
-	names := strings.Split(assetName, ":")
-	if len(names) == 2 {
-		assetNames = strings.Split(names[1], ".")
-		assetPrex = names[0] + ":"
-	} else {
-		assetNames = strings.Split(assetName, ".")
-		assetPrex = ""
-	}
-
-	if len(assetNames) < 2 {
-		return 0, false
-	}
-
-	return a.IsValidAssetOwner(fromName, assetPrex, assetNames)
 }
 
 // HasAccess contract asset access
@@ -589,27 +605,24 @@ func (a *Asset) CheckOwner(fromName common.Name, assetID uint64) error {
 	}
 
 	if assetObj.GetAssetOwner() != fromName {
-		if IsMainAsset(assetObj.GetAssetName()) {
+		var assetNames []string
+		var assetPrex string
+		names := strings.Split(assetObj.GetAssetName(), ":")
+		if len(names) == 2 {
+			assetNames = strings.Split(names[1], ".")
+			assetPrex = names[0] + ":"
+		} else {
+			assetNames = strings.Split(assetObj.GetAssetName(), ".")
+			assetPrex = ""
+		}
+
+		if len(assetNames) == 1 {
 			return ErrOwnerMismatch
 		}
 
-		if _, isVaild := a.IsValidSubAssetOwner(fromName, assetObj.GetAssetName()); !isVaild {
+		if _, isVaild := a.IsValidAssetOwner(fromName, assetPrex, assetNames); !isVaild {
 			return ErrOwnerMismatch
 		}
 	}
 	return nil
-}
-
-func IsAssetNameValid(assetName common.Name) bool {
-	if !assetName.IsValid(assetRegExp, assetNameLength) {
-		return false
-	}
-	return true
-}
-
-func IsAssetSymbolValid(symbol common.Name) bool {
-	if !symbol.IsValid(assetRegExp, assetNameLength) {
-		return false
-	}
-	return true
 }
