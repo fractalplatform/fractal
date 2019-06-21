@@ -79,6 +79,33 @@ func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
 	return content
 }
 
+// PendingTransactions returns the pending transactions that are in the transaction pool
+func (s *PrivateTxPoolAPI) PendingTransactions(fullTx bool) (interface{}, error) {
+	pending, err := s.b.TxPool().Pending()
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		txs       []*types.RPCTransaction
+		txsHashes []common.Hash
+	)
+
+	for _, batch := range pending {
+		for _, tx := range batch {
+			if fullTx {
+				txs = append(txs, tx.NewRPCTransaction(common.Hash{}, 0, 0))
+			} else {
+				txsHashes = append(txsHashes, tx.Hash())
+			}
+		}
+	}
+	if fullTx {
+		return txs, nil
+	}
+	return txsHashes, nil
+}
+
 // GetPoolTransactions txpool returns the transaction for the given hash
 func (s *PrivateTxPoolAPI) GetPoolTransactions(hashes []common.Hash) []*types.RPCTransaction {
 	var txs []*types.RPCTransaction
