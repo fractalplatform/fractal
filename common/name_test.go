@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 )
 
@@ -148,14 +147,14 @@ func TestIsChildren1(t *testing.T) {
 		{"include4", fields{StrToName("abc4567.abc4567"), StrToName("abc4567.abc5678"), acctRegExp}, false},
 		{"include5", fields{StrToName("abc4567"), StrToName("abc4567.abc"), acctRegExp}, true},
 		{"include6", fields{StrToName("abc4567"), StrToName("abc4567.abc4567"), acctRegExp}, true},
-		{"include7", fields{StrToName("abc4567"), StrToName("abc4567.a"), acctRegExp}, true},
+		{"include7", fields{StrToName("abc4567"), StrToName("abc4567.a"), acctRegExp}, false},
 		{"include8", fields{StrToName("abc5678.abc5678"), StrToName("abc456.abc5678.abc5678"), acctRegExp}, false},
 		{"include9", fields{StrToName("abc5678.abc5678"), StrToName("abc4567.abc5678.abc5678"), acctRegExp}, false},
 		{"include10", fields{StrToName("abc4567"), StrToName("abc4567"), acctRegExp}, false},
 	}
 
 	for _, tt := range tests {
-		if len(strings.Split(tt.fields.acct.String(), ".")) > 1 {
+		if len(FindStringSubmatch(tt.fields.reg, tt.fields.acct.String())) > 1 {
 			if result := tt.fields.from.IsChildren(tt.fields.acct); result != tt.exp {
 				t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
 			}
@@ -166,4 +165,5 @@ func TestIsChildren1(t *testing.T) {
 			}
 		}
 	}
+
 }

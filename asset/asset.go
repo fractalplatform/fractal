@@ -472,22 +472,6 @@ func (a *Asset) SetAssetNewContract(assetID uint64, contract common.Name) error 
 // 	return a.SetAssetObject(asset)
 // }
 
-// IsMainAsset judge main asset
-func IsMainAsset(assetName string) bool {
-	var assetNames []string
-	names := strings.Split(assetName, ":")
-	if len(names) == 2 {
-		assetNames = strings.Split(names[1], ".")
-	} else {
-		assetNames = strings.Split(assetName, ".")
-	}
-
-	if len(assetNames) == 1 {
-		return true
-	}
-	return false
-}
-
 func (a *Asset) IsValidMainAssetBeforeFork(assetName string) bool {
 	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {

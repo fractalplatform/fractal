@@ -280,7 +280,7 @@ func GetAccountNameLevel(accountName common.Name) (uint64, error) {
 	return subAccount, nil
 }
 
-func (am *AccountManager) checkaccountNameValid(fromName common.Name, accountName common.Name) error {
+func (am *AccountManager) checkAccountNameValid(fromName common.Name, accountName common.Name) error {
 	accountLevel, err := GetAccountNameLevel(accountName)
 	if err != nil {
 		return err
@@ -292,7 +292,7 @@ func (am *AccountManager) checkaccountNameValid(fromName common.Name, accountNam
 		}
 	}
 
-	if len(strings.Split(accountName.String(), ".")) > 1 {
+	if accountLevel == subAccount {
 		if !fromName.IsChildren(accountName) {
 			return ErrAccountInvaid
 		}
@@ -304,7 +304,7 @@ func (am *AccountManager) checkaccountNameValid(fromName common.Name, accountNam
 //CreateAccount create account
 func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, curForkID uint64, pubkey common.PubKey, detail string) error {
 	if curForkID >= params.ForkID1 {
-		if err := am.checkaccountNameValid(fromName, accountName); err != nil {
+		if err := am.checkAccountNameValid(fromName, accountName); err != nil {
 			return err
 		}
 	} else {
@@ -1354,7 +1354,7 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 
 	// check asset contract
 	if len(asset.Contract) > 0 {
-		if curForkID == 0 {
+		if curForkID < params.ForkID1 {
 			if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
 				return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
 			}
