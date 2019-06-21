@@ -264,7 +264,7 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 
 const (
 	unknow uint64 = iota
-	mianAccount
+	mainAccount
 	subAccount
 )
 
@@ -274,7 +274,7 @@ func GetAccountNameLevel(accountName common.Name) (uint64, error) {
 	}
 
 	if len(strings.Split(accountName.String(), ".")) == 1 {
-		return mianAccount, nil
+		return mainAccount, nil
 	}
 
 	return subAccount, nil
@@ -286,7 +286,7 @@ func (am *AccountManager) checkAccountNameValid(fromName common.Name, accountNam
 		return err
 	}
 
-	if accountLevel == mianAccount {
+	if accountLevel == mainAccount {
 		if !accountName.IsValid(acctRegExpFork1, accountNameLength) {
 			return fmt.Errorf("account %s is invalid", accountName.String())
 		}
