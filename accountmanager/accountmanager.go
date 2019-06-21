@@ -1250,7 +1250,7 @@ func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo
 
 func (am *AccountManager) checkAssetInfoValid(fromName common.Name, assetInfo *IssueAsset) error {
 	if assetInfo.Owner == "" {
-		return ErrAssetOwnerInvaild
+		return fmt.Errorf("asset owner invalid")
 	}
 
 	if assetInfo.Amount.Cmp(big.NewInt(0)) < 0 || assetInfo.UpperLimit.Cmp(big.NewInt(0)) < 0 {
@@ -1287,7 +1287,7 @@ func (am *AccountManager) IssueAsset(fromName common.Name, assetInfo IssueAsset,
 			return 0, err
 		}
 	} else {
-		if asset.IsValidSubAssetName(assetInfo.AssetName) {
+		if asset.IsValidSubAssetNameBeforeFork(assetInfo.AssetName) {
 			parentAassetID, isValid := am.ast.IsValidSubAssetOwner(fromName, assetInfo.AssetName)
 			if !isValid {
 				return 0, fmt.Errorf("account %s can not create %s", fromName, assetInfo.AssetName)

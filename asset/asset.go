@@ -481,28 +481,20 @@ func IsMainAsset(assetName string) bool {
 		assetNames = strings.Split(assetName, ".")
 	}
 
-	if len(assetNames) < 2 {
+	if len(assetNames) == 1 {
 		return true
 	}
 	return false
 }
 
-// IsValidSubAssetName check sub asset name is valid
-func IsValidSubAssetName(assetName string) bool {
+// IsValidOriSubAssetName check sub asset name is valid before fork
+func IsValidSubAssetNameBeforeFork(assetName string) bool {
 	var assetNames []string
 
-	names := strings.Split(assetName, ":")
-	if len(names) == 2 {
-		if !IsAssetNameValid(common.StrToName(names[1])) {
-			return false
-		}
-		assetNames = strings.Split(names[1], ".")
-	} else {
-		if !IsAssetNameValid(common.StrToName(assetName)) {
-			return false
-		}
-		assetNames = strings.Split(assetName, ".")
+	if !IsAssetNameValid(common.StrToName(assetName)) {
+		return false
 	}
+	assetNames = strings.Split(assetName, ".")
 
 	if len(assetNames) < 2 {
 		return false
