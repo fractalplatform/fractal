@@ -638,46 +638,98 @@ func (dpos *Dpos) GetDelegatedByTime(state *state.StateDB, candidate string, tim
 	return new(big.Int).Mul(candidateInfo.Quantity, sys.config.unitStake()), nil
 }
 
-// GetLatestEpoch get latest epoch
-func (dpos *Dpos) GetLatestEpoch(state *state.StateDB) (epoch uint64, err error) {
+// GetEpoch get epoch and epoch start time by type
+func (dpos *Dpos) GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epoch uint64, time uint64, err error) {
+	//new sys
 	sys := NewSystem(state, dpos.config)
-	return sys.GetLastestEpoch()
+	if t == 0 {
+		//get latest epoch
+		epoch, err = sys.GetLastestEpoch()
+	} else if t == 1 {
+		//get pre epoch
+		var gstate *GlobalState
+		gstate, err = sys.GetState(curEpoch)
+		if gstate == nil {
+			err = errors.New("gstate not found")
+		} else {
+			epoch = gstate.PreEpoch
+		}
+	} else if t == 2 {
+		//get next epoch
+		var latest uint64
+		var gstate *GlobalState
+		latest, err = sys.GetLastestEpoch()
+		for {
+			curEpoch++
+			if curEpoch > latest {
+				err = errors.New("not found")
+				break
+			}
+			gstate, err = sys.GetState(curEpoch)
+			if err != nil && !strings.Contains(err.Error(), "not found") {
+				break
+			}
+			if gstate != nil {
+				epoch = gstate.Epoch
+			}
+		}
+	} else if t == 3 {
+		//get current epoch time
+		epoch = curEpoch
+	} else {
+		err = errors.New("type error")
+	}
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	//get epoch time   epoch must > 0
+	time = dpos.config.epochTimeStamp(epoch)
+
+	return epoch, time, nil
 }
+
+// GetLatestEpoch get latest epoch
+// func (dpos *Dpos) GetLatestEpoch(state *state.StateDB) (epoch uint64, err error) {
+// 	sys := NewSystem(state, dpos.config)
+// 	return sys.GetLastestEpoch()
+// }
 
 // GetPrevEpoch get pre epoch
-func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
-	sys := NewSystem(state, dpos.config)
-	gstate, err := sys.GetState(epoch)
-	if err != nil {
-		return 0, err
-	}
-	if gstate == nil {
-		return 0, fmt.Errorf("not found")
-	}
-	return gstate.PreEpoch, nil
-}
+// func (dpos *Dpos) GetPrevEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
+// 	sys := NewSystem(state, dpos.config)
+// 	gstate, err := sys.GetState(epoch)
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	if gstate == nil {
+// 		return 0, fmt.Errorf("not found")
+// 	}
+// 	return gstate.PreEpoch, nil
+// }
 
 // GetNextEpoch get next epoch
-func (dpos *Dpos) GetNextEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
-	sys := NewSystem(state, dpos.config)
-	latest, err := sys.GetLastestEpoch()
-	if err != nil {
-		return 0, err
-	}
-	for {
-		epoch++
-		if epoch > latest {
-			return 0, nil
-		}
-		gstate, err := sys.GetState(epoch)
-		if err != nil && !strings.Contains(err.Error(), "not found") {
-			return 0, err
-		}
-		if gstate != nil {
-			return gstate.Epoch, nil
-		}
-	}
-}
+// func (dpos *Dpos) GetNextEpoch(state *state.StateDB, epoch uint64) (uint64, error) {
+// 	sys := NewSystem(state, dpos.config)
+// 	latest, err := sys.GetLastestEpoch()
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	for {
+// 		epoch++
+// 		if epoch > latest {
+// 			return 0, nil
+// 		}
+// 		gstate, err := sys.GetState(epoch)
+// 		if err != nil && !strings.Contains(err.Error(), "not found") {
+// 			return 0, err
+// 		}
+// 		if gstate != nil {
+// 			return gstate.Epoch, nil
+// 		}
+// 	}
+// }
 
 // GetActivedCandidateSize get actived candidate size
 func (dpos *Dpos) GetActivedCandidateSize(state *state.StateDB, epoch uint64) (uint64, error) {

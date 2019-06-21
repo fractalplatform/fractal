@@ -51,7 +51,6 @@ func SetAssetNameConfig(config *Config) bool {
 
 	if config.AssetNameLevel > 1 && (config.SubAssetNameMinLength < 1 || config.SubAssetNameMinLength >= config.SubAssetNameMaxLength) {
 		return false
-		panic("asset name level config error")
 	}
 
 	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{%v,%v})", config.MainAssetNameMinLength-1, config.MainAssetNameMaxLength-1)

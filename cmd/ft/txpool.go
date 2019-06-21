@@ -29,21 +29,21 @@ var txpoolCommand = &cobra.Command{
 }
 
 var contentCmd = &cobra.Command{
-	Use:   "content ",
+	Use:   "content <fullTx bool>",
 	Short: "Returns the transactions contained within the transaction pool.",
 	Long:  `Returns the transactions contained within the transaction pool.`,
-	Args:  cobra.NoArgs,
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		result := map[string]map[string]map[string]*types.RPCTransaction{}
-		clientCall(ipcEndpoint, &result, "txpool_content")
+		var result interface{}
+		clientCall(ipcEndpoint, &result, "txpool_content", parseBool(args[0]))
 		printJSON(result)
 	},
 }
 
 var statusCmd = &cobra.Command{
 	Use:   "status ",
-	Short: "returns the number of pending and queued transaction in the pool.",
-	Long:  `returns the number of pending and queued transaction in the pool.`,
+	Short: "Returns the number of pending and queued transaction in the pool.",
+	Long:  `Returns the number of pending and queued transaction in the pool.`,
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		result := map[string]int{}
@@ -54,8 +54,8 @@ var statusCmd = &cobra.Command{
 
 var setGasPriceCmd = &cobra.Command{
 	Use:   "setgasprice <gasprice uint64> ",
-	Short: "set txpool the Minimum gas price ",
-	Long:  `set txpool the Minimum gas price `,
+	Short: "Set txpool the Minimum gas price ",
+	Long:  `Set txpool the Minimum gas price `,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var result bool
@@ -64,8 +64,30 @@ var setGasPriceCmd = &cobra.Command{
 	},
 }
 
+var getTxCmd = &cobra.Command{
+	Use:   "gettx <txhashes string array> ",
+	Short: "Returns the transaction for the given hash",
+	Long:  `Returns the transaction for the given hash`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var result []*types.RPCTransaction
+		clientCall(ipcEndpoint, &result, "txpool_getPoolTransactions", args)
+		printJSONList(result)
+	},
+}
+var getPendingTxsCmd = &cobra.Command{
+	Use:   "getpending <fullTx bool>",
+	Short: "Returns the pending transactions that are in the transaction pool",
+	Long:  `Returns the pending transactions that are in the transaction pool`,
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var result interface{}
+		clientCall(ipcEndpoint, &result, "txpool_pendingTransactions", parseBool(args[0]))
+		printJSON(result)
+	},
+}
+
 func init() {
 	RootCmd.AddCommand(txpoolCommand)
-	txpoolCommand.AddCommand(contentCmd, statusCmd, setGasPriceCmd)
+	txpoolCommand.AddCommand(contentCmd, statusCmd, setGasPriceCmd, getTxCmd, getPendingTxsCmd)
 	txpoolCommand.PersistentFlags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
 }

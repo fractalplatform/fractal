@@ -938,57 +938,6 @@ func (am *AccountManager) GetAssetFounder(assetID uint64) (common.Name, error) {
 	return am.ast.GetAssetFounderById(assetID)
 }
 
-//GetChargeRatio Get Account ChargeRatio
-// func (am *AccountManager) GetChargeRatio(accountName common.Name) (uint64, error) {
-// 	acct, err := am.GetAccountByName(accountName)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	if acct == nil {
-// 		return 0, ErrAccountNotExist
-// 	}
-// 	return acct.GetChargeRatio(), nil
-// }
-
-//GetAssetChargeRatio Get Asset ChargeRatio
-// func (am *AccountManager) GetAssetChargeRatio(assetID uint64) (uint64, error) {
-// 	acctName, err := am.ast.GetAssetFounderById(assetID)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	if acctName == "" {
-// 		return 0, ErrAccountNotExist
-// 	}
-// 	return am.GetChargeRatio(acctName)
-// }
-
-//GetAccountBalanceByName get account balance by name
-//func (am *AccountManager) GetAccountBalanceByName(accountName common.Name, assetName string) (*big.Int, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return big.NewInt(0), err
-//	}
-//	if acct == nil {
-//		return big.NewInt(0), ErrAccountNotExist
-//	}
-//
-//	assetID, err := am.ast.GetAssetIdByName(assetName)
-//	if err != nil {
-//		return big.NewInt(0), err
-//	}
-//	if assetID == 0 {
-//		return big.NewInt(0), asset.ErrAssetNotExist
-//	}
-//
-//	ba := &big.Int{}
-//	ba, err = acct.GetBalanceByID(assetID)
-//	if err != nil {
-//		return big.NewInt(0), err
-//	}
-//
-//	return ba, nil
-//}
-
 //SubAccountBalanceByID sub balance by assetID
 func (am *AccountManager) SubAccountBalanceByID(accountName common.Name, assetID uint64, value *big.Int) error {
 	acct, err := am.GetAccountByName(accountName)

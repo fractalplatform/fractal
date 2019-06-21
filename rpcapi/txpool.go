@@ -36,7 +36,7 @@ func NewPrivateTxPoolAPI(b Backend) *PrivateTxPoolAPI {
 
 // Status returns the number of pending and queued transaction in the pool.
 func (s *PrivateTxPoolAPI) Status() map[string]int {
-	pending, queue := s.b.Stats()
+	pending, queue := s.b.TxPool().Stats()
 	return map[string]int{
 		"pending": pending,
 		"queued":  queue,
@@ -44,32 +44,80 @@ func (s *PrivateTxPoolAPI) Status() map[string]int {
 }
 
 // Content returns the transactions contained within the transaction pool.
-func (s *PrivateTxPoolAPI) Content() map[string]map[string]map[string]*types.RPCTransaction {
-	content := map[string]map[string]map[string]*types.RPCTransaction{
-		"pending": make(map[string]map[string]*types.RPCTransaction),
-		"queued":  make(map[string]map[string]*types.RPCTransaction),
+func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
+	content := map[string]map[string]map[string]interface{}{
+		"pending": make(map[string]map[string]interface{}),
+		"queued":  make(map[string]map[string]interface{}),
 	}
-	pending, queue := s.b.TxPoolContent()
+
+	pending, queue := s.b.TxPool().Content()
 	// Flatten the pending transactions
 	for account, txs := range pending {
-		dump := make(map[string]*types.RPCTransaction)
+		dump := make(map[string]interface{})
 		for _, tx := range txs {
-			dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+			if fullTx {
+				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+			} else {
+				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
+			}
+
 		}
 		content["pending"][account.String()] = dump
 	}
 	// Flatten the queued transactions
 	for account, txs := range queue {
-		dump := make(map[string]*types.RPCTransaction)
+		dump := make(map[string]interface{})
 		for _, tx := range txs {
-			dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+			if fullTx {
+				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+			} else {
+				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
+			}
 		}
 		content["queued"][account.String()] = dump
 	}
 	return content
 }
 
-// SetGasPrice set gas price
+// PendingTransactions returns the pending transactions that are in the transaction pool
+func (s *PrivateTxPoolAPI) PendingTransactions(fullTx bool) (interface{}, error) {
+	pending, err := s.b.TxPool().Pending()
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		txs       []*types.RPCTransaction
+		txsHashes []common.Hash
+	)
+
+	for _, batch := range pending {
+		for _, tx := range batch {
+			if fullTx {
+				txs = append(txs, tx.NewRPCTransaction(common.Hash{}, 0, 0))
+			} else {
+				txsHashes = append(txsHashes, tx.Hash())
+			}
+		}
+	}
+	if fullTx {
+		return txs, nil
+	}
+	return txsHashes, nil
+}
+
+// GetPoolTransactions txpool returns the transaction for the given hash
+func (s *PrivateTxPoolAPI) GetPoolTransactions(hashes []common.Hash) []*types.RPCTransaction {
+	var txs []*types.RPCTransaction
+	for _, hash := range hashes {
+		if tx := s.b.TxPool().Get(hash); tx != nil {
+			txs = append(txs, tx.NewRPCTransaction(common.Hash{}, 0, 0))
+		}
+	}
+	return txs
+}
+
+// SetGasPrice set txpool gas price
 func (s *PrivateTxPoolAPI) SetGasPrice(gasprice *big.Int) bool {
 	return s.b.SetGasPrice(gasprice)
 }
