@@ -262,18 +262,58 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
+const (
+	unknow uint64 = iota
+	mianAccount
+	subAccount
+)
+
+func GetAccountNameLevel(accountName common.Name) (uint64, error) {
+	if !accountName.IsValid(acctRegExp, accountNameLength) {
+		return unknow, fmt.Errorf("account %s is invalid", accountName.String())
+	}
+
+	if len(strings.Split(accountName.String(), ".")) == 1 {
+		return mianAccount, nil
+	}
+
+	return subAccount, nil
+}
+
+func (am *AccountManager) checkaccountNameValid(fromName common.Name, accountName common.Name) error {
+	accountLevel, err := GetAccountNameLevel(accountName)
+	if err != nil {
+		return err
+	}
+
+	if accountLevel == mianAccount {
+		if !accountName.IsValid(acctRegExpFork1, accountNameLength) {
+			return fmt.Errorf("account %s is invalid", accountName.String())
+		}
+	}
+
+	if len(strings.Split(accountName.String(), ".")) > 1 {
+		if !fromName.IsChildren(accountName) {
+			return ErrAccountInvaid
+		}
+	}
+
+	return nil
+}
+
 //CreateAccount create account
 func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, curForkID uint64, pubkey common.PubKey, detail string) error {
 	if curForkID >= params.ForkID1 {
-		if !accountName.IsValid(acctRegExpFork1, accountNameLength) {
-			return fmt.Errorf("account %s is invalid", accountName.String())
-		} else {
-			if exist, _ := am.AccountIsExist(accountName); !exist {
-				return fmt.Errorf("account %s is invalid", accountName.String())
-			}
+		if err := am.checkaccountNameValid(fromName, accountName); err != nil {
+			return err
 		}
 	} else {
-		//check name valid
+		if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
+			if !fromName.IsChildren(accountName) {
+				return ErrAccountInvaid
+			}
+		}
+
 		if !accountName.IsValid(acctRegExp, accountNameLength) {
 			return fmt.Errorf("account %s is invalid", accountName.String())
 		}
@@ -1321,9 +1361,12 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 
 	// check asset contract
 	if len(asset.Contract) > 0 {
-		if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
-			return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
+		if curForkID == 0 {
+			if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
+				return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
+			}
 		}
+
 		f, err := am.GetAccountByName(asset.Contract)
 		if err != nil {
 			return 0, err
