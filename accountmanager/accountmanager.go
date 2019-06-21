@@ -319,13 +319,6 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 		}
 	}
 
-	//check parent
-	if len(strings.Split(accountName.String(), ".")) > 1 {
-		if !fromName.IsChildren(accountName) {
-			return ErrAccountInvaid
-		}
-	}
-
 	//check is exist
 	accountID, err := am.GetAccountIDByName(accountName)
 	if err != nil {
