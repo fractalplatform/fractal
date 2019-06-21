@@ -301,7 +301,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			}
 			slt := strings.Split(names[1], ".")
 			if len(slt) > 1 {
-				if ast, _ := accountManager.GetAssetInfoByName(names[0] + slt[0]); ast == nil {
+				if ast, _ := accountManager.GetAssetInfoByName(names[0] + ":" + slt[0]); ast == nil {
 					panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
 				} else {
 					pname = ast.Owner
