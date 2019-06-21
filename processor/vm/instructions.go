@@ -1168,6 +1168,7 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Na
 	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
 		Action:      action,
 		Number:      evm.Context.BlockNumber.Uint64(),
+		CurForkID:   evm.Context.ForkID,
 		ChainConfig: evm.chainConfig,
 	})
 	if evm.vmConfig.ContractLogFlag {
@@ -1196,6 +1197,7 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
 		Action:      action,
 		Number:      evm.Context.BlockNumber.Uint64(),
+		CurForkID:   evm.Context.ForkID,
 		ChainConfig: evm.chainConfig,
 	})
 	if evm.vmConfig.ContractLogFlag {
@@ -1397,6 +1399,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
 		Action:      action,
 		Number:      evm.Context.BlockNumber.Uint64(),
+		CurForkID:   evm.Context.ForkID,
 		ChainConfig: evm.chainConfig,
 	})
 	if err != nil {
@@ -1459,6 +1462,7 @@ func execSetAssetOwner(evm *EVM, contract *Contract, assetID uint64, owner commo
 	internalActions, err := evm.AccountDB.Process(&types.AccountManagerContext{
 		Action:      action,
 		Number:      evm.Context.BlockNumber.Uint64(),
+		CurForkID:   evm.Context.ForkID,
 		ChainConfig: evm.chainConfig,
 	})
 	if evm.vmConfig.ContractLogFlag {

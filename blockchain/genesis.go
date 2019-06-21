@@ -281,6 +281,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
 			Action:      action,
 			Number:      0,
+			CurForkID:   g.ForkID,
 			ChainConfig: g.Config,
 		})
 		if err != nil {
@@ -328,6 +329,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
 			Action:      action,
 			Number:      0,
+			CurForkID:   g.ForkID,
 			ChainConfig: g.Config,
 		})
 		if err != nil {

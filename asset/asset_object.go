@@ -80,6 +80,25 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 	return &ao, nil
 }
 
+func NewAssetObjectNoCheck(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) *AssetObject {
+	ao := AssetObject{
+		AssetId:     0,
+		Number:      number,
+		Stats:       0,
+		AssetName:   assetName,
+		Symbol:      symbol,
+		Amount:      amount,
+		Decimals:    dec,
+		Founder:     founder,
+		Owner:       owner,
+		AddIssue:    amount,
+		UpperLimit:  limit,
+		Contract:    contract,
+		Description: description,
+	}
+	return &ao
+}
+
 func (ao *AssetObject) GetAssetId() uint64 {
 	return ao.AssetId
 }
