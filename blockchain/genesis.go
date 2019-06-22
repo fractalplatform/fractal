@@ -293,8 +293,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	astActions := []*types.Action{}
 	for _, asset := range g.AllocAssets {
 		pname := common.Name("")
-
 		if g.ForkID >= params.ForkID1 {
+			pname = common.Name(g.Config.SysName)
 			names := strings.Split(asset.Name, ":")
 			if len(names) != 2 {
 				panic(fmt.Sprintf("asset name invalid %v", asset.Name))
