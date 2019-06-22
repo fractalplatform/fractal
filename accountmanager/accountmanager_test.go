@@ -2054,3 +2054,108 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		}
 	}
 }
+
+func Test_IssueAssetForkID1(t *testing.T) {
+	type args struct {
+		assetName  string
+		symbol     string
+		amount     *big.Int
+		dec        uint64
+		founder    common.Name
+		owner      common.Name
+		UpperLimit *big.Int
+		contract   common.Name
+		desc       string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, true},
+		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a123"), big.NewInt(999999), "", ""}, false},
+		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"symbolempty", args{"ft", "", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"amount==0", args{"ft", "z", big.NewInt(-1), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"ownerempty", args{"ft", "z", big.NewInt(2), 18, common.Name(""), common.Name(""), big.NewInt(999999), "", ""}, false},
+		{"shortsymbol", args{"ft", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"longsymbol", args{"ft", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+	}
+
+	am := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+
+	newAccount := common.Name("a0123456789abc")
+	pubkey := new(common.PubKey)
+	pubkey.SetBytes([]byte("abcde123456789"))
+
+	//create account
+	err := am.CreateAccount(common.Name("fractal.founder"), newAccount, "", 0, 0, *pubkey, "")
+
+	if err != nil {
+		t.Errorf("Test_IssueAssetForkID1 create account error = %v", err)
+	}
+
+	argBeforeFork := args{"main", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+	argSubFork := args{"main.sub", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+
+	assetBefore := IssueAsset{
+		AssetName:   (argBeforeFork.assetName),
+		Symbol:      argBeforeFork.symbol,
+		Amount:      argBeforeFork.amount,
+		Decimals:    argBeforeFork.dec,
+		Founder:     argBeforeFork.founder,
+		Owner:       argBeforeFork.owner,
+		UpperLimit:  argBeforeFork.UpperLimit,
+		Contract:    argBeforeFork.contract,
+		Description: argBeforeFork.desc,
+	}
+
+	_, err = am.IssueAsset(newAccount, assetBefore, blockNumber, 0)
+
+	if err != nil {
+		t.Errorf("Test_IssueAssetForkID1 main error = %v", err)
+	}
+
+	subFork := IssueAsset{
+		AssetName:   (argSubFork.assetName),
+		Symbol:      argSubFork.symbol,
+		Amount:      argSubFork.amount,
+		Decimals:    argSubFork.dec,
+		Founder:     argSubFork.founder,
+		Owner:       argSubFork.owner,
+		UpperLimit:  argSubFork.UpperLimit,
+		Contract:    argSubFork.contract,
+		Description: argSubFork.desc,
+	}
+
+	_, err = am.IssueAsset(newAccount, subFork, blockNumber, 1)
+	if err != nil {
+		t.Errorf("Test_IssueAssetForkID1 error = %v", err)
+	}
+
+	for _, tt := range tests {
+		var asset = IssueAsset{
+			AssetName:   (newAccount.String() + ":" + tt.args.assetName),
+			Symbol:      tt.args.symbol,
+			Amount:      tt.args.amount,
+			Decimals:    tt.args.dec,
+			Founder:     tt.args.founder,
+			Owner:       tt.args.owner,
+			UpperLimit:  tt.args.UpperLimit,
+			Contract:    tt.args.contract,
+			Description: tt.args.desc,
+		}
+		_, err := am.IssueAsset(newAccount, asset, blockNumber, 1)
+
+		if (err != nil && tt.wantErr == true) || (err == nil && tt.wantErr == false) {
+			t.Errorf("%q. Test_IssueAssetForkID1 error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}
