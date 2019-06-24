@@ -649,9 +649,7 @@ func (dpos *Dpos) GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epo
 		//get pre epoch
 		var gstate *GlobalState
 		gstate, err = sys.GetState(curEpoch)
-		if gstate == nil {
-			err = errors.New("gstate not found")
-		} else {
+		if err == nil {
 			epoch = gstate.PreEpoch
 		}
 	} else if t == 2 {
@@ -671,6 +669,7 @@ func (dpos *Dpos) GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epo
 			}
 			if gstate != nil {
 				epoch = gstate.Epoch
+				break
 			}
 		}
 	} else if t == 3 {
