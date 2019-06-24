@@ -296,7 +296,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		if g.ForkID >= params.ForkID1 {
 			names := strings.Split(asset.Name, ":")
 			if len(names) != 2 {
-				panic(fmt.Sprintf("asset name invalid %v", asset.Name))
+				return nil, nil, fmt.Errorf("asset name invalid %v", asset.Name)
 			}
 			slt := strings.Split(names[1], ".")
 			if len(slt) > 1 {
