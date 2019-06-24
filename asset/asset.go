@@ -21,9 +21,11 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -49,7 +51,6 @@ func SetAssetNameConfig(config *Config) bool {
 
 	if config.AssetNameLevel > 1 && (config.SubAssetNameMinLength < 1 || config.SubAssetNameMinLength >= config.SubAssetNameMaxLength) {
 		return false
-		panic("asset name level config error")
 	}
 
 	regexpStr := fmt.Sprintf("([a-z][a-z0-9]{%v,%v})", config.MainAssetNameMinLength-1, config.MainAssetNameMaxLength-1)
@@ -292,7 +293,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 }
 
 //IssueAsset issue asset
-func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
+func (a *Asset) IssueAsset(assetName string, number uint64, forkID uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
 	_, err := a.GetAssetIdByName(assetName)
 	if err != nil && err != ErrAssetNotExist {
 		return 0, err
@@ -302,10 +303,17 @@ func (a *Asset) IssueAsset(assetName string, number uint64, symbol string, amoun
 		return 0, ErrAssetIsExist
 	}
 
-	ao, err := NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, description)
-	if err != nil {
-		return 0, err
+	var ao *AssetObject
+
+	if forkID >= params.ForkID1 {
+		ao = NewAssetObjectNoCheck(assetName, number, symbol, amount, dec, founder, owner, limit, contract, description)
+	} else {
+		ao, err = NewAssetObject(assetName, number, symbol, amount, dec, founder, owner, limit, contract, description)
+		if err != nil {
+			return 0, err
+		}
 	}
+
 	return a.addNewAssetObject(ao)
 }
 
@@ -463,7 +471,7 @@ func (a *Asset) SetAssetNewContract(assetID uint64, contract common.Name) error 
 // 	return a.SetAssetObject(asset)
 // }
 
-func (a *Asset) IsValidMainAsset(assetName string) bool {
+func (a *Asset) IsValidMainAssetBeforeFork(assetName string) bool {
 	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {
 		return true
@@ -472,7 +480,7 @@ func (a *Asset) IsValidMainAsset(assetName string) bool {
 }
 
 // IsValidOwner check parent owner valid
-func (a *Asset) IsValidSubAsset(fromName common.Name, assetName string) (uint64, bool) {
+func (a *Asset) IsValidSubAssetBeforeFork(fromName common.Name, assetName string) (uint64, bool) {
 	assetNames := common.FindStringSubmatch(assetRegExp, assetName)
 	if len(assetNames) < 2 {
 		return 0, false
@@ -510,6 +518,35 @@ func (a *Asset) IsValidSubAsset(fromName common.Name, assetName string) (uint64,
 		}
 	}
 	log.Debug("Asset create failed", "account", fromName, "name", assetName)
+	return 0, false
+}
+
+func (a *Asset) IsValidAssetOwner(fromName common.Name, assetPrex string, assetNames []string) (uint64, bool) {
+	var an string
+	for i := 0; i < len(assetNames)-1; i++ {
+		if i == 0 {
+			an = assetPrex + assetNames[i]
+		} else {
+			an = an + "." + assetNames[i]
+		}
+
+		assetId, err := a.GetAssetIdByName(an)
+		if err != nil {
+			continue
+		}
+		assetObj, err := a.GetAssetObjectById(assetId)
+		if err != nil {
+			continue
+		}
+
+		if assetObj == nil {
+			continue
+		}
+
+		if assetObj.GetAssetOwner() == fromName {
+			return assetId, true
+		}
+	}
 	return 0, false
 }
 
@@ -551,11 +588,22 @@ func (a *Asset) CheckOwner(fromName common.Name, assetID uint64) error {
 	}
 
 	if assetObj.GetAssetOwner() != fromName {
-		if a.IsValidMainAsset(assetObj.GetAssetName()) {
+		var assetNames []string
+		var assetPrex string
+		names := strings.Split(assetObj.GetAssetName(), ":")
+		if len(names) == 2 {
+			assetNames = strings.Split(names[1], ".")
+			assetPrex = names[0] + ":"
+		} else {
+			assetNames = strings.Split(assetObj.GetAssetName(), ".")
+			assetPrex = ""
+		}
+
+		if len(assetNames) == 1 {
 			return ErrOwnerMismatch
 		}
 
-		if _, isVaild := a.IsValidSubAsset(fromName, assetObj.GetAssetName()); !isVaild {
+		if _, isVaild := a.IsValidAssetOwner(fromName, assetPrex, assetNames); !isVaild {
 			return ErrOwnerMismatch
 		}
 	}

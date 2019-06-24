@@ -46,17 +46,17 @@ func TestRunCode(t *testing.T) {
 	toName := common.Name("fractal.asset")
 
 	//fmt.Println("in TestRunCode3 ...")
-	if err := account.CreateAccount(common.Name("fractal"), senderName, "", 0, senderPubkey, ""); err != nil {
+	if err := account.CreateAccount(common.Name("fractal"), senderName, "", 0, 0, senderPubkey, ""); err != nil {
 		fmt.Println("create sender account error\n", err)
 		return
 	}
 
-	if err := account.CreateAccount(common.Name("fractal"), receiverName, "", 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(common.Name("fractal"), receiverName, "", 0, 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create receiver account error\n", err)
 		return
 	}
 
-	if err := account.CreateAccount(common.Name("fractal"), toName, "", 0, receiverPubkey, ""); err != nil {
+	if err := account.CreateAccount(common.Name("fractal"), toName, "", 0, 0, receiverPubkey, ""); err != nil {
 		fmt.Println("create toName  error\n", err)
 		return
 	}

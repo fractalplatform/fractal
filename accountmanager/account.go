@@ -79,21 +79,16 @@ type Account struct {
 
 // NewAccount create a new account object.
 func NewAccount(accountName common.Name, founderName common.Name, pubkey common.PubKey, description string) (*Account, error) {
-	if !accountName.IsValid(acctRegExp, accountNameLength) {
-		return nil, ErrAccountNameInvalid
-	}
-
 	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrCreateAccountError
 	}
 
 	auth := common.NewAuthor(pubkey, 1)
 	acctObject := Account{
-		AcctName:  accountName,
-		Founder:   founderName,
-		AccountID: 0,
-		Number:    0,
-		//ChargeRatio:           0,
+		AcctName:              accountName,
+		Founder:               founderName,
+		AccountID:             0,
+		Number:                0,
 		Nonce:                 0,
 		Balances:              make([]*AssetBalance, 0),
 		Code:                  make([]byte, 0),

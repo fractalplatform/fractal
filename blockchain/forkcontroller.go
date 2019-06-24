@@ -55,8 +55,12 @@ func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkContr
 	return &ForkController{cfg: cfg, chainCfg: chaincfg}
 }
 
-func initForkController(chainName string, statedb *state.StateDB) error {
-	var info = ForkInfo{}
+func initForkController(chainName string, statedb *state.StateDB, curforkID uint64) error {
+	if curforkID > params.NextForkID {
+		return fmt.Errorf("not support fork ID: %v,the last fork ID: %v", curforkID, params.NextForkID)
+	}
+
+	var info = ForkInfo{CurForkID: curforkID, NextForkID: curforkID}
 	infoBytes, err := statedb.Get(chainName, forkInfo)
 	if err != nil {
 		return err

@@ -77,6 +77,7 @@ type Genesis struct {
 	AllocCandidates []*GenesisCandidate `json:"allocCandidates,omitempty"`
 	AllocAssets     []*GenesisAsset     `json:"allocAssets,omitempty"`
 	Remark          string              `json:"remark,omitempty"`
+	ForkID          uint64              `json:"forkID,omitempty"`
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
@@ -103,23 +104,11 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		AssetID:                       cfg.SysTokenID,
 		ReferenceTime:                 cfg.ReferenceTime,
 	}
-	if err := dcfg.IsValid(); err != nil {
-		panic(err)
-	}
 	return dcfg
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
-func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.ChainConfig, dcfg *dpos.Config, hash common.Hash, err error) {
-	chainCfg = params.DefaultChainconfig
-	dcfg = dpos.DefaultConfig
-	hash = common.Hash{}
-	defer func() {
-		if e := recover(); e != nil {
-			err = errors.New(e.(string))
-		}
-	}()
-
+func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
 	if genesis != nil && genesis.Config == nil {
 		return params.DefaultChainconfig, dposConfig(params.DefaultChainconfig), common.Hash{}, errGenesisNoConfig
 	}
@@ -131,29 +120,38 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 			genesis = DefaultGenesis()
 		}
 		block, err := genesis.Commit(db)
+		if err != nil {
+			return nil, nil, common.Hash{}, err
+		}
+		dfg := dposConfig(genesis.Config)
+		if err := dfg.IsValid(); err != nil {
+			return nil, nil, common.Hash{}, err
+		}
 		log.Info("Writing genesis block", "hash", block.Hash().Hex())
-
-		return genesis.Config, dposConfig(genesis.Config), block.Hash(), err
+		return genesis.Config, dfg, block.Hash(), err
 	}
 
 	// Check whether the genesis block is already written.
 	if genesis != nil {
-		blk, _ := genesis.ToBlock(nil)
+		blk, _, err := genesis.ToBlock(nil)
+		if err != nil {
+			return nil, nil, common.Hash{}, err
+
+		}
 		hash := blk.Hash()
 		if hash != stored {
 			return genesis.Config, dposConfig(genesis.Config), hash, &GenesisMismatchError{stored, hash}
 		}
 	}
-	newcfg := genesis.configOrDefault(stored)
 
 	number := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
 	if number == nil {
-		return newcfg, dposConfig(newcfg), common.Hash{}, errors.New("missing block number for head header hash")
+		return nil, nil, common.Hash{}, errors.New("missing block number for head header hash")
 	}
 
 	storedcfg := rawdb.ReadChainConfig(db, stored)
 	if storedcfg == nil {
-		return newcfg, dposConfig(newcfg), common.Hash{}, errors.New("Found genesis block without chain config")
+		return nil, nil, common.Hash{}, errors.New("Found genesis block without chain config")
 	}
 	am.SetAccountNameConfig(&am.Config{
 		AccountNameLevel:         storedcfg.AccountNameCfg.Level,
@@ -174,12 +172,18 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (chainCfg *params.Chai
 	am.SetAcctMangerName(common.StrToName(storedcfg.AccountName))
 	at.SetAssetMangerName(common.StrToName(storedcfg.AssetName))
 	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
-	return storedcfg, dposConfig(storedcfg), stored, nil
+
+	dfg := dposConfig(storedcfg)
+	if err := dfg.IsValid(); err != nil {
+		log.Error("genesis get stored config failed ", "hash", stored, "err", err)
+		return nil, nil, stored, err
+	}
+	return storedcfg, dfg, stored, nil
 }
 
 // ToBlock creates the genesis block and writes state of a genesis specification
 // to the given database (or discards it if nil).
-func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
+func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, error) {
 	if db == nil {
 		db = memdb.NewMemDatabase()
 	}
@@ -207,11 +211,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
-		panic(fmt.Sprintf("genesis statedb new err: %v", err))
+		return nil, nil, fmt.Errorf("genesis statedb new err: %v", err)
 	}
 	accountManager, err := am.NewAccountManager(statedb)
 	if err != nil {
-		panic(fmt.Sprintf("genesis accountManager new err: %v", err))
+		return nil, nil, fmt.Errorf("genesis accountManager new err: %v", err)
 	}
 	//p2p
 	for _, node := range g.Config.BootNodes {
@@ -227,7 +231,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	timestamp := g.Timestamp * uint64(time.Millisecond)
 	g.Config.ReferenceTime = timestamp
 	if err := dpos.Genesis(dposConfig(g.Config), statedb, timestamp, number.Uint64()); err != nil {
-		panic(fmt.Sprintf("genesis dpos err %v", err))
+		return nil, nil, fmt.Errorf("genesis dpos err %v", err)
 	}
 
 	chainName := common.Name(g.Config.ChainName)
@@ -280,10 +284,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
 			Action:      action,
 			Number:      0,
+			CurForkID:   g.ForkID,
 			ChainConfig: g.Config,
 		})
 		if err != nil {
-			panic(fmt.Sprintf("genesis create account %v,err %v", index, err))
+			return nil, nil, fmt.Errorf("genesis create account %v,err %v", index, err)
 		}
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
@@ -291,14 +296,32 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	astActions := []*types.Action{}
 	for _, asset := range g.AllocAssets {
 		pname := common.Name("")
-		slt := strings.Split(asset.Name, ".")
-		if len(slt) > 1 {
-			if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
-				panic(fmt.Sprintf("parent asset not exist %v", ast.AssetName))
-			} else {
-				pname = ast.Owner
+		if g.ForkID >= params.ForkID1 {
+			pname = common.Name(g.Config.SysName)
+			names := strings.Split(asset.Name, ":")
+			if len(names) != 2 {
+				return nil, nil, fmt.Errorf("asset name invalid %v", asset.Name)
+			}
+			slt := strings.Split(names[1], ".")
+			if len(slt) > 1 {
+				if ast, _ := accountManager.GetAssetInfoByName(names[0] + ":" + slt[0]); ast == nil {
+					return nil, nil, fmt.Errorf("parent asset not exist %v", ast.AssetName)
+
+				} else {
+					pname = ast.Owner
+				}
+			}
+		} else {
+			slt := strings.Split(asset.Name, ".")
+			if len(slt) > 1 {
+				if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
+					return nil, nil, fmt.Errorf("parent asset not exist %v", ast.AssetName)
+				} else {
+					pname = ast.Owner
+				}
 			}
 		}
+
 		ast := &am.IssueAsset{
 			AssetName:  asset.Name,
 			Symbol:     asset.Symbol,
@@ -327,10 +350,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
 			Action:      action,
 			Number:      0,
+			CurForkID:   g.ForkID,
 			ChainConfig: g.Config,
 		})
 		if err != nil {
-			panic(fmt.Sprintf("genesis create asset %v,err %v", index, err))
+			return nil, nil, fmt.Errorf("genesis create asset %v,err %v", index, err)
 		}
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
@@ -351,23 +375,23 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 		SubAssetNameMaxLength:  g.Config.AssetNameCfg.SubMaxLength,
 	})
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
-		panic(fmt.Sprintf("system is not exist %v", err))
+		return nil, nil, fmt.Errorf("system is not exist %v", err)
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
-		panic(fmt.Sprintf("account is not exist %v", err))
+		return nil, nil, fmt.Errorf("account is not exist %v", err)
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AssetName)); !ok {
-		panic(fmt.Sprintf("asset account is not exist %v", err))
+		return nil, nil, fmt.Errorf("asset account is not exist %v", err)
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
-		panic(fmt.Sprintf("dpos is not exist %v", err))
+		return nil, nil, fmt.Errorf("dpos is not exist %v", err)
 	}
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.FeeName)); !ok {
-		panic(fmt.Sprintf("fee is not exist %v", err))
+		return nil, nil, fmt.Errorf("fee is not exist %v", err)
 	}
 	assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
 	if err != nil {
-		panic(fmt.Sprintf("genesis system asset err %v", err))
+		return nil, nil, fmt.Errorf("genesis system asset err %v", err)
 	}
 
 	g.Config.SysTokenID = assetInfo.AssetId
@@ -377,7 +401,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	epoch, _ := sys.GetLastestEpoch()
 	for _, candidate := range g.AllocCandidates {
 		if ok, err := accountManager.AccountIsExist(common.StrToName(candidate.Name)); !ok {
-			panic(fmt.Sprintf("candidate %v is not exist %v", candidate.Name, err))
+			return nil, nil, fmt.Errorf("candidate %v is not exist %v", candidate.Name, err)
 		}
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
 			Epoch:         epoch,
@@ -387,16 +411,16 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 			TotalQuantity: big.NewInt(0),
 			Number:        number.Uint64(),
 		}); err != nil {
-			panic(fmt.Sprintf("genesis create candidate err %v", err))
+			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 		}
 	}
 	if err := sys.UpdateElectedCandidates(epoch, epoch, number.Uint64(), ""); err != nil {
-		panic(fmt.Sprintf("genesis create candidate err %v", err))
+		return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 	}
 
 	// init  fork controller
-	if err := initForkController(chainName.String(), statedb); err != nil {
-		panic(fmt.Sprintf("genesis init fork controller err %v", err))
+	if err := initForkController(chainName.String(), statedb, g.ForkID); err != nil {
+		return nil, nil, fmt.Errorf("genesis init fork controller failed %v", err)
 	}
 
 	// snapshot
@@ -405,13 +429,13 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 	snapshotManager := snapshot.NewSnapshotManager(statedb)
 	err = snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: number.Uint64(), BlockHash: common.Hash{}, Timestamp: 0})
 	if err != nil {
-		panic(fmt.Sprintf("genesis snapshot err %v", err))
+		return nil, nil, fmt.Errorf("genesis snapshot err %v", err)
 	}
 
 	root := statedb.IntermediateRoot()
 	gjson, err := json.Marshal(g)
 	if err != nil {
-		panic(fmt.Sprintf("genesis json marshal json err %v", err))
+		return nil, nil, fmt.Errorf("genesis json marshal json err %v", err)
 	}
 
 	head := &types.Header{
@@ -476,6 +500,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	receipts := []*types.Receipt{receipt}
 	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
+	block.Head.WithForkID(g.ForkID, g.ForkID)
 	batch := db.NewBatch()
 
 	// write snapshot to db
@@ -490,19 +515,22 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt) {
 
 	roothash, err := statedb.Commit(batch, block.Hash(), block.NumberU64())
 	if err != nil {
-		panic(fmt.Sprintf("genesis statedb commit err: %v", err))
+		return nil, nil, fmt.Errorf("genesis statedb commit err: %v", err)
 	}
 	statedb.Database().TrieDB().Commit(roothash, false)
 	if err := batch.Write(); err != nil {
-		panic(fmt.Sprintf("genesis batch write err: %v", err))
+		return nil, nil, fmt.Errorf("genesis batch write err: %v", err)
 	}
-	return block, receipts
+	return block, receipts, nil
 }
 
 // Commit writes the block and state of a genesis specification to the database.
 // The block is committed as the canonical head block.
 func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
-	block, receipts := g.ToBlock(db)
+	block, receipts, err := g.ToBlock(db)
+	if err != nil {
+		return nil, err
+	}
 	if block.Number().Sign() != 0 {
 		return nil, fmt.Errorf("can't commit genesis block with number > 0")
 	}
@@ -513,18 +541,10 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(db, block.Hash())
 	rawdb.WriteHeadHeaderHash(db, block.Hash())
-
 	rawdb.WriteChainConfig(db, block.Hash(), g.Config)
 	rawdb.WriteIrreversibleNumber(db, uint64(0))
 
 	return block, nil
-}
-
-func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
-	if g != nil {
-		return g.Config
-	}
-	return params.DefaultChainconfig
 }
 
 // DefaultGenesis returns the ft net genesis block.

@@ -62,7 +62,7 @@ func getAccountManager() *AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("fractal.founder"), common.Name("systestname"), common.Name(""), 0, *pubkey, "")
+	am.CreateAccount(common.Name("fractal.founder"), common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
 	return am
 }
 
@@ -91,7 +91,7 @@ func TestSDB(t *testing.T) {
 
 }
 func TestNN(t *testing.T) {
-	if err := acctm.CreateAccount(common.Name("fractal.founder"), common.Name("a123asdf2"), common.Name(""), 0, *new(common.PubKey), ""); err != nil {
+	if err := acctm.CreateAccount(common.Name("fractal.founder"), common.Name("a123asdf2"), common.Name(""), 0, 0, *new(common.PubKey), ""); err != nil {
 		t.Errorf("err create account\n")
 	}
 	_, err := acctm.GetAccountBalanceByID(common.Name("a123asdf2"), 1, 0)
@@ -176,7 +176,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.CreateAccount(tt.args.fromName, tt.args.accountName, tt.args.founderName, 0, tt.args.pubkey, ""); (err != nil) != tt.wantErr {
+		if err := am.CreateAccount(tt.args.fromName, tt.args.accountName, tt.args.founderName, 0, 0, tt.args.pubkey, ""); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -184,7 +184,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	err := am1.CreateAccount(common.Name("fractal.founder"), common.Name("aaaadddd"), common.Name("a111222332a"), 0, *pubkey, "")
+	err := am1.CreateAccount(common.Name("fractal.founder"), common.Name("aaaadddd"), common.Name("a111222332a"), 0, 0, *pubkey, "")
 	if err != nil {
 		t.Errorf("create acct err:%v", err)
 	}
@@ -326,7 +326,7 @@ func TestAccountManager_SetAccount(t *testing.T) {
 		acct *Account
 	}
 	pubkey2 := new(common.PubKey)
-	acctm.CreateAccount(common.Name("fractal.founder"), common.Name("a123456789"), common.Name(""), 0, *pubkey2, "")
+	acctm.CreateAccount(common.Name("fractal.founder"), common.Name("a123456789"), common.Name(""), 0, 0, *pubkey2, "")
 	ac, _ := acctm.GetAccountByName(common.Name("a123456789"))
 
 	tests := []struct {
@@ -580,7 +580,7 @@ func TestAccountManager_GetAccountBalanceByID(t *testing.T) {
 		assetID     uint64
 	}
 	//asset ID = 0
-	acctm.ast.IssueAsset("ziz", blockNumber, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
+	acctm.ast.IssueAsset("ziz", blockNumber, 0, "zz", big.NewInt(1000), 0, common.Name("a123456789aeee"), common.Name("a123456789aeee"), big.NewInt(1000), common.Name(""), "")
 	id, err := acctm.ast.GetAssetIdByName("ziz")
 	if err != nil {
 		t.Errorf("GetAssetIdByName ziz err")
@@ -1122,7 +1122,7 @@ func TestAccountManager_GetCode(t *testing.T) {
 	}
 	pubkey2 := new(common.PubKey)
 	acct, _ := acctm.GetAccountByName(common.Name("a123456789aeee"))
-	acctm.CreateAccount(common.Name("fractal.founder"), common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, *pubkey2, "")
+	acctm.CreateAccount(common.Name("fractal.founder"), common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, 0, *pubkey2, "")
 	acct.SetCode([]byte("abcde123456789"))
 	acctm.SetAccount(acct)
 	//t.Logf("EnoughAccountBalance asset id=%v : val=%v\n", 1, val)
@@ -1422,7 +1422,7 @@ func TestAccountManager_IssueAsset(t *testing.T) {
 			Contract:    tt.args.asset.GetContract(),
 			Description: tt.args.asset.GetAssetDescription(),
 		}
-		if _, err := am.IssueAsset(tt.from, asset, blockNumber); (err != nil) != tt.wantErr {
+		if _, err := am.IssueAsset(tt.from, asset, blockNumber, 0); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IssueAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -1919,7 +1919,7 @@ func TestAccountManager_TransferContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber, 0); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	am.AddAccountBalanceByName(asset1.Owner, asset1.AssetName, asset1.Amount)
@@ -1992,7 +1992,7 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		Description: ast1.GetAssetDescription(),
 	}
 
-	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber); err != nil {
+	if _, err := am.IssueAsset(common.Name(""), asset1, blockNumber, 0); err != nil {
 		t.Errorf("%q. AccountManager.IssueAsset() error = %v", ast1.AssetName, err)
 	}
 	ast1, _ = am.GetAssetInfoByName(ast1.GetAssetName())
@@ -2051,6 +2051,111 @@ func TestAccountManager_ProcessContractAsset(t *testing.T) {
 		}
 		if _, err := am.Process(&types.AccountManagerContext{Action: tt.args.action, ChainConfig: params.DefaultChainconfig, Number: 0}); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.Process() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}
+
+func Test_IssueAssetForkID1(t *testing.T) {
+	type args struct {
+		assetName  string
+		symbol     string
+		amount     *big.Int
+		dec        uint64
+		founder    common.Name
+		owner      common.Name
+		UpperLimit *big.Int
+		contract   common.Name
+		desc       string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, true},
+		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a123"), big.NewInt(999999), "", ""}, false},
+		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"symbolempty", args{"ft", "", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"amount==0", args{"ft", "z", big.NewInt(-1), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"ownerempty", args{"ft", "z", big.NewInt(2), 18, common.Name(""), common.Name(""), big.NewInt(999999), "", ""}, false},
+		{"shortsymbol", args{"ft", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"longsymbol", args{"ft", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+	}
+
+	am := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+
+	newAccount := common.Name("a0123456789abc")
+	pubkey := new(common.PubKey)
+	pubkey.SetBytes([]byte("abcde123456789"))
+
+	//create account
+	err := am.CreateAccount(common.Name("fractal.founder"), newAccount, "", 0, 0, *pubkey, "")
+
+	if err != nil {
+		t.Errorf("Test_IssueAssetForkID1 create account error = %v", err)
+	}
+
+	argBeforeFork := args{"main", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+	argSubFork := args{"main.sub", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+
+	assetBefore := IssueAsset{
+		AssetName:   (argBeforeFork.assetName),
+		Symbol:      argBeforeFork.symbol,
+		Amount:      argBeforeFork.amount,
+		Decimals:    argBeforeFork.dec,
+		Founder:     argBeforeFork.founder,
+		Owner:       argBeforeFork.owner,
+		UpperLimit:  argBeforeFork.UpperLimit,
+		Contract:    argBeforeFork.contract,
+		Description: argBeforeFork.desc,
+	}
+
+	_, err = am.IssueAsset(newAccount, assetBefore, blockNumber, 0)
+
+	if err != nil {
+		t.Errorf("Test_IssueAssetForkID1 main error = %v", err)
+	}
+
+	subFork := IssueAsset{
+		AssetName:   (argSubFork.assetName),
+		Symbol:      argSubFork.symbol,
+		Amount:      argSubFork.amount,
+		Decimals:    argSubFork.dec,
+		Founder:     argSubFork.founder,
+		Owner:       argSubFork.owner,
+		UpperLimit:  argSubFork.UpperLimit,
+		Contract:    argSubFork.contract,
+		Description: argSubFork.desc,
+	}
+
+	_, err = am.IssueAsset(newAccount, subFork, blockNumber, 1)
+	if err != nil {
+		t.Errorf("Test_IssueAssetForkID1 error = %v", err)
+	}
+
+	for _, tt := range tests {
+		var asset = IssueAsset{
+			AssetName:   (newAccount.String() + ":" + tt.args.assetName),
+			Symbol:      tt.args.symbol,
+			Amount:      tt.args.amount,
+			Decimals:    tt.args.dec,
+			Founder:     tt.args.founder,
+			Owner:       tt.args.owner,
+			UpperLimit:  tt.args.UpperLimit,
+			Contract:    tt.args.contract,
+			Description: tt.args.desc,
+		}
+		_, err := am.IssueAsset(newAccount, asset, blockNumber, 1)
+
+		if (err != nil && tt.wantErr == true) || (err == nil && tt.wantErr == false) {
+			t.Errorf("%q. Test_IssueAssetForkID1 error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
 }

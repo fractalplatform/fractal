@@ -35,7 +35,10 @@ import (
 var defaultgenesisBlockHash = common.HexToHash("0xfff77195a34bae2cbe56990436ef0ae4f41f1a466a1a7943f7040ecdd19eceba")
 
 func TestDefaultGenesisBlock(t *testing.T) {
-	block, _ := DefaultGenesis().ToBlock(nil)
+	block, _, err := DefaultGenesis().ToBlock(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if block.Hash() != defaultgenesisBlockHash {
 		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash().Hex(), defaultgenesisBlockHash.Hex())
 	}

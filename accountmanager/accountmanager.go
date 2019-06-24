@@ -21,6 +21,7 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/asset"
@@ -35,6 +36,7 @@ import (
 
 var (
 	acctRegExp          = regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
+	acctRegExpFork1     = regexp.MustCompile(`^([a-z][a-z0-9]{11,15})(\.([a-z0-9]{2,16})){0,2}$`)
 	accountNameLength   = uint64(31)
 	acctManagerName     = "sysAccount"
 	acctInfoPrefix      = "acctInfo"
@@ -136,6 +138,10 @@ func SetAccountNameConfig(config *Config) bool {
 }
 func GetAcountNameRegExp() *regexp.Regexp {
 	return acctRegExp
+}
+
+func GetAcountNameRegExpFork1() *regexp.Regexp {
+	return acctRegExpFork1
 }
 
 func GetAcountNameLength() uint64 {
@@ -256,18 +262,63 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 	return false, nil
 }
 
-//CreateAccount create account
-func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, pubkey common.PubKey, detail string) error {
-	//check parent
-	if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
-		if !fromName.IsChildren(accountName, accountNameLength) {
+const (
+	unknow uint64 = iota
+	mainAccount
+	subAccount
+)
+
+func GetAccountNameLevel(accountName common.Name) (uint64, error) {
+	if !accountName.IsValid(acctRegExp, accountNameLength) {
+		return unknow, fmt.Errorf("account %s is invalid", accountName.String())
+	}
+
+	if len(strings.Split(accountName.String(), ".")) == 1 {
+		return mainAccount, nil
+	}
+
+	return subAccount, nil
+}
+
+func (am *AccountManager) checkAccountNameValid(fromName common.Name, accountName common.Name) error {
+	accountLevel, err := GetAccountNameLevel(accountName)
+	if err != nil {
+		return err
+	}
+
+	if accountLevel == mainAccount {
+		if !accountName.IsValid(acctRegExpFork1, accountNameLength) {
+			return fmt.Errorf("account %s is invalid", accountName.String())
+		}
+	}
+
+	if accountLevel == subAccount {
+		if !fromName.IsChildren(accountName) {
 			return ErrAccountInvaid
 		}
 	}
-	//check name valid
-	if !accountName.IsValid(acctRegExp, accountNameLength) {
-		return fmt.Errorf("account %s is invalid", accountName.String())
+
+	return nil
+}
+
+//CreateAccount create account
+func (am *AccountManager) CreateAccount(fromName common.Name, accountName common.Name, founderName common.Name, number uint64, curForkID uint64, pubkey common.PubKey, detail string) error {
+	if curForkID >= params.ForkID1 {
+		if err := am.checkAccountNameValid(fromName, accountName); err != nil {
+			return err
+		}
+	} else {
+		if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
+			if !fromName.IsChildren(accountName) {
+				return ErrAccountInvaid
+			}
+		}
+
+		if !accountName.IsValid(acctRegExp, accountNameLength) {
+			return fmt.Errorf("account %s is invalid", accountName.String())
+		}
 	}
+
 	//check is exist
 	accountID, err := am.GetAccountIDByName(accountName)
 	if err != nil {
@@ -552,7 +603,7 @@ func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex 
 		return accountName, nil
 	}
 
-	list := common.FindStringSubmatch(acctRegExp, accountName.String())
+	list := strings.Split(accountName.String(), ".")
 	if parentIndex > uint64(len(list)-1) {
 		return common.Name(""), fmt.Errorf("invalid index, %s , %d", accountName.String(), parentIndex)
 	}
@@ -750,7 +801,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 			return nil, err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameLength()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName())) {
 			ba[id] = balance
 		}
 	}
@@ -783,7 +834,7 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 			return big.NewInt(0), err
 		}
 
-		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName()), asset.GetAssetNameLength()) {
+		if common.StrToName(assetName).IsChildren(common.StrToName(subAssetObj.GetAssetName())) {
 			ba = ba.Add(ba, balance)
 		}
 	}
@@ -886,57 +937,6 @@ func (am *AccountManager) GetFounder(accountName common.Name) (common.Name, erro
 func (am *AccountManager) GetAssetFounder(assetID uint64) (common.Name, error) {
 	return am.ast.GetAssetFounderById(assetID)
 }
-
-//GetChargeRatio Get Account ChargeRatio
-// func (am *AccountManager) GetChargeRatio(accountName common.Name) (uint64, error) {
-// 	acct, err := am.GetAccountByName(accountName)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	if acct == nil {
-// 		return 0, ErrAccountNotExist
-// 	}
-// 	return acct.GetChargeRatio(), nil
-// }
-
-//GetAssetChargeRatio Get Asset ChargeRatio
-// func (am *AccountManager) GetAssetChargeRatio(assetID uint64) (uint64, error) {
-// 	acctName, err := am.ast.GetAssetFounderById(assetID)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	if acctName == "" {
-// 		return 0, ErrAccountNotExist
-// 	}
-// 	return am.GetChargeRatio(acctName)
-// }
-
-//GetAccountBalanceByName get account balance by name
-//func (am *AccountManager) GetAccountBalanceByName(accountName common.Name, assetName string) (*big.Int, error) {
-//	acct, err := am.GetAccountByName(accountName)
-//	if err != nil {
-//		return big.NewInt(0), err
-//	}
-//	if acct == nil {
-//		return big.NewInt(0), ErrAccountNotExist
-//	}
-//
-//	assetID, err := am.ast.GetAssetIdByName(assetName)
-//	if err != nil {
-//		return big.NewInt(0), err
-//	}
-//	if assetID == 0 {
-//		return big.NewInt(0), asset.ErrAssetNotExist
-//	}
-//
-//	ba := &big.Int{}
-//	ba, err = acct.GetBalanceByID(assetID)
-//	if err != nil {
-//		return big.NewInt(0), err
-//	}
-//
-//	return ba, nil
-//}
 
 //SubAccountBalanceByID sub balance by assetID
 func (am *AccountManager) SubAccountBalanceByID(accountName common.Name, assetID uint64, value *big.Int) error {
@@ -1190,16 +1190,94 @@ func (am *AccountManager) CheckAssetContract(contract common.Name, owner common.
 	return false
 }
 
-//IssueAsset issue asset
-func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64) (uint64, error) {
-	//check owner valid
-	if !am.ast.IsValidMainAsset(asset.AssetName) {
-		parentAassetID, isValid := am.ast.IsValidSubAsset(fromName, asset.AssetName)
-		if !isValid {
-			return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo *IssueAsset) error {
+	var assetNames []string
+	var assetPrex string
+
+	names := strings.Split(assetInfo.AssetName, ":")
+	if len(names) == 2 {
+		if !common.StrToName(names[1]).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
+			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
 		}
-		assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
-		asset.Decimals = assetObj.GetDecimals()
+		assetNames = strings.Split(names[1], ".")
+		if len(assetNames) == 1 && names[0] != fromName.String() {
+			return fmt.Errorf("asset name not match from, name: %v, from:%v", assetInfo.AssetName, fromName)
+		}
+		assetPrex = names[0] + ":"
+	} else {
+		if !common.StrToName(assetInfo.AssetName).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
+			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
+		}
+		assetNames = strings.Split(assetInfo.AssetName, ".")
+		if len(assetNames) < 2 {
+			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
+		}
+		assetPrex = ""
+	}
+
+	if len(assetNames) == 1 {
+		return nil
+	}
+
+	//check sub asset owner
+	parentAassetID, isValid := am.ast.IsValidAssetOwner(fromName, assetPrex, assetNames)
+	if !isValid {
+		return fmt.Errorf("asset owner is invalid, name: %v", assetInfo.AssetName)
+	}
+	assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+	assetInfo.Decimals = assetObj.GetDecimals()
+
+	return nil
+}
+
+func (am *AccountManager) checkAssetInfoValid(fromName common.Name, assetInfo *IssueAsset) error {
+	if assetInfo.Owner == "" {
+		return fmt.Errorf("asset owner invalid")
+	}
+
+	if assetInfo.Amount.Cmp(big.NewInt(0)) < 0 || assetInfo.UpperLimit.Cmp(big.NewInt(0)) < 0 {
+		return fmt.Errorf("asset amount or limit invalid, amount:%v,limit:%v", assetInfo.Amount, assetInfo.UpperLimit)
+	}
+
+	if assetInfo.UpperLimit.Cmp(big.NewInt(0)) > 0 {
+		if assetInfo.Amount.Cmp(assetInfo.UpperLimit) > 0 {
+			return fmt.Errorf("asset amount greater than limit, amount:%v,limit:%v", assetInfo.Amount, assetInfo.UpperLimit)
+		}
+	}
+
+	err := am.checkAssetNameAndOwner(fromName, assetInfo)
+	if err != nil {
+		return err
+	}
+
+	//symbol use asset reg
+	if !common.StrToName(assetInfo.Symbol).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
+		return fmt.Errorf("asset symbol invalid, symbol:%v", assetInfo.Symbol)
+	}
+	if uint64(len(assetInfo.Description)) > MaxDescriptionLength {
+		return fmt.Errorf("asset description invalid, description:%v", assetInfo.Description)
+	}
+
+	return nil
+}
+
+//IssueAsset issue asset
+func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, number uint64, curForkID uint64) (uint64, error) {
+	//check owner valid
+	if curForkID >= params.ForkID1 {
+		err := am.checkAssetInfoValid(fromName, &asset)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		if !am.ast.IsValidMainAssetBeforeFork(asset.AssetName) {
+			parentAassetID, isValid := am.ast.IsValidSubAssetBeforeFork(fromName, asset.AssetName)
+			if !isValid {
+				return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
+			}
+			assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+			asset.Decimals = assetObj.GetDecimals()
+		}
 	}
 
 	//check owner
@@ -1225,9 +1303,12 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 
 	// check asset contract
 	if len(asset.Contract) > 0 {
-		if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
-			return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
+		if curForkID < params.ForkID1 {
+			if !asset.Contract.IsValid(acctRegExp, accountNameLength) {
+				return 0, fmt.Errorf("account %s is invalid", asset.Contract.String())
+			}
 		}
+
 		f, err := am.GetAccountByName(asset.Contract)
 		if err != nil {
 			return 0, err
@@ -1244,7 +1325,9 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 		return 0, ErrNameIsExist
 	}
 
-	assetID, err := am.ast.IssueAsset(asset.AssetName, number, asset.Symbol, asset.Amount, asset.Decimals, asset.Founder, asset.Owner, asset.UpperLimit, asset.Contract, asset.Description)
+	assetID, err := am.ast.IssueAsset(asset.AssetName, number, curForkID, asset.Symbol,
+		asset.Amount, asset.Decimals, asset.Founder, asset.Owner,
+		asset.UpperLimit, asset.Contract, asset.Description)
 	if err != nil {
 		return 0, err
 	}
@@ -1278,7 +1361,8 @@ func (am *AccountManager) Process(accountManagerContext *types.AccountManagerCon
 func (am *AccountManager) process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error) {
 	action := accountManagerContext.Action
 	number := accountManagerContext.Number
-	fromAccountExtra := make([]common.Name, 0)
+	curForkID := accountManagerContext.CurForkID
+	var fromAccountExtra []common.Name
 	fromAccountExtra = append(fromAccountExtra, accountManagerContext.FromAccountExtra...)
 
 	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
@@ -1300,7 +1384,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.CreateAccount(action.Sender(), acct.AccountName, acct.Founder, number, acct.PublicKey, acct.Description); err != nil {
+		if err := am.CreateAccount(action.Sender(), acct.AccountName, acct.Founder, number, curForkID, acct.PublicKey, acct.Description); err != nil {
 			return nil, err
 		}
 
@@ -1345,7 +1429,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			}
 		}
 
-		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number)
+		assetID, err := am.IssueAsset(action.Sender(), issueAsset, number, curForkID)
 		if err != nil {
 			return nil, err
 		}
