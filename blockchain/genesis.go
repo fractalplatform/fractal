@@ -120,6 +120,9 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 			genesis = DefaultGenesis()
 		}
 		block, err := genesis.Commit(db)
+		if err != nil {
+			return nil, nil, common.Hash{}, err
+		}
 		dfg := dposConfig(genesis.Config)
 		if err := dfg.IsValid(); err != nil {
 			return nil, nil, common.Hash{}, err
