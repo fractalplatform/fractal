@@ -219,6 +219,11 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 	if len(s.peers) == 0 {
 		return
 	}
+	minSend := int(s.txpool.config.MinBroadcast)
+	maxSend := len(s.peers) / int(s.txpool.config.RatioBraodcast)
+	if maxSend < minSend {
+		maxSend = minSend
+	}
 	sendTask := make(map[*peerInfo][]*TransactionWithPath)
 	addToTask := func(name string, peerInfo *peerInfo, txObj *TransactionWithPath) bool {
 		tx := txObj.Tx
@@ -240,7 +245,7 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 		s.cache.ttlCheck(tx)
 		skipedPeers := make(map[string]*peerInfo, len(s.peers))
 		for name, peerInfo := range s.peers {
-			if txSend > 3 {
+			if txSend > maxSend {
 				break
 			}
 			if s.cache.txHadPath(tx, name) {
@@ -252,7 +257,7 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 			}
 		}
 		for name, peerInfo := range skipedPeers {
-			if txSend >= 3 {
+			if txSend >= minSend {
 				break
 			}
 			if addToTask(name, peerInfo, txObj) {

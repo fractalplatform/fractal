@@ -373,6 +373,22 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("ftservice.txpool.resendtime", flags.Lookup("txpool_resendtime"))
 
+	flags.Uint64Var(
+		&ftCfgInstance.FtServiceCfg.TxPool.MinBroadcast,
+		"txpool_minBroadcast",
+		ftCfgInstance.FtServiceCfg.TxPool.MinBroadcast,
+		"Minimum number of nodes for the transaction broadcast",
+	)
+	viper.BindPFlag("ftservice.txpool.minBroadcast", flags.Lookup("txpool_minBroadcast"))
+
+	flags.Uint64Var(
+		&ftCfgInstance.FtServiceCfg.TxPool.RatioBraodcast,
+		"txpool_ratioBraodcast",
+		ftCfgInstance.FtServiceCfg.TxPool.RatioBraodcast,
+		"Ratio of nodes for the transaction broadcast",
+	)
+	viper.BindPFlag("ftservice.txpool.ratioBraodcast", flags.Lookup("txpool_ratioBraodcast"))
+
 	// miner
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.Miner.Start,
