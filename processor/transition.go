@@ -148,7 +148,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.KickedCandidate:
 		fallthrough
 	case actionType == types.ExitTakeOver:
-		internalLogs, err := st.engine.ProcessAction(1, st.evm.Context.BlockNumber.Uint64(),
+		internalLogs, err := st.engine.ProcessAction(st.evm.Context.ForkID, st.evm.Context.BlockNumber.Uint64(),
 			st.evm.ChainConfig(), st.evm.StateDB, st.action)
 		vmerr = err
 		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
@@ -156,6 +156,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		internalLogs, err := st.account.Process(&types.AccountManagerContext{
 			Action:      st.action,
 			Number:      st.evm.Context.BlockNumber.Uint64(),
+			CurForkID:   st.evm.Context.ForkID,
 			ChainConfig: st.chainConfig,
 		})
 		vmerr = err

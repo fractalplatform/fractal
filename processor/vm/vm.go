@@ -71,6 +71,7 @@ type Context struct {
 	Coinbase    common.Name // Provides information for COINBASE
 	GasLimit    uint64      // Provides information for GASLIMIT
 	BlockNumber *big.Int    // Provides information for NUMBER
+	ForkID      uint64      // Provides information for FORKID
 	Time        *big.Int    // Provides information for TIME
 	Difficulty  *big.Int    // Provides information for DIFFICULTY
 }

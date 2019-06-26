@@ -91,7 +91,6 @@ func TestNameUnmarshalJSON(t *testing.T) {
 }
 
 func TestIsChildren(t *testing.T) {
-	length := uint64(31)
 	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{1,8})){0,1}$`)
 
 	type fields struct {
@@ -121,7 +120,7 @@ func TestIsChildren(t *testing.T) {
 	//eg := regexp.MustCompile("^[a-z][a-z0-9]{6,16}(\.[a-z][a-z0-9]{0,16}){0,2}$")
 	for _, tt := range tests {
 
-		if result := tt.fields.from.IsChildren(tt.fields.acct, length); result != tt.exp {
+		if result := tt.fields.from.IsChildren(tt.fields.acct); result != tt.exp {
 			t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
 
 		}
@@ -129,7 +128,6 @@ func TestIsChildren(t *testing.T) {
 }
 
 func TestIsChildren1(t *testing.T) {
-	length := uint64(31)
 	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{2,16})){0,1}(?:\.([a-z0-9]{2,16})){0,1}$`)
 
 	type fields struct {
@@ -157,7 +155,7 @@ func TestIsChildren1(t *testing.T) {
 
 	for _, tt := range tests {
 		if len(FindStringSubmatch(tt.fields.reg, tt.fields.acct.String())) > 1 {
-			if result := tt.fields.from.IsChildren(tt.fields.acct, length); result != tt.exp {
+			if result := tt.fields.from.IsChildren(tt.fields.acct); result != tt.exp {
 				t.Errorf("%q. Account.GetNonce() = %v, want %v", tt.name, result, tt.exp)
 			}
 		} else {
@@ -167,4 +165,5 @@ func TestIsChildren1(t *testing.T) {
 			}
 		}
 	}
+
 }

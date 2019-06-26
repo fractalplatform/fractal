@@ -1,4 +1,14 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.22] - 2019-06-24
+### Forked
+- [ACCOUNTNAME] forkID=1: modify account verification rules,asset contains account prefix
+### Changed
+- [DPOS] modify dpos getepoch api
+- [GENESIS] fix SetupGenesisBlock func return result
+### Added
+- [GENESIS] start node with fork id
+
+
 ## [0.0.21] - 2019-06-15
 ### Fixed
 - [DOWNLOADER] fixed bug that may casue dead loop 
@@ -170,6 +180,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.22]: https://github.com/fractalplatform/fractal/compare/v0.0.21...v0.0.22
 [0.0.21]: https://github.com/fractalplatform/fractal/compare/v0.0.20...v0.0.21
 [0.0.20]: https://github.com/fractalplatform/fractal/compare/v0.0.19...v0.0.20
 [0.0.19]: https://github.com/fractalplatform/fractal/compare/v0.0.18...v0.0.19

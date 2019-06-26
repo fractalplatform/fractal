@@ -21,6 +21,8 @@ import (
 	"math/big"
 	"sync/atomic"
 	"time"
+
+	"github.com/fractalplatform/fractal/params"
 )
 
 // DefaultConfig configures
@@ -150,7 +152,7 @@ func (cfg *Config) nextslot(timestamp uint64) uint64 {
 
 func (cfg *Config) getoffset(timestamp uint64, fid uint64) uint64 {
 	offsetInterval := cfg.blockInterval()
-	if fid >= 1 {
+	if fid >= params.ForkID2 {
 		offsetInterval = 0
 	}
 	offset := uint64(timestamp-offsetInterval-cfg.ReferenceTime) % cfg.epochInterval() % cfg.mepochInterval()

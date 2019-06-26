@@ -30,6 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -191,7 +192,7 @@ func (dpos *Dpos) Author(header *types.Header) (common.Name, error) {
 
 // Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
 func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error {
-	if fid := header.CurForkID(); fid >= 1 {
+	if fid := header.CurForkID(); fid >= params.ForkID2 {
 		return dpos.prepare1(chain, header, txs, receipts, state)
 	}
 	return dpos.prepare0(chain, header, txs, receipts, state)
@@ -511,7 +512,7 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		header.Root = state.IntermediateRoot()
 		return types.NewBlock(header, txs, receipts), nil
 	}
-	if fid := header.CurForkID(); fid >= 1 {
+	if fid := header.CurForkID(); fid >= params.ForkID2 {
 		return dpos.finalize1(chain, header, txs, receipts, state)
 	}
 	return dpos.finalize0(chain, header, txs, receipts, state)
@@ -832,7 +833,7 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 			}
 		}
 
-		if fid > 1 {
+		if fid > params.ForkID2 {
 			epoch := dpos.config.epoch(timestamp)
 			pepoch := dpos.config.epoch(parent.Time.Uint64())
 			if epoch == pepoch {
@@ -930,6 +931,9 @@ func (dpos *Dpos) GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epo
 				break
 			}
 		}
+	} else if t == 3 {
+		//get current epoch time
+		epoch = curEpoch
 	} else {
 		err = errors.New("type error")
 	}

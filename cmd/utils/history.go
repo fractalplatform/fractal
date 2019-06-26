@@ -31,6 +31,8 @@ import "github.com/monax/relic"
 ### Removed
 
 ### Deprecated
+
+### Forked
 */
 
 // History the releases described by version string and changes, newest release first.
@@ -41,6 +43,15 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.22 - 2019-06-24",
+		`### Forked
+- [ACCOUNTNAME] forkID=1: modify account verification rules,asset contains account prefix
+### Changed
+- [DPOS] modify dpos getepoch api
+- [GENESIS] fix SetupGenesisBlock func return result
+### Added
+- [GENESIS] start node with fork id
+`,
 		"0.0.21 - 2019-06-15",
 		`### Fixed
 - [DOWNLOADER] fixed bug that may casue dead loop 

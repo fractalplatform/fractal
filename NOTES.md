@@ -1,11 +1,8 @@
-### Fixed
-- [DOWNLOADER] fixed bug that may casue dead loop 
-- [BLOCKCHAIN] fixed state store irreversible number bug
-- [DPOS] fixed replace rate for candiate
-### Removed
-- [TXPOOL] removed some unused variable in txpool/handler.go
-- [RPC] removed invalid code
+### Forked
+- [ACCOUNTNAME] forkID=1: modify account verification rules,asset contains account prefix
+### Changed
+- [DPOS] modify dpos getepoch api
+- [GENESIS] fix SetupGenesisBlock func return result
 ### Added
-- [TXPOOL] limited the amount of gorouting not greater 1024
-- [GENESIS] add use default block gaslimit and update genesis.json
+- [GENESIS] start node with fork id
 

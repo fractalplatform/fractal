@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -108,7 +109,7 @@ func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stak
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	if fid >= 1 {
+	if fid >= params.ForkID2 {
 		if err := sys.updateState(gstate, prod); err != nil {
 			return err
 		}
@@ -194,7 +195,7 @@ func (sys *System) UpdateCandidate(epoch uint64, candidate string, url string, n
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	if fid >= 1 {
+	if fid >= params.ForkID2 {
 		if err := sys.updateState(gstate, prod); err != nil {
 			return err
 		}
@@ -259,7 +260,7 @@ func (sys *System) UnregCandidate(epoch uint64, candidate string, number uint64,
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	if fid >= 1 {
+	if fid >= params.ForkID2 {
 		if err := sys.updateState(gstate, prod); err != nil {
 			return err
 		}
@@ -425,7 +426,7 @@ func (sys *System) VoteCandidate(epoch uint64, voter string, candidate string, s
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
 
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	if fid >= 1 {
+	if fid >= params.ForkID2 {
 		if err := sys.updateState(gstate, prod); err != nil {
 			return err
 		}
@@ -482,7 +483,7 @@ func (sys *System) KickedCandidate(epoch uint64, candidate string, number uint64
 			return err
 		}
 		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-		if fid >= 1 {
+		if fid >= params.ForkID2 {
 			prod.Type = Black
 			if err := sys.updateState(gstate, prod); err != nil {
 				return err

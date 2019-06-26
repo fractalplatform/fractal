@@ -144,6 +144,11 @@ func (cfg *ChainConfig) Copy() *ChainConfig {
 }
 
 const (
+	//ForkID1 account first name > 12, asset name contain account name
+	ForkID1 = uint64(1)
+	//ForkID2 dpos
+	ForkID2 = uint64(2)
+
 	// NextForkID is the id of next fork
 	NextForkID uint64 = 1
 )
