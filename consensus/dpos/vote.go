@@ -848,9 +848,7 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 						strings.Compare(tprod.Name, sys.config.SystemName) == 0 {
 						continue
 					}
-					if sprod == nil {
-						sprod = tprod
-					} else if more(tprod, prod) {
+					if sprod == nil || more(tprod, sprod) {
 						sprod = tprod
 					}
 				}
