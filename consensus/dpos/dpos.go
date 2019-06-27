@@ -406,7 +406,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 	if header.Number.Uint64() != 1 {
 		dpos.missing(sys, parent.Time.Uint64()+dpos.config.blockInterval(), header.Time.Uint64())
 
-		gstate, err := sys.GetState(epoch)
+		gstate, err := sys.GetState(pepoch)
 		if err != nil {
 			return err
 		}
