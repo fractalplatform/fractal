@@ -40,7 +40,7 @@ type Config struct {
 	ResendTime time.Duration `mapstructure:"resendtime"` // Maximum amount of time  executable transaction are resended
 
 	MinBroadcast   uint64 `mapstructure:"minBroadcast"`
-	RatioBraodcast uint64 `mapstructure:"ratioBroadcast"`
+	RatioBroadcast uint64 `mapstructure:"ratioBroadcast"`
 	GasAssetID     uint64
 }
 
@@ -57,7 +57,7 @@ var DefaultTxPoolConfig = &Config{
 	Lifetime:       3 * time.Hour,
 	ResendTime:     10 * time.Minute,
 	MinBroadcast:   3,
-	RatioBraodcast: 3,
+	RatioBroadcast: 3,
 }
 
 // check checks the provided user configurations and changes anything that's

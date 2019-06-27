@@ -382,12 +382,12 @@ func addFlags(flags *flag.FlagSet) {
 	viper.BindPFlag("ftservice.txpool.minBroadcast", flags.Lookup("txpool_minBroadcast"))
 
 	flags.Uint64Var(
-		&ftCfgInstance.FtServiceCfg.TxPool.RatioBraodcast,
-		"txpool_ratioBraodcast",
-		ftCfgInstance.FtServiceCfg.TxPool.RatioBraodcast,
+		&ftCfgInstance.FtServiceCfg.TxPool.RatioBroadcast,
+		"txpool_ratioBroadcast",
+		ftCfgInstance.FtServiceCfg.TxPool.RatioBroadcast,
 		"Ratio of nodes for the transaction broadcast",
 	)
-	viper.BindPFlag("ftservice.txpool.ratioBraodcast", flags.Lookup("txpool_ratioBraodcast"))
+	viper.BindPFlag("ftservice.txpool.ratioBroadcast", flags.Lookup("txpool_ratioBroadcast"))
 
 	// miner
 	flags.BoolVar(

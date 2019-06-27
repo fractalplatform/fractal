@@ -220,7 +220,7 @@ func (s *TxpoolStation) broadcast(txs []*types.Transaction) {
 		return
 	}
 	minSend := int(s.txpool.config.MinBroadcast)
-	maxSend := len(s.peers) / int(s.txpool.config.RatioBraodcast)
+	maxSend := len(s.peers) / int(s.txpool.config.RatioBroadcast)
 	if maxSend < minSend {
 		maxSend = minSend
 	}
