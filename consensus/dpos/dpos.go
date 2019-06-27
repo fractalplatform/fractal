@@ -427,7 +427,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 	// replace
 	pmepoch := (parent.Time.Uint64() - dpos.config.epochTimeStamp(pepoch)) / dpos.config.mepochInterval() / dpos.config.minMEpoch()
 	mepoch := (header.Time.Uint64() - dpos.config.epochTimeStamp(epoch)) / dpos.config.mepochInterval() / dpos.config.minMEpoch()
-	if pmepoch != mepoch {
+	if pepoch != epoch || pmepoch != mepoch {
 		gstate, err := sys.GetState(epoch)
 		if err != nil {
 			return err
@@ -452,7 +452,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 				return err
 			}
 			tcandidate := candidate.copy()
-			for timestamp := header.Time.Uint64() - dpos.config.blockInterval(); timestamp < parent.Time.Uint64(); timestamp -= dpos.config.blockInterval() {
+			for timestamp := header.Time.Uint64() - dpos.config.blockInterval(); timestamp > parent.Time.Uint64(); timestamp -= dpos.config.blockInterval() {
 				if (timestamp-dpos.config.epochTimeStamp(dpos.config.epoch(timestamp)))/dpos.config.mepochInterval()/dpos.config.minMEpoch() == pmepoch {
 					break
 				}
