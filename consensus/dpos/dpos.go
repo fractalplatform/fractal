@@ -405,23 +405,23 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 
 	if header.Number.Uint64() != 1 {
 		dpos.missing(sys, parent.Time.Uint64()+dpos.config.blockInterval(), header.Time.Uint64())
+
+		gstate, err := sys.GetState(epoch)
+		if err != nil {
+			return err
+		}
+		if dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval() {
+			if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
+				gstate.TakeOver = true
+				if err := sys.SetState(gstate); err != nil {
+					return err
+				}
+			}
+		}
 	}
 	sys.UpdateElectedCandidates1(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
 	if header.Number.Uint64() != 1 && pepoch != epoch {
 		dpos.missing(sys, dpos.config.epoch(epoch), header.Time.Uint64())
-	}
-
-	gstate, err := sys.GetState(epoch)
-	if err != nil {
-		return err
-	}
-	if dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval() {
-		if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
-			gstate.TakeOver = true
-			if err := sys.SetState(gstate); err != nil {
-				return err
-			}
-		}
 	}
 
 	// replace
