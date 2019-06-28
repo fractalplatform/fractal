@@ -988,29 +988,29 @@ func (dpos *Dpos) GetActivedCandidateSize(state *state.StateDB, epoch uint64) (u
 }
 
 // GetActivedCandidate get actived candidate info
-func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (string, *big.Int, *big.Int, uint64, uint64, uint64, error) {
+func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (string, *big.Int, *big.Int, uint64, uint64, uint64, bool, error) {
 	sys := NewSystem(state, dpos.config)
 	gstate, err := sys.GetState(epoch)
 	if err != nil {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, false, err
 	}
 	pstate, err := sys.GetState(gstate.PreEpoch)
 	if err != nil {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, false, err
 	}
 	if index >= uint64(len(pstate.ActivatedCandidateSchedule)) {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, fmt.Errorf("out of index")
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, false, fmt.Errorf("out of index")
 	}
 	candidate := pstate.ActivatedCandidateSchedule[index]
 
 	prevCandidateInfo, err := sys.GetCandidate(gstate.PreEpoch, candidate)
 	if err != nil {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, false, err
 	}
 
 	candidateInfo, err := sys.GetCandidate(gstate.Epoch, candidate)
 	if err != nil {
-		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, err
+		return "", big.NewInt(0), big.NewInt(0), 0, 0, 0, false, err
 	}
 
 	if prevCandidateInfo == nil {
@@ -1034,7 +1034,25 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epoch uint64, index 
 		rindex = pstate.BadCandidateIndexSchedule[index-dpos.config.CandidateScheduleSize] + 1
 	}
 
-	return candidate, new(big.Int).Mul(prevCandidateInfo.Quantity, sys.config.unitStake()), new(big.Int).Mul(prevCandidateInfo.TotalQuantity, sys.config.unitStake()), counter, actualCounter, rindex, err
+	isbad := false
+	if index < dpos.config.CandidateScheduleSize {
+		for _, offset := range pstate.BadCandidateIndexSchedule {
+			if index == offset {
+				isbad = true
+				break
+			}
+		}
+	} else if rindex != 0 {
+		for index -= dpos.config.CandidateScheduleSize; index+1 < uint64(len(pstate.BadCandidateIndexSchedule)); index++ {
+			offset := pstate.BadCandidateIndexSchedule[index+1]
+			if rindex-1 == offset {
+				isbad = true
+				break
+			}
+		}
+	}
+
+	return candidate, new(big.Int).Mul(prevCandidateInfo.Quantity, sys.config.unitStake()), new(big.Int).Mul(prevCandidateInfo.TotalQuantity, sys.config.unitStake()), counter, actualCounter, rindex, isbad, err
 }
 
 // GetCandidateStake candidate delegate stake

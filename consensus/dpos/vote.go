@@ -870,12 +870,15 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 					}
 					if sprod == nil || more(tprod, sprod) {
 						sprod = tprod
+						log.Debug("updateState", "candiate invalid", prod.Name, "replace", sprod.Name)
 					}
 				}
 			}
 			if sprod == nil {
+				log.Debug("updateState", "candiate invalid", prod.Name)
 				return nil
 			}
+			log.Debug("updateState", "candiate invalid", prod.Name, "replaced", sprod.Name)
 			prod = sprod
 		}
 

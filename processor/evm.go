@@ -80,7 +80,7 @@ type EngineContext interface {
 
 	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
 
-	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, err error)
+	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, isbad bool, err error)
 
 	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 }
