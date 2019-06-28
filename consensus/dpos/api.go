@@ -273,16 +273,16 @@ func (api *API) CandidatesInfoForBrowser(epoch uint64) (interface{}, error) {
 		candidateInfos.Data[i] = candidateInfo
 	}
 
-	if len(preGstate.OffCandidateSchedule) > 14 {
-		return nil, fmt.Errorf("OffCandidateSchedule count %d > 14", len(preGstate.OffCandidateSchedule))
+	if len(preGstate.BadCandidateIndexSchedule) > 14 {
+		return nil, fmt.Errorf("OffCandidateSchedule count %d > 14", len(preGstate.BadCandidateIndexSchedule))
 	}
-	for i := 0; i < len(preGstate.OffCandidateSchedule); i++ {
+	for i := 0; i < len(preGstate.BadCandidateIndexSchedule); i++ {
 		if i < spare {
 			j := i + activate
-			candidateInfos.Data[preGstate.OffCandidateSchedule[i]].Type = 0
+			candidateInfos.Data[preGstate.BadCandidateIndexSchedule[i]].Type = 0
 			candidateInfos.Data[j].Type = 1
 		} else {
-			candidateInfos.Data[preGstate.OffCandidateSchedule[i]].Type = 0
+			candidateInfos.Data[preGstate.BadCandidateIndexSchedule[i]].Type = 0
 		}
 	}
 	return candidateInfos, nil
