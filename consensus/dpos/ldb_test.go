@@ -345,13 +345,13 @@ func TestLDBGlobalState(t *testing.T) {
 
 	for index := range candidates {
 		gstate := &GlobalState{
-			Epoch:                      uint64(index + 1),
-			PreEpoch:                   uint64(index),
-			ActivatedTotalQuantity:     big.NewInt(0),
-			ActivatedCandidateSchedule: candidates[index:],
-			OffCandidateNumber:         []uint64{},
-			OffCandidateSchedule:       []uint64{},
-			TotalQuantity:              big.NewInt(0),
+			Epoch:                       uint64(index + 1),
+			PreEpoch:                    uint64(index),
+			ActivatedTotalQuantity:      big.NewInt(0),
+			ActivatedCandidateSchedule:  candidates[index:],
+			UsingCandidateIndexSchedule: []uint64{},
+			BadCandidateIndexSchedule:   []uint64{},
+			TotalQuantity:               big.NewInt(0),
 		}
 		if err := db.SetState(gstate); err != nil {
 			panic(fmt.Errorf("SetState --- %v", err))
@@ -372,13 +372,13 @@ func TestLDBGlobalState(t *testing.T) {
 
 	for index := range candidates {
 		gstate := &GlobalState{
-			Epoch:                      uint64(index + 1),
-			PreEpoch:                   uint64(index),
-			ActivatedTotalQuantity:     big.NewInt(0),
-			ActivatedCandidateSchedule: candidates[index:],
-			TotalQuantity:              big.NewInt(0),
-			OffCandidateNumber:         []uint64{},
-			OffCandidateSchedule:       []uint64{},
+			Epoch:                       uint64(index + 1),
+			PreEpoch:                    uint64(index),
+			ActivatedTotalQuantity:      big.NewInt(0),
+			ActivatedCandidateSchedule:  candidates[index:],
+			TotalQuantity:               big.NewInt(0),
+			UsingCandidateIndexSchedule: []uint64{},
+			BadCandidateIndexSchedule:   []uint64{},
 		}
 		if err := db.SetState(gstate); err != nil {
 			panic(fmt.Errorf("Redo SetState --- %v", err))

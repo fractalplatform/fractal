@@ -366,7 +366,7 @@ func (api *API) GetActivedCandidate(epoch uint64, index uint64) (interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	candidate, delegated, voted, scounter, acounter, rindex, err := api.dpos.GetActivedCandidate(state, epoch, index)
+	candidate, delegated, voted, scounter, acounter, rindex, isbad, err := api.dpos.GetActivedCandidate(state, epoch, index)
 	if err != nil {
 		return nil, err
 	}
@@ -378,5 +378,6 @@ func (api *API) GetActivedCandidate(epoch uint64, index uint64) (interface{}, er
 	ret["shouldCount"] = scounter
 	ret["actualCount"] = acounter
 	ret["replaceIndex"] = rindex
+	ret["bad"] = isbad
 	return ret, nil
 }
