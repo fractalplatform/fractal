@@ -123,30 +123,33 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 	return r, err
 }
 
+// checkRangeInputArgs checks the input arguments of
+// GetTxsByAccount,GetTxsByBloom,GetInternalTxByAccount,GetInternalTxByBloom
+func (s *PublicBlockChainAPI) checkRangeInputArgs(blockNr, lookbackNum uint64) error {
+	current_num := s.b.CurrentBlock().Number().Uint64()
+	if blockNr > current_num {
+		return fmt.Errorf("blockNr range err")
+	}
+	if lookbackNum > 128 {
+		return fmt.Errorf("lookbackNum cant bigger than 128")
+	}
+	return nil
+}
+
 // GetTxsByAccount return all txs, sent from or received by a specific account
 // the range is indicate by blockNr and lookbackNum,
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	// check input argments
-	current_num := s.b.CurrentBlock().Number().Uint64()
-	in_block_num := uint64(blockNr)
-	if in_block_num < 0 || in_block_num > current_num {
-		errInfo := fmt.Errorf("blockNr range err")
-		return []common.Hash{}, errInfo
-	}
-	if lookbackNum >= 128 {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than 128")
-		return []common.Hash{}, errInfo
-	}
-	if in_block_num < lookbackNum {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than blockNr")
-		return []common.Hash{}, errInfo
+	ui64BlockNr := uint64(blockNr)
+	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+		return nil, err
 	}
 
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-	return s.b.GetTxsByFilter(ctx, filterFn, in_block_num, lookbackNum), nil
+	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
 }
 
 // GetTxsByBloom return all txs, filtered by a bloomByte
@@ -155,26 +158,16 @@ func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName comm
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
 	// check input argments
-	current_num := s.b.CurrentBlock().Number().Uint64()
-	in_block_num := uint64(blockNr)
-	if in_block_num < 0 || in_block_num > current_num {
-		errInfo := fmt.Errorf("blockNr range err")
-		return []common.Hash{}, errInfo
-	}
-	if lookbackNum >= 128 {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than 128")
-		return []common.Hash{}, errInfo
-	}
-	if in_block_num < lookbackNum {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than blockNr")
-		return []common.Hash{}, errInfo
+	ui64BlockNr := uint64(blockNr)
+	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+		return nil, err
 	}
 
 	bloom := types.BytesToBloom(bloomByte)
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
-	return s.b.GetTxsByFilter(ctx, filterFn, in_block_num, lookbackNum), nil
+	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
 }
 
 // GetInternalTxByAccount return all logs of interal txs, sent from or received by a specific account
@@ -182,25 +175,15 @@ func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexut
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	// check input argments
-	current_num := s.b.CurrentBlock().Number().Uint64()
-	in_block_num := uint64(blockNr)
-	if in_block_num < 0 || in_block_num > current_num {
-		errInfo := fmt.Errorf("blockNr range err")
-		return []*types.DetailTx{}, errInfo
-	}
-	if lookbackNum >= 128 {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than 128")
-		return []*types.DetailTx{}, errInfo
-	}
-	if in_block_num < lookbackNum {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than blockNr")
-		return []*types.DetailTx{}, errInfo
+	ui64BlockNr := uint64(blockNr)
+	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+		return nil, err
 	}
 
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-	return s.b.GetDetailTxByFilter(ctx, filterFn, in_block_num, lookbackNum), nil
+	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
 }
 
 // GetInternalTxByBloom return all logs of interal txs, filtered by a bloomByte
@@ -209,26 +192,16 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	// check input argments
-	current_num := s.b.CurrentBlock().Number().Uint64()
-	in_block_num := uint64(blockNr)
-	if in_block_num < 0 || in_block_num > current_num {
-		errInfo := fmt.Errorf("blockNr range err")
-		return []*types.DetailTx{}, errInfo
-	}
-	if lookbackNum >= 128 {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than 128")
-		return []*types.DetailTx{}, errInfo
-	}
-	if in_block_num < lookbackNum {
-		errInfo := fmt.Errorf("lookbackNum cant bigger than blockNr")
-		return []*types.DetailTx{}, errInfo
+	ui64BlockNr := uint64(blockNr)
+	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+		return nil, err
 	}
 
 	bloom := types.BytesToBloom(bloomByte)
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
-	return s.b.GetDetailTxByFilter(ctx, filterFn, in_block_num, lookbackNum), nil
+	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
 }
 
 // GetInternalTxByHash return logs of interal txs include by a transcastion

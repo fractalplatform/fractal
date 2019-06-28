@@ -117,7 +117,12 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 }
 
 func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []common.Hash {
-	lastnum := blockNr - lookbackNum
+	var lastnum uint64
+	if lookbackNum > blockNr {
+		lastnum = 0
+	} else {
+		lastnum = blockNr - lookbackNum
+	}
 	txHashs := make([]common.Hash, 0)
 	for ublocknum := blockNr; ublocknum > lastnum; ublocknum-- {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
@@ -145,7 +150,12 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 }
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
-	lastnum := blockNr - lookbackNum
+	var lastnum uint64
+	if lookbackNum > blockNr {
+		lastnum = 0
+	} else {
+		lastnum = blockNr - lookbackNum
+	}
 	txdetails := make([]*types.DetailTx, 0)
 
 	for ublocknum := blockNr; ublocknum > lastnum; ublocknum-- {
