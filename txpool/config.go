@@ -92,5 +92,9 @@ func (config *Config) check() Config {
 		log.Warn("Sanitizing invalid txpool lifetime", "provided", conf.Lifetime, "updated", DefaultTxPoolConfig.Lifetime)
 		conf.Lifetime = DefaultTxPoolConfig.Lifetime
 	}
+	if conf.ResendTime < 1 {
+		log.Warn("Sanitizing invalid txpool resendtime", "provided", conf.ResendTime, "updated", DefaultTxPoolConfig.ResendTime)
+		conf.ResendTime = DefaultTxPoolConfig.ResendTime
+	}
 	return conf
 }

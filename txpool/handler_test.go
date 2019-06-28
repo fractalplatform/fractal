@@ -172,7 +172,7 @@ func TestP2PTxMsg(t *testing.T) {
 
 	// trigger state change in the background
 	trigger = true
-	pool.lockedReset(nil, nil)
+	pool.requestReset(nil, nil)
 
 	_, err = pool.Pending()
 	if err != nil {
