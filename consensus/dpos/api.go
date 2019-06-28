@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strconv"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/rpc"
 )
@@ -214,6 +216,76 @@ func (api *API) ValidCandidates(epoch uint64) (interface{}, error) {
 		return nil, err
 	}
 	return sys.GetState(gstate.PreEpoch)
+}
+
+func (api *API) CandidatesInfoForBrowser(epoch uint64) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	gstate, err := sys.GetState(epoch)
+	if err != nil {
+		return nil, err
+	}
+
+	timestamp := sys.config.epochTimeStamp(gstate.PreEpoch)
+	preGstate, err := sys.GetState(gstate.PreEpoch)
+	if err != nil {
+		return nil, err
+	}
+
+	candidateInfos := ArrayCandidateInfoForBrowser{}
+	candidateInfos.Data = make([]*CandidateInfoForBrowser, len(preGstate.ActivatedCandidateSchedule))
+
+	copyCandidate := make([]string, len(preGstate.ActivatedCandidateSchedule))
+	var spare = 7
+	var activate = 21
+	for i, activatedCandidate := range preGstate.ActivatedCandidateSchedule {
+		//backup
+		copyCandidate[i] = activatedCandidate
+
+		candidateInfo := &CandidateInfoForBrowser{}
+		candidateInfo.Candidate = activatedCandidate
+
+		tmp, err := sys.GetCandidate(gstate.PreEpoch, activatedCandidate)
+		if err != nil {
+			return nil, err
+		}
+		candidateInfo.Quantity = strconv.FormatInt(tmp.Quantity.Int64(), 10)
+		candidateInfo.TotalQuantity = strconv.FormatInt(tmp.TotalQuantity.Int64(), 10)
+		candidateInfo.Counter = tmp.Counter
+		candidateInfo.ActualCounter = tmp.ActualCounter
+		if i < activate {
+			candidateInfo.Type = 1
+		} else {
+			candidateInfo.Type = 2
+		}
+		// candidateInfo.Type
+		if balance, err := sys.GetBalanceByTime(activatedCandidate, timestamp); err != nil {
+			log.Warn("CandidatesInfoForBrowser", "candidate", activatedCandidate, "ignore", err)
+			return nil, err
+		} else {
+			candidateInfo.Holder = strconv.FormatInt(balance.Int64(), 10)
+		}
+		candidateInfos.Data[i] = candidateInfo
+	}
+
+	if len(preGstate.OffCandidateSchedule) > 14 {
+		return nil, fmt.Errorf("OffCandidateSchedule count %d > 14", len(preGstate.OffCandidateSchedule))
+	}
+	for i := 0; i < len(preGstate.OffCandidateSchedule); i++ {
+		if i < spare {
+			j := i + activate
+			candidateInfos.Data[preGstate.OffCandidateSchedule[i]].Type = 0
+			candidateInfos.Data[j].Type = 1
+		} else {
+			candidateInfos.Data[preGstate.OffCandidateSchedule[i]].Type = 0
+		}
+	}
+	return candidateInfos, nil
 }
 
 // SnapShotTime get snapshot timestamp
