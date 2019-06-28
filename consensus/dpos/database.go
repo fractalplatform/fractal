@@ -163,16 +163,32 @@ func (voter *VoterInfo) key() string {
 
 // GlobalState dpos state
 type GlobalState struct {
-	Epoch                      uint64   `json:"epoch"`                      // epoch
-	PreEpoch                   uint64   `json:"preEpoch"`                   // epoch
-	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
-	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
-	OffCandidateSchedule       []uint64 `json:"offCandidateSchedule"`       // activated backup candidates
-	OffCandidateNumber         []uint64 `json:"offCandidateNumber"`         // activated backup candidates
-	TotalQuantity              *big.Int `json:"totalQuantity"`              // the sum of all candidate votes
-	TakeOver                   bool     `json:"takeOver"`                   // systemio take over dpos
-	Dpos                       bool     `json:"dpos"`                       // dpos status
-	Number                     uint64   `json:"number"`                     // timestamp
+	Epoch                       uint64   `json:"epoch"`                       // epoch
+	PreEpoch                    uint64   `json:"preEpoch"`                    // epoch
+	ActivatedCandidateSchedule  []string `json:"activatedCandidateSchedule"`  // candidates
+	ActivatedTotalQuantity      *big.Int `json:"activatedTotalQuantity"`      // the sum of activate candidate votes
+	BadCandidateIndexSchedule   []uint64 `json:"badCandidateIndexSchedule"`   // activated backup candidates
+	UsingCandidateIndexSchedule []uint64 `json:"usingCandidateIndexSchedule"` // activated backup candidates
+	TotalQuantity               *big.Int `json:"totalQuantity"`               // the sum of all candidate votes
+	TakeOver                    bool     `json:"takeOver"`                    // systemio take over dpos
+	Dpos                        bool     `json:"dpos"`                        // dpos status
+	Number                      uint64   `json:"number"`                      // timestamp
+}
+
+// ArrayCandidateInfoForBrowser dpos state
+type ArrayCandidateInfoForBrowser struct {
+	Data []*CandidateInfoForBrowser `json:"data"`
+}
+
+// CandidateInfoForBrowser dpos state
+type CandidateInfoForBrowser struct {
+	Candidate     string `json:"candidate"`
+	Holder        string `json:"holder"`
+	Quantity      string `json:"quantity"`
+	TotalQuantity string `json:"totalQuantity"`
+	Counter       uint64 `json:"shouldCounter"`
+	ActualCounter uint64 `json:"actualCounter"`
+	Type          uint64 `json:"type"` //0:die 1:activate 2:spare
 }
 
 // CandidateInfoArray array of candidate

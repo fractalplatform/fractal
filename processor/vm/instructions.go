@@ -1084,7 +1084,7 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	id := epochID.Uint64()
 	i := index.Uint64()
 	//
-	name, stake, totalVote, counter, actualCounter, replace, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
+	name, stake, totalVote, counter, actualCounter, replace, isbad, err := evm.Context.GetActivedCandidate(evm.StateDB, id, i)
 	//
 	if err == nil {
 		id, err := evm.AccountDB.GetAccountIDByName(common.Name(name))
@@ -1095,6 +1095,7 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
 			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
 			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
+			_ = isbad
 			return nil, nil
 		}
 	}

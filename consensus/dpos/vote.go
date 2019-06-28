@@ -609,14 +609,14 @@ func (sys *System) UpdateElectedCandidates0(pepoch uint64, epoch uint64, number 
 
 	if pepoch != epoch {
 		gstate := &GlobalState{
-			Epoch:                  epoch,
-			PreEpoch:               pstate.Epoch,
-			ActivatedTotalQuantity: big.NewInt(0),
-			TotalQuantity:          new(big.Int).SetBytes(ntotalQuantity.Bytes()),
-			OffCandidateNumber:     []uint64{},
-			OffCandidateSchedule:   []uint64{},
-			TakeOver:               pstate.TakeOver,
-			Dpos:                   pstate.Dpos,
+			Epoch:                       epoch,
+			PreEpoch:                    pstate.Epoch,
+			ActivatedTotalQuantity:      big.NewInt(0),
+			TotalQuantity:               new(big.Int).SetBytes(ntotalQuantity.Bytes()),
+			UsingCandidateIndexSchedule: []uint64{},
+			BadCandidateIndexSchedule:   []uint64{},
+			TakeOver:                    pstate.TakeOver,
+			Dpos:                        pstate.Dpos,
 		}
 		if err := sys.SetLastestEpoch(epoch); err != nil {
 			return err
@@ -658,15 +658,15 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 		tcandidateInfoArray := CandidateInfoArray{}
 		gstate := &GlobalState{
-			Epoch:                  epoch,
-			PreEpoch:               pepoch,
-			ActivatedTotalQuantity: big.NewInt(0),
-			TotalQuantity:          big.NewInt(0),
-			OffCandidateNumber:     []uint64{},
-			OffCandidateSchedule:   []uint64{},
-			TakeOver:               pstate.TakeOver,
-			Dpos:                   pstate.Dpos,
-			Number:                 number,
+			Epoch:                       epoch,
+			PreEpoch:                    pepoch,
+			ActivatedTotalQuantity:      big.NewInt(0),
+			TotalQuantity:               big.NewInt(0),
+			UsingCandidateIndexSchedule: []uint64{},
+			BadCandidateIndexSchedule:   []uint64{},
+			TakeOver:                    pstate.TakeOver,
+			Dpos:                        pstate.Dpos,
+			Number:                      number,
 		}
 		for _, candidateInfo := range candidateInfoArray {
 			// if !gstate.Dpos &&
@@ -706,13 +706,13 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, sysCandidate.TotalQuantity)
 	}
 	tstate := &GlobalState{
-		Epoch:                  math.MaxUint64,
-		PreEpoch:               math.MaxUint64,
-		ActivatedTotalQuantity: big.NewInt(0),
-		TotalQuantity:          big.NewInt(0),
-		OffCandidateNumber:     []uint64{},
-		OffCandidateSchedule:   []uint64{},
-		Number:                 0,
+		Epoch:                       math.MaxUint64,
+		PreEpoch:                    math.MaxUint64,
+		ActivatedTotalQuantity:      big.NewInt(0),
+		TotalQuantity:               big.NewInt(0),
+		UsingCandidateIndexSchedule: []uint64{},
+		BadCandidateIndexSchedule:   []uint64{},
+		Number:                      0,
 	}
 	for _, candidateInfo := range candidateInfoArray {
 		if !candidateInfo.invalid() {
@@ -739,6 +739,8 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
 				activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+			} else if pstate.Dpos {
+				break
 			}
 		}
 	}
@@ -747,7 +749,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		if init := len(activatedCandidateSchedule); init > 0 {
 			index := 0
 			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
-				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
+				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index%init])
 				index++
 			}
 		}
@@ -758,6 +760,12 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
+	for index := range pstate.ActivatedCandidateSchedule {
+		if uint64(index) >= sys.config.CandidateScheduleSize {
+			break
+		}
+		pstate.UsingCandidateIndexSchedule = append(pstate.UsingCandidateIndexSchedule, uint64(index))
+	}
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
@@ -791,6 +799,15 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 	return q, nil
 }
 
+func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
+	size := uint64(len(gstate.UsingCandidateIndexSchedule))
+	if offset >= size {
+		return ""
+	}
+	index := gstate.UsingCandidateIndexSchedule[offset]
+	return gstate.ActivatedCandidateSchedule[index]
+}
+
 func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 	if prod.Quantity.Sign() == 0 ||
 		strings.Compare(prod.Name, sys.config.SystemName) == 0 {
@@ -821,18 +838,20 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 
 		if prod.invalid() {
 			has := false
+			findex := 0
 			names := map[string]bool{}
 			for index, name := range gstate.ActivatedCandidateSchedule {
+				names[name] = true
 				if strings.Compare(name, prod.Name) == 0 {
-					gstate.ActivatedTotalQuantity = new(big.Int).Sub(gstate.ActivatedTotalQuantity, prod.TotalQuantity)
-					gstate.ActivatedCandidateSchedule = append(gstate.ActivatedCandidateSchedule[:index], gstate.ActivatedCandidateSchedule[index+1:]...)
+					findex = index
 					has = true
 				}
-				names[name] = true
 			}
 			if !has {
 				return nil
 			}
+			gstate.ActivatedTotalQuantity = new(big.Int).Sub(gstate.ActivatedTotalQuantity, prod.TotalQuantity)
+			gstate.ActivatedCandidateSchedule = append(gstate.ActivatedCandidateSchedule[:findex], gstate.ActivatedCandidateSchedule[findex+1:]...)
 
 			candidateInfoArray, err := sys.GetCandidates(prod.Epoch)
 			if err != nil {
@@ -850,12 +869,15 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 					}
 					if sprod == nil || more(tprod, sprod) {
 						sprod = tprod
+						log.Debug("updateState", "candiate invalid", prod.Name, "replace", sprod.Name)
 					}
 				}
 			}
 			if sprod == nil {
+				log.Debug("updateState", "candiate invalid", prod.Name)
 				return nil
 			}
+			log.Debug("updateState", "candiate invalid", prod.Name, "replaced", sprod.Name)
 			prod = sprod
 		}
 
