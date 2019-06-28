@@ -116,10 +116,10 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
-	lastnum := uint64(blockNr) - lookbackNum
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []common.Hash {
+	lastnum := blockNr - lookbackNum
 	txHashs := make([]common.Hash, 0)
-	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+	for ublocknum := blockNr; ublocknum > lastnum; ublocknum-- {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
 		if hash == (common.Hash{}) {
 			continue
@@ -144,11 +144,11 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 	return txHashs
 }
 
-func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
-	lastnum := uint64(blockNr) - lookbackNum
+func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
+	lastnum := blockNr - lookbackNum
 	txdetails := make([]*types.DetailTx, 0)
 
-	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+	for ublocknum := blockNr; ublocknum > lastnum; ublocknum-- {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
 		if hash == (common.Hash{}) {
 			continue
