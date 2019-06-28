@@ -802,6 +802,7 @@ func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 			}
 			size++
 			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
+			sys.SetState(gstate)
 		}
 	}
 	if offset >= size {
