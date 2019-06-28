@@ -609,14 +609,14 @@ func (sys *System) UpdateElectedCandidates0(pepoch uint64, epoch uint64, number 
 
 	if pepoch != epoch {
 		gstate := &GlobalState{
-			Epoch:                  epoch,
-			PreEpoch:               pstate.Epoch,
-			ActivatedTotalQuantity: big.NewInt(0),
-			TotalQuantity:          new(big.Int).SetBytes(ntotalQuantity.Bytes()),
-			OffCandidateNumber:     []uint64{},
-			OffCandidateSchedule:   []uint64{},
-			TakeOver:               pstate.TakeOver,
-			Dpos:                   pstate.Dpos,
+			Epoch:                       epoch,
+			PreEpoch:                    pstate.Epoch,
+			ActivatedTotalQuantity:      big.NewInt(0),
+			TotalQuantity:               new(big.Int).SetBytes(ntotalQuantity.Bytes()),
+			UsingCandidateIndexSchedule: []uint64{},
+			BadCandidateIndexSchedule:   []uint64{},
+			TakeOver:                    pstate.TakeOver,
+			Dpos:                        pstate.Dpos,
 		}
 		if err := sys.SetLastestEpoch(epoch); err != nil {
 			return err
@@ -658,15 +658,15 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 		tcandidateInfoArray := CandidateInfoArray{}
 		gstate := &GlobalState{
-			Epoch:                  epoch,
-			PreEpoch:               pepoch,
-			ActivatedTotalQuantity: big.NewInt(0),
-			TotalQuantity:          big.NewInt(0),
-			OffCandidateNumber:     []uint64{},
-			OffCandidateSchedule:   []uint64{},
-			TakeOver:               pstate.TakeOver,
-			Dpos:                   pstate.Dpos,
-			Number:                 number,
+			Epoch:                       epoch,
+			PreEpoch:                    pepoch,
+			ActivatedTotalQuantity:      big.NewInt(0),
+			TotalQuantity:               big.NewInt(0),
+			UsingCandidateIndexSchedule: []uint64{},
+			BadCandidateIndexSchedule:   []uint64{},
+			TakeOver:                    pstate.TakeOver,
+			Dpos:                        pstate.Dpos,
+			Number:                      number,
 		}
 		for _, candidateInfo := range candidateInfoArray {
 			// if !gstate.Dpos &&
@@ -706,13 +706,13 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, sysCandidate.TotalQuantity)
 	}
 	tstate := &GlobalState{
-		Epoch:                  math.MaxUint64,
-		PreEpoch:               math.MaxUint64,
-		ActivatedTotalQuantity: big.NewInt(0),
-		TotalQuantity:          big.NewInt(0),
-		OffCandidateNumber:     []uint64{},
-		OffCandidateSchedule:   []uint64{},
-		Number:                 0,
+		Epoch:                       math.MaxUint64,
+		PreEpoch:                    math.MaxUint64,
+		ActivatedTotalQuantity:      big.NewInt(0),
+		TotalQuantity:               big.NewInt(0),
+		UsingCandidateIndexSchedule: []uint64{},
+		BadCandidateIndexSchedule:   []uint64{},
+		Number:                      0,
 	}
 	for _, candidateInfo := range candidateInfoArray {
 		if !candidateInfo.invalid() {
@@ -739,6 +739,8 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 			if uint64(len(activatedCandidateSchedule)) < n {
 				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
 				activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+			} else if pstate.Dpos {
+				break
 			}
 		}
 	}
@@ -789,6 +791,24 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 		q = quantity
 	}
 	return q, nil
+}
+
+func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
+	size := uint64(len(gstate.UsingCandidateIndexSchedule))
+	if size == 0 && len(gstate.BadCandidateIndexSchedule) == 0 {
+		for index := range gstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			size++
+			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
+		}
+	}
+	if offset >= size {
+		return ""
+	}
+	index := gstate.UsingCandidateIndexSchedule[offset]
+	return gstate.ActivatedCandidateSchedule[index]
 }
 
 func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
