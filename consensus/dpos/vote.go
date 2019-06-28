@@ -841,18 +841,20 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 
 		if prod.invalid() {
 			has := false
+			findex := 0
 			names := map[string]bool{}
 			for index, name := range gstate.ActivatedCandidateSchedule {
+				names[name] = true
 				if strings.Compare(name, prod.Name) == 0 {
-					gstate.ActivatedTotalQuantity = new(big.Int).Sub(gstate.ActivatedTotalQuantity, prod.TotalQuantity)
-					gstate.ActivatedCandidateSchedule = append(gstate.ActivatedCandidateSchedule[:index], gstate.ActivatedCandidateSchedule[index+1:]...)
+					findex = index
 					has = true
 				}
-				names[name] = true
 			}
 			if !has {
 				return nil
 			}
+			gstate.ActivatedTotalQuantity = new(big.Int).Sub(gstate.ActivatedTotalQuantity, prod.TotalQuantity)
+			gstate.ActivatedCandidateSchedule = append(gstate.ActivatedCandidateSchedule[:findex], gstate.ActivatedCandidateSchedule[findex+1:]...)
 
 			candidateInfoArray, err := sys.GetCandidates(prod.Epoch)
 			if err != nil {
