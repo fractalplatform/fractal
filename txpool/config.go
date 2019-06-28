@@ -96,5 +96,9 @@ func (config *Config) check() Config {
 		log.Warn("Sanitizing invalid txpool lifetime", "provided", conf.Lifetime, "updated", DefaultTxPoolConfig.Lifetime)
 		conf.Lifetime = DefaultTxPoolConfig.Lifetime
 	}
+	if conf.RatioBroadcast < 1 {
+		log.Warn("Sanitizing invalid txpool ratiobroadcast", "provided", conf.RatioBroadcast, "updated", DefaultTxPoolConfig.RatioBroadcast)
+		conf.RatioBroadcast = DefaultTxPoolConfig.RatioBroadcast
+	}
 	return conf
 }
