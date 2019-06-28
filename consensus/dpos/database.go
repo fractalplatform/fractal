@@ -175,6 +175,22 @@ type GlobalState struct {
 	Number                      uint64   `json:"number"`                      // timestamp
 }
 
+// ArrayCandidateInfoForBrowser dpos state
+type ArrayCandidateInfoForBrowser struct {
+	Data []*CandidateInfoForBrowser `json:"data"`
+}
+
+// CandidateInfoForBrowser dpos state
+type CandidateInfoForBrowser struct {
+	Candidate     string `json:"candidate"`
+	Holder        string `json:"holder"`
+	Quantity      string `json:"quantity"`
+	TotalQuantity string `json:"totalQuantity"`
+	Counter       uint64 `json:"shouldCounter"`
+	ActualCounter uint64 `json:"actualCounter"`
+	Type          uint64 `json:"type"` //0:die 1:activate 2:spare
+}
+
 // CandidateInfoArray array of candidate
 type CandidateInfoArray []*CandidateInfo
 
