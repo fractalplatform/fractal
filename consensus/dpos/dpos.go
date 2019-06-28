@@ -472,7 +472,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 					scnt := tcandidate.Counter - ptcandidate.Counter
 					acnt := tcandidate.ActualCounter - ptcandidate.ActualCounter
 					log.Debug("replace check", "num", header.Number.Uint64(), "epoch", epoch, "mepoch", mepoch, "candidate", tname, "scnt", scnt, "acnt", acnt)
-					if scnt >= acnt+scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
+					if scnt > acnt+scnt/2 && uint64(len(pstate.OffCandidateSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
 						pstate.OffCandidateSchedule = append(pstate.OffCandidateSchedule, uint64(index))
 						rname := pstate.ActivatedCandidateSchedule[uint64(len(pstate.OffCandidateSchedule)-1)+dpos.config.CandidateScheduleSize]
 						log.Info("replace checked", "num", header.Number.Uint64(), "epoch", epoch, "mepoch", mepoch, "candidate", tname, "==>rcandidate", rname, "scnt", scnt, "acnt", acnt)
