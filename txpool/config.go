@@ -39,8 +39,8 @@ type Config struct {
 	Lifetime   time.Duration `mapstructure:"lifetime"`   // Maximum amount of time non-executable transaction are queued
 	ResendTime time.Duration `mapstructure:"resendtime"` // Maximum amount of time  executable transaction are resended
 
-	MinBroadcast   uint64 `mapstructure:"minBroadcast"`
-	RatioBroadcast uint64 `mapstructure:"ratioBroadcast"`
+	MinBroadcast   uint64 `mapstructure:"minbroadcast"`   // Minimum number of nodes for the transaction broadcast
+	RatioBroadcast uint64 `mapstructure:"ratiobroadcast"` // Ratio of nodes for the transaction broadcast
 	GasAssetID     uint64
 }
 
