@@ -57,8 +57,8 @@ func TestSharedSecret(t *testing.T) {
 
 func TestCompatibility(t *testing.T) {
 	tests := []struct {
-		netid1 uint
-		netid2 uint
+		netid1 uint64
+		netid2 uint64
 		err    error
 	}{
 		{
@@ -96,8 +96,8 @@ func TestEncHandshake(t *testing.T) {
 
 func TestEncHandshakeErrors(t *testing.T) {
 	tests := []struct {
-		netid1 uint
-		netid2 uint
+		netid1 uint64
+		netid2 uint64
 		err    [2]error
 	}{
 		{
@@ -126,7 +126,7 @@ func TestEncHandshakeErrors(t *testing.T) {
 	}
 }
 
-func testEncHandshake(token []byte, netid1, netid2 uint) error {
+func testEncHandshake(token []byte, netid1, netid2 uint64) error {
 	type result struct {
 		side   string
 		pubkey *ecdsa.PublicKey

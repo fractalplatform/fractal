@@ -77,12 +77,14 @@ func (adaptor *ProtoAdaptor) Start() error {
 	sub2 := router.Subscribe(nil, adaptor.event, router.OneMinuteLimited, nil)
 	adaptor.subs = append(adaptor.subs, sub1, sub2)
 	adaptor.loopWG.Add(1)
-	go adaptor.adaptorEvent()
+	go func() {
+		adaptor.adaptorEvent()
+		adaptor.loopWG.Done()
+	}()
 	return adaptor.Server.Start()
 }
 
 func (adaptor *ProtoAdaptor) adaptorEvent() {
-	defer adaptor.loopWG.Done()
 	timer := time.NewTimer(time.Second)
 	if adaptor.PeerPeriod == 0 || adaptor.MaxPeers == 0 {
 		timer.Stop()
@@ -90,7 +92,6 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 	for {
 		select {
 		case <-adaptor.quit:
-			close(adaptor.event)
 			return
 		case <-timer.C:
 			if adaptor.PeerCount() == adaptor.MaxPeers {
