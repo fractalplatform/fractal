@@ -180,6 +180,7 @@ func (cfg *Config) minBlockCnt() uint64 {
 
 func (cfg *Config) IsValid() error {
 	if minEpochInterval := 2 * cfg.minBlockCnt() * cfg.blockInterval(); cfg.epochInterval() < minEpochInterval {
+		return nil
 		return fmt.Errorf("epoch interval %v invalid (min epoch interval %v)", cfg.epochInterval(), minEpochInterval)
 	}
 	return nil

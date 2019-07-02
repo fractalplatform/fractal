@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"math/rand"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -298,6 +299,8 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 		return nil, err
 	}
 
+	header.Extra = []byte(GenerateAccountName("browser", 10))
+
 	work := &Work{
 		currentHeader:   header,
 		currentState:    state,
@@ -368,6 +371,22 @@ func (worker *Worker) commitNewWork(timestamp int64, quit chan struct{}) (*types
 	block := types.NewBlock(work.currentHeader, work.currentTxs, work.currentReceipts)
 	work.currentBlock = block
 	return block, nil
+}
+
+var (
+	availableChars = "abcdefghijklmnopqrstuvwxyz0123456789"
+)
+
+// GenerateAccountName generate account name
+func GenerateAccountName(namePrefix string, addStrLen int) string {
+	newRandomName := namePrefix
+	size := len(availableChars)
+	rand.Seed(time.Now().UnixNano())
+	for i := 0; i < addStrLen; i++ {
+		index := rand.Intn(10000) % size
+		newRandomName += string(availableChars[index])
+	}
+	return newRandomName
 }
 
 func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPriceAndNonce, interval uint64) error {
