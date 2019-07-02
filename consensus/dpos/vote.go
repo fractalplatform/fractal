@@ -642,17 +642,14 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return nil
 	}
 
-	updateUsing := func(gstate *GlobalState) error {
+	updateUsing := func(gstate *GlobalState) {
+		gstate.UsingCandidateIndexSchedule = []uint64{}
 		for index := range gstate.ActivatedCandidateSchedule {
 			if uint64(index) >= sys.config.CandidateScheduleSize {
 				break
 			}
 			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
 		}
-		if err := sys.SetState(gstate); err != nil {
-			return err
-		}
-		return nil
 	}
 
 	t := time.Now()
@@ -665,7 +662,8 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return err
 	}
 	if pepoch != epoch {
-		if err := updateUsing(pstate); err != nil {
+		updateUsing(pstate)
+		if err := sys.SetState(pstate); err != nil {
 			return err
 		}
 
@@ -778,9 +776,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
 	if pstate.Epoch == pstate.PreEpoch {
-		if err := updateUsing(pstate); err != nil {
-			return err
-		}
+		updateUsing(pstate)
 	}
 	if err := sys.SetState(pstate); err != nil {
 		return err
