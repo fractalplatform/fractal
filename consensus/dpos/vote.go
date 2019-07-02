@@ -760,12 +760,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
-	for index := range pstate.ActivatedCandidateSchedule {
-		if uint64(index) >= sys.config.CandidateScheduleSize {
-			break
-		}
-		pstate.UsingCandidateIndexSchedule = append(pstate.UsingCandidateIndexSchedule, uint64(index))
-	}
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
@@ -801,6 +795,15 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 
 func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 	size := uint64(len(gstate.UsingCandidateIndexSchedule))
+	if size == 0 && len(gstate.BadCandidateIndexSchedule) == 0 {
+		for index := range gstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
+			size++
+		}
+	}
 	if offset >= size {
 		return ""
 	}
