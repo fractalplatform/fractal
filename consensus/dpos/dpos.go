@@ -819,10 +819,15 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		}
 	}
 
-	pstate, err := sys.GetState(gstate.PreEpoch)
-	if err != nil {
-		return err
+	pstate := gstate
+	if sys.config.epoch(timestamp) == sys.config.epoch(parent.Time.Uint64()) {
+		tstate, err := sys.GetState(gstate.PreEpoch)
+		if err != nil {
+			return err
+		}
+		pstate = tstate
 	}
+
 	tname := ""
 	offset := dpos.config.getoffset(timestamp, fid)
 	if fid >= params.ForkID2 {
@@ -883,7 +888,7 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 	}
 
 	if strings.Compare(tname, candidate) != 0 {
-		return fmt.Errorf("%v %v, except %v index %v (%v) ", errInvalidBlockCandidate, candidate, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
+		return fmt.Errorf("%v %v, except %v(%v) index %v (%v epoch) ", errInvalidBlockCandidate, candidate, pstate.ActivatedCandidateSchedule, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
 	}
 	return nil
 }
