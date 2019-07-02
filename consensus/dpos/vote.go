@@ -642,6 +642,20 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return nil
 	}
 
+	sameEpoch := true
+	updateUsing := func(gstate *GlobalState) error {
+		for index := range gstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
+		}
+		if err := sys.SetState(gstate); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	t := time.Now()
 	defer func() {
 		log.Debug("UpdateElectedCandidates1", "pepoch", pepoch, "epoch", epoch, "number", number, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
@@ -652,6 +666,11 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return err
 	}
 	if pepoch != epoch {
+		sameEpoch = false
+		if err := updateUsing(pstate); err != nil {
+			return err
+		}
+
 		// totalQuantity := big.NewInt(0)
 		// quantity := big.NewInt(0)
 		// cnt := uint64(0)
@@ -760,6 +779,11 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
+	if sameEpoch {
+		if err := updateUsing(pstate); err != nil {
+			return err
+		}
+	}
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
@@ -795,15 +819,6 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 
 func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 	size := uint64(len(gstate.UsingCandidateIndexSchedule))
-	if size == 0 && len(gstate.BadCandidateIndexSchedule) == 0 {
-		for index := range gstate.ActivatedCandidateSchedule {
-			if uint64(index) >= sys.config.CandidateScheduleSize {
-				break
-			}
-			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
-			size++
-		}
-	}
 	if offset >= size {
 		return ""
 	}
