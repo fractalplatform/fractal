@@ -228,9 +228,9 @@ func (dpos *Dpos) prepare0(chain consensus.IChainReader, header *types.Header, t
 			if header.Time.Uint64() < etimestamp {
 				etimestamp = header.Time.Uint64()
 			}
-			poffset := dpos.config.getoffset(parent.Time.Uint64(), 0)
+			poffset := dpos.config.getoffset(parent.Time.Uint64(), params.ForkID0)
 			for ; timestamp < etimestamp; timestamp += dpos.config.blockInterval() {
-				coffset := dpos.config.getoffset(timestamp, 0)
+				coffset := dpos.config.getoffset(timestamp, params.ForkID0)
 				if coffset != poffset {
 					if coffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
 						continue
@@ -266,7 +266,7 @@ func (dpos *Dpos) prepare0(chain consensus.IChainReader, header *types.Header, t
 			candidate.ActualCounter++
 			if gstate.TakeOver {
 				candidate.Counter++
-			} else if /*dpos.config.getoffset(parent.Time.Uint64())*/ dpos.config.getoffset(header.Time.Uint64()-dpos.config.blockInterval(), 0) != dpos.config.getoffset(header.Time.Uint64(), 0) ||
+			} else if /*dpos.config.getoffset(parent.Time.Uint64())*/ dpos.config.getoffset(header.Time.Uint64()-dpos.config.blockInterval(), params.ForkID0) != dpos.config.getoffset(header.Time.Uint64(), params.ForkID0) ||
 				strings.Compare(parent.Coinbase.String(), header.Coinbase.String()) != 0 {
 				etimestamp := sys.config.epochTimeStamp(gstate.Epoch+1) + 2*sys.config.blockInterval()
 				c := dpos.config.shouldCounter(header.Time.Uint64(), etimestamp)
@@ -296,9 +296,9 @@ func (dpos *Dpos) prepare0(chain consensus.IChainReader, header *types.Header, t
 				stimestamp = parent.Time.Uint64()
 			}
 
-			poffset := dpos.config.getoffset(stimestamp, 0)
+			poffset := dpos.config.getoffset(stimestamp, params.ForkID0)
 			for stimestamp += dpos.config.blockInterval(); stimestamp < header.Time.Uint64(); stimestamp += dpos.config.blockInterval() {
-				coffset := dpos.config.getoffset(stimestamp, 0)
+				coffset := dpos.config.getoffset(stimestamp, params.ForkID0)
 				if coffset != poffset {
 					if coffset >= uint64(len(pstate.ActivatedCandidateSchedule)) {
 						continue
@@ -365,7 +365,7 @@ func (dpos *Dpos) missing(sys *System, timestamp, etimestamp uint64) error {
 
 	candidates := map[uint64]*CandidateInfo{}
 	for ; timestamp < etimestamp; timestamp += dpos.config.blockInterval() {
-		coffset := dpos.config.getoffset(timestamp, 1)
+		coffset := dpos.config.getoffset(timestamp, params.ForkID2)
 		name := sys.usingCandiate(pstate, coffset)
 		if name == "" {
 			continue
@@ -443,7 +443,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 					if (timestamp-dpos.config.epochTimeStamp(dpos.config.epoch(timestamp)))/dpos.config.mepochInterval()/dpos.config.minMEpoch() == mepoch-1 {
 						break
 					}
-					if dpos.config.getoffset(timestamp, 1) == uint64(offset) {
+					if dpos.config.getoffset(timestamp, params.ForkID2) == uint64(offset) {
 						tcandidate.Counter--
 					}
 				}
@@ -580,12 +580,12 @@ func (dpos *Dpos) finalize0(chain consensus.IChainReader, header *types.Header, 
 				info.ActualCounter++
 
 				pheader := chain.GetHeaderByHash(theader.ParentHash)
-				coffset := dpos.config.getoffset(theader.Time.Uint64(), 0)
-				poffset := dpos.config.getoffset(pheader.Time.Uint64(), 0)
+				coffset := dpos.config.getoffset(theader.Time.Uint64(), params.ForkID0)
+				poffset := dpos.config.getoffset(pheader.Time.Uint64(), params.ForkID0)
 				exit := pheader.Time.Uint64() < timestamp || (pheader.Time.Uint64()-timestamp)/dpos.config.mepochInterval() < mepoch-dpos.config.minMEpoch()
 				if ftimestamp := pheader.Time.Uint64() + dpos.config.blockInterval(); ftimestamp < theader.Time.Uint64() && poffset != coffset {
 					tpoffset := poffset
-					toffset := dpos.config.getoffset(ftimestamp, 0)
+					toffset := dpos.config.getoffset(ftimestamp, params.ForkID0)
 					for {
 						if toffset == coffset {
 							break
@@ -614,7 +614,7 @@ func (dpos *Dpos) finalize0(chain consensus.IChainReader, header *types.Header, 
 							tpoffset = toffset
 						}
 						ftimestamp += dpos.config.blockInterval()
-						toffset = dpos.config.getoffset(ftimestamp, 0)
+						toffset = dpos.config.getoffset(ftimestamp, params.ForkID0)
 					}
 					info.Counter += dpos.config.shouldCounter(ftimestamp, theader.Time.Uint64())
 				}
@@ -841,7 +841,7 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 					if (timestamp-dpos.config.epochTimeStamp(dpos.config.epoch(timestamp)))/dpos.config.mepochInterval()/dpos.config.minMEpoch() == mepoch-1 {
 						break
 					}
-					if dpos.config.getoffset(timestamp, 1) == uint64(offset) {
+					if dpos.config.getoffset(timestamp, params.ForkID2) == uint64(offset) {
 						candidate.Counter--
 					}
 				}
