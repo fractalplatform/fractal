@@ -642,7 +642,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return nil
 	}
 
-	sameEpoch := true
 	updateUsing := func(gstate *GlobalState) error {
 		for index := range gstate.ActivatedCandidateSchedule {
 			if uint64(index) >= sys.config.CandidateScheduleSize {
@@ -666,7 +665,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return err
 	}
 	if pepoch != epoch {
-		sameEpoch = false
 		if err := updateUsing(pstate); err != nil {
 			return err
 		}
@@ -779,7 +777,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
-	if sameEpoch {
+	if pstate.Epoch == pstate.PreEpoch {
 		if err := updateUsing(pstate); err != nil {
 			return err
 		}
