@@ -505,6 +505,15 @@ func (sys *System) ExitTakeOver(epoch uint64, number uint64, fid uint64) error {
 	if err != nil {
 		return err
 	}
+	if fid >= params.ForkID2 {
+		pstate, err := sys.GetState(gstate.PreEpoch)
+		if err != nil {
+			return err
+		}
+		if !pstate.TakeOver {
+			return fmt.Errorf("take over must in diff epoch")
+		}
+	}
 	gstate.TakeOver = false
 	return sys.SetState(gstate)
 }
@@ -827,6 +836,9 @@ func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 		return ""
 	}
 	index := gstate.UsingCandidateIndexSchedule[offset]
+	if index == InvalidIndex {
+		return ""
+	}
 	return gstate.ActivatedCandidateSchedule[index]
 }
 
