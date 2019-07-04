@@ -395,10 +395,6 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		return nil
 	}
 
-	gstate, err := sys.GetState(pepoch)
-	if err != nil {
-		return err
-	}
 	pstate, err := sys.GetState(gstate.PreEpoch)
 	if err != nil {
 		return err
