@@ -187,17 +187,28 @@ type ArrayCandidateInfoForBrowser struct {
 
 // CandidateInfoForBrowser dpos state
 type CandidateInfoForBrowser struct {
-	Candidate     string `json:"candidate"`
-	Holder        string `json:"holder"`
-	Quantity      string `json:"quantity"`
-	TotalQuantity string `json:"totalQuantity"`
-	Counter       uint64 `json:"shouldCounter"`
-	ActualCounter uint64 `json:"actualCounter"`
-	Type          uint64 `json:"type"` //0:die 1:activate 2:spare
+	Candidate        string `json:"candidate"`
+	Holder           string `json:"holder"`
+	Quantity         string `json:"quantity"`
+	TotalQuantity    string `json:"totalQuantity"`
+	Counter          uint64 `json:"shouldCounter"`
+	ActualCounter    uint64 `json:"actualCounter"`
+	NowCounter       uint64 `json:"nowShouldCounter"`
+	NowActualCounter uint64 `json:"nowActualCounter"`
+	Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
 // CandidateInfoArray array of candidate
 type CandidateInfoArray []*CandidateInfo
+
+type Epochs struct {
+	Data []*Epoch `json:"data"`
+}
+
+type Epoch struct {
+	Start uint64 `json:"start"`
+	Epoch uint64 `json:"epoch"`
+}
 
 func (prods CandidateInfoArray) Len() int {
 	return len(prods)
