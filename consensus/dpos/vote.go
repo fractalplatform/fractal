@@ -668,17 +668,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return nil
 	}
 
-	updateUsing := func(gstate *GlobalState) {
-		usingCandidateIndexSchedule := []uint64{}
-		for index := range gstate.ActivatedCandidateSchedule {
-			if uint64(index) >= sys.config.CandidateScheduleSize {
-				break
-			}
-			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
-		}
-		gstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
-	}
-
 	t := time.Now()
 	defer func() {
 		log.Debug("UpdateElectedCandidates1", "pepoch", pepoch, "epoch", epoch, "number", number, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
@@ -689,14 +678,17 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return err
 	}
 	if pepoch != epoch {
-		updateUsing(pstate)
+		usingCandidateIndexSchedule := []uint64{}
+		for index := range pstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+		}
+		pstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		if err := sys.SetState(pstate); err != nil {
 			return err
 		}
-
-		// totalQuantity := big.NewInt(0)
-		// quantity := big.NewInt(0)
-		// cnt := uint64(0)
 
 		tcandidateInfoArray := CandidateInfoArray{}
 		gstate := &GlobalState{
@@ -711,15 +703,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 			Number:                      number,
 		}
 		for _, candidateInfo := range candidateInfoArray {
-			// if !gstate.Dpos &&
-			// 	!candidateInfo.invalid() &&
-			// 	candidateInfo.Quantity.Sign() != 0 &&
-			// 	strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0 {
-			// 	totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.TotalQuantity)
-			// 	quantity = new(big.Int).Add(quantity, candidateInfo.Quantity)
-			// 	cnt++
-			// }
-			// clear vote quantity
 			tcandidateInfo := candidateInfo.copy()
 			tcandidateInfo.Epoch = epoch
 			tcandidateInfo.TotalQuantity = tcandidateInfo.Quantity
@@ -731,10 +714,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 			}
 			tcandidateInfoArray = append(tcandidateInfoArray, tcandidateInfo)
 		}
-		// if !gstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
-		// 	cnt >= n && cnt >= sys.config.ActivatedMinCandidate {
-		// 	gstate.Dpos = true
-		// }
 		candidateInfoArray = tcandidateInfoArray
 		pstate = gstate
 	}
@@ -802,9 +781,6 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
-	if pstate.Epoch == pstate.PreEpoch {
-		updateUsing(pstate)
-	}
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
