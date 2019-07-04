@@ -382,6 +382,9 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		if err := sys.SetState(gstate); err != nil {
 			return err
 		}
+		if err := sys.SetTakeOver(gstate.Epoch); err != nil {
+			return err
+		}
 
 		if candidate, err := sys.GetCandidate(epoch, header.Coinbase.String()); err != nil {
 			return err

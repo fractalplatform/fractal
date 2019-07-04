@@ -53,6 +53,9 @@ var (
 	// VoterHead head
 	VoterHead = "v"
 
+	// TakeOver key
+	TakeOver = "takeover"
+
 	// StateKeyPrefix globalState
 	StateKeyPrefix = "s"
 	// LastestStateKey lastest
@@ -387,6 +390,29 @@ func (db *LDB) GetVotersByVoter(epoch uint64, voter string) ([]*VoterInfo, error
 		nextKey = next.NextKeyForVoter
 	}
 	return voterInfos, nil
+}
+
+// SetTakeOver update activated candidate info
+func (db *LDB) SetTakeOver(epoch uint64) error {
+	if val, err := rlp.EncodeToBytes(epoch); err != nil {
+		return err
+	} else if err := db.Put(TakeOver, val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetTakeOver get activated candidate info
+func (db *LDB) GetTakeOver() (uint64, error) {
+	epoch := uint64(0)
+	if val, err := db.Get(TakeOver); err != nil {
+		return epoch, err
+	} else if val == nil {
+		return epoch, nil
+	} else if err := rlp.DecodeBytes(val, &epoch); err != nil {
+		return epoch, err
+	}
+	return epoch, nil
 }
 
 // SetState set global state info

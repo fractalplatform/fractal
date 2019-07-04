@@ -85,10 +85,10 @@ const (
 const (
 	// KickedCandidate kicked
 	KickedCandidate ActionType = 0x400 + iota
-	// RemoveKickedCandidate kicked
-	RemoveKickedCandidate
 	// ExitTakeOver exit
 	ExitTakeOver
+	// RemoveKickedCandidate kicked
+	RemoveKickedCandidate
 )
 
 const (

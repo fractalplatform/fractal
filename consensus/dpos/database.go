@@ -50,6 +50,9 @@ type IDB interface {
 	SetLastestEpoch(uint64) error
 	GetLastestEpoch() (uint64, error)
 
+	SetTakeOver(uint64) error
+	GetTakeOver() (uint64, error)
+
 	Undelegate(string, *big.Int) (*types.Action, error)
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)

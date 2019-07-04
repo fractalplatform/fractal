@@ -523,11 +523,11 @@ func (sys *System) ExitTakeOver(epoch uint64, number uint64, fid uint64) error {
 		return err
 	}
 	if fid >= params.ForkID2 {
-		pstate, err := sys.GetState(gstate.PreEpoch)
+		epoch, err := sys.GetTakeOver()
 		if err != nil {
 			return err
 		}
-		if !pstate.TakeOver {
+		if gstate.Epoch == epoch {
 			return fmt.Errorf("take over must in diff epoch")
 		}
 	}

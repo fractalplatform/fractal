@@ -133,7 +133,8 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 			return nil, err
 		}
 	case types.KickedCandidate:
-		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+		gstate, _ := sys.GetState(epoch)
+		if gstate.TakeOver == false || strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for kicking candidates")
 		}
 		arg := &KickedCandidate{}
@@ -166,7 +167,8 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 		}
 
 	case types.ExitTakeOver:
-		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+		gstate, _ := sys.GetState(epoch)
+		if gstate.TakeOver == false || strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
 		if err := sys.ExitTakeOver(epoch, number, fid); err != nil {
