@@ -505,6 +505,15 @@ func (sys *System) ExitTakeOver(epoch uint64, number uint64, fid uint64) error {
 	if err != nil {
 		return err
 	}
+	if fid >= params.ForkID2 {
+		pstate, err := sys.GetState(gstate.PreEpoch)
+		if err != nil {
+			return err
+		}
+		if !pstate.TakeOver {
+			return fmt.Errorf("take over must in diff epoch")
+		}
+	}
 	gstate.TakeOver = false
 	return sys.SetState(gstate)
 }
@@ -642,6 +651,17 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return nil
 	}
 
+	updateUsing := func(gstate *GlobalState) {
+		usingCandidateIndexSchedule := []uint64{}
+		for index := range gstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+		}
+		gstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
+	}
+
 	t := time.Now()
 	defer func() {
 		log.Debug("UpdateElectedCandidates1", "pepoch", pepoch, "epoch", epoch, "number", number, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
@@ -652,6 +672,11 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return err
 	}
 	if pepoch != epoch {
+		updateUsing(pstate)
+		if err := sys.SetState(pstate); err != nil {
+			return err
+		}
+
 		// totalQuantity := big.NewInt(0)
 		// quantity := big.NewInt(0)
 		// cnt := uint64(0)
@@ -712,7 +737,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		TotalQuantity:               big.NewInt(0),
 		UsingCandidateIndexSchedule: []uint64{},
 		BadCandidateIndexSchedule:   []uint64{},
-		Number: 0,
+		Number:                      0,
 	}
 	for _, candidateInfo := range candidateInfoArray {
 		if !candidateInfo.invalid() {
@@ -749,7 +774,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		if init := len(activatedCandidateSchedule); init > 0 {
 			index := 0
 			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
-				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
+				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index%init])
 				index++
 			}
 		}
@@ -760,6 +785,9 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 	pstate.ActivatedTotalQuantity = activatedTotalQuantity
+	if pstate.Epoch == pstate.PreEpoch {
+		updateUsing(pstate)
+	}
 	if err := sys.SetState(pstate); err != nil {
 		return err
 	}
@@ -800,15 +828,17 @@ func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 			if uint64(index) >= sys.config.CandidateScheduleSize {
 				break
 			}
-			size++
 			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
-			sys.SetState(gstate)
+			size++
 		}
 	}
 	if offset >= size {
 		return ""
 	}
 	index := gstate.UsingCandidateIndexSchedule[offset]
+	if index == InvalidIndex {
+		return ""
+	}
 	return gstate.ActivatedCandidateSchedule[index]
 }
 
