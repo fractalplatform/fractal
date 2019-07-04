@@ -249,6 +249,8 @@ func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 		fallthrough
 	case types.KickedCandidate:
 		fallthrough
+	case types.RemoveKickedCandidate:
+		fallthrough
 	case types.ExitTakeOver:
 		st.distributeToSystemAccount(common.Name(st.chainConfig.DposName))
 		return

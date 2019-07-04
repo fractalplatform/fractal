@@ -499,6 +499,23 @@ func (sys *System) KickedCandidate(epoch uint64, candidate string, number uint64
 	return sys.SetCandidate(prod)
 }
 
+// RemoveKickedCandidate remove
+func (sys *System) RemoveKickedCandidate(epoch uint64, candidate string, number uint64, fid uint64) error {
+	// name validity
+	prod, err := sys.GetCandidate(epoch, candidate)
+	if prod == nil || err != nil {
+		return err
+	}
+	if prod.Type != Black {
+		return nil
+	}
+
+	if err := sys.DelCandidate(epoch, prod.Name); err != nil {
+		return err
+	}
+	return nil
+}
+
 // ExitTakeOver system exit take over
 func (sys *System) ExitTakeOver(epoch uint64, number uint64, fid uint64) error {
 	gstate, err := sys.GetState(epoch)

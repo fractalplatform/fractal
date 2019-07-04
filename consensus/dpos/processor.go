@@ -50,6 +50,11 @@ type KickedCandidate struct {
 	Candidates []string
 }
 
+// RemoveKickedCandidate remove kicked info
+type RemoveKickedCandidate struct {
+	Candidates []string
+}
+
 // ProcessAction exec action
 func (dpos *Dpos) ProcessAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
@@ -143,6 +148,23 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 				return nil, err
 			}
 		}
+	case types.RemoveKickedCandidate:
+		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+			return nil, fmt.Errorf("no permission for removing candidates")
+		}
+		arg := &RemoveKickedCandidate{}
+		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
+			return nil, err
+		}
+		for _, cadicate := range arg.Candidates {
+			if strings.Compare(cadicate, dpos.config.SystemName) == 0 {
+				continue
+			}
+			if err := sys.RemoveKickedCandidate(epoch, cadicate, number, fid); err != nil {
+				return nil, err
+			}
+		}
+
 	case types.ExitTakeOver:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
