@@ -1096,20 +1096,27 @@ func (dpos *Dpos) GetActivedCandidate(state *state.StateDB, epoch uint64, index 
 
 	isbad := false
 	if index < dpos.config.CandidateScheduleSize {
-		for _, offset := range pstate.BadCandidateIndexSchedule {
-			if index == offset {
-				isbad = true
-				break
+		isbad = pstate.UsingCandidateIndexSchedule[index] == InvalidIndex
+		if isbad == false {
+			for _, offset := range pstate.BadCandidateIndexSchedule {
+				if index == offset {
+					isbad = true
+					break
+				}
 			}
 		}
 	} else if rindex != 0 {
-		for index -= dpos.config.CandidateScheduleSize; index+1 < uint64(len(pstate.BadCandidateIndexSchedule)); index++ {
-			offset := pstate.BadCandidateIndexSchedule[index+1]
-			if rindex-1 == offset {
-				isbad = true
-				break
+		isbad = pstate.UsingCandidateIndexSchedule[rindex-1] == InvalidIndex
+		if isbad == false {
+			for index -= dpos.config.CandidateScheduleSize; index+1 < uint64(len(pstate.BadCandidateIndexSchedule)); index++ {
+				offset := pstate.BadCandidateIndexSchedule[index+1]
+				if rindex-1 == offset {
+					isbad = true
+					break
+				}
 			}
 		}
+
 	}
 
 	return candidate, new(big.Int).Mul(prevCandidateInfo.Quantity, sys.config.unitStake()), new(big.Int).Mul(prevCandidateInfo.TotalQuantity, sys.config.unitStake()), counter, actualCounter, rindex, isbad, err
