@@ -19,6 +19,7 @@ package dpos
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"strings"
 
@@ -160,6 +161,10 @@ type VoterInfo struct {
 func (voter *VoterInfo) key() string {
 	return fmt.Sprintf("0x%x_%s_%s", voter.Epoch, voter.Name, voter.Candidate)
 }
+
+var (
+	InvalidIndex = uint64(math.MaxUint64)
+)
 
 // GlobalState dpos state
 type GlobalState struct {
