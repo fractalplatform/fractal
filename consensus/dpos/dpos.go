@@ -352,7 +352,11 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 	pepoch := dpos.config.epoch(parent.Time.Uint64())
 	epoch := dpos.config.epoch(header.Time.Uint64())
 
-	if header.Number.Uint64() == 1 {
+	gstate, err := sys.GetState(pepoch)
+	if err != nil {
+		return err
+	}
+	if header.Number.Uint64() == 1 || gstate.TakeOver {
 		sys.UpdateElectedCandidates1(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
 		if candidate, err := sys.GetCandidate(epoch, header.Coinbase.String()); err != nil {
 			return err
