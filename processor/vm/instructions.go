@@ -1095,11 +1095,16 @@ func opGetCandidate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 			stack.push(evm.interpreter.intPool.get().SetUint64(counter))
 			stack.push(evm.interpreter.intPool.get().SetUint64(actualCounter))
 			stack.push(evm.interpreter.intPool.get().SetUint64(replace))
-			_ = isbad
+			if isbad {
+				stack.push(evm.interpreter.intPool.get().SetUint64(1))
+			} else {
+				stack.push(evm.interpreter.intPool.get().SetUint64(0))
+			}
 			return nil, nil
 		}
 	}
 
+	stack.push(evm.interpreter.intPool.getZero())
 	stack.push(evm.interpreter.intPool.getZero())
 	stack.push(evm.interpreter.intPool.getZero())
 	stack.push(evm.interpreter.intPool.getZero())
