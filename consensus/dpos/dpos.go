@@ -894,6 +894,14 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 			}
 			pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 			pstate.ActivatedTotalQuantity = activatedTotalQuantity
+			usingCandidateIndexSchedule := []uint64{}
+			for index := range pstate.ActivatedCandidateSchedule {
+				if uint64(index) >= sys.config.CandidateScheduleSize {
+					break
+				}
+				usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+			}
+			pstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		}
 		if sys.config.epoch(timestamp) == pepoch {
 			candidates := map[uint64]*CandidateInfo{}
