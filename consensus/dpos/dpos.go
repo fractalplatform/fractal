@@ -19,6 +19,7 @@ package dpos
 import (
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sort"
 	"strings"
@@ -826,6 +827,75 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 	tname := ""
 	offset := dpos.config.getoffset(timestamp, fid)
 	if fid >= params.ForkID2 {
+		if len(pstate.ActivatedCandidateSchedule) == 0 {
+			n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
+			candidateInfoArray, err := sys.GetCandidates(pstate.Epoch)
+			if err != nil {
+				return err
+			}
+			activatedCandidateSchedule := []string{}
+			activatedTotalQuantity := big.NewInt(0)
+			sort.Sort(candidateInfoArray)
+			if pstate.Dpos {
+				for _, candidateInfo := range candidateInfoArray {
+					if !candidateInfo.invalid() {
+						if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
+							continue
+						}
+						if uint64(len(activatedCandidateSchedule)) >= n {
+							break
+						}
+						activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+						activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+					}
+				}
+			} else {
+				tstate := &GlobalState{
+					Epoch:                       math.MaxUint64,
+					PreEpoch:                    math.MaxUint64,
+					ActivatedTotalQuantity:      big.NewInt(0),
+					TotalQuantity:               big.NewInt(0),
+					UsingCandidateIndexSchedule: []uint64{},
+					BadCandidateIndexSchedule:   []uint64{},
+					Number:                      0,
+				}
+				for _, candidateInfo := range candidateInfoArray {
+					if !candidateInfo.invalid() {
+						if candidateInfo.Quantity.Sign() != 0 && strings.Compare(candidateInfo.Name, sys.config.SystemName) != 0 {
+							tstate.Number++
+							tstate.TotalQuantity = new(big.Int).Add(tstate.TotalQuantity, candidateInfo.TotalQuantity)
+							if uint64(len(tstate.ActivatedCandidateSchedule)) < n {
+								tstate.ActivatedCandidateSchedule = append(tstate.ActivatedCandidateSchedule, candidateInfo.Name)
+								tstate.ActivatedTotalQuantity = new(big.Int).Add(tstate.ActivatedTotalQuantity, candidateInfo.TotalQuantity)
+							}
+							continue
+						}
+						if uint64(len(activatedCandidateSchedule)) < n {
+							activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
+							activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
+						}
+					}
+				}
+
+				if tstate.TotalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
+					tstate.Number >= n &&
+					tstate.Number >= sys.config.ActivatedMinCandidate {
+					pstate.Dpos = true
+					pstate.ActivatedTotalQuantity = tstate.ActivatedTotalQuantity
+					pstate.ActivatedCandidateSchedule = tstate.ActivatedCandidateSchedule
+				} else {
+					if init := len(activatedCandidateSchedule); init > 0 {
+						index := 0
+						for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
+							activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index%init])
+							index++
+						}
+					}
+				}
+			}
+			pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+			pstate.ActivatedTotalQuantity = activatedTotalQuantity
+		}
 		if sys.config.epoch(timestamp) == pepoch {
 			candidates := map[uint64]*CandidateInfo{}
 			mcandidates := map[uint64]*CandidateInfo{}
