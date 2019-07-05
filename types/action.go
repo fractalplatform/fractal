@@ -215,6 +215,8 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		fallthrough
 	case KickedCandidate:
 		fallthrough
+	case RemoveKickedCandidate:
+		fallthrough
 	case ExitTakeOver:
 		if a.data.To.String() != conf.DposName {
 			return fmt.Errorf("Receipt should is %v", conf.DposName)
