@@ -816,17 +816,16 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 	}
 
 	pstate := gstate
-	if sys.config.epoch(timestamp) == sys.config.epoch(parent.Time.Uint64()) {
-		tstate, err := sys.GetState(gstate.PreEpoch)
-		if err != nil {
-			return err
-		}
-		pstate = tstate
-	}
-
 	tname := ""
 	offset := dpos.config.getoffset(timestamp, fid)
 	if fid >= params.ForkID2 {
+		if sys.config.epoch(timestamp) == sys.config.epoch(parent.Time.Uint64()) {
+			tstate, err := sys.GetState(gstate.PreEpoch)
+			if err != nil {
+				return err
+			}
+			pstate = tstate
+		}
 		if len(pstate.ActivatedCandidateSchedule) == 0 {
 			n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
 			candidateInfoArray, err := sys.GetCandidates(pstate.Epoch)
@@ -976,6 +975,10 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		}
 		tname = sys.usingCandiate(pstate, offset)
 	} else {
+		pstate, err := sys.GetState(gstate.PreEpoch)
+		if err != nil {
+			return err
+		}
 		if offset < uint64(len(pstate.ActivatedCandidateSchedule)) {
 			tname = pstate.ActivatedCandidateSchedule[offset]
 			for rindex := len(pstate.BadCandidateIndexSchedule); rindex > 0; rindex-- {
