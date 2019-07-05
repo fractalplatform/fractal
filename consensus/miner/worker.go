@@ -213,7 +213,17 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 			break
 		} else if strings.Contains(err.Error(), "wait") {
-			time.Sleep(time.Duration(cdpos.BlockInterval() / 10))
+			usleep := func(duration time.Duration) {
+				end := time.Now().Add(duration)
+				for {
+					time.Sleep(time.Microsecond)
+					if time.Now().Sub(end) >= 0 {
+						break
+					}
+				}
+			}
+			usleep(time.Duration(cdpos.BlockInterval() / 10))
+			//time.Sleep(time.Duration(cdpos.BlockInterval() / 10))
 		}
 
 		log.Warn("failed to mint block", "timestamp", timestamp, "err", err)

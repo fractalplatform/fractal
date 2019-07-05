@@ -748,6 +748,22 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 		return err
 	}
 	if len(pstate.ActivatedCandidateSchedule) == 0 {
+		ppstate, err := sys.GetState(pstate.PreEpoch)
+		if err != nil {
+			return err
+		}
+		usingCandidateIndexSchedule := []uint64{}
+		for index := range ppstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+		}
+		ppstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
+		if err := sys.SetState(ppstate); err != nil {
+			return err
+		}
+
 		if err := initActivatedCandidateSchedule(pstate, candidateInfoArray); err != nil {
 			return err
 		}
