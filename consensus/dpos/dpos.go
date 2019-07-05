@@ -210,7 +210,8 @@ func (dpos *Dpos) prepare0(chain consensus.IChainReader, header *types.Header, t
 		if err != nil {
 			return err
 		}
-		if dpos.CalcProposedIrreversible(chain, parent, true) == 0 || header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval() {
+		if header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval() ||
+			dpos.CalcProposedIrreversible(chain, parent, true) == 0 {
 			if systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0; systemio {
 				gstate.TakeOver = true
 				if err := sys.SetState(gstate); err != nil {
@@ -372,7 +373,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 	}
 
 	systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0
-	takeover := dpos.CalcProposedIrreversible(chain, parent, true) == 0 && systemio
+	takeover := (header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval() || dpos.CalcProposedIrreversible(chain, parent, true) == 0) && systemio
 	if takeover {
 		sys.UpdateElectedCandidates1(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
 		gstate, err := sys.GetState(epoch)
@@ -1249,11 +1250,11 @@ func (dpos *Dpos) CalcProposedIrreversible(chain consensus.IChainReader, parent 
 	candidateMap := make(map[string]uint64)
 	timestamp := curHeader.Time.Uint64()
 	for curHeader.Number.Uint64() > 0 {
-		if strings.Compare(curHeader.Coinbase.String(), dpos.config.SystemName) == 0 {
-			return curHeader.Number.Uint64()
-		}
 		if strict && timestamp-curHeader.Time.Uint64() >= 2*dpos.config.mepochInterval() {
 			break
+		}
+		if strings.Compare(curHeader.Coinbase.String(), dpos.config.SystemName) == 0 {
+			return curHeader.Number.Uint64()
 		}
 		candidateMap[curHeader.Coinbase.String()]++
 		if uint64(len(candidateMap)) >= dpos.config.consensusSize() {
