@@ -147,6 +147,8 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		fallthrough
 	case actionType == types.KickedCandidate:
 		fallthrough
+	case actionType == types.RemoveKickedCandidate:
+		fallthrough
 	case actionType == types.ExitTakeOver:
 		internalLogs, err := st.engine.ProcessAction(st.evm.Context.ForkID, st.evm.Context.BlockNumber.Uint64(),
 			st.evm.ChainConfig(), st.evm.StateDB, st.action)
