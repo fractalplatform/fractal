@@ -39,21 +39,25 @@ type Config struct {
 	Lifetime   time.Duration `mapstructure:"lifetime"`   // Maximum amount of time non-executable transaction are queued
 	ResendTime time.Duration `mapstructure:"resendtime"` // Maximum amount of time  executable transaction are resended
 
-	GasAssetID uint64
+	MinBroadcast   uint64 `mapstructure:"minbroadcast"`   // Minimum number of nodes for the transaction broadcast
+	RatioBroadcast uint64 `mapstructure:"ratiobroadcast"` // Ratio of nodes for the transaction broadcast
+	GasAssetID     uint64
 }
 
 // DefaultTxPoolConfig default txpool config
 var DefaultTxPoolConfig = &Config{
-	Journal:      "transactions.rlp",
-	Rejournal:    time.Hour,
-	PriceLimit:   1000000000,
-	PriceBump:    10,
-	AccountSlots: 128,
-	GlobalSlots:  4096,
-	AccountQueue: 1280,
-	GlobalQueue:  4096,
-	Lifetime:     3 * time.Hour,
-	ResendTime:   10 * time.Minute,
+	Journal:        "transactions.rlp",
+	Rejournal:      time.Hour,
+	PriceLimit:     1000000000,
+	PriceBump:      10,
+	AccountSlots:   128,
+	GlobalSlots:    4096,
+	AccountQueue:   1280,
+	GlobalQueue:    4096,
+	Lifetime:       3 * time.Hour,
+	ResendTime:     10 * time.Minute,
+	MinBroadcast:   3,
+	RatioBroadcast: 3,
 }
 
 // check checks the provided user configurations and changes anything that's
@@ -95,6 +99,10 @@ func (config *Config) check() Config {
 	if conf.ResendTime < 1 {
 		log.Warn("Sanitizing invalid txpool resendtime", "provided", conf.ResendTime, "updated", DefaultTxPoolConfig.ResendTime)
 		conf.ResendTime = DefaultTxPoolConfig.ResendTime
+	}
+	if conf.RatioBroadcast < 1 {
+		log.Warn("Sanitizing invalid txpool ratiobroadcast", "provided", conf.RatioBroadcast, "updated", DefaultTxPoolConfig.RatioBroadcast)
+		conf.RatioBroadcast = DefaultTxPoolConfig.RatioBroadcast
 	}
 	return conf
 }

@@ -66,7 +66,7 @@ const (
 	// This is shorter than the usual timeout because we don't want
 	// to wait if the connection is known to be bad anyway.
 	discWriteTimeout = 1 * time.Second
-	rlpxVersion      = 5
+	rlpxVersion      = 6
 )
 
 // errPlainMessageTooLarge is returned if a decompressed message length exceeds
@@ -76,17 +76,17 @@ var errPlainMessageTooLarge = errors.New("message length >= 16MB")
 // rlpx is the transport protocol used by actual (non-test) connections.
 // It wraps the frame encoder with locks and read/write deadlines.
 type rlpx struct {
-	fd      net.Conn
-	netID   uint
-	version uint
+	fd         net.Conn
+	magicNetID uint64
+	version    uint
 
 	rmu, wmu sync.Mutex
 	rw       *rlpxFrameRW
 }
 
-func newRLPX(fd net.Conn, netid uint) transport {
+func newRLPX(fd net.Conn, netid uint64) transport {
 	fd.SetDeadline(time.Now().Add(handshakeTimeout))
-	return &rlpx{fd: fd, netID: netid, version: rlpxVersion}
+	return &rlpx{fd: fd, magicNetID: netid, version: rlpxVersion}
 }
 
 func (t *rlpx) ReadMsg() (Msg, error) {
@@ -180,9 +180,9 @@ func (t *rlpx) doEncHandshake(prv *ecdsa.PrivateKey, dial *ecdsa.PublicKey) (*ec
 		err error
 	)
 	if dial == nil {
-		sec, err = receiverEncHandshake(t.fd, prv, t.netID, t.version)
+		sec, err = receiverEncHandshake(t.fd, prv, t.magicNetID, t.version)
 	} else {
-		sec, err = initiatorEncHandshake(t.fd, prv, dial, t.netID, t.version)
+		sec, err = initiatorEncHandshake(t.fd, prv, dial, t.magicNetID, t.version)
 	}
 	if err != nil {
 		return nil, err
@@ -217,7 +217,7 @@ type authMsgV4 struct {
 	InitiatorPubkey [pubLen]byte
 	Nonce           [shaLen]byte
 	Version         uint
-	NetID           uint
+	MagicNetID      uint64
 	// Ignore additional fields (for forward compatibility).
 	Rest []rlp.RawValue `rlp:"tail"`
 }
@@ -227,7 +227,7 @@ type authRespV4 struct {
 	RandomPubkey [pubLen]byte
 	Nonce        [shaLen]byte
 	Version      uint
-	NetID        uint
+	MagicNetID   uint64
 	// Ignore additional fields (for forward compatibility).
 	Rest []rlp.RawValue `rlp:"tail"`
 }
@@ -275,7 +275,7 @@ func (h *encHandshake) staticSharedSecret(prv *ecdsa.PrivateKey) ([]byte, error)
 // it should be called on the dialing side of the connection.
 //
 // prv is the local client's private key.
-func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ecdsa.PublicKey, netid, version uint) (s secrets, err error) {
+func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ecdsa.PublicKey, netid uint64, version uint) (s secrets, err error) {
 	h := &encHandshake{initiator: true, remote: ecies.ImportECDSAPublic(remote)}
 	authMsg, err := h.makeAuthMsg(prv, netid, version)
 	if err != nil {
@@ -291,8 +291,8 @@ func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ec
 	if err != nil {
 		return s, err
 	}
-	if authRespMsg.NetID != netid {
-		return s, fmt.Errorf("handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authRespMsg.NetID)
+	if authRespMsg.MagicNetID != netid {
+		return s, fmt.Errorf("handshake with other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authRespMsg.MagicNetID)
 	}
 	if err := h.handleAuthResp(authRespMsg); err != nil {
 		return s, err
@@ -301,7 +301,7 @@ func initiatorEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, remote *ec
 }
 
 // makeAuthMsg creates the initiator handshake message.
-func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey, netid, version uint) (*authMsgV4, error) {
+func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey, netid uint64, version uint) (*authMsgV4, error) {
 	// Generate random initiator nonce.
 	h.initNonce = make([]byte, shaLen)
 	_, err := rand.Read(h.initNonce)
@@ -329,7 +329,7 @@ func (h *encHandshake) makeAuthMsg(prv *ecdsa.PrivateKey, netid, version uint) (
 	copy(msg.Signature[:], signature)
 	copy(msg.InitiatorPubkey[:], crypto.FromECDSAPub(&prv.PublicKey)[1:])
 	copy(msg.Nonce[:], h.initNonce)
-	msg.NetID = netid
+	msg.MagicNetID = netid
 	msg.Version = version
 	return msg, nil
 }
@@ -344,7 +344,7 @@ func (h *encHandshake) handleAuthResp(msg *authRespV4) (err error) {
 // it should be called on the listening side of the connection.
 //
 // prv is the local client's private key.
-func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, netid, verison uint) (s secrets, err error) {
+func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, netid uint64, verison uint) (s secrets, err error) {
 	authMsg := new(authMsgV4)
 	authPacket, err := readHandshakeMsg(authMsg, encAuthMsgLenV4, prv, conn)
 	if err != nil {
@@ -365,8 +365,8 @@ func receiverEncHandshake(conn io.ReadWriter, prv *ecdsa.PrivateKey, netid, veri
 	if err != nil {
 		return s, err
 	}
-	if authMsg.NetID != netid {
-		return s, fmt.Errorf("handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authMsg.NetID)
+	if authMsg.MagicNetID != netid {
+		return s, fmt.Errorf("handshake from other network node. self.NetID=0x%x remote.NetID=0x%x", netid, authMsg.MagicNetID)
 	}
 	return h.secrets(authPacket, authRespPacket)
 }
@@ -403,7 +403,7 @@ func (h *encHandshake) handleAuthMsg(msg *authMsgV4, prv *ecdsa.PrivateKey) erro
 	return nil
 }
 
-func (h *encHandshake) makeAuthResp(netid, version uint) (msg *authRespV4, err error) {
+func (h *encHandshake) makeAuthResp(netid uint64, version uint) (msg *authRespV4, err error) {
 	// Generate random nonce.
 	h.respNonce = make([]byte, shaLen)
 	if _, err = rand.Read(h.respNonce); err != nil {
@@ -414,7 +414,7 @@ func (h *encHandshake) makeAuthResp(netid, version uint) (msg *authRespV4, err e
 	copy(msg.Nonce[:], h.respNonce)
 	copy(msg.RandomPubkey[:], exportPubkey(&h.randomPrivKey.PublicKey))
 	msg.Version = version
-	msg.NetID = netid
+	msg.MagicNetID = netid
 	return msg, nil
 }
 
