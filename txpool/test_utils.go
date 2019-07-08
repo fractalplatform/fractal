@@ -49,6 +49,7 @@ func init() {
 		AccountQueue: 64,
 		GlobalQueue:  1024,
 		Lifetime:     3 * time.Hour,
+		ResendTime:   10 * time.Minute,
 		GasAssetID:   uint64(0),
 	}
 }
