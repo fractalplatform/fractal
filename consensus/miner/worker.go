@@ -96,7 +96,6 @@ out:
 						close(worker.quitWork)
 						worker.quitWork = nil
 					}
-					worker.wgWork.Wait()
 					worker.quitWorkRW.Unlock()
 				}
 			}
@@ -135,24 +134,28 @@ func (worker *Worker) mintLoop() {
 		return nil, fmt.Errorf("not found match private key for sign")
 	})
 	interval := int64(dpos.BlockInterval())
-	timer := time.NewTimer(time.Duration(interval - (time.Now().UnixNano() % interval)))
-	defer timer.Stop()
+	c := make(chan time.Time)
+	worker.utimer(time.Duration(interval-(time.Now().UnixNano()%interval)), c)
 	for {
 		select {
-		case now := <-timer.C:
+		case now := <-c:
 			worker.quitWorkRW.Lock()
 			if worker.quitWork != nil {
 				close(worker.quitWork)
 				worker.quitWork = nil
 				log.Debug("next time coming, will be closing current work")
 			}
-			worker.wgWork.Wait()
 			worker.quitWorkRW.Unlock()
+			worker.wgWork.Wait()
 
 			quit := make(chan struct{})
 			worker.wgWork.Add(1)
-			go worker.mintBlock(int64(dpos.Slot(uint64(now.UnixNano()))), quit)
-			timer.Reset(time.Duration(interval - (time.Now().UnixNano() % interval)))
+			timestamp := int64(dpos.Slot(uint64(now.UnixNano())))
+			worker.mintBlock(timestamp, quit)
+			if d := time.Unix(timestamp/int64(time.Second), timestamp%int64(time.Second)).Sub(time.Now()); d > 0 {
+				worker.usleep(d)
+			}
+			worker.utimer(time.Duration(interval-(time.Now().UnixNano()%interval)), c)
 		case <-worker.quit:
 			worker.quit = make(chan struct{})
 			return
@@ -165,10 +168,10 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 	worker.quitWork = quit
 	worker.quitWorkRW.Unlock()
 	defer func() {
-		worker.wgWork.Done()
 		worker.quitWorkRW.Lock()
 		worker.quitWork = nil
 		worker.quitWorkRW.Unlock()
+		worker.wgWork.Done()
 	}()
 
 	bstart := time.Now()
@@ -213,16 +216,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 			break
 		} else if strings.Contains(err.Error(), "wait") {
-			usleep := func(duration time.Duration) {
-				end := time.Now().Add(duration)
-				for {
-					time.Sleep(time.Microsecond)
-					if time.Now().Sub(end) >= 0 {
-						break
-					}
-				}
-			}
-			usleep(time.Duration(cdpos.BlockInterval() / 10))
+			worker.usleep(time.Duration(cdpos.BlockInterval() / 10))
 			//time.Sleep(time.Duration(cdpos.BlockInterval() / 10))
 		}
 
@@ -474,4 +468,20 @@ type Work struct {
 	currentBlock    *types.Block
 	currentState    *state.StateDB
 	quit            chan struct{}
+}
+
+func (worker *Worker) usleep(duration time.Duration) {
+	end := time.Now().Add(duration)
+	for {
+		time.Sleep(time.Microsecond)
+		if time.Now().Sub(end) >= 0 {
+			break
+		}
+	}
+}
+func (worker *Worker) utimer(duration time.Duration, c chan time.Time) {
+	go func(c chan time.Time) {
+		worker.usleep(duration)
+		c <- time.Now()
+	}(c)
 }
