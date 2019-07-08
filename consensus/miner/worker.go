@@ -150,6 +150,7 @@ func (worker *Worker) mintLoop() {
 			worker.wgWork.Wait()
 
 			quit := make(chan struct{})
+			worker.wgWork.Add(1)
 			go worker.mintBlock(int64(dpos.Slot(uint64(now.UnixNano()))), quit)
 			timer.Reset(time.Duration(interval - (time.Now().UnixNano() % interval)))
 		case <-worker.quit:
@@ -160,13 +161,12 @@ func (worker *Worker) mintLoop() {
 }
 
 func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
-	worker.wgWork.Add(1)
 	worker.quitWorkRW.Lock()
 	worker.quitWork = quit
 	worker.quitWorkRW.Unlock()
 	defer func() {
-		worker.wgWork.Done()
 		worker.quitWorkRW.Lock()
+		worker.wgWork.Done()
 		worker.quitWork = nil
 		worker.quitWorkRW.Unlock()
 	}()
