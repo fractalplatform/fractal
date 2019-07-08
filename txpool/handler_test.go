@@ -157,7 +157,7 @@ func TestP2PTxMsg(t *testing.T) {
 
 	event.SendTo(event.NewLocalStation("test", nil), nil, event.P2PTxMsg, txs)
 	for {
-		if pending, quened := pool.Stats(); pending > 0 || quened > 0 {
+		if pending, _ := pool.Stats(); pending > 0 {
 			break
 		}
 	}
