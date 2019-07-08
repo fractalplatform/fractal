@@ -96,8 +96,8 @@ out:
 						close(worker.quitWork)
 						worker.quitWork = nil
 					}
-					worker.quitWorkRW.Unlock()
 					worker.wgWork.Wait()
+					worker.quitWorkRW.Unlock()
 				}
 			}
 		case <-chainHeadSub.Err():
@@ -146,8 +146,8 @@ func (worker *Worker) mintLoop() {
 				worker.quitWork = nil
 				log.Debug("next time coming, will be closing current work")
 			}
-			worker.quitWorkRW.Unlock()
 			worker.wgWork.Wait()
+			worker.quitWorkRW.Unlock()
 
 			quit := make(chan struct{})
 			worker.wgWork.Add(1)
@@ -165,8 +165,8 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 	worker.quitWork = quit
 	worker.quitWorkRW.Unlock()
 	defer func() {
-		worker.quitWorkRW.Lock()
 		worker.wgWork.Done()
+		worker.quitWorkRW.Lock()
 		worker.quitWork = nil
 		worker.quitWorkRW.Unlock()
 	}()
