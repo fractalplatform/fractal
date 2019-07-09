@@ -56,16 +56,16 @@ func TestCandiate(t *testing.T) {
 		if err := sys.IDB.SetAvailableQuantity(uint64(index), candidate, new(big.Int).Mul(big10, minStakeCandidate)); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
-		if err := sys.RegCandidate(uint64(index), candidate, strings.Repeat(fmt.Sprintf("www.%v.com", candidate), int(DefaultConfig.MaxURLLen)), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); !strings.Contains(err.Error(), "invalid url") {
+		if err := sys.RegCandidate(uint64(index), candidate, strings.Repeat(fmt.Sprintf("www.%v.com", candidate), int(DefaultConfig.MaxURLLen)), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "invalid url") {
 			panic(fmt.Sprintf("RegCandidate invalid url %v mismatch", err))
 		}
-		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), big1, uint64(index)); !strings.Contains(err.Error(), "non divisibility") {
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), big1, uint64(index), 0); !strings.Contains(err.Error(), "non divisibility") {
 			panic(fmt.Sprintf("RegCandidate invalid stake %v mismatch", err))
 		}
-		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big0, minStakeCandidate), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big0, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "insufficient") {
 			panic(fmt.Sprintf("RegCandidate invalid stake %v mismatch", err))
 		}
-		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); err != nil {
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("RegCandidate %v", err))
 		}
 
@@ -82,11 +82,11 @@ func TestCandiate(t *testing.T) {
 			panic(fmt.Sprintf("GetState mismatch"))
 		}
 
-		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); !strings.Contains(err.Error(), "invalid candidate") {
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
 			panic(fmt.Sprintf("RegCandidate invalid name %v mismatch", err))
 		}
 
-		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big2, minStakeCandidate), uint64(index)); err != nil {
+		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big2, minStakeCandidate), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("UpdateCandidate %v", err))
 		}
 
@@ -102,7 +102,7 @@ func TestCandiate(t *testing.T) {
 			panic(fmt.Sprintf("GetState mismatch"))
 		}
 
-		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index)); err != nil {
+		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("UnregCandidate %v", err))
 		}
 
@@ -141,10 +141,10 @@ func TestVote(t *testing.T) {
 		if err := sys.IDB.SetAvailableQuantity(uint64(index), candidate, new(big.Int).Mul(big10, minStakeCandidate)); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
-		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); err != nil {
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("RegCandidate %v", err))
 		}
-		if err := sys.RefundCandidate(uint64(index), candidate, uint64(index)); err == nil {
+		if err := sys.RefundCandidate(uint64(index), candidate, uint64(index), 0); err == nil {
 			panic(fmt.Sprintf("RefundCandidate %v", err))
 		}
 	}
@@ -153,19 +153,19 @@ func TestVote(t *testing.T) {
 		if err := sys.IDB.SetAvailableQuantity(uint64(index), voter, new(big.Int).Mul(big10, minStakeVote)); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
-		if err := sys.VoteCandidate(uint64(index), voter, "test", new(big.Int).Mul(big1, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "invalid candidate") {
+		if err := sys.VoteCandidate(uint64(index), voter, "test", new(big.Int).Mul(big1, minStakeVote), uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
 			panic(fmt.Sprintf("VoteCandidate invalid candidate %v mismatch", err))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index)); !strings.Contains(err.Error(), "non divisibility") {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], big1, uint64(index), 0); !strings.Contains(err.Error(), "non divisibility") {
 			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big0, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "insufficient") {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big0, minStakeVote), uint64(index), 0); !strings.Contains(err.Error(), "insufficient") {
 			panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("VoteCandidate --- %v", err))
 		}
 
@@ -173,7 +173,7 @@ func TestVote(t *testing.T) {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("VoteCandidate --- %v", err))
 		}
 
@@ -209,7 +209,7 @@ func TestCandidateVote(t *testing.T) {
 		if err := sys.IDB.SetAvailableQuantity(uint64(index), candidate, new(big.Int).Mul(big10, minStakeCandidate)); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
-		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index)); err != nil {
+		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("RegCandidate %v", err))
 		}
 		// if err := sys.UnregCandidate(uint64(index), candidate, uint64(index)); err != nil {
@@ -221,7 +221,7 @@ func TestCandidateVote(t *testing.T) {
 		if err := sys.IDB.SetAvailableQuantity(uint64(index), voter, new(big.Int).Mul(big10, minStakeVote)); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
-		if err := sys.VoteCandidate(uint64(index), voter, "test", new(big.Int).Mul(big1, minStakeVote), uint64(index)); !strings.Contains(err.Error(), "invalid candidate") {
+		if err := sys.VoteCandidate(uint64(index), voter, "test", new(big.Int).Mul(big1, minStakeVote), uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
 			panic(fmt.Sprintf("VoteCandidate invalid candidate %v mismatch", err))
 		}
 
@@ -233,7 +233,7 @@ func TestCandidateVote(t *testing.T) {
 		// 	panic(fmt.Sprintf("VoteCandidate invalid stake %v mismatch", err))
 		// }
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("VoteCandidate --- %v", err))
 		}
 
@@ -241,7 +241,7 @@ func TestCandidateVote(t *testing.T) {
 			panic(fmt.Sprintf("GetCandidate mismatch"))
 		}
 
-		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index)); err != nil {
+		if err := sys.VoteCandidate(uint64(index), voter, candidates[index], new(big.Int).Mul(big1, minStakeVote), uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("VoteCandidate --- %v", err))
 		}
 

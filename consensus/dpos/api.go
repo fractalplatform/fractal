@@ -19,8 +19,10 @@ package dpos
 import (
 	"fmt"
 	"math/big"
+	"sort"
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/rpc"
 )
@@ -65,8 +67,6 @@ func (api *API) Epoch(height uint64) (uint64, error) {
 
 // PrevEpoch get prev epoch number by epoch
 func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
-	var e uint64
-
 	if epoch == 0 {
 		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
@@ -74,15 +74,12 @@ func (api *API) PrevEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	e, _, err = api.dpos.GetEpoch(state, 1, epoch)
-	return e, err
+	pepoch, _, err := api.dpos.GetEpoch(state, 1, epoch)
+	return pepoch, err
 }
 
 // NextEpoch get next epoch number by epoch
 func (api *API) NextEpoch(epoch uint64) (uint64, error) {
-	var e uint64
-
 	if epoch == 0 {
 		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	}
@@ -90,9 +87,8 @@ func (api *API) NextEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-
-	e, _, err = api.dpos.GetEpoch(state, 2, epoch)
-	return e, err
+	nepoch, _, err := api.dpos.GetEpoch(state, 2, epoch)
+	return nepoch, err
 }
 
 // CandidatesSize get candidates size
@@ -120,6 +116,7 @@ func (api *API) Candidates(epoch uint64, detail bool) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(candidates)
 	if detail {
 		return candidates, nil
 	}
@@ -220,6 +217,191 @@ func (api *API) ValidCandidates(epoch uint64) (interface{}, error) {
 	return sys.GetState(gstate.PreEpoch)
 }
 
+func (api *API) BrowserAllEpoch() (interface{}, error) {
+	epochs := Epochs{}
+	epochs.Data = make([]*Epoch, 0)
+	epochNumber, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	for {
+		data := &Epoch{}
+		timestamp := sys.config.epochTimeStamp(epochNumber)
+		gstate, err := sys.GetState(epochNumber)
+		if err != nil {
+			return nil, err
+		}
+		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+		}
+
+		data.Start = timestamp / 1000000000
+		data.Epoch = epochNumber
+		epochs.Data = append(epochs.Data, data)
+		if epochNumber == 1 {
+			break
+		}
+		// log.Info("BrowserAllEpoch1", "number", epochNumber)
+		epochNumber = gstate.PreEpoch
+		// log.Info("BrowserAllEpoch2", "number", epochNumber)
+	}
+	return epochs, nil
+}
+
+func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
+	var req, data uint64
+	if reqEpochNumber == 0 {
+		log.Warn("BrowserAccounting 0")
+		return nil, fmt.Errorf("request:0")
+	}
+
+	vote, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	if reqEpochNumber > vote {
+		log.Warn("BrowserAccounting", " request:", reqEpochNumber, "> vote:", vote)
+		return nil, fmt.Errorf("request:%d > vote:%d", reqEpochNumber, vote)
+	}
+	req = reqEpochNumber
+
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	log.Info("BrowserAccounting", "req epoch:", req)
+	reqEpoch, err := sys.GetState(req)
+	if err != nil {
+		return nil, err
+	}
+
+	data = reqEpoch.PreEpoch
+	log.Info("BrowserAccounting", "data epoch:", data)
+	timestamp := sys.config.epochTimeStamp(data)
+	dataEpoch, err := sys.GetState(data)
+	if err != nil {
+		return nil, err
+	}
+
+	candidateInfos := ArrayCandidateInfoForBrowser{}
+	candidateInfos.Data = make([]*CandidateInfoForBrowser, len(dataEpoch.ActivatedCandidateSchedule))
+
+	var spare = 7
+	var activate = 21
+	for i, activatedCandidate := range dataEpoch.ActivatedCandidateSchedule {
+		candidateInfo := &CandidateInfoForBrowser{}
+		candidateInfo.Candidate = activatedCandidate
+
+		curtmp, err := sys.GetCandidate(req, activatedCandidate)
+		if err != nil {
+			log.Warn("BrowserAccounting Cur Candidate:", req, " Data not found")
+			return nil, fmt.Errorf("Cur Candidate:%d Data not found", req)
+		}
+		candidateInfo.NowCounter = curtmp.Counter
+		candidateInfo.NowActualCounter = curtmp.ActualCounter
+
+		tmp, err := sys.GetCandidate(data, activatedCandidate)
+		if err != nil {
+			return nil, err
+		}
+		candidateInfo.Quantity = tmp.Quantity.Mul(tmp.Quantity, api.dpos.config.unitStake()).String()
+		candidateInfo.TotalQuantity = tmp.TotalQuantity.String()
+		candidateInfo.Counter = tmp.Counter
+		candidateInfo.ActualCounter = tmp.ActualCounter
+		if i < activate {
+			candidateInfo.Status = 1
+		} else {
+			candidateInfo.Status = 2
+		}
+		// candidateInfo.Status
+		if balance, err := sys.GetBalanceByTime(activatedCandidate, timestamp); err != nil {
+			log.Warn("BrowserAccounting", "candidate", activatedCandidate, "ignore", err)
+			return nil, err
+		} else {
+			candidateInfo.Holder = balance.String()
+		}
+		candidateInfos.Data[i] = candidateInfo
+	}
+
+	fmt.Println(dataEpoch.BadCandidateIndexSchedule, len(candidateInfos.Data))
+	if len(dataEpoch.BadCandidateIndexSchedule) > 14 {
+		log.Warn("BrowserAccounting BadCandidateIndexSchedule > 14", "epoch", data)
+		return nil, fmt.Errorf("count %d > 14", len(dataEpoch.BadCandidateIndexSchedule))
+	}
+	for i := 0; i < len(dataEpoch.BadCandidateIndexSchedule); i++ {
+		j := i + activate
+		if i < spare && len(candidateInfos.Data) > j {
+			// log.Info("***** i", "", i)
+			// log.Info("***** j", "", j)
+			// log.Info("***** len", "", len(dataEpoch.BadCandidateIndexSchedule))
+			candidateInfos.Data[dataEpoch.BadCandidateIndexSchedule[i]].Status = 0
+			// log.Info("*********")
+			candidateInfos.Data[j].Status = 1
+			// log.Info("&&&&&&&&&")
+		} else {
+			candidateInfos.Data[dataEpoch.BadCandidateIndexSchedule[i]].Status = 0
+		}
+	}
+	return candidateInfos, nil
+}
+
+func (api *API) BrowserVote() (interface{}, error) {
+	vote, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
+
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	log.Info("BrowserVote", "vote:", vote)
+	reqEpoch, err := sys.GetState(vote)
+	if err != nil {
+		return nil, err
+	}
+
+	//history miner rate
+	prereqEpoch, err := sys.GetState(reqEpoch.PreEpoch)
+	if err != nil {
+		return nil, err
+	}
+
+	history := prereqEpoch.PreEpoch
+	log.Info("BrowserVote", "history:", history)
+	timestamp := sys.config.epochTimeStamp(vote)
+
+	candidateInfos := ArrayCandidateInfoForBrowser{}
+	candidateInfos.Data = make([]*CandidateInfoForBrowser, len(reqEpoch.ActivatedCandidateSchedule))
+
+	for i, activatedCandidate := range reqEpoch.ActivatedCandidateSchedule {
+		candidateInfo := &CandidateInfoForBrowser{}
+		candidateInfo.Candidate = activatedCandidate
+
+		tmp, err := sys.GetCandidate(vote, activatedCandidate)
+		if err != nil {
+			return nil, err
+		}
+		// candidateInfo.NowCounter = tmp.Counter
+		// candidateInfo.NowActualCounter = tmp.ActualCounter
+
+		candidateInfo.Quantity = tmp.Quantity.Mul(tmp.Quantity, api.dpos.config.unitStake()).String()
+		candidateInfo.TotalQuantity = tmp.TotalQuantity.String()
+
+		// candidateInfo.Type
+		if balance, err := sys.GetBalanceByTime(activatedCandidate, timestamp); err != nil {
+			log.Warn("Accounting", "candidate", activatedCandidate, "ignore", err)
+			return nil, err
+		} else {
+			candidateInfo.Holder = balance.String()
+		}
+
+		histmp, err := sys.GetCandidate(history, activatedCandidate)
+		if err != nil {
+			return nil, err
+		}
+		candidateInfo.Counter = histmp.Counter
+		candidateInfo.ActualCounter = histmp.ActualCounter
+		candidateInfos.Data[i] = candidateInfo
+	}
+	return candidateInfos, nil
+}
+
 // SnapShotTime get snapshot timestamp
 func (api *API) SnapShotTime(epoch uint64) (interface{}, error) {
 	if epoch == 0 {
@@ -298,7 +480,7 @@ func (api *API) GetActivedCandidate(epoch uint64, index uint64) (interface{}, er
 	if err != nil {
 		return nil, err
 	}
-	candidate, delegated, voted, scounter, acounter, rindex, err := api.dpos.GetActivedCandidate(state, epoch, index)
+	candidate, delegated, voted, scounter, acounter, rindex, isbad, err := api.dpos.GetActivedCandidate(state, epoch, index)
 	if err != nil {
 		return nil, err
 	}
@@ -310,5 +492,6 @@ func (api *API) GetActivedCandidate(epoch uint64, index uint64) (interface{}, er
 	ret["shouldCount"] = scounter
 	ret["actualCount"] = acounter
 	ret["replaceIndex"] = rindex
+	ret["bad"] = isbad
 	return ret, nil
 }
