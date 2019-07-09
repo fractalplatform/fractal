@@ -21,7 +21,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"sort"
 	"strings"
 
 	"github.com/fractalplatform/fractal/types"
@@ -46,11 +45,16 @@ var (
 	CandidateKeyPrefix = "p"
 	// CandidateHead all candidate key
 	CandidateHead = "s"
+	// ActivatedCandidateKeyPrefix candidateInfo
+	ActivatedCandidateKeyPrefix = "ap"
 
 	// VoterKeyPrefix voterInfo
 	VoterKeyPrefix = "v"
 	// VoterHead head
 	VoterHead = "v"
+
+	// TakeOver key
+	TakeOver = "takeover"
 
 	// StateKeyPrefix globalState
 	StateKeyPrefix = "s"
@@ -174,7 +178,7 @@ func (db *LDB) GetCandidate(epoch uint64, name string) (*CandidateInfo, error) {
 }
 
 // GetCandidates get all candidate info & sort
-func (db *LDB) GetCandidates(epoch uint64) ([]*CandidateInfo, error) {
+func (db *LDB) GetCandidates(epoch uint64) (CandidateInfoArray, error) {
 	// candidates
 	head, err := db.GetCandidate(epoch, CandidateHead)
 	if err != nil {
@@ -194,7 +198,7 @@ func (db *LDB) GetCandidates(epoch uint64) ([]*CandidateInfo, error) {
 		nextKey = candidateInfo.NextKey
 		candidateInfos = append(candidateInfos, candidateInfo)
 	}
-	sort.Sort(candidateInfos)
+	// sort.Sort(candidateInfos)
 	return candidateInfos, nil
 }
 
@@ -208,6 +212,31 @@ func (db *LDB) CandidatesSize(epoch uint64) (uint64, error) {
 		return 0, nil
 	}
 	return head.Counter, nil
+}
+
+// SetActivatedCandidate update activated candidate info
+func (db *LDB) SetActivatedCandidate(index uint64, candidate *CandidateInfo) error {
+	key := strings.Join([]string{ActivatedCandidateKeyPrefix, hex.EncodeToString(uint64tobytes(index))}, Separator)
+	if val, err := rlp.EncodeToBytes(candidate); err != nil {
+		return err
+	} else if err := db.Put(key, val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetActivatedCandidate get activated candidate info
+func (db *LDB) GetActivatedCandidate(index uint64) (*CandidateInfo, error) {
+	key := strings.Join([]string{ActivatedCandidateKeyPrefix, hex.EncodeToString(uint64tobytes(index))}, Separator)
+	candidateInfo := &CandidateInfo{}
+	if val, err := db.Get(key); err != nil {
+		return nil, err
+	} else if val == nil {
+		return nil, nil
+	} else if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
+		return nil, err
+	}
+	return candidateInfo, nil
 }
 
 // SetAvailableQuantity set quantity
@@ -363,6 +392,29 @@ func (db *LDB) GetVotersByVoter(epoch uint64, voter string) ([]*VoterInfo, error
 	return voterInfos, nil
 }
 
+// SetTakeOver update activated candidate info
+func (db *LDB) SetTakeOver(epoch uint64) error {
+	if val, err := rlp.EncodeToBytes(epoch); err != nil {
+		return err
+	} else if err := db.Put(TakeOver, val); err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetTakeOver get activated candidate info
+func (db *LDB) GetTakeOver() (uint64, error) {
+	epoch := uint64(0)
+	if val, err := db.Get(TakeOver); err != nil {
+		return epoch, err
+	} else if val == nil {
+		return epoch, nil
+	} else if err := rlp.DecodeBytes(val, &epoch); err != nil {
+		return epoch, err
+	}
+	return epoch, nil
+}
+
 // SetState set global state info
 func (db *LDB) SetState(gstate *GlobalState) error {
 	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(gstate.Epoch))}, Separator)
@@ -376,14 +428,6 @@ func (db *LDB) SetState(gstate *GlobalState) error {
 
 // GetState get state info
 func (db *LDB) GetState(epoch uint64) (*GlobalState, error) {
-	if epoch == LastEpoch {
-		var err error
-		epoch, err = db.GetLastestEpoch()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	key := strings.Join([]string{StateKeyPrefix, hex.EncodeToString(uint64tobytes(epoch))}, Separator)
 	gstate := &GlobalState{}
 	if val, err := db.Get(key); err != nil {

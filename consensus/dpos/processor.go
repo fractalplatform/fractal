@@ -50,17 +50,22 @@ type KickedCandidate struct {
 	Candidates []string
 }
 
+// RemoveKickedCandidate remove kicked info
+type RemoveKickedCandidate struct {
+	Candidates []string
+}
+
 // ProcessAction exec action
-func (dpos *Dpos) ProcessAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+func (dpos *Dpos) ProcessAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	snap := state.Snapshot()
-	internalLogs, err := dpos.processAction(number, chainCfg, state, action)
+	internalLogs, err := dpos.processAction(fid, number, chainCfg, state, action)
 	if err != nil {
 		state.RevertToSnapshot(snap)
 	}
 	return internalLogs, err
 }
 
-func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
+func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
 	if err := action.Check(chainCfg); err != nil {
 		return nil, err
 	}
@@ -81,28 +86,41 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 	}
 	switch action.Type() {
 	case types.RegCandidate:
+		if fid >= params.ForkID2 {
+			if val := new(big.Int).Mul(dpos.config.CandidateMinQuantity, dpos.config.unitStake()); action.Value().Cmp(val) != 0 {
+				return nil, fmt.Errorf("value must be %v", val)
+			}
+		}
 		arg := &RegisterCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
+		if err := sys.RegCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number, fid); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
+		if fid >= params.ForkID2 {
+			if action.Value().Sign() == 1 {
+				return nil, fmt.Errorf("value must be zero")
+			}
+		}
 		arg := &UpdateCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number); err != nil {
+		if err := sys.UpdateCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number, fid); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:
-		err := sys.UnregCandidate(epoch, action.Sender().String(), number)
+		if strings.Compare(action.Sender().String(), dpos.config.SystemName) == 0 {
+			return nil, fmt.Errorf("no permission")
+		}
+		err := sys.UnregCandidate(epoch, action.Sender().String(), number, fid)
 		if err != nil {
 			return nil, err
 		}
 	case types.RefundCandidate:
-		err := sys.RefundCandidate(epoch, action.Sender().String(), number)
+		err := sys.RefundCandidate(epoch, action.Sender().String(), number, fid)
 		if err != nil {
 			return nil, err
 		}
@@ -111,11 +129,12 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.VoteCandidate(epoch, action.Sender().String(), arg.Candidate, arg.Stake, number); err != nil {
+		if err := sys.VoteCandidate(epoch, action.Sender().String(), arg.Candidate, arg.Stake, number, fid); err != nil {
 			return nil, err
 		}
 	case types.KickedCandidate:
-		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+		gstate, _ := sys.GetState(epoch)
+		if gstate.TakeOver == false || strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for kicking candidates")
 		}
 		arg := &KickedCandidate{}
@@ -123,15 +142,36 @@ func (dpos *Dpos) processAction(number uint64, chainCfg *params.ChainConfig, sta
 			return nil, err
 		}
 		for _, cadicate := range arg.Candidates {
-			if err := sys.KickedCandidate(epoch, cadicate, number); err != nil {
+			if strings.Compare(cadicate, dpos.config.SystemName) == 0 {
+				continue
+			}
+			if err := sys.KickedCandidate(epoch, cadicate, number, fid); err != nil {
 				return nil, err
 			}
 		}
-	case types.ExitTakeOver:
+	case types.RemoveKickedCandidate:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
+			return nil, fmt.Errorf("no permission for removing candidates")
+		}
+		arg := &RemoveKickedCandidate{}
+		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
+			return nil, err
+		}
+		for _, cadicate := range arg.Candidates {
+			if strings.Compare(cadicate, dpos.config.SystemName) == 0 {
+				continue
+			}
+			if err := sys.RemoveKickedCandidate(epoch, cadicate, number, fid); err != nil {
+				return nil, err
+			}
+		}
+
+	case types.ExitTakeOver:
+		gstate, _ := sys.GetState(epoch)
+		if gstate.TakeOver == false || strings.Compare(action.Sender().String(), dpos.config.SystemName) != 0 {
 			return nil, fmt.Errorf("no permission for exit take over")
 		}
-		if err := sys.ExitTakeOver(epoch); err != nil {
+		if err := sys.ExitTakeOver(epoch, number, fid); err != nil {
 			return nil, err
 		}
 	default:
