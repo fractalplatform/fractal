@@ -341,6 +341,33 @@ func gasCall(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem
 	return gas, nil
 }
 
+func gasCallWithPay(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
+	var (
+		gas            = gt.Calls
+		transfersValue = stack.Back(3).Sign() != 0
+	)
+	if transfersValue {
+		gas += gt.CallValueTransferGas
+	}
+	memoryGas, err := memoryGasCost(gt, mem, memorySize)
+	if err != nil {
+		return 0, err
+	}
+	var overflow bool
+	if gas, overflow = math.SafeAdd(gas, memoryGas); overflow {
+		return 0, errGasUintOverflow
+	}
+
+	evm.callGasTemp, err = callGas(gt, contract.Gas, gas, stack.Back(0))
+	if err != nil {
+		return 0, err
+	}
+	if gas, overflow = math.SafeAdd(gas, evm.callGasTemp); overflow {
+		return 0, errGasUintOverflow
+	}
+	return gas, nil
+}
+
 func gasCallCode(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {
 	gas := gt.Calls
 	if stack.Back(2).Sign() != 0 {

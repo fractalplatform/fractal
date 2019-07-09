@@ -132,13 +132,19 @@ func (api *PrivateP2pAPI) BadNodes() []string {
 }
 
 // AddBadNode add a bad node
-func (api *PrivateP2pAPI) AddBadNode(url string) error {
-	return api.b.AddBadNode(url)
+func (api *PrivateP2pAPI) AddBadNode(url string) (bool, error) {
+	if err := api.b.AddBadNode(url); err != nil {
+		return false, fmt.Errorf("invalid enode: %v", err)
+	}
+	return true, nil
 }
 
 // RemoveBadNode remove a bad node
-func (api *PrivateP2pAPI) RemoveBadNode(url string) error {
-	return api.b.RemoveBadNode(url)
+func (api *PrivateP2pAPI) RemoveBadNode(url string) (bool, error) {
+	if err := api.b.RemoveBadNode(url); err != nil {
+		return false, fmt.Errorf("invalid enode: %v", err)
+	}
+	return true, nil
 }
 
 // SelfNode return self enode url

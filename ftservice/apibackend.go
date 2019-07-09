@@ -116,10 +116,15 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []common.Hash {
-	lastnum := uint64(blockNr) - lookbackNum
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []common.Hash {
+	var lastnum uint64
+	if lookbackNum > blockNr {
+		lastnum = 0
+	} else {
+		lastnum = blockNr - lookbackNum
+	}
 	txHashs := make([]common.Hash, 0)
-	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+	for ublocknum := blockNr; ublocknum >= lastnum; ublocknum-- {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
 		if hash == (common.Hash{}) {
 			continue
@@ -129,9 +134,9 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 		if blockBody == nil {
 			continue
 		}
-		batch_txs := blockBody.Transactions
+		batchTxs := blockBody.Transactions
 
-		for _, tx := range batch_txs {
+		for _, tx := range batchTxs {
 			for _, act := range tx.GetActions() {
 				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
 					txHashs = append(txHashs, tx.Hash())
@@ -144,33 +149,38 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 	return txHashs
 }
 
-func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr rpc.BlockNumber, lookbackNum uint64) []*types.DetailTx {
-	lastnum := uint64(blockNr) - lookbackNum
+func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
+	var lastnum uint64
+	if lookbackNum > blockNr {
+		lastnum = 0
+	} else {
+		lastnum = blockNr - lookbackNum
+	}
 	txdetails := make([]*types.DetailTx, 0)
 
-	for ublocknum := uint64(blockNr); ublocknum > lastnum; ublocknum-- {
+	for ublocknum := blockNr; ublocknum >= lastnum; ublocknum-- {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
 		if hash == (common.Hash{}) {
 			continue
 		}
 
-		batch_txdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
-		for _, txd := range batch_txdetails {
-			new_intxs := make([]*types.DetailAction, 0)
+		batchTxdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
+		for _, txd := range batchTxdetails {
+			newIntxs := make([]*types.DetailAction, 0)
 			for _, intx := range txd.Actions {
-				new_inactions := make([]*types.InternalAction, 0)
+				newInactions := make([]*types.InternalAction, 0)
 				for _, inlog := range intx.InternalActions {
 					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
-						new_inactions = append(new_inactions, inlog)
+						newInactions = append(newInactions, inlog)
 					}
 				}
-				if len(new_inactions) > 0 {
-					new_intxs = append(new_intxs, &types.DetailAction{InternalActions: new_inactions})
+				if len(newInactions) > 0 {
+					newIntxs = append(newIntxs, &types.DetailAction{InternalActions: newInactions})
 				}
 			}
 
-			if len(new_intxs) > 0 {
-				txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, Actions: new_intxs})
+			if len(newIntxs) > 0 {
+				txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, Actions: newIntxs})
 			}
 		}
 	}

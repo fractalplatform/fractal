@@ -53,7 +53,7 @@ const (
 	ntpFailureThreshold = 32               // Continuous timeouts after which to check NTP
 	ntpWarningCooldown  = 10 * time.Minute // Minimum amount of time to pass before repeating NTP warning
 	driftThreshold      = 10 * time.Second // Allowed clock drift before warning user
-	udpVersion          = 5
+	udpVersion          = 6
 )
 
 // RPC packet types
@@ -68,7 +68,7 @@ const (
 type (
 	ping struct {
 		Version    uint
-		NetID      uint
+		MagicNetID uint64
 		From, To   rpcEndpoint
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
@@ -77,8 +77,8 @@ type (
 
 	// pong is the reply to ping.
 	pong struct {
-		Version uint
-		NetID   uint
+		Version    uint
+		MagicNetID uint64
 		// This field should mirror the UDP envelope address
 		// of the ping packet, which provides a way to discover the
 		// the external address (after NAT).
@@ -93,7 +93,7 @@ type (
 	// findnode is a query for nodes close to the given target.
 	findnode struct {
 		Version    uint
-		NetID      uint
+		MagicNetID uint64
 		Target     encPubkey
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
@@ -103,7 +103,7 @@ type (
 	// reply to findnode
 	neighbors struct {
 		Version    uint
-		NetID      uint
+		MagicNetID uint64
 		Nodes      []rpcNode
 		Expiration uint64
 		// Ignore additional fields (for forward compatibility).
@@ -186,7 +186,7 @@ type udp struct {
 
 	closing chan struct{}
 	//nat     nat.Interface
-	netID uint
+	magicNetID uint64
 
 	*Table
 }
@@ -238,8 +238,8 @@ type ReadPacket struct {
 type Config struct {
 	// These settings are required and configure the UDP listener:
 	PrivateKey *ecdsa.PrivateKey
-	TCPPort    int  // tcp port
-	NetworkID  uint // network id
+	TCPPort    int    // tcp port
+	MagicNetID uint64 // magic net id
 
 	// These settings are optional:
 	AnnounceAddr *net.UDPAddr      // local address announced in the DHT
@@ -277,7 +277,7 @@ func newUDP(c conn, cfg Config) (*Table, *udp, error) {
 		closing:     make(chan struct{}),
 		gotreply:    make(chan reply),
 		addpending:  make(chan *pending),
-		netID:       cfg.NetworkID,
+		magicNetID:  cfg.MagicNetID,
 	}
 	// TODO: separate TCP port
 	udp.ourEndpoint = makeEndpoint(realaddr, uint16(realaddr.Port))
@@ -311,7 +311,7 @@ func (t *udp) ping(toid enode.ID, toaddr *net.UDPAddr) error {
 // when the reply arrives.
 func (t *udp) sendPing(toid enode.ID, toaddr *net.UDPAddr, callback func()) <-chan error {
 	req := &ping{
-		NetID:      t.netID,
+		MagicNetID: t.magicNetID,
 		Version:    udpVersion,
 		From:       t.ourEndpoint,
 		To:         makeEndpoint(toaddr, 0), // TODO: maybe use known TCP port from DB
@@ -364,7 +364,7 @@ func (t *udp) findnode(toid enode.ID, toaddr *net.UDPAddr, target encPubkey) ([]
 		return nreceived >= bucketSize
 	})
 	t.send(toaddr, findnodePacket, &findnode{
-		NetID:      t.netID,
+		MagicNetID: t.magicNetID,
 		Version:    udpVersion,
 		Target:     target,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
@@ -636,15 +636,15 @@ func (req *ping) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
-		return fmt.Errorf("receive ping packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
+	if t.magicNetID != req.MagicNetID {
+		return fmt.Errorf("receive ping packet from other network. self.NetID=%x remote.NetID=%x", t.magicNetID, req.MagicNetID)
 	}
 	key, err := decodePubkey(fromKey)
 	if err != nil {
 		return fmt.Errorf("invalid public key: %v", err)
 	}
 	t.send(from, pongPacket, &pong{
-		NetID:      t.netID,
+		MagicNetID: t.magicNetID,
 		Version:    udpVersion,
 		To:         makeEndpoint(from, req.From.TCP),
 		ReplyTok:   mac,
@@ -667,8 +667,8 @@ func (req *pong) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []byte
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
-		return fmt.Errorf("receive pong packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
+	if t.magicNetID != req.MagicNetID {
+		return fmt.Errorf("receive pong packet from other network. self.NetID=%x remote.NetID=%x", t.magicNetID, req.MagicNetID)
 	}
 	fromID := fromKey.id()
 	if !t.handleReply(fromID, pongPacket, req) {
@@ -684,8 +684,8 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
-		return fmt.Errorf("receive findnode packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
+	if t.magicNetID != req.MagicNetID {
+		return fmt.Errorf("receive findnode packet from other network. self.NetID=%x remote.NetID=%x", t.magicNetID, req.MagicNetID)
 	}
 	fromID := fromKey.id()
 	if time.Since(t.db.LastPongReceived(fromID)) > bondExpiration {
@@ -709,7 +709,7 @@ func (req *findnode) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac []
 	t.mutex.Unlock()
 
 	p := neighbors{
-		NetID:      t.netID,
+		MagicNetID: t.magicNetID,
 		Version:    udpVersion,
 		Expiration: uint64(time.Now().Add(expiration).Unix()),
 	}
@@ -744,8 +744,8 @@ func (req *neighbors) handle(t *udp, from *net.UDPAddr, fromKey encPubkey, mac [
 	if expired(req.Expiration) {
 		return errExpired
 	}
-	if t.netID != req.NetID {
-		return fmt.Errorf("receive neighbors packet from other network. self.NetID=%d remote.NetID=%d", t.netID, req.NetID)
+	if t.magicNetID != req.MagicNetID {
+		return fmt.Errorf("receive neighbors packet from other network. self.NetID=%x remote.NetID=%x", t.magicNetID, req.MagicNetID)
 	}
 	if !t.handleReply(fromKey.id(), neighborsPacket, req) {
 		return errUnsolicitedReply
