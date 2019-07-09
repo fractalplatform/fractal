@@ -151,7 +151,7 @@ func (worker *Worker) mintLoop() {
 			quit := make(chan struct{})
 			worker.wgWork.Add(1)
 			timestamp := int64(dpos.Slot(uint64(now.UnixNano())))
-			worker.mintBlock(timestamp, quit)
+			go worker.mintBlock(timestamp, quit)
 			if d := time.Unix(timestamp/int64(time.Second), timestamp%int64(time.Second)).Sub(time.Now()); d > 0 {
 				worker.usleep(d)
 			}
