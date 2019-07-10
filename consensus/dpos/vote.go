@@ -842,13 +842,16 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 
 func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 	size := uint64(len(gstate.UsingCandidateIndexSchedule))
-	if size == 0 && len(gstate.BadCandidateIndexSchedule) == 0 {
+	if size == 0 {
 		for index := range gstate.ActivatedCandidateSchedule {
 			if uint64(index) >= sys.config.CandidateScheduleSize {
 				break
 			}
 			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
 			size++
+		}
+		for index, offset := range gstate.BadCandidateIndexSchedule {
+			gstate.UsingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
 		}
 	}
 	if offset >= size {
