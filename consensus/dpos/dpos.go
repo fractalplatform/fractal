@@ -902,6 +902,9 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 				}
 				usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
 			}
+			for index, offset := range pstate.BadCandidateIndexSchedule {
+				usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
+			}
 			pstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		}
 		if sys.config.epoch(timestamp) == pepoch {
@@ -997,7 +1000,7 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 	}
 
 	if strings.Compare(tname, candidate) != 0 {
-		return fmt.Errorf("%v %v, except %v(%v) index %v (%v epoch) ", errInvalidBlockCandidate, candidate, pstate.ActivatedCandidateSchedule, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
+		return fmt.Errorf("%v %v, except %v %v(%v) index %v (%v epoch) ", errInvalidBlockCandidate, candidate, tname, pstate.ActivatedCandidateSchedule, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
 	}
 	return nil
 }
