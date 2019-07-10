@@ -902,6 +902,9 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 				}
 				usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
 			}
+			for index, offset := range pstate.BadCandidateIndexSchedule {
+				usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
+			}
 			pstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		}
 		if sys.config.epoch(timestamp) == pepoch {

@@ -759,6 +759,9 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 			}
 			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
 		}
+		for index, offset := range pstate.BadCandidateIndexSchedule {
+			usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
+		}
 		ppstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		if err := sys.SetState(ppstate); err != nil {
 			return err
