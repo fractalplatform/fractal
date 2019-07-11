@@ -400,6 +400,10 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		return nil
 	}
 
+	if len(gstate.ActivatedCandidateSchedule) == 0 {
+		sys.UpdateElectedCandidates1(pepoch, pepoch, header.Number.Uint64(), header.Coinbase.String())
+	}
+
 	pstate, err := sys.GetState(gstate.PreEpoch)
 	if err != nil {
 		return err
@@ -497,9 +501,6 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		if err := sys.SetCandidate(candidate); err != nil {
 			return err
 		}
-	}
-	if len(gstate.ActivatedCandidateSchedule) == 0 {
-		sys.UpdateElectedCandidates1(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
 	}
 	return nil
 }
@@ -895,6 +896,8 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 			}
 			pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
 			pstate.ActivatedTotalQuantity = activatedTotalQuantity
+		}
+		if len(pstate.UsingCandidateIndexSchedule) == 0 {
 			usingCandidateIndexSchedule := []uint64{}
 			for index := range pstate.ActivatedCandidateSchedule {
 				if uint64(index) >= sys.config.CandidateScheduleSize {
@@ -941,12 +944,12 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 							}
 							scnt := tcandidate.Counter - ptcandidate.Counter
 							acnt := tcandidate.ActualCounter - ptcandidate.ActualCounter
-							log.Debug("replace check", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candidate", tcandidate.Name, "scnt", scnt, "acnt", acnt)
+							log.Debug("replace check...", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candidate", tcandidate.Name, "scnt", scnt, "acnt", acnt)
 							if scnt > acnt+scnt/2 {
 								if uint64(len(pstate.BadCandidateIndexSchedule))+dpos.config.CandidateScheduleSize < uint64(len(pstate.ActivatedCandidateSchedule)) {
 									rindex := uint64(len(pstate.BadCandidateIndexSchedule)) + dpos.config.CandidateScheduleSize
 									rname := pstate.ActivatedCandidateSchedule[rindex]
-									log.Info("replace checked", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candidate", tcandidate.Name, "==>rcandidate", rname, "scnt", scnt, "acnt", acnt)
+									log.Info("replace checked...", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candidate", tcandidate.Name, "==>rcandidate", rname, "scnt", scnt, "acnt", acnt)
 
 									pstate.BadCandidateIndexSchedule = append(pstate.BadCandidateIndexSchedule, uint64(offset))
 									pstate.UsingCandidateIndexSchedule[uint64(offset)] = rindex
@@ -956,15 +959,15 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 									}
 									tcandidate = rcandidate
 								} else {
-									log.Info("replace checked", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candidate", tcandidate.Name, "==>rcandidate", "****", "scnt", scnt, "acnt", acnt)
+									log.Info("replace checked...", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candidate", tcandidate.Name, "==>rcandidate", "****", "scnt", scnt, "acnt", acnt)
 									pstate.UsingCandidateIndexSchedule[uint64(offset)] = InvalidIndex
 								}
 							}
 						}
-						log.Debug("replace start", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candiate", tcandidate.Name, "counter", tcandidate.Counter, "actual", tcandidate.ActualCounter)
+						log.Debug("replace start...", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "index", offset, "candiate", tcandidate.Name, "counter", tcandidate.Counter, "actual", tcandidate.ActualCounter)
 						mcandidates[uint64(offset)] = tcandidate
 					}
-					log.Debug("replace after", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "usingCandidateIndexSchedule", fmt.Sprintf("%v", gstate.UsingCandidateIndexSchedule))
+					log.Debug("replace after...", "num", parent.Number.Uint64()+1, "epoch", pepoch, "mepoch", mepoch, "usingCandidateIndexSchedule", fmt.Sprintf("%v", gstate.UsingCandidateIndexSchedule))
 					mepoch = tmepoch
 				}
 
