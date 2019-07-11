@@ -117,20 +117,20 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 }
 
 func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []common.Hash {
-	var lastnum uint64
+	var lastnum int64
 	if lookbackNum > blockNr {
 		lastnum = 0
 	} else {
-		lastnum = blockNr - lookbackNum
+		lastnum = int64(blockNr - lookbackNum)
 	}
 	txHashs := make([]common.Hash, 0)
-	for ublocknum := blockNr; ublocknum >= lastnum; ublocknum-- {
-		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
+	for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
+		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
 		if hash == (common.Hash{}) {
 			continue
 		}
 
-		blockBody := rawdb.ReadBody(b.ftservice.chainDb, hash, ublocknum)
+		blockBody := rawdb.ReadBody(b.ftservice.chainDb, hash, uint64(ublocknum))
 		if blockBody == nil {
 			continue
 		}
@@ -150,21 +150,21 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 }
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
-	var lastnum uint64
+	var lastnum int64
 	if lookbackNum > blockNr {
 		lastnum = 0
 	} else {
-		lastnum = blockNr - lookbackNum
+		lastnum = int64(blockNr - lookbackNum)
 	}
 	txdetails := make([]*types.DetailTx, 0)
 
-	for ublocknum := blockNr; ublocknum >= lastnum; ublocknum-- {
-		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, ublocknum)
+	for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
+		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
 		if hash == (common.Hash{}) {
 			continue
 		}
 
-		batchTxdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, ublocknum)
+		batchTxdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, uint64(ublocknum))
 		for _, txd := range batchTxdetails {
 			newIntxs := make([]*types.DetailAction, 0)
 			for _, intx := range txd.Actions {
