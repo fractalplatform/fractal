@@ -59,6 +59,9 @@ type Config struct {
 	// This field must be set to a valid secp256k1 private key.
 	PrivateKey *ecdsa.PrivateKey
 
+	// This field with NetworkID used to generate MagicNetID. Set by ftservice when construct.
+	GenesisHash common.Hash
+
 	// NetworkID is ID of network
 	NetworkID uint `mapstructure:"networkid"`
 
@@ -153,7 +156,7 @@ type Server struct {
 
 	// Hooks for testing. These are useful because we can inhibit
 	// the whole protocol stack.
-	newTransport func(net.Conn, uint) transport
+	newTransport func(net.Conn, uint64) transport
 	newPeerHook  func(*Peer)
 
 	lock    sync.Mutex // protects running
@@ -481,6 +484,10 @@ func (s *sharedUDPConn) Close() error {
 	return nil
 }
 
+func (srv *Server) magicNetID() uint64 {
+	return (srv.GenesisHash.Big().Uint64() & 0xffffffff) | (uint64(srv.NetworkID) << 32)
+}
+
 // DiscoverOnly ..
 func (srv *Server) DiscoverOnly() error {
 	srv.lock.Lock()
@@ -501,7 +508,7 @@ func (srv *Server) DiscoverOnly() error {
 	srv.quit = make(chan struct{})
 	cfg := discover.Config{
 		TCPPort:      0,
-		NetworkID:    srv.NetworkID,
+		MagicNetID:   srv.magicNetID(),
 		PrivateKey:   srv.PrivateKey,
 		AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
 		NodeDBPath:   srv.NodeDatabase,
@@ -579,10 +586,9 @@ func (srv *Server) Start() (err error) {
 		if err != nil {
 			return err
 		}
-
 		cfg := discover.Config{
 			TCPPort:      conn.LocalAddr().(*net.UDPAddr).Port,
-			NetworkID:    srv.NetworkID,
+			MagicNetID:   srv.magicNetID(),
 			PrivateKey:   srv.PrivateKey,
 			AnnounceAddr: conn.LocalAddr().(*net.UDPAddr),
 			NodeDBPath:   srv.NodeDatabase,
@@ -965,7 +971,7 @@ func (srv *Server) SetupConn(fd net.Conn, flags connFlag, dialDest *enode.Node) 
 	if self == nil {
 		return errors.New("shutdown")
 	}
-	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.NetworkID), flags: flags, cont: make(chan error)}
+	c := &conn{fd: fd, transport: srv.newTransport(fd, srv.magicNetID()), flags: flags, cont: make(chan error)}
 	err := srv.setupConn(c, flags, dialDest)
 	if err != nil {
 		c.close(err)

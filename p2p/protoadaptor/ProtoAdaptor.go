@@ -44,11 +44,10 @@ type remotePeer struct {
 type ProtoAdaptor struct {
 	p2p.Server
 	peerMangaer
-	event   chan *router.Event
-	station router.Station
-	loopWG  sync.WaitGroup
-	quit    chan struct{}
-	subs    []router.Subscription
+	event  chan *router.Event
+	loopWG sync.WaitGroup
+	quit   chan struct{}
+	subs   []router.Subscription
 }
 
 // NewProtoAdaptor return new ProtoAdaptor
@@ -61,10 +60,9 @@ func NewProtoAdaptor(config *p2p.Config) *ProtoAdaptor {
 			activePeers: make(map[[8]byte]*remotePeer),
 			station:     nil,
 		},
-		event:   make(chan *router.Event),
-		station: router.NewLocalStation("p2p", nil),
-		quit:    make(chan struct{}),
-		subs:    make([]router.Subscription, 0, 2),
+		event: make(chan *router.Event),
+		quit:  make(chan struct{}),
+		subs:  make([]router.Subscription, 0, 2),
 	}
 	adaptor.peerMangaer.station = router.NewBroadcastStation("broadcast", &adaptor.peerMangaer)
 	adaptor.Server.Config.Protocols = adaptor.Protocols()
@@ -79,12 +77,14 @@ func (adaptor *ProtoAdaptor) Start() error {
 	sub2 := router.Subscribe(nil, adaptor.event, router.OneMinuteLimited, nil)
 	adaptor.subs = append(adaptor.subs, sub1, sub2)
 	adaptor.loopWG.Add(1)
-	go adaptor.adaptorEvent()
+	go func() {
+		adaptor.adaptorEvent()
+		adaptor.loopWG.Done()
+	}()
 	return adaptor.Server.Start()
 }
 
 func (adaptor *ProtoAdaptor) adaptorEvent() {
-	defer adaptor.loopWG.Done()
 	timer := time.NewTimer(time.Second)
 	if adaptor.PeerPeriod == 0 || adaptor.MaxPeers == 0 {
 		timer.Stop()
@@ -92,7 +92,6 @@ func (adaptor *ProtoAdaptor) adaptorEvent() {
 	for {
 		select {
 		case <-adaptor.quit:
-			close(adaptor.event)
 			return
 		case <-timer.C:
 			if adaptor.PeerCount() == adaptor.MaxPeers {

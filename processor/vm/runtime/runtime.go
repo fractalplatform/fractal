@@ -113,8 +113,8 @@ func NewEnv(cfg *Config) *vm.EVM {
 			return 3, nil
 		},
 		//GetActivedCandidate
-		GetActivedCandidate: func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, err error) {
-			return "testname", big.NewInt(0), big.NewInt(3), 3, 3, 3, nil
+		GetActivedCandidate: func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, isbad bool, err error) {
+			return "testname", big.NewInt(0), big.NewInt(3), 3, 3, 3, false, nil
 		},
 
 		//GetVoterStake

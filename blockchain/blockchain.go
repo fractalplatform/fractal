@@ -201,8 +201,11 @@ func (bc *BlockChain) SetLastSnapshot(block *types.Block) error {
 	rawdb.WriteHeadHeaderHash(bc.db, currentHeader.Hash())
 
 	// Restore the last known irreversible number
-	rawdb.WriteIrreversibleNumber(bc.db, block.NumberU64())
-	bc.irreversibleNumber.Store(block.NumberU64())
+	irreversibleNumber := rawdb.ReadIrreversibleNumber(bc.db)
+	if block.NumberU64() < irreversibleNumber {
+		rawdb.WriteIrreversibleNumber(bc.db, block.NumberU64())
+	}
+	bc.irreversibleNumber.Store(irreversibleNumber)
 	return nil
 }
 
@@ -228,7 +231,7 @@ func (bc *BlockChain) loadLastBlock() error {
 
 	currentBlock = bc.CurrentBlock()
 	blockTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
-	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "irreversible", currentBlock.NumberU64())
+	log.Info("Loaded most recent local full block", "number", currentBlock.Number(), "hash", currentBlock.Hash(), "td", blockTd, "irreversible", bc.IrreversibleNumber())
 	return nil
 }
 

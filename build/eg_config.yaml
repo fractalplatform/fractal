@@ -110,6 +110,10 @@ ftservice:
     lifetime: 1h
     # Maximum amount of time  executable transaction are resended
     resendtime: 1h
+    # Minimum number of nodes for the transaction broadcast
+    minbroadcast: 3
+    # Ratio of nodes for the transaction broadcast
+    ratiobroadcast: 3
   # gas price oracle
   gpo:
     # Number of recent blocks to check for gas prices
