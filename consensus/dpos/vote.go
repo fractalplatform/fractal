@@ -759,7 +759,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 			}
 			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
 		}
-		for index, offset := range pstate.BadCandidateIndexSchedule {
+		for index, offset := range ppstate.BadCandidateIndexSchedule {
 			usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
 		}
 		ppstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
@@ -779,6 +779,9 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 				break
 			}
 			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+		}
+		for index, offset := range pstate.BadCandidateIndexSchedule {
+			usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
 		}
 		pstate.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		if err := sys.SetState(pstate); err != nil {
@@ -845,18 +848,6 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 
 func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 	size := uint64(len(gstate.UsingCandidateIndexSchedule))
-	if size == 0 {
-		for index := range gstate.ActivatedCandidateSchedule {
-			if uint64(index) >= sys.config.CandidateScheduleSize {
-				break
-			}
-			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
-			size++
-		}
-		for index, offset := range gstate.BadCandidateIndexSchedule {
-			gstate.UsingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
-		}
-	}
 	if offset >= size {
 		return ""
 	}
