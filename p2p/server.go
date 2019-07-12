@@ -492,6 +492,17 @@ func (srv *Server) magicNetID() uint64 {
 func (srv *Server) DiscoverOnly() error {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
+	if srv.running {
+		return errors.New("server already running")
+	}
+	srv.running = true
+	srv.log = srv.Config.Logger
+	if srv.log == nil {
+		srv.log = log.New()
+	}
+
+	srv.log.Info("Starting P2P discovery networking", "NetID", srv.magicNetID(), "UsrNetID", srv.NetworkID)
+
 	// static fields
 	if srv.PrivateKey == nil {
 		return fmt.Errorf("Server.PrivateKey must be set to a non-nil key")
@@ -520,6 +531,7 @@ func (srv *Server) DiscoverOnly() error {
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		timeout := time.NewTicker(10 * time.Minute)
 		defer timeout.Stop()
@@ -549,7 +561,7 @@ func (srv *Server) Start() (err error) {
 	if srv.log == nil {
 		srv.log = log.New()
 	}
-	srv.log.Info("Starting P2P networking")
+	srv.log.Info("Starting P2P networking", "NetID", srv.magicNetID(), "UsrNetID", srv.NetworkID)
 
 	// static fields
 	if srv.PrivateKey == nil {

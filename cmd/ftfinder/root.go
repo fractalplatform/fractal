@@ -24,6 +24,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/cmd/utils"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/spf13/cobra"
@@ -42,8 +43,12 @@ var RootCmd = &cobra.Command{
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
+		hexStr, _ := cmd.Flags().GetString("genesisHash")
 		nodeConfig.P2PConfig.PrivateKey = nodeConfig.NodeKey()
 		nodeConfig.P2PConfig.BootstrapNodes = nodeConfig.BootNodes()
+		nodeConfig.P2PConfig.GenesisHash = common.HexToHash(hexStr)
+		nodeConfig.P2PConfig.Logger = log.New()
+		fmt.Printf("%s %x\n", hexStr, nodeConfig.P2PConfig.GenesisHash)
 		srv := p2p.Server{
 			Config: nodeConfig.P2PConfig,
 		}
@@ -97,6 +102,12 @@ func init() {
 		"p2p_bootnodes",
 		nodeConfig.P2PBootNodes,
 		"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network",
+	)
+
+	flags.String(
+		"genesisHash",
+		"",
+		"Genesis block hash",
 	)
 	defaultLogConfig().Setup()
 }
