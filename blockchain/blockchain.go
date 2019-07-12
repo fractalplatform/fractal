@@ -1176,7 +1176,7 @@ func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
 // ForkUpdate .
 func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
-	return bc.fcontroller.update(block, statedb)
+	return bc.fcontroller.update(block, statedb, bc.GetHeaderByNumber)
 }
 
 // Export writes the active chain to the given writer.
