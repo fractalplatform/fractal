@@ -124,7 +124,7 @@ func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, number uint64)
 		TotalQuantity:               big.NewInt(0),
 		UsingCandidateIndexSchedule: []uint64{},
 		BadCandidateIndexSchedule:   []uint64{},
-		Number: number,
+		Number:                      number,
 	}); err != nil {
 		return err
 	}
@@ -858,7 +858,7 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 					TotalQuantity:               big.NewInt(0),
 					UsingCandidateIndexSchedule: []uint64{},
 					BadCandidateIndexSchedule:   []uint64{},
-					Number: 0,
+					Number:                      0,
 				}
 				for _, candidateInfo := range candidateInfoArray {
 					if !candidateInfo.invalid() {
