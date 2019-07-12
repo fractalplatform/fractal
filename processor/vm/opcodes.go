@@ -228,7 +228,8 @@ const (
 	GETCANDIDATE           = 0xd2
 	GETVOTERSTAKE          = 0xd3
 	RECIPIENT              = 0xd4
-	CALLWITHPAY            = 0xd5
+
+//	CALLWITHPAY            = 0xd5
 )
 
 const (
@@ -422,7 +423,7 @@ var opCodeToString = map[OpCode]string{
 	GETCANDIDATE:    "GETCANDIDATE",
 	GETVOTERSTAKE:   "GETVOTERSTAKE",
 	RECIPIENT:       "RECIPIENT",
-	CALLWITHPAY:     "CALLWITHPAY",
+	//	CALLWITHPAY:     "CALLWITHPAY",
 
 	// 0xf0 range
 	CREATE:       "CREATE",
@@ -611,7 +612,7 @@ var stringToOp = map[string]OpCode{
 	"GETCANDIDATE":    GETCANDIDATE,
 	"GETVOTERSTAKE":   GETVOTERSTAKE,
 	"RECIPIENT":       RECIPIENT,
-	"CALLWITHPAY":     CALLWITHPAY,
+	//	"CALLWITHPAY":     CALLWITHPAY,
 
 	"CREATE":       CREATE,
 	"CALL":         CALL,
