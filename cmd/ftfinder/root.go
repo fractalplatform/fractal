@@ -48,7 +48,6 @@ var RootCmd = &cobra.Command{
 		nodeConfig.P2PConfig.BootstrapNodes = nodeConfig.BootNodes()
 		nodeConfig.P2PConfig.GenesisHash = common.HexToHash(hexStr)
 		nodeConfig.P2PConfig.Logger = log.New()
-		fmt.Printf("%s %x\n", hexStr, nodeConfig.P2PConfig.GenesisHash)
 		srv := p2p.Server{
 			Config: nodeConfig.P2PConfig,
 		}
