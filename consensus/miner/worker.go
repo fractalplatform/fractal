@@ -135,7 +135,8 @@ func (worker *Worker) mintLoop() {
 	})
 	interval := int64(dpos.BlockInterval())
 	c := make(chan time.Time)
-	worker.utimer(time.Duration(interval-(time.Now().UnixNano()%interval)), c)
+	to := time.Now()
+	worker.utimerTo(to.Add(time.Duration(interval-(to.UnixNano()%interval))), c)
 	for {
 		select {
 		case now := <-c:
@@ -152,10 +153,8 @@ func (worker *Worker) mintLoop() {
 			worker.wgWork.Add(1)
 			timestamp := int64(dpos.Slot(uint64(now.UnixNano())))
 			go worker.mintBlock(timestamp, quit)
-			if d := time.Unix(timestamp/int64(time.Second), timestamp%int64(time.Second)).Sub(time.Now()); d > 0 {
-				worker.usleep(d)
-			}
-			worker.utimer(time.Duration(interval-(time.Now().UnixNano()%interval)), c)
+			to := time.Now()
+			worker.utimerTo(to.Add(time.Duration(interval-(to.UnixNano()%interval))), c)
 		case <-worker.quit:
 			worker.quit = make(chan struct{})
 			return
@@ -216,7 +215,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 			break
 		} else if strings.Contains(err.Error(), "wait") {
-			worker.usleep(time.Duration(cdpos.BlockInterval() / 10))
+			worker.usleepTo(time.Now().Add(time.Duration(cdpos.BlockInterval() / 10)))
 			//time.Sleep(time.Duration(cdpos.BlockInterval() / 10))
 		}
 
@@ -257,11 +256,11 @@ func (worker *Worker) setExtra(extra []byte) {
 
 func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit chan struct{}) (*types.Block, error) {
 	dpos := worker.Engine().(*dpos.Dpos)
-	if time.Now().UnixNano() >= timestamp+int64(dpos.BlockInterval()) {
-		return nil, errors.New("mint the ingore block")
+	if t := time.Now(); t.UnixNano() >= timestamp+int64(dpos.BlockInterval()) {
+		return nil, fmt.Errorf("mint the ingore block, need %v, now %v, sub %v", timestamp, t.UnixNano(), t.Sub(time.Unix(timestamp/int64(time.Second), timestamp%int64(time.Second))))
 	}
 	if parent.Time.Int64() >= timestamp {
-		return nil, errors.New("mint the future block")
+		return nil, errors.New("mint the old block")
 	}
 	// if dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && timestamp-time.Now().UnixNano() >= int64(dpos.BlockInterval())/10 {
 	if parent.Number.Uint64() > 0 &&
@@ -470,18 +469,17 @@ type Work struct {
 	quit            chan struct{}
 }
 
-func (worker *Worker) usleep(duration time.Duration) {
-	end := time.Now().Add(duration)
+func (worker *Worker) usleepTo(to time.Time) {
 	for {
-		time.Sleep(time.Microsecond)
-		if time.Now().Sub(end) >= 0 {
+		if time.Now().UnixNano() >= to.UnixNano() {
 			break
 		}
+		time.Sleep(time.Millisecond)
 	}
 }
-func (worker *Worker) utimer(duration time.Duration, c chan time.Time) {
+func (worker *Worker) utimerTo(to time.Time, c chan time.Time) {
 	go func(c chan time.Time) {
-		worker.usleep(duration)
-		c <- time.Now()
+		worker.usleepTo(to)
+		c <- to
 	}(c)
 }
