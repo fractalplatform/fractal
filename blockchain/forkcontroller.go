@@ -104,7 +104,7 @@ func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) err
 	return nil
 }
 
-func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) error {
+func (fc *ForkController) update(block *types.Block, statedb *state.StateDB, getHeader func(number uint64) *types.Header) error {
 	info, err := fc.getForkInfo(statedb)
 	if err != nil {
 		return err
@@ -120,13 +120,23 @@ func (fc *ForkController) update(block *types.Block, statedb *state.StateDB) err
 
 		info.NextForkIDBlockNum++
 		if info.CurForkIDBlockNum+info.NextForkIDBlockNum >= fc.cfg.ForkBlockNum {
-			info.CurForkIDBlockNum--
+			header := getHeader(block.NumberU64() + 1 - fc.cfg.ForkBlockNum)
+			if header.NextForkID() == info.NextForkID {
+				info.NextForkIDBlockNum--
+			} else {
+				info.CurForkIDBlockNum--
+			}
 		}
 	} else {
 		info.CurForkIDBlockNum++
 		if info.CurForkIDBlockNum+info.NextForkIDBlockNum >= fc.cfg.ForkBlockNum {
-			if info.NextForkIDBlockNum != 0 {
-				info.NextForkIDBlockNum--
+			header := getHeader(block.NumberU64() + 1 - fc.cfg.ForkBlockNum)
+			if header.NextForkID() == info.NextForkID {
+				if info.NextForkIDBlockNum != 0 {
+					info.NextForkIDBlockNum--
+				} else {
+					info.CurForkIDBlockNum--
+				}
 			} else {
 				info.CurForkIDBlockNum--
 			}
