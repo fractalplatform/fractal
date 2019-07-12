@@ -185,7 +185,9 @@ type GlobalState struct {
 
 // ArrayCandidateInfoForBrowser dpos state
 type ArrayCandidateInfoForBrowser struct {
-	Data []*CandidateInfoForBrowser `json:"data"`
+	Data                        []*CandidateInfoForBrowser `json:"data"`
+	BadCandidateIndexSchedule   []uint64                   `json:"bad"`
+	UsingCandidateIndexSchedule []uint64                   `json:"using"`
 }
 
 // CandidateInfoForBrowser dpos state
@@ -198,7 +200,7 @@ type CandidateInfoForBrowser struct {
 	ActualCounter    uint64 `json:"actualCounter"`
 	NowCounter       uint64 `json:"nowShouldCounter"`
 	NowActualCounter uint64 `json:"nowActualCounter"`
-	Status           uint64 `json:"status"` //0:die 1:activate 2:spare
+	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
 // CandidateInfoArray array of candidate
