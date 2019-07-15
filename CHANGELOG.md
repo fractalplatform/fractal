@@ -1,4 +1,16 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.23] - 2019-07-15
+### Fixed
+- [RPC] fixed getTxsByAccount rpc arg check and uint infinite loop
+- [BLOCKCHAIN] modify blockchain start err 
+### Changed
+- [TXPOOL] move TxPool reorg and events to background goroutine
+- [P2P] ftfinder: add cmd flag that can input genesis block hash
+### Added
+- [P2P] txpool.handler: add config of txs broadcast
+- [RPC] add some dpos rpc api for browser
+
+
 ## [0.0.22] - 2019-06-24
 ### Forked
 - [ACCOUNTNAME] forkID=1: modify account verification rules,asset contains account prefix
@@ -180,6 +192,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.23]: https://github.com/fractalplatform/fractal/compare/v0.0.22...v0.0.23
 [0.0.22]: https://github.com/fractalplatform/fractal/compare/v0.0.21...v0.0.22
 [0.0.21]: https://github.com/fractalplatform/fractal/compare/v0.0.20...v0.0.21
 [0.0.20]: https://github.com/fractalplatform/fractal/compare/v0.0.19...v0.0.20

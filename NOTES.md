@@ -1,8 +1,10 @@
-### Forked
-- [ACCOUNTNAME] forkID=1: modify account verification rules,asset contains account prefix
+### Fixed
+- [RPC] fixed getTxsByAccount rpc arg check and uint infinite loop
+- [BLOCKCHAIN] modify blockchain start err 
 ### Changed
-- [DPOS] modify dpos getepoch api
-- [GENESIS] fix SetupGenesisBlock func return result
+- [TXPOOL] move TxPool reorg and events to background goroutine
+- [P2P] ftfinder: add cmd flag that can input genesis block hash
 ### Added
-- [GENESIS] start node with fork id
+- [P2P] txpool.handler: add config of txs broadcast
+- [RPC] add some dpos rpc api for browser
 
