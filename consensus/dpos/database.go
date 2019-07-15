@@ -26,16 +26,16 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// LastEpoch latest
-var LastEpoch = uint64(math.MaxUint64)
-
 // IDB dpos database
 type IDB interface {
 	SetCandidate(*CandidateInfo) error
 	DelCandidate(uint64, string) error
 	GetCandidate(uint64, string) (*CandidateInfo, error)
-	GetCandidates(uint64) ([]*CandidateInfo, error)
+	GetCandidates(uint64) (CandidateInfoArray, error)
 	CandidatesSize(uint64) (uint64, error)
+
+	SetActivatedCandidate(uint64, *CandidateInfo) error
+	GetActivatedCandidate(uint64) (*CandidateInfo, error)
 
 	SetAvailableQuantity(uint64, string, *big.Int) error
 	GetAvailableQuantity(uint64, string) (*big.Int, error)
@@ -49,6 +49,9 @@ type IDB interface {
 	GetState(uint64) (*GlobalState, error)
 	SetLastestEpoch(uint64) error
 	GetLastestEpoch() (uint64, error)
+
+	SetTakeOver(uint64) error
+	GetTakeOver() (uint64, error)
 
 	Undelegate(string, *big.Int) (*types.Action, error)
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
@@ -162,36 +165,73 @@ func (voter *VoterInfo) key() string {
 	return fmt.Sprintf("0x%x_%s_%s", voter.Epoch, voter.Name, voter.Candidate)
 }
 
+var (
+	InvalidIndex = uint64(math.MaxUint64)
+)
+
 // GlobalState dpos state
 type GlobalState struct {
-	Epoch                      uint64   `json:"epoch"`                      // epoch
-	PreEpoch                   uint64   `json:"preEpoch"`                   // epoch
-	ActivatedCandidateSchedule []string `json:"activatedCandidateSchedule"` // candidates
-	ActivatedTotalQuantity     *big.Int `json:"activatedTotalQuantity"`     // the sum of activate candidate votes
-	OffCandidateSchedule       []uint64 `json:"offCandidateSchedule"`       // activated backup candidates
-	OffCandidateNumber         []uint64 `json:"offCandidateNumber"`         // activated backup candidates
-	TotalQuantity              *big.Int `json:"totalQuantity"`              // the sum of all candidate votes
-	TakeOver                   bool     `json:"takeOver"`                   // systemio take over dpos
-	Dpos                       bool     `json:"dpos"`                       // dpos status
-	Number                     uint64   `json:"number"`                     // timestamp
+	Epoch                       uint64   `json:"epoch"`                       // epoch
+	PreEpoch                    uint64   `json:"preEpoch"`                    // epoch
+	ActivatedCandidateSchedule  []string `json:"activatedCandidateSchedule"`  // candidates
+	ActivatedTotalQuantity      *big.Int `json:"activatedTotalQuantity"`      // the sum of activate candidate votes
+	BadCandidateIndexSchedule   []uint64 `json:"badCandidateIndexSchedule"`   // activated backup candidates
+	UsingCandidateIndexSchedule []uint64 `json:"usingCandidateIndexSchedule"` // activated backup candidates
+	TotalQuantity               *big.Int `json:"totalQuantity"`               // the sum of all candidate votes
+	TakeOver                    bool     `json:"takeOver"`                    // systemio take over dpos
+	Dpos                        bool     `json:"dpos"`                        // dpos status
+	Number                      uint64   `json:"number"`                      // timestamp
+}
+
+// ArrayCandidateInfoForBrowser dpos state
+type ArrayCandidateInfoForBrowser struct {
+	Data                        []*CandidateInfoForBrowser `json:"data"`
+	BadCandidateIndexSchedule   []uint64                   `json:"bad"`
+	UsingCandidateIndexSchedule []uint64                   `json:"using"`
+}
+
+// CandidateInfoForBrowser dpos state
+type CandidateInfoForBrowser struct {
+	Candidate        string `json:"candidate"`
+	Holder           string `json:"holder"`
+	Quantity         string `json:"quantity"`
+	TotalQuantity    string `json:"totalQuantity"`
+	Counter          uint64 `json:"shouldCounter"`
+	ActualCounter    uint64 `json:"actualCounter"`
+	NowCounter       uint64 `json:"nowShouldCounter"`
+	NowActualCounter uint64 `json:"nowActualCounter"`
+	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
 // CandidateInfoArray array of candidate
 type CandidateInfoArray []*CandidateInfo
 
+type Epochs struct {
+	Data []*Epoch `json:"data"`
+}
+
+type Epoch struct {
+	Start uint64 `json:"start"`
+	Epoch uint64 `json:"epoch"`
+}
+
 func (prods CandidateInfoArray) Len() int {
 	return len(prods)
 }
 func (prods CandidateInfoArray) Less(i, j int) bool {
-	val := prods[i].TotalQuantity.Cmp(prods[j].TotalQuantity)
-	if val == 0 {
-		if prods[i].Number == prods[j].Number {
-			return strings.Compare(prods[i].Name, prods[j].Name) > 0
-		}
-		return prods[i].Number < prods[j].Number
-	}
-	return val > 0
+	return more(prods[i], prods[j])
 }
 func (prods CandidateInfoArray) Swap(i, j int) {
 	prods[i], prods[j] = prods[j], prods[i]
+}
+
+func more(frist *CandidateInfo, second *CandidateInfo) bool {
+	val := frist.TotalQuantity.Cmp(second.TotalQuantity)
+	if val == 0 {
+		if frist.Number == second.Number {
+			return strings.Compare(frist.Name, second.Name) > 0
+		}
+		return frist.Number < second.Number
+	}
+	return val > 0
 }

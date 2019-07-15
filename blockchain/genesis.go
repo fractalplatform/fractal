@@ -24,17 +24,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fractalplatform/fractal/consensus/dpos"
-	"github.com/fractalplatform/fractal/snapshot"
-
 	"github.com/ethereum/go-ethereum/log"
 	am "github.com/fractalplatform/fractal/accountmanager"
 	at "github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/consensus/dpos"
 	fm "github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
+	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -414,8 +413,14 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 		}
 	}
-	if err := sys.UpdateElectedCandidates(epoch, epoch, number.Uint64(), ""); err != nil {
-		return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
+	if fid := g.ForkID; fid >= params.ForkID2 {
+		if err := sys.UpdateElectedCandidates1(epoch, epoch, number.Uint64(), ""); err != nil {
+			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
+		}
+	} else {
+		if err := sys.UpdateElectedCandidates0(epoch, epoch, number.Uint64(), ""); err != nil {
+			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
+		}
 	}
 
 	// init  fork controller

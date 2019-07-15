@@ -26,8 +26,6 @@ import (
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
 )
 
 // Miner creates blocks and searches for proof values.
@@ -114,11 +112,6 @@ func (miner *Miner) Stop() bool {
 // Mining wroker is wroking
 func (miner *Miner) Mining() bool {
 	return atomic.LoadInt32(&miner.mining) > 0
-}
-
-// Pending returns the currently pending block and associated state.
-func (miner *Miner) Pending() (*types.Block, *state.StateDB) {
-	return miner.worker.pending()
 }
 
 // SetCoinbase coinbase name & private key

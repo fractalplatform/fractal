@@ -28,11 +28,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestForkController(t *testing.T) {
+type headerMap map[uint64]*types.Header
+
+func (h headerMap) getHeader(num uint64) *types.Header {
+	return h[num]
+}
+func (h headerMap) setHeader(num uint64, header *types.Header) {
+	h[num] = header
+}
+
+func TestForkController1(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
 		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
+		hm         = make(headerMap)
 	)
 	if err := initForkController(params.DefaultChainconfig.ChainName, statedb, 0); err != nil {
 		t.Fatal(err)
@@ -40,21 +50,22 @@ func TestForkController(t *testing.T) {
 	fc := NewForkController(testcfg, params.DefaultChainconfig)
 
 	var number int64
-	for j := 0; j < 2; j++ {
+	for j := 0; j < 1; j++ {
 		for i := 0; i < 8; i++ {
-
 			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
-			block.Head.WithForkID(uint64(j), uint64(j+1))
+			block.Head.WithForkID(uint64(j), uint64(j))
+			hm.setHeader(uint64(number), block.Head)
 			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
-			assert.NoError(t, fc.update(block, statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
 			number++
 		}
 
-		for i := 0; i < 10; i++ {
+		for i := 0; i < 8; i++ {
 			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
-			block.Head.WithForkID(uint64(j+1), uint64(j+1))
+			block.Head.WithForkID(uint64(j), uint64(j+1))
+			hm.setHeader(uint64(number), block.Head)
 			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
-			assert.NoError(t, fc.update(block, statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
 			number++
 		}
 
@@ -66,11 +77,75 @@ func TestForkController(t *testing.T) {
 	}
 }
 
+func TestForkController2(t *testing.T) {
+	var (
+		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
+		db         = memdb.NewMemDatabase()
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
+		hm         = make(headerMap)
+	)
+	if err := initForkController(params.DefaultChainconfig.ChainName, statedb, 0); err != nil {
+		t.Fatal(err)
+	}
+	fc := NewForkController(testcfg, params.DefaultChainconfig)
+
+	var number int64
+	for j := 0; j < 1; j++ {
+		for i := 0; i < 16; i++ {
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
+			if i%2 == 0 {
+				block.Head.WithForkID(uint64(j), uint64(j))
+			} else {
+				block.Head.WithForkID(uint64(j), uint64(j+2))
+			}
+			hm.setHeader(uint64(number), block.Head)
+			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
+			number++
+		}
+
+		for i := 0; i < 2; i++ {
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
+			block.Head.WithForkID(uint64(j), uint64(j+1))
+			hm.setHeader(uint64(number), block.Head)
+			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
+			number++
+		}
+
+		for i := 0; i < 8; i++ {
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
+			block.Head.WithForkID(uint64(j), uint64(j+2))
+			hm.setHeader(uint64(number), block.Head)
+			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
+			number++
+		}
+
+		// after fork success
+		for i := 0; i < 6; i++ {
+			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
+			block.Head.WithForkID(uint64(j+2), uint64(j+2))
+			hm.setHeader(uint64(number), block.Head)
+			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
+			number++
+		}
+
+		id, _, err := fc.currentForkID(statedb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, uint64(j+2), id)
+	}
+}
+
 func TestUpdateDifferentForkBlock(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
 		db         = memdb.NewMemDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
+		hm         = make(headerMap)
 	)
 	if err := initForkController(params.DefaultChainconfig.ChainName, statedb, 0); err != nil {
 		t.Fatal(err)
@@ -82,8 +157,9 @@ func TestUpdateDifferentForkBlock(t *testing.T) {
 		for i := 0; i < 7; i++ {
 			block := &types.Block{Head: &types.Header{Number: big.NewInt(number)}}
 			block.Head.WithForkID(uint64(0), uint64(j+1))
+			hm.setHeader(uint64(number), block.Head)
 			assert.NoError(t, fc.checkForkID(block.Header(), statedb))
-			assert.NoError(t, fc.update(block, statedb))
+			assert.NoError(t, fc.update(block, statedb, hm.getHeader))
 			number++
 
 			info, err := fc.getForkInfo(statedb)

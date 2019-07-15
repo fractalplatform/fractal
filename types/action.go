@@ -87,6 +87,8 @@ const (
 	KickedCandidate ActionType = 0x400 + iota
 	// ExitTakeOver exit
 	ExitTakeOver
+	// RemoveKickedCandidate kicked
+	RemoveKickedCandidate
 )
 
 const (
@@ -212,6 +214,8 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 	case RefundCandidate:
 		fallthrough
 	case KickedCandidate:
+		fallthrough
+	case RemoveKickedCandidate:
 		fallthrough
 	case ExitTakeOver:
 		if a.data.To.String() != conf.DposName {

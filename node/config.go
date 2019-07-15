@@ -216,7 +216,7 @@ func (c *Config) readEnodes(path string) []*enode.Node {
 		if node, err := enode.ParseV4(string(line)); err == nil {
 			nodes = append(nodes, node)
 		} else {
-			log.Error("enodes config node parseV4 failed.", "err", err)
+			log.Error("enodes config node parseV4 failed.", "err", err, "line", string(line))
 		}
 	}
 	return nodes
