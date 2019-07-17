@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fractalplatform/fractal/params"
+
 	"github.com/fractalplatform/fractal/sdk"
 )
 
@@ -84,8 +86,15 @@ func main() {
 	epochFunc := func(timestamp uint64) uint64 {
 		return (timestamp-chainCfg.ReferenceTime)/epochInterval + 1
 	}
-	offsetFunc := func(timestamp uint64) uint64 {
-		offset := uint64(timestamp-blockInterval) % epochInterval % mepochInterval
+	epochTimeStampFunc := func(epoch uint64) uint64 {
+		return (epoch-1)*epochInterval + chainCfg.ReferenceTime
+	}
+	offsetFunc := func(timestamp uint64, fid uint64) uint64 {
+		interval := blockInterval
+		if fid >= params.ForkID2 {
+			interval = 0
+		}
+		offset := uint64(timestamp-interval) % epochInterval % mepochInterval
 		offset /= blockInterval * chainCfg.DposCfg.BlockFrequency
 		return offset
 	}
@@ -94,6 +103,7 @@ func main() {
 	var timeStart, timeEnd int64
 	var totalTxsCount, totalBlockSize int64
 	var prevTime int64
+	lastminer := ""
 	for i := *_start; i <= *_end; i++ {
 		blk, err := getBlockInfo(api, i)
 		if err != nil {
@@ -110,32 +120,28 @@ func main() {
 
 		printDetails := func(timestamp int64, miner string, txs uint64, height uint64) {
 			if prevTime == blk.TimeStamp || epochFunc(uint64(prevTime)) != epochFunc(uint64(timestamp)) {
-				if epochFunc(uint64(prevTime)) != epochFunc(uint64(timestamp)) {
-					fmt.Printf("%5d(%05d-%ds-%s)", txs, height, timestamp/(int64(time.Second))%60, miner)
-				}
 				epoch := epochFunc(uint64(timestamp))
 				vcandidates, err := api.DposValidCandidates(epoch)
 				if err != nil {
 					panic(err)
 				}
 				fmt.Println("\n==========================周期==========================")
-				if height > 0 {
-					fmt.Println(blk.Height, epoch, vcandidates["activatedCandidateSchedule"])
-				} else {
-					fmt.Println(epoch)
-				}
+				fmt.Printf("epoch %d height %d\n", epoch, blk.Height)
+				fmt.Printf("activatedCandidateSchedule %v\n", vcandidates["activatedCandidateSchedule"])
+				fmt.Printf("badCandidateIndexSchedule %v\n", vcandidates["badCandidateIndexSchedule"])
+				fmt.Printf("usingCandidateIndexSchedule %v\n", vcandidates["usingCandidateIndexSchedule"])
 				fmt.Println("==========================周期==========================")
 			}
-			offset := offsetFunc(uint64(timestamp))
-			if prevTime == blk.TimeStamp || offset != offsetFunc(uint64(prevTime)) {
-				fmt.Printf("\n%03d%s:", offset, miner)
+			offset := offsetFunc(uint64(timestamp), params.ForkID2)
+			if prevTime == blk.TimeStamp || offset != offsetFunc(uint64(prevTime), params.ForkID2) {
+				mepoch := (uint64(blk.TimeStamp) - epochTimeStampFunc(epochFunc(uint64(blk.TimeStamp)))) / mepochInterval / 10
+				fmt.Printf("\n%03d-%03d-%05d(%s):", mepoch, offset, height, miner)
+				lastminer = miner
 			}
-			if prevTime == blk.TimeStamp || epochFunc(uint64(prevTime)) == epochFunc(uint64(timestamp)) {
-				if height == 0 {
-					fmt.Printf("%5d(*****-%ds)", txs, timestamp/(int64(time.Second))%60)
-				} else {
-					fmt.Printf("%5d(%05d-%ds)", txs, height, timestamp/(int64(time.Second))%60)
-				}
+			if lastminer != miner {
+				fmt.Printf("%5d-%05d(%s)", txs, height, miner)
+			} else {
+				fmt.Printf("%5d", txs)
 			}
 		}
 		if *_detail {
