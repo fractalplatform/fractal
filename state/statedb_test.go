@@ -29,6 +29,86 @@ import (
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
+func TestNew(t *testing.T) {
+	db := mdb.NewMemDatabase()
+	cacheDb := NewDatabase(db)
+
+	rootHash := common.BytesToHash([]byte("not exist hash"))
+	_, err := New(rootHash, cacheDb)
+	if err == nil {
+		t.Error(fmt.Sprintf("new state error, %v", err))
+	}
+
+	rootNullHash := common.Hash{}
+	_, err = New(rootNullHash, cacheDb)
+	if err != nil {
+		t.Error(fmt.Sprintf("new state error, %v", err))
+	}
+}
+
+func TestReset(t *testing.T) {
+	db := mdb.NewMemDatabase()
+	cacheDb := NewDatabase(db)
+	rootNullHash := common.Hash{}
+
+	stateX, err := New(rootNullHash, cacheDb)
+	if err != nil {
+		t.Error(fmt.Sprintf("new state error, %v", err))
+	}
+
+	accountName := "A"
+	key := "key"
+	value := []byte("100")
+
+	stateX.Put(accountName, key, value)
+	valueRet, err := stateX.Get(accountName, key)
+	if err != nil {
+		t.Error(fmt.Sprintf("get value error, %v", err))
+	}
+
+	if !bytes.Equal(valueRet, value) {
+		t.Error("value error")
+	}
+
+	err = stateX.Reset(rootNullHash)
+	if err != nil {
+		t.Error(fmt.Sprintf("state reset error, %v", err))
+	}
+
+	valueRet, err = stateX.Get(accountName, key)
+	if err != nil {
+		t.Error(fmt.Sprintf("get value error, %v", err))
+	}
+
+	if !bytes.Equal(valueRet, nil) {
+		t.Error("value error")
+	}
+
+	err = stateX.Reset(common.BytesToHash([]byte("not exist hash")))
+	if err == nil {
+		t.Error(fmt.Sprintf("state reset error"))
+	}
+}
+
+func TestRefund(t *testing.T) {
+	db := mdb.NewMemDatabase()
+	cacheDb := NewDatabase(db)
+	rootNullHash := common.Hash{}
+
+	stateX, err := New(rootNullHash, cacheDb)
+	if err != nil {
+		t.Error(fmt.Sprintf("new state error, %v", err))
+	}
+
+	stateX.AddRefund(1000)
+	stateX.AddRefund(2000)
+
+	refund := stateX.GetRefund()
+	if refund != 3000 {
+		t.Error(fmt.Sprintf("refund error, %v", refund))
+	}
+}
+
 func TestPutAndGet(t *testing.T) {
 	db := mdb.NewMemDatabase()
 	batch := db.NewBatch()
