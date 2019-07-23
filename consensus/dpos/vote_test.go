@@ -70,7 +70,6 @@ func TestCandiate(t *testing.T) {
 		}
 
 		if ncandidates, _ := sys.GetCandidates(uint64(index)); len(ncandidates) != 1 {
-			fmt.Println(len(ncandidates), 1)
 			panic(fmt.Sprintf("GetCandidates mismatch"))
 		}
 
