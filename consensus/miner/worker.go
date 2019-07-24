@@ -200,7 +200,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			case dpos.ErrIllegalCandidateName:
 				fallthrough
 			case dpos.ErrIllegalCandidatePubKey:
-				log.Error("failed to mint the block", "timestamp", timestamp, "err", err, "candidate", worker.coinbase)
+				log.Warn("failed to mint the block", "timestamp", timestamp, "err", err, "candidate", worker.coinbase)
 			default:
 				log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
 			}
@@ -243,8 +243,10 @@ func (worker *Worker) setCoinbase(name string, privKeys []*ecdsa.PrivateKey) {
 	worker.coinbase = name
 	worker.privKeys = privKeys
 	worker.pubKeys = nil
-	for _, privkey := range privKeys {
-		worker.pubKeys = append(worker.pubKeys, crypto.FromECDSAPub(&privkey.PublicKey))
+	for index, privkey := range privKeys {
+		pubkey := crypto.FromECDSAPub(&privkey.PublicKey)
+		log.Info("setCoinbase", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String())
+		worker.pubKeys = append(worker.pubKeys, pubkey)
 	}
 }
 
@@ -362,7 +364,8 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	for {
 		select {
 		case <-work.quit:
-			return fmt.Errorf("mined block timestamp %v missing --- signal", work.currentHeader.Time.Int64())
+			log.Debug("mined block missing --- signal", "timestamp", work.currentHeader.Time.Int64())
+			return nil
 		default:
 		}
 		if work.currentGasPool.Gas() < params.GasTableInstanse.ActionGas {
