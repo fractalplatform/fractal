@@ -429,6 +429,26 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	return candidateInfos, nil
 }
 
+// SnapShotStake get snapshot stake
+func (api *API) SnapShotStake(epoch uint64, name string) (interface{}, error) {
+	if epoch == 0 {
+		epoch, _ = api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	}
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	timestamp := sys.config.epochTimeStamp(epoch)
+	gstate, err := sys.GetState(epoch)
+	if err != nil {
+		return nil, err
+	}
+	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+	}
+	return sys.GetBalanceByTime(name, timestamp)
+}
+
 // SnapShotTime get snapshot timestamp
 func (api *API) SnapShotTime(epoch uint64) (interface{}, error) {
 	if epoch == 0 {
