@@ -150,7 +150,9 @@ const (
 	ForkID1 = uint64(1)
 	//ForkID2 dpos
 	ForkID2 = uint64(2)
+	//ForkID3 dpos config candidateAvailableMinQuantity modified
+	ForkID3 = uint64(3)
 
 	// NextForkID is the id of next fork
-	NextForkID uint64 = 2
+	NextForkID uint64 = ForkID3
 )
