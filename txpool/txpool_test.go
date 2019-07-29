@@ -1326,7 +1326,7 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 	for i := uint64(0); i < config.GlobalSlots; i++ {
 		txs = append(txs, pricedTransaction(i, accs[0], tname, 1000000, big.NewInt(1), keys[0]))
 	}
-	pool.addRemotesSync(txs)
+	pool.AddRemotes(txs)
 
 	pending, queued := pool.Stats()
 	if pending != int(config.GlobalSlots) {
