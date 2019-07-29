@@ -282,86 +282,70 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	}
 
 	candidateInfos := ArrayCandidateInfoForBrowser{}
-	candidateInfos.Data = make([]*CandidateInfoForBrowser, len(dataEpoch.ActivatedCandidateSchedule))
+	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
 
-	// var spare = 7
-	// var activate = 21
-	// var magic uint64 = 18446744073709551615
-	for i, activatedCandidate := range dataEpoch.ActivatedCandidateSchedule {
-		candidateInfo := &CandidateInfoForBrowser{}
-		candidateInfo.Candidate = activatedCandidate
+	candidateInfos.TakeOver = dataEpoch.TakeOver
+	candidateInfos.Dpos = dataEpoch.Dpos
 
-		curtmp, err := sys.GetCandidate(req, activatedCandidate)
-		if err != nil {
-			log.Warn("BrowserEpochRecord Cur Candidate:", req, " Data not found")
-			return nil, fmt.Errorf("Cur Candidate:%d Data not found", req)
-		}
-		if curtmp != nil {
-			candidateInfo.NowCounter = curtmp.Counter
-			candidateInfo.NowActualCounter = curtmp.ActualCounter
-		}
-
-		tmp, err := sys.GetCandidate(data, activatedCandidate)
-		if err != nil {
-			return nil, err
-		}
-		if tmp != nil {
-			candidateInfo.Quantity = tmp.Quantity.Mul(tmp.Quantity, api.dpos.config.unitStake()).String()
-			candidateInfo.TotalQuantity = tmp.TotalQuantity.String()
-			candidateInfo.Counter = tmp.Counter
-			candidateInfo.ActualCounter = tmp.ActualCounter
-		}
-
-		// if i < activate {
-		// 	candidateInfo.Status = 1
-		// } else {
-		// 	candidateInfo.Status = 2
-		// }
-		if balance, err := sys.GetBalanceByTime(activatedCandidate, timestamp); err != nil {
-			log.Warn("BrowserEpochRecord", "candidate", activatedCandidate, "ignore", err)
-			return nil, err
-		} else {
-			candidateInfo.Holder = balance.String()
-		}
-		candidateInfos.Data[i] = candidateInfo
-	}
-
-	// fmt.Println(dataEpoch.BadCandidateIndexSchedule, len(candidateInfos.Data))
-	// if len(dataEpoch.BadCandidateIndexSchedule) > 14 {
-	// 	log.Warn("BrowserEpochRecord BadCandidateIndexSchedule > 14", "epoch", data)
-	// 	return nil, fmt.Errorf("count %d > 14", len(dataEpoch.BadCandidateIndexSchedule))
-	// }
-	// for i := 0; i < len(dataEpoch.BadCandidateIndexSchedule); i++ {
-	// 	j := i + activate
-	// 	if i < spare && len(candidateInfos.Data) > j {
-	// 		candidateInfos.Data[dataEpoch.BadCandidateIndexSchedule[i]].Status = 0
-	// 		candidateInfos.Data[j].Status = 1
-	// 	} else {
-	// 		candidateInfos.Data[dataEpoch.BadCandidateIndexSchedule[i]].Status = 0
-	// 	}
-	// }
-	if len(dataEpoch.UsingCandidateIndexSchedule) == 0 {
-		usingCandidateIndexSchedule := []uint64{}
-		for index := range dataEpoch.ActivatedCandidateSchedule {
-			if uint64(index) >= sys.config.CandidateScheduleSize {
-				break
+	if dataEpoch.Dpos {
+		for _, activatedCandidate := range dataEpoch.ActivatedCandidateSchedule {
+			if activatedCandidate == "fractal.founder" {
+				continue
 			}
-			usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+			candidateInfo := &CandidateInfoForBrowser{}
+			candidateInfo.Candidate = activatedCandidate
+
+			curtmp, err := sys.GetCandidate(req, activatedCandidate)
+			if err != nil {
+				log.Warn("BrowserEpochRecord Cur Candidate:", req, " Data not found")
+				return nil, fmt.Errorf("Cur Candidate:%d Data not found", req)
+			}
+			if curtmp != nil {
+				candidateInfo.NowCounter = curtmp.Counter
+				candidateInfo.NowActualCounter = curtmp.ActualCounter
+			}
+
+			tmp, err := sys.GetCandidate(data, activatedCandidate)
+			if err != nil {
+				return nil, err
+			}
+			if tmp != nil {
+				candidateInfo.Quantity = tmp.Quantity.Mul(tmp.Quantity, api.dpos.config.unitStake()).String()
+				candidateInfo.TotalQuantity = tmp.TotalQuantity.String()
+				candidateInfo.Counter = tmp.Counter
+				candidateInfo.ActualCounter = tmp.ActualCounter
+			}
+
+			var balance *big.Int
+			if balance, err = sys.GetBalanceByTime(activatedCandidate, timestamp); err != nil {
+				if err.Error() != "Not snapshot info, error = EOF" {
+					log.Warn("BrowserEpochRecord", "candidate", activatedCandidate, "ignore", err)
+					return nil, err
+				}
+			}
+			candidateInfo.Holder = balance.String()
+
+			candidateInfos.Data = append(candidateInfos.Data, candidateInfo)
 		}
-		for index, offset := range dataEpoch.BadCandidateIndexSchedule {
-			usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
+
+		if len(dataEpoch.UsingCandidateIndexSchedule) == 0 {
+			usingCandidateIndexSchedule := []uint64{}
+			for index := range dataEpoch.ActivatedCandidateSchedule {
+				if uint64(index) >= sys.config.CandidateScheduleSize {
+					break
+				}
+				usingCandidateIndexSchedule = append(usingCandidateIndexSchedule, uint64(index))
+			}
+			for index, offset := range dataEpoch.BadCandidateIndexSchedule {
+				usingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
+			}
+			dataEpoch.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
 		}
-		dataEpoch.UsingCandidateIndexSchedule = usingCandidateIndexSchedule
+
+		candidateInfos.BadCandidateIndexSchedule = dataEpoch.BadCandidateIndexSchedule
+		candidateInfos.UsingCandidateIndexSchedule = dataEpoch.UsingCandidateIndexSchedule
 	}
 
-	// for i, index := range dataEpoch.UsingCandidateIndexSchedule {
-	// 	if index == magic {
-	// 		candidateInfos.Data[i].Status = 0
-	// 	}
-	// }
-
-	candidateInfos.BadCandidateIndexSchedule = dataEpoch.BadCandidateIndexSchedule
-	candidateInfos.UsingCandidateIndexSchedule = dataEpoch.UsingCandidateIndexSchedule
 	log.Info("BrowserEpochRecord", "elapsed", common.PrettyDuration(time.Since(bstart)).String())
 	return candidateInfos, nil
 }
@@ -400,18 +384,35 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	}
 	sort.Sort(candidates)
 
-	candidateInfos.Data = make([]*CandidateInfoForBrowser, len(candidates))
-	for i, c := range candidates {
+	var declims uint64 = 1000000000000000000
+	minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
+	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
+	for _, c := range candidates {
+		if c.Name == "fractal.founder" {
+			continue
+		}
+
+		if c.Type == Freeze || c.Type == Black {
+			continue
+		}
+		balance, err := sys.GetBalanceByTime(c.Name, timestamp)
+		if err != nil {
+			if err.Error() != "Not snapshot info, error = EOF" {
+				log.Warn("BrowserVote", "candidate", c.Name, "ignore", err)
+				return nil, err
+			}
+		}
+
+		if balance.Cmp(minQuantity) < 0 {
+			continue
+		}
+
 		candidateInfo := &CandidateInfoForBrowser{}
 		candidateInfo.Candidate = c.Name
 
 		candidateInfo.Quantity = c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake()).String()
 		candidateInfo.TotalQuantity = c.TotalQuantity.String()
-		balance, err := sys.GetBalanceByTime(c.Name, timestamp)
-		if err != nil {
-			log.Warn("BrowserVote", "candidate", c.Name, "ignore", err)
-			return nil, err
-		}
+
 		candidateInfo.Holder = balance.String()
 
 		tmp, err := sys.GetCandidate(history, c.Name)
@@ -423,7 +424,7 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 			candidateInfo.Counter = tmp.Counter
 			candidateInfo.ActualCounter = tmp.ActualCounter
 		}
-		candidateInfos.Data[i] = candidateInfo
+		candidateInfos.Data = append(candidateInfos.Data, candidateInfo)
 	}
 	log.Info("BrowserVote", "elapsed", common.PrettyDuration(time.Since(bstart)).String())
 	return candidateInfos, nil
