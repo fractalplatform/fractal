@@ -204,6 +204,7 @@ func (bc *BlockChain) SetLastSnapshot(block *types.Block) error {
 	irreversibleNumber := rawdb.ReadIrreversibleNumber(bc.db)
 	if block.NumberU64() < irreversibleNumber {
 		rawdb.WriteIrreversibleNumber(bc.db, block.NumberU64())
+		irreversibleNumber = block.NumberU64()
 	}
 	bc.irreversibleNumber.Store(irreversibleNumber)
 	return nil

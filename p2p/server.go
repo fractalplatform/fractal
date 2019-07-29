@@ -795,7 +795,7 @@ running:
 			}
 		case n := <-srv.addBad:
 			badNodes[n.node.ID()] = n
-			srv.log.Info("Add bad node", "node", n)
+			srv.log.Info("Add bad node", "node", n.node, "endtime", n.endtime)
 			if p, ok := peers[n.node.ID()]; ok {
 				if isBadNode(n.node.ID()) {
 					p.rw.set(badNodeConn, true)
