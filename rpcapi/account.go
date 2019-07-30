@@ -55,9 +55,7 @@ func (aapi *AccountAPI) GetAccountByID(accountID uint64, showAllAsset bool) (*ac
 		return nil, err
 	}
 
-	if showAllAsset {
-		return accountObj, err
-	} else {
+	if !showAllAsset {
 		balances := make([]*accountmanager.AssetBalance, 0)
 		zero := big.NewInt(0)
 		for _, balance := range accountObj.Balances {
@@ -66,8 +64,8 @@ func (aapi *AccountAPI) GetAccountByID(accountID uint64, showAllAsset bool) (*ac
 			}
 		}
 		accountObj.Balances = balances
-		return accountObj, nil
 	}
+	return accountObj, nil
 }
 
 //GetAccountByName
@@ -82,9 +80,7 @@ func (aapi *AccountAPI) GetAccountByName(accountName common.Name, showAllAsset b
 		return nil, err
 	}
 
-	if showAllAsset {
-		return accountObj, err
-	} else {
+	if !showAllAsset {
 		balances := make([]*accountmanager.AssetBalance, 0)
 		zero := big.NewInt(0)
 		for _, balance := range accountObj.Balances {
@@ -93,8 +89,8 @@ func (aapi *AccountAPI) GetAccountByName(accountName common.Name, showAllAsset b
 			}
 		}
 		accountObj.Balances = balances
-		return accountObj, nil
 	}
+	return accountObj, nil
 }
 
 //GetAccountBalanceByID
