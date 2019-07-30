@@ -403,7 +403,7 @@ func addFlags(flags *flag.FlagSet) {
 		&ftCfgInstance.FtServiceCfg.Miner.Delay,
 		"miner_delay",
 		ftCfgInstance.FtServiceCfg.Miner.Delay,
-		"delay duration for miner",
+		"delay duration for miner (ms)",
 	)
 	viper.BindPFlag("ftservice.miner.delay", flags.Lookup("miner_delay"))
 
