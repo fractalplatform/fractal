@@ -43,6 +43,16 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.24 - 2019-07-30",
+		`### Fixed
+- [BLOCKCHAIN] blockchain store irreversible number 
+- [TXPOOL] fixed txpool test failed in travis CI
+### Changed
+- [DPOS] update some dpos apis
+### Added
+- [LOG] add some log print
+- [RPC] add rpc dpos_snapShotStake and fixed GetActivedCandidate
+`,
 		"0.0.23 - 2019-07-15",
 		`### Fixed
 - [RPC] fixed getTxsByAccount rpc arg check and uint infinite loop
