@@ -44,23 +44,57 @@ func (aapi *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
 }
 
 //GetAccountByID
-func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountByID(accountID uint64, showAllAsset bool) (*accountmanager.Account, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
 
-	return am.GetAccountById(accountID)
+	accountObj, err := am.GetAccountById(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	if showAllAsset {
+		return accountObj, err
+	} else {
+		balances := make([]*accountmanager.AssetBalance, 0)
+		zero := big.NewInt(0)
+		for _, balance := range accountObj.Balances {
+			if balance.Balance.Cmp(zero) > 0 {
+				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
+			}
+		}
+		accountObj.Balances = balances
+		return accountObj, nil
+	}
 }
 
 //GetAccountByName
-func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountByName(accountName common.Name, showAllAsset bool) (*accountmanager.Account, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
 
-	return am.GetAccountByName(accountName)
+	accountObj, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+
+	if showAllAsset {
+		return accountObj, err
+	} else {
+		balances := make([]*accountmanager.AssetBalance, 0)
+		zero := big.NewInt(0)
+		for _, balance := range accountObj.Balances {
+			if balance.Balance.Cmp(zero) > 0 {
+				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
+			}
+		}
+		accountObj.Balances = balances
+		return accountObj, nil
+	}
 }
 
 //GetAccountBalanceByID
