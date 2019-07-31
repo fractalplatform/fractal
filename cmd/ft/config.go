@@ -86,8 +86,7 @@ func defaultFtServiceConfig() *ftservice.Config {
 		TxPool:          txpool.DefaultTxPoolConfig,
 		Miner:           defaultMinerConfig(),
 		GasPrice: gasprice.Config{
-			Blocks:     20,
-			Percentile: 60,
+			Blocks: 20,
 		},
 		MetricsConf:     defaultMetricsConfig(),
 		ContractLogFlag: false,
