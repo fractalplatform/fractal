@@ -404,11 +404,10 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 		work.currentState.Prepare(tx.Hash(), common.Hash{}, work.currentCnt)
 
 		logs, err := worker.commitTransaction(work, tx, endTime)
-		if err == vm.ErrExecOverTime {
-			log.Warn("Transaction failed, exec over time", "hash", tx.Hash(), "err", err)
-			break
-		}
 		switch err {
+		case vm.ErrExecOverTime:
+			log.Trace("Skipping transaction exec over time", "hash", tx.Hash())
+			txs.Pop()
 		case common.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
 			log.Trace("Gas limit exceeded for current block", "sender", from)
