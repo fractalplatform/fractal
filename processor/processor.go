@@ -18,6 +18,7 @@ package processor
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/accountmanager"
@@ -100,7 +101,9 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.Config().SysTokenID)
 	}
 	gasPrice := tx.GasPrice()
-
+	//timer for vm exec overtime
+	var t *time.Timer
+	//
 	var totalGas uint64
 	var ios []*types.ActionResult
 	detailTx := &types.DetailTx{}
@@ -129,7 +132,20 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)
 
+		//will abort the vm if overtime
+		if false == cfg.EndTime.IsZero() {
+			t = time.AfterFunc(cfg.EndTime.Sub(time.Now()), func() {
+				vmenv.OverTimeAbort()
+			})
+		}
+
 		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, assetID, config, p.engine)
+
+		if false == cfg.EndTime.IsZero() {
+			//close timer
+			t.Stop()
+		}
+
 		if err != nil {
 			return nil, 0, err
 		}
