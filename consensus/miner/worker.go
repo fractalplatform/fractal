@@ -405,7 +405,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 		logs, err := worker.commitTransaction(work, tx, endTime)
 		if err == vm.ErrExecOverTime {
-			log.Debug("Transaction failed, exec over time", "hash", tx.Hash(), "err", err)
+			log.Warn("Transaction failed, exec over time", "hash", tx.Hash(), "err", err)
 			break
 		}
 		switch err {
