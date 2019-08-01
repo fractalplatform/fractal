@@ -294,17 +294,34 @@ func (tp *TxPool) loop() {
 			// Handle inactive account transaction resend
 		case <-resend.C:
 			tp.mu.Lock()
+
+			resendFunc := func(txs []*types.Transaction) {
+				events := []*event.Event{
+					{Typecode: event.NewTxs, Data: txs},
+				}
+				go event.SendEvents(events)
+				log.Debug("resend account transactions", "txlen", len(txs))
+			}
+
+			var resendTxs []*types.Transaction
+
 			for name := range tp.pending {
 				if time.Since(tp.beats[name]) > tp.config.ResendTime {
 					if txs := tp.pending[name].Flatten(); len(txs) != 0 {
-						events := []*event.Event{
-							{Typecode: event.NewTxs, Data: txs},
-						}
-						go event.SendEvents(events)
-						log.Debug("resend account transactions", "name", name, "txlen", len(txs))
+						resendTxs = append(resendTxs, txs...)
 					}
 				}
+				if len(resendTxs) == 256 {
+					resendFunc(resendTxs)
+					resendTxs = []*types.Transaction{}
+				}
 			}
+
+			// if resendTxs > 0 ,and resendTxs < 256 resend this txs
+			if len(resendTxs) > 0 {
+				resendFunc(resendTxs)
+			}
+
 			tp.mu.Unlock()
 			// Handle local transaction journal rotation
 		case <-journal.C:
@@ -904,7 +921,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 	}
 
 	tp.mu.Lock()
-	errs, dirtyNames := tp.addTxsLocked(txs, local)
+	errs, dirtyNames := tp.addTxsLocked(addedTxs, local)
 	tp.mu.Unlock()
 
 	done := tp.requestPromoteExecutables(dirtyNames)
