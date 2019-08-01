@@ -366,8 +366,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	for {
 		select {
 		case <-work.quit:
-			log.Debug("mined block missing --- signal", "timestamp", work.currentHeader.Time.Int64())
-			return nil
+			return fmt.Errorf("mint the quit block")
 		default:
 		}
 		if work.currentGasPool.Gas() < params.GasTableInstanse.ActionGas {
