@@ -118,8 +118,6 @@ ftservice:
   gpo:
     # Number of recent blocks to check for gas prices
     blocks: 30
-    # Suggested gas price is the given percentile of a set of recent transaction gas prices
-    percentile: 50
   miner:
     # Start miner generate block and process transaction
     start: false

@@ -56,7 +56,6 @@ ftservice:
     resendtime: 1h
   gpo:
     blocks: 30
-    percentile: 50
   miner:
     start: true
     name: "fractal.founder"

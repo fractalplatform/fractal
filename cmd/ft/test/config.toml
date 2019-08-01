@@ -60,7 +60,6 @@ genesis = "./test/genesis.json"
     resendtime=3600000000000
   [ftservice.gpo]
     blocks=30
-    percentile=50
   [ftservice.miner]
     start=true
     name="fractal.founder"
