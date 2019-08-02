@@ -1,4 +1,15 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.24] - 2019-07-30
+### Fixed
+- [BLOCKCHAIN] blockchain store irreversible number 
+- [TXPOOL] fixed txpool test failed in travis CI
+### Changed
+- [DPOS] update some dpos apis
+### Added
+- [LOG] add some log print
+- [RPC] add rpc dpos_snapShotStake and fixed GetActivedCandidate
+
+
 ## [0.0.23] - 2019-07-15
 ### Fixed
 - [RPC] fixed getTxsByAccount rpc arg check and uint infinite loop
@@ -192,6 +203,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.24]: https://github.com/fractalplatform/fractal/compare/v0.0.23...v0.0.24
 [0.0.23]: https://github.com/fractalplatform/fractal/compare/v0.0.22...v0.0.23
 [0.0.22]: https://github.com/fractalplatform/fractal/compare/v0.0.21...v0.0.22
 [0.0.21]: https://github.com/fractalplatform/fractal/compare/v0.0.20...v0.0.21

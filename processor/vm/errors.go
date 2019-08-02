@@ -27,4 +27,5 @@ var (
 	ErrContractAddressCollision = errors.New("contract name collision")
 	ErrContractCodeCollision    = errors.New("contract code collision")
 	ErrAccountNotExist          = errors.New("account not exist")
+	ErrExecOverTime             = errors.New("vm exec overtime shutdown")
 )

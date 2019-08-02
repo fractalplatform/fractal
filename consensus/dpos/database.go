@@ -188,6 +188,8 @@ type ArrayCandidateInfoForBrowser struct {
 	Data                        []*CandidateInfoForBrowser `json:"data"`
 	BadCandidateIndexSchedule   []uint64                   `json:"bad"`
 	UsingCandidateIndexSchedule []uint64                   `json:"using"`
+	TakeOver                    bool                       `json:"takeOver"`
+	Dpos                        bool                       `json:"dpos"`
 }
 
 // CandidateInfoForBrowser dpos state

@@ -440,14 +440,6 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("ftservice.gpo.blocks", flags.Lookup("gpo_blocks"))
 
-	flags.IntVar(
-		&ftCfgInstance.FtServiceCfg.GasPrice.Percentile,
-		"gpo_percentile",
-		ftCfgInstance.FtServiceCfg.GasPrice.Percentile,
-		"Suggested gas price is the given percentile of a set of recent transaction gas prices",
-	)
-	viper.BindPFlag("ftservice.gpo.percentile", flags.Lookup("gpo_percentile"))
-
 	// metrics
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.MetricsFlag,

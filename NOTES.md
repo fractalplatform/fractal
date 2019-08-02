@@ -1,10 +1,9 @@
 ### Fixed
-- [RPC] fixed getTxsByAccount rpc arg check and uint infinite loop
-- [BLOCKCHAIN] modify blockchain start err 
+- [BLOCKCHAIN] blockchain store irreversible number 
+- [TXPOOL] fixed txpool test failed in travis CI
 ### Changed
-- [TXPOOL] move TxPool reorg and events to background goroutine
-- [P2P] ftfinder: add cmd flag that can input genesis block hash
+- [DPOS] update some dpos apis
 ### Added
-- [P2P] txpool.handler: add config of txs broadcast
-- [RPC] add some dpos rpc api for browser
+- [LOG] add some log print
+- [RPC] add rpc dpos_snapShotStake and fixed GetActivedCandidate
 

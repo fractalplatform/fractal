@@ -361,11 +361,12 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 
 func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPriceAndNonce, interval uint64) error {
 	var coalescedLogs []*types.Log
+	endTimeStamp := work.currentHeader.Time.Uint64() + interval - 2*interval/5
+	endTime := time.Unix((int64)(endTimeStamp)/(int64)(time.Second), (int64)(endTimeStamp)%(int64)(time.Second))
 	for {
 		select {
 		case <-work.quit:
-			log.Debug("mined block missing --- signal", "timestamp", work.currentHeader.Time.Int64())
-			return nil
+			return fmt.Errorf("mint the quit block")
 		default:
 		}
 		if work.currentGasPool.Gas() < params.GasTableInstanse.ActionGas {
@@ -373,7 +374,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			break
 		}
 
-		if interval != math.MaxUint64 && uint64(time.Now().UnixNano())+2*interval/5 >= work.currentHeader.Time.Uint64()+interval {
+		if interval != math.MaxUint64 && uint64(time.Now().UnixNano()) >= endTimeStamp {
 			log.Debug("Not enough time for further transactions", "timestamp", work.currentHeader.Time.Int64())
 			break
 		}
@@ -401,8 +402,11 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 		// Start executing the transaction
 		work.currentState.Prepare(tx.Hash(), common.Hash{}, work.currentCnt)
 
-		logs, err := worker.commitTransaction(work, tx)
+		logs, err := worker.commitTransaction(work, tx, endTime)
 		switch err {
+		case vm.ErrExecOverTime:
+			log.Trace("Skipping transaction exec over time", "hash", tx.Hash())
+			txs.Pop()
 		case common.ErrGasLimitReached:
 			// Pop the current out-of-gas transaction without shifting in the next from the account
 			log.Trace("Gas limit exceeded for current block", "sender", from)
@@ -436,7 +440,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	return nil
 }
 
-func (worker *Worker) commitTransaction(work *Work, tx *types.Transaction) ([]*types.Log, error) {
+func (worker *Worker) commitTransaction(work *Work, tx *types.Transaction, endTime time.Time) ([]*types.Log, error) {
 	snap := work.currentState.Snapshot()
 	var name *common.Name
 	if len(work.currentHeader.Coinbase.String()) > 0 {
@@ -444,7 +448,9 @@ func (worker *Worker) commitTransaction(work *Work, tx *types.Transaction) ([]*t
 		*name = common.StrToName(work.currentHeader.Coinbase.String())
 	}
 
-	receipt, _, err := worker.ApplyTransaction(name, work.currentGasPool, work.currentState, work.currentHeader, tx, &work.currentHeader.GasUsed, vm.Config{})
+	receipt, _, err := worker.ApplyTransaction(name, work.currentGasPool, work.currentState, work.currentHeader, tx, &work.currentHeader.GasUsed, vm.Config{
+		EndTime: endTime,
+	})
 	if err != nil {
 		work.currentState.RevertToSnapshot(snap)
 		return nil, err
