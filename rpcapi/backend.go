@@ -46,8 +46,8 @@ type Backend interface {
 
 	// BlockChain API
 	CurrentBlock() *types.Block
-	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error)
-	BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error)
+	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header
+	BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block
 	StateAndHeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*state.StateDB, *types.Header, error)
 	GetBlock(ctx context.Context, blockHash common.Hash) (*types.Block, error)
 	GetReceipts(ctx context.Context, blockHash common.Hash) ([]*types.Receipt, error)

@@ -63,13 +63,13 @@ func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, blockHash comm
 
 // GetBlockByNumber returns the requested block. When blockNr is -1 the chain head is returned. When fullTx is true all
 // transactions in the block are returned in full detail, otherwise only the transaction hash is returned.
-func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
-	block, err := s.b.BlockByNumber(ctx, blockNr)
+func (s *PublicBlockChainAPI) GetBlockByNumber(ctx context.Context, blockNr rpc.BlockNumber, fullTx bool) map[string]interface{} {
+	block := s.b.BlockByNumber(ctx, blockNr)
 	if block != nil {
 		response := s.rpcOutputBlock(s.b.ChainConfig().ChainID, block, true, fullTx)
-		return response, err
+		return response
 	}
-	return nil, err
+	return nil
 }
 
 // rpcOutputBlock uses the generalized output filler, then adds the total difficulty field, which requires
@@ -113,14 +113,14 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
 }
 
-func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
+func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
 	r := s.b.GetBlockDetailLog(ctx, blockNr)
 	if r == nil {
-		return nil, nil
+		return nil
 	}
-	block, err := s.GetBlockByNumber(ctx, blockNr, true)
+	block := s.GetBlockByNumber(ctx, blockNr, true)
 	r.Block = block
-	return r, err
+	return r
 }
 
 // checkRangeInputArgs checks the input arguments of
@@ -313,10 +313,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 		hi = uint64(args.Gas)
 	} else {
 		// Retrieve the current pending block to act as the gas ceiling
-		block, err := s.b.BlockByNumber(ctx, rpc.LatestBlockNumber)
-		if err != nil {
-			return 0, err
-		}
+		block := s.b.BlockByNumber(ctx, rpc.LatestBlockNumber)
 		hi = block.GasLimit()
 	}
 	cap = hi
@@ -349,12 +346,9 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 }
 
 // GetChainConfig returns chain config.
-func (s *PublicBlockChainAPI) GetChainConfig(ctx context.Context) (*params.ChainConfig, error) {
-	g, err := s.b.BlockByNumber(ctx, 0)
-	if err != nil {
-		return nil, err
-	}
-	return rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash()), nil
+func (s *PublicBlockChainAPI) GetChainConfig(ctx context.Context) *params.ChainConfig {
+	g := s.b.BlockByNumber(ctx, 0)
+	return rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash())
 }
 
 // PrivateBlockChainAPI provides an API to access the blockchain.

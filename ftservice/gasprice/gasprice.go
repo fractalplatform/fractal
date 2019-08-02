@@ -18,6 +18,7 @@ package gasprice
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sort"
 	"sync"
@@ -28,8 +29,8 @@ import (
 )
 
 type backend interface {
-	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error)
-	BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error)
+	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header
+	BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block
 }
 
 //Config gas price oracle config
@@ -41,13 +42,14 @@ type Config struct {
 // Oracle recommends gas prices based on the content of recent
 // blocks.
 type Oracle struct {
-	backend   backend
-	lastHead  common.Hash
-	lastPrice *big.Int
-	cacheLock sync.RWMutex
-	fetchLock sync.Mutex
+	backend      backend
+	defaultPrice *big.Int
+	lastHead     common.Hash
+	lastPrice    *big.Int
+	cacheLock    sync.RWMutex
+	fetchLock    sync.Mutex
 
-	checkBlocks, maxEmpty, maxBlocks int
+	checkBlocks int
 }
 
 // NewOracle returns a new oracle.
@@ -57,11 +59,10 @@ func NewOracle(backend backend, params Config) *Oracle {
 		blocks = 1
 	}
 	return &Oracle{
-		backend:     backend,
-		lastPrice:   params.Default,
-		checkBlocks: blocks,
-		maxEmpty:    blocks / 2,
-		maxBlocks:   blocks * 5,
+		defaultPrice: params.Default,
+		backend:      backend,
+		lastPrice:    params.Default,
+		checkBlocks:  blocks,
 	}
 }
 
@@ -72,10 +73,7 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	lastPrice := gpo.lastPrice
 	gpo.cacheLock.RUnlock()
 
-	head, err := gpo.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
-	if err != nil {
-		return lastPrice, nil
-	}
+	head := gpo.backend.HeaderByNumber(ctx, rpc.LatestBlockNumber)
 
 	headHash := head.Hash()
 	if headHash == lastHead {
@@ -107,29 +105,14 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 		exp++
 		blockNum--
 	}
-	maxEmpty := gpo.maxEmpty
 	for exp > 0 {
 		res := <-ch
 		if res.err != nil {
 			return lastPrice, res.err
 		}
 		exp--
-		if res.price != nil {
-			prices = new(big.Int).Add(prices, new(big.Int).Mul(res.price, res.weight))
-			weights = new(big.Int).Add(weights, res.weight)
-			continue
-		}
-		if maxEmpty > 0 {
-			maxEmpty--
-			continue
-		}
-
-		if blockNum > 0 && sent < gpo.maxBlocks {
-			go gpo.getBlockPrices(ctx, blockNum, ch)
-			sent++
-			exp++
-			blockNum--
-		}
+		prices = new(big.Int).Add(prices, new(big.Int).Mul(res.price, res.weight))
+		weights = new(big.Int).Add(weights, res.weight)
 	}
 
 	price := lastPrice
@@ -159,20 +142,19 @@ func (t transactionsByGasPrice) Less(i, j int) bool { return t[i].GasPrice().Cmp
 // getBlockPrices calculates the lowest transaction gas price in a given block
 // and sends it to the result channel. If the block is empty, price is nil.
 func (gpo *Oracle) getBlockPrices(ctx context.Context, blockNum uint64, ch chan getBlockPricesResult) {
-	block, err := gpo.backend.BlockByNumber(ctx, rpc.BlockNumber(blockNum))
+	block := gpo.backend.BlockByNumber(ctx, rpc.BlockNumber(blockNum))
 	if block == nil {
-		ch <- getBlockPricesResult{nil, nil, err}
+		ch <- getBlockPricesResult{nil, nil, fmt.Errorf("not found block %v", blockNum)}
 		return
 	}
 
 	blockTxs := block.Transactions()
 	txs := make([]*types.Transaction, len(blockTxs))
-
 	copy(txs, blockTxs)
 	sort.Sort(transactionsByGasPrice(txs))
 	for _, tx := range txs {
 		sender := tx.GetActions()[0].Sender()
-		if err == nil && sender != block.Coinbase() {
+		if sender != block.Coinbase() {
 			ch <- getBlockPricesResult{
 				new(big.Int).Div(big.NewInt(int64(block.GasUsed()*1000)),
 					big.NewInt(int64(block.GasLimit()))),
@@ -180,5 +162,6 @@ func (gpo *Oracle) getBlockPrices(ctx context.Context, blockNum uint64, ch chan 
 			return
 		}
 	}
-	ch <- getBlockPricesResult{nil, nil, nil}
+	// if block no transaction  the weight is the biggest，price is default price
+	ch <- getBlockPricesResult{big.NewInt(1 * 1000), gpo.defaultPrice, nil}
 }

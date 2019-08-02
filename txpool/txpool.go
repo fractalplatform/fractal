@@ -37,6 +37,8 @@ var (
 	evictionInterval    = 15 * time.Minute // Time interval to check for evictable transactions
 	statsReportInterval = 10 * time.Second // Time interval to report transaction pool stats
 	resendTxInterval    = 10 * time.Minute // Time interval to resend transaction
+
+	maxResendTxs = 256
 )
 
 const (
@@ -294,17 +296,19 @@ func (tp *TxPool) loop() {
 			// Handle inactive account transaction resend
 		case <-resend.C:
 			tp.mu.Lock()
+
+			var resendTxsCount int
+
 			for name := range tp.pending {
 				if time.Since(tp.beats[name]) > tp.config.ResendTime {
 					if txs := tp.pending[name].Flatten(); len(txs) != 0 {
-						events := []*event.Event{
-							{Typecode: event.NewTxs, Data: txs},
-						}
-						go event.SendEvents(events)
-						log.Debug("resend account transactions", "name", name, "txlen", len(txs))
+						resendTxsFunc(txs)
+						resendTxsCount = resendTxsCount + len(txs)
 					}
 				}
 			}
+
+			log.Debug("resend account transactions", "txlen", resendTxsCount)
 			tp.mu.Unlock()
 			// Handle local transaction journal rotation
 		case <-journal.C:
@@ -316,6 +320,27 @@ func (tp *TxPool) loop() {
 				tp.mu.Unlock()
 			}
 		}
+	}
+}
+
+func resendTxsFunc(txs []*types.Transaction) {
+	sendFunc := func(sendTxs []*types.Transaction) {
+		events := []*event.Event{
+			{Typecode: event.NewTxs, Data: sendTxs},
+		}
+		go event.SendEvents(events)
+
+	}
+
+	if len(txs) > maxResendTxs {
+		sendFunc(txs[:maxResendTxs])
+		if len(txs[maxResendTxs:]) > maxResendTxs {
+			resendTxsFunc(txs[maxResendTxs:])
+		} else {
+			sendFunc(txs[maxResendTxs:])
+		}
+	} else {
+		sendFunc(txs)
 	}
 }
 
@@ -904,7 +929,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 	}
 
 	tp.mu.Lock()
-	errs, dirtyNames := tp.addTxsLocked(txs, local)
+	errs, dirtyNames := tp.addTxsLocked(addedTxs, local)
 	tp.mu.Unlock()
 
 	done := tp.requestPromoteExecutables(dirtyNames)
