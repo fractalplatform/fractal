@@ -32,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/rpcapi/bloombits"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
@@ -201,6 +202,10 @@ func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber
 		return b.ftservice.blockchain.CurrentBlock().Header()
 	}
 	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr))
+}
+
+func (b *APIBackend) HeaderByHash(ctx context.Context, hash common.Hash) *types.Header {
+	return b.ftservice.blockchain.GetHeaderByHash(hash)
 }
 
 func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block {
@@ -384,4 +389,12 @@ func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
 // APIs returns apis
 func (b *APIBackend) APIs() []rpc.API {
 	return b.ftservice.miner.APIs(b.ftservice.blockchain)
+}
+
+func (b *APIBackend) BloomStatus() (uint64, uint64) {
+	return 4096, 1
+}
+
+func (b *APIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
+
 }
