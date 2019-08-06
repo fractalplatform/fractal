@@ -1,21 +1,21 @@
-// Copyright 2015 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// Package filters implements an ethereum filtering system for block,
-// transactions and log events.
+// package rpcapi implements the general API functions.
+
 package filters
 
 import (
@@ -30,7 +30,6 @@ import (
 	router "github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -88,7 +87,7 @@ type subscription struct {
 // EventSystem creates subscriptions, processes events and broadcasts them to the
 // subscription which match the subscription criteria.
 type EventSystem struct {
-	backend   rpcapi.Backend
+	backend   Backend
 	lightMode bool
 	lastHead  *types.Header
 
@@ -113,7 +112,7 @@ type EventSystem struct {
 //
 // The returned manager has a loop that needs to be stopped with the Stop function
 // or by stopping the given mux.
-func NewEventSystem(backend rpcapi.Backend, lightMode bool) *EventSystem {
+func NewEventSystem(backend Backend, lightMode bool) *EventSystem {
 	m := &EventSystem{
 		backend:   backend,
 		lightMode: lightMode,
@@ -127,6 +126,8 @@ func NewEventSystem(backend rpcapi.Backend, lightMode bool) *EventSystem {
 
 	// Subscribe events
 	m.txsSub = router.Subscribe(nil, m.txsCh, router.NewTxs, []*types.Transaction{})
+	m.chainSub = router.Subscribe(nil, m.chainCh, router.ChainHeadEv, &types.Block{})
+
 	// m.logsSub = router.Subscribe(nil, txsCh, router.NewTxs, []*types.Transaction{})
 	// m.txsSub = router.Subscribe(nil, txsCh, router.NewTxs, []*types.Transaction{})
 	// m.txsSub = router.Subscribe(nil, txsCh, router.NewTxs, []*types.Transaction{})
@@ -318,6 +319,20 @@ func (es *EventSystem) broadcast(filters filterIndex, ev *router.Event) {
 		}
 		for _, f := range filters[PendingTransactionsSubscription] {
 			f.hashes <- hashes
+		}
+	case router.ChainHeadEv:
+		block := ev.Data.(types.Block)
+		for _, f := range filters[BlocksSubscription] {
+			f.headers <- block.Header()
+		}
+		if es.lightMode && len(filters[LogsSubscription]) > 0 {
+			es.lightFilterNewHead(block.Header(), func(header *types.Header, remove bool) {
+				for _, f := range filters[LogsSubscription] {
+					if matchedLogs := es.lightFilterLogs(header, f.logsCrit.Addresses, f.logsCrit.Topics, remove); len(matchedLogs) > 0 {
+						f.logs <- matchedLogs
+					}
+				}
+			})
 		}
 	}
 

@@ -1,18 +1,20 @@
-// Copyright 2014 The go-ethereum Authors
-// This file is part of the go-ethereum library.
+// Copyright 2018 The Fractal Team Authors
+// This file is part of the fractal project.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// The go-ethereum library is distributed in the hope that it will be useful,
+// This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
+// GNU General Public License for more details.
 //
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+// package rpcapi implements the general API functions.
 
 package filters
 
@@ -23,15 +25,25 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi"
 	"github.com/fractalplatform/fractal/rpcapi/bloombits"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
+type Backend interface {
+	ChainDb() fdb.Database
+	HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header
+	HeaderByHash(ctx context.Context, blockHash common.Hash) *types.Header
+	GetReceipts(ctx context.Context, blockHash common.Hash) ([]*types.Receipt, error)
+	GetLogs(ctx context.Context, blockHash common.Hash) ([][]*types.Log, error)
+
+	BloomStatus() (uint64, uint64)
+	ServiceFilter(ctx context.Context, session *bloombits.MatcherSession)
+}
+
 // Filter can be used to retrieve and filter logs.
 type Filter struct {
-	backend rpcapi.Backend
+	backend Backend
 
 	db        fdb.Database
 	addresses []common.Address
@@ -45,7 +57,7 @@ type Filter struct {
 
 // NewRangeFilter creates a new filter which uses a bloom filter on blocks to
 // figure out whether a particular block is interesting or not.
-func NewRangeFilter(backend rpcapi.Backend, begin, end int64, addresses []common.Address, topics [][]common.Hash) *Filter {
+func NewRangeFilter(backend Backend, begin, end int64, addresses []common.Address, topics [][]common.Hash) *Filter {
 	// Flatten the address and topic filter clauses into a single bloombits filter
 	// system. Since the bloombits are not positional, nil topics are permitted,
 	// which get flattened into a nil byte slice.
@@ -78,7 +90,7 @@ func NewRangeFilter(backend rpcapi.Backend, begin, end int64, addresses []common
 
 // NewBlockFilter creates a new filter which directly inspects the contents of
 // a block to figure out whether it is interesting or not.
-func NewBlockFilter(backend rpcapi.Backend, block common.Hash, addresses []common.Address, topics [][]common.Hash) *Filter {
+func NewBlockFilter(backend Backend, block common.Hash, addresses []common.Address, topics [][]common.Hash) *Filter {
 	// Create a generic filter and convert it into a block filter
 	filter := newFilter(backend, addresses, topics)
 	filter.block = block
@@ -87,7 +99,7 @@ func NewBlockFilter(backend rpcapi.Backend, block common.Hash, addresses []commo
 
 // newFilter creates a generic filter that can either filter based on a block hash,
 // or based on range queries. The search criteria needs to be explicitly set.
-func newFilter(backend rpcapi.Backend, addresses []common.Address, topics [][]common.Hash) *Filter {
+func newFilter(backend Backend, addresses []common.Address, topics [][]common.Hash) *Filter {
 	return &Filter{
 		backend:   backend,
 		addresses: addresses,
