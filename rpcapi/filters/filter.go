@@ -45,9 +45,9 @@ type Backend interface {
 type Filter struct {
 	backend Backend
 
-	db        fdb.Database
-	addresses []common.Address
-	topics    [][]common.Hash
+	db       fdb.Database
+	accounts []common.Name
+	topics   [][]common.Hash
 
 	block      common.Hash // Block hash if filtering a single block
 	begin, end int64       // Range interval if filtering multiple blocks
@@ -57,14 +57,14 @@ type Filter struct {
 
 // NewRangeFilter creates a new filter which uses a bloom filter on blocks to
 // figure out whether a particular block is interesting or not.
-func NewRangeFilter(backend Backend, begin, end int64, addresses []common.Address, topics [][]common.Hash) *Filter {
+func NewRangeFilter(backend Backend, begin, end int64, accounts []common.Name, topics [][]common.Hash) *Filter {
 	// Flatten the address and topic filter clauses into a single bloombits filter
 	// system. Since the bloombits are not positional, nil topics are permitted,
 	// which get flattened into a nil byte slice.
 	var filters [][][]byte
-	if len(addresses) > 0 {
-		filter := make([][]byte, len(addresses))
-		for i, address := range addresses {
+	if len(accounts) > 0 {
+		filter := make([][]byte, len(accounts))
+		for i, address := range accounts {
 			filter[i] = address.Bytes()
 		}
 		filters = append(filters, filter)
@@ -79,7 +79,7 @@ func NewRangeFilter(backend Backend, begin, end int64, addresses []common.Addres
 	size, _ := backend.BloomStatus()
 
 	// Create a generic filter and convert it into a range filter
-	filter := newFilter(backend, addresses, topics)
+	filter := newFilter(backend, accounts, topics)
 
 	filter.matcher = bloombits.NewMatcher(size, filters)
 	filter.begin = begin
@@ -90,21 +90,21 @@ func NewRangeFilter(backend Backend, begin, end int64, addresses []common.Addres
 
 // NewBlockFilter creates a new filter which directly inspects the contents of
 // a block to figure out whether it is interesting or not.
-func NewBlockFilter(backend Backend, block common.Hash, addresses []common.Address, topics [][]common.Hash) *Filter {
+func NewBlockFilter(backend Backend, block common.Hash, accounts []common.Name, topics [][]common.Hash) *Filter {
 	// Create a generic filter and convert it into a block filter
-	filter := newFilter(backend, addresses, topics)
+	filter := newFilter(backend, accounts, topics)
 	filter.block = block
 	return filter
 }
 
 // newFilter creates a generic filter that can either filter based on a block hash,
 // or based on range queries. The search criteria needs to be explicitly set.
-func newFilter(backend Backend, addresses []common.Address, topics [][]common.Hash) *Filter {
+func newFilter(backend Backend, accounts []common.Name, topics [][]common.Hash) *Filter {
 	return &Filter{
-		backend:   backend,
-		addresses: addresses,
-		topics:    topics,
-		db:        backend.ChainDb(),
+		backend:  backend,
+		accounts: accounts,
+		topics:   topics,
+		db:       backend.ChainDb(),
 	}
 }
 
@@ -222,7 +222,7 @@ func (f *Filter) unindexedLogs(ctx context.Context, end uint64) ([]*types.Log, e
 
 // blockLogs returns the logs matching the filter criteria within a single block.
 func (f *Filter) blockLogs(ctx context.Context, header *types.Header) (logs []*types.Log, err error) {
-	if bloomFilter(header.Bloom, f.addresses, f.topics) {
+	if bloomFilter(header.Bloom, f.accounts, f.topics) {
 		found, err := f.checkMatches(ctx, header)
 		if err != nil {
 			return logs, err
@@ -244,7 +244,7 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) (logs [
 	for _, logs := range logsList {
 		unfiltered = append(unfiltered, logs...)
 	}
-	logs = filterLogs(unfiltered, nil, nil, f.addresses, f.topics)
+	logs = filterLogs(unfiltered, nil, nil, f.accounts, f.topics)
 	if len(logs) > 0 {
 		// We have matching logs, check if we need to resolve full logs via the light client
 		if logs[0].TxHash == (common.Hash{}) {
@@ -256,16 +256,16 @@ func (f *Filter) checkMatches(ctx context.Context, header *types.Header) (logs [
 			for _, receipt := range receipts {
 				unfiltered = append(unfiltered, receipt.Logs...)
 			}
-			logs = filterLogs(unfiltered, nil, nil, f.addresses, f.topics)
+			logs = filterLogs(unfiltered, nil, nil, f.accounts, f.topics)
 		}
 		return logs, nil
 	}
 	return nil, nil
 }
 
-func includes(addresses []common.Address, a common.Address) bool {
-	for _, addr := range addresses {
-		if addr == a {
+func includes(accounts []common.Name, a common.Name) bool {
+	for _, acct := range accounts {
+		if acct == a {
 			return true
 		}
 	}
@@ -274,7 +274,7 @@ func includes(addresses []common.Address, a common.Address) bool {
 }
 
 // filterLogs creates a slice of logs matching the given criteria.
-func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, addresses []common.Address, topics [][]common.Hash) []*types.Log {
+func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, accounts []common.Name, topics [][]common.Hash) []*types.Log {
 	var ret []*types.Log
 Logs:
 	for _, log := range logs {
@@ -285,9 +285,9 @@ Logs:
 			continue
 		}
 
-		// if len(addresses) > 0 && !includes(addresses, log.Address) {
-		// 	continue
-		// }
+		if len(accounts) > 0 && !includes(accounts, log.Name) {
+			continue
+		}
 		// If the to filtered topics is greater than the amount of topics in logs, skip.
 		if len(topics) > len(log.Topics) {
 			continue Logs
@@ -309,10 +309,10 @@ Logs:
 	return ret
 }
 
-func bloomFilter(bloom types.Bloom, addresses []common.Address, topics [][]common.Hash) bool {
-	if len(addresses) > 0 {
+func bloomFilter(bloom types.Bloom, accounts []common.Name, topics [][]common.Hash) bool {
+	if len(accounts) > 0 {
 		var included bool
-		for _, addr := range addresses {
+		for _, addr := range accounts {
 			if types.BloomLookup(bloom, addr) {
 				included = true
 				break

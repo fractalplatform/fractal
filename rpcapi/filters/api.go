@@ -270,10 +270,10 @@ func (api *PublicFilterAPI) Logs(ctx context.Context, crit FilterCriteria) (*rpc
 }
 
 type FilterQuery struct {
-	BlockHash *common.Hash     // used by eth_getLogs, return logs only from block with this hash
-	FromBlock *big.Int         // beginning of the queried range, nil means genesis block
-	ToBlock   *big.Int         // end of the range, nil means latest block
-	Addresses []common.Address // restricts matches to events created by specific contracts
+	BlockHash *common.Hash  // used by eth_getLogs, return logs only from block with this hash
+	FromBlock *big.Int      // beginning of the queried range, nil means genesis block
+	ToBlock   *big.Int      // end of the range, nil means latest block
+	Accounts  []common.Name // restricts matches to events created by specific contracts
 
 	// The Topic list restricts matches to particular event topics. Each event has a list
 	// of topics. Topics matches a prefix of that list. An empty element slice matches any
@@ -345,7 +345,7 @@ func (api *PublicFilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([
 	var filter *Filter
 	if crit.BlockHash != nil {
 		// Block filter requested, construct a single-shot filter
-		filter = NewBlockFilter(api.backend, *crit.BlockHash, crit.Addresses, crit.Topics)
+		filter = NewBlockFilter(api.backend, *crit.BlockHash, crit.Accounts, crit.Topics)
 	} else {
 		// Convert the RPC block numbers into internal representations
 		begin := rpc.LatestBlockNumber.Int64()
@@ -357,7 +357,7 @@ func (api *PublicFilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([
 			end = crit.ToBlock.Int64()
 		}
 		// Construct the range filter
-		filter = NewRangeFilter(api.backend, begin, end, crit.Addresses, crit.Topics)
+		filter = NewRangeFilter(api.backend, begin, end, crit.Accounts, crit.Topics)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
@@ -400,7 +400,7 @@ func (api *PublicFilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*ty
 	var filter *Filter
 	if f.crit.BlockHash != nil {
 		// Block filter requested, construct a single-shot filter
-		filter = NewBlockFilter(api.backend, *f.crit.BlockHash, f.crit.Addresses, f.crit.Topics)
+		filter = NewBlockFilter(api.backend, *f.crit.BlockHash, f.crit.Accounts, f.crit.Topics)
 	} else {
 		// Convert the RPC block numbers into internal representations
 		begin := rpc.LatestBlockNumber.Int64()
@@ -412,7 +412,7 @@ func (api *PublicFilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*ty
 			end = f.crit.ToBlock.Int64()
 		}
 		// Construct the range filter
-		filter = NewRangeFilter(api.backend, begin, end, f.crit.Addresses, f.crit.Topics)
+		filter = NewRangeFilter(api.backend, begin, end, f.crit.Accounts, f.crit.Topics)
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
@@ -480,7 +480,7 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 		BlockHash *common.Hash     `json:"blockHash"`
 		FromBlock *rpc.BlockNumber `json:"fromBlock"`
 		ToBlock   *rpc.BlockNumber `json:"toBlock"`
-		Addresses interface{}      `json:"address"`
+		Accounts  interface{}      `json:"accounts"`
 		Topics    []interface{}    `json:"topics"`
 	}
 
@@ -505,29 +505,29 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	args.Addresses = []common.Address{}
+	args.Accounts = []common.Name{}
 
-	if raw.Addresses != nil {
+	if raw.Accounts != nil {
 		// raw.Address can contain a single address or an array of addresses
-		switch rawAddr := raw.Addresses.(type) {
+		switch rawAccounts := raw.Accounts.(type) {
 		case []interface{}:
-			for i, addr := range rawAddr {
-				if strAddr, ok := addr.(string); ok {
-					addr, err := decodeAddress(strAddr)
+			for i, account := range rawAccounts {
+				if strAcct, ok := account.(string); ok {
+					account, err := decodeAccount(strAcct)
 					if err != nil {
 						return fmt.Errorf("invalid address at index %d: %v", i, err)
 					}
-					args.Addresses = append(args.Addresses, addr)
+					args.Accounts = append(args.Accounts, account)
 				} else {
 					return fmt.Errorf("non-string address at index %d", i)
 				}
 			}
 		case string:
-			addr, err := decodeAddress(rawAddr)
+			account, err := decodeAccount(rawAccounts)
 			if err != nil {
 				return fmt.Errorf("invalid address: %v", err)
 			}
-			args.Addresses = []common.Address{addr}
+			args.Accounts = []common.Name{account}
 		default:
 			return errors.New("invalid addresses in query")
 		}
@@ -577,12 +577,12 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func decodeAddress(s string) (common.Address, error) {
+func decodeAccount(s string) (common.Name, error) {
 	b, err := hexutil.Decode(s)
 	if err == nil && len(b) != common.AddressLength {
 		err = fmt.Errorf("hex has invalid length %d after decoding; expected %d for address", len(b), common.AddressLength)
 	}
-	return common.BytesToAddress(b), err
+	return common.BytesToName(b), err
 }
 
 func decodeTopic(s string) (common.Hash, error) {

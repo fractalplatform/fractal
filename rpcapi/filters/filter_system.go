@@ -321,14 +321,14 @@ func (es *EventSystem) broadcast(filters filterIndex, ev *router.Event) {
 			f.hashes <- hashes
 		}
 	case router.ChainHeadEv:
-		block := ev.Data.(types.Block)
+		block := ev.Data.(*types.Block)
 		for _, f := range filters[BlocksSubscription] {
 			f.headers <- block.Header()
 		}
 		if es.lightMode && len(filters[LogsSubscription]) > 0 {
 			es.lightFilterNewHead(block.Header(), func(header *types.Header, remove bool) {
 				for _, f := range filters[LogsSubscription] {
-					if matchedLogs := es.lightFilterLogs(header, f.logsCrit.Addresses, f.logsCrit.Topics, remove); len(matchedLogs) > 0 {
+					if matchedLogs := es.lightFilterLogs(header, f.logsCrit.Accounts, f.logsCrit.Topics, remove); len(matchedLogs) > 0 {
 						f.logs <- matchedLogs
 					}
 				}
@@ -340,14 +340,14 @@ func (es *EventSystem) broadcast(filters filterIndex, ev *router.Event) {
 	// case []*types.Log:
 	// 	if len(e) > 0 {
 	// 		for _, f := range filters[LogsSubscription] {
-	// 			if matchedLogs := filterLogs(e, f.logsCrit.FromBlock, f.logsCrit.ToBlock, f.logsCrit.Addresses, f.logsCrit.Topics); len(matchedLogs) > 0 {
+	// 			if matchedLogs := filterLogs(e, f.logsCrit.FromBlock, f.logsCrit.ToBlock, f.logsCrit.Accounts, f.logsCrit.Topics); len(matchedLogs) > 0 {
 	// 				f.logs <- matchedLogs
 	// 			}
 	// 		}
 	// 	}
 	// case blockchain.RemovedLogsEvent:
 	// 	for _, f := range filters[LogsSubscription] {
-	// 		if matchedLogs := filterLogs(e.Logs, f.logsCrit.FromBlock, f.logsCrit.ToBlock, f.logsCrit.Addresses, f.logsCrit.Topics); len(matchedLogs) > 0 {
+	// 		if matchedLogs := filterLogs(e.Logs, f.logsCrit.FromBlock, f.logsCrit.ToBlock, f.logsCrit.Accounts, f.logsCrit.Topics); len(matchedLogs) > 0 {
 	// 			f.logs <- matchedLogs
 	// 		}
 	// 	}
@@ -355,7 +355,7 @@ func (es *EventSystem) broadcast(filters filterIndex, ev *router.Event) {
 	// // 	if muxe, ok := e.Data.(blockchain.PendingLogsEvent); ok {
 	// // 		for _, f := range filters[PendingLogsSubscription] {
 	// // 			if e.Time.After(f.created) {
-	// // 				if matchedLogs := filterLogs(muxe.Logs, nil, f.logsCrit.ToBlock, f.logsCrit.Addresses, f.logsCrit.Topics); len(matchedLogs) > 0 {
+	// // 				if matchedLogs := filterLogs(muxe.Logs, nil, f.logsCrit.ToBlock, f.logsCrit.Accounts, f.logsCrit.Topics); len(matchedLogs) > 0 {
 	// // 					f.logs <- matchedLogs
 	// // 				}
 	// // 			}
@@ -376,7 +376,7 @@ func (es *EventSystem) broadcast(filters filterIndex, ev *router.Event) {
 	// 	if es.lightMode && len(filters[LogsSubscription]) > 0 {
 	// 		es.lightFilterNewHead(e.Block.Header(), func(header *types.Header, remove bool) {
 	// 			for _, f := range filters[LogsSubscription] {
-	// 				if matchedLogs := es.lightFilterLogs(header, f.logsCrit.Addresses, f.logsCrit.Topics, remove); len(matchedLogs) > 0 {
+	// 				if matchedLogs := es.lightFilterLogs(header, f.logsCrit.Accounts, f.logsCrit.Topics, remove); len(matchedLogs) > 0 {
 	// 					f.logs <- matchedLogs
 	// 				}
 	// 			}
@@ -419,7 +419,7 @@ func (es *EventSystem) lightFilterNewHead(newHeader *types.Header, callBack func
 }
 
 // filter logs of a single header in light client mode
-func (es *EventSystem) lightFilterLogs(header *types.Header, addresses []common.Address, topics [][]common.Hash, remove bool) []*types.Log {
+func (es *EventSystem) lightFilterLogs(header *types.Header, addresses []common.Name, topics [][]common.Hash, remove bool) []*types.Log {
 	if bloomFilter(header.Bloom, addresses, topics) {
 		// Get the logs of the block
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -464,8 +464,8 @@ func (es *EventSystem) eventLoop() {
 	defer func() {
 		//		es.pendingLogSub.Unsubscribe()
 		es.txsSub.Unsubscribe()
-		es.logsSub.Unsubscribe()
-		es.rmLogsSub.Unsubscribe()
+		//es.logsSub.Unsubscribe()
+		//es.rmLogsSub.Unsubscribe()
 		es.chainSub.Unsubscribe()
 	}()
 
@@ -514,10 +514,10 @@ func (es *EventSystem) eventLoop() {
 		// System stopped
 		case <-es.txsSub.Err():
 			return
-		case <-es.logsSub.Err():
-			return
-		case <-es.rmLogsSub.Err():
-			return
+		// case <-es.logsSub.Err():
+		// 	return
+		// case <-es.rmLogsSub.Err():
+		// 	return
 		case <-es.chainSub.Err():
 			return
 		}
