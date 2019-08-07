@@ -30,7 +30,6 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi/bloombits"
 	"github.com/fractalplatform/fractal/rpcapi/filters"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
@@ -93,9 +92,6 @@ type Backend interface {
 	// Filter Log
 	HeaderByHash(ctx context.Context, blockHash common.Hash) *types.Header
 	GetLogs(ctx context.Context, blockHash common.Hash) ([][]*types.Log, error)
-
-	BloomStatus() (uint64, uint64)
-	ServiceFilter(ctx context.Context, session *bloombits.MatcherSession)
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {

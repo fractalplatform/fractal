@@ -32,7 +32,6 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi/bloombits"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
@@ -389,12 +388,4 @@ func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
 // APIs returns apis
 func (b *APIBackend) APIs() []rpc.API {
 	return b.ftservice.miner.APIs(b.ftservice.blockchain)
-}
-
-func (b *APIBackend) BloomStatus() (uint64, uint64) {
-	return 4096, 1
-}
-
-func (b *APIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
-
 }
