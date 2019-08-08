@@ -24,18 +24,15 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/rpc"
 )
 
 func TestUnmarshalJSONNewFilterArgs(t *testing.T) {
 	var (
-		fromBlock rpc.BlockNumber = 0x123435
-		toBlock   rpc.BlockNumber = 0xabcdef
-		address0                  = common.HexToAddress("70c87d191324e6712a591f304b4eedef6ad9bb9d")
-		address1                  = common.HexToAddress("9b2055d370f73ec7d8a03e965129118dc8f5bf83")
-		topic0                    = common.HexToHash("3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1ca")
-		topic1                    = common.HexToHash("9084a792d2f8b16a62b882fd56f7860c07bf5fa91dd8a2ae7e809e5180fef0b3")
-		topic2                    = common.HexToHash("6ccae1c4af4152f460ff510e573399795dfab5dcf1fa60d1f33ac8fdc1e480ce")
+		account0 = common.Name("fractal.founder")
+		account1 = common.Name("supportmytest")
+		topic0   = common.HexToHash("3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1ca")
+		topic1   = common.HexToHash("9084a792d2f8b16a62b882fd56f7860c07bf5fa91dd8a2ae7e809e5180fef0b3")
+		topic2   = common.HexToHash("6ccae1c4af4152f460ff510e573399795dfab5dcf1fa60d1f33ac8fdc1e480ce")
 	)
 
 	// default values
@@ -43,59 +40,40 @@ func TestUnmarshalJSONNewFilterArgs(t *testing.T) {
 	if err := json.Unmarshal([]byte("{}"), &test0); err != nil {
 		t.Fatal(err)
 	}
-	if test0.FromBlock != nil {
-		t.Fatalf("expected nil, got %d", test0.FromBlock)
-	}
-	if test0.ToBlock != nil {
-		t.Fatalf("expected nil, got %d", test0.ToBlock)
-	}
-	if len(test0.Addresses) != 0 {
-		t.Fatalf("expected 0 addresses, got %d", len(test0.Addresses))
+	if len(test0.Accounts) != 0 {
+		t.Fatalf("expected 0 addresses, got %d", len(test0.Accounts))
 	}
 	if len(test0.Topics) != 0 {
 		t.Fatalf("expected 0 topics, got %d topics", len(test0.Topics))
 	}
 
-	// from, to block number
-	var test1 FilterCriteria
-	vector := fmt.Sprintf(`{"fromBlock":"0x%x","toBlock":"0x%x"}`, fromBlock, toBlock)
-	if err := json.Unmarshal([]byte(vector), &test1); err != nil {
-		t.Fatal(err)
-	}
-	if test1.FromBlock.Int64() != fromBlock.Int64() {
-		t.Fatalf("expected FromBlock %d, got %d", fromBlock, test1.FromBlock)
-	}
-	if test1.ToBlock.Int64() != toBlock.Int64() {
-		t.Fatalf("expected ToBlock %d, got %d", toBlock, test1.ToBlock)
-	}
-
 	// single address
 	var test2 FilterCriteria
-	vector = fmt.Sprintf(`{"address": "%s"}`, address0.Hex())
+	vector := fmt.Sprintf(`{"address": "%s"}`, account0.String())
 	if err := json.Unmarshal([]byte(vector), &test2); err != nil {
 		t.Fatal(err)
 	}
-	if len(test2.Addresses) != 1 {
-		t.Fatalf("expected 1 address, got %d address(es)", len(test2.Addresses))
+	if len(test2.Accounts) != 1 {
+		t.Fatalf("expected 1 address, got %d address(es)", len(test2.Accounts))
 	}
-	if test2.Addresses[0] != address0 {
-		t.Fatalf("expected address %x, got %x", address0, test2.Addresses[0])
+	if test2.Accounts[0] != account0 {
+		t.Fatalf("expected address %x, got %x", account0, test2.Accounts[0])
 	}
 
 	// multiple address
 	var test3 FilterCriteria
-	vector = fmt.Sprintf(`{"address": ["%s", "%s"]}`, address0.Hex(), address1.Hex())
+	vector = fmt.Sprintf(`{"address": ["%s", "%s"]}`, account0.String(), account1.String())
 	if err := json.Unmarshal([]byte(vector), &test3); err != nil {
 		t.Fatal(err)
 	}
-	if len(test3.Addresses) != 2 {
-		t.Fatalf("expected 2 addresses, got %d address(es)", len(test3.Addresses))
+	if len(test3.Accounts) != 2 {
+		t.Fatalf("expected 2 addresses, got %d address(es)", len(test3.Accounts))
 	}
-	if test3.Addresses[0] != address0 {
-		t.Fatalf("expected address %x, got %x", address0, test3.Addresses[0])
+	if test3.Accounts[0] != account0 {
+		t.Fatalf("expected address %x, got %x", account0, test3.Accounts[0])
 	}
-	if test3.Addresses[1] != address1 {
-		t.Fatalf("expected address %x, got %x", address1, test3.Addresses[1])
+	if test3.Accounts[1] != account1 {
+		t.Fatalf("expected address %x, got %x", account1, test3.Accounts[1])
 	}
 
 	// single topic
