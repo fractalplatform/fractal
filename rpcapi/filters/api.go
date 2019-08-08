@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 	"sync"
 	"time"
 
@@ -61,11 +60,11 @@ type PublicFilterAPI struct {
 }
 
 // NewPublicFilterAPI returns a new PublicFilterAPI instance.
-func NewPublicFilterAPI(backend Backend, lightMode bool) *PublicFilterAPI {
+func NewPublicFilterAPI(backend Backend) *PublicFilterAPI {
 	api := &PublicFilterAPI{
 		backend: backend,
 		chainDb: backend.ChainDb(),
-		events:  NewEventSystem(backend, lightMode),
+		events:  NewEventSystem(backend),
 		filters: make(map[rpc.ID]*filter),
 	}
 	go api.timeoutLoop()
@@ -270,10 +269,7 @@ func (api *PublicFilterAPI) Logs(ctx context.Context, crit FilterCriteria) (*rpc
 }
 
 type FilterQuery struct {
-	BlockHash *common.Hash  // used by eth_getLogs, return logs only from block with this hash
-	FromBlock *big.Int      // beginning of the queried range, nil means genesis block
-	ToBlock   *big.Int      // end of the range, nil means latest block
-	Accounts  []common.Name // restricts matches to events created by specific contracts
+	Accounts []common.Name // restricts matches to events created by specific contracts
 
 	// The Topic list restricts matches to particular event topics. Each event has a list
 	// of topics. Topics matches a prefix of that list. An empty element slice matches any
@@ -410,32 +406,13 @@ func returnLogs(logs []*types.Log) []*types.Log {
 // UnmarshalJSON sets *args fields with given data.
 func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	type input struct {
-		BlockHash *common.Hash     `json:"blockHash"`
-		FromBlock *rpc.BlockNumber `json:"fromBlock"`
-		ToBlock   *rpc.BlockNumber `json:"toBlock"`
-		Accounts  interface{}      `json:"accounts"`
-		Topics    []interface{}    `json:"topics"`
+		Accounts interface{}   `json:"accounts"`
+		Topics   []interface{} `json:"topics"`
 	}
 
 	var raw input
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
-	}
-
-	if raw.BlockHash != nil {
-		if raw.FromBlock != nil || raw.ToBlock != nil {
-			// BlockHash is mutually exclusive with FromBlock/ToBlock criteria
-			return fmt.Errorf("cannot specify both BlockHash and FromBlock/ToBlock, choose one or the other")
-		}
-		args.BlockHash = raw.BlockHash
-	} else {
-		if raw.FromBlock != nil {
-			args.FromBlock = big.NewInt(raw.FromBlock.Int64())
-		}
-
-		if raw.ToBlock != nil {
-			args.ToBlock = big.NewInt(raw.ToBlock.Int64())
-		}
 	}
 
 	args.Accounts = []common.Name{}
@@ -512,9 +489,6 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 
 func decodeAccount(s string) (common.Name, error) {
 	b, err := hexutil.Decode(s)
-	if err == nil && len(b) != common.AddressLength {
-		err = fmt.Errorf("hex has invalid length %d after decoding; expected %d for address", len(b), common.AddressLength)
-	}
 	return common.BytesToName(b), err
 }
 

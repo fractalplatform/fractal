@@ -119,7 +119,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		}, {
 			Namespace: "ft",
 			Version:   "1.0",
-			Service:   filters.NewPublicFilterAPI(apiBackend, false),
+			Service:   filters.NewPublicFilterAPI(apiBackend),
 			Public:    true,
 		},
 		{
