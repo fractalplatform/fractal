@@ -21,7 +21,6 @@ package filters
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -406,7 +405,7 @@ func returnLogs(logs []*types.Log) []*types.Log {
 // UnmarshalJSON sets *args fields with given data.
 func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	type input struct {
-		Accounts interface{}   `json:"accounts"`
+		Accounts []common.Name `json:"accounts"`
 		Topics   []interface{} `json:"topics"`
 	}
 
@@ -416,35 +415,12 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	}
 
 	args.Accounts = []common.Name{}
-
 	if raw.Accounts != nil {
-		// raw.Address can contain a single address or an array of addresses
-		switch rawAccounts := raw.Accounts.(type) {
-		case []interface{}:
-			for i, account := range rawAccounts {
-				if strAcct, ok := account.(string); ok {
-					account, err := decodeAccount(strAcct)
-					if err != nil {
-						return fmt.Errorf("invalid address at index %d: %v", i, err)
-					}
-					args.Accounts = append(args.Accounts, account)
-				} else {
-					return fmt.Errorf("non-string address at index %d", i)
-				}
-			}
-		case string:
-			account, err := decodeAccount(rawAccounts)
-			if err != nil {
-				return fmt.Errorf("invalid address: %v", err)
-			}
-			args.Accounts = []common.Name{account}
-		default:
-			return errors.New("invalid addresses in query")
+		for _, account := range raw.Accounts {
+			args.Accounts = append(args.Accounts, account)
 		}
 	}
 
-	// topics is an array consisting of strings and/or arrays of strings.
-	// JSON null values are converted to common.Hash{} and ignored by the filter manager.
 	if len(raw.Topics) > 0 {
 		args.Topics = make([][]common.Hash, len(raw.Topics))
 		for i, t := range raw.Topics {
@@ -485,11 +461,6 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	}
 
 	return nil
-}
-
-func decodeAccount(s string) (common.Name, error) {
-	b, err := hexutil.Decode(s)
-	return common.BytesToName(b), err
 }
 
 func decodeTopic(s string) (common.Hash, error) {

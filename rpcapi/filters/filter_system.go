@@ -43,9 +43,6 @@ const (
 	LogsSubscription
 	// PendingLogsSubscription queries for logs in pending blocks
 	PendingLogsSubscription
-	// MinedAndPendingLogsSubscription queries for logs in mined and pending blocks.
-	MinedAndPendingLogsSubscription
-	// PendingTransactionsSubscription queries tx hashes for pending
 	// transactions entering the pending state
 	PendingTransactionsSubscription
 	// BlocksSubscription queries hashes for blocks that are imported
