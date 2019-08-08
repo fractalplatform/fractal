@@ -22,23 +22,23 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"reflect"
 	"testing"
 	"time"
 
 	ethereum "github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/bloombits"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/rawdb"
+
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 type testBackend struct {
@@ -50,15 +50,11 @@ type testBackend struct {
 	chainFeed  *event.Feed
 }
 
-func (b *testBackend) ChainDb() ethdb.Database {
+func (b *testBackend) ChainDb() fdb.Database {
 	return b.db
 }
 
-func (b *testBackend) EventMux() *event.TypeMux {
-	return b.mux
-}
-
-func (b *testBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error) {
+func (b *testBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header {
 	var (
 		hash common.Hash
 		num  uint64
@@ -67,25 +63,25 @@ func (b *testBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumbe
 		hash = rawdb.ReadHeadBlockHash(b.db)
 		number := rawdb.ReadHeaderNumber(b.db, hash)
 		if number == nil {
-			return nil, nil
+			return nil
 		}
 		num = *number
 	} else {
 		num = uint64(blockNr)
 		hash = rawdb.ReadCanonicalHash(b.db, num)
 	}
-	return rawdb.ReadHeader(b.db, hash, num), nil
+	return rawdb.ReadHeader(b.db, hash, num)
 }
 
-func (b *testBackend) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+func (b *testBackend) HeaderByHash(ctx context.Context, hash common.Hash) *types.Header {
 	number := rawdb.ReadHeaderNumber(b.db, hash)
 	if number == nil {
-		return nil, nil
+		return nil
 	}
-	return rawdb.ReadHeader(b.db, hash, *number), nil
+	return rawdb.ReadHeader(b.db, hash, *number)
 }
 
-func (b *testBackend) GetReceipts(ctx context.Context, hash common.Hash) (types.Receipts, error) {
+func (b *testBackend) GetReceipts(ctx context.Context, hash common.Hash) ([]*types.Receipt, error) {
 	if number := rawdb.ReadHeaderNumber(b.db, hash); number != nil {
 		return rawdb.ReadReceipts(b.db, hash, *number), nil
 	}
@@ -110,47 +106,8 @@ func (b *testBackend) SubscribeNewTxsEvent(ch chan<- core.NewTxsEvent) event.Sub
 	return b.txFeed.Subscribe(ch)
 }
 
-func (b *testBackend) SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription {
-	return b.rmLogsFeed.Subscribe(ch)
-}
-
-func (b *testBackend) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription {
-	return b.logsFeed.Subscribe(ch)
-}
-
 func (b *testBackend) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription {
 	return b.chainFeed.Subscribe(ch)
-}
-
-func (b *testBackend) BloomStatus() (uint64, uint64) {
-	return params.BloomBitsBlocks, b.sections
-}
-
-func (b *testBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
-	requests := make(chan chan *bloombits.Retrieval)
-
-	go session.Multiplex(16, 0, requests)
-	go func() {
-		for {
-			// Wait for a service request or a shutdown
-			select {
-			case <-ctx.Done():
-				return
-
-			case request := <-requests:
-				task := <-request
-
-				task.Bitsets = make([][]byte, len(task.Sections))
-				for i, section := range task.Sections {
-					if rand.Int()%4 != 0 { // Handle occasional missing deliveries
-						head := rawdb.ReadCanonicalHash(b.db, (section+1)*params.BloomBitsBlocks-1)
-						task.Bitsets[i], _ = rawdb.ReadBloomBits(b.db, task.Bit, section, head)
-					}
-				}
-				request <- task
-			}
-		}
-	}()
 }
 
 // TestBlockSubscription tests if a block subscription returns block hashes for posted chain events.
@@ -162,14 +119,13 @@ func TestBlockSubscription(t *testing.T) {
 	t.Parallel()
 
 	var (
-		mux         = new(event.TypeMux)
-		db          = ethdb.NewMemDatabase()
+		db          = memdb.NewMemDatabase()
 		txFeed      = new(event.Feed)
 		rmLogsFeed  = new(event.Feed)
 		logsFeed    = new(event.Feed)
 		chainFeed   = new(event.Feed)
-		backend     = &testBackend{mux, db, 0, txFeed, rmLogsFeed, logsFeed, chainFeed}
-		api         = NewPublicFilterAPI(backend, false)
+		backend     = &testBackend{db, 0, txFeed, rmLogsFeed, logsFeed, chainFeed}
+		api         = NewPublicFilterAPI(backend)
 		genesis     = new(core.Genesis).MustCommit(db)
 		chain, _    = core.GenerateChain(params.TestChainConfig, genesis, ethash.NewFaker(), db, 10, func(i int, gen *core.BlockGen) {})
 		chainEvents = []core.ChainEvent{}
