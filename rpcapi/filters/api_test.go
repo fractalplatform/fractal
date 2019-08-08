@@ -49,7 +49,7 @@ func TestUnmarshalJSONNewFilterArgs(t *testing.T) {
 
 	// single address
 	var test2 FilterCriteria
-	vector := fmt.Sprintf(`{"address": "%s"}`, account0.String())
+	vector := fmt.Sprintf(`{"accounts": ["%s"]}`, account0.String())
 	if err := json.Unmarshal([]byte(vector), &test2); err != nil {
 		t.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func TestUnmarshalJSONNewFilterArgs(t *testing.T) {
 
 	// multiple address
 	var test3 FilterCriteria
-	vector = fmt.Sprintf(`{"address": ["%s", "%s"]}`, account0.String(), account1.String())
+	vector = fmt.Sprintf(`{"accounts": ["%s", "%s"]}`, account0.String(), account1.String())
 	if err := json.Unmarshal([]byte(vector), &test3); err != nil {
 		t.Fatal(err)
 	}
