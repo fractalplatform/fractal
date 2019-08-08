@@ -38,11 +38,11 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
 type testBackend struct {
-	mux        *event.TypeMux
-	db         ethdb.Database
+	db         fdb.Database
 	sections   uint64
 	txFeed     *event.Feed
 	rmLogsFeed *event.Feed
