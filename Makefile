@@ -16,22 +16,18 @@
 
 SHELL:=/bin/bash
 REPO := $(shell pwd)
-GOFILES_NOVENDOR := $(shell go list -f "{{.Dir}}" ./...)
-PACKAGES_NOVENDOR := $(shell go list ./... | grep -v test)
-WORK_SPACE := ${REPO}/build/_workspace
-FT_DIR :=${WORK_SPACE}/src/github.com/fractalplatform
-TEMP_GOPATH := $(GOPATH)
+GOFILES_NOVENDOR := $(shell GOFLAGS="-mod=vendor" go list -f "{{.Dir}}" ./...)
+PACKAGES_NOVENDOR := $(shell GOFLAGS="-mod=vendor" go list ./... | grep -v test)
 
-export GOPATH := ${WORK_SPACE}
+export GOFLAGS=-mod=vendor
 
 define build
-	@cd ${FT_DIR}/fractal && go build -ldflags " \
+	@go build -ldflags " \
 	-X github.com/fractalplatform/fractal/cmd/utils.commit=$(shell cat commit_hash.txt) \
 	-X github.com/fractalplatform/fractal/cmd/utils.date=$(shell date '+%Y-%m-%d') \
 	-X 'github.com/fractalplatform/fractal/cmd/utils.goversion=$(shell go version)'" \
-	-o ${FT_DIR}/fractal/build/bin/$(1) ./cmd/$(1)
+	-o ${REPO}/build/bin/$(1) ./cmd/$(1)
 endef
-
 
 ### Check and format code 
 
@@ -64,25 +60,21 @@ vet:
 commit_hash:
 	@git status &> /dev/null && scripts/commit_hash.sh > commit_hash.txt || true
 
-.PHONY: build_workspace
-build_workspace:
-	@[ -d ${FT_DIR} ] || mkdir -p ${FT_DIR}
-	@[ -d ${FT_DIR}/fractal ] || ln -s ${REPO} ${FT_DIR}/fractal
 
 # build all targets 
 .PHONY: all
-all:check build_workspace build_ft build_ftfinder
+all:check  build_ft build_ftfinder
 
 # build ft
 .PHONY: build_ft
-build_ft: commit_hash check build_workspace
+build_ft: commit_hash check 
 	@echo "Building ft."
 	$(call build,ft)
 
 
 # build ftfinder
 .PHONY: build_ftfinder 
-build_ftfinder: commit_hash check build_workspace
+build_ftfinder: commit_hash check 
 	@echo "Building ftfinder."
 	$(call build,ftfinder)
 
@@ -90,18 +82,18 @@ build_ftfinder: commit_hash check build_workspace
 
 .PHONY: test 
 test: all
-	@cd ${FT_DIR}/fractal  && scripts/test.sh
+	@scripts/test.sh
 
 .PHONY: test_win 
 test_win: 
-	@export GOPATH=${TEMP_GOPATH} && bash scripts/test.sh
+	@bash scripts/test.sh
 
 ### Clean up
 
 # clean removes the target folder containing build artefacts
 .PHONY: clean
 clean:
-	-rm -rf ./build/bin ./build/_workspace
+	-rm -rf ./build/bin 
 
 ### Release and versioning
 
@@ -129,9 +121,9 @@ tag_release: test check docs
 .PHONY: release
 release: check docs 
 	@scripts/is_checkout_dirty.sh || (echo "checkout is dirty so not releasing!" && exit 1)
-	@export GOPATH=${TEMP_GOPATH} && scripts/release.sh
+	@scripts/release.sh
 
 .PHONY: tmp_release
 tmp_release: check 
 	@echo "Building and releasing"
-	@export GOPATH=${TEMP_GOPATH} && goreleaser --snapshot --rm-dist 
+	@goreleaser --snapshot --rm-dist 
