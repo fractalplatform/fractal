@@ -17,6 +17,8 @@
 package txpool
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -906,36 +908,47 @@ func (tp *TxPool) AddRemote(tx *types.Transaction) error {
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 	var addedTxs []*types.Transaction
-
+	var errs = make([]error, len(txs))
+	var indexs []int
 	// Cache senders in transactions before obtaining lock (pool.signer is immutable)
-	for _, tx := range txs {
+	for index, tx := range txs {
 		// If the transaction is already known, discard it
 		if tp.all.Get(tx.Hash()) != nil {
 			log.Trace("Discarding already known transaction", "hash", tx.Hash())
+			errs[index] = errors.New("already known transaction")
 			continue
 		}
 
 		if err := tx.Check(tp.chain.Config()); err != nil {
 			log.Trace("add txs check ", "err", err, "hash", tx.Hash())
+			errs[index] = fmt.Errorf("transaction check err: %v", err)
 			continue
 		}
 
-		for _, action := range tx.GetActions() {
+		for i, action := range tx.GetActions() {
 			if _, err := types.RecoverMultiKey(tp.signer, action, tx); err != nil {
 				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
+				errs[index] = fmt.Errorf("action %v,recoverMultiKey reocver faild: %v", i, err)
+				continue
 			}
 		}
+		indexs = append(indexs, index)
 		addedTxs = append(addedTxs, tx)
 	}
 
 	tp.mu.Lock()
-	errs, dirtyNames := tp.addTxsLocked(addedTxs, local)
+	addTxErrs, dirtyNames := tp.addTxsLocked(addedTxs, local)
 	tp.mu.Unlock()
 
 	done := tp.requestPromoteExecutables(dirtyNames)
 	if sync {
 		<-done
 	}
+
+	for i, index := range indexs {
+		errs[index] = addTxErrs[i]
+	}
+
 	return errs
 }
 
