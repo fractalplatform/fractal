@@ -5,8 +5,8 @@ as defined by http://www.w3.org/TR/cors/
 You can configure it by passing an option struct to cors.New:
 
     c := cors.New(cors.Options{
-        AllowedOrigins:   []string{"foo.com"},
-        AllowedMethods:   []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+        AllowedOrigins: []string{"foo.com"},
+        AllowedMethods: []string{"GET", "POST", "DELETE"},
         AllowCredentials: true,
     })
 
@@ -161,7 +161,7 @@ func New(options Options) *Cors {
 	// Allowed Methods
 	if len(options.AllowedMethods) == 0 {
 		// Default is spec's "simple" methods
-		c.allowedMethods = []string{http.MethodGet, http.MethodPost, http.MethodHead}
+		c.allowedMethods = []string{"GET", "POST", "HEAD"}
 	} else {
 		c.allowedMethods = convert(options.AllowedMethods, strings.ToUpper)
 	}
@@ -178,15 +178,8 @@ func Default() *Cors {
 // origins with all standard methods with any header and credentials.
 func AllowAll() *Cors {
 	return New(Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{
-			http.MethodHead,
-			http.MethodGet,
-			http.MethodPost,
-			http.MethodPut,
-			http.MethodPatch,
-			http.MethodDelete,
-		},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: false,
 	})
