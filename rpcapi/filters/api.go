@@ -46,7 +46,7 @@ type filter struct {
 }
 
 // PublicFilterAPI offers support to create and manage filters. This will allow external clients to retrieve various
-// information related to the Ethereum protocol such als blocks, transactions and logs.
+// information related to the fractal protocol such als blocks, transactions and logs.
 type PublicFilterAPI struct {
 	backend   Backend
 	quit      chan struct{}
@@ -93,7 +93,7 @@ func (api *PublicFilterAPI) timeoutLoop() {
 // as transactions enter the pending state.
 //
 // It is part of the filter package because this filter can be used through the
-// `eth_getFilterChanges` polling method that is also used for log filters.
+// `ft_getFilterChanges` polling method that is also used for log filters.
 //
 func (api *PublicFilterAPI) NewPendingTransactionFilter() rpc.ID {
 	var (
@@ -162,7 +162,7 @@ func (api *PublicFilterAPI) NewPendingTransactions(ctx context.Context) (*rpc.Su
 }
 
 // NewBlockFilter creates a filter that fetches blocks that are imported into the chain.
-// It is part of the filter package since polling goes with eth_getFilterChanges.
+// It is part of the filter package since polling goes with ft_getFilterChanges.
 //
 func (api *PublicFilterAPI) NewBlockFilter() rpc.ID {
 	var (
