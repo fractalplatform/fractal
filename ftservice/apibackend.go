@@ -203,6 +203,10 @@ func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber
 	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr))
 }
 
+func (b *APIBackend) HeaderByHash(ctx context.Context, hash common.Hash) *types.Header {
+	return b.ftservice.blockchain.GetHeaderByHash(hash)
+}
+
 func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block {
 	if blockNr == rpc.LatestBlockNumber {
 		return b.ftservice.blockchain.CurrentBlock()

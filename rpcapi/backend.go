@@ -30,6 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/rpcapi/filters"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
@@ -87,6 +88,10 @@ type Backend interface {
 	SelfNode() string
 	Engine() consensus.IEngine
 	APIs() []rpc.API
+
+	// Filter Log
+	HeaderByHash(ctx context.Context, blockHash common.Hash) *types.Header
+	GetLogs(ctx context.Context, blockHash common.Hash) ([][]*types.Log, error)
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {
@@ -110,6 +115,11 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Namespace: "ft",
 			Version:   "1.0",
 			Service:   NewPublicFractalAPI(apiBackend),
+			Public:    true,
+		}, {
+			Namespace: "ft",
+			Version:   "1.0",
+			Service:   filters.NewPublicFilterAPI(apiBackend),
 			Public:    true,
 		},
 		{
