@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// package rpcapi implements the general API functions.
-
 package filters
 
 import (
@@ -41,8 +39,6 @@ const (
 	UnknownSubscription Type = iota
 	// LogsSubscription queries for new or removed (chain reorg) logs
 	LogsSubscription
-	// PendingLogsSubscription queries for logs in pending blocks
-	PendingLogsSubscription
 	// transactions entering the pending state
 	PendingTransactionsSubscription
 	// BlocksSubscription queries hashes for blocks that are imported
@@ -87,17 +83,13 @@ type EventSystem struct {
 	lastHead *types.Header
 
 	// Subscriptions
-	txsSub    event.Subscription // Subscription for new transaction event
-	logsSub   event.Subscription // Subscription for new log event
-	rmLogsSub event.Subscription // Subscription for removed log event
-	chainSub  event.Subscription // Subscription for new chain event
+	txsSub   event.Subscription // Subscription for new transaction event
+	chainSub event.Subscription // Subscription for new chain event
 
 	// Channels
 	install   chan *subscription // install filter for event notification
 	uninstall chan *subscription // remove filter for event notification
 	txsCh     chan *router.Event // Channel to receive new transactions event
-	logsCh    chan *router.Event // Channel to receive new log event
-	rmLogsCh  chan *router.Event // Channel to receive removed log event
 	chainCh   chan *router.Event // Channel to receive new chain event
 }
 
@@ -113,18 +105,12 @@ func NewEventSystem(backend Backend) *EventSystem {
 		install:   make(chan *subscription),
 		uninstall: make(chan *subscription),
 		txsCh:     make(chan *router.Event, txChanSize),
-		logsCh:    make(chan *router.Event, logsChanSize),
-		rmLogsCh:  make(chan *router.Event, rmLogsChanSize),
 		chainCh:   make(chan *router.Event, chainEvChanSize),
 	}
 
 	// Subscribe events
 	m.txsSub = router.Subscribe(nil, m.txsCh, router.NewTxs, []*types.Transaction{})
 	m.chainSub = router.Subscribe(nil, m.chainCh, router.ChainHeadEv, &types.Block{})
-
-	// m.logsSub = router.Subscribe(nil, txsCh, router.NewTxs, []*types.Transaction{})
-	// m.txsSub = router.Subscribe(nil, txsCh, router.NewTxs, []*types.Transaction{})
-	// m.txsSub = router.Subscribe(nil, txsCh, router.NewTxs, []*types.Transaction{})
 
 	go m.eventLoop()
 	return m
@@ -299,8 +285,8 @@ func (es *EventSystem) lightFilterNewHead(newHeader *types.Header, callBack func
 }
 
 // filter logs of a single header in light client mode
-func (es *EventSystem) lightFilterLogs(header *types.Header, addresses []common.Name, topics [][]common.Hash, remove bool) []*types.Log {
-	if bloomFilter(header.Bloom, addresses, topics) {
+func (es *EventSystem) lightFilterLogs(header *types.Header, accounts []common.Name, topics [][]common.Hash, remove bool) []*types.Log {
+	if bloomFilter(header.Bloom, accounts, topics) {
 		// Get the logs of the block
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
@@ -316,7 +302,7 @@ func (es *EventSystem) lightFilterLogs(header *types.Header, addresses []common.
 				unfiltered = append(unfiltered, &logcopy)
 			}
 		}
-		logs := filterLogs(unfiltered, nil, nil, addresses, topics)
+		logs := filterLogs(unfiltered, accounts, topics)
 		if len(logs) > 0 && logs[0].TxHash == (common.Hash{}) {
 			// We have matching but non-derived logs
 			receipts, err := es.backend.GetReceipts(ctx, header.Hash())
@@ -331,7 +317,7 @@ func (es *EventSystem) lightFilterLogs(header *types.Header, addresses []common.
 					unfiltered = append(unfiltered, &logcopy)
 				}
 			}
-			logs = filterLogs(unfiltered, nil, nil, addresses, topics)
+			logs = filterLogs(unfiltered, accounts, topics)
 		}
 		return logs
 	}

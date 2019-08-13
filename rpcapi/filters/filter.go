@@ -14,13 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-// package rpcapi implements the general API functions.
-
 package filters
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rpc"
@@ -60,17 +57,10 @@ func includes(accounts []common.Name, a common.Name) bool {
 }
 
 // filterLogs creates a slice of logs matching the given criteria.
-func filterLogs(logs []*types.Log, fromBlock, toBlock *big.Int, accounts []common.Name, topics [][]common.Hash) []*types.Log {
+func filterLogs(logs []*types.Log, accounts []common.Name, topics [][]common.Hash) []*types.Log {
 	var ret []*types.Log
 Logs:
 	for _, log := range logs {
-		if fromBlock != nil && fromBlock.Int64() >= 0 && fromBlock.Uint64() > log.BlockNumber {
-			continue
-		}
-		if toBlock != nil && toBlock.Int64() >= 0 && toBlock.Uint64() < log.BlockNumber {
-			continue
-		}
-
 		if len(accounts) > 0 && !includes(accounts, log.Name) {
 			continue
 		}
