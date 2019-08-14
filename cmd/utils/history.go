@@ -43,6 +43,10 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.26 - 2019-08-14",
+		`### Fixed
+- [LOG] fix vendor log bug, patch for version 0.0.25 
+`,
 		"0.0.25 - 2019-08-07",
 		`### Forked
 - [DPOS] fork3: reduce CandidateAvailableMinQuantity (#416)
