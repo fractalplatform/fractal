@@ -1,4 +1,22 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.25] - 2019-08-07
+### Forked
+- [DPOS] fork3: reduce CandidateAvailableMinQuantity (#416)
+### Fixed
+- [MINER] fixed some bugs (#421)(#422)
+- [TXPOOL] fixed txpool add remotes not check the same tx was exist (#423)
+- [TXPOOL] fixed txpool rpc send same tx err (#430)
+- [ACCOUNT] fix internal action bug (#424)
+### Changed
+- [RPCAPI] modify api get account by name and id (#428)
+- [GASPRICE] modify gas price oracle (#417)
+- [ACCOUNT] modify account fliter balance zero (#414)
+### Added
+- [FILTERS] add filters rpc (#431)
+- [MOD] support go mod (#429)
+- [VM] add timeout func (#419) and add callwithpay (#425)
+
+
 ## [0.0.24] - 2019-07-30
 ### Fixed
 - [BLOCKCHAIN] blockchain store irreversible number 
@@ -203,6 +221,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.25]: https://github.com/fractalplatform/fractal/compare/v0.0.24...v0.0.25
 [0.0.24]: https://github.com/fractalplatform/fractal/compare/v0.0.23...v0.0.24
 [0.0.23]: https://github.com/fractalplatform/fractal/compare/v0.0.22...v0.0.23
 [0.0.22]: https://github.com/fractalplatform/fractal/compare/v0.0.21...v0.0.22

@@ -70,6 +70,8 @@ var RootCmd = &cobra.Command{
 			log.Error("debug setup faild", "err", err)
 		}
 
+		log.Info("fractal node", "version", utils.FullVersion())
+
 		node, err := makeNode()
 		if err != nil {
 			log.Error("ft make node failed.", "err", err)
