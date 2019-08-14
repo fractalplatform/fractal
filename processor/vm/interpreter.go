@@ -19,6 +19,7 @@ package vm
 import (
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/fractalplatform/fractal/params"
@@ -46,6 +47,8 @@ type Config struct {
 	// table.
 	JumpTable       [256]operation
 	ContractLogFlag bool
+	//
+	EndTime time.Time
 }
 
 // Interpreter is used to run based contracts and will utilise the
@@ -117,7 +120,12 @@ func (in *Interpreter) enforceRestrictions(op OpCode, operation operation, stack
 func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err error) {
 	// Increment the call depth which is restricted to 1024
 	in.evm.depth++
-	defer func() { in.evm.depth-- }()
+	defer func() {
+		in.evm.depth--
+		if false == in.cfg.EndTime.IsZero() && true == in.evm.IsOverTime() {
+			err = ErrExecOverTime
+		}
+	}()
 
 	// Reset the previous call's return data. It's unimportant to preserve the old buffer
 	// as every returning call will return new data anyway.

@@ -19,10 +19,9 @@ package gasprice
 import (
 	"context"
 	"math/big"
-	"math/rand"
-	"sort"
 	"testing"
 
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/stretchr/testify/assert"
@@ -32,35 +31,40 @@ type testBlockChain struct {
 	blocks map[int]*types.Block
 }
 
-func newTestBlockChain(prices *big.Int) *testBlockChain {
+func newTestBlockChain(price *big.Int) *testBlockChain {
 	blocks := make(map[int]*types.Block)
-	for i := 0; i < 100; i++ {
-		block := &types.Block{Head: &types.Header{Number: big.NewInt(int64(i))}}
-		action := types.NewAction(types.CreateContract, "gpotestname", "", 1,
-			10, 10, nil, nil, nil)
-		block.Txs = []*types.Transaction{types.NewTransaction(1, prices, action)}
+	for i := 0; i < 6; i++ {
+		if i%2 == 0 {
+			price = new(big.Int).Mul(price, big.NewInt(2))
+		}
+		block := &types.Block{Head: &types.Header{Number: big.NewInt(int64(i)), GasLimit: params.BlockGasLimit, GasUsed: uint64((i + 1) * 100000)}}
+		if i < 5 { // blocks[5] no transaction
+			action := types.NewAction(types.CreateContract, "gpotestname", "", 1,
+				10, 10, nil, nil, nil)
+			block.Txs = []*types.Transaction{types.NewTransaction(1, price, action)}
+		}
 		blocks[i] = block
 	}
+
 	return &testBlockChain{
 		blocks: blocks,
 	}
 }
-func (b *testBlockChain) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error) {
+func (b *testBlockChain) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header {
 	if blockNr == rpc.LatestBlockNumber {
-		return b.blocks[len(b.blocks)-1].Header(), nil
+		return b.blocks[len(b.blocks)-1].Header()
 	}
-	return b.blocks[int(blockNr)].Header(), nil
+	return b.blocks[int(blockNr)].Header()
 }
 
-func (b *testBlockChain) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
-	return b.blocks[int(blockNr)], nil
+func (b *testBlockChain) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block {
+	return b.blocks[int(blockNr)]
 }
 
 func TestSuggestPrice(t *testing.T) {
 	cfg := Config{
-		Blocks:     100,
-		Percentile: 60,
-		Default:    big.NewInt(1),
+		Blocks:  5,
+		Default: big.NewInt(1),
 	}
 	price := big.NewInt(1)
 	gpo := NewOracle(newTestBlockChain(price), cfg)
@@ -70,25 +74,4 @@ func TestSuggestPrice(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, price, gasPrice)
-
-}
-
-func TestSortPrice(t *testing.T) {
-	pricesLen := 10
-	prices := make([]*big.Int, pricesLen)
-	for i := 0; i < pricesLen; i++ {
-		prices[i] = big.NewInt(rand.Int63())
-	}
-	sort.Sort(bigIntArray(prices))
-	for k, v := range prices {
-		if k == (pricesLen - 1) {
-			if v.Cmp(prices[k-1]) < 0 {
-				t.Errorf("prices[%d]=%v must > prices[%d]=%v", k, v, pricesLen-1, prices[pricesLen-1])
-			}
-			break
-		}
-		if v.Cmp(prices[k+1]) > 0 {
-			t.Errorf("prices[%d]=%v must > prices[%d]=%v", k+1, prices[k+1], k, v)
-		}
-	}
 }

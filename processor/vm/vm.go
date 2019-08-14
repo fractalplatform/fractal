@@ -168,6 +168,19 @@ func (evm *EVM) Cancel() {
 	atomic.StoreInt32(&evm.abort, 1)
 }
 
+//
+func (evm *EVM) OverTimeAbort() {
+	atomic.StoreInt32(&evm.abort, 2)
+}
+
+// Check vm is overtime abort
+func (evm *EVM) IsOverTime() bool {
+	if atomic.LoadInt32(&evm.abort) == 2 {
+		return true
+	}
+	return false
+}
+
 func (evm *EVM) GetCurrentGasTable() params.GasTable {
 	return evm.interpreter.GetGasTable()
 }

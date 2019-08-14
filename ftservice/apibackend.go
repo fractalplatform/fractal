@@ -196,24 +196,28 @@ func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
 	return b.ftservice.blockchain.GetTdByHash(blockHash)
 }
 
-func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error) {
+func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header {
 	if blockNr == rpc.LatestBlockNumber {
-		return b.ftservice.blockchain.CurrentBlock().Header(), nil
+		return b.ftservice.blockchain.CurrentBlock().Header()
 	}
-	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr)), nil
+	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr))
 }
 
-func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
+func (b *APIBackend) HeaderByHash(ctx context.Context, hash common.Hash) *types.Header {
+	return b.ftservice.blockchain.GetHeaderByHash(hash)
+}
+
+func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block {
 	if blockNr == rpc.LatestBlockNumber {
-		return b.ftservice.blockchain.CurrentBlock(), nil
+		return b.ftservice.blockchain.CurrentBlock()
 	}
-	return b.ftservice.blockchain.GetBlockByNumber(uint64(blockNr)), nil
+	return b.ftservice.blockchain.GetBlockByNumber(uint64(blockNr))
 }
 
 func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*state.StateDB, *types.Header, error) {
-	header, err := b.HeaderByNumber(ctx, blockNr)
-	if header == nil || err != nil {
-		return nil, nil, err
+	header := b.HeaderByNumber(ctx, blockNr)
+	if header == nil {
+		return nil, nil, nil
 	}
 	stateDb, err := b.ftservice.blockchain.StateAt(b.ftservice.blockchain.CurrentBlock().Root())
 	return stateDb, header, err

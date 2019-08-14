@@ -43,14 +43,48 @@ func (aapi *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
 	return acct.AccountIsExist(acctName)
 }
 
-//GetAccountByID
-func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountExByID(accountID uint64) (*accountmanager.Account, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
 
 	return am.GetAccountById(accountID)
+}
+
+//GetAccountByID
+func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Account, error) {
+
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+
+	accountObj, err := am.GetAccountById(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	if accountObj != nil {
+		balances := make([]*accountmanager.AssetBalance, 0, len(accountObj.Balances))
+		zero := big.NewInt(0)
+		for _, balance := range accountObj.Balances {
+			if balance.Balance.Cmp(zero) > 0 {
+				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
+			}
+		}
+		accountObj.Balances = balances
+	}
+	return accountObj, nil
+}
+
+func (aapi *AccountAPI) GetAccountExByName(accountName common.Name) (*accountmanager.Account, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+
+	return am.GetAccountByName(accountName)
 }
 
 //GetAccountByName
@@ -60,7 +94,22 @@ func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanag
 		return nil, err
 	}
 
-	return am.GetAccountByName(accountName)
+	accountObj, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+
+	if accountObj != nil {
+		balances := make([]*accountmanager.AssetBalance, 0, len(accountObj.Balances))
+		zero := big.NewInt(0)
+		for _, balance := range accountObj.Balances {
+			if balance.Balance.Cmp(zero) > 0 {
+				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
+			}
+		}
+		accountObj.Balances = balances
+	}
+	return accountObj, nil
 }
 
 //GetAccountBalanceByID
