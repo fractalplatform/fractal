@@ -95,6 +95,22 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 	return nil
 }
 
+func (s *PublicBlockChainAPI) GetTransBatch(ctx context.Context, hashes []common.Hash) []*types.RPCTransaction {
+	txs := make([]*types.RPCTransaction, 0)
+
+	for i, hash := range hashes {
+		if i > 2048 {
+			break
+		}
+
+		if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
+			txs = append(txs, tx.NewRPCTransaction(blockHash, blockNumber, index))
+		}
+	}
+
+	return txs
+}
+
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (*types.RPCReceipt, error) {
 	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
