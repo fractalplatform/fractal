@@ -95,6 +95,22 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 	return nil
 }
 
+func (s *PublicBlockChainAPI) GetTransBatch(ctx context.Context, hashes []common.Hash) []*types.RPCTransaction {
+	txs := make([]*types.RPCTransaction, 0)
+
+	for i, hash := range hashes {
+		if i > 2048 {
+			break
+		}
+
+		if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
+			txs = append(txs, tx.NewRPCTransaction(blockHash, blockNumber, index))
+		}
+	}
+
+	return txs
+}
+
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (*types.RPCReceipt, error) {
 	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
@@ -130,36 +146,34 @@ func (s *PublicBlockChainAPI) checkRangeInputArgs(blockNr, lookbackNum uint64) e
 	if blockNr > current_num {
 		return fmt.Errorf("blockNr range err")
 	}
-	if lookbackNum > 128 {
-		return fmt.Errorf("lookbackNum cant bigger than 128")
-	}
 	return nil
 }
 
 // GetTxsByAccount return all txs, sent from or received by a specific account
-// the range is indicate by blockNr and lookbackNum,
-// from blocks with number from blockNr-lookbackNum to blockNr
-func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
+// the range is indicate by blockNr and lookforwardNum,
+// from blocks with number from blockNr to blockNr+lookforwardNum
+func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookforwardNum uint64) (*types.AccountTxs, error) {
 	// check input argments
 	ui64BlockNr := uint64(blockNr)
-	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+	if err := s.checkRangeInputArgs(ui64BlockNr, lookforwardNum); err != nil {
 		return nil, err
 	}
 
 	filterFn := func(name common.Name) bool {
 		return name == acctName
 	}
-	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
+
+	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookforwardNum), nil
 }
 
 // GetTxsByBloom return all txs, filtered by a bloomByte
 // bloomByte is constructed by some quantities of account names
 // the range is indicate by blockNr and lookbackNum,
-// from blocks with number from blockNr-lookbackNum to blockNr
-func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]common.Hash, error) {
+// from blocks with number from blockNr to blockNr+lookforwardNum
+func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookforwardNum uint64) (*types.AccountTxs, error) {
 	// check input argments
 	ui64BlockNr := uint64(blockNr)
-	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+	if err := s.checkRangeInputArgs(ui64BlockNr, lookforwardNum); err != nil {
 		return nil, err
 	}
 
@@ -167,7 +181,7 @@ func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexut
 	filterFn := func(name common.Name) bool {
 		return bloom.TestBytes([]byte(name))
 	}
-	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
+	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookforwardNum), nil
 }
 
 // GetInternalTxByAccount return all logs of interal txs, sent from or received by a specific account
@@ -178,6 +192,10 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
 		return nil, err
+	}
+
+	if lookbackNum > 128 {
+		lookbackNum = 128
 	}
 
 	filterFn := func(name common.Name) bool {
@@ -195,6 +213,10 @@ func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByt
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
 		return nil, err
+	}
+
+	if lookbackNum > 128 {
+		lookbackNum = 128
 	}
 
 	bloom := types.BytesToBloom(bloomByte)
