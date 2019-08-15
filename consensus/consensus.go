@@ -118,6 +118,8 @@ type IEngine interface {
 
 	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 
+	CalcBFTIrreversible() uint64
+
 	IAPI
 
 	IValidator
