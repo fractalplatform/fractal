@@ -48,7 +48,7 @@ type TxHeightHashPair struct {
 }
 
 type AccountTxs struct {
-	Txs                   []*TxHeightHashPair `json:"txs"`
-	ReversibleBlockHeight uint64              `json:"reversibleBlockHeight"`
-	EndHeight             uint64              `json:"endheight"`
+	Txs                     []*TxHeightHashPair `json:"txs"`
+	IrreversibleBlockHeight uint64              `json:"irreversibleBlockHeight"`
+	EndHeight               uint64              `json:"endHeight"`
 }

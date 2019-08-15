@@ -150,9 +150,9 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 	}
 
 	accountTxs := &types.AccountTxs{
-		Txs:                   txhhpairs,
-		ReversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
-		EndHeight:             uint64(lastnum),
+		Txs:                     txhhpairs,
+		IrreversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
+		EndHeight:               uint64(lastnum),
 	}
 
 	return accountTxs
