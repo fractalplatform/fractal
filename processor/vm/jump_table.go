@@ -94,33 +94,29 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[GETEPCHO] = operation{
 		execute:       opGetEpoch,
 		gasCost:       gasGetEpoch,
-		validateStack: makeStackFunc(1, 1),
+		validateStack: makeStackFunc(2, 2),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[GETCANDIDATENUM] = operation{
 		execute:       opGetCandidateNum,
 		gasCost:       gasGetCandidateNum,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(1, 1),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[GETCANDIDATE] = operation{
 		execute:       opGetCandidate,
 		gasCost:       gasGetCandidate,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(2, 7),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[GETVOTERSTAKE] = operation{
 		execute:       opGetVoterStake,
 		gasCost:       gasGetVoterStake,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(3, 1),
 		valid:         true,
-		returns:       true,
 	}
 	instructionSet[RECIPIENT] = operation{
 		execute:       opRecipient,
@@ -133,7 +129,6 @@ func NewByzantiumInstructionSet() [256]operation {
 		gasCost:       gasGetAccountTime,
 		validateStack: makeStackFunc(1, 1),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[SNAPSHOTTIME] = operation{
@@ -141,88 +136,83 @@ func NewByzantiumInstructionSet() [256]operation {
 		gasCost:       gasGetSnapshotTime,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[CRYPTOCALC] = operation{
 		execute:       opCryptoCalc,
 		gasCost:       gasCryptoCalc,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(7, 1),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[DEDUCTGAS] = operation{
 		execute:       opDeductGas,
 		gasCost:       gasDeductGas,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(1, 1),
 		valid:         true,
-		returns:       true,
+		writes:        true,
 	}
 
 	instructionSet[ASSETINFO] = operation{
 		execute:       opGetAssetInfo,
 		gasCost:       gasGetAssetInfo,
-		validateStack: makeStackFunc(2, 2),
+		validateStack: makeStackFunc(4, 2),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[SNAPBALANCE] = operation{
 		execute:       opSnapBalance,
 		gasCost:       gasSnapBalance,
-		validateStack: makeStackFunc(3, 1),
+		validateStack: makeStackFunc(4, 1),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[BALANCEEX] = operation{
 		execute:       opBalanceex,
 		gasCost:       gasBalanceex,
-		validateStack: makeStackFunc(1, 0),
+		validateStack: makeStackFunc(2, 1),
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[ADDASSET] = operation{
 		execute:       opAddAsset,
 		gasCost:       gasAddAsset,
-		validateStack: makeStackFunc(2, 1),
+		validateStack: makeStackFunc(3, 1),
 		valid:         true,
-		returns:       true,
+		writes:        true,
 	}
 
 	instructionSet[ISSUEASSET] = operation{
 		execute:       opIssueAsset,
 		gasCost:       gasIssueAsset,
-		validateStack: makeStackFunc(1, 1),
-		memorySize:    memoryReturn,
+		validateStack: makeStackFunc(2, 1),
+		memorySize:    memoryIssueAsset,
 		valid:         true,
-		returns:       true,
+		writes:        true,
 	}
 
 	instructionSet[DESTROYASSET] = operation{
 		execute:       opDestroyAsset,
 		gasCost:       gasDestroyAsset,
-		validateStack: makeStackFunc(1, 1),
+		validateStack: makeStackFunc(2, 1),
 		valid:         true,
-		returns:       true,
+		writes:        true,
 	}
 
 	instructionSet[GETACCOUNTID] = operation{
 		execute:       opGetAccountID,
 		gasCost:       gasGetAccountID,
 		validateStack: makeStackFunc(2, 1),
+		memorySize:    memoryGetAccountID,
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[GETASSETID] = operation{
 		execute:       opGetAssetID,
 		gasCost:       gasGetAssetID,
 		validateStack: makeStackFunc(2, 1),
+		memorySize:    memoryGetAssetID,
 		valid:         true,
-		returns:       true,
 	}
 
 	instructionSet[SETASSETOWNER] = operation{
@@ -230,7 +220,7 @@ func NewByzantiumInstructionSet() [256]operation {
 		gasCost:       gasSetAssetOwner,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
-		returns:       true,
+		writes:        true,
 	}
 
 	instructionSet[WITHDRAWFEE] = operation{
@@ -238,13 +228,13 @@ func NewByzantiumInstructionSet() [256]operation {
 		gasCost:       gasWithdrawFee,
 		validateStack: makeStackFunc(2, 1),
 		valid:         true,
-		returns:       true,
+		writes:        true,
 	}
 
 	instructionSet[CALLEX] = operation{
 		execute:       opCallEx,
 		gasCost:       gasCallEx,
-		validateStack: makeStackFunc(7, 1),
+		validateStack: makeStackFunc(8, 1),
 		memorySize:    memoryCallEx,
 		valid:         true,
 		returns:       true,
@@ -285,7 +275,6 @@ func NewByzantiumInstructionSet() [256]operation {
 		validateStack: makeStackFunc(0, 0),
 		valid:         false,
 		reverts:       true,
-		returns:       true,
 	}
 	return instructionSet
 }
@@ -603,8 +592,7 @@ func NewFrontierInstructionSet() [256]operation {
 			gasCost:       gasMStore8,
 			memorySize:    memoryMStore8,
 			validateStack: makeStackFunc(2, 0),
-
-			valid: true,
+			valid:         true,
 		},
 		SLOAD: {
 			execute:       opSload,
@@ -1086,7 +1074,7 @@ func NewFrontierInstructionSet() [256]operation {
 			gasCost:       gasCreate,
 			validateStack: makeStackFunc(3, 1),
 			memorySize:    memoryCreate,
-			valid:         true,
+			valid:         false,
 			writes:        true,
 			returns:       true,
 		},
@@ -1125,9 +1113,9 @@ func NewFrontierInstructionSet() [256]operation {
 		SELFDESTRUCT: {
 			execute:       opSuicide,
 			gasCost:       gasSuicide,
-			validateStack: makeStackFunc(1, 0),
+			validateStack: makeStackFunc(0, 0),
 			halts:         true,
-			valid:         true,
+			valid:         false,
 			writes:        true,
 		},
 	}

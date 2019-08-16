@@ -41,3 +41,14 @@ type BlockAndResult struct {
 	Receipts  []*Receipt             `json:"receipts"`
 	DetailTxs []*DetailTx            `json:"detailTxs"`
 }
+
+type TxHeightHashPair struct {
+	Hash   common.Hash `json:"hash"`
+	Height uint64      `json:"height"`
+}
+
+type AccountTxs struct {
+	Txs                     []*TxHeightHashPair `json:"txs"`
+	IrreversibleBlockHeight uint64              `json:"irreversibleBlockHeight"`
+	EndHeight               uint64              `json:"endHeight"`
+}

@@ -116,15 +116,14 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []common.Hash {
-	var lastnum int64
-	if lookbackNum > blockNr {
-		lastnum = 0
-	} else {
-		lastnum = int64(blockNr - lookbackNum)
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookforwardNum uint64) *types.AccountTxs {
+	if lookforwardNum > 128 {
+		lookforwardNum = 128
 	}
-	txHashs := make([]common.Hash, 0)
-	for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
+
+	lastnum := int64(blockNr + lookforwardNum)
+	txhhpairs := make([]*types.TxHeightHashPair, 0)
+	for ublocknum := int64(blockNr); ublocknum <= lastnum; ublocknum++ {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
 		if hash == (common.Hash{}) {
 			continue
@@ -139,14 +138,24 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 		for _, tx := range batchTxs {
 			for _, act := range tx.GetActions() {
 				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
-					txHashs = append(txHashs, tx.Hash())
+					hhpair := &types.TxHeightHashPair{
+						Hash:   tx.Hash(),
+						Height: uint64(ublocknum),
+					}
+					txhhpairs = append(txhhpairs, hhpair)
 					break
 				}
 			}
 		}
 	}
 
-	return txHashs
+	accountTxs := &types.AccountTxs{
+		Txs:                     txhhpairs,
+		IrreversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
+		EndHeight:               uint64(lastnum),
+	}
+
+	return accountTxs
 }
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {

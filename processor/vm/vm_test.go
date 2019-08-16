@@ -63,3 +63,68 @@ func TestDistributeKeys(t *testing.T) {
 	}
 	assert.Equal(t, keys, keys1)
 }
+
+func TestOverTimeAbort(t *testing.T) {
+	evm := &EVM{}
+	evm.OverTimeAbort()
+	if evm.IsOverTime() != true {
+		t.Error("IsOverTime test fail")
+	}
+}
+
+func TestIsOverTime(t *testing.T) {
+	evm := &EVM{}
+	if evm.IsOverTime() == true {
+		evm.OverTimeAbort()
+	}
+
+	if evm.IsOverTime() != false {
+		t.Error("IsOverTime test fail")
+	}
+}
+
+func TestCheckReceipt(t *testing.T) {
+	//evm := &EVM{}
+	//a := &types.Action{}
+	//evm.CheckReceipt(a)
+	return
+}
+
+func TestdistributeContractGas(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeContractGas(0, common.Name(""), common.Name(""))
+	return
+}
+
+func TestdistributeAssetGas(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeAssetGas(0, common.Name(""), common.Name(""))
+	return
+}
+
+func TestdistributeGasByScale(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeAssetGas(0, common.Name(""), common.Name(""))
+	return
+}
+
+func TestCallCode(t *testing.T) {
+	//evm := &EVM{}
+	//a := &types.Action{}
+	//evm.CallCode(nil, a, 0)
+	return
+}
+
+func TestChainConfig(t *testing.T) {
+	evm := &EVM{}
+	if evm.ChainConfig() != nil {
+		t.Error("test ChainConfig fail")
+	}
+	return
+}
+
+func TestDistributeGasByScale(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeGasByScale(0, 0)
+	return
+}
