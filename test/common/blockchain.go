@@ -41,3 +41,16 @@ func GetTransactionByHash(hash common.Hash) (*types.RPCTransaction, error) {
 	err := ClientCall("ft_getTransactionByHash", &result, hash)
 	return result, err
 }
+
+// GetTransBatch returns the transactions for the given hashes
+func GetTransBatch(hashes []common.Hash) ([]*types.RPCTransaction, error) {
+	result := make([]*types.RPCTransaction, 0)
+	err := ClientCall("ft_getTransBatch", &result, hashes)
+	return result, err
+}
+
+func GetTxsByAccount(acctName common.Name, blockNr, lookforwardNum uint64) (*types.AccountTxs, error) {
+	result := &types.AccountTxs{}
+	err := ClientCall("ft_getTxsByAccount", &result, acctName, blockNr, lookforwardNum)
+	return result, err
+}
