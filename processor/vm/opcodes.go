@@ -614,12 +614,12 @@ var stringToOp = map[string]OpCode{
 	"RECIPIENT":       RECIPIENT,
 	"CALLWITHPAY":     CALLWITHPAY,
 
-	"CREATE":       CREATE,
-	"CALL":         CALL,
-	"RETURN":       RETURN,
-	"CALLCODE":     CALLCODE,
-	"REVERT":       REVERT,
-	"SELFDESTRUCT": SELFDESTRUCT,
+	//"CREATE":   CREATE,
+	"CALL":     CALL,
+	"RETURN":   RETURN,
+	"CALLCODE": CALLCODE,
+	"REVERT":   REVERT,
+	//"SELFDESTRUCT": SELFDESTRUCT,
 }
 
 func StringToOp(str string) OpCode {
