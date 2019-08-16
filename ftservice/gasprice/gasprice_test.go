@@ -33,29 +33,32 @@ type testBlockChain struct {
 
 func newTestBlockChain(price *big.Int) *testBlockChain {
 	blocks := make(map[int]*types.Block)
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 6; i++ {
 		if i%2 == 0 {
 			price = new(big.Int).Mul(price, big.NewInt(2))
 		}
 		block := &types.Block{Head: &types.Header{Number: big.NewInt(int64(i)), GasLimit: params.BlockGasLimit, GasUsed: uint64((i + 1) * 100000)}}
-		action := types.NewAction(types.CreateContract, "gpotestname", "", 1,
-			10, 10, nil, nil, nil)
-		block.Txs = []*types.Transaction{types.NewTransaction(1, price, action)}
+		if i < 5 { // blocks[5] no transaction
+			action := types.NewAction(types.CreateContract, "gpotestname", "", 1,
+				10, 10, nil, nil, nil)
+			block.Txs = []*types.Transaction{types.NewTransaction(1, price, action)}
+		}
 		blocks[i] = block
 	}
+
 	return &testBlockChain{
 		blocks: blocks,
 	}
 }
-func (b *testBlockChain) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error) {
+func (b *testBlockChain) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header {
 	if blockNr == rpc.LatestBlockNumber {
-		return b.blocks[len(b.blocks)-1].Header(), nil
+		return b.blocks[len(b.blocks)-1].Header()
 	}
-	return b.blocks[int(blockNr)].Header(), nil
+	return b.blocks[int(blockNr)].Header()
 }
 
-func (b *testBlockChain) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
-	return b.blocks[int(blockNr)], nil
+func (b *testBlockChain) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block {
+	return b.blocks[int(blockNr)]
 }
 
 func TestSuggestPrice(t *testing.T) {
@@ -70,5 +73,5 @@ func TestSuggestPrice(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, big.NewInt(5), gasPrice)
+	assert.Equal(t, price, gasPrice)
 }

@@ -116,15 +116,14 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []common.Hash {
-	var lastnum int64
-	if lookbackNum > blockNr {
-		lastnum = 0
-	} else {
-		lastnum = int64(blockNr - lookbackNum)
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookforwardNum uint64) *types.AccountTxs {
+	if lookforwardNum > 128 {
+		lookforwardNum = 128
 	}
-	txHashs := make([]common.Hash, 0)
-	for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
+
+	lastnum := int64(blockNr + lookforwardNum)
+	txhhpairs := make([]*types.TxHeightHashPair, 0)
+	for ublocknum := int64(blockNr); ublocknum <= lastnum; ublocknum++ {
 		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
 		if hash == (common.Hash{}) {
 			continue
@@ -139,14 +138,24 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 		for _, tx := range batchTxs {
 			for _, act := range tx.GetActions() {
 				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
-					txHashs = append(txHashs, tx.Hash())
+					hhpair := &types.TxHeightHashPair{
+						Hash:   tx.Hash(),
+						Height: uint64(ublocknum),
+					}
+					txhhpairs = append(txhhpairs, hhpair)
 					break
 				}
 			}
 		}
 	}
 
-	return txHashs
+	accountTxs := &types.AccountTxs{
+		Txs:                   txhhpairs,
+		ReversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
+		EndHeight:             uint64(lastnum),
+	}
+
+	return accountTxs
 }
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
@@ -196,24 +205,28 @@ func (b *APIBackend) GetTd(blockHash common.Hash) *big.Int {
 	return b.ftservice.blockchain.GetTdByHash(blockHash)
 }
 
-func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Header, error) {
+func (b *APIBackend) HeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Header {
 	if blockNr == rpc.LatestBlockNumber {
-		return b.ftservice.blockchain.CurrentBlock().Header(), nil
+		return b.ftservice.blockchain.CurrentBlock().Header()
 	}
-	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr)), nil
+	return b.ftservice.blockchain.GetHeaderByNumber(uint64(blockNr))
 }
 
-func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*types.Block, error) {
+func (b *APIBackend) HeaderByHash(ctx context.Context, hash common.Hash) *types.Header {
+	return b.ftservice.blockchain.GetHeaderByHash(hash)
+}
+
+func (b *APIBackend) BlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.Block {
 	if blockNr == rpc.LatestBlockNumber {
-		return b.ftservice.blockchain.CurrentBlock(), nil
+		return b.ftservice.blockchain.CurrentBlock()
 	}
-	return b.ftservice.blockchain.GetBlockByNumber(uint64(blockNr)), nil
+	return b.ftservice.blockchain.GetBlockByNumber(uint64(blockNr))
 }
 
 func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.BlockNumber) (*state.StateDB, *types.Header, error) {
-	header, err := b.HeaderByNumber(ctx, blockNr)
-	if header == nil || err != nil {
-		return nil, nil, err
+	header := b.HeaderByNumber(ctx, blockNr)
+	if header == nil {
+		return nil, nil, nil
 	}
 	stateDb, err := b.ftservice.blockchain.StateAt(b.ftservice.blockchain.CurrentBlock().Root())
 	return stateDb, header, err

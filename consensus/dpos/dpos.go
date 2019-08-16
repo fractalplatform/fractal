@@ -193,6 +193,10 @@ func (dpos *Dpos) Author(header *types.Header) (common.Name, error) {
 
 // Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
 func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error {
+	if header.CurForkID() >= params.ForkID3 {
+		dpos.config.CandidateAvailableMinQuantity = big.NewInt(1000000)
+	}
+
 	if fid := header.CurForkID(); fid >= params.ForkID2 {
 		return dpos.prepare1(chain, header, txs, receipts, state)
 	}
