@@ -101,7 +101,7 @@ func NewByzantiumInstructionSet() [256]operation {
 	instructionSet[GETCANDIDATENUM] = operation{
 		execute:       opGetCandidateNum,
 		gasCost:       gasGetCandidateNum,
-		validateStack: makeStackFunc(2, 2),
+		validateStack: makeStackFunc(1, 1),
 		valid:         true,
 	}
 
@@ -1069,15 +1069,15 @@ func NewFrontierInstructionSet() [256]operation {
 			valid:         true,
 			writes:        true,
 		},
-		// CREATE: {
-		// 	execute:       opCreate,
-		// 	gasCost:       gasCreate,
-		// 	validateStack: makeStackFunc(3, 1),
-		// 	memorySize:    memoryCreate,
-		// 	valid:         true,
-		// 	writes:        true,
-		// 	returns:       true,
-		// },
+		CREATE: {
+			execute:       opCreate,
+			gasCost:       gasCreate,
+			validateStack: makeStackFunc(3, 1),
+			memorySize:    memoryCreate,
+			valid:         false,
+			writes:        true,
+			returns:       true,
+		},
 		CALL: {
 			execute:       opCall,
 			gasCost:       gasCall,
@@ -1110,13 +1110,13 @@ func NewFrontierInstructionSet() [256]operation {
 			halts:         true,
 			valid:         true,
 		},
-		// SELFDESTRUCT: {
-		// 	execute:       opSuicide,
-		// 	gasCost:       gasSuicide,
-		// 	validateStack: makeStackFunc(0, 0),
-		// 	halts:         true,
-		// 	valid:         true,
-		// 	writes:        true,
-		// },
+		SELFDESTRUCT: {
+			execute:       opSuicide,
+			gasCost:       gasSuicide,
+			validateStack: makeStackFunc(0, 0),
+			halts:         true,
+			valid:         false,
+			writes:        true,
+		},
 	}
 }
