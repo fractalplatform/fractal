@@ -42,7 +42,7 @@ func version() {
 	if commit != "" {
 		fmt.Println("Git Commit:", commit)
 	}
-	fmt.Println("Version:", fullVersion())
+	fmt.Println("Version:", FullVersion())
 	fmt.Println("Architecture:", runtime.GOARCH)
 	if goversion != "" {
 		fmt.Println("Go Version:", goversion)
@@ -52,8 +52,8 @@ func version() {
 	fmt.Printf("GOROOT=%s\n", runtime.GOROOT())
 }
 
-// fullVersion returns the version.
-func fullVersion() string {
+// FullVersion returns the version.
+func FullVersion() string {
 	version := History.CurrentVersion().String()
 	if commit != "" {
 		version += "+commit." + commit

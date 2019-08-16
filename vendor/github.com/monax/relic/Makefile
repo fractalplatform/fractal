@@ -10,7 +10,6 @@ check:
 	@goimports -l ${GO_FILES} | read && echo && \
 	echo "Your marmot has found a problem with the formatting style of the code."\
 	 1>&2 && exit 1 || true
-	@go mod tidy
 
 # Just fix it
 .PHONY: fix

@@ -16,8 +16,6 @@ such as [goreleaser](https://github.com/goreleaser/goreleaser).
 By keeping the changelog with the version they are synchronised and you are reminded to produce 
 the changelog.
 
-![relic marmot](docs/images/relic.png)
-
 ## Usage
 ```go
 // Add file to your project in which to record your projects revision history

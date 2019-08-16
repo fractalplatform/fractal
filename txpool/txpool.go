@@ -17,6 +17,8 @@
 package txpool
 
 import (
+	"errors"
+	"fmt"
 	"math"
 	"math/big"
 	"sort"
@@ -37,6 +39,8 @@ var (
 	evictionInterval    = 15 * time.Minute // Time interval to check for evictable transactions
 	statsReportInterval = 10 * time.Second // Time interval to report transaction pool stats
 	resendTxInterval    = 10 * time.Minute // Time interval to resend transaction
+
+	maxResendTxs = 256
 )
 
 const (
@@ -294,17 +298,19 @@ func (tp *TxPool) loop() {
 			// Handle inactive account transaction resend
 		case <-resend.C:
 			tp.mu.Lock()
+
+			var resendTxsCount int
+
 			for name := range tp.pending {
 				if time.Since(tp.beats[name]) > tp.config.ResendTime {
 					if txs := tp.pending[name].Flatten(); len(txs) != 0 {
-						events := []*event.Event{
-							{Typecode: event.NewTxs, Data: txs},
-						}
-						go event.SendEvents(events)
-						log.Debug("resend account transactions", "name", name, "txlen", len(txs))
+						resendTxsFunc(txs)
+						resendTxsCount = resendTxsCount + len(txs)
 					}
 				}
 			}
+
+			log.Debug("resend account transactions", "txlen", resendTxsCount)
 			tp.mu.Unlock()
 			// Handle local transaction journal rotation
 		case <-journal.C:
@@ -316,6 +322,27 @@ func (tp *TxPool) loop() {
 				tp.mu.Unlock()
 			}
 		}
+	}
+}
+
+func resendTxsFunc(txs []*types.Transaction) {
+	sendFunc := func(sendTxs []*types.Transaction) {
+		events := []*event.Event{
+			{Typecode: event.NewTxs, Data: sendTxs},
+		}
+		go event.SendEvents(events)
+
+	}
+
+	if len(txs) > maxResendTxs {
+		sendFunc(txs[:maxResendTxs])
+		if len(txs[maxResendTxs:]) > maxResendTxs {
+			resendTxsFunc(txs[maxResendTxs:])
+		} else {
+			sendFunc(txs[maxResendTxs:])
+		}
+	} else {
+		sendFunc(txs)
 	}
 }
 
@@ -881,36 +908,47 @@ func (tp *TxPool) AddRemote(tx *types.Transaction) error {
 // addTxs attempts to queue a batch of transactions if they are valid.
 func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 	var addedTxs []*types.Transaction
-
+	var errs = make([]error, len(txs))
+	var indexs []int
 	// Cache senders in transactions before obtaining lock (pool.signer is immutable)
-	for _, tx := range txs {
+	for index, tx := range txs {
 		// If the transaction is already known, discard it
 		if tp.all.Get(tx.Hash()) != nil {
 			log.Trace("Discarding already known transaction", "hash", tx.Hash())
+			errs[index] = errors.New("already known transaction")
 			continue
 		}
 
 		if err := tx.Check(tp.chain.Config()); err != nil {
 			log.Trace("add txs check ", "err", err, "hash", tx.Hash())
+			errs[index] = fmt.Errorf("transaction check err: %v", err)
 			continue
 		}
 
-		for _, action := range tx.GetActions() {
+		for i, action := range tx.GetActions() {
 			if _, err := types.RecoverMultiKey(tp.signer, action, tx); err != nil {
 				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
+				errs[index] = fmt.Errorf("action %v,recoverMultiKey reocver faild: %v", i, err)
+				continue
 			}
 		}
+		indexs = append(indexs, index)
 		addedTxs = append(addedTxs, tx)
 	}
 
 	tp.mu.Lock()
-	errs, dirtyNames := tp.addTxsLocked(txs, local)
+	addTxErrs, dirtyNames := tp.addTxsLocked(addedTxs, local)
 	tp.mu.Unlock()
 
 	done := tp.requestPromoteExecutables(dirtyNames)
 	if sync {
 		<-done
 	}
+
+	for i, index := range indexs {
+		errs[index] = addTxErrs[i]
+	}
+
 	return errs
 }
 
