@@ -104,3 +104,15 @@ func memoryCallEx(stack *Stack) *big.Int {
 
 	return math.BigMax(x, y)
 }
+
+func memoryGetAssetID(stack *Stack) *big.Int {
+	return calcMemSize(stack.Back(0), big.NewInt(1))
+}
+
+func memoryGetAccountID(stack *Stack) *big.Int {
+	return calcMemSize(stack.Back(0), big.NewInt(1))
+}
+
+func memoryIssueAsset(stack *Stack) *big.Int {
+	return calcMemSize(stack.Back(0), big.NewInt(1))
+}
