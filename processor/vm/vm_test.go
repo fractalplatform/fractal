@@ -84,22 +84,34 @@ func TestIsOverTime(t *testing.T) {
 }
 
 func TestCheckReceipt(t *testing.T) {
+	//evm := &EVM{}
+	//a := &types.Action{}
+	//evm.CheckReceipt(a)
 	return
 }
 
 func TestdistributeContractGas(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeContractGas(0, common.Name(""), common.Name(""))
 	return
 }
 
 func TestdistributeAssetGas(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeAssetGas(0, common.Name(""), common.Name(""))
 	return
 }
 
 func TestdistributeGasByScale(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeAssetGas(0, common.Name(""), common.Name(""))
 	return
 }
 
 func TestCallCode(t *testing.T) {
+	//evm := &EVM{}
+	//a := &types.Action{}
+	//evm.CallCode(nil, a, 0)
 	return
 }
 
