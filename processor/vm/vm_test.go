@@ -63,3 +63,15 @@ func TestDistributeKeys(t *testing.T) {
 	}
 	assert.Equal(t, keys, keys1)
 }
+
+func TestOverTimeAbort(t *testing.T) {
+
+}
+
+func TestIsOverTime(t *testing.T) {
+
+}
+
+func TestCheckReceipt(t *testing.T) {
+
+}
