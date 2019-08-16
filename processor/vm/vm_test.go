@@ -65,29 +65,54 @@ func TestDistributeKeys(t *testing.T) {
 }
 
 func TestOverTimeAbort(t *testing.T) {
-
+	evm := &EVM{}
+	evm.OverTimeAbort()
+	if evm.IsOverTime() != true {
+		t.Error("IsOverTime test fail")
+	}
 }
 
 func TestIsOverTime(t *testing.T) {
+	evm := &EVM{}
+	if evm.IsOverTime() == true {
+		evm.OverTimeAbort()
+	}
 
+	if evm.IsOverTime() != false {
+		t.Error("IsOverTime test fail")
+	}
 }
 
 func TestCheckReceipt(t *testing.T) {
-
+	return
 }
 
 func TestdistributeContractGas(t *testing.T) {
-
+	return
 }
 
 func TestdistributeAssetGas(t *testing.T) {
-
+	return
 }
 
 func TestdistributeGasByScale(t *testing.T) {
-
+	return
 }
 
 func TestCallCode(t *testing.T) {
+	return
+}
 
+func TestChainConfig(t *testing.T) {
+	evm := &EVM{}
+	if evm.ChainConfig() != nil {
+		t.Error("test ChainConfig fail")
+	}
+	return
+}
+
+func TestDistributeGasByScale(t *testing.T) {
+	evm := &EVM{}
+	evm.distributeGasByScale(0, 0)
+	return
 }
