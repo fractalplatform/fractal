@@ -75,3 +75,19 @@ func TestIsOverTime(t *testing.T) {
 func TestCheckReceipt(t *testing.T) {
 
 }
+
+func TestdistributeContractGas(t *testing.T) {
+
+}
+
+func TestdistributeAssetGas(t *testing.T) {
+
+}
+
+func TestdistributeGasByScale(t *testing.T) {
+
+}
+
+func TestCallCode(t *testing.T) {
+
+}
