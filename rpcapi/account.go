@@ -18,6 +18,7 @@ package rpcapi
 
 import (
 	"context"
+	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -70,6 +71,35 @@ func NewRPCAccount(account *accountmanager.Account) *RPCAccount {
 		Description:           account.Description,
 	}
 	return &acctObject
+}
+
+func (a *RPCAccount) GetBalanceByID(assetID uint64) (*big.Int, error) {
+	p, find := a.binarySearch(assetID)
+	if find {
+		return a.Balances[p].Balance, nil
+	}
+	return big.NewInt(0), errors.New("account asset not exist")
+}
+
+// BinarySearch binary search
+func (a *RPCAccount) binarySearch(assetID uint64) (int64, bool) {
+
+	low := int64(0)
+	high := int64(len(a.Balances)) - 1
+	for low <= high {
+		mid := (low + high) / 2
+		if a.Balances[mid].AssetID < assetID {
+			low = mid + 1
+		} else if a.Balances[mid].AssetID > assetID {
+			high = mid - 1
+		} else if a.Balances[mid].AssetID == assetID {
+			return mid, true
+		}
+	}
+	if high < 0 {
+		high = 0
+	}
+	return high, false
 }
 
 type AccountAPI struct {
