@@ -202,6 +202,7 @@ type CandidateInfoForBrowser struct {
 	ActualCounter    uint64 `json:"actualCounter"`
 	NowCounter       uint64 `json:"nowShouldCounter"`
 	NowActualCounter uint64 `json:"nowActualCounter"`
+	URL              string `json:"url"`
 	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
