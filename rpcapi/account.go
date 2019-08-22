@@ -26,6 +26,52 @@ import (
 	"github.com/fractalplatform/fractal/common"
 )
 
+type RPCAccount struct {
+	//LastTime *big.Int
+	AcctName              common.Name   `json:"accountName"`
+	Founder               common.Name   `json:"founder"`
+	AccountID             uint64        `json:"accountID"`
+	Number                uint64        `json:"number"`
+	Nonce                 uint64        `json:"nonce"`
+	Code                  hexutil.Bytes `json:"code"`
+	CodeHash              common.Hash   `json:"codeHash"`
+	CodeSize              uint64        `json:"codeSize"`
+	Threshold             uint64        `json:"threshold"`
+	UpdateAuthorThreshold uint64        `json:"updateAuthorThreshold"`
+	AuthorVersion         common.Hash   `json:"authorVersion"`
+	//sort by asset id asc
+	Balances []*accountmanager.AssetBalance `json:"balances"`
+	//realated account, pubkey and address
+	Authors []*common.Author `json:"authors"`
+	//code Suicide
+	Suicide bool `json:"suicide"`
+	//account destroy
+	Destroy     bool   `json:"destroy"`
+	Description string `json:"description"`
+}
+
+func NewRPCAccount(account *accountmanager.Account) *RPCAccount {
+	acctObject := RPCAccount{
+		AcctName:              account.AcctName,
+		Founder:               account.Founder,
+		AccountID:             account.AccountID,
+		Number:                account.Number,
+		Nonce:                 account.Nonce,
+		Code:                  hexutil.Bytes(account.Code),
+		CodeHash:              account.CodeHash,
+		CodeSize:              account.CodeSize,
+		Threshold:             account.Threshold,
+		UpdateAuthorThreshold: account.UpdateAuthorThreshold,
+		AuthorVersion:         account.AuthorVersion,
+		Balances:              account.Balances,
+		Authors:               account.Authors,
+		Suicide:               account.Suicide,
+		Destroy:               account.Destroy,
+		Description:           account.Description,
+	}
+	return &acctObject
+}
+
 type AccountAPI struct {
 	b Backend
 }
@@ -43,17 +89,27 @@ func (aapi *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
 	return acct.AccountIsExist(acctName)
 }
 
-func (aapi *AccountAPI) GetAccountExByID(accountID uint64) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountExByID(accountID uint64) (*RPCAccount, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
 
-	return am.GetAccountById(accountID)
+	accountObj, err := am.GetAccountById(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	var rpcAccountObj *RPCAccount
+	if accountObj != nil {
+		rpcAccountObj = NewRPCAccount(accountObj)
+	}
+
+	return rpcAccountObj, nil
 }
 
 //GetAccountByID
-func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*RPCAccount, error) {
 
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
@@ -65,30 +121,22 @@ func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Accoun
 		return nil, err
 	}
 
+	var rpcAccountObj *RPCAccount
 	if accountObj != nil {
-		balances := make([]*accountmanager.AssetBalance, 0, len(accountObj.Balances))
+		rpcAccountObj = NewRPCAccount(accountObj)
+		balances := make([]*accountmanager.AssetBalance, 0, len(rpcAccountObj.Balances))
 		zero := big.NewInt(0)
-		for _, balance := range accountObj.Balances {
+		for _, balance := range rpcAccountObj.Balances {
 			if balance.Balance.Cmp(zero) > 0 {
 				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
 			}
 		}
-		accountObj.Balances = balances
+		rpcAccountObj.Balances = balances
 	}
-	return accountObj, nil
+	return rpcAccountObj, nil
 }
 
-func (aapi *AccountAPI) GetAccountExByName(accountName common.Name) (*accountmanager.Account, error) {
-	am, err := aapi.b.GetAccountManager()
-	if err != nil {
-		return nil, err
-	}
-
-	return am.GetAccountByName(accountName)
-}
-
-//GetAccountByName
-func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanager.Account, error) {
+func (aapi *AccountAPI) GetAccountExByName(accountName common.Name) (*RPCAccount, error) {
 	am, err := aapi.b.GetAccountManager()
 	if err != nil {
 		return nil, err
@@ -99,17 +147,40 @@ func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanag
 		return nil, err
 	}
 
+	var rpcAccountObj *RPCAccount
 	if accountObj != nil {
-		balances := make([]*accountmanager.AssetBalance, 0, len(accountObj.Balances))
+		rpcAccountObj = NewRPCAccount(accountObj)
+	}
+
+	return rpcAccountObj, nil
+}
+
+//GetAccountByName
+func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*RPCAccount, error) {
+	am, err := aapi.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+
+	accountObj, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+
+	var rpcAccountObj *RPCAccount
+	if accountObj != nil {
+		rpcAccountObj = NewRPCAccount(accountObj)
+		balances := make([]*accountmanager.AssetBalance, 0, len(rpcAccountObj.Balances))
 		zero := big.NewInt(0)
-		for _, balance := range accountObj.Balances {
+		for _, balance := range rpcAccountObj.Balances {
 			if balance.Balance.Cmp(zero) > 0 {
 				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
 			}
 		}
-		accountObj.Balances = balances
+		rpcAccountObj.Balances = balances
 	}
-	return accountObj, nil
+
+	return rpcAccountObj, nil
 }
 
 //GetAccountBalanceByID
