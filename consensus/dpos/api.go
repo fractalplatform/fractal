@@ -324,7 +324,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 				}
 			}
 			candidateInfo.Holder = balance.String()
-
+			candidateInfo.URL = tmp.URL
 			candidateInfos.Data = append(candidateInfos.Data, candidateInfo)
 		}
 
@@ -412,7 +412,7 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 
 		candidateInfo.Quantity = c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake()).String()
 		candidateInfo.TotalQuantity = c.TotalQuantity.String()
-
+		candidateInfo.URL = c.URL
 		candidateInfo.Holder = balance.String()
 
 		tmp, err := sys.GetCandidate(history, c.Name)
