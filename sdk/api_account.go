@@ -19,8 +19,8 @@ package sdk
 import (
 	"math/big"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
+	"github.com/fractalplatform/fractal/rpcapi"
 )
 
 // AccountIsExist account exist
@@ -31,15 +31,15 @@ func (api *API) AccountIsExist(name string) (bool, error) {
 }
 
 // AccountInfo get account by name
-func (api *API) AccountInfo(name string) (*accountmanager.Account, error) {
-	account := &accountmanager.Account{}
+func (api *API) AccountInfo(name string) (*rpcapi.RPCAccount, error) {
+	account := &rpcapi.RPCAccount{}
 	err := api.client.Call(account, "account_getAccountExByName", name)
 	return account, err
 }
 
 // AccountInfoByID get account by id
-func (api *API) AccountInfoByID(id uint64) (*accountmanager.Account, error) {
-	account := &accountmanager.Account{}
+func (api *API) AccountInfoByID(id uint64) (*rpcapi.RPCAccount, error) {
+	account := &rpcapi.RPCAccount{}
 	err := api.client.Call(account, "account_getAccountExByID", id)
 	return account, err
 }

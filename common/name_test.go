@@ -19,6 +19,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"testing"
 )
@@ -164,6 +165,23 @@ func TestIsChildren1(t *testing.T) {
 				t.Errorf("%q, want %v", tt.name, tt.exp)
 			}
 		}
+	}
+
+}
+
+func TestConver(t *testing.T) {
+	myname := []byte("myname")
+	name := BytesToName(myname)
+	if reflect.TypeOf(name).String() != "common.Name" {
+		t.Errorf("type conver error")
+	}
+
+	myname1 := "myname1"
+	name.SetString(myname1)
+
+	bname := name.Big()
+	if BigToName(bname) != Name(myname1) {
+		t.Errorf("conver error")
 	}
 
 }
