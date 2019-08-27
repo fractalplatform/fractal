@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	router "github.com/fractalplatform/fractal/event"
+	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -140,6 +141,7 @@ func (bs *BlockchainStation) loop() {
 				}()
 			default:
 				if router.Thread(e.From) > 3 {
+					log.Warn("Disconnect because request too frequently:", "node:", adaptor.GetFnode(e.From), "thread", router.Thread(e.From))
 					router.SendTo(nil, nil, router.OneMinuteLimited, e.From)
 					continue
 				}
