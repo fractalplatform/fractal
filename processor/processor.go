@@ -170,7 +170,13 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
 		}
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
-		detailActions = append(detailActions, &types.DetailAction{InternalActions: vmenv.InternalTxs})
+
+		internalTxLog := make([]*types.InternalAction, 0, len(vmenv.InternalTxs))
+		for _, internalAction := range vmenv.InternalTxs {
+			internalAction.Action.SetHash(action.Hash())
+			internalTxLog = append(internalTxLog, internalAction)
+		}
+		detailActions = append(detailActions, &types.DetailAction{InternalActions: internalTxLog})
 	}
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
