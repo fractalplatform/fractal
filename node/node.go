@@ -113,6 +113,7 @@ func (n *Node) Start() error {
 	n.config.P2PConfig.BootstrapNodes = n.config.BootNodes()
 	n.config.P2PConfig.StaticNodes = n.config.StaticNodes()
 	n.config.P2PConfig.TrustedNodes = n.config.TrustedNodes()
+	n.config.P2PConfig.NodeDatabase = n.config.NodeDB()
 
 	n.p2pServer = adaptor.NewProtoAdaptor(n.config.P2PConfig)
 

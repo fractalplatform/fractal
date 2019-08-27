@@ -59,10 +59,12 @@ type Config struct {
 	WSExposeAll bool     `mapstructure:"wsexposall"`
 
 	// p2p
-	P2PBootNodes   string      `mapstructure:"bootnodes"`
-	P2PStaticNodes string      `mapstructure:"staticnodes"`
-	P2PTrustNodes  string      `mapstructure:"trustnodes"`
-	P2PConfig      *p2p.Config `mapstructure:"p2p"`
+	P2PBootNodes    string `mapstructure:"bootnodes"`
+	P2PStaticNodes  string `mapstructure:"staticnodes"`
+	P2PTrustNodes   string `mapstructure:"trustnodes"`
+	P2PNodeDatabase string `mapstructure:"nodedb"`
+
+	P2PConfig *p2p.Config `mapstructure:"p2p"`
 
 	// Logger is a custom logger to use with the p2p.Server.
 	Logger log.Logger `toml:",omitempty"`
@@ -189,6 +191,14 @@ func (c *Config) TrustedNodes() []*enode.Node {
 		return c.readEnodes(c.P2PTrustNodes)
 	}
 	return c.readEnodes(c.resolvePath(datadirTrustedNodes))
+}
+
+// NodeDB returns the path of nodedatabase
+func (c *Config) NodeDB() string {
+	if len(c.P2PNodeDatabase) == 0 {
+		return ""
+	}
+	return filepath.Join(c.DataDir, c.P2PNodeDatabase)
 }
 
 func (c *Config) readEnodes(path string) []*enode.Node {

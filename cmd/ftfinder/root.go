@@ -48,6 +48,7 @@ var RootCmd = &cobra.Command{
 		nodeConfig.P2PConfig.BootstrapNodes = nodeConfig.BootNodes()
 		nodeConfig.P2PConfig.GenesisHash = common.HexToHash(hexStr)
 		nodeConfig.P2PConfig.Logger = log.New()
+		nodeConfig.P2PConfig.NodeDatabase = nodeConfig.NodeDB()
 		srv := p2p.Server{
 			Config: nodeConfig.P2PConfig,
 		}
@@ -83,9 +84,9 @@ func init() {
 	)
 
 	flags.StringVar(
-		&nodeConfig.P2PConfig.NodeDatabase,
+		&nodeConfig.P2PNodeDatabase,
 		"p2p_nodedb",
-		nodeConfig.P2PConfig.NodeDatabase,
+		nodeConfig.P2PNodeDatabase,
 		"The path to the database containing the previously seen live nodes in the network",
 	)
 
