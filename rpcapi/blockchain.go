@@ -324,7 +324,7 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNr r
 
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
-func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
+func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (uint64, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
 		lo  uint64 = params.GasTableInstanse.ActionGas - 1
@@ -364,7 +364,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 			return 0, fmt.Errorf("gas required exceeds allowance or always failing transaction")
 		}
 	}
-	return hexutil.Uint64(hi), nil
+	return hi, nil
 }
 
 // GetChainConfig returns chain config.
