@@ -1,6 +1,6 @@
 module github.com/fractalplatform/fractal
 
-go 1.12
+go 1.11
 
 require (
 	github.com/aristanetworks/goarista v0.0.0-20190712234253-ed1100a1c015
