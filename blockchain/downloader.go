@@ -723,7 +723,7 @@ func (task *downloadTask) Do() {
 
 	reqHashes := make([]common.Hash, 0, len(headers))
 	for _, header := range headers {
-		if header.Hash() != emptyHash {
+		if header.TxsRoot != emptyHash {
 			reqHashes = append(reqHashes, header.Hash())
 		}
 	}
@@ -737,7 +737,7 @@ func (task *downloadTask) Do() {
 	blocks := make([]*types.Block, len(headers))
 	bodyIndex := 0
 	for i, header := range headers {
-		if header.Hash() == emptyHash {
+		if header.TxsRoot == emptyHash {
 			blocks[i] = types.NewBlockWithHeader(header)
 		} else {
 			blocks[i] = types.NewBlockWithHeader(header).WithBody(bodies[bodyIndex].Transactions)
