@@ -66,6 +66,7 @@ func defaultNodeConfig() *node.Config {
 		WSPort:           8546,
 		WSModules:        []string{"ft"},
 		Logger:           log.New(),
+		P2PNodeDatabase:  "nodedb",
 		P2PConfig:        defaultP2pConfig(),
 	}
 }
