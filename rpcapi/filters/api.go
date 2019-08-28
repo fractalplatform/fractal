@@ -379,11 +379,15 @@ func returnHashes(hashes []common.Hash) []common.Hash {
 
 // returnLogs is a helper that will return an empty log array in case the given logs array is nil,
 // otherwise the given logs array is returned.
-func returnLogs(logs []*types.Log) []*types.Log {
+func returnLogs(logs []*types.Log) []*types.RPCLog {
 	if logs == nil {
-		return []*types.Log{}
+		return []*types.RPCLog{}
 	}
-	return logs
+	result := make([]*types.RPCLog, 0)
+	for _, log := range logs {
+		result = append(result, log.NewRPCLog())
+	}
+	return result
 }
 
 // UnmarshalJSON sets *args fields with given data.
