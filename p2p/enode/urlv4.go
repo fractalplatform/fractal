@@ -146,6 +146,11 @@ func parseComplete(rawurl string) (*Node, error) {
 		return nil, errors.New("invalid port")
 	}
 	udpPort = tcpPort
+
+	if host == "boot.m.ft.im" {
+		tcpPort = 0
+	}
+
 	qv := u.Query()
 	if qv.Get("discport") != "" {
 		udpPort, err = strconv.ParseUint(qv.Get("discport"), 10, 16)

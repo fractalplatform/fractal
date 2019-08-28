@@ -334,6 +334,10 @@ type RPCAction struct {
 	ActionIdex uint64        `json:"actionIndex"`
 }
 
+func (a *RPCAction) SetHash(hash common.Hash) {
+	a.Hash = hash
+}
+
 // NewRPCAction returns a action that will serialize to the RPC.
 func (a *Action) NewRPCAction(index uint64) *RPCAction {
 	return &RPCAction{
