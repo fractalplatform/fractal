@@ -101,6 +101,7 @@ int mdb_midl_insert( MDB_IDL ids, MDB_ID id )
 }
 #endif
 
+/*内存分配, 多分配两个空间用来存放容量和使用量*/
 MDB_IDL mdb_midl_alloc(int num)
 {
 	MDB_IDL ids = malloc((num+2) * sizeof(MDB_ID));
@@ -111,12 +112,14 @@ MDB_IDL mdb_midl_alloc(int num)
 	return ids;
 }
 
+/*释放内存, ids前面还有一个存放容量的元素*/
 void mdb_midl_free(MDB_IDL ids)
 {
 	if (ids)
 		free(ids-1);
 }
 
+/*将空间缩小到MDB_IDL_UM_MAX*/
 void mdb_midl_shrink( MDB_IDL *idp )
 {
 	MDB_IDL ids = *idp;
@@ -128,6 +131,7 @@ void mdb_midl_shrink( MDB_IDL *idp )
 	}
 }
 
+/*将容量增加num个元素*/
 static int mdb_midl_grow( MDB_IDL *idp, int num )
 {
 	MDB_IDL idn = *idp-1;
@@ -140,6 +144,7 @@ static int mdb_midl_grow( MDB_IDL *idp, int num )
 	return 0;
 }
 
+/*判断是否能容纳num个元素, 不够则分配空间*/
 int mdb_midl_need( MDB_IDL *idp, unsigned num )
 {
 	MDB_IDL ids = *idp;
@@ -154,6 +159,7 @@ int mdb_midl_need( MDB_IDL *idp, unsigned num )
 	return 0;
 }
 
+/*追加一个元素*/
 int mdb_midl_append( MDB_IDL *idp, MDB_ID id )
 {
 	MDB_IDL ids = *idp;
@@ -168,6 +174,7 @@ int mdb_midl_append( MDB_IDL *idp, MDB_ID id )
 	return 0;
 }
 
+/*追加一个列表*/
 int mdb_midl_append_list( MDB_IDL *idp, MDB_IDL app )
 {
 	MDB_IDL ids = *idp;
@@ -182,6 +189,7 @@ int mdb_midl_append_list( MDB_IDL *idp, MDB_IDL app )
 	return 0;
 }
 
+/*追加n个元素*/
 int mdb_midl_append_range( MDB_IDL *idp, MDB_ID id, unsigned n )
 {
 	MDB_ID *ids = *idp, len = ids[0];
@@ -198,6 +206,7 @@ int mdb_midl_append_range( MDB_IDL *idp, MDB_ID id, unsigned n )
 	return 0;
 }
 
+/*合并两个列表*/
 void mdb_midl_xmerge( MDB_IDL idl, MDB_IDL merge )
 {
 	MDB_ID old_id, merge_id, i = merge[0], j = idl[0], k = i+j, total = k;
@@ -217,6 +226,7 @@ void mdb_midl_xmerge( MDB_IDL idl, MDB_IDL merge )
 #define SMALL	8
 #define	MIDL_SWAP(a,b)	{ itmp=(a); (a)=(b); (b)=itmp; }
 
+/*排序*/
 void
 mdb_midl_sort( MDB_IDL ids )
 {
@@ -278,6 +288,7 @@ mdb_midl_sort( MDB_IDL ids )
 	}
 }
 
+/*二分法查找一个id, 找到则返回id的位置, 没找到则返回第一个大于id的位置*/
 unsigned mdb_mid2l_search( MDB_ID2L ids, MDB_ID id )
 {
 	/*
@@ -313,6 +324,7 @@ unsigned mdb_mid2l_search( MDB_ID2L ids, MDB_ID id )
 	return cursor;
 }
 
+/*插入一个id到列表*/
 int mdb_mid2l_insert( MDB_ID2L ids, MDB_ID2 *id )
 {
 	unsigned x, i;
@@ -344,6 +356,7 @@ int mdb_mid2l_insert( MDB_ID2L ids, MDB_ID2 *id )
 	return 0;
 }
 
+/*在末尾追加一个id*/
 int mdb_mid2l_append( MDB_ID2L ids, MDB_ID2 *id )
 {
 	/* Too big? */

@@ -237,6 +237,7 @@ union semun {
 
 #include "lmdb.h"
 #include "midl.h"
+#include "sha256.h"
 
 #if (BYTE_ORDER == LITTLE_ENDIAN) == (BYTE_ORDER == BIG_ENDIAN)
 # error "Unknown or unsupported endianness (BYTE_ORDER)"
@@ -1019,6 +1020,11 @@ typedef struct MDB_page {
 	/** The percentage of space used in the page, in tenths of a percent. */
 #define PAGEFILL(env, p) (1000L * ((env)->me_psize - PAGEHDRSZ - SIZELEFT(p)) / \
 				((env)->me_psize - PAGEHDRSZ))
+
+    /** all node size in a branch page */
+#define PAGENODESZ(env, p) ((env)->me_psize - p->mp_upper)
+#define PAGENODEPTR(p) ((void *)((char *)(p) + p->mp_upper))
+
 	/** The minimum page fill factor, in tenths of a percent.
 	 *	Pages emptier than this are candidates for merging.
 	 */
@@ -1081,7 +1087,7 @@ typedef struct MDB_node {
 /** @} */
 	unsigned short	mn_flags;		/**< @ref mdb_node */
 	unsigned short	mn_ksize;		/**< key size */
-	char		mn_data[1];			/**< key and data are appended here */
+	char		mn_data[1];			/**< key and data are appended here, if branch append hash*/
 } MDB_node;
 
 	/** Size of the node header, excluding dynamic data at the end */
@@ -1092,8 +1098,9 @@ typedef struct MDB_node {
 
 	/** Size of a node in a branch page with a given key.
 	 *	This is just the node header plus the key, there is no data.
+	 *  append hash after the key
 	 */
-#define INDXSIZE(k)	 (NODESIZE + ((k) == NULL ? 0 : (k)->mv_size))
+#define INDXSIZE(k)	 (NODESIZE + ((k) == NULL ? 0 : (k)->mv_size) + HASH_LEN)
 
 	/** Size of a node in a leaf page with a given key and data.
 	 *	This is node header plus key plus data size.
@@ -1109,6 +1116,9 @@ typedef struct MDB_node {
 	/** Address of the data for a node */
 #define NODEDATA(node)	 (void *)((char *)(node)->mn_data + (node)->mn_ksize)
 
+   /* Address of the hash of a node in a branch page*/
+#define NODEHASH(node)   (void *)((char *)(node)->mn_data + (node)->mn_ksize)
+
 	/** Get the page number pointed to by a branch node */
 #define NODEPGNO(node) \
 	((node)->mn_lo | ((pgno_t) (node)->mn_hi << 16) | \
@@ -1117,6 +1127,9 @@ typedef struct MDB_node {
 #define SETPGNO(node,pgno)	do { \
 	(node)->mn_lo = (pgno) & 0xffff; (node)->mn_hi = (pgno) >> 16; \
 	if (PGNO_TOPWORD) (node)->mn_flags = (pgno) >> PGNO_TOPWORD; } while(0)
+
+   /*Set the hash in a branch node */
+#define SETHASH(node, hash) memcpy(NODEHASH(node), hash, HASH_LEN)
 
 	/** Get the size of the data in a leaf node */
 #define NODEDSZ(node)	 ((node)->mn_lo | ((unsigned)(node)->mn_hi << 16))
@@ -1173,6 +1186,7 @@ typedef struct MDB_db {
 	pgno_t		md_overflow_pages;	/**< number of overflow pages */
 	mdb_size_t	md_entries;		/**< number of data items */
 	pgno_t		md_root;		/**< the root page of this tree */
+	char        hash[HASH_LEN]; /**merkle hash of root page */
 } MDB_db;
 
 #define MDB_VALID	0x8000		/**< DB handle is valid, for me_dbflags */
@@ -2874,6 +2888,116 @@ mdb_cursor_shadow(MDB_txn *src, MDB_txn *dst)
 	return MDB_SUCCESS;
 }
 
+
+
+/*get the hash of leaf page*/
+static int mdb_leaf_hash(MDB_env *env, MDB_page *mp, char *hash)
+{
+	unsigned int len = PAGENODESZ(env, mp);
+	unsigned char *data = PAGENODEPTR(mp);
+
+	/*big data store page num in node*/
+	/*if (F_ISSET(node->mn_flags, F_BIGDATA)) {
+	}*/
+
+	/*node index may added to cal hash ? */
+	sha256(data, len, hash);
+
+	return MDB_SUCCESS;
+}
+
+/*get the hash of branch page*/
+static int mdb_branch_hash(MDB_env *env, MDB_page *mp, char *hash)
+{
+	unsigned int len = PAGENODESZ(env, mp);
+	unsigned char *data = PAGENODEPTR(mp);
+
+	/*node index may added to cal hash ? */
+	sha256(data, len, hash);
+	return MDB_SUCCESS;
+}
+
+/*get the hash of leaf2 page*/
+static int mdb_leaf2_hash(MDB_page *mp, char *hash)
+{
+	unsigned int len = NUMKEYS(mp) * mp->mp_pad;
+	unsigned char *data = LEAF2KEY(mp, 0, mp->mp_pad);
+
+	sha256(data, len, hash);
+	return MDB_SUCCESS;
+}
+
+/*get the hash of page*/
+static int mdb_page_hash(MDB_cursor *mc)
+{
+	MDB_page *mp = mc->mc_pg[mc->mc_top], *np;
+	MDB_txn *txn = mc->mc_txn;
+	MDB_env *env = txn->mt_env;
+	MDB_cursor *m2, *m3;
+	MDB_page *parent;
+	MDB_node *node;
+	char hash[HASH_LEN];
+	pgno_t	pgno;
+	int rc;
+
+	if (IS_LEAF(mp)) {
+		rc = mdb_leaf_hash(env, mp, hash);
+	} else if (IS_LEAF2(mp)) {
+		rc = mdb_leaf2_hash(mp, hash);
+	} else if (IS_BRANCH(mp)) {
+		rc = mdb_branch_hash(env, mp, hash);
+	} else {
+		DPRINTF(("page flag error when get hash, flag:%u", mp->mp_flags));
+		rc = EINVAL;
+	}
+
+	if (rc != MDB_SUCCESS) {
+		goto fail;
+	}
+
+	/*update parent node‘s hash*/
+	if (mc->mc_top) {
+		parent = mc->mc_pg[mc->mc_top-1];
+		node = NODEPTR(parent, mc->mc_ki[mc->mc_top-1]);
+		SETHASH(node, hash);
+	} else {
+		memcpy(mc->mc_db->hash, hash, HASH_LEN);
+	}
+	return MDB_SUCCESS;
+fail:
+	txn->mt_flags |= MDB_TXN_ERROR;
+	return rc;
+}
+
+/*cal the hash of all the page in the cusor stack*/
+static int mdb_cursor_hash(MDB_cursor *mc) 
+{
+	int rc = MDB_SUCCESS;
+
+	mc->mc_top = 0;
+	if (mc->mc_snum) {
+		do {
+			rc = mdb_page_hash(mc);
+		} while (!rc && ++(mc->mc_top) < mc->mc_snum);
+		mc->mc_top = mc->mc_snum-1;
+	}
+	return rc;
+}
+
+static void mdb_cursors_hash(MDB_txn *txn)
+{
+	MDB_cursor **cursors = txn->mt_cursors, *mc, *next;
+	//MDB_xcursor *mx;
+	int i;
+
+	for (i = txn->mt_numdbs; --i >= 0; ) {
+		for (mc = cursors[i]; mc; mc = next) {
+			next = mc->mc_next;
+			mdb_cursor_hash(mc);
+		}
+	}
+}
+
 /** Close this write txn's cursors, give parent txn's cursors back to parent.
  * @param[in] txn the transaction handle.
  * @param[in] merge true to keep changes to parent cursors, false to revert.
@@ -3965,6 +4089,9 @@ mdb_txn_commit(MDB_txn *txn)
 		goto fail;
 	}
 
+	/*get the new hash */
+    mdb_cursors_hash(txn);
+
 	mdb_cursors_close(txn, 0);
 
 	if (!txn->mt_u.dirty_list[0].mid &&
@@ -3995,6 +4122,9 @@ mdb_txn_commit(MDB_txn *txn)
 					goto fail;
 			}
 		}
+
+		/*after main db modify, get the new hash */
+		mdb_cursor_hash(&mc);
 	}
 
 	rc = mdb_freelist_save(txn);
@@ -7593,6 +7723,10 @@ fix_parent:
 				if (rc2)
 					return rc2;
 			}
+
+			/*must cal merkle hash, node is leaf2*/
+
+
 			return MDB_SUCCESS;
 		}
 
@@ -7794,6 +7928,11 @@ current:
 					data->mv_data = METADATA(omp);
 				else
 					memcpy(METADATA(omp), data->mv_data, data->mv_size);
+
+				/*must cal merkle hash*/
+
+
+
 				return MDB_SUCCESS;
 			  }
 			}
@@ -7812,6 +7951,11 @@ current:
 				memcpy(NODEKEY(leaf), key->mv_data, key->mv_size);
 				goto fix_parent;
 			}
+
+			/*must cal merkle hash*/
+
+
+
 			return MDB_SUCCESS;
 		}
 		mdb_node_del(mc, 0);
@@ -7936,6 +8080,11 @@ put_sub:
 				}
 			}
 		}
+
+		/*if rc is success, cal merkle hash*/
+
+
+
 		return rc;
 bad_sub:
 		if (rc == MDB_KEYEXIST)	/* should not happen, we deleted that item */

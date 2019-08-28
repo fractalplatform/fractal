@@ -61,12 +61,12 @@ test:	all
 	rm -rf testdb && mkdir testdb
 	./mtest && ./mdb_stat testdb
 
-liblmdb.a:	mdb.o midl.o
-	$(AR) rs $@ mdb.o midl.o
+liblmdb.a:	mdb.o midl.o sha256.o
+	$(AR) rs $@ mdb.o midl.o sha256.o
 
-liblmdb$(SOEXT):	mdb.lo midl.lo
+liblmdb$(SOEXT):	mdb.lo midl.lo sha256.lo
 #	$(CC) $(LDFLAGS) -pthread -shared -Wl,-Bsymbolic -o $@ mdb.o midl.o $(SOLIBS)
-	$(CC) $(LDFLAGS) -pthread -shared -o $@ mdb.lo midl.lo $(SOLIBS)
+	$(CC) $(LDFLAGS) -pthread -shared -o $@ mdb.lo midl.lo sha256.lo $(SOLIBS)
 
 mdb_stat: mdb_stat.o liblmdb.a
 mdb_copy: mdb_copy.o liblmdb.a
@@ -80,17 +80,23 @@ mtest4:	mtest4.o liblmdb.a
 mtest5:	mtest5.o liblmdb.a
 mtest6:	mtest6.o liblmdb.a
 
-mdb.o: mdb.c lmdb.h midl.h
+mdb.o: mdb.c lmdb.h midl.h sha256.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c mdb.c
 
 midl.o: midl.c midl.h
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c midl.c
 
-mdb.lo: mdb.c lmdb.h midl.h
+sha256.o: sha256.c sha256.h
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c sha256.c
+
+mdb.lo: mdb.c lmdb.h midl.h sha256.h
 	$(CC) $(CFLAGS) -fPIC $(CPPFLAGS) -c mdb.c -o $@
 
 midl.lo: midl.c midl.h
 	$(CC) $(CFLAGS) -fPIC $(CPPFLAGS) -c midl.c -o $@
+
+sha256.lo: sha256.c sha256.h
+	$(CC) $(CFLAGS) -fPIC $(CPPFLAGS) -c sha256.c -o $@
 
 %:	%.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
