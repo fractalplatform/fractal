@@ -37,9 +37,6 @@ func TestHandler(t *testing.T) {
 	if err != nil || len(hash) != 1 || hash[0] != chain.GetHeaderByNumber(0).Hash() {
 		t.Fatal("genesis block not match")
 	}
-	if err != nil || len(hash) != 1 || hash[0] != chain.GetHeaderByNumber(0).Hash() {
-		t.Fatal("genesis block hash not match")
-	}
 
 	headers, err := getHeaders(nil, nil, &getBlockHeadersData{
 		hashOrNumber{
