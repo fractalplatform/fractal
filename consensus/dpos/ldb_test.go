@@ -139,6 +139,18 @@ func TestLDBCandidate(t *testing.T) {
 
 	for index, candidate := range candidates {
 		candidateInfo, _ := db.GetCandidate(uint64(index), candidate)
+		if err := db.SetActivatedCandidate(uint64(index), candidateInfo); err != nil {
+			panic(fmt.Errorf("SetActivatedCandidate --- %v", err))
+		}
+		if nCandidateInfo, err := db.GetActivatedCandidate(uint64(index)); err != nil {
+			panic(fmt.Errorf("GetActivatedCandidate --- %v", err))
+		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
+			panic(fmt.Errorf("GetActivatedCandidate mismatch"))
+		}
+	}
+
+	for index, candidate := range candidates {
+		candidateInfo, _ := db.GetCandidate(uint64(index), candidate)
 		if err := db.SetCandidate(candidateInfo); err != nil {
 			panic(fmt.Errorf("Redo SetCandidate --- %v", err))
 		}
