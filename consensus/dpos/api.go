@@ -384,8 +384,8 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	}
 	sort.Sort(candidates)
 
-	var declims uint64 = 1000000000000000000
-	minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
+	// var declims uint64 = 1000000000000000000
+	// minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
 	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
 	for _, c := range candidates {
 		if c.Name == "fractal.founder" {
@@ -403,9 +403,9 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 			}
 		}
 
-		if balance.Cmp(minQuantity) < 0 {
-			continue
-		}
+		// if balance.Cmp(minQuantity) < 0 {
+		// 	continue
+		// }
 
 		candidateInfo := &CandidateInfoForBrowser{}
 		candidateInfo.Candidate = c.Name
