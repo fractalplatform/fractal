@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -44,7 +45,7 @@ func TestHandler(t *testing.T) {
 		}, 1, 0, false,
 	}, errCh)
 	if err != nil || len(headers) != 1 || headers[0].Number.Uint64() != 0 || headers[0].Hash() != chain.GetHeaderByNumber(headers[0].Number.Uint64()).Hash() {
-		t.Fatal("genesis block header not match", err, len(headers))
+		t.Fatal(fmt.Sprint("genesis block header not match", err, len(headers)))
 	}
-
+	//t.Fatal("genesis block header not match", err, len(headers))
 }
