@@ -27,17 +27,17 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// IAPI returns the RPC APIs this consensus engine provides.
+// IAPI defines interface to provide the RPC APIs.
 type IAPI interface {
 	APIs(chain IChainReader) []rpc.API
 }
 
-// IChainReader defines a small collection of methods needed to access the local blockchain.
+// IChainReader defines interface to access the blockchain.
 type IChainReader interface {
-	// Config retrieves the blockchain's chain configuration.
+	// Config retrieves the blockchain's configuration.
 	Config() *params.ChainConfig
 
-	// CurrentHeader retrieves the current header from the local chain.
+	// CurrentHeader retrieves the current header from the database.
 	CurrentHeader() *types.Header
 
 	// GetHeaderByNumber retrieves a block header from the database by number.
@@ -72,10 +72,10 @@ type IChainReader interface {
 	ForkUpdate(block *types.Block, statedb *state.StateDB) error
 }
 
-// IValidator implements consensus validator.
+// IValidator defines interface to validate block.
 type IValidator interface {
-	// CalcDifficulty is the difficulty adjustment algorithm. It returns the difficulty
-	// that a new block should have.
+	// CalcDifficulty is the difficulty adjustment algorithm.
+	// It returns the difficulty that a new block should have.
 	CalcDifficulty(chain IChainReader, time uint64, parent *types.Header) *big.Int
 
 	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
@@ -96,28 +96,30 @@ type IEngine interface {
 	// Seal generates a new block for the given input block with the local miner's seal place on top.
 	Seal(chain IChainReader, block *types.Block, stop <-chan struct{}) (*types.Block, error)
 
+	// Engine retrieves engine interface
 	Engine() IEngine
 
+	// Engine process actions of dpos
 	ProcessAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
-
+	// GetDelegatedByTime get delegate stake of candidate in snapshot database
 	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
 
-	//GetLatestEpoch(state *state.StateDB) (epoch uint64, err error)
-
-	//GetPrevEpoch(state *state.StateDB, epoch uint64) (pecho uint64, err error)
-
-	//GetNextEpoch(state *state.StateDB, epoch uint64) (necho uint64, err error)
-
+	// GetEpoch get number and timestamp of prev/next epoch
 	GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epoch uint64, time uint64, err error)
 
+	// GetActivedCandidateSize get actived candidates size in epoch database
 	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
 
+	// GetActivedCandidate get actived info in epoch database
 	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, isbad bool, err error)
 
+	// GetCandidateStake get voted stake in epoch database
 	GetCandidateStake(state *state.StateDB, epoch uint64, candidate string) (stake *big.Int, err error)
 
+	// GetVoterStake get voted stake in epoch database
 	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 
+	// CalcBFTIrreversible get chain rreversible number
 	CalcBFTIrreversible() uint64
 
 	IAPI
@@ -125,18 +127,19 @@ type IEngine interface {
 	IValidator
 }
 
-// ITxProcessor is an Processor.
+// ITxProcessor defines interface to process tx.
 type ITxProcessor interface {
 	// ApplyTransaction attempts to apply a transaction.
 	ApplyTransaction(coinbase *common.Name, gp *common.GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error)
 }
 
-// ITxPool contains all currently known transactions.
+// ITxPool defines interface to get pending transactions.
 type ITxPool interface {
+	// Pending attempts to get all pending transaction.
 	Pending() (map[common.Name][]*types.Transaction, error)
 }
 
-// IConsensus defines a small collection of methods needed for miner.
+// IConsensus defines interface to invoke for miner.
 type IConsensus interface {
 	IChainReader
 	IEngine
