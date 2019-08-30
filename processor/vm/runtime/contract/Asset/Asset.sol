@@ -17,7 +17,7 @@ contract Asset {
         return msg.assetid;
     }
     function transAsset(address to, uint assetId, uint256 value) public payable {
-        to.transferex(assetId, value);
+        to.transfer(assetId, value);
     }
     function setname(address newOwner, uint assetId) public {
         setassetowner(assetId, newOwner);
@@ -25,13 +25,13 @@ contract Asset {
     function getbalance(address to, uint assetId) public returns(uint256) {
         return to.balanceex(assetId);
     }
-    function getAssetAmount(uint256 assetId, uint256 t) public returns (uint256){
-        return assetamount(assetId,t);
-    }
+    // function getAssetAmount(uint256 assetId, uint256 t) public returns (uint256){
+    //     return assetamount(assetId,t);
+    // }
     function getSnapshotTime(uint256 i,uint256 t) public returns (uint256){
         return snapshottime(i,t);
     }
     function getSnapBalance(address to,uint256 assetId,uint256 t) public returns (uint256){
-        return to.snapbalance(assetId,t);
+        return to.snapbalance(assetId,t,0);
     }
 }
