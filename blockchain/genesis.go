@@ -393,7 +393,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		return nil, nil, fmt.Errorf("genesis system asset err %v", err)
 	}
 
-	g.Config.SysTokenID = assetInfo.AssetId
+	g.Config.SysTokenID = assetInfo.AssetID
 	g.Config.SysTokenDecimals = assetInfo.Decimals
 
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))

@@ -88,8 +88,8 @@ func (api *API) NextEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	nepoch, _, err := api.dpos.GetEpoch(state, 2, epoch)
-	return nepoch, err
+	nextEpoch, _, err := api.dpos.GetEpoch(state, 2, epoch)
+	return nextEpoch, err
 }
 
 // CandidatesSize get candidates size
