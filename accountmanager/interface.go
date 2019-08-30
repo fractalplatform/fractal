@@ -94,7 +94,7 @@ type SdbIf interface {
 
 //import
 //type AccountAssetIf interface {
-//	GetAssetIdByName(assetName string) (uint64, error)
+//	GetAssetIDByName(assetName string) (uint64, error)
 //	IssueAssetObject(ao *AssetObject) error
 //	IssueAsset(assetName string, symbol string, amount *big.Int, owner string) error
 //	IncreaseAsset(accountName string, assetId uint64, amount *big.Int) error

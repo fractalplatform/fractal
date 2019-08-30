@@ -153,7 +153,7 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 		t.Fatalf("genesis system asset err %v", err)
 	}
 
-	chainCfg.SysTokenID = assetInfo.AssetId
+	chainCfg.SysTokenID = assetInfo.AssetID
 	chainCfg.SysTokenDecimals = assetInfo.Decimals
 
 	engine := dpos.New(dposCfg, blockchain)

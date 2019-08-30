@@ -53,28 +53,23 @@ func newAssetBalance(assetID uint64, amount *big.Int) *AssetBalance {
 
 //Account account object
 type Account struct {
-	//LastTime *big.Int
-	AcctName  common.Name `json:"accountName"`
-	Founder   common.Name `json:"founder"`
-	AccountID uint64      `json:"accountID"`
-	Number    uint64      `json:"number"`
-	//ChargeRatio           uint64      `json:"chargeRatio"`
-	Nonce                 uint64      `json:"nonce"`
-	Code                  []byte      `json:"code"`
-	CodeHash              common.Hash `json:"codeHash"`
-	CodeSize              uint64      `json:"codeSize"`
-	Threshold             uint64      `json:"threshold"`
-	UpdateAuthorThreshold uint64      `json:"updateAuthorThreshold"`
-	AuthorVersion         common.Hash `json:"authorVersion"`
-	//sort by asset id asc
-	Balances []*AssetBalance `json:"balances"`
-	//realated account, pubkey and address
-	Authors []*common.Author `json:"authors"`
-	//code Suicide
-	Suicide bool `json:"suicide"`
-	//account destroy
-	Destroy     bool   `json:"destroy"`
-	Description string `json:"description"`
+	AcctName              common.Name
+	Founder               common.Name
+	AccountID             uint64
+	Number                uint64
+	Nonce                 uint64
+	Code                  []byte
+	CodeHash              common.Hash
+	CodeSize              uint64
+	Threshold             uint64
+	UpdateAuthorThreshold uint64
+	AuthorVersion         common.Hash
+	Balances              []*AssetBalance  //sort by asset id asc
+	Authors               []*common.Author //related account, pubkey and address
+	Suicide               bool             //code Suicide
+	Destroy               bool             //account destroy
+	Description           string
+	//ChargeRatio           uint64
 }
 
 // NewAccount create a new account object.

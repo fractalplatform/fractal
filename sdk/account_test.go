@@ -87,7 +87,7 @@ func TestCreateAccount(t *testing.T) {
 func TestUpdateAccount(t *testing.T) {
 	Convey("UpdateAccount", t, func() {
 		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
-		hash, err := act.UpdateAccount(common.StrToName(chainCfg.AccountName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdataAccountAction{
+		hash, err := act.UpdateAccount(common.StrToName(chainCfg.AccountName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAccountAction{
 			Founder: common.StrToName(name),
 		})
 		So(err, ShouldBeNil)
@@ -136,7 +136,7 @@ func TestUpdateAsset(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		hash, err := sysAct.UpdateAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAsset{
-			AssetID: ast.AssetId,
+			AssetID: ast.AssetID,
 			Founder: common.StrToName(chainCfg.SysName),
 		})
 		So(err, ShouldBeNil)
@@ -149,7 +149,7 @@ func TestSetAssetOwner(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		hash, err := sysAct.SetAssetOwner(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.UpdateAssetOwner{
-			AssetID: ast.AssetId,
+			AssetID: ast.AssetID,
 			Owner:   common.StrToName(chainCfg.SysName),
 		})
 		So(err, ShouldBeNil)
@@ -161,7 +161,7 @@ func TestDestroyAsset(t *testing.T) {
 		ast, err := api.AssetInfoByName(astname)
 		So(err, ShouldBeNil)
 
-		hash, err := sysAct.DestroyAsset(common.StrToName(chainCfg.AssetName), new(big.Int).Mul(astamount, decimals), ast.AssetId, gas)
+		hash, err := sysAct.DestroyAsset(common.StrToName(chainCfg.AssetName), new(big.Int).Mul(astamount, decimals), ast.AssetID, gas)
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
 	})
@@ -172,7 +172,7 @@ func TestIncreaseAsset(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		hash, err := sysAct.IncreaseAsset(common.StrToName(chainCfg.AssetName), big.NewInt(0), chainCfg.SysTokenID, gas, &accountmanager.IncAsset{
-			AssetId: ast.AssetId,
+			AssetID: ast.AssetID,
 			Amount:  new(big.Int).Mul(astamount, decimals),
 			To:      common.StrToName(chainCfg.SysName),
 		})
@@ -332,10 +332,10 @@ func TestContract(t *testing.T) {
 		// increase asset in contract
 		accountInfo, err := api.AccountInfo(acct.name.String())
 		So(err, ShouldBeNil)
-		balance, err := getBalanceByID(accountInfo.Balances, ast.AssetId)
+		balance, err := getBalanceByID(accountInfo.Balances, ast.AssetID)
 		So(err, ShouldBeNil)
 		increment := big.NewInt(100000)
-		input, err = formIncreaseAssetInput(AssetAbi, big.NewInt(int64(ast.GetAssetId())),
+		input, err = formIncreaseAssetInput(AssetAbi, big.NewInt(int64(ast.GetAssetID())),
 			common.BigToAddress(big.NewInt(int64(accountInfo.AccountID))), increment)
 		So(err, ShouldBeNil)
 		hash, err = acct.CallContract(systemassetid, tGas, input)
@@ -348,7 +348,7 @@ func TestContract(t *testing.T) {
 
 		newAccountInfo, err := api.AccountInfo(acct.name.String())
 		So(err, ShouldBeNil)
-		newBalance, err := getBalanceByID(newAccountInfo.Balances, ast.AssetId)
+		newBalance, err := getBalanceByID(newAccountInfo.Balances, ast.AssetID)
 		So(err, ShouldBeNil)
 		So(big.NewInt(0).Add(balance, increment), ShouldResemble, newBalance) // compare account blanace
 
@@ -357,7 +357,7 @@ func TestContract(t *testing.T) {
 		So(err, ShouldBeNil)
 		toAcctInfo, err := api.AccountInfo(toAcct.name.String())
 		So(err, ShouldBeNil)
-		input, err = formTransferAssetInput(AssetAbi, big.NewInt(int64(ast.AssetId)), common.BigToAddress(big.NewInt(int64(toAcctInfo.AccountID))), big.NewInt(1))
+		input, err = formTransferAssetInput(AssetAbi, big.NewInt(int64(ast.AssetID)), common.BigToAddress(big.NewInt(int64(toAcctInfo.AccountID))), big.NewInt(1))
 		So(err, ShouldBeNil)
 		hash, err = acct.CallContract(systemassetid, tGas, input)
 		So(err, ShouldBeNil)
@@ -365,18 +365,18 @@ func TestContract(t *testing.T) {
 
 		sendAccountInfo, err := api.AccountInfo(acct.name.String())
 		So(err, ShouldBeNil)
-		senderBalance, err := getBalanceByID(sendAccountInfo.Balances, ast.AssetId)
+		senderBalance, err := getBalanceByID(sendAccountInfo.Balances, ast.AssetID)
 		So(err, ShouldBeNil)
 		So(newBalance.Sub(newBalance, big.NewInt(1)), ShouldResemble, senderBalance) // compare sender blanace
 
 		recipientAccountInfo, err := api.AccountInfo(toAcct.name.String())
 		So(err, ShouldBeNil)
-		recipientBalance, err := getBalanceByID(recipientAccountInfo.Balances, ast.AssetId)
+		recipientBalance, err := getBalanceByID(recipientAccountInfo.Balances, ast.AssetID)
 		So(err, ShouldBeNil)
 		So(big.NewInt(1), ShouldResemble, recipientBalance) // compare recipient blanace
 
 		// change asset owner in contract
-		input, err = formChangeAssetOwner(AssetAbi, common.BigToAddress(big.NewInt(int64(toAcctInfo.AccountID))), big.NewInt(int64(ast.AssetId))) //22168
+		input, err = formChangeAssetOwner(AssetAbi, common.BigToAddress(big.NewInt(int64(toAcctInfo.AccountID))), big.NewInt(int64(ast.AssetID))) //22168
 		So(err, ShouldBeNil)
 		hash, err = acct.CallContract(systemassetid, tGas, input)
 		So(err, ShouldBeNil)
@@ -386,7 +386,7 @@ func TestContract(t *testing.T) {
 		So(newOwnerAsset.Owner, ShouldEqual, toAcct.name) // compare asset owner
 
 		// destory asset in contract
-		input, err = formDestroyAsset(AssetAbi, big.NewInt(int64(ast.AssetId)), senderBalance)
+		input, err = formDestroyAsset(AssetAbi, big.NewInt(int64(ast.AssetID)), senderBalance)
 		So(err, ShouldBeNil)
 		hash, err = acct.CallContract(systemassetid, tGas, input)
 		So(err, ShouldBeNil)
@@ -394,7 +394,7 @@ func TestContract(t *testing.T) {
 
 		destroyAccountInfo, err := api.AccountInfo(acct.name.String())
 		So(err, ShouldBeNil)
-		destroyBalance, err := getBalanceByID(destroyAccountInfo.Balances, ast.AssetId)
+		destroyBalance, err := getBalanceByID(destroyAccountInfo.Balances, ast.AssetID)
 		So(err, ShouldBeNil)
 		So(big.NewInt(0), ShouldResemble, destroyBalance) // compare destory balance
 	})
