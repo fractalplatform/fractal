@@ -266,9 +266,11 @@ func TestLog(t *testing.T) {
 	}
 
 	allLogs := state.Logs()
-	for i, l := range allLogs {
-		if !bytes.Equal(l.Data, currentLog[i].txLog.Data) {
-			t.Error(fmt.Sprintf("log error get %v, want %v", l.Data, currentLog[i].txLog.Data))
+	for _, l := range allLogs {
+		if l.TxHash == currentTxHash1 {
+			if !bytes.Equal(l.Data, currentLog[2].txLog.Data) {
+				t.Error(fmt.Sprintf("log error get %v, want %v", l.Data, currentLog[2].txLog.Data))
+			}
 		}
 	}
 }
