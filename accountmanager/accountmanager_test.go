@@ -2158,4 +2158,25 @@ func Test_IssueAssetForkID1(t *testing.T) {
 			t.Errorf("%q. Test_IssueAssetForkID1 error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
+
+	argAfterFork := args{"test", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+
+	assetAfter := IssueAsset{
+		AssetName:   (argAfterFork.assetName),
+		Symbol:      argAfterFork.symbol,
+		Amount:      argAfterFork.amount,
+		Decimals:    argAfterFork.dec,
+		Founder:     argAfterFork.founder,
+		Owner:       argAfterFork.owner,
+		UpperLimit:  argAfterFork.UpperLimit,
+		Contract:    argAfterFork.contract,
+		Description: argAfterFork.desc,
+	}
+
+	_, err = am.IssueAsset(newAccount, assetAfter, blockNumber, 1)
+
+	if err == nil {
+		t.Errorf("Test_IssueAssetForkID1 error, create invalid asset name failed")
+	}
+
 }

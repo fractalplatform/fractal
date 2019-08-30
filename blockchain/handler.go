@@ -58,7 +58,12 @@ func newBlockchainStation(bc *BlockChain, networkId uint64) *BlockchainStation {
 	bs.subs[4] = router.Subscribe(nil, bs.peerCh, router.P2PGetBlockHeadersMsg, &getBlockHeadersData{})
 	bs.subs[5] = router.Subscribe(nil, bs.peerCh, router.P2PGetBlockBodiesMsg, []common.Hash{})
 
-	go bs.loop()
+	bs.loopWG.Add(1)
+	go func() {
+		bs.loop()
+		bs.loopWG.Done()
+	}()
+
 	return bs
 }
 

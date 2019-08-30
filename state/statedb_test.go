@@ -264,12 +264,24 @@ func TestRevertSnap(t *testing.T) {
 	addr := "addr01"
 	key1 := []byte("sk01")
 	value1 := []byte("sv01")
+
 	state.SetState(addr, common.BytesToHash(key1), common.BytesToHash(value1))
 
 	snapInx := state.Snapshot()
 
 	key2 := []byte("sk02")
 	value2 := []byte("sv02")
+
+	log := new(types.Log)
+	gas := uint64(100)
+	state.AddRefund(gas)
+	state.AddLog(log)
+	state.AddLog(log)
+	preimagesHash := common.BytesToHash([]byte("testpreimagekey"))
+	preimagesValue := []byte("testpreimagevalue")
+
+	state.AddPreimage(preimagesHash, preimagesValue)
+
 	state.SetState(addr, common.BytesToHash(key2), common.BytesToHash(value2))
 
 	testValue1 := state.GetState(addr, common.BytesToHash(key1))
@@ -281,6 +293,21 @@ func TestRevertSnap(t *testing.T) {
 
 	if testValue2 != common.BytesToHash(value2) {
 		t.Error("test value2 before revert failed")
+	}
+
+	if state.GetRefund() != gas {
+		t.Error("test gas before revert failed")
+	}
+
+	preimages := state.Preimages()
+	for k, v := range preimages {
+		if k != preimagesHash {
+			t.Error("test preimagesHash before revert failed")
+		}
+
+		if bytes.Compare(v, preimagesValue) != 0 {
+			t.Error("test preimagesValue before revert failed")
+		}
 	}
 
 	state.RevertToSnapshot(snapInx)
@@ -295,6 +322,16 @@ func TestRevertSnap(t *testing.T) {
 	if (testValue2 != common.Hash{}) {
 		t.Error("test value2 after revert failed ", testValue2)
 	}
+
+	if state.GetRefund() != 0 {
+		t.Error("test gas after revert failed")
+	}
+
+	preimages = state.Preimages()
+	if len(preimages) != 0 {
+		t.Error("test preimages after revert failed")
+	}
+
 }
 
 //element : 1->2->3
