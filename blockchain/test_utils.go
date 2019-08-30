@@ -214,6 +214,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, candidates 
 func generateForkBlocks(t *testing.T, genesis *Genesis, candidates []string, headerTimes []uint64) []*types.Block {
 	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
 	chain := newCanonical(t, genesis)
+	defer chain.Stop()
 
 	tmpdb, err := deepCopyDB(chain.db)
 	if err != nil {
