@@ -64,9 +64,9 @@ func Test_newAssetObject(t *testing.T) {
 	}
 }
 
-func TestAssetObject_GetAssetId(t *testing.T) {
+func TestAssetObject_GetAssetID(t *testing.T) {
 	type fields struct {
-		AssetId    uint64
+		AssetID    uint64
 		AssetName  string
 		Symbol     string
 		Amount     *big.Int
@@ -89,7 +89,7 @@ func TestAssetObject_GetAssetId(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:    tt.fields.AssetId,
+			AssetID:    tt.fields.AssetID,
 			AssetName:  tt.fields.AssetName,
 			Symbol:     tt.fields.Symbol,
 			Amount:     tt.fields.Amount,
@@ -99,15 +99,15 @@ func TestAssetObject_GetAssetId(t *testing.T) {
 			AddIssue:   tt.fields.AddIssue,
 			UpperLimit: tt.fields.UpperLimit,
 		}
-		if got := ao.GetAssetId(); got != tt.want {
-			t.Errorf("%q. AssetObject.GetAssetId() = %v, want %v", tt.name, got, tt.want)
+		if got := ao.GetAssetID(); got != tt.want {
+			t.Errorf("%q. AssetObject.GetAssetID() = %v, want %v", tt.name, got, tt.want)
 		}
 	}
 }
 
-func TestAssetObject_SetAssetId(t *testing.T) {
+func TestAssetObject_SetAssetID(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -115,7 +115,7 @@ func TestAssetObject_SetAssetId(t *testing.T) {
 		Owner     common.Name
 	}
 	type args struct {
-		assetId uint64
+		AssetID uint64
 	}
 	tests := []struct {
 		name   string
@@ -129,20 +129,20 @@ func TestAssetObject_SetAssetId(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
 			Decimals:  tt.fields.Decimals,
 			Owner:     tt.fields.Owner,
 		}
-		ao.SetAssetId(tt.args.assetId)
+		ao.SetAssetID(tt.args.AssetID)
 	}
 }
 
 func TestAssetObject_GetSymbol(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -159,7 +159,7 @@ func TestAssetObject_GetSymbol(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -174,7 +174,7 @@ func TestAssetObject_GetSymbol(t *testing.T) {
 
 func TestAssetObject_SetSymbol(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -193,7 +193,7 @@ func TestAssetObject_SetSymbol(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -206,13 +206,14 @@ func TestAssetObject_SetSymbol(t *testing.T) {
 
 func TestAssetObject_GetDecimals(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
 		Decimals  uint64
 		Owner     common.Name
 	}
+
 	tests := []struct {
 		name   string
 		fields fields
@@ -222,7 +223,7 @@ func TestAssetObject_GetDecimals(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -237,7 +238,7 @@ func TestAssetObject_GetDecimals(t *testing.T) {
 
 func TestAssetObject_SetDecimals(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -256,7 +257,7 @@ func TestAssetObject_SetDecimals(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -269,7 +270,7 @@ func TestAssetObject_SetDecimals(t *testing.T) {
 
 func TestAssetObject_GetAssetName(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -285,7 +286,7 @@ func TestAssetObject_GetAssetName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -300,7 +301,7 @@ func TestAssetObject_GetAssetName(t *testing.T) {
 
 func TestAssetObject_SetAssetName(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -319,7 +320,7 @@ func TestAssetObject_SetAssetName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -332,7 +333,7 @@ func TestAssetObject_SetAssetName(t *testing.T) {
 
 func TestAssetObject_GetAssetAmount(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -348,7 +349,7 @@ func TestAssetObject_GetAssetAmount(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -363,7 +364,7 @@ func TestAssetObject_GetAssetAmount(t *testing.T) {
 
 func TestAssetObject_SetAssetAmount(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -382,7 +383,7 @@ func TestAssetObject_SetAssetAmount(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -395,7 +396,7 @@ func TestAssetObject_SetAssetAmount(t *testing.T) {
 
 func TestAssetObject_GetAssetOwner(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -411,7 +412,7 @@ func TestAssetObject_GetAssetOwner(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
@@ -426,7 +427,7 @@ func TestAssetObject_GetAssetOwner(t *testing.T) {
 
 func TestAssetObject_SetAssetOwner(t *testing.T) {
 	type fields struct {
-		AssetId   uint64
+		AssetID   uint64
 		AssetName string
 		Symbol    string
 		Amount    *big.Int
@@ -445,7 +446,7 @@ func TestAssetObject_SetAssetOwner(t *testing.T) {
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
-			AssetId:   tt.fields.AssetId,
+			AssetID:   tt.fields.AssetID,
 			AssetName: tt.fields.AssetName,
 			Symbol:    tt.fields.Symbol,
 			Amount:    tt.fields.Amount,
