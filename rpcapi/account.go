@@ -27,27 +27,22 @@ import (
 )
 
 type RPCAccount struct {
-	//LastTime *big.Int
-	AcctName              common.Name   `json:"accountName"`
-	Founder               common.Name   `json:"founder"`
-	AccountID             uint64        `json:"accountID"`
-	Number                uint64        `json:"number"`
-	Nonce                 uint64        `json:"nonce"`
-	Code                  hexutil.Bytes `json:"code"`
-	CodeHash              common.Hash   `json:"codeHash"`
-	CodeSize              uint64        `json:"codeSize"`
-	Threshold             uint64        `json:"threshold"`
-	UpdateAuthorThreshold uint64        `json:"updateAuthorThreshold"`
-	AuthorVersion         common.Hash   `json:"authorVersion"`
-	//sort by asset id asc
-	Balances []*accountmanager.AssetBalance `json:"balances"`
-	//realated account, pubkey and address
-	Authors []*common.Author `json:"authors"`
-	//code Suicide
-	Suicide bool `json:"suicide"`
-	//account destroy
-	Destroy     bool   `json:"destroy"`
-	Description string `json:"description"`
+	AcctName              common.Name                    `json:"accountName"`
+	Founder               common.Name                    `json:"founder"`
+	AccountID             uint64                         `json:"accountID"`
+	Number                uint64                         `json:"number"`
+	Nonce                 uint64                         `json:"nonce"`
+	Code                  hexutil.Bytes                  `json:"code"`
+	CodeHash              common.Hash                    `json:"codeHash"`
+	CodeSize              uint64                         `json:"codeSize"`
+	Threshold             uint64                         `json:"threshold"`
+	UpdateAuthorThreshold uint64                         `json:"updateAuthorThreshold"`
+	AuthorVersion         common.Hash                    `json:"authorVersion"`
+	Balances              []*accountmanager.AssetBalance `json:"balances"`
+	Authors               []*common.Author               `json:"authors"`
+	Suicide               bool                           `json:"suicide"`
+	Destroy               bool                           `json:"destroy"`
+	Description           string                         `json:"description"`
 }
 
 func NewRPCAccount(account *accountmanager.Account) *RPCAccount {
@@ -81,16 +76,16 @@ func NewAccountAPI(b Backend) *AccountAPI {
 }
 
 //AccountIsExist
-func (aapi *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return false, err
 	}
 	return acct.AccountIsExist(acctName)
 }
 
-func (aapi *AccountAPI) GetAccountExByID(accountID uint64) (*RPCAccount, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountExByID(accountID uint64) (*RPCAccount, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +104,9 @@ func (aapi *AccountAPI) GetAccountExByID(accountID uint64) (*RPCAccount, error) 
 }
 
 //GetAccountByID
-func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*RPCAccount, error) {
+func (api *AccountAPI) GetAccountByID(accountID uint64) (*RPCAccount, error) {
 
-	am, err := aapi.b.GetAccountManager()
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -136,8 +131,8 @@ func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*RPCAccount, error) {
 	return rpcAccountObj, nil
 }
 
-func (aapi *AccountAPI) GetAccountExByName(accountName common.Name) (*RPCAccount, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountExByName(accountName common.Name) (*RPCAccount, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -156,8 +151,8 @@ func (aapi *AccountAPI) GetAccountExByName(accountName common.Name) (*RPCAccount
 }
 
 //GetAccountByName
-func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*RPCAccount, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountByName(accountName common.Name) (*RPCAccount, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +179,8 @@ func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*RPCAccount, 
 }
 
 //GetAccountBalanceByID
-func (aapi *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -193,8 +188,8 @@ func (aapi *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID u
 }
 
 //GetCode
-func (aapi *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -208,8 +203,8 @@ func (aapi *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) 
 }
 
 //GetNonce
-func (aapi *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}
@@ -219,8 +214,8 @@ func (aapi *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
 }
 
 //GetAssetInfoByName
-func (aapi *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string) (*asset.AssetObject, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string) (*asset.AssetObject, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -228,8 +223,8 @@ func (aapi *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string
 }
 
 //GetAssetInfoByID
-func (aapi *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -237,8 +232,8 @@ func (aapi *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, er
 }
 
 //GetAssetAmountByTime
-func (aapi *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -246,8 +241,8 @@ func (aapi *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.
 }
 
 //GetAccountBalanceByTime
-func (aapi *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -255,8 +250,8 @@ func (aapi *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID
 }
 
 //GetSnapshotLast  get last snapshot time
-func (aapi *AccountAPI) GetSnapshotLast() (uint64, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetSnapshotLast() (uint64, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}
@@ -264,9 +259,9 @@ func (aapi *AccountAPI) GetSnapshotLast() (uint64, error) {
 	return am.GetSnapshotTime(0, 0)
 }
 
-//getSnapshottime  m: 1  preview time   2 next time
-func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint64) (uint64, error) {
-	am, err := aapi.b.GetAccountManager()
+//GetSnapshotTime  m: 1  preview time   2 next time
+func (api *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint64) (uint64, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}

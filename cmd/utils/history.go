@@ -168,7 +168,7 @@ var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github
 		"0.0.13 - 2019-05-18",
 		`### Add
 - [GPO] add add gas price oracle unit test 
-- [VM] move gas to GasTableInstanse
+- [VM] move gas to GasTableInstance
 ### Fixed
 - [PARAMS] change genesis gas limit to 30 million 
 - [VM] opCreate doing nothing but push zero into stack and distributeGasByScale distribute right num

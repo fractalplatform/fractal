@@ -311,7 +311,7 @@ func (st *StateTransition) distributeFee() error {
 	fm := feemanager.NewFeeManager(st.evm.StateDB, st.evm.AccountDB)
 
 	var keys vm.DistributeKeys
-	for key, _ := range st.evm.FounderGasMap {
+	for key := range st.evm.FounderGasMap {
 		keys = append(keys, key)
 	}
 	sort.Sort(keys)
