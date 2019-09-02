@@ -131,6 +131,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
+
 	if err := createAccount(account, "fractal.asset"); err != nil {
 		return
 	}

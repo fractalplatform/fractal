@@ -409,3 +409,25 @@ func TestLDBGlobalState(t *testing.T) {
 		}
 	}
 }
+
+func TestLDBTakeOver(t *testing.T) {
+	ldb, function := newTestLDB()
+	db, _ := NewLDB(ldb)
+	defer function()
+
+	epoch := uint64(2)
+	if err := db.SetTakeOver(epoch); err != nil {
+		panic(fmt.Errorf("SetTakeOver --- %v", err))
+	} else if to_epoch, err := db.GetTakeOver(); err != nil {
+		panic(fmt.Errorf("GetTakeOver --- %v", err))
+	} else if to_epoch != epoch {
+		panic(fmt.Errorf("GetTakeOver mismatch"))
+	}
+	// return 0 when not set
+	if z_epoch, err := db.GetTakeOver(); err != nil {
+		panic(fmt.Errorf("Zero GetTakeOver --- %v", err))
+	} else if z_epoch != epoch {
+		panic(fmt.Errorf("Zero GetTakeOver mismatch"))
+	}
+
+}

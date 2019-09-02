@@ -133,6 +133,7 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 	return nil
 }
 
+// SetDelayDuration delay broacast block when mint block (unit:ms)
 func (miner *Miner) SetDelayDuration(delayDuration uint64) error {
 	return miner.worker.setDelayDuration(delayDuration)
 }
