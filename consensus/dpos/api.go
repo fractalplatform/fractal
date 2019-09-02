@@ -218,6 +218,7 @@ func (api *API) ValidCandidates(epoch uint64) (interface{}, error) {
 	return sys.GetState(gstate.PreEpoch)
 }
 
+// BrowserAllEpoch get all epoch info for browser api
 func (api *API) BrowserAllEpoch() (interface{}, error) {
 	epochs := Epochs{}
 	epochs.Data = make([]*Epoch, 0)
@@ -248,6 +249,7 @@ func (api *API) BrowserAllEpoch() (interface{}, error) {
 	return epochs, nil
 }
 
+// BrowserEpochRecord get epoch info for browser api
 func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	bstart := time.Now()
 	var req, data uint64
@@ -350,6 +352,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	return candidateInfos, nil
 }
 
+// BrowserVote get epoch info for browser api
 func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	var req, history uint64
 	bstart := time.Now()

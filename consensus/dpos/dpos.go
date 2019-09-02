@@ -39,17 +39,21 @@ import (
 )
 
 var (
-	errMissingSignature       = errors.New("extra-data 65 byte suffix signature missing")
-	errInvalidMintBlockTime   = errors.New("invalid time to mint the block")
-	errInvalidBlockCandidate  = errors.New("invalid block candidate")
-	errInvalidTimestamp       = errors.New("invalid timestamp")
-	ErrIllegalCandidateName   = errors.New("illegal candidate name")
+	errMissingSignature      = errors.New("extra-data 65 byte suffix signature missing")
+	errInvalidMintBlockTime  = errors.New("invalid time to mint the block")
+	errInvalidBlockCandidate = errors.New("invalid block candidate")
+	errInvalidTimestamp      = errors.New("invalid timestamp")
+	// ErrIllegalCandidateName not exist
+	ErrIllegalCandidateName = errors.New("illegal candidate name")
+	// ErrIllegalCandidatePubKey mismatch public key
 	ErrIllegalCandidatePubKey = errors.New("illegal candidate pubkey")
-	ErrTooMuchRreversible     = errors.New("too much rreversible blocks")
-	ErrSystemTakeOver         = errors.New("system account take over")
-	errUnknownBlock           = errors.New("unknown block")
-	extraSeal                 = 65
-	timeOfGenesisBlock        int64
+	// ErrTooMuchRreversible too much rreversible blocks
+	ErrTooMuchRreversible = errors.New("too much rreversible blocks")
+	// ErrSystemTakeOver system taking over
+	ErrSystemTakeOver  = errors.New("system account take over")
+	errUnknownBlock    = errors.New("unknown block")
+	extraSeal          = 65
+	timeOfGenesisBlock int64
 )
 
 type stateDB struct {
