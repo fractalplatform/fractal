@@ -37,7 +37,7 @@ func TestDistributeKeys(t *testing.T) {
 	founderGasMap[key4] = DistributeGas{0, 2}
 
 	var keys DistributeKeys
-	for key, _ := range founderGasMap {
+	for key := range founderGasMap {
 		keys = append(keys, key)
 	}
 	sort.Sort(keys)
@@ -54,7 +54,7 @@ func TestDistributeKeys(t *testing.T) {
 	founderGasMap[key4] = DistributeGas{0, 2}
 
 	var keys1 DistributeKeys
-	for key, _ := range founderGasMap {
+	for key := range founderGasMap {
 		keys1 = append(keys1, key)
 	}
 	sort.Sort(keys1)
@@ -90,19 +90,13 @@ func TestCheckReceipt(t *testing.T) {
 	return
 }
 
-func TestdistributeContractGas(t *testing.T) {
+func TestDistributeContractGas(t *testing.T) {
 	evm := &EVM{}
 	evm.distributeContractGas(0, common.Name(""), common.Name(""))
 	return
 }
 
-func TestdistributeAssetGas(t *testing.T) {
-	evm := &EVM{}
-	evm.distributeAssetGas(0, common.Name(""), common.Name(""))
-	return
-}
-
-func TestdistributeGasByScale(t *testing.T) {
+func TestDistributeAssetGas(t *testing.T) {
 	evm := &EVM{}
 	evm.distributeAssetGas(0, common.Name(""), common.Name(""))
 	return

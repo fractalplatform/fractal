@@ -42,10 +42,10 @@ const (
 	maxKnownBlocks = 1024 // Maximum block hashes to keep in the known list (prevent DOS)
 )
 
-type errid int
+type errorID int
 
 const (
-	other errid = iota
+	other errorID = iota
 	ioTimeout
 	ioClose
 	notFind
@@ -56,7 +56,7 @@ const (
 // Error represent error by downloader
 type Error struct {
 	error
-	eid errid
+	eid errorID
 }
 
 type stationStatus struct {
@@ -288,7 +288,7 @@ func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.D
 	return waitEvent(errch, ch, timeout)
 }
 
-func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByNumber, errch chan struct{}) ([]common.Hash, *Error) {
+func getBlockHashes(from router.Station, to router.Station, req *getBlockHashByNumber, errch chan struct{}) ([]common.Hash, *Error) {
 	se := &router.Event{
 		From:     from,
 		To:       to,
@@ -349,16 +349,16 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	if headNumber < 1 {
 		return 0, nil
 	}
-	find := func(headnu, length uint64) (uint64, *Error) {
-		hashes, err := getBlockHashes(from, to, &getBlcokHashByNumber{headNumber, length, 0, true}, errCh)
+	find := func(headNum, length uint64) (uint64, *Error) {
+		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNumber, length, 0, true}, errCh)
 		if err != nil {
 			return 0, err
 		}
 
 		for i, hash := range hashes {
-			if dl.blockchain.HasBlock(hash, headnu-uint64(i)) {
-				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headnu-uint64(i))
-				return headnu - uint64(i), nil
+			if dl.blockchain.HasBlock(hash, headNum-uint64(i)) {
+				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headNum-uint64(i))
+				return headNum - uint64(i), nil
 			}
 		}
 		return 0, &Error{errors.New("not find"), notFind}
@@ -456,14 +456,14 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 
 	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
-		log.Warn("ancestor err", "err", err, "errid:", err.eid)
+		log.Warn("ancestor err", "err", err, "errID:", err.eid)
 		if err.eid == notFind {
 			log.Warn("Disconnect because ancestor not find:", "node:", adaptor.GetFnode(status.station))
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 		}
 		return false
 	}
-	log.Debug("downloader ancestro:", "ancestor", ancestor)
+	log.Debug("downloader ancestor:", "ancestor", ancestor)
 	downloadStart := ancestor
 	downloadAmount := statusNumber - ancestor
 	if downloadAmount == 0 { // maybe the status of remote was changed
@@ -484,7 +484,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	hashes = append(hashes, dl.blockchain.GetHeaderByNumber(numbers[0]).Hash())
 
 	if len(numbers[1:]) > 0 {
-		hash, err := getBlockHashes(stationSearch, status.station, &getBlcokHashByNumber{
+		hash, err := getBlockHashes(stationSearch, status.station, &getBlockHashByNumber{
 			Number:  numbers[1],
 			Amount:  uint64(len(numbers[1:])),
 			Skip:    downloadSkip,
@@ -498,7 +498,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 
 	if numbers[len(numbers)-1] != downloadEnd {
 		numbers = append(numbers, downloadEnd)
-		hash, err := getBlockHashes(stationSearch, status.station, &getBlcokHashByNumber{
+		hash, err := getBlockHashes(stationSearch, status.station, &getBlockHashByNumber{
 			Number:  downloadEnd,
 			Amount:  1,
 			Skip:    0,
@@ -572,7 +572,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 	dl.remotesMutex.RLock()
 	workers.data = append(workers.data, dl.remotes.data...)
 	dl.remotesMutex.RUnlock()
-	taskes := &simpleHeap{
+	tasks := &simpleHeap{
 		data: make([]interface{}, 0, len(numbers)-1),
 		cmp: func(a, b interface{}) int {
 			wa, wb := a.(*downloadTask), b.(*downloadTask)
@@ -581,7 +581,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 	}
 	resultCh := make(chan *downloadTask)
 	for i := len(numbers) - 1; i > 0; i-- {
-		taskes.push(&downloadTask{
+		tasks.push(&downloadTask{
 			startNumber: numbers[i-1],
 			startHash:   hashes[i-1],
 			endNumber:   numbers[i],
@@ -594,7 +594,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 		if worker == nil {
 			return nil
 		}
-		task := taskes.pop()
+		task := tasks.pop()
 		if task == nil {
 			workers.push(worker)
 			return nil
@@ -622,10 +622,10 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 		taskCount--
 		if len(task.blocks) == 0 {
 			if task.errorTotal > 5 {
-				taskes.clear()
+				tasks.clear()
 				continue
 			}
-			taskes.push(task)
+			tasks.push(task)
 		} else {
 			workers.push(task.worker)
 			insertList[task.startNumber] = task.blocks
@@ -682,7 +682,7 @@ func (task *downloadTask) Do() {
 	router.StationRegister(station)
 	defer router.StationUnregister(station)
 
-	reqHash := &getBlcokHashByNumber{task.startNumber, 2, task.endNumber - task.startNumber - 1, false}
+	reqHash := &getBlockHashByNumber{task.startNumber, 2, task.endNumber - task.startNumber - 1, false}
 	if task.endNumber == task.startNumber {
 		reqHash.Skip = 0
 		reqHash.Amount = 1

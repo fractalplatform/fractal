@@ -26,7 +26,8 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-const ProtocolMaxMsgSize = 10 * 1024 * 1024 // Maximum cap on the size of a protocol message
+// ProtocolMaxMsgSize Maximum cap on the size of a protocol message
+const ProtocolMaxMsgSize = 10 * 1024 * 1024
 
 type errCode int
 
@@ -35,7 +36,7 @@ const (
 	ErrDecode
 	ErrInvalidMsgCode
 	ErrProtocolVersionMismatch
-	ErrNetworkIdMismatch
+	ErrNetworkIDMismatch
 	ErrGenesisBlockMismatch
 	ErrNoStatusMsg
 	ErrExtraStatusMsg
@@ -52,7 +53,7 @@ var errorToString = map[int]string{
 	ErrDecode:                  "Invalid message",
 	ErrInvalidMsgCode:          "Invalid message code",
 	ErrProtocolVersionMismatch: "Protocol version mismatch",
-	ErrNetworkIdMismatch:       "NetworkId mismatch",
+	ErrNetworkIDMismatch:       "NetworkID mismatch",
 	ErrGenesisBlockMismatch:    "Genesis block mismatch",
 	ErrNoStatusMsg:             "No status message",
 	ErrExtraStatusMsg:          "Extra status message",
@@ -62,7 +63,7 @@ var errorToString = map[int]string{
 // statusData is the network packet for the status message.
 type statusData struct {
 	ProtocolVersion uint32
-	NetworkId       uint64
+	NetworkID       uint64
 	GenesisBlock    common.Hash
 	CurrentBlock    common.Hash
 	CurrentNumber   uint64
@@ -70,10 +71,10 @@ type statusData struct {
 }
 
 // Number = 0, Amount = 4
-// Reverse=fales; Skip=0: [0,1,2,3]; skip=1:[0,2,4,6]; skip=2:[0,3,6,9];
+// Reverse=false; Skip=0: [0,1,2,3]; skip=1:[0,2,4,6]; skip=2:[0,3,6,9];
 // Number = 9, Amount = 4
 // Reverse=true; Skip=0: [9,8,7,6]; skip=1:[9,7,5,3]; skip=2:[9,6,3,0];
-type getBlcokHashByNumber struct {
+type getBlockHashByNumber struct {
 	Number  uint64
 	Amount  uint64
 	Skip    uint64
