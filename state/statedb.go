@@ -232,34 +232,6 @@ func (s *StateDB) get(key string) ([]byte, error) {
 	return common.CopyBytes(value), nil
 }
 
-//RpcGetState provide get value of the key to rpc
-//when called please RLock cachedb
-func (s *StateDB) RpcGetState(account string, key common.Hash) common.Hash {
-	optKey := statePrefix + linkSymbol + account + linkSymbol + key.String()
-
-	value, err := s.trie.TryGet([]byte(optKey))
-	if len(value) == 0 {
-		s.setError(err)
-		return common.Hash{}
-	}
-
-	return common.BytesToHash(value)
-}
-
-//RpcGet provide get value of the key to rpc
-//when called please RLock cachedb
-func (s *StateDB) RpcGet(account string, key string) ([]byte, error) {
-	optKey := acctDataPrefix + linkSymbol + account + linkSymbol + key
-
-	value, err := s.trie.TryGet([]byte(optKey))
-	if len(value) == 0 {
-		s.setError(err)
-		return nil, err
-	}
-
-	return common.CopyBytes(value), nil
-}
-
 func (s *StateDB) Database() Database {
 	return s.db
 }
