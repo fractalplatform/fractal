@@ -88,6 +88,7 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 
 func createAccount(account *accountmanager.AccountManager, name string) error {
 	if err := account.CreateAccount(common.Name("fractal"), common.Name(name), "", 0, 2, common.HexToPubKey("12345"), ""); err != nil {
+		fmt.Printf("create account %s err %s", name, err)
 		return fmt.Errorf("create account %s err %s", name, err)
 	}
 	return nil
@@ -306,23 +307,24 @@ func TestAsset(t *testing.T) {
 		t.Error("getBalance fail, want 1, get ", num)
 	}
 }
-func TestBNB(t *testing.T) {
+func TestVEN(t *testing.T) {
 	state, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
 	account, _ := accountmanager.NewAccountManager(state)
 
-	senderName := common.Name("jacobwolf")
+	senderName := common.Name("jacobwolf12345")
 	senderPubkey := common.HexToPubKey("12345")
 
-	receiverName := common.Name("denverfolk")
-	receiverPubkey := common.HexToPubKey("12345")
+	receiverName := common.Name("denverfolk12345")
 
-	if err := account.CreateAccount(common.Name("fractal"), senderName, common.Name(""), 0, 0, senderPubkey, ""); err != nil {
-		fmt.Println("create sender account error", err)
+	if err := createAccount(account, "jacobwolf12345"); err != nil {
 		return
 	}
 
-	if err := account.CreateAccount(common.Name("fractal"), receiverName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
-		fmt.Println("create receiver account error", err)
+	if err := createAccount(account, "denverfolk12345"); err != nil {
+		return
+	}
+
+	if err := createAccount(account, "fractal.asset"); err != nil {
 		return
 	}
 
@@ -341,7 +343,7 @@ func TestBNB(t *testing.T) {
 		FromPubkey:  senderPubkey,
 		State:       state,
 		Account:     account,
-		AssetID:     1,
+		AssetID:     0,
 		GasLimit:    10000000000,
 		GasPrice:    big.NewInt(0),
 		Value:       big.NewInt(0),
@@ -352,21 +354,24 @@ func TestBNB(t *testing.T) {
 	VenAbifile := "./contract/Ven/VEN.abi"
 	VenSaleBinfile := "./contract/Ven/VENSale.bin"
 	VenSaleAbifile := "./contract/Ven/VENSale.abi"
-	venContractName := common.Name("vencontract")
+	venContractName := common.Name("vencontract12345")
 	venSaleContractName := common.Name("vensalevontract")
-	ethvaultName := common.Name("ethvault")
-	venvaultName := common.Name("venvault")
 
-	if err := account.CreateAccount(common.Name("fractal"), venContractName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
-		fmt.Println("create venContractName account error", err)
+	if err := createAccount(account, "vencontract12345"); err != nil {
 		return
 	}
-	if err := account.CreateAccount(common.Name("fractal"), venSaleContractName, common.Name(""), 0, 0, receiverPubkey, ""); err != nil {
-		fmt.Println("create venSaleContractName account error", err)
+
+	if err := createAccount(account, "vensalevontract"); err != nil {
 		return
 	}
-	account.CreateAccount(common.Name("fractal"), ethvaultName, common.Name(""), 0, 0, senderPubkey, "")
-	account.CreateAccount(common.Name("fractal"), venvaultName, common.Name(""), 0, 0, senderPubkey, "")
+
+	if err := createAccount(account, "ethvault12345"); err != nil {
+		return
+	}
+
+	if err := createAccount(account, "venvault12345"); err != nil {
+		return
+	}
 
 	err := createContract(VenSaleAbifile, VenSaleBinfile, venSaleContractName, runtimeConfig)
 	if err != nil {
@@ -392,16 +397,18 @@ func TestBNB(t *testing.T) {
 		return
 	}
 
-	venAcct.AddBalanceByID(1, big.NewInt(1))
-	venSaleAcct.AddBalanceByID(1, big.NewInt(1))
+	venAcct.AddBalanceByID(0, big.NewInt(1))
+	venSaleAcct.AddBalanceByID(0, big.NewInt(1))
+	account.SetAccount(venAcct)
+	account.SetAccount(venSaleAcct)
 
-	setVenOwnerInput, err := input(VenAbifile, "setOwner", common.BytesToAddress([]byte(venSaleContractName.String())))
+	setVenOwnerInput, err := input(VenAbifile, "setOwner", common.BigToAddress(big.NewInt(4101)))
 	if err != nil {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
 	}
 
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput, nil)
+	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -409,12 +416,13 @@ func TestBNB(t *testing.T) {
 		return
 	}
 
-	initializeVenSaleInput, err := input(VenSaleAbifile, "initialize", common.BigToAddress(big.NewInt(4099)), common.BigToAddress(big.NewInt(4101)), common.BigToAddress(big.NewInt(4102)))
+	initializeVenSaleInput, err := input(VenSaleAbifile, "initialize", common.BigToAddress(big.NewInt(4100)), common.BigToAddress(big.NewInt(4102)), common.BigToAddress(big.NewInt(4103)))
 	if err != nil {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput, nil)
+	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput, nil)
+	runtimeConfig.Time = big.NewInt(1504180700)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -423,8 +431,7 @@ func TestBNB(t *testing.T) {
 	}
 
 	runtimeConfig.Value = big.NewInt(100000000000000000)
-	runtimeConfig.Time = big.NewInt(1503057700)
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
+	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
 
 	_, _, err = Call(action, &runtimeConfig)
 	if err != nil {
@@ -433,12 +440,12 @@ func TestBNB(t *testing.T) {
 	}
 
 	runtimeConfig.Value = big.NewInt(0)
-	getBalanceInput, err := input(VenAbifile, "balanceOf", common.BytesToAddress([]byte(senderName.String())))
+	getBalanceInput, err := input(VenAbifile, "balanceOf", common.BigToAddress(big.NewInt(4097)))
 	if err != nil {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.Transfer, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
+	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
 	ret, _, err := Call(action, &runtimeConfig)
 	if err != nil {
@@ -447,5 +454,5 @@ func TestBNB(t *testing.T) {
 	}
 
 	num := new(big.Int).SetBytes(ret)
-	fmt.Println("num ", num)
+	assert.Equal(t, num, new(big.Int).Mul(big.NewInt(3500000000), big.NewInt(100000000000)))
 }
