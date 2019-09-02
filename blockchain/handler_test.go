@@ -49,7 +49,7 @@ func TestHandler(t *testing.T) {
 
 	//router.AdaptorRegister(simuAdaptor{})
 	errCh := make(chan struct{})
-	hash, err := getBlockHashes(nil, nil, &getBlcokHashByNumber{0, 1, 0, true}, errCh)
+	hash, err := getBlockHashes(nil, nil, &getBlockHashByNumber{0, 1, 0, true}, errCh)
 	if err != nil || len(hash) != 1 || hash[0] != chain.GetHeaderByNumber(0).Hash() {
 		t.Fatal("genesis block not match")
 	}

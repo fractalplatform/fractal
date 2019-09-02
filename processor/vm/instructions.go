@@ -1362,8 +1362,8 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte {
-		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte
+	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstance.CryptoByte {
+		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstance.CryptoByte
 	} else {
 		contract.Gas = 0
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1389,7 +1389,6 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)
 			ret, err = eciesprikey.Decrypt(data, nil, nil)
-			//pintg
 			if err == nil {
 				datalen = len(ret)
 				if uint64(datalen) > retSize.Uint64()*32 {

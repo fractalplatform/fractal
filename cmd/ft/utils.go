@@ -163,7 +163,7 @@ func printJSONList(data interface{}) {
 func parseUint64(arg string) uint64 {
 	num, err := strconv.ParseUint(arg, 10, 64)
 	if err != nil {
-		jww.ERROR.Printf("Invalid fulltx value: %v err: %v", arg, err)
+		jww.ERROR.Printf("%v can not convert uint64,err: %v", arg, err)
 		os.Exit(1)
 	}
 	return num

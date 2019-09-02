@@ -54,7 +54,7 @@ var (
 	errZeroBlockTime = errors.New("timestamp equals parent's")
 
 	errParentBlock = errors.New("parent block not exist")
-	//
+
 	ErrActionInvalid = errors.New("action field invalid")
 )
 

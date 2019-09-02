@@ -369,8 +369,8 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			return fmt.Errorf("mint the quit block")
 		default:
 		}
-		if work.currentGasPool.Gas() < params.GasTableInstanse.ActionGas {
-			log.Debug("Not enough gas for further transactions", "have", work.currentGasPool, "want", params.GasTableInstanse.ActionGas)
+		if work.currentGasPool.Gas() < params.GasTableInstance.ActionGas {
+			log.Debug("Not enough gas for further transactions", "have", work.currentGasPool, "want", params.GasTableInstance.ActionGas)
 			break
 		}
 
