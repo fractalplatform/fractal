@@ -418,15 +418,15 @@ func TestLDBTakeOver(t *testing.T) {
 	epoch := uint64(2)
 	if err := db.SetTakeOver(epoch); err != nil {
 		panic(fmt.Errorf("SetTakeOver --- %v", err))
-	} else if to_epoch, err := db.GetTakeOver(); err != nil {
+	} else if tepoch, err := db.GetTakeOver(); err != nil {
 		panic(fmt.Errorf("GetTakeOver --- %v", err))
-	} else if to_epoch != epoch {
+	} else if tepoch != epoch {
 		panic(fmt.Errorf("GetTakeOver mismatch"))
 	}
 	// return 0 when not set
-	if z_epoch, err := db.GetTakeOver(); err != nil {
+	if zepoch, err := db.GetTakeOver(); err != nil {
 		panic(fmt.Errorf("Zero GetTakeOver --- %v", err))
-	} else if z_epoch != epoch {
+	} else if zepoch != epoch {
 		panic(fmt.Errorf("Zero GetTakeOver mismatch"))
 	}
 
