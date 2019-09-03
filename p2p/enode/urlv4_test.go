@@ -25,6 +25,8 @@ import (
 	"strings"
 	"testing"
 	"testing/quick"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var parseNodeTests = []struct {
@@ -275,4 +277,11 @@ func TestNodeID_logdistEqual(t *testing.T) {
 	if LogDist(x, x) != 0 {
 		t.Errorf("LogDist(x, x) != 0")
 	}
+}
+
+func TestBootnodes(t *testing.T) {
+	n, err := ParseV4("fnode://a85ccab0374c60ddea0a63b521ae3f8475100ff4e116090d6798a8618ceea193f5b7deffc14627b2f61bc374336983f6a6c6ed979478590d49906e8ce6041a18@boot.m.ft.im:30000")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, 0, n.TCP())
+	assert.Equal(t, 30000, n.UDP())
 }
