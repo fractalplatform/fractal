@@ -1569,7 +1569,7 @@ func TestAccountManager_Process(t *testing.T) {
 	if err != nil {
 		panic("rlp payload err")
 	}
-	aa1 := &UpdateAccountAction{
+	aa1 := &UpdataAccountAction{
 		Founder: common.Name(""),
 	}
 

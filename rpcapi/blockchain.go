@@ -387,3 +387,29 @@ func (s *PrivateBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
 	prestatus, number := s.b.SetStatePruning(enable)
 	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
 }
+
+type RPCForkStatus struct {
+	Count            uint64 `json:"count"`
+	Percentage       uint64 `json:"percentage"`
+	CurID            uint64 `json:"curID"`
+	NexID            uint64 `json:"nextID"`
+	CurIDBlockCount  uint64 `json:"curIDBlockCount"`
+	NextIDBlockCount uint64 `json:"nextIDBlockCount"`
+}
+
+func (s *PrivateBlockChainAPI) ForkStatus(ctx context.Context) (*RPCForkStatus, error) {
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.LatestBlockNumber)
+	if state == nil || err != nil {
+		return nil, err
+	}
+	cfg, status, err := s.b.ForkStatus(state)
+	if err != nil {
+		return nil, err
+	}
+	return &RPCForkStatus{Count: cfg.ForkBlockNum,
+		Percentage:       cfg.Forkpercentage,
+		CurID:            status.CurForkID,
+		NexID:            status.NextForkID,
+		CurIDBlockCount:  status.CurForkIDBlockNum,
+		NextIDBlockCount: status.NextForkIDBlockNum}, nil
+}
