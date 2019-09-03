@@ -104,7 +104,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewPrivateTxPoolAPI(apiBackend),
 		},
 		{
-			Namespace: "ft",
+			Namespace: "bc",
 			Version:   "1.0",
 			Service:   NewPrivateBlockChainAPI(apiBackend),
 		},
