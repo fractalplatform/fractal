@@ -158,7 +158,6 @@ func (fs *FtService) GasPrice() *big.Int {
 func (fs *FtService) SetGasPrice(gasPrice *big.Int) bool {
 	fs.config.GasPrice.Default = new(big.Int).SetBytes(gasPrice.Bytes())
 	fs.APIBackend.gpo = gasprice.NewOracle(fs.APIBackend, fs.config.GasPrice)
-
 	fs.txPool.SetGasPrice(new(big.Int).SetBytes(gasPrice.Bytes()))
 	return true
 }

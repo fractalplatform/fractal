@@ -184,6 +184,7 @@ func (cfg *Config) minBlockCnt() uint64 {
 	return cfg.minMEpoch() * cfg.BlockFrequency * cfg.CandidateScheduleSize
 }
 
+// IsValid config validate
 func (cfg *Config) IsValid() error {
 	if minEpochInterval := 2 * cfg.minBlockCnt() * cfg.blockInterval(); cfg.epochInterval() < minEpochInterval {
 		return fmt.Errorf("epoch interval %v invalid (min epoch interval %v)", cfg.epochInterval(), minEpochInterval)

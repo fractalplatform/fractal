@@ -83,7 +83,7 @@ var miningCmd = &cobra.Command{
 }
 
 var setCoinbaseCmd = &cobra.Command{
-	Use:   "setcoinbase <name> <privKeys file>",
+	Use:   "setcoinbase <name> <privateKeys file>",
 	Short: "Set the coinbase of the miner.",
 	Long:  `Set the coinbase of the miner.`,
 	Args:  cobra.ExactArgs(2),

@@ -305,7 +305,7 @@ func (fm *FeeManager) WithdrawFeeFromSystem(objectName string, objectType uint64
 	objectFee, err := fm.GetObjectFeeByName(objectName, objectType)
 
 	if err != nil || objectFee == nil {
-		return nil, fmt.Errorf("object(%s) fee not exsit, err:%v", objectName, err)
+		return nil, fmt.Errorf("object(%s) fee not exist, err:%v", objectName, err)
 	}
 
 	founder, err1 := fm.getObjectFounder(objectName, objectType)

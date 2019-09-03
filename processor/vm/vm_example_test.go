@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package runtime
+package vm_test
 
 import (
 	"bytes"
@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/processor/vm/runtime"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/fractalplatform/fractal/accountmanager"
@@ -62,7 +63,7 @@ func input(abifile string, method string, params ...interface{}) ([]byte, error)
 	return input, nil
 }
 
-func createContract(abifile string, binfile string, contractName common.Name, runtimeConfig Config) error {
+func createContract(abifile string, binfile string, contractName common.Name, runtimeConfig runtime.Config) error {
 	hexcode, err := ioutil.ReadFile(binfile)
 	if err != nil {
 		fmt.Printf("Could not load code from file: %v\n", err)
@@ -78,7 +79,7 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 
 	createCode := append(code, createInput...)
 	action := types.NewAction(types.CreateContract, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, createCode, nil)
-	_, _, err = Create(action, &runtimeConfig)
+	_, _, err = runtime.Create(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("create error ", err)
 		return err
@@ -145,7 +146,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	runtimeConfig := Config{
+	runtimeConfig := runtime.Config{
 		Origin:      senderName,
 		FromPubkey:  senderPubkey,
 		State:       state,
@@ -157,8 +158,8 @@ func TestAsset(t *testing.T) {
 		BlockNumber: new(big.Int).SetUint64(0),
 	}
 
-	binfile := "./contract/Asset/Asset.bin"
-	abifile := "./contract/Asset/Asset.abi"
+	binfile := "./runtime/contract/Asset/Asset.bin"
+	abifile := "./runtime/contract/Asset/Asset.abi"
 	contractName := common.Name("assetcontract")
 	if err := createAccount(account, "assetcontract"); err != nil {
 		return
@@ -177,7 +178,7 @@ func TestAsset(t *testing.T) {
 	}
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, 0, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput, nil)
 
-	ret, _, err := Call(action, &runtimeConfig)
+	ret, _, err := runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
@@ -208,7 +209,7 @@ func TestAsset(t *testing.T) {
 	}
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, 0, runtimeConfig.GasLimit, runtimeConfig.Value, addAssetInput, nil)
 
-	_, _, err = Call(action, &runtimeConfig)
+	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("add call error ", err)
 		return
@@ -234,7 +235,7 @@ func TestAsset(t *testing.T) {
 	runtimeConfig.AssetID = 1
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, transferExAssetInput, nil)
 
-	_, _, err = Call(action, &runtimeConfig)
+	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
@@ -267,7 +268,7 @@ func TestAsset(t *testing.T) {
 	runtimeConfig.Value = big.NewInt(0)
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput, nil)
 
-	_, _, err = Call(action, &runtimeConfig)
+	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
@@ -280,7 +281,7 @@ func TestAsset(t *testing.T) {
 	}
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
-	ret, _, err = Call(action, &runtimeConfig)
+	ret, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
@@ -297,7 +298,7 @@ func TestAsset(t *testing.T) {
 	}
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getAssetIDInput, nil)
 
-	ret, _, err = Call(action, &runtimeConfig)
+	ret, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call error ", err)
 		return
@@ -338,7 +339,7 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	runtimeConfig := Config{
+	runtimeConfig := runtime.Config{
 		Origin:      senderName,
 		FromPubkey:  senderPubkey,
 		State:       state,
@@ -350,10 +351,10 @@ func TestVEN(t *testing.T) {
 		BlockNumber: new(big.Int).SetUint64(0),
 	}
 
-	VenBinfile := "./contract/Ven/VEN.bin"
-	VenAbifile := "./contract/Ven/VEN.abi"
-	VenSaleBinfile := "./contract/Ven/VENSale.bin"
-	VenSaleAbifile := "./contract/Ven/VENSale.abi"
+	VenBinfile := "./runtime/contract/Ven/VEN.bin"
+	VenAbifile := "./runtime/contract/Ven/VEN.abi"
+	VenSaleBinfile := "./runtime/contract/Ven/VENSale.bin"
+	VenSaleAbifile := "./runtime/contract/Ven/VENSale.abi"
 	venContractName := common.Name("vencontract12345")
 	venSaleContractName := common.Name("vensalevontract")
 
@@ -410,7 +411,7 @@ func TestVEN(t *testing.T) {
 
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput, nil)
 
-	_, _, err = Call(action, &runtimeConfig)
+	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call set ven owner error ", err)
 		return
@@ -424,7 +425,7 @@ func TestVEN(t *testing.T) {
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput, nil)
 	runtimeConfig.Time = big.NewInt(1504180700)
 
-	_, _, err = Call(action, &runtimeConfig)
+	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call initialize vensale error ", err)
 		return
@@ -433,7 +434,7 @@ func TestVEN(t *testing.T) {
 	runtimeConfig.Value = big.NewInt(100000000000000000)
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
 
-	_, _, err = Call(action, &runtimeConfig)
+	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call buy ven sale error ", err)
 		return
@@ -447,7 +448,7 @@ func TestVEN(t *testing.T) {
 	}
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
 
-	ret, _, err := Call(action, &runtimeConfig)
+	ret, _, err := runtime.Call(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("call get balance error ", err)
 		return
