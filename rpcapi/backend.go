@@ -23,6 +23,7 @@ import (
 	"math/big"
 
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/debug"
@@ -59,6 +60,7 @@ type Backend interface {
 	GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx
 	GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) *types.AccountTxs
 	GetBadBlocks(ctx context.Context) ([]*types.Block, error)
+	ForkStatus(statedb *state.StateDB) (*blockchain.ForkConfig, blockchain.ForkInfo, error)
 	SetStatePruning(enable bool) (bool, uint64)
 
 	// TxPool

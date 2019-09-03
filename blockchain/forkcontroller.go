@@ -165,7 +165,7 @@ func (fc *ForkController) checkForkID(header *types.Header, state *state.StateDB
 	if curForkID, _, err := fc.currentForkID(state); err != nil {
 		return err
 	} else if header.CurForkID() != curForkID || header.NextForkID() < curForkID {
-		return fmt.Errorf("invild header curForkID: %v, header nextForkID: %v,actual curForkID %v, header hash: %v, header number: %v",
+		return fmt.Errorf("invalid header curForkID: %v, header nextForkID: %v,actual curForkID %v, header hash: %v, header number: %v",
 			header.CurForkID(), header.NextForkID(), curForkID, header.Hash().Hex(), header.Number.Uint64())
 	}
 	return nil
