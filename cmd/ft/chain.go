@@ -63,7 +63,7 @@ func pruneState(arg string) error {
 	}
 
 	result := new(types.BlockState)
-	clientCall(ipcEndpoint, &result, "ft_setStatePruning", enable)
+	clientCall(ipcEndpoint, &result, "bc_setStatePruning", enable)
 	printJSON(result)
 	return nil
 }

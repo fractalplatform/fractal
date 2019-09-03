@@ -179,7 +179,7 @@ func sampleIncreaseAsset() *TTX {
 		AssetID: chainCfg.SysTokenID,
 		Value:   big.NewInt(0),
 		Payload: &accountmanager.IncAsset{
-			AssetId: 1,
+			AssetID: 1,
 			Amount:  new(big.Int).Mul(big.NewInt(100000000000), big.NewInt(1e18)),
 			To:      "sampleact",
 		},
