@@ -60,7 +60,7 @@ type CreateAccountAction struct {
 	Description string        `json:"description,omitempty"`
 }
 
-type UpdateAccountAction struct {
+type UpdataAccountAction struct {
 	Founder common.Name `json:"founder,omitempty"`
 }
 
@@ -392,7 +392,7 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 // }
 
 //UpdateAccount update the pubkey of the account
-func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *UpdateAccountAction) error {
+func (am *AccountManager) UpdateAccount(accountName common.Name, accountAction *UpdataAccountAction) error {
 	acct, err := am.GetAccountByName(accountName)
 	if acct == nil {
 		return ErrAccountNotExist
@@ -1397,7 +1397,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			internalActions = append(internalActions, internalAction)
 		}
 	case types.UpdateAccount:
-		var acct UpdateAccountAction
+		var acct UpdataAccountAction
 		err := rlp.DecodeBytes(action.Data(), &acct)
 		if err != nil {
 			return nil, err

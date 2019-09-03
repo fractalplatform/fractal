@@ -1175,9 +1175,15 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 // Config retrieves the blockchain's chain configuration.
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
-// ForkUpdate .
+// ForkUpdate update fork status.
 func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
 	return bc.fcontroller.update(block, statedb, bc.GetHeaderByNumber)
+}
+
+// ForkStatus returns current fork status.
+func (bc *BlockChain) ForkStatus(statedb *state.StateDB) (*ForkConfig, ForkInfo, error) {
+	info, err := bc.fcontroller.getForkInfo(statedb)
+	return bc.fcontroller.cfg, info, err
 }
 
 // Export writes the active chain to the given writer.

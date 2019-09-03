@@ -22,6 +22,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/feemanager"
@@ -39,7 +40,7 @@ import (
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-// APIBackend implements ftserviceapi.Backend for full nodes
+// APIBackend implements ftservice api.Backend for full nodes
 type APIBackend struct {
 	ftservice *FtService
 	gpo       *gasprice.Oracle
@@ -236,18 +237,21 @@ func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.Account
 	account.AddAccountBalanceByID(from, assetID, math.MaxBig256)
 	vmError := func() error { return nil }
 
-	evmcontext := &processor.EvmContext{
+	evmContext := &processor.EvmContext{
 		ChainContext:  b.ftservice.BlockChain(),
 		EngineContext: b.ftservice.Engine(),
 	}
 
-	context := processor.NewEVMContext(from, to, assetID, gasPrice, header, evmcontext, nil)
+	context := processor.NewEVMContext(from, to, assetID, gasPrice, header, evmContext, nil)
 	return vm.NewEVM(context, account, state, b.ChainConfig(), vmCfg), vmError, nil
 }
 
 func (b *APIBackend) SetGasPrice(gasPrice *big.Int) bool {
-	b.ftservice.SetGasPrice(gasPrice)
-	return true
+	return b.ftservice.SetGasPrice(gasPrice)
+}
+
+func (b *APIBackend) ForkStatus(statedb *state.StateDB) (*blockchain.ForkConfig, blockchain.ForkInfo, error) {
+	return b.ftservice.BlockChain().ForkStatus(statedb)
 }
 
 func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error) {
