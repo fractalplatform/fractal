@@ -105,6 +105,12 @@ func TestLDBCandidate(t *testing.T) {
 	// GetCandidate(string) (*CandidateInfo, error)
 	// GetCandidates() ([]string, error)
 	// CandidatesSize() (uint64, error)
+
+	// SetActivatedCandidate(uint64, *CandidateInfo) error
+	// GetActivatedCandidate(uint64) (*CandidateInfo, error)
+
+	// SetAvailableQuantity(uint64, string, *big.Int) error
+	// GetAvailableQuantity(uint64, string) (*big.Int, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
@@ -135,10 +141,7 @@ func TestLDBCandidate(t *testing.T) {
 		} else if size != 1 {
 			panic(fmt.Errorf("CandidatesSize mismatch"))
 		}
-	}
 
-	for index, candidate := range candidates {
-		candidateInfo, _ := db.GetCandidate(uint64(index), candidate)
 		if err := db.SetActivatedCandidate(uint64(index), candidateInfo); err != nil {
 			panic(fmt.Errorf("SetActivatedCandidate --- %v", err))
 		}
@@ -146,6 +149,15 @@ func TestLDBCandidate(t *testing.T) {
 			panic(fmt.Errorf("GetActivatedCandidate --- %v", err))
 		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
 			panic(fmt.Errorf("GetActivatedCandidate mismatch"))
+		}
+
+		if err := db.SetAvailableQuantity(uint64(index), candidate, big.NewInt(int64(index))); err != nil {
+			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
+		}
+		if stake, err := db.GetAvailableQuantity(uint64(index), candidate); err != nil {
+			panic(fmt.Errorf("GetAvailableQuantity --- %v", err))
+		} else if stake.Cmp(big.NewInt(int64(index))) != 0 {
+			panic(fmt.Errorf("GetAvailableQuantity mismatch"))
 		}
 	}
 
@@ -169,6 +181,24 @@ func TestLDBCandidate(t *testing.T) {
 		} else if size != 1 {
 			panic(fmt.Errorf("Redo CandidatesSize mismatch"))
 		}
+
+		if err := db.SetActivatedCandidate(uint64(index), candidateInfo); err != nil {
+			panic(fmt.Errorf("Redo SetActivatedCandidate --- %v", err))
+		}
+		if nCandidateInfo, err := db.GetActivatedCandidate(uint64(index)); err != nil {
+			panic(fmt.Errorf("Redo GetActivatedCandidate --- %v", err))
+		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
+			panic(fmt.Errorf("Redo GetActivatedCandidate mismatch"))
+		}
+
+		if err := db.SetAvailableQuantity(uint64(index), candidate, big.NewInt(int64(index))); err != nil {
+			panic(fmt.Errorf("Redo SetAvailableQuantity --- %v", err))
+		}
+		if stake, err := db.GetAvailableQuantity(uint64(index), candidate); err != nil {
+			panic(fmt.Errorf("Redo GetAvailableQuantity --- %v", err))
+		} else if stake.Cmp(big.NewInt(int64(index))) != 0 {
+			panic(fmt.Errorf("Redo GetAvailableQuantity mismatch"))
+		}
 	}
 
 	for index, candidate := range candidates {
@@ -190,6 +220,18 @@ func TestLDBCandidate(t *testing.T) {
 			panic(fmt.Errorf("Del CandidatesSize --- %v", err))
 		} else if size != 0 {
 			panic(fmt.Errorf("Del CandidatesSize mismatch"))
+		}
+
+		if nCandidateInfo, err := db.GetActivatedCandidate(uint64(index)); err != nil {
+			panic(fmt.Errorf("Del GetActivatedCandidate --- %v", err))
+		} else if nCandidateInfo.Name != candidate {
+			panic(fmt.Errorf("Del GetActivatedCandidate mismatch"))
+		}
+
+		if stake, err := db.GetAvailableQuantity(uint64(index), candidate); err != nil {
+			panic(fmt.Errorf("Del GetAvailableQuantity --- %v", err))
+		} else if stake.Cmp(big.NewInt(int64(index))) != 0 {
+			panic(fmt.Errorf("Del GetAvailableQuantity mismatch"))
 		}
 	}
 }
@@ -228,11 +270,9 @@ func TestLDBAvailableQuantity(t *testing.T) {
 
 func TestLDBVoter(t *testing.T) {
 	// SetVoter(*VoterInfo) error
-	// DelVoter(*VoterInfo) error
-	// DelVoters(uint64, string) error
 	// GetVoter(uint64, string, string) (*VoterInfo, error)
-	// GetVoters(uint64, string) ([]string, error)
-	// GetVoterCandidates(uint64, string) ([]string, error)
+	// GetVotersByVoter(uint64, string) ([]*VoterInfo, error)
+	// GetVotersByCandidate(uint64, string) ([]*VoterInfo, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
@@ -351,6 +391,8 @@ func TestLDBVoter(t *testing.T) {
 func TestLDBGlobalState(t *testing.T) {
 	// SetState(*GlobalState) error
 	// GetState(uint64) (*GlobalState, error)
+	// SetLastestEpoch(uint64) error
+	// GetLastestEpoch() (uint64, error)
 	ldb, function := newTestLDB()
 	db, _ := NewLDB(ldb)
 	defer function()
