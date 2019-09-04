@@ -43,6 +43,18 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.28 - 2019-09-04",
+		`### Fixed
+- [P2P] bootnode in genesis is ft finder.(#439)
+- [DPOS]dpos api epoch add url. (#437)
+- [INTERNALTX]modify internal tx log hash. (#441)
+- [FILTER]fix rpc output format. (#440)
+### Changed
+- [RPCAPI] modify setStatePruning rpc private (#464),modify blockchain misspelling and change ft_getTransactions (#457)
+### Added
+- [RPCAPI] add rpc api ft_forkStatus.(#463)
+- [TEST] add each code module unit test or note.(#442)(#446)(#447)(#448)(#450)(#451)(#454)(#455)(#456)(#458)(#459)(#461)(#462)(#465)
+`,
 		"0.0.27 - 2019-08-16",
 		`### Fixed
 - [VIM] vm fix stack valid (#416)

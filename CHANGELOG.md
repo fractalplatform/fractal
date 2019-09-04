@@ -1,4 +1,17 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.28] - 2019-09-04
+### Fixed
+- [P2P] bootnode in genesis is ft finder.(#439)
+- [DPOS]dpos api epoch add url. (#437)
+- [INTERNALTX]modify internal tx log hash. (#441)
+- [FILTER]fix rpc output format. (#440)
+### Changed
+- [RPCAPI] modify setStatePruning rpc private (#464),modify blockchain misspelling and change ft_getTransactions (#457)
+### Added
+- [RPCAPI] add rpc api ft_forkStatus.(#463)
+- [TEST] add each code module unit test or note.(#442)(#446)(#447)(#448)(#450)(#451)(#454)(#455)(#456)(#458)(#459)(#461)(#462)(#465)
+
+
 ## [0.0.27] - 2019-08-16
 ### Fixed
 - [VIM] vm fix stack valid (#416)
@@ -144,7 +157,7 @@
 ## [0.0.13] - 2019-05-18
 ### Add
 - [GPO] add add gas price oracle unit test 
-- [VM] move gas to GasTableInstanse
+- [VM] move gas to GasTableInstance
 ### Fixed
 - [PARAMS] change genesis gas limit to 30 million 
 - [VM] opCreate doing nothing but push zero into stack and distributeGasByScale distribute right num
@@ -233,6 +246,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.28]: https://github.com/fractalplatform/fractal/compare/v0.0.27...v0.0.28
 [0.0.27]: https://github.com/fractalplatform/fractal/compare/v0.0.26...v0.0.27
 [0.0.26]: https://github.com/fractalplatform/fractal/compare/v0.0.25...v0.0.26
 [0.0.25]: https://github.com/fractalplatform/fractal/compare/v0.0.24...v0.0.25
