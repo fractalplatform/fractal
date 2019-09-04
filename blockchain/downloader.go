@@ -436,6 +436,12 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	if headNumber < statusNumber && statusNumber < headNumber+6 {
 		_, err := dl.shortcutDownload(status, headNumber, head.Hash(), statusNumber, statusHash)
 		if err == nil { // download and insert completed
+			dl.broadcastStatus(&NewBlockHashesData{
+				Hash:      head.Hash(),
+				Number:    head.NumberU64(),
+				TD:        dl.blockchain.GetTd(head.Hash(), head.NumberU64()),
+				Completed: true,
+			})
 			return false
 		}
 		if err.eid == insertError || err.eid == sizeNotEqual { // download failed because of the remote's error
