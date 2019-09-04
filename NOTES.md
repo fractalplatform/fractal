@@ -1,3 +1,5 @@
 ### Fixed
-- [LOG] fix vendor log bug, patch for version 0.0.25 
+- [VIM] vm fix stack valid (#416)
+### Added
+- [RPC] add rpc interface: ft_getTransBatch
 
