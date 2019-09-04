@@ -86,7 +86,7 @@ func NewInterpreter(evm *EVM, cfg Config) *Interpreter {
 	return &Interpreter{
 		evm:      evm,
 		cfg:      cfg,
-		gasTable: params.GasTableInstanse,
+		gasTable: params.GasTableInstance,
 		intPool:  newIntPool(),
 	}
 }

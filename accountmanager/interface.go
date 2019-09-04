@@ -24,9 +24,8 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-//export account interface
+//IAccount export account interface
 type IAccount interface {
-	//newAccount(accountName common.Name, pubkey common.PubKey) (*Account, error)
 	GetName() common.Name
 	//nonce
 	GetNonce() uint64
@@ -53,7 +52,7 @@ type IAccount interface {
 	SetDestroy()
 }
 
-//export account manager interface
+//IAccountManager export account manager interface
 type IAccountManager interface {
 	//account
 	AccountIsExist(accountName common.Name) (bool, error)
@@ -74,29 +73,11 @@ type IAccountManager interface {
 	IncAsset2Acct(fromName common.Name, toName common.Name, assetId uint64, amount *big.Int) error
 	AddBalanceByName(accountName common.Name, assetID uint64, amount *big.Int) error
 	Process(action *types.Action) error
-	//to EVM
-	//GetCode(accountName common.Name) ([]byte, error)
-	//SetCode(accountName common.Name, code []byte) (bool, error)
-	//GetCodeHash(accountName common.Name) (common.Hash, error)
-	//GetCodeSize(accountName common.Name) (uint64, error)
 }
 
-// import
-type SdbIf interface {
+//IStateDB  export state database interface
+type IStateDB interface {
 	Put(account string, key string, value []byte)
 	Get(account string, key string) ([]byte, error)
-	// GetSnapshot(accountName string, key string, time uint64) ([]byte, error)
-	// GetSnapshotLast() (uint64, error)
-	// GetSnapshotPrev(time uint64) (uint64, error)
-	// Snapshot() int
-	RevertToSnapshot(revid int)
+	RevertToSnapshot(revisionID int)
 }
-
-//import
-//type AccountAssetIf interface {
-//	GetAssetIdByName(assetName string) (uint64, error)
-//	IssueAssetObject(ao *AssetObject) error
-//	IssueAsset(assetName string, symbol string, amount *big.Int, owner string) error
-//	IncreaseAsset(accountName string, assetId uint64, amount *big.Int) error
-//	SetAssetNewOwner(accountName string, assetId uint64, newOwner string) error
-//}

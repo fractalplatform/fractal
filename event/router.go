@@ -329,72 +329,111 @@ func GetDDosLimit(t int) int {
 }
 
 func AddNetIn(s Station, pkg uint64) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.addNetIn(s, pkg)
 }
 func AddNetOut(s Station, pkg uint64) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.addNetOut(s, pkg)
 }
 
 func AddCPU(s Station, dur time.Duration) time.Duration {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.addCPU(s, dur)
 }
 
 func AddAck(s Station, dur time.Duration) (uint64, time.Duration) {
+	if s == nil {
+		return 0, 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.addAck(s, dur)
 }
 func AddErr(s Station, n uint64) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.addErr(s, n)
 }
 func AddThread(s Station, c int64) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.addThread(s, c)
 }
 
 func CPU(s Station) time.Duration {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.cpu(s)
 }
 func NetIn(s Station) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.netin(s)
 }
 func NetOut(s Station) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.netout(s)
 }
 func Ack(s Station) (uint64, time.Duration) {
+	if s == nil {
+		return 0, 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.ack(s)
 }
 
 func Err(s Station) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.err(s)
 }
 
 func Thread(s Station) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.thread(s)
 }
 
 func Score(s Station) uint64 {
+	if s == nil {
+		return 0
+	}
 	routerMutex.RLock()
 	defer routerMutex.RUnlock()
 	return router.eval.score(s)

@@ -42,20 +42,21 @@ const (
 	maxKnownBlocks = 1024 // Maximum block hashes to keep in the known list (prevent DOS)
 )
 
-type errid int
+type errorID int
 
 const (
-	other errid = iota
+	other errorID = iota
 	ioTimeout
 	ioClose
 	notFind
 	sizeNotEqual
+	insertError
 )
 
 // Error represent error by downloader
 type Error struct {
 	error
-	eid errid
+	eid errorID
 }
 
 type stationStatus struct {
@@ -287,7 +288,7 @@ func syncReq(e *router.Event, recvCode int, recvType interface{}, timeout time.D
 	return waitEvent(errch, ch, timeout)
 }
 
-func getBlockHashes(from router.Station, to router.Station, req *getBlcokHashByNumber, errch chan struct{}) ([]common.Hash, *Error) {
+func getBlockHashes(from router.Station, to router.Station, req *getBlockHashByNumber, errch chan struct{}) ([]common.Hash, *Error) {
 	se := &router.Event{
 		From:     from,
 		To:       to,
@@ -348,16 +349,16 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	if headNumber < 1 {
 		return 0, nil
 	}
-	find := func(headnu, length uint64) (uint64, *Error) {
-		hashes, err := getBlockHashes(from, to, &getBlcokHashByNumber{headNumber, length, 0, true}, errCh)
+	find := func(headNum, length uint64) (uint64, *Error) {
+		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNumber, length, 0, true}, errCh)
 		if err != nil {
 			return 0, err
 		}
 
 		for i, hash := range hashes {
-			if dl.blockchain.HasBlock(hash, headnu-uint64(i)) {
-				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headnu-uint64(i))
-				return headnu - uint64(i), nil
+			if dl.blockchain.HasBlock(hash, headNum-uint64(i)) {
+				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headNum-uint64(i))
+				return headNum - uint64(i), nil
 			}
 		}
 		return 0, &Error{errors.New("not find"), notFind}
@@ -389,6 +390,30 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	return 0, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
 }
 
+func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64, startHash common.Hash, endNumber uint64, endHash common.Hash) (uint64, *Error) {
+	resultCh := make(chan *downloadTask)
+	go (&downloadTask{
+		worker:      status,
+		startNumber: startNumber,
+		startHash:   startHash,
+		endNumber:   endNumber,
+		endHash:     endHash,
+		result:      resultCh,
+	}).Do()
+
+	task := <-resultCh
+
+	if len(task.blocks) == 0 {
+		return startNumber, task.err
+	}
+
+	if index, err := dl.blockchain.InsertChain(task.blocks); err != nil {
+		return task.blocks[index].NumberU64() - 1, &Error{err, insertError}
+	}
+	return endNumber, nil
+}
+
+// return true means need call again
 func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	log.Debug("multiplexDownload start")
 	defer log.Debug("multiplexDownload end")
@@ -406,56 +431,74 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 
 	log.Debug("downloader station:", "node", adaptor.GetFnode(status.station))
 	log.Debug("downloader statusTD x ", "Local", dl.blockchain.GetTd(head.Hash(), head.NumberU64()), "Number", head.NumberU64(), "R", statusTD, "Number", statusNumber)
+
+	headNumber := head.NumberU64()
+	if headNumber < statusNumber && statusNumber < headNumber+6 {
+		_, err := dl.shortcutDownload(status, headNumber, head.Hash(), statusNumber, statusHash)
+		if err == nil { // download and insert completed
+			return false
+		}
+		if err.eid == insertError || err.eid == sizeNotEqual { // download failed because of the remote's error
+			log.Warn("Disconnect because some error:", "node:", adaptor.GetFnode(status.station), "err", err)
+			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
+			return true
+		}
+		// download failed, continue download from other peers.
+	}
+	if headNumber > statusNumber {
+		headNumber = statusNumber
+	}
+
 	rand.Seed(time.Now().UnixNano())
 	stationSearch := router.NewLocalStation(fmt.Sprintf("downloaderSearch%d", rand.Int()), nil)
 	router.StationRegister(stationSearch)
 	defer router.StationUnregister(stationSearch)
 
-	headNumber := head.NumberU64()
-	if headNumber > statusNumber {
-		headNumber = statusNumber
-	}
 	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
-		log.Warn("ancestor err", "err", err, "errid:", err.eid)
+		log.Warn("ancestor err", "err", err, "errID:", err.eid)
 		if err.eid == notFind {
-			log.Warn("Disconnect because ancestor not find:", "station:", fmt.Sprintf("%x", status.station.Name()))
+			log.Warn("Disconnect because ancestor not find:", "node:", adaptor.GetFnode(status.station))
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 		}
 		return false
 	}
-	log.Debug("downloader ancestro:", "ancestor", ancestor)
-	downloadStart := ancestor + 1
+	log.Debug("downloader ancestor:", "ancestor", ancestor)
+	downloadStart := ancestor
 	downloadAmount := statusNumber - ancestor
-	if downloadAmount == 0 { // maybe the status of remote has changed
-		log.Debug(fmt.Sprintf("Why-1?:number: head:%d headNumber:%d statusNumber: %d", head.NumberU64(), headNumber, statusNumber))
-		log.Debug(fmt.Sprintf("Why-2?:hash: head %x status %x", head.Hash(), statusHash))
-		log.Debug(fmt.Sprintf("Why-3?:td: head:%d status: %d", dl.blockchain.GetTd(head.Hash(), head.NumberU64()).Uint64(), statusTD.Uint64()))
+	if downloadAmount == 0 { // maybe the status of remote was changed
 		return false
 	}
 	if downloadAmount > 1024 {
 		downloadAmount = 1024
 	}
-	downloadEnd := ancestor + downloadAmount
+	downloadEnd := downloadStart + downloadAmount
 	downloadBulk := uint64(64)
-	var numbers []uint64
-	var hashes []common.Hash
-	downloadSkip := downloadBulk
+	numbers := make([]uint64, 0, (downloadAmount+downloadBulk-1)/downloadBulk+1)
+	hashes := make([]common.Hash, 0, (downloadAmount+downloadBulk-1)/downloadBulk+1)
+	downloadSkip := downloadBulk - 1 // f(n+1) = f(n) + 1 + skip
+
 	for i := downloadStart; i <= downloadEnd; i += downloadSkip + 1 {
 		numbers = append(numbers, i)
 	}
-	hashes, err = getBlockHashes(stationSearch, status.station, &getBlcokHashByNumber{
-		Number:  downloadStart,
-		Amount:  uint64(len(numbers)),
-		Skip:    downloadSkip,
-		Reverse: false}, status.errCh)
-	if err != nil || len(hashes) != len(numbers) {
-		log.Debug("getBlockHashes 1 err", "err", err, "len(hashes)", len(hashes), "len(numbers)", len(numbers))
-		return false
+	hashes = append(hashes, dl.blockchain.GetHeaderByNumber(numbers[0]).Hash())
+
+	if len(numbers[1:]) > 0 {
+		hash, err := getBlockHashes(stationSearch, status.station, &getBlockHashByNumber{
+			Number:  numbers[1],
+			Amount:  uint64(len(numbers[1:])),
+			Skip:    downloadSkip,
+			Reverse: false}, status.errCh)
+		if err != nil || len(hash) != len(numbers[1:]) {
+			log.Debug("getBlockHashes 1 err", "err", err, "len(hash)", len(hash), "len(numbers)", len(numbers[1:]))
+			return false
+		}
+		hashes = append(hashes, hash...)
 	}
+
 	if numbers[len(numbers)-1] != downloadEnd {
 		numbers = append(numbers, downloadEnd)
-		hash, err := getBlockHashes(stationSearch, status.station, &getBlcokHashByNumber{
+		hash, err := getBlockHashes(stationSearch, status.station, &getBlockHashByNumber{
 			Number:  downloadEnd,
 			Amount:  1,
 			Skip:    0,
@@ -466,18 +509,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		}
 		hashes = append(hashes, hash...)
 	}
-	if len(numbers) == 1 {
-		numbers = append(numbers, numbers[0])
-		hashes = append(hashes, hashes[0])
-	}
-	// info1 := fmt.Sprintf("1 head:%d headNumber:%d statusNumber:%d ancestor:%d\n", head.NumberU64(), headNumber, statusNumber, ancestor)
-	// log.Debug(info1)
-	// info2 := fmt.Sprintf("2 head diff:%d status diff:%d\n", dl.blockchain.GetTd(head.Hash(), head.NumberU64()).Uint64(), statusTD.Uint64())
-	// log.Debug(info2)
-	// info3 := fmt.Sprintf("3 download start:%d end:%d amount:%d bluk:%d\n", downloadStart, downloadEnd, downloadAmount, downloadBulk)
-	// log.Debug(info3)
-	// info4 := fmt.Sprintf("4 numbers:%d hashes:%d\n", len(numbers), len(hashes))
-	// log.Debug(info4)
+
 	n, err := dl.assignDownloadTask(hashes, numbers)
 	status.ancestor = n
 	if err != nil {
@@ -485,7 +517,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 		failedNum := numbers[len(numbers)-1] - n
 		router.AddErr(status.station, failedNum)
 		if failedNum > 32 {
-			log.Warn("Disconnect because Insert error:", "station:", fmt.Sprintf("%x", status.station.Name()), "failedNum", failedNum)
+			log.Warn("Disconnect because Insert error:", "node:", adaptor.GetFnode(status.station), "failedNum", failedNum)
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 		}
 	}
@@ -533,13 +565,14 @@ func (dl *Downloader) loop() {
 	}
 }
 
+// Return the height of the last successfully inserted block and error
 func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64) (uint64, *Error) {
 	log.Debug("assingDownloadTask:", "hashesLen", len(hashes), "numbersLen", len(numbers), "numbers", numbers)
 	workers := &simpleHeap{cmp: dl.remotes.cmp}
 	dl.remotesMutex.RLock()
 	workers.data = append(workers.data, dl.remotes.data...)
 	dl.remotesMutex.RUnlock()
-	taskes := &simpleHeap{
+	tasks := &simpleHeap{
 		data: make([]interface{}, 0, len(numbers)-1),
 		cmp: func(a, b interface{}) int {
 			wa, wb := a.(*downloadTask), b.(*downloadTask)
@@ -548,7 +581,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 	}
 	resultCh := make(chan *downloadTask)
 	for i := len(numbers) - 1; i > 0; i-- {
-		taskes.push(&downloadTask{
+		tasks.push(&downloadTask{
 			startNumber: numbers[i-1],
 			startHash:   hashes[i-1],
 			endNumber:   numbers[i],
@@ -561,7 +594,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 		if worker == nil {
 			return nil
 		}
-		task := taskes.pop()
+		task := tasks.pop()
 		if task == nil {
 			workers.push(worker)
 			return nil
@@ -589,10 +622,10 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 		taskCount--
 		if len(task.blocks) == 0 {
 			if task.errorTotal > 5 {
-				taskes.clear()
+				tasks.clear()
 				continue
 			}
-			taskes.push(task)
+			tasks.push(task)
 		} else {
 			workers.push(task.worker)
 			insertList[task.startNumber] = task.blocks
@@ -601,7 +634,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 	for _, start := range numbers[:len(numbers)-1] {
 		blocks := insertList[start]
 		if blocks == nil {
-			return start - 1, nil
+			return start, nil
 		}
 		if index, err := dl.blockchain.InsertChain(blocks); err != nil {
 			return blocks[index].NumberU64() - 1, &Error{err, other}
@@ -619,11 +652,17 @@ type downloadTask struct {
 	blocks      []*types.Block     // result blocks, length == 0 means failed
 	errorTotal  int                // total error amount
 	result      chan *downloadTask // result channel
+	err         *Error
 }
 
 func (task *downloadTask) Do() {
+	var err *Error
+	var headers []*types.Header
+	var bodies []*types.Body
+
 	latestStatus := task.worker.getStatus()
 	defer func() {
+		task.err = err
 		task.result <- task
 		diff := latestStatus.Number - task.endNumber
 		if latestStatus.Number < task.endNumber {
@@ -643,31 +682,33 @@ func (task *downloadTask) Do() {
 	router.StationRegister(station)
 	defer router.StationUnregister(station)
 
-	reqHash := &getBlcokHashByNumber{task.startNumber, 2, task.endNumber - task.startNumber - 1, false}
+	reqHash := &getBlockHashByNumber{task.startNumber, 2, task.endNumber - task.startNumber - 1, false}
 	if task.endNumber == task.startNumber {
 		reqHash.Skip = 0
 		reqHash.Amount = 1
 	}
-	hashes, err := getBlockHashes(station, remote, reqHash, task.worker.errCh)
-	if err != nil || len(hashes) != int(reqHash.Amount) ||
-		hashes[0] != task.startHash || hashes[len(hashes)-1] != task.endHash {
-		log.Debug(fmt.Sprint("err-1:", err, task.startNumber, task.endNumber, len(hashes)))
-		if len(hashes) > 0 {
-			log.Debug(fmt.Sprintf("0:%x\n0e:%x\ns:%x\nse:%x", hashes[0], hashes[len(hashes)-1], task.startHash, task.endHash))
+	/*
+		hashes, err := getBlockHashes(station, remote, reqHash, task.worker.errCh)
+		if err != nil || len(hashes) != int(reqHash.Amount) ||
+			hashes[0] != task.startHash || hashes[len(hashes)-1] != task.endHash {
+			log.Debug(fmt.Sprint("err-1:", err, task.startNumber, task.endNumber, len(hashes)))
+			if len(hashes) > 0 {
+				log.Debug(fmt.Sprintf("0:%x\n0e:%x\ns:%x\nse:%x", hashes[0], hashes[len(hashes)-1], task.startHash, task.endHash))
+			}
+			return
 		}
-		return
-	}
-	downloadAmount := task.endNumber - task.startNumber + 1
-	headers, err := getHeaders(station, remote, &getBlockHeadersData{
+	*/
+	downloadAmount := task.endNumber - task.startNumber
+	headers, err = getHeaders(station, remote, &getBlockHeadersData{
 		hashOrNumber{
-			Number: task.startNumber,
+			Number: task.startNumber + 1,
 		}, downloadAmount, 0, false,
 	}, task.worker.errCh)
 	if err != nil || len(headers) != int(downloadAmount) {
 		log.Debug(fmt.Sprint("err-2:", err, len(headers), downloadAmount))
 		return
 	}
-	if headers[0].Number.Uint64() != task.startNumber || headers[0].Hash() != task.startHash ||
+	if headers[0].Number.Uint64() != task.startNumber+1 || headers[0].ParentHash != task.startHash ||
 		headers[len(headers)-1].Number.Uint64() != task.endNumber || headers[len(headers)-1].Hash() != task.endHash {
 		log.Debug(fmt.Sprintf("e2-1 0d:%d\n0ed:%d\nsd:%d\nsed:%d", headers[0].Number.Uint64(), headers[len(headers)-1].Number.Uint64(), task.startNumber, task.endNumber))
 		log.Debug(fmt.Sprintf("e2-2 0:%x\n0e:%x\ns:%x\nse:%x", headers[0].Hash(), headers[len(headers)-1].Hash(), task.startHash, task.endHash))
@@ -682,12 +723,12 @@ func (task *downloadTask) Do() {
 
 	reqHashes := make([]common.Hash, 0, len(headers))
 	for _, header := range headers {
-		if header.Hash() != emptyHash {
+		if header.TxsRoot != emptyHash {
 			reqHashes = append(reqHashes, header.Hash())
 		}
 	}
 
-	bodies, err := getBlocks(station, remote, reqHashes, task.worker.errCh)
+	bodies, err = getBlocks(station, remote, reqHashes, task.worker.errCh)
 	if err != nil || len(bodies) != len(reqHashes) {
 		log.Debug(fmt.Sprint("err-4:", err, len(bodies), len(reqHashes)))
 		return
@@ -696,7 +737,7 @@ func (task *downloadTask) Do() {
 	blocks := make([]*types.Block, len(headers))
 	bodyIndex := 0
 	for i, header := range headers {
-		if header.Hash() == emptyHash {
+		if header.TxsRoot == emptyHash {
 			blocks[i] = types.NewBlockWithHeader(header)
 		} else {
 			blocks[i] = types.NewBlockWithHeader(header).WithBody(bodies[bodyIndex].Transactions)

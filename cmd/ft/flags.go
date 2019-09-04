@@ -555,9 +555,9 @@ func addFlags(flags *flag.FlagSet) {
 	viper.BindPFlag("ftservice.p2p.listenaddr", flags.Lookup("p2p_listenaddr"))
 
 	flags.StringVar(
-		&ftCfgInstance.NodeCfg.P2PConfig.NodeDatabase,
+		&ftCfgInstance.NodeCfg.P2PNodeDatabase,
 		"p2p_nodedb",
-		ftCfgInstance.NodeCfg.P2PConfig.NodeDatabase,
+		ftCfgInstance.NodeCfg.P2PNodeDatabase,
 		"The path to the database containing the previously seen live nodes in the network",
 	)
 	viper.BindPFlag("ftservice.p2p.nodedb", flags.Lookup("p2p_nodedb"))

@@ -276,3 +276,25 @@ func TestWithdrawFeeFromSystem(t *testing.T) {
 		}
 	}
 }
+
+func TestWithdrawFeeFromSystemNotExsit(t *testing.T) {
+	type testFee struct {
+		assetIndex int
+		objectName string
+		objectType uint64
+		assetID    uint64
+		value      *big.Int
+		totalValue *big.Int
+	}
+
+	testFeeInfo := []*testFee{
+		{1, "testnotexsit.tt", uint64(params.ContractFeeType), uint64(2), big.NewInt(200), big.NewInt(700)},
+	}
+
+	//withdraw fee from system
+	_, err := fm.WithdrawFeeFromSystem(testFeeInfo[0].objectName, testFeeInfo[0].objectType)
+
+	if err == nil {
+		t.Errorf("withdraw not exsit fee from system case failed")
+	}
+}

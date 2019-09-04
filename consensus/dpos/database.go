@@ -59,13 +59,19 @@ type IDB interface {
 	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
 }
 
+// CandidateType candiate status
 type CandidateType uint64
 
 const (
+	// Normal reg
 	Normal CandidateType = iota
+	// Freeze unreg bug not del
 	Freeze
+	// Black in black list
 	Black
+	// Jail in jail list
 	Jail
+	// Unkown not support
 	Unkown
 )
 
@@ -166,6 +172,7 @@ func (voter *VoterInfo) key() string {
 }
 
 var (
+	// InvalidIndex magic number
 	InvalidIndex = uint64(math.MaxUint64)
 )
 
@@ -202,16 +209,19 @@ type CandidateInfoForBrowser struct {
 	ActualCounter    uint64 `json:"actualCounter"`
 	NowCounter       uint64 `json:"nowShouldCounter"`
 	NowActualCounter uint64 `json:"nowActualCounter"`
+	URL              string `json:"url"`
 	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
 // CandidateInfoArray array of candidate
 type CandidateInfoArray []*CandidateInfo
 
+// Epochs array of epcho
 type Epochs struct {
 	Data []*Epoch `json:"data"`
 }
 
+// Epoch timestamp & epoch number
 type Epoch struct {
 	Start uint64 `json:"start"`
 	Epoch uint64 `json:"epoch"`

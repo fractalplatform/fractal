@@ -72,7 +72,7 @@ type GasTable struct {
 // Variables containing gas prices for different phases.
 var (
 	// GasTable contain the gas re-prices
-	GasTableInstanse = GasTable{
+	GasTableInstance = GasTable{
 		ActionGas:             100000,
 		ActionGasCallContract: 200000,
 		ActionGasCreation:     500000,

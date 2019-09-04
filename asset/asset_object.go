@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package asset
 
 import (
@@ -22,7 +23,7 @@ import (
 )
 
 type AssetObject struct {
-	AssetId     uint64      `json:"assetId"`
+	AssetID     uint64      `json:"assetId"`
 	Number      uint64      `json:"number"`
 	Stats       uint64      `json:"stats"`
 	AssetName   string      `json:"assetName"`
@@ -37,8 +38,9 @@ type AssetObject struct {
 	Description string      `json:"description"`
 }
 
-func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (*AssetObject, error) {
-
+func NewAssetObject(assetName string, number uint64, symbol string, amount *big.Int,
+	dec uint64, founder common.Name, owner common.Name,
+	limit *big.Int, contract common.Name, description string) (*AssetObject, error) {
 	if assetName == "" || symbol == "" || owner == "" {
 		return nil, ErrNewAssetObject
 	}
@@ -63,7 +65,7 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 	}
 
 	ao := AssetObject{
-		AssetId:     0,
+		AssetID:     0,
 		Number:      number,
 		Stats:       0,
 		AssetName:   assetName,
@@ -80,9 +82,12 @@ func NewAssetObject(assetName string, number uint64, symbol string, amount *big.
 	return &ao, nil
 }
 
-func NewAssetObjectNoCheck(assetName string, number uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) *AssetObject {
+func NewAssetObjectNoCheck(assetName string, number uint64, symbol string,
+	amount *big.Int, dec uint64, founder common.Name, owner common.Name,
+	limit *big.Int, contract common.Name, description string) *AssetObject {
+
 	ao := AssetObject{
-		AssetId:     0,
+		AssetID:     0,
 		Number:      number,
 		Stats:       0,
 		AssetName:   assetName,
@@ -99,12 +104,12 @@ func NewAssetObjectNoCheck(assetName string, number uint64, symbol string, amoun
 	return &ao
 }
 
-func (ao *AssetObject) GetAssetId() uint64 {
-	return ao.AssetId
+func (ao *AssetObject) GetAssetID() uint64 {
+	return ao.AssetID
 }
 
-func (ao *AssetObject) SetAssetId(assetId uint64) {
-	ao.AssetId = assetId
+func (ao *AssetObject) SetAssetID(AssetID uint64) {
+	ao.AssetID = AssetID
 }
 
 func (ao *AssetObject) GetAssetNumber() uint64 {

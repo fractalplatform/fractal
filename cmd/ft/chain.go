@@ -38,7 +38,7 @@ var (
 		Long:  "Start or stop pure state",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			if err := prueState(args[0]); err != nil {
+			if err := pruneState(args[0]); err != nil {
 				fmt.Println(err)
 			}
 		},
@@ -51,7 +51,7 @@ func init() {
 	statePureCommand.Flags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
 }
 
-func prueState(arg string) error {
+func pruneState(arg string) error {
 	var enable bool
 
 	switch arg {
@@ -63,7 +63,7 @@ func prueState(arg string) error {
 	}
 
 	result := new(types.BlockState)
-	clientCall(ipcEndpoint, &result, "ft_setStatePruning", enable)
+	clientCall(ipcEndpoint, &result, "bc_setStatePruning", enable)
 	printJSON(result)
 	return nil
 }

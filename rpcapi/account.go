@@ -26,6 +26,47 @@ import (
 	"github.com/fractalplatform/fractal/common"
 )
 
+type RPCAccount struct {
+	AcctName              common.Name                    `json:"accountName"`
+	Founder               common.Name                    `json:"founder"`
+	AccountID             uint64                         `json:"accountID"`
+	Number                uint64                         `json:"number"`
+	Nonce                 uint64                         `json:"nonce"`
+	Code                  hexutil.Bytes                  `json:"code"`
+	CodeHash              common.Hash                    `json:"codeHash"`
+	CodeSize              uint64                         `json:"codeSize"`
+	Threshold             uint64                         `json:"threshold"`
+	UpdateAuthorThreshold uint64                         `json:"updateAuthorThreshold"`
+	AuthorVersion         common.Hash                    `json:"authorVersion"`
+	Balances              []*accountmanager.AssetBalance `json:"balances"`
+	Authors               []*common.Author               `json:"authors"`
+	Suicide               bool                           `json:"suicide"`
+	Destroy               bool                           `json:"destroy"`
+	Description           string                         `json:"description"`
+}
+
+func NewRPCAccount(account *accountmanager.Account) *RPCAccount {
+	acctObject := RPCAccount{
+		AcctName:              account.AcctName,
+		Founder:               account.Founder,
+		AccountID:             account.AccountID,
+		Number:                account.Number,
+		Nonce:                 account.Nonce,
+		Code:                  hexutil.Bytes(account.Code),
+		CodeHash:              account.CodeHash,
+		CodeSize:              account.CodeSize,
+		Threshold:             account.Threshold,
+		UpdateAuthorThreshold: account.UpdateAuthorThreshold,
+		AuthorVersion:         account.AuthorVersion,
+		Balances:              account.Balances,
+		Authors:               account.Authors,
+		Suicide:               account.Suicide,
+		Destroy:               account.Destroy,
+		Description:           account.Description,
+	}
+	return &acctObject
+}
+
 type AccountAPI struct {
 	b Backend
 }
@@ -35,27 +76,16 @@ func NewAccountAPI(b Backend) *AccountAPI {
 }
 
 //AccountIsExist
-func (aapi *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return false, err
 	}
 	return acct.AccountIsExist(acctName)
 }
 
-func (aapi *AccountAPI) GetAccountExByID(accountID uint64) (*accountmanager.Account, error) {
-	am, err := aapi.b.GetAccountManager()
-	if err != nil {
-		return nil, err
-	}
-
-	return am.GetAccountById(accountID)
-}
-
-//GetAccountByID
-func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Account, error) {
-
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountExByID(accountID uint64) (*RPCAccount, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -65,31 +95,44 @@ func (aapi *AccountAPI) GetAccountByID(accountID uint64) (*accountmanager.Accoun
 		return nil, err
 	}
 
+	var rpcAccountObj *RPCAccount
 	if accountObj != nil {
-		balances := make([]*accountmanager.AssetBalance, 0, len(accountObj.Balances))
-		zero := big.NewInt(0)
-		for _, balance := range accountObj.Balances {
-			if balance.Balance.Cmp(zero) > 0 {
-				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
-			}
-		}
-		accountObj.Balances = balances
+		rpcAccountObj = NewRPCAccount(accountObj)
 	}
-	return accountObj, nil
+
+	return rpcAccountObj, nil
 }
 
-func (aapi *AccountAPI) GetAccountExByName(accountName common.Name) (*accountmanager.Account, error) {
-	am, err := aapi.b.GetAccountManager()
+//GetAccountByID
+func (api *AccountAPI) GetAccountByID(accountID uint64) (*RPCAccount, error) {
+
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
 
-	return am.GetAccountByName(accountName)
+	accountObj, err := am.GetAccountById(accountID)
+	if err != nil {
+		return nil, err
+	}
+
+	var rpcAccountObj *RPCAccount
+	if accountObj != nil {
+		rpcAccountObj = NewRPCAccount(accountObj)
+		balances := make([]*accountmanager.AssetBalance, 0, len(rpcAccountObj.Balances))
+		zero := big.NewInt(0)
+		for _, balance := range rpcAccountObj.Balances {
+			if balance.Balance.Cmp(zero) > 0 {
+				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
+			}
+		}
+		rpcAccountObj.Balances = balances
+	}
+	return rpcAccountObj, nil
 }
 
-//GetAccountByName
-func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanager.Account, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountExByName(accountName common.Name) (*RPCAccount, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -99,22 +142,45 @@ func (aapi *AccountAPI) GetAccountByName(accountName common.Name) (*accountmanag
 		return nil, err
 	}
 
+	var rpcAccountObj *RPCAccount
 	if accountObj != nil {
-		balances := make([]*accountmanager.AssetBalance, 0, len(accountObj.Balances))
+		rpcAccountObj = NewRPCAccount(accountObj)
+	}
+
+	return rpcAccountObj, nil
+}
+
+//GetAccountByName
+func (api *AccountAPI) GetAccountByName(accountName common.Name) (*RPCAccount, error) {
+	am, err := api.b.GetAccountManager()
+	if err != nil {
+		return nil, err
+	}
+
+	accountObj, err := am.GetAccountByName(accountName)
+	if err != nil {
+		return nil, err
+	}
+
+	var rpcAccountObj *RPCAccount
+	if accountObj != nil {
+		rpcAccountObj = NewRPCAccount(accountObj)
+		balances := make([]*accountmanager.AssetBalance, 0, len(rpcAccountObj.Balances))
 		zero := big.NewInt(0)
-		for _, balance := range accountObj.Balances {
+		for _, balance := range rpcAccountObj.Balances {
 			if balance.Balance.Cmp(zero) > 0 {
 				balances = append(balances, &accountmanager.AssetBalance{AssetID: balance.AssetID, Balance: balance.Balance})
 			}
 		}
-		accountObj.Balances = balances
+		rpcAccountObj.Balances = balances
 	}
-	return accountObj, nil
+
+	return rpcAccountObj, nil
 }
 
 //GetAccountBalanceByID
-func (aapi *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +188,8 @@ func (aapi *AccountAPI) GetAccountBalanceByID(accountName common.Name, assetID u
 }
 
 //GetCode
-func (aapi *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -137,19 +203,17 @@ func (aapi *AccountAPI) GetCode(accountName common.Name) (hexutil.Bytes, error) 
 }
 
 //GetNonce
-func (aapi *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}
-
 	return acct.GetNonce(accountName)
-
 }
 
 //GetAssetInfoByName
-func (aapi *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string) (*asset.AssetObject, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string) (*asset.AssetObject, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -157,8 +221,8 @@ func (aapi *AccountAPI) GetAssetInfoByName(ctx context.Context, assetName string
 }
 
 //GetAssetInfoByID
-func (aapi *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, error) {
-	acct, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, error) {
+	acct, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +230,8 @@ func (aapi *AccountAPI) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, er
 }
 
 //GetAssetAmountByTime
-func (aapi *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.Int, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -175,8 +239,8 @@ func (aapi *AccountAPI) GetAssetAmountByTime(assetID uint64, time uint64) (*big.
 }
 
 //GetAccountBalanceByTime
-func (aapi *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID uint64, typeID uint64, time uint64) (*big.Int, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return nil, err
 	}
@@ -184,8 +248,8 @@ func (aapi *AccountAPI) GetAccountBalanceByTime(accountName common.Name, assetID
 }
 
 //GetSnapshotLast  get last snapshot time
-func (aapi *AccountAPI) GetSnapshotLast() (uint64, error) {
-	am, err := aapi.b.GetAccountManager()
+func (api *AccountAPI) GetSnapshotLast() (uint64, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}
@@ -193,9 +257,9 @@ func (aapi *AccountAPI) GetSnapshotLast() (uint64, error) {
 	return am.GetSnapshotTime(0, 0)
 }
 
-//getSnapshottime  m: 1  preview time   2 next time
-func (aapi *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint64) (uint64, error) {
-	am, err := aapi.b.GetAccountManager()
+//GetSnapshotTime  m: 1  preview time   2 next time
+func (api *AccountAPI) GetSnapshotTime(ctx context.Context, m uint64, time uint64) (uint64, error) {
+	am, err := api.b.GetAccountManager()
 	if err != nil {
 		return 0, err
 	}

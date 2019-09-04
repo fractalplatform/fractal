@@ -58,7 +58,7 @@ type Contract struct {
 
 	Gas     uint64
 	value   *big.Int
-	AssetId uint64
+	AssetID uint64
 
 	Args []byte
 
@@ -66,7 +66,7 @@ type Contract struct {
 }
 
 // NewContract returns a new contract environment for the execution of EVM.
-func NewContract(caller ContractRef, object ContractRef, value *big.Int, gas uint64, assetId uint64) *Contract {
+func NewContract(caller ContractRef, object ContractRef, value *big.Int, gas uint64, assetID uint64) *Contract {
 	c := &Contract{CallerName: caller.Name(), caller: caller, self: object, Args: nil}
 
 	if parent, ok := caller.(*Contract); ok {
@@ -81,7 +81,7 @@ func NewContract(caller ContractRef, object ContractRef, value *big.Int, gas uin
 	c.Gas = gas
 	// ensures a value is set
 	c.value = value
-	c.AssetId = assetId
+	c.AssetID = assetID
 	return c
 }
 

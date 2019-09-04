@@ -106,7 +106,7 @@ type Config struct {
 
 	// NodeDatabase is the path to the database containing the previously seen
 	// live nodes in the network.
-	NodeDatabase string `mapstructure:"nodedb"`
+	NodeDatabase string
 
 	// Protocols should contain the protocols supported
 	// by the server. Matching protocols are launched for

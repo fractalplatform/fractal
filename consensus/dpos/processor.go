@@ -175,7 +175,7 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 			return nil, err
 		}
 	default:
-		return nil, accountmanager.ErrUnkownTxType
+		return nil, accountmanager.ErrUnKnownTxType
 	}
 	return sys.internalActions, nil
 }

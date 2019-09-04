@@ -19,10 +19,9 @@ package blockchain
 import (
 	"time"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
-
-	"github.com/ethereum/go-ethereum/log"
 )
 
 // insertStats tracks and reports on block insertion.

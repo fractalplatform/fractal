@@ -29,7 +29,7 @@ import (
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
 func IntrinsicGas(accountDB *accountmanager.AccountManager, action *types.Action) (uint64, error) {
 	// Bump the required gas by the amount of transactional data
-	gasTable := params.GasTableInstanse
+	gasTable := params.GasTableInstance
 	dataGasFunc := func(data []byte) (uint64, error) {
 		var gas uint64
 		if len(data) > 0 {

@@ -88,7 +88,7 @@ type IssueAsset struct {
 }
 
 type IncAsset struct {
-	AssetId uint64      `json:"assetId,omitempty"`
+	AssetID uint64      `json:"assetId,omitempty"`
 	Amount  *big.Int    `json:"amount,omitempty"`
 	To      common.Name `json:"acceptor,omitempty"`
 }
@@ -136,15 +136,15 @@ func SetAccountNameConfig(config *Config) bool {
 	accountNameLength = config.AccountNameMaxLength
 	return true
 }
-func GetAcountNameRegExp() *regexp.Regexp {
+func GetAccountNameRegExp() *regexp.Regexp {
 	return acctRegExp
 }
 
-func GetAcountNameRegExpFork1() *regexp.Regexp {
+func GetAccountNameRegExpFork1() *regexp.Regexp {
 	return acctRegExpFork1
 }
 
-func GetAcountNameLength() uint64 {
+func GetAccountNameLength() uint64 {
 	return accountNameLength
 }
 
@@ -263,14 +263,14 @@ func (am *AccountManager) AccountIsEmpty(accountName common.Name) (bool, error) 
 }
 
 const (
-	unknow uint64 = iota
+	unKnown uint64 = iota
 	mainAccount
 	subAccount
 )
 
 func GetAccountNameLevel(accountName common.Name) (uint64, error) {
 	if !accountName.IsValid(acctRegExp, accountNameLength) {
-		return unknow, fmt.Errorf("account %s is invalid", accountName.String())
+		return unKnown, fmt.Errorf("account %s is invalid", accountName.String())
 	}
 
 	if len(strings.Split(accountName.String(), ".")) == 1 {
@@ -294,7 +294,7 @@ func (am *AccountManager) checkAccountNameValid(fromName common.Name, accountNam
 
 	if accountLevel == subAccount {
 		if !fromName.IsChildren(accountName) {
-			return ErrAccountInvaid
+			return ErrAccountInvalid
 		}
 	}
 
@@ -310,7 +310,7 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 	} else {
 		if len(common.FindStringSubmatch(acctRegExp, accountName.String())) > 1 {
 			if !fromName.IsChildren(accountName) {
-				return ErrAccountInvaid
+				return ErrAccountInvalid
 			}
 		}
 
@@ -329,12 +329,12 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 	}
 
 	// asset and account name diff
-	_, err = am.ast.GetAssetIdByName(accountName.String())
+	_, err = am.ast.GetAssetIDByName(accountName.String())
 	if err == nil {
 		return ErrNameIsExist
 	}
 
-	var fname common.Name
+	var fName common.Name
 	if len(founderName.String()) > 0 && founderName != accountName {
 		f, err := am.GetAccountByName(founderName)
 		if err != nil {
@@ -343,12 +343,12 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 		if f == nil {
 			return ErrAccountNotExist
 		}
-		fname.SetString(founderName.String())
+		fName.SetString(founderName.String())
 	} else {
-		fname.SetString(accountName.String())
+		fName.SetString(accountName.String())
 	}
 
-	acctObj, err := NewAccount(accountName, fname, pubkey, detail)
+	acctObj, err := NewAccount(accountName, fName, pubkey, detail)
 	if err != nil {
 		return err
 	}
@@ -444,7 +444,7 @@ func (am *AccountManager) UpdateAccountAuthor(accountName common.Name, acctAuth 
 		}
 	}
 	if uint64(len(acct.Authors)) > params.MaxAuthorNum {
-		return fmt.Errorf("account author lenght can not exceed %d", params.MaxAuthorNum)
+		return fmt.Errorf("account author length can not exceed %d", params.MaxAuthorNum)
 	}
 	acct.SetAuthorVersion()
 	return am.SetAccount(acct)
@@ -762,29 +762,29 @@ func (am *AccountManager) ValidOneSign(acct *Account, index uint64, pub common.P
 
 //GetAssetInfoByName get asset info by asset name.
 func (am *AccountManager) GetAssetInfoByName(assetName string) (*asset.AssetObject, error) {
-	assetID, err := am.ast.GetAssetIdByName(assetName)
+	assetID, err := am.ast.GetAssetIDByName(assetName)
 	if err != nil {
 		return nil, err
 	}
-	return am.ast.GetAssetObjectById(assetID)
+	return am.ast.GetAssetObjectByID(assetID)
 }
 
 //GetAssetInfoByID get asset info by assetID
 func (am *AccountManager) GetAssetInfoByID(assetID uint64) (*asset.AssetObject, error) {
-	return am.ast.GetAssetObjectById(assetID)
+	return am.ast.GetAssetObjectByID(assetID)
 }
 
-// GetAllAssetbyAssetId get accout asset and subAsset Info
-func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (map[uint64]*big.Int, error) {
+// GetAllAssetByAssetID get accout asset and subAsset information
+func (am *AccountManager) GetAllAssetByAssetID(acct *Account, assetID uint64) (map[uint64]*big.Int, error) {
 	var ba = make(map[uint64]*big.Int)
 
-	b, err := acct.GetBalanceByID(assetId)
+	b, err := acct.GetBalanceByID(assetID)
 	if err != nil {
 		return nil, err
 	}
-	ba[assetId] = b
+	ba[assetID] = b
 
-	assetObj, err := am.ast.GetAssetObjectById(assetId)
+	assetObj, err := am.ast.GetAssetObjectByID(assetID)
 	if err != nil {
 		return nil, err
 	}
@@ -796,7 +796,7 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 	}
 
 	for id, balance := range balances {
-		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		subAssetObj, err := am.ast.GetAssetObjectByID(id)
 		if err != nil {
 			return nil, err
 		}
@@ -809,15 +809,15 @@ func (am *AccountManager) GetAllAssetbyAssetId(acct *Account, assetId uint64) (m
 	return ba, nil
 }
 
-// GetAllBalancebyAssetID get account balance, balance(asset) = asset + subAsset
-func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) (*big.Int, error) {
+// GetAllBalanceByAssetID get account balance, balance(asset) = asset + subAsset
+func (am *AccountManager) GetAllBalanceByAssetID(acct *Account, assetID uint64) (*big.Int, error) {
 	var ba *big.Int
 	ba = big.NewInt(0)
 
 	b, _ := acct.GetBalanceByID(assetID)
 	ba = ba.Add(ba, b)
 
-	assetObj, err := am.ast.GetAssetObjectById(assetID)
+	assetObj, err := am.ast.GetAssetObjectByID(assetID)
 	if err != nil {
 		return big.NewInt(0), err
 	}
@@ -829,7 +829,7 @@ func (am *AccountManager) GetAllBalancebyAssetID(acct *Account, assetID uint64) 
 	}
 
 	for id, balance := range balances {
-		subAssetObj, err := am.ast.GetAssetObjectById(id)
+		subAssetObj, err := am.ast.GetAssetObjectByID(id)
 		if err != nil {
 			return big.NewInt(0), err
 		}
@@ -855,7 +855,7 @@ func (am *AccountManager) GetBalanceByTime(accountName common.Name, assetID uint
 	if typeID == 0 {
 		return acct.GetBalanceByID(assetID)
 	} else if typeID == 1 {
-		return am.GetAllBalancebyAssetID(acct, assetID)
+		return am.GetAllBalanceByAssetID(acct, assetID)
 	} else {
 		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
 	}
@@ -873,7 +873,7 @@ func (am *AccountManager) GetAccountBalanceByID(accountName common.Name, assetID
 	if typeID == 0 {
 		return acct.GetBalanceByID(assetID)
 	} else if typeID == 1 {
-		return am.GetAllBalancebyAssetID(acct, assetID)
+		return am.GetAllBalanceByAssetID(acct, assetID)
 	} else {
 		return big.NewInt(0), fmt.Errorf("type ID %d invalid", typeID)
 	}
@@ -935,7 +935,7 @@ func (am *AccountManager) GetFounder(accountName common.Name) (common.Name, erro
 
 //GetAssetFounder Get Asset Founder
 func (am *AccountManager) GetAssetFounder(assetID uint64) (common.Name, error) {
-	return am.ast.GetAssetFounderById(assetID)
+	return am.ast.GetAssetFounderByID(assetID)
 }
 
 //SubAccountBalanceByID sub balance by assetID
@@ -992,7 +992,7 @@ func (am *AccountManager) AddAccountBalanceByName(accountName common.Name, asset
 		return ErrAccountNotExist
 	}
 
-	assetID, err := am.ast.GetAssetIdByName(assetName)
+	assetID, err := am.ast.GetAssetIDByName(assetName)
 	if err != nil {
 		return err
 	}
@@ -1192,7 +1192,7 @@ func (am *AccountManager) CheckAssetContract(contract common.Name, owner common.
 
 func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo *IssueAsset) error {
 	var assetNames []string
-	var assetPrex string
+	var assetPre string
 
 	names := strings.Split(assetInfo.AssetName, ":")
 	if len(names) == 2 {
@@ -1203,7 +1203,7 @@ func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo
 		if len(assetNames) == 1 && names[0] != fromName.String() {
 			return fmt.Errorf("asset name not match from, name: %v, from:%v", assetInfo.AssetName, fromName)
 		}
-		assetPrex = names[0] + ":"
+		assetPre = names[0] + ":"
 	} else {
 		if !common.StrToName(assetInfo.AssetName).IsValid(asset.GetAssetNameRegExp(), asset.GetAssetNameLength()) {
 			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
@@ -1212,7 +1212,7 @@ func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo
 		if len(assetNames) < 2 {
 			return fmt.Errorf("asset name is invalid, name: %v", assetInfo.AssetName)
 		}
-		assetPrex = ""
+		assetPre = ""
 	}
 
 	if len(assetNames) == 1 {
@@ -1220,11 +1220,11 @@ func (am *AccountManager) checkAssetNameAndOwner(fromName common.Name, assetInfo
 	}
 
 	//check sub asset owner
-	parentAassetID, isValid := am.ast.IsValidAssetOwner(fromName, assetPrex, assetNames)
+	parentAssetID, isValid := am.ast.IsValidAssetOwner(fromName, assetPre, assetNames)
 	if !isValid {
 		return fmt.Errorf("asset owner is invalid, name: %v", assetInfo.AssetName)
 	}
-	assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+	assetObj, _ := am.ast.GetAssetObjectByID(parentAssetID)
 	assetInfo.Decimals = assetObj.GetDecimals()
 
 	return nil
@@ -1271,11 +1271,11 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 		}
 	} else {
 		if !am.ast.IsValidMainAssetBeforeFork(asset.AssetName) {
-			parentAassetID, isValid := am.ast.IsValidSubAssetBeforeFork(fromName, asset.AssetName)
+			parentAssetID, isValid := am.ast.IsValidSubAssetBeforeFork(fromName, asset.AssetName)
 			if !isValid {
 				return 0, fmt.Errorf("account %s can not create %s", fromName, asset.AssetName)
 			}
-			assetObj, _ := am.ast.GetAssetObjectById(parentAassetID)
+			assetObj, _ := am.ast.GetAssetObjectByID(parentAssetID)
 			asset.Decimals = assetObj.GetDecimals()
 		}
 	}
@@ -1458,22 +1458,22 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, ErrNegativeAmount
 		}
 
-		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetId, inc.Amount); err != nil {
+		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetID, inc.Amount); err != nil {
 			return nil, err
 		}
 
-		if err := am.AddAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), inc.AssetId, inc.Amount); err != nil {
+		if err := am.AddAccountBalanceByID(common.Name(accountManagerContext.ChainConfig.AssetName), inc.AssetID, inc.Amount); err != nil {
 			return nil, err
 		}
-		actionX := types.NewAction(types.Transfer, common.Name(""), common.Name(accountManagerContext.ChainConfig.AssetName), 0, inc.AssetId, 0, inc.Amount, nil, nil)
+		actionX := types.NewAction(types.Transfer, common.Name(""), common.Name(accountManagerContext.ChainConfig.AssetName), 0, inc.AssetID, 0, inc.Amount, nil, nil)
 		internalAction := &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 
 		fromAccountExtra = append(fromAccountExtra, action.Sender())
-		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, inc.AssetId, inc.Amount, fromAccountExtra...); err != nil {
+		if err := am.TransferAsset(common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, inc.AssetID, inc.Amount, fromAccountExtra...); err != nil {
 			return nil, err
 		}
-		actionX = types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, 0, inc.AssetId, 0, inc.Amount, nil, nil)
+		actionX = types.NewAction(types.Transfer, common.Name(accountManagerContext.ChainConfig.AssetName), inc.To, 0, inc.AssetID, 0, inc.Amount, nil, nil)
 		internalAction = &types.InternalAction{Action: actionX.NewRPCAction(0), ActionType: "", GasUsed: 0, GasLimit: 0, Depth: 0, Error: ""}
 		internalActions = append(internalActions, internalAction)
 	case types.DestroyAsset:
@@ -1560,7 +1560,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 
 	case types.Transfer:
 	default:
-		return nil, ErrUnkownTxType
+		return nil, ErrUnKnownTxType
 	}
 
 	return internalActions, nil

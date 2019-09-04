@@ -46,7 +46,7 @@ func NewPublicBlockChainAPI(b Backend) *PublicBlockChainAPI {
 	return &PublicBlockChainAPI{b}
 }
 
-// GetCurrentBlock returns cureent block.
+// GetCurrentBlock returns current block.
 func (s *PublicBlockChainAPI) GetCurrentBlock(fullTx bool) map[string]interface{} {
 	return s.rpcOutputBlock(s.b.ChainConfig().ChainID, s.b.CurrentBlock(), true, fullTx)
 }
@@ -95,20 +95,17 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 	return nil
 }
 
-func (s *PublicBlockChainAPI) GetTransBatch(ctx context.Context, hashes []common.Hash) []*types.RPCTransaction {
-	txs := make([]*types.RPCTransaction, 0)
-
+func (s *PublicBlockChainAPI) GetTransactions(ctx context.Context, hashes []common.Hash) []*types.RPCTransaction {
+	var result []*types.RPCTransaction
 	for i, hash := range hashes {
 		if i > 2048 {
 			break
 		}
-
 		if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
-			txs = append(txs, tx.NewRPCTransaction(blockHash, blockNumber, index))
+			result = append(result, tx.NewRPCTransaction(blockHash, blockNumber, index))
 		}
 	}
-
-	return txs
+	return result
 }
 
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
@@ -142,8 +139,8 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 // checkRangeInputArgs checks the input arguments of
 // GetTxsByAccount,GetTxsByBloom,GetInternalTxByAccount,GetInternalTxByBloom
 func (s *PublicBlockChainAPI) checkRangeInputArgs(blockNr, lookbackNum uint64) error {
-	current_num := s.b.CurrentBlock().Number().Uint64()
-	if blockNr > current_num {
+	currentNum := s.b.CurrentBlock().Number().Uint64()
+	if blockNr > currentNum {
 		return fmt.Errorf("blockNr range err")
 	}
 	return nil
@@ -153,7 +150,7 @@ func (s *PublicBlockChainAPI) checkRangeInputArgs(blockNr, lookbackNum uint64) e
 // the range is indicate by blockNr and lookforwardNum,
 // from blocks with number from blockNr to blockNr+lookforwardNum
 func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookforwardNum uint64) (*types.AccountTxs, error) {
-	// check input argments
+	// check input arguments
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookforwardNum); err != nil {
 		return nil, err
@@ -171,7 +168,7 @@ func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName comm
 // the range is indicate by blockNr and lookbackNum,
 // from blocks with number from blockNr to blockNr+lookforwardNum
 func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookforwardNum uint64) (*types.AccountTxs, error) {
-	// check input argments
+	// check input arguments
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookforwardNum); err != nil {
 		return nil, err
@@ -184,11 +181,11 @@ func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexut
 	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookforwardNum), nil
 }
 
-// GetInternalTxByAccount return all logs of interal txs, sent from or received by a specific account
+// GetInternalTxByAccount return all logs of internal txs, sent from or received by a specific account
 // the range is indicate by blockNr and lookbackNum,
 // from blocks with number from blockNr-lookbackNum to blockNr
 func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
-	// check input argments
+	// check input arguments
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
 		return nil, err
@@ -204,12 +201,13 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
 }
 
-// GetInternalTxByBloom return all logs of interal txs, filtered by a bloomByte
+// GetInternalTxByBloom return all logs of internal txs, filtered by a bloomByte
 // bloomByte is constructed by some quantities of account names
 // the range is indicate by blockNr and lookbackNum,
 // from blocks with number from blockNr-lookbackNum to blockNr
-func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
-	// check input argments
+func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes,
+	blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+	// check input arguments
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
 		return nil, err
@@ -226,19 +224,19 @@ func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByt
 	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
 }
 
-// GetInternalTxByHash return logs of interal txs include by a transcastion
+// GetInternalTxByHash return logs of internal txs include by a transcastion
 func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash common.Hash) (*types.DetailTx, error) {
 	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
 	if tx == nil {
 		return nil, nil
 	}
 
-	detailtxs := rawdb.ReadDetailTxs(s.b.ChainDb(), blockHash, blockNumber)
-	if len(detailtxs) <= int(index) {
+	detailTxs := rawdb.ReadDetailTxs(s.b.ChainDb(), blockHash, blockNumber)
+	if len(detailTxs) <= int(index) {
 		return nil, nil
 	}
 
-	return detailtxs[index], nil
+	return detailTxs[index], nil
 }
 
 func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]map[string]interface{}, error) {
@@ -324,14 +322,14 @@ func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNr r
 
 // EstimateGas returns an estimate of the amount of gas needed to execute the
 // given transaction against the current pending block.
-func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (hexutil.Uint64, error) {
+func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (uint64, error) {
 	// Binary search the gas requirement, as it may be higher than the amount used
 	var (
-		lo  uint64 = params.GasTableInstanse.ActionGas - 1
+		lo  uint64 = params.GasTableInstance.ActionGas - 1
 		hi  uint64
 		cap uint64
 	)
-	if uint64(args.Gas) >= params.GasTableInstanse.ActionGas {
+	if uint64(args.Gas) >= params.GasTableInstance.ActionGas {
 		hi = uint64(args.Gas)
 	} else {
 		// Retrieve the current pending block to act as the gas ceiling
@@ -364,7 +362,7 @@ func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (h
 			return 0, fmt.Errorf("gas required exceeds allowance or always failing transaction")
 		}
 	}
-	return hexutil.Uint64(hi), nil
+	return hi, nil
 }
 
 // GetChainConfig returns chain config.
@@ -388,4 +386,30 @@ func NewPrivateBlockChainAPI(b Backend) *PrivateBlockChainAPI {
 func (s *PrivateBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
 	prestatus, number := s.b.SetStatePruning(enable)
 	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
+}
+
+type RPCForkStatus struct {
+	Count            uint64 `json:"count"`
+	Percentage       uint64 `json:"percentage"`
+	CurID            uint64 `json:"curID"`
+	NexID            uint64 `json:"nextID"`
+	CurIDBlockCount  uint64 `json:"curIDBlockCount"`
+	NextIDBlockCount uint64 `json:"nextIDBlockCount"`
+}
+
+func (s *PrivateBlockChainAPI) ForkStatus(ctx context.Context) (*RPCForkStatus, error) {
+	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.LatestBlockNumber)
+	if state == nil || err != nil {
+		return nil, err
+	}
+	cfg, status, err := s.b.ForkStatus(state)
+	if err != nil {
+		return nil, err
+	}
+	return &RPCForkStatus{Count: cfg.ForkBlockNum,
+		Percentage:       cfg.Forkpercentage,
+		CurID:            status.CurForkID,
+		NexID:            status.NextForkID,
+		CurIDBlockCount:  status.CurForkIDBlockNum,
+		NextIDBlockCount: status.NextForkIDBlockNum}, nil
 }

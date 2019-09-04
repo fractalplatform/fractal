@@ -221,7 +221,9 @@ func TestLog(t *testing.T) {
 	currentBlockHash := common.BytesToHash([]byte("01"))
 	currentBlockNumber := uint64(0)
 	currentTxHash := common.BytesToHash([]byte("02"))
+	currentTxHash1 := common.BytesToHash([]byte("03"))
 	currentTxIndex := 0
+	currentTxIndex1 := 1
 
 	currentLog01 := types.Log{
 		Data:        []byte("01"),
@@ -233,6 +235,11 @@ func TestLog(t *testing.T) {
 		BlockNumber: currentBlockNumber,
 	}
 
+	currentLog03 := types.Log{
+		Data:        []byte("03"),
+		BlockNumber: currentBlockNumber,
+	}
+
 	type args struct {
 		txLog types.Log
 	}
@@ -240,6 +247,7 @@ func TestLog(t *testing.T) {
 	currentLog := []args{
 		args{txLog: currentLog01},
 		args{txLog: currentLog02},
+		args{txLog: currentLog03},
 	}
 
 	state, _ := New(prevRoot, cachedb)
@@ -247,10 +255,22 @@ func TestLog(t *testing.T) {
 	state.AddLog(&currentLog01)
 	state.AddLog(&currentLog02)
 
+	state.Prepare(currentTxHash1, currentBlockHash, currentTxIndex1)
+	state.AddLog(&currentLog03)
+
 	getLogs := state.GetLogs(currentTxHash)
 	for i, l := range getLogs {
 		if !bytes.Equal(l.Data, currentLog[i].txLog.Data) {
 			t.Error(fmt.Sprintf("log error get %v, want %v", l.Data, currentLog[i].txLog.Data))
+		}
+	}
+
+	allLogs := state.Logs()
+	for _, l := range allLogs {
+		if l.TxHash == currentTxHash1 {
+			if !bytes.Equal(l.Data, currentLog[2].txLog.Data) {
+				t.Error(fmt.Sprintf("log error get %v, want %v", l.Data, currentLog[2].txLog.Data))
+			}
 		}
 	}
 }
@@ -264,12 +284,41 @@ func TestRevertSnap(t *testing.T) {
 	addr := "addr01"
 	key1 := []byte("sk01")
 	value1 := []byte("sv01")
+
 	state.SetState(addr, common.BytesToHash(key1), common.BytesToHash(value1))
 
 	snapInx := state.Snapshot()
 
 	key2 := []byte("sk02")
 	value2 := []byte("sv02")
+
+	gas := uint64(100)
+	state.AddRefund(gas)
+
+	currentBlockHash := common.BytesToHash([]byte("01"))
+	currentTxHash := common.BytesToHash([]byte("02"))
+	currentTxIndex := 0
+	currentBlockNumber := uint64(0)
+	state.Prepare(currentTxHash, currentBlockHash, currentTxIndex)
+
+	currentLog01 := &types.Log{
+		Data:        []byte("01"),
+		BlockNumber: currentBlockNumber,
+	}
+
+	currentLog02 := &types.Log{
+		Data:        []byte("02"),
+		BlockNumber: currentBlockNumber,
+	}
+
+	state.AddLog(currentLog01)
+	state.AddLog(currentLog02)
+
+	preimagesHash := common.BytesToHash([]byte("testpreimagekey"))
+	preimagesValue := []byte("testpreimagevalue")
+
+	state.AddPreimage(preimagesHash, preimagesValue)
+
 	state.SetState(addr, common.BytesToHash(key2), common.BytesToHash(value2))
 
 	testValue1 := state.GetState(addr, common.BytesToHash(key1))
@@ -281,6 +330,21 @@ func TestRevertSnap(t *testing.T) {
 
 	if testValue2 != common.BytesToHash(value2) {
 		t.Error("test value2 before revert failed")
+	}
+
+	if state.GetRefund() != gas {
+		t.Error("test gas before revert failed")
+	}
+
+	preimages := state.Preimages()
+	for k, v := range preimages {
+		if k != preimagesHash {
+			t.Error("test preimagesHash before revert failed")
+		}
+
+		if bytes.Compare(v, preimagesValue) != 0 {
+			t.Error("test preimagesValue before revert failed")
+		}
 	}
 
 	state.RevertToSnapshot(snapInx)
@@ -295,6 +359,20 @@ func TestRevertSnap(t *testing.T) {
 	if (testValue2 != common.Hash{}) {
 		t.Error("test value2 after revert failed ", testValue2)
 	}
+
+	if state.GetRefund() != 0 {
+		t.Error("test gas after revert failed")
+	}
+
+	if len(state.Logs()) != 0 {
+		t.Error("test logs after revert failed")
+	}
+
+	preimages = state.Preimages()
+	if len(preimages) != 0 {
+		t.Error("test preimages after revert failed")
+	}
+
 }
 
 //element : 1->2->3

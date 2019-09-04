@@ -88,8 +88,8 @@ func (api *API) NextEpoch(epoch uint64) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	nepoch, _, err := api.dpos.GetEpoch(state, 2, epoch)
-	return nepoch, err
+	nextEpoch, _, err := api.dpos.GetEpoch(state, 2, epoch)
+	return nextEpoch, err
 }
 
 // CandidatesSize get candidates size
@@ -218,6 +218,7 @@ func (api *API) ValidCandidates(epoch uint64) (interface{}, error) {
 	return sys.GetState(gstate.PreEpoch)
 }
 
+// BrowserAllEpoch get all epoch info for browser api
 func (api *API) BrowserAllEpoch() (interface{}, error) {
 	epochs := Epochs{}
 	epochs.Data = make([]*Epoch, 0)
@@ -248,6 +249,7 @@ func (api *API) BrowserAllEpoch() (interface{}, error) {
 	return epochs, nil
 }
 
+// BrowserEpochRecord get epoch info for browser api
 func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	bstart := time.Now()
 	var req, data uint64
@@ -324,7 +326,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 				}
 			}
 			candidateInfo.Holder = balance.String()
-
+			candidateInfo.URL = tmp.URL
 			candidateInfos.Data = append(candidateInfos.Data, candidateInfo)
 		}
 
@@ -350,6 +352,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	return candidateInfos, nil
 }
 
+// BrowserVote get epoch info for browser api
 func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	var req, history uint64
 	bstart := time.Now()
@@ -384,8 +387,8 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	}
 	sort.Sort(candidates)
 
-	var declims uint64 = 1000000000000000000
-	minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
+	// var declims uint64 = 1000000000000000000
+	// minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
 	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
 	for _, c := range candidates {
 		if c.Name == "fractal.founder" {
@@ -403,16 +406,16 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 			}
 		}
 
-		if balance.Cmp(minQuantity) < 0 {
-			continue
-		}
+		// if balance.Cmp(minQuantity) < 0 {
+		// 	continue
+		// }
 
 		candidateInfo := &CandidateInfoForBrowser{}
 		candidateInfo.Candidate = c.Name
 
 		candidateInfo.Quantity = c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake()).String()
 		candidateInfo.TotalQuantity = c.TotalQuantity.String()
-
+		candidateInfo.URL = c.URL
 		candidateInfo.Holder = balance.String()
 
 		tmp, err := sys.GetCandidate(history, c.Name)

@@ -48,7 +48,7 @@ type GenesisAccount struct {
 	PubKey  common.PubKey `json:"pubKey,omitempty"`
 }
 
-// GenesisCandidate is an cadicate in the state of the genesis block.
+// GenesisCandidate is an candidate  in the state of the genesis block.
 type GenesisCandidate struct {
 	Name  string   `json:"name,omitempty"`
 	URL   string   `json:"url,omitempty"`
@@ -80,7 +80,7 @@ type Genesis struct {
 }
 
 func dposConfig(cfg *params.ChainConfig) *dpos.Config {
-	dcfg := &dpos.Config{
+	return &dpos.Config{
 		MaxURLLen:                     cfg.DposCfg.MaxURLLen,
 		UnitStake:                     cfg.DposCfg.UnitStake,
 		CandidateAvailableMinQuantity: cfg.DposCfg.CandidateAvailableMinQuantity,
@@ -103,7 +103,6 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		AssetID:                       cfg.SysTokenID,
 		ReferenceTime:                 cfg.ReferenceTime,
 	}
-	return dcfg
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
@@ -148,36 +147,36 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		return nil, nil, common.Hash{}, errors.New("missing block number for head header hash")
 	}
 
-	storedcfg := rawdb.ReadChainConfig(db, stored)
-	if storedcfg == nil {
+	storedCfg := rawdb.ReadChainConfig(db, stored)
+	if storedCfg == nil {
 		return nil, nil, common.Hash{}, errors.New("Found genesis block without chain config")
 	}
 	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:         storedcfg.AccountNameCfg.Level,
-		AccountNameMaxLength:     storedcfg.AccountNameCfg.AllLength,
-		MainAccountNameMinLength: storedcfg.AccountNameCfg.MainMinLength,
-		MainAccountNameMaxLength: storedcfg.AccountNameCfg.MainMaxLength,
-		SubAccountNameMinLength:  storedcfg.AccountNameCfg.SubMinLength,
-		SubAccountNameMaxLength:  storedcfg.AccountNameCfg.SubMaxLength,
+		AccountNameLevel:         storedCfg.AccountNameCfg.Level,
+		AccountNameMaxLength:     storedCfg.AccountNameCfg.AllLength,
+		MainAccountNameMinLength: storedCfg.AccountNameCfg.MainMinLength,
+		MainAccountNameMaxLength: storedCfg.AccountNameCfg.MainMaxLength,
+		SubAccountNameMinLength:  storedCfg.AccountNameCfg.SubMinLength,
+		SubAccountNameMaxLength:  storedCfg.AccountNameCfg.SubMaxLength,
 	})
 	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:         storedcfg.AssetNameCfg.Level,
-		AssetNameLength:        storedcfg.AssetNameCfg.AllLength,
-		MainAssetNameMinLength: storedcfg.AssetNameCfg.MainMinLength,
-		MainAssetNameMaxLength: storedcfg.AssetNameCfg.MainMaxLength,
-		SubAssetNameMinLength:  storedcfg.AssetNameCfg.SubMinLength,
-		SubAssetNameMaxLength:  storedcfg.AssetNameCfg.SubMaxLength,
+		AssetNameLevel:         storedCfg.AssetNameCfg.Level,
+		AssetNameLength:        storedCfg.AssetNameCfg.AllLength,
+		MainAssetNameMinLength: storedCfg.AssetNameCfg.MainMinLength,
+		MainAssetNameMaxLength: storedCfg.AssetNameCfg.MainMaxLength,
+		SubAssetNameMinLength:  storedCfg.AssetNameCfg.SubMinLength,
+		SubAssetNameMaxLength:  storedCfg.AssetNameCfg.SubMaxLength,
 	})
-	am.SetAcctMangerName(common.StrToName(storedcfg.AccountName))
-	at.SetAssetMangerName(common.StrToName(storedcfg.AssetName))
-	fm.SetFeeManagerName(common.StrToName(storedcfg.FeeName))
+	am.SetAcctMangerName(common.StrToName(storedCfg.AccountName))
+	at.SetAssetMangerName(common.StrToName(storedCfg.AssetName))
+	fm.SetFeeManagerName(common.StrToName(storedCfg.FeeName))
 
-	dfg := dposConfig(storedcfg)
+	dfg := dposConfig(storedCfg)
 	if err := dfg.IsValid(); err != nil {
 		log.Error("genesis get stored config failed ", "hash", stored, "err", err)
 		return nil, nil, stored, err
 	}
-	return storedcfg, dfg, stored, nil
+	return storedCfg, dfg, stored, nil
 }
 
 // ToBlock creates the genesis block and writes state of a genesis specification
@@ -222,7 +221,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 			continue
 		}
 		if _, err := enode.ParseV4(node); err != nil {
-			log.Warn("genesis bootnodes prase failed", "err", err, "node", node)
+			log.Warn("genesis bootnodes parse failed", "err", err, "node", node)
 		}
 	}
 
@@ -255,10 +254,10 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	))
 
 	for _, account := range g.AllocAccounts {
-		pname := common.Name("")
+		pName := common.Name("")
 		slt := strings.Split(account.Name, ".")
 		if len(slt) > 1 {
-			pname = common.Name(slt[0])
+			pName = common.Name(slt[0])
 		}
 		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
@@ -268,7 +267,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		payload, _ := rlp.EncodeToBytes(act)
 		actActions = append(actActions, types.NewAction(
 			types.CreateAccount,
-			pname,
+			pName,
 			accoutName,
 			0,
 			0,
@@ -294,9 +293,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 
 	astActions := []*types.Action{}
 	for _, asset := range g.AllocAssets {
-		pname := common.Name("")
+		pName := common.Name("")
 		if g.ForkID >= params.ForkID1 {
-			pname = common.Name(g.Config.SysName)
+			pName = common.Name(g.Config.SysName)
 			names := strings.Split(asset.Name, ":")
 			if len(names) != 2 {
 				return nil, nil, fmt.Errorf("asset name invalid %v", asset.Name)
@@ -305,9 +304,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 			if len(slt) > 1 {
 				if ast, _ := accountManager.GetAssetInfoByName(names[0] + ":" + slt[0]); ast == nil {
 					return nil, nil, fmt.Errorf("parent asset not exist %v", ast.AssetName)
-
 				} else {
-					pname = ast.Owner
+					pName = ast.Owner
 				}
 			}
 		} else {
@@ -316,7 +314,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 				if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
 					return nil, nil, fmt.Errorf("parent asset not exist %v", ast.AssetName)
 				} else {
-					pname = ast.Owner
+					pName = ast.Owner
 				}
 			}
 		}
@@ -334,7 +332,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		payload, _ := rlp.EncodeToBytes(ast)
 		astActions = append(astActions, types.NewAction(
 			types.IssueAsset,
-			pname,
+			pName,
 			assetName,
 			0,
 			0,
@@ -393,7 +391,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		return nil, nil, fmt.Errorf("genesis system asset err %v", err)
 	}
 
-	g.Config.SysTokenID = assetInfo.AssetId
+	g.Config.SysTokenID = assetInfo.AssetID
 	g.Config.SysTokenDecimals = assetInfo.Decimals
 
 	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
@@ -438,7 +436,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	}
 
 	root := statedb.IntermediateRoot()
-	gjson, err := json.Marshal(g)
+	aBytes, err := json.Marshal(g)
 	if err != nil {
 		return nil, nil, fmt.Errorf("genesis json marshal json err %v", err)
 	}
@@ -447,7 +445,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		Number:     number,
 		Time:       new(big.Int).SetUint64(timestamp),
 		ParentHash: common.Hash{},
-		Extra:      gjson,
+		Extra:      aBytes,
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Difficulty: g.Difficulty,

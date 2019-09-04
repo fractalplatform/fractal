@@ -32,7 +32,7 @@ type PrivateP2pAPI struct {
 type notifyEvent struct {
 	Count int
 	Add   bool
-	Url   *string
+	URL   *string
 }
 
 // NewPrivateP2pAPI creates a new p2p service that gives information about p2p networking.
@@ -64,7 +64,7 @@ func (api *PrivateP2pAPI) PeerEvents(ctx context.Context) (*rpc.Subscription, er
 				notifier.Notify(rpcSub.ID, &notifyEvent{
 					Count: api.b.PeerCount(),
 					Add:   e.Typecode == router.NewPeerNotify,
-					Url:   e.Data.(*string),
+					URL:   e.Data.(*string),
 				})
 			case <-rpcSub.Err():
 				return

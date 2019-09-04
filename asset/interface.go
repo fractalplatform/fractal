@@ -22,12 +22,11 @@ import (
 	"github.com/fractalplatform/fractal/common"
 )
 
-//export
 type AssetIf interface {
-	GetAssetIdByName(assetName common.Name) (uint64, error)
+	GetAssetIDByName(assetName common.Name) (uint64, error)
 	GetAllAssetObject() []*AssetObject
 	IssueAssetObject(ao *AssetObject) (uint64, error)
 	IssueAsset(assetName common.Name, symbol string, amount *big.Int, owner common.Name) error
-	IncreaseAsset(accountName common.Name, assetId uint64, amount *big.Int) error
-	SetAssetNewOwner(accountName common.Name, assetId uint64, newOwner common.Name) error
+	IncreaseAsset(accountName common.Name, assetID uint64, amount *big.Int) error
+	SetAssetNewOwner(accountName common.Name, assetID uint64, newOwner common.Name) error
 }

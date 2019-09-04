@@ -139,6 +139,18 @@ func TestLDBCandidate(t *testing.T) {
 
 	for index, candidate := range candidates {
 		candidateInfo, _ := db.GetCandidate(uint64(index), candidate)
+		if err := db.SetActivatedCandidate(uint64(index), candidateInfo); err != nil {
+			panic(fmt.Errorf("SetActivatedCandidate --- %v", err))
+		}
+		if nCandidateInfo, err := db.GetActivatedCandidate(uint64(index)); err != nil {
+			panic(fmt.Errorf("GetActivatedCandidate --- %v", err))
+		} else if !reflect.DeepEqual(candidateInfo, nCandidateInfo) {
+			panic(fmt.Errorf("GetActivatedCandidate mismatch"))
+		}
+	}
+
+	for index, candidate := range candidates {
+		candidateInfo, _ := db.GetCandidate(uint64(index), candidate)
 		if err := db.SetCandidate(candidateInfo); err != nil {
 			panic(fmt.Errorf("Redo SetCandidate --- %v", err))
 		}
@@ -396,4 +408,26 @@ func TestLDBGlobalState(t *testing.T) {
 			panic(fmt.Errorf("GetLastestEpoch mismatch"))
 		}
 	}
+}
+
+func TestLDBTakeOver(t *testing.T) {
+	ldb, function := newTestLDB()
+	db, _ := NewLDB(ldb)
+	defer function()
+
+	epoch := uint64(2)
+	if err := db.SetTakeOver(epoch); err != nil {
+		panic(fmt.Errorf("SetTakeOver --- %v", err))
+	} else if tepoch, err := db.GetTakeOver(); err != nil {
+		panic(fmt.Errorf("GetTakeOver --- %v", err))
+	} else if tepoch != epoch {
+		panic(fmt.Errorf("GetTakeOver mismatch"))
+	}
+	// return 0 when not set
+	if zepoch, err := db.GetTakeOver(); err != nil {
+		panic(fmt.Errorf("Zero GetTakeOver --- %v", err))
+	} else if zepoch != epoch {
+		panic(fmt.Errorf("Zero GetTakeOver mismatch"))
+	}
+
 }

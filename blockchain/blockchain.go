@@ -86,7 +86,7 @@ type BlockChain struct {
 	fcontroller   *ForkController     // fcontroller
 	processor     processor.Processor // block processor interface
 	validator     processor.Validator // block and state validator interface
-	station       *BlockchainStation  // p2p station
+	station       *Station            // p2p station
 
 	headerCache  *lru.Cache    // Cache for the most recent block headers
 	tdCache      *lru.Cache    // Cache for the most recent block total difficulties
@@ -178,7 +178,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		log.Info("Start chain with a specified block number", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
 	}
 
-	bc.station = newBlockchainStation(bc, 0)
+	bc.station = newStation(bc, 0)
 	go bc.update()
 	return bc, nil
 }
@@ -668,11 +668,11 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 	rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), receipts)
 	if bc.vmConfig.ContractLogFlag {
-		detailtxs := make([]*types.DetailTx, len(receipts))
+		detailTxs := make([]*types.DetailTx, len(receipts))
 		for i := 0; i < len(receipts); i++ {
-			detailtxs[i] = receipts[i].GetInternalTxsLog()
+			detailTxs[i] = receipts[i].GetInternalTxsLog()
 		}
-		rawdb.WriteDetailTxs(batch, block.Hash(), block.NumberU64(), detailtxs)
+		rawdb.WriteDetailTxs(batch, block.Hash(), block.NumberU64(), detailTxs)
 	}
 
 	currentBlock := bc.CurrentBlock()
@@ -713,7 +713,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 	return isCanon, err
 }
 
-// StatePruning enale/disable state pruning
+// StatePruning enable/disable state pruning
 func (bc *BlockChain) StatePruning(enable bool) (bool, uint64) {
 	bc.chainmu.Lock()
 	defer bc.chainmu.Unlock()
@@ -1175,9 +1175,15 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 // Config retrieves the blockchain's chain configuration.
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
 
-// ForkUpdate .
+// ForkUpdate update fork status.
 func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
 	return bc.fcontroller.update(block, statedb, bc.GetHeaderByNumber)
+}
+
+// ForkStatus returns current fork status.
+func (bc *BlockChain) ForkStatus(statedb *state.StateDB) (*ForkConfig, ForkInfo, error) {
+	info, err := bc.fcontroller.getForkInfo(statedb)
+	return bc.fcontroller.cfg, info, err
 }
 
 // Export writes the active chain to the given writer.

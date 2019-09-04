@@ -216,7 +216,6 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			break
 		} else if strings.Contains(err.Error(), "wait") {
 			worker.usleepTo(time.Now().Add(time.Duration(cdpos.BlockInterval() / 10)))
-			//time.Sleep(time.Duration(cdpos.BlockInterval() / 10))
 		}
 
 		log.Warn("failed to mint block", "timestamp", timestamp, "err", err)
@@ -369,8 +368,8 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			return fmt.Errorf("mint the quit block")
 		default:
 		}
-		if work.currentGasPool.Gas() < params.GasTableInstanse.ActionGas {
-			log.Debug("Not enough gas for further transactions", "have", work.currentGasPool, "want", params.GasTableInstanse.ActionGas)
+		if work.currentGasPool.Gas() < params.GasTableInstance.ActionGas {
+			log.Debug("Not enough gas for further transactions", "have", work.currentGasPool, "want", params.GasTableInstance.ActionGas)
 			break
 		}
 

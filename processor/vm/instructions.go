@@ -555,7 +555,7 @@ func opBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 		slot.Set(big.NewInt(0))
 		return nil, nil
 	}
-	balance, _ := account.GetBalanceByID(contract.AssetId)
+	balance, _ := account.GetBalanceByID(contract.AssetID)
 	slot.Set(balance)
 	return nil, nil
 }
@@ -761,7 +761,7 @@ func opGasLimit(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 }
 
 func opCallAssetId(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.interpreter.intPool.get().SetUint64(contract.AssetId))
+	stack.push(evm.interpreter.intPool.get().SetUint64(contract.AssetID))
 	return nil, nil
 }
 
@@ -1222,7 +1222,7 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 }
 
 func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Name, value *big.Int) error {
-	asset := &accountmanager.IncAsset{AssetId: assetID, Amount: value, To: toName}
+	asset := &accountmanager.IncAsset{AssetID: assetID, Amount: value, To: toName}
 	b, err := rlp.EncodeToBytes(asset)
 	if err != nil {
 		return err
@@ -1297,7 +1297,7 @@ func opGetAssetID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	name := string(assetName)
 	if asset, err := evm.AccountDB.GetAssetInfoByName(name); err == nil {
 		if asset != nil {
-			stack.push(evm.interpreter.intPool.get().SetUint64(asset.GetAssetId()))
+			stack.push(evm.interpreter.intPool.get().SetUint64(asset.GetAssetID()))
 		} else {
 			stack.push(big.NewInt(-1))
 		}
@@ -1362,8 +1362,8 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	var err error
 
 	//consume gas per byte
-	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte {
-		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstanse.CryptoByte
+	if contract.Gas >= uint64(dataSize.Int64())*params.GasTableInstance.CryptoByte {
+		contract.Gas = contract.Gas - uint64(dataSize.Int64())*params.GasTableInstance.CryptoByte
 	} else {
 		contract.Gas = 0
 		stack.push(evm.interpreter.intPool.getZero())
@@ -1389,7 +1389,6 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 			eciesprikey := ecies.ImportECDSA(ecdsaprikey)
 			//ret, err = prv1.Decrypt(data, nil, nil)
 			ret, err = eciesprikey.Decrypt(data, nil, nil)
-			//pintg
 			if err == nil {
 				datalen = len(ret)
 				if uint64(datalen) > retSize.Uint64()*32 {
@@ -1488,7 +1487,7 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 					evm.InternalTxs = append(evm.InternalTxs, internalActions...)
 				}
 			}
-			return assetInfo.AssetId, nil
+			return assetInfo.AssetID, nil
 		}
 	}
 }

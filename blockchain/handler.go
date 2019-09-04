@@ -24,13 +24,14 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	router "github.com/fractalplatform/fractal/event"
+	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/types"
 )
 
-type BlockchainStation struct {
+type Station struct {
 	peerCh     chan *router.Event
 	blockchain *BlockChain
-	networkId  uint64
+	networkID  uint64
 	quit       chan struct{}
 	loopWG     sync.WaitGroup
 	downloader *Downloader
@@ -41,11 +42,11 @@ func errResp(code errCode, format string, v ...interface{}) error {
 	return fmt.Errorf("%v - %v", code, fmt.Sprintf(format, v...))
 }
 
-func newBlockchainStation(bc *BlockChain, networkId uint64) *BlockchainStation {
-	bs := &BlockchainStation{
+func newStation(bc *BlockChain, networkID uint64) *Station {
+	bs := &Station{
 		peerCh:     make(chan *router.Event),
 		blockchain: bc,
-		networkId:  networkId,
+		networkID:  networkID,
 		quit:       make(chan struct{}),
 		downloader: NewDownloader(bc),
 		subs:       make([]router.Subscription, 6),
@@ -53,15 +54,20 @@ func newBlockchainStation(bc *BlockChain, networkId uint64) *BlockchainStation {
 	bs.subs[0] = router.Subscribe(nil, bs.peerCh, router.NewPeerNotify, nil)
 	bs.subs[1] = router.Subscribe(nil, bs.peerCh, router.DelPeerNotify, nil)
 	bs.subs[2] = router.Subscribe(nil, bs.peerCh, router.P2PGetStatus, "")
-	bs.subs[3] = router.Subscribe(nil, bs.peerCh, router.P2PGetBlockHashMsg, &getBlcokHashByNumber{})
+	bs.subs[3] = router.Subscribe(nil, bs.peerCh, router.P2PGetBlockHashMsg, &getBlockHashByNumber{})
 	bs.subs[4] = router.Subscribe(nil, bs.peerCh, router.P2PGetBlockHeadersMsg, &getBlockHeadersData{})
 	bs.subs[5] = router.Subscribe(nil, bs.peerCh, router.P2PGetBlockBodiesMsg, []common.Hash{})
 
-	go bs.loop()
+	bs.loopWG.Add(1)
+	go func() {
+		bs.loop()
+		bs.loopWG.Done()
+	}()
+
 	return bs
 }
 
-func (bs *BlockchainStation) chainStatus() *statusData {
+func (bs *Station) chainStatus() *statusData {
 	genesis := bs.blockchain.Genesis()
 	head := bs.blockchain.CurrentHeader()
 	hash := head.Hash()
@@ -69,7 +75,7 @@ func (bs *BlockchainStation) chainStatus() *statusData {
 	td := bs.blockchain.GetTd(hash, number)
 	return &statusData{
 		ProtocolVersion: uint32(1),
-		NetworkId:       0,
+		NetworkID:       0,
 		TD:              td,
 		CurrentBlock:    hash,
 		CurrentNumber:   number,
@@ -81,8 +87,8 @@ func checkChainStatus(local *statusData, remote *statusData) error {
 	if local.GenesisBlock != remote.GenesisBlock {
 		return errResp(ErrGenesisBlockMismatch, "remote:%x (!= self:%x)", remote.GenesisBlock[:8], local.GenesisBlock[:8])
 	}
-	if local.NetworkId != remote.NetworkId {
-		return errResp(ErrNetworkIdMismatch, "remote:%d (!= self:%d)", remote.NetworkId, local.NetworkId)
+	if local.NetworkID != remote.NetworkID {
+		return errResp(ErrNetworkIDMismatch, "remote:%d (!= self:%d)", remote.NetworkID, local.NetworkID)
 	}
 	if local.ProtocolVersion != remote.ProtocolVersion {
 		return errResp(ErrProtocolVersionMismatch, "remote:%d (!= self:%d)", remote.ProtocolVersion, local.ProtocolVersion)
@@ -90,7 +96,7 @@ func checkChainStatus(local *statusData, remote *statusData) error {
 	return nil
 }
 
-func (bs *BlockchainStation) handshake(e *router.Event) {
+func (bs *Station) handshake(e *router.Event) {
 	station := router.NewLocalStation("shake"+e.From.Name(), nil)
 	ch := make(chan *router.Event)
 	sub := router.Subscribe(station, ch, router.P2PStatusMsg, &statusData{})
@@ -119,7 +125,7 @@ func (bs *BlockchainStation) handshake(e *router.Event) {
 	}
 }
 
-func (bs *BlockchainStation) loop() {
+func (bs *Station) loop() {
 	for {
 		select {
 		case <-bs.quit:
@@ -140,6 +146,7 @@ func (bs *BlockchainStation) loop() {
 				}()
 			default:
 				if router.Thread(e.From) > 3 {
+					log.Warn("Disconnect because request too frequently:", "node:", adaptor.GetFnode(e.From), "thread", router.Thread(e.From))
 					router.SendTo(nil, nil, router.OneMinuteLimited, e.From)
 					continue
 				}
@@ -156,7 +163,7 @@ func (bs *BlockchainStation) loop() {
 
 // handleMsg is invoked whenever an inbound message is received from a remote
 // peer. The remote connection is torn down upon returning any error.
-func (bs *BlockchainStation) handleMsg(e *router.Event) error {
+func (bs *Station) handleMsg(e *router.Event) error {
 	start := time.Now()
 	defer func() {
 		router.AddCPU(e.From, time.Since(start))
@@ -168,7 +175,7 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 		router.ReplyEvent(e, router.P2PStatusMsg, status)
 
 	case router.P2PGetBlockHashMsg:
-		query := e.Data.(*getBlcokHashByNumber)
+		query := e.Data.(*getBlockHashByNumber)
 		hashes := make([]common.Hash, 0, query.Amount)
 		for len(hashes) < int(query.Amount) {
 			header := bs.blockchain.GetHeaderByNumber(query.Number)
@@ -247,7 +254,7 @@ func (bs *BlockchainStation) handleMsg(e *router.Event) error {
 	return nil
 }
 
-func (bs *BlockchainStation) Stop() {
+func (bs *Station) Stop() {
 	log.Info("BlockchainHandler stopping...")
 	close(bs.quit)
 	for _, sub := range bs.subs {
