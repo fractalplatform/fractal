@@ -424,9 +424,9 @@ func TestLDBTakeOver(t *testing.T) {
 		panic(fmt.Errorf("GetTakeOver mismatch"))
 	}
 	// return 0 when not set
-	if zpoch, err := db.GetTakeOver(); err != nil {
+	if zepoch, err := db.GetTakeOver(); err != nil {
 		panic(fmt.Errorf("Zero GetTakeOver --- %v", err))
-	} else if zpoch != epoch {
+	} else if zepoch != epoch {
 		panic(fmt.Errorf("Zero GetTakeOver mismatch"))
 	}
 
