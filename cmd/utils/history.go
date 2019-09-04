@@ -43,6 +43,13 @@ import "github.com/monax/relic"
 // release tagging script: ./scripts/tag_release.sh
 var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
 	MustDeclareReleases(
+		"0.0.29 - 2019-09-04",
+		`### Fixed
+- [P2P] blockchain/downloader: fixed bug that may don't download the new block (#469)
+### Added
+- [CMD] add chain command forkstatus (#468)
+- [TEST] add each code module unit test or note.(#467)(#466)
+`,
 		"0.0.28 - 2019-09-04",
 		`### Fixed
 - [P2P] bootnode in genesis is ft finder.(#439)
