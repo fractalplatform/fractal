@@ -2180,3 +2180,49 @@ func Test_IssueAssetForkID1(t *testing.T) {
 	}
 
 }
+
+func Test_GetAccountNameLevel(t *testing.T) {
+	level, err := GetAccountNameLevel("fractal")
+
+	if level != 1 || err != nil {
+		t.Errorf("account level 1 test failed, level:%v, err:%v", level, err)
+	}
+
+	level, err = GetAccountNameLevel("fractal.test")
+
+	if level != 2 || err != nil {
+		t.Errorf("account level 1 test failed, level:%v, err:%v", level, err)
+	}
+}
+
+func Test_CheckAssetContract(t *testing.T) {
+	type args struct {
+		contractName string
+		owner        string
+		from         string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"assetContract", args{"fractal.contract", "fractal.contract", "fractal.test"}, true},
+		{"assetContract", args{"fractal.contract", "fractal.test1", "fractal.test"}, false},
+	}
+
+	am := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+
+	for _, tt := range tests {
+		assetContract := am.CheckAssetContract(common.Name(tt.args.contractName),
+			common.Name(tt.args.owner), common.Name(tt.args.from))
+
+		if assetContract != tt.wantErr {
+			t.Errorf("asset contract test failed")
+		}
+	}
+}
