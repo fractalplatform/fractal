@@ -208,9 +208,7 @@ func (api *AccountAPI) GetNonce(accountName common.Name) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-
 	return acct.GetNonce(accountName)
-
 }
 
 //GetAssetInfoByName
