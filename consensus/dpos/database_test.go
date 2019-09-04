@@ -23,16 +23,16 @@ import (
 )
 
 func TestCandidateType(t *testing.T) {
-	type_list := []CandidateType{Normal, Freeze, Black, Jail, Unkown}
-	for _, t := range type_list {
+	typeList := []CandidateType{Normal, Freeze, Black, Jail, Unkown}
+	for _, t := range typeList {
 		if text, err := t.MarshalText(); err != nil {
 			panic(fmt.Errorf("MarshalText --- %v", err))
 		} else {
-			var new_ct CandidateType
-			if err := new_ct.UnmarshalText(text); err != nil {
+			var newCt CandidateType
+			if err := newCt.UnmarshalText(text); err != nil {
 				panic(fmt.Errorf("UnmarshalText --- %v", err))
 			} else {
-				if new_ct != t {
+				if newCt != t {
 					panic(fmt.Errorf("Var mismatch --- %v", err))
 				}
 			}
@@ -42,7 +42,7 @@ func TestCandidateType(t *testing.T) {
 
 func TestCandidateInfo(t *testing.T) {
 
-	candidate_info := &CandidateInfo{
+	candidateInfo := &CandidateInfo{
 		Epoch:         1,
 		Name:          "candidate1",
 		URL:           "",
@@ -55,39 +55,39 @@ func TestCandidateInfo(t *testing.T) {
 		PrevKey:       "-",
 		NextKey:       "-",
 	}
-	if candidate_info.invalid() {
+	if candidateInfo.invalid() {
 		panic(fmt.Errorf("Candidate Info invalid"))
 	}
 
-	var new_ci *CandidateInfo
-	candidate_array := CandidateInfoArray{}
-	candidate_array = append(candidate_array, candidate_info)
+	var newCi *CandidateInfo
+	candidateArray := CandidateInfoArray{}
+	candidateArray = append(candidateArray, candidateInfo)
 
-	new_ci = candidate_info.copy()
-	new_ci.Name = "candidate2"
-	candidate_array = append(candidate_array, new_ci)
+	newCi = candidateInfo.copy()
+	newCi.Name = "candidate2"
+	candidateArray = append(candidateArray, newCi)
 
-	new_ci = candidate_info.copy()
-	new_ci.Name = "candidate3"
-	candidate_array = append(candidate_array, new_ci)
+	newCi = candidateInfo.copy()
+	newCi.Name = "candidate3"
+	candidateArray = append(candidateArray, newCi)
 
-	new_ci = candidate_info.copy()
-	new_ci.Number = 2
-	candidate_array = append(candidate_array, new_ci)
+	newCi = candidateInfo.copy()
+	newCi.Number = 2
+	candidateArray = append(candidateArray, newCi)
 
-	if 4 != candidate_array.Len() {
+	if 4 != candidateArray.Len() {
 		panic(fmt.Errorf("CandidateInfoArray Len mismatch"))
 	}
 
-	if candidate_array.Less(1, 2) {
+	if candidateArray.Less(1, 2) {
 		panic(fmt.Errorf("CandidateInfoArray Less mismatch"))
 	}
-	if !candidate_array.Less(2, 3) {
+	if !candidateArray.Less(2, 3) {
 		panic(fmt.Errorf("CandidateInfoArray Less mismatch"))
 	}
 
-	candidate_array.Swap(0, 3)
-	if candidate_info != candidate_array[3] {
+	candidateArray.Swap(0, 3)
+	if candidateInfo != candidateArray[3] {
 		panic(fmt.Errorf("CandidateInfoArray Swap doesnt work"))
 	}
 }
