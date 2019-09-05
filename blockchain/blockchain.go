@@ -49,7 +49,7 @@ const (
 	tdCacheLimit        = 1024
 	numberCacheLimit    = 2048
 	maxFutureBlocks     = 256
-	maxTimeFutureBlocks = 30
+	maxTimeFutureBlocks = 30 // 30's
 	badBlockLimit       = 10
 
 	//BlockChainVersion ensures that an incompatible database forces a resync from scratch.
@@ -800,7 +800,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 			stats.ignored++
 			continue
 		case err == processor.ErrFutureBlock:
-			max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
+			max := big.NewInt(time.Now().Add(maxTimeFutureBlocks * time.Second).UnixNano())
 			if block.Time().Cmp(max) > 0 {
 				return i, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
