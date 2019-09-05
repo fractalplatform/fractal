@@ -1,4 +1,12 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.29] - 2019-09-04
+### Fixed
+- [P2P] blockchain/downloader: fixed bug that may don't download the new block (#469)
+### Added
+- [CMD] add chain command forkstatus (#468)
+- [TEST] add each code module unit test or note.(#467)(#466)
+
+
 ## [0.0.28] - 2019-09-04
 ### Fixed
 - [P2P] bootnode in genesis is ft finder.(#439)
@@ -246,6 +254,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.29]: https://github.com/fractalplatform/fractal/compare/v0.0.28...v0.0.29
 [0.0.28]: https://github.com/fractalplatform/fractal/compare/v0.0.27...v0.0.28
 [0.0.27]: https://github.com/fractalplatform/fractal/compare/v0.0.26...v0.0.27
 [0.0.26]: https://github.com/fractalplatform/fractal/compare/v0.0.25...v0.0.26

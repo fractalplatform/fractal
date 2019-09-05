@@ -1,11 +1,6 @@
 ### Fixed
-- [P2P] bootnode in genesis is ft finder.(#439)
-- [DPOS]dpos api epoch add url. (#437)
-- [INTERNALTX]modify internal tx log hash. (#441)
-- [FILTER]fix rpc output format. (#440)
-### Changed
-- [RPCAPI] modify setStatePruning rpc private (#464),modify blockchain misspelling and change ft_getTransactions (#457)
+- [P2P] blockchain/downloader: fixed bug that may don't download the new block (#469)
 ### Added
-- [RPCAPI] add rpc api ft_forkStatus.(#463)
-- [TEST] add each code module unit test or note.(#442)(#446)(#447)(#448)(#450)(#451)(#454)(#455)(#456)(#458)(#459)(#461)(#462)(#465)
+- [CMD] add chain command forkstatus (#468)
+- [TEST] add each code module unit test or note.(#467)(#466)
 
