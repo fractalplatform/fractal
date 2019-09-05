@@ -35,7 +35,14 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestConfigCheck(t *testing.T) {
+	cfg := new(Config)
+	cfg.Journal = DefaultTxPoolConfig.Journal
+	assert.Equal(t, cfg.check(), *DefaultTxPoolConfig)
+}
 
 // This test simulates a scenario where a new block is imported during a
 // state reset and tests whether the pending state is in sync with the
@@ -49,7 +56,6 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 		fkey       = generateAccount(t, fname, manager)
 		_          = generateAccount(t, tname, manager)
 		asset      = asset.NewAsset(statedb)
-		trigger    = false
 	)
 
 	// issue asset
@@ -61,8 +67,7 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
-
-	blockchain := &testChain{&testBlockChain{statedb, 1000000000, new(event.Feed)}, fname, &trigger}
+	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 
 	tx0 := transaction(0, fname, tname, 109000, fkey)
 	tx1 := transaction(1, fname, tname, 109000, fkey)
@@ -88,8 +93,6 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
 
-	// trigger state change in the background
-	trigger = true
 	<-pool.requestReset(nil, nil)
 
 	_, err = pool.Pending()

@@ -181,40 +181,6 @@ func validateEvents(events chan *event.Event, count int) error {
 	return nil
 }
 
-type testChain struct {
-	*testBlockChain
-
-	name    common.Name
-	trigger *bool
-}
-
-// testChain.State() is used multiple times to reset the pending state.
-// when simulate is true it will create a state that indicates
-// that tx0 and tx1 are included in the chain.
-func (c *testChain) State() (*state.StateDB, error) {
-	// delay "state change" by one. The tx pool fetches the
-	// state multiple times and by delaying it a bit we simulate
-	// a state change between those fetches.
-	stdb := c.statedb
-	if *c.trigger {
-		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
-		am, err := am.NewAccountManager(c.statedb)
-		if err != nil {
-			return nil, err
-		}
-
-		// simulate that the new head block included tx0 and tx1
-		if err := am.SetNonce(c.name, 2); err != nil {
-			return nil, err
-		}
-		if err := am.AddAccountBalanceByID(c.name, uint64(0), new(big.Int).SetUint64(params.Fractal)); err != nil {
-			return nil, err
-		}
-		*c.trigger = false
-	}
-	return stdb, nil
-}
-
 func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
 	return types.NewAction(types.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
 }
