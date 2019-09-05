@@ -25,7 +25,7 @@ import (
 
 // The fields below define the low level database schema prefixing.
 var (
-	//irreversibleNumberKey tracks the blcokchain irreversible number
+	//irreversibleNumberKey tracks the blockchain irreversible number
 	irreversibleNumberKey = []byte("irreversibleNumber")
 	// headHeaderKey tracks the latest know header's hash.
 	headHeaderKey = []byte("LastHeader")
