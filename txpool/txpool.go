@@ -1192,7 +1192,7 @@ func (tp *TxPool) truncatePending() {
 	}
 }
 
-// truncateQueue drops the oldes transactions in the queue if the pool is above the global queue limit.
+// truncateQueue drops the oldest transactions in the queue if the pool is above the global queue limit.
 func (tp *TxPool) truncateQueue() {
 	queued := uint64(0)
 	for _, list := range tp.queue {

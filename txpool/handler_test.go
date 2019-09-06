@@ -121,7 +121,6 @@ func TestP2PTxMsg(t *testing.T) {
 		fkey       = generateAccount(t, fname, manager)
 		_          = generateAccount(t, tname, manager)
 		asset      = asset.NewAsset(statedb)
-		trigger    = false
 	)
 	// issue asset
 	if _, err := asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
@@ -132,7 +131,7 @@ func TestP2PTxMsg(t *testing.T) {
 		t.Fatal(err)
 	}
 	params.DefaultChainconfig.SysTokenID = 0
-	blockchain := &testChain{&testBlockChain{statedb, 1000000000, new(event.Feed)}, fname, &trigger}
+	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
@@ -170,8 +169,6 @@ func TestP2PTxMsg(t *testing.T) {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
 
-	// trigger state change in the background
-	trigger = true
 	pool.requestReset(nil, nil)
 
 	_, err = pool.Pending()
