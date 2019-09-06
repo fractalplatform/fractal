@@ -34,6 +34,9 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
+// NewMinedBlockEvent is posted when a block has been imported.
+type NewMinedBlockEvent struct{ Block *types.Block }
+
 var (
 	emptyHash = common.Hash{}
 )
