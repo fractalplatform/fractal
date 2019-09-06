@@ -36,3 +36,21 @@ func TestStorageSizeString(t *testing.T) {
 		}
 	}
 }
+
+func TestStorageSizeTerminalString(t *testing.T) {
+	tests := []struct {
+		size StorageSize
+		str  string
+	}{
+		{2381273, "2.38mB"},
+		{2192, "2.19kB"},
+		{12, "12.00B"},
+		{32 * 1024, "32.77kB"},
+	}
+
+	for _, test := range tests {
+		if test.size.TerminalString() != test.str {
+			t.Errorf("%f: got %q, want %q", float64(test.size), test.size.String(), test.str)
+		}
+	}
+}
