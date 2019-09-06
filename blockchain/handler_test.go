@@ -40,12 +40,11 @@ func (simuAdaptor) SendOut(e *router.Event) error {
 */
 func TestHandler(t *testing.T) {
 	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	blockCount := 10
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
-	makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
+	makeNewChain(t, genesis, chain, blockCount, canonicalSeed)
 
 	//router.AdaptorRegister(simuAdaptor{})
 	errCh := make(chan struct{})
