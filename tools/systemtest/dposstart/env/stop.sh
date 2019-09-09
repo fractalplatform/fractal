@@ -1,0 +1,1 @@
+ps x | grep ftproducer | awk '{print $1}' | xargs kill >./datadir/null 2>&1
