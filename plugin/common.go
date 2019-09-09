@@ -1,4 +1,4 @@
-package native
+package plugin
 
 import (
 	"errors"
@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	errFuncNotExist = errors.New("function not exist")
+	errFuncNotExist      = errors.New("function not exist")
+	errFuncParamNumWrong = errors.New("function param num wrong")
 )
 
 type NativeContract interface {
@@ -17,5 +18,5 @@ type NativeContract interface {
 // PrecompiledContracts contains the default set of pre-compiled
 var NativeContracts = map[common.Name]NativeContract{
 	common.Name("native.asset"):    &NativeAsset{},
-	common.Name("native.contract"): &Contract{},
+	common.Name("native.contract"): &NativeAccount{},
 }

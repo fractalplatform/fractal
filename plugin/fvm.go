@@ -14,31 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package vm
+//VM is a Virtual Machine based on Ethereum Virtual Machine
+package plugin
 
 import (
 	"fmt"
 
-	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/common"
 )
 
-func makeStackFunc(pop, push int) stackValidationFunc {
-	return func(stack *Stack) error {
-		if err := stack.require(pop); err != nil {
-			return err
-		}
-
-		if stack.len()+push-pop > int(params.StackLimit) {
-			return fmt.Errorf("stack limit reached %d (%d)", stack.len(), params.StackLimit)
-		}
-		return nil
+func CallNative(contract common.Name, method string, params ...interface{}) ([]byte, error) {
+	if c := NativeContracts[contract]; c != nil {
+		return c.Run(method, params)
 	}
-}
-
-func makeDupStackFunc(n int) stackValidationFunc {
-	return makeStackFunc(n, n+1)
-}
-
-func makeSwapStackFunc(n int) stackValidationFunc {
-	return makeStackFunc(n, n)
+	return nil, fmt.Errorf("native contract %s not exist", contract)
 }
