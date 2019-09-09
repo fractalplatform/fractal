@@ -1,0 +1,1 @@
+[{"constant":false,"inputs":[{"name":"d","type":"string"},{"name":"e","type":"string"}],"name":"mydecode","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"myencode","outputs":[{"name":"ret","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]
