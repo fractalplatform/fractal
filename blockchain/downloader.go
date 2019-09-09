@@ -439,6 +439,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	if headNumber < statusNumber && statusNumber < headNumber+6 {
 		_, err := dl.shortcutDownload(status, headNumber, head.Hash(), statusNumber, statusHash)
 		if err == nil { // download and insert completed
+			head = dl.blockchain.CurrentBlock()
 			dl.broadcastStatus(&NewBlockHashesData{
 				Hash:      head.Hash(),
 				Number:    head.NumberU64(),
