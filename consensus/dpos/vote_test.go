@@ -56,6 +56,19 @@ func TestCandiate(t *testing.T) {
 		if err := sys.IDB.SetAvailableQuantity(uint64(index), candidate, new(big.Int).Mul(big10, minStakeCandidate)); err != nil {
 			panic(fmt.Errorf("SetAvailableQuantity --- %v", err))
 		}
+
+		if err := sys.RefundCandidate(uint64(index), candidate, uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
+			panic(fmt.Sprintf("RefundCandidate %v", err))
+		}
+
+		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big2, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
+			panic(fmt.Sprintf("UpdateCandidate %v", err))
+		}
+
+		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
+			panic(fmt.Sprintf("UnregCandidate %v", err))
+		}
+
 		if err := sys.RegCandidate(uint64(index), candidate, strings.Repeat(fmt.Sprintf("www.%v.com", candidate), int(DefaultConfig.MaxURLLen)), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "invalid url") {
 			panic(fmt.Sprintf("RegCandidate invalid url %v mismatch", err))
 		}
@@ -82,7 +95,15 @@ func TestCandiate(t *testing.T) {
 		}
 
 		if err := sys.RegCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "invalid candidate") {
-			panic(fmt.Sprintf("RegCandidate invalid name %v mismatch", err))
+			panic(fmt.Sprintf("RegCandidate %v", err))
+		}
+
+		if err := sys.UpdateCandidate(uint64(index), candidate, strings.Repeat(fmt.Sprintf("www.%v.com", candidate), int(DefaultConfig.MaxURLLen)), new(big.Int).Mul(big1, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "invalid url") {
+			panic(fmt.Sprintf("UpdateCandidate invalid url %v mismatch", err))
+		}
+
+		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), big1, uint64(index), 0); !strings.Contains(err.Error(), "non divisibility") {
+			panic(fmt.Sprintf("UpdateCandidate invalid stake %v mismatch", err))
 		}
 
 		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big2, minStakeCandidate), uint64(index), 0); err != nil {
@@ -101,13 +122,25 @@ func TestCandiate(t *testing.T) {
 			panic(fmt.Sprintf("GetState mismatch"))
 		}
 
+		if err := sys.RefundCandidate(uint64(index), candidate, uint64(index), 0); !strings.Contains(err.Error(), "not in freeze") {
+			panic(fmt.Sprintf("RefundCandidate %v", err))
+		}
+
 		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index), 0); err != nil {
 			panic(fmt.Sprintf("UnregCandidate %v", err))
 		}
 
-		// if err := sys.RefundCandidate(uint64(index), candidate, uint64(index)); err == nil {
-		// 	panic(fmt.Sprintf("RefundCandidate %v", err))
-		// }
+		if err := sys.UnregCandidate(uint64(index), candidate, uint64(index), 0); !strings.Contains(err.Error(), "not in normal") {
+			panic(fmt.Sprintf("UnregCandidate %v", err))
+		}
+
+		if err := sys.UpdateCandidate(uint64(index), candidate, fmt.Sprintf("www.%v.com", candidate), new(big.Int).Mul(big2, minStakeCandidate), uint64(index), 0); !strings.Contains(err.Error(), "not in normal") {
+			panic(fmt.Sprintf("UpdateCandidate %v", err))
+		}
+
+		if err := sys.RefundCandidate(uint64(index), candidate, uint64(index), 0); !strings.Contains(err.Error(), "not arrived") {
+			panic(fmt.Sprintf("RefundCandidate %v", err))
+		}
 
 		if ncandidates, _ := sys.GetCandidates(uint64(index)); len(ncandidates) != 1 {
 			panic(fmt.Sprintf("UnregCandidate %v mismatch", err))
