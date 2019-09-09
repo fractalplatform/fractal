@@ -32,7 +32,7 @@ ps -ef | grep ./build/test_sdk/ft | grep -v grep |  awk -F ' ' '{print $2}' | xa
 set -e
 echo "mode: count" >coverage.out
 
-for d in $(go list ./... | grep -v vendor | grep -v test); do
+for d in $(go list ./... | grep -v vendor | grep -v test | grep -v module | grep -v tools ); do
     echo testing $d ...
     go test -coverprofile=profile.out -covermode=count $d
     if [ -f profile.out ]; then

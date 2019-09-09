@@ -1,0 +1,5 @@
+mkdir -p ./datadir
+ps x | grep ftproducer | awk '{print $1}' | xargs kill >./datadir/null 2>&1
+../../../build/bin/z0 --datadir ./datadir/ftproducer1 --p2p_bootnodes ./nodes.txt --p2p_listenaddr :2017 --http_port 8445 --ws_port 8486 --miner_coinbase ftproducer1 --miner_private 289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032 --miner_start > ./datadir/1.log 2>&1 &
+../../../build/bin/z0 --datadir ./datadir/ftproducer2 --p2p_bootnodes ./nodes.txt --p2p_listenaddr :2016 --http_port 8345 --ws_port 8386 --miner_coinbase ftproducer2 --miner_private 9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658 --miner_start > ./datadir/2.log 2>&1 &
+../../../build/bin/z0 --datadir ./datadir/ftproducer3 --p2p_bootnodes ./nodes.txt --p2p_listenaddr :2015 --http_port 8245 --ws_port 8286 --miner_coinbase ftproducer3 --miner_private 8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8 --miner_start > ./datadir/3.log 2>&1 &
