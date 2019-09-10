@@ -111,12 +111,15 @@ func (worker *Worker) start(force bool) {
 		return
 	}
 	worker.force = force
-	go worker.mintLoop()
+	worker.quit = make(chan struct{})
+	worker.wg.Add(1)
+	go func() {
+		worker.mintLoop()
+		worker.wg.Done()
+	}()
 }
 
 func (worker *Worker) mintLoop() {
-	worker.wg.Add(1)
-	defer worker.wg.Done()
 	dpos, ok := worker.Engine().(*dpos.Dpos)
 	if !ok {
 		panic("only support dpos engine")
@@ -140,44 +143,22 @@ func (worker *Worker) mintLoop() {
 	for {
 		select {
 		case now := <-c:
-			worker.quitWorkRW.Lock()
-			if worker.quitWork != nil {
-				close(worker.quitWork)
-				worker.quitWork = nil
-				log.Debug("next time coming, will be closing current work")
-			}
-			worker.quitWorkRW.Unlock()
-			worker.wgWork.Wait()
-
-			quit := make(chan struct{})
-			worker.wgWork.Add(1)
 			timestamp := int64(dpos.Slot(uint64(now.UnixNano())))
-			go worker.mintBlock(timestamp, quit)
+			worker.mintBlock(timestamp)
 			to := time.Now()
 			worker.utimerTo(to.Add(time.Duration(interval-(to.UnixNano()%interval))), c)
 		case <-worker.quit:
-			worker.quit = make(chan struct{})
 			return
 		}
 	}
 }
 
-func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
-	worker.quitWorkRW.Lock()
-	worker.quitWork = quit
-	worker.quitWorkRW.Unlock()
-	defer func() {
-		worker.quitWorkRW.Lock()
-		worker.quitWork = nil
-		worker.quitWorkRW.Unlock()
-		worker.wgWork.Done()
-	}()
-
+func (worker *Worker) mintBlock(timestamp int64) {
 	bstart := time.Now()
 	log.Debug("mint block", "timestamp", timestamp)
 	for {
 		select {
-		case <-quit:
+		case <-worker.quit:
 			return
 		default:
 		}
@@ -206,7 +187,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			}
 			return
 		}
-		block, err := worker.commitNewWork(timestamp, header, quit)
+		block, err := worker.commitNewWork(timestamp, header)
 		if err == nil {
 			log.Info("Mined new block", "candidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 			break
@@ -228,6 +209,7 @@ func (worker *Worker) stop() {
 		return
 	}
 	close(worker.quit)
+	worker.wg.Wait()
 }
 func (worker *Worker) setDelayDuration(delay uint64) error {
 	worker.mu.Lock()
@@ -255,7 +237,7 @@ func (worker *Worker) setExtra(extra []byte) {
 	worker.extra = extra
 }
 
-func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit chan struct{}) (*types.Block, error) {
+func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header) (*types.Block, error) {
 	dpos := worker.Engine().(*dpos.Dpos)
 	if t := time.Now(); t.UnixNano() >= timestamp+int64(dpos.BlockInterval()) {
 		return nil, fmt.Errorf("mint the ingore block, need %v, now %v, sub %v", timestamp, t.UnixNano(), t.Sub(time.Unix(timestamp/int64(time.Second), timestamp%int64(time.Second))))
@@ -299,7 +281,6 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 		currentReceipts: []*types.Receipt{},
 		currentGasPool:  new(common.GasPool).AddGas(header.GasLimit),
 		currentCnt:      0,
-		quit:            quit,
 	}
 
 	if err := worker.Prepare(worker.IConsensus, work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState); err != nil {
@@ -364,7 +345,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	endTime := time.Unix((int64)(endTimeStamp)/(int64)(time.Second), (int64)(endTimeStamp)%(int64)(time.Second))
 	for {
 		select {
-		case <-work.quit:
+		case <-worker.quit:
 			return fmt.Errorf("mint the quit block")
 		default:
 		}
@@ -474,7 +455,6 @@ type Work struct {
 	currentReceipts []*types.Receipt
 	currentBlock    *types.Block
 	currentState    *state.StateDB
-	quit            chan struct{}
 }
 
 func (worker *Worker) usleepTo(to time.Time) {
