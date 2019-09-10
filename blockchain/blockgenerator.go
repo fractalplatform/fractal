@@ -18,7 +18,6 @@ package blockchain
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
@@ -56,20 +55,6 @@ func (bg *BlockGenerator) SetCoinbase(name common.Name) {
 	}
 	bg.header.Coinbase = name
 	bg.gasPool = new(common.GasPool).AddGas(bg.header.GasLimit)
-}
-
-// OffsetTime modifies the time instance of a block
-func (bg *BlockGenerator) OffsetTime(seconds int64) {
-	bg.header.Time.Add(bg.header.Time, new(big.Int).SetInt64(seconds))
-	if bg.header.Time.Cmp(bg.parent.Header().Time) <= 0 {
-		panic(fmt.Sprintf("header time %d less than parent header time %v ", bg.header.Time.Uint64(), bg.parent.Time().Uint64()))
-	}
-	bg.header.Difficulty = bg.engine.CalcDifficulty(bg, bg.header.Time.Uint64(), bg.parent.Header())
-}
-
-// AddTx adds a transaction to the generated block.
-func (bg *BlockGenerator) AddTx(tx *types.Transaction) {
-	bg.AddTxWithChain(tx)
 }
 
 // TxNonce retrun nonce
