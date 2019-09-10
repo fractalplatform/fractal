@@ -286,7 +286,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	candidateInfos := ArrayCandidateInfoForBrowser{}
 	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
 
-	candidateInfos.TakeOver = dataEpoch.TakeOver
+	candidateInfos.TakeOver = reqEpoch.TakeOver
 	candidateInfos.Dpos = dataEpoch.Dpos
 
 	if dataEpoch.Dpos {
@@ -418,7 +418,7 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 		candidateInfo.URL = c.URL
 		candidateInfo.Holder = balance.String()
 
-		tmp, err := sys.GetCandidate(history, c.Name)
+		tmp, err := sys.GetCandidate(req, c.Name)
 		if err != nil {
 			return nil, err
 		}
