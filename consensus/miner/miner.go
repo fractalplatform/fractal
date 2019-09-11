@@ -32,7 +32,7 @@ import (
 type Miner struct {
 	worker *Worker
 
-	mining      int32
+	mining      int32 // 0: stoped; 1: starting; 2: started; 3: stopping
 	canStart    int32 // can start indicates whether we can start the mining operation
 	shouldStart int32 // should start indicates whether we should start after sync
 }
@@ -94,18 +94,20 @@ func (miner *Miner) Start(force bool) bool {
 	}
 	log.Info("Starting mining operation")
 	miner.worker.start(force)
+	atomic.StoreInt32(&miner.mining, 2)
 	return true
 }
 
 // Stop stop worker
 func (miner *Miner) Stop() bool {
-	if !atomic.CompareAndSwapInt32(&miner.mining, 1, 0) {
+	if !atomic.CompareAndSwapInt32(&miner.mining, 2, 3) {
 		log.Error("miner already stopped")
 		return false
 	}
 	log.Info("Stopping mining operation")
 	atomic.StoreInt32(&miner.shouldStart, 0)
 	miner.worker.stop()
+	atomic.StoreInt32(&miner.mining, 0)
 	return true
 }
 
