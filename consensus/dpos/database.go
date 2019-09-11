@@ -221,6 +221,7 @@ type VoterInfoFractal struct {
 	URL           string `json:"url"`
 	State         uint64 `json:"state"`
 	Vote          uint64 `json:"vote"`
+	CanVote       bool   `json:"canVote"`
 }
 
 // CandidateInfoArray array of candidate

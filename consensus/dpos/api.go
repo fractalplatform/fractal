@@ -534,6 +534,11 @@ func (api *API) VoterInfo(reqEpochNumber uint64) (interface{}, error) {
 		}
 		voter.Candidate = c.Name
 
+		if voter.Vote == 1 && voter.State == uint64(Normal) {
+			voter.CanVote = true
+		} else {
+			voter.CanVote = false
+		}
 		tmp := c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake())
 		voter.Quantity = tmp.Div(tmp, declimsBigInt).String()
 		voter.TotalQuantity = c.TotalQuantity.String()
