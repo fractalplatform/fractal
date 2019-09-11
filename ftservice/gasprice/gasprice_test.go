@@ -74,4 +74,19 @@ func TestSuggestPrice(t *testing.T) {
 		t.Fatal(err)
 	}
 	assert.Equal(t, price, gasPrice)
+
+	// test the Minimum configuration
+
+	cfg1 := Config{
+		Blocks:  5,
+		Default: big.NewInt(10),
+	}
+	gpo = NewOracle(newTestBlockChain(price), cfg1)
+
+	gasPrice, err = gpo.SuggestPrice(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, big.NewInt(10), gasPrice)
+
 }
