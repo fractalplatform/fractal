@@ -17,15 +17,9 @@
 //VM is a Virtual Machine based on Ethereum Virtual Machine
 package plugin
 
-import (
-	"fmt"
-
-	"github.com/fractalplatform/fractal/common"
-)
-
-func CallNative(contract common.Name, method string, params ...interface{}) ([]byte, error) {
-	if c := NativeContracts[contract]; c != nil {
-		return c.Run(method, params)
+func CallNative(context *Context) ([]byte, error) {
+	if op := methodSet[context.action.MethodID()]; op != nil {
+		return op.execute(context)
 	}
-	return nil, fmt.Errorf("native contract %s not exist", contract)
+	return nil, errFuncNotExist
 }

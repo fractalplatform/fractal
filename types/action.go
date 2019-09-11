@@ -40,6 +40,7 @@ const (
 	CallContract ActionType = iota
 	// CreateContract repesents the create contract action.
 	CreateContract
+	CallNative
 )
 
 const (
@@ -109,6 +110,7 @@ type SignData struct {
 }
 
 type actionData struct {
+	MethodID string
 	AType    ActionType
 	Nonce    uint64
 	AssetID  uint64
@@ -118,8 +120,7 @@ type actionData struct {
 	Amount   *big.Int
 	Payload  []byte
 	Remark   []byte
-
-	Sign *Signature
+	Sign     *Signature
 }
 
 // Action represents an entire action in the transaction.
@@ -251,6 +252,8 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 	}
 	return nil
 }
+
+func (a *Action) MethodID() string { return a.data.MethodID }
 
 // Type returns action's type.
 func (a *Action) Type() ActionType { return a.data.AType }

@@ -3,7 +3,8 @@ package plugin
 import (
 	"errors"
 
-	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/types"
 )
 
 var (
@@ -11,12 +12,18 @@ var (
 	errFuncParamNumWrong = errors.New("function param num wrong")
 )
 
-type NativeContract interface {
-	Run(method string, params ...interface{}) ([]byte, error) // Run runs the precompiled contract
+type operation struct {
+	execute func(context *Context) ([]byte, error)
 }
 
-// PrecompiledContracts contains the default set of pre-compiled
-var NativeContracts = map[common.Name]NativeContract{
-	common.Name("native.asset"):    &NativeAsset{},
-	common.Name("native.contract"): &NativeAccount{},
+var methodSet = map[string]*operation{
+	"NativeAccount_CreateAccount": &operation{
+		execute: CreateAccount,
+	},
+}
+
+type Context struct {
+	account *accountmanager.AccountManager
+	action  *types.Action
+	params  []interface{}
 }
