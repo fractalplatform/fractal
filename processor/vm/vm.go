@@ -123,6 +123,7 @@ type DistributeKey struct {
 	ObjectName common.Name
 	ObjectType uint64
 }
+
 type DistributeKeys []DistributeKey
 
 func (keys DistributeKeys) Len() int {

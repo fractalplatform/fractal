@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -13,17 +14,19 @@ var (
 )
 
 type operation struct {
-	execute func(context *Context) ([]byte, error)
+	execute func(context *Context) ([]byte, uint64, error)
 }
 
 var methodSet = map[string]*operation{
-	"NativeAccount_CreateAccount": &operation{
+	"account_CreateAccount": &operation{
 		execute: CreateAccount,
 	},
 }
 
 type Context struct {
-	account *accountmanager.AccountManager
-	action  *types.Action
-	params  []interface{}
+	Account *accountmanager.AccountManager
+	Action  *types.Action
+	Evm     *vm.EVM
+	Gas     uint64
+	Params  []interface{}
 }

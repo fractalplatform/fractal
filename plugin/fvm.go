@@ -17,9 +17,9 @@
 //VM is a Virtual Machine based on Ethereum Virtual Machine
 package plugin
 
-func CallNative(context *Context) ([]byte, error) {
-	if op := methodSet[context.action.MethodID()]; op != nil {
+func CallNative(context *Context) ([]byte, uint64, error) {
+	if op := methodSet[context.Action.MethodID()]; op != nil {
 		return op.execute(context)
 	}
-	return nil, errFuncNotExist
+	return nil, context.Gas, errFuncNotExist
 }

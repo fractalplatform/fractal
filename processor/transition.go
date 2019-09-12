@@ -27,6 +27,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
@@ -89,7 +90,8 @@ func (st *StateTransition) preCheck() error {
 
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
-	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
+	balance, err := plugin.GetAccountBalanceByID(st.account, st.from, st.assetID, 0)
+	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
 	if err != nil {
 		return err
 	}
@@ -101,7 +103,8 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.action.Gas()
 	st.initialGas = st.action.Gas()
-	return st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
+	return plugin.TransferAsset(st.account, st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
+	//return st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
 // TransitionDb will transition the state by applying the current message and
@@ -121,7 +124,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return nil, 0, true, err, vmerr
 	}
 
-	sender := vm.AccountRef(st.from)
+	//sender := vm.AccountRef(st.from)
 
 	var (
 		evm = st.evm
@@ -129,41 +132,43 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		// not assigned to err, except for insufficient balance
 		// error.
 	)
-	actionType := st.action.Type()
-	switch {
-	case actionType == types.CreateContract:
-		ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
-	case actionType == types.CallContract:
-		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
-	case actionType == types.RegCandidate:
-		fallthrough
-	case actionType == types.UpdateCandidate:
-		fallthrough
-	case actionType == types.UnregCandidate:
-		fallthrough
-	case actionType == types.VoteCandidate:
-		fallthrough
-	case actionType == types.RefundCandidate:
-		fallthrough
-	case actionType == types.KickedCandidate:
-		fallthrough
-	case actionType == types.RemoveKickedCandidate:
-		fallthrough
-	case actionType == types.ExitTakeOver:
-		internalLogs, err := st.engine.ProcessAction(st.evm.Context.ForkID, st.evm.Context.BlockNumber.Uint64(),
-			st.evm.ChainConfig(), st.evm.StateDB, st.action)
-		vmerr = err
-		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
-	default:
-		internalLogs, err := st.account.Process(&types.AccountManagerContext{
-			Action:      st.action,
-			Number:      st.evm.Context.BlockNumber.Uint64(),
-			CurForkID:   st.evm.Context.ForkID,
-			ChainConfig: st.chainConfig,
-		})
-		vmerr = err
-		evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
-	}
+	//actionType := st.action.Type()
+	context := &plugin.Context{Account: st.account, Action: st.action, Evm: evm, Gas: st.gas}
+	ret, st.gas, vmerr = plugin.CallNative(context)
+	// switch {
+	// case actionType == types.CreateContract:
+	// 	ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
+	// case actionType == types.CallContract:
+	// 	ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
+	// case actionType == types.RegCandidate:
+	// 	fallthrough
+	// case actionType == types.UpdateCandidate:
+	// 	fallthrough
+	// case actionType == types.UnregCandidate:
+	// 	fallthrough
+	// case actionType == types.VoteCandidate:
+	// 	fallthrough
+	// case actionType == types.RefundCandidate:
+	// 	fallthrough
+	// case actionType == types.KickedCandidate:
+	// 	fallthrough
+	// case actionType == types.RemoveKickedCandidate:
+	// 	fallthrough
+	// case actionType == types.ExitTakeOver:
+	// 	internalLogs, err := st.engine.ProcessAction(st.evm.Context.ForkID, st.evm.Context.BlockNumber.Uint64(),
+	// 		st.evm.ChainConfig(), st.evm.StateDB, st.action)
+	// 	vmerr = err
+	// 	evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+	// default:
+	// 	internalLogs, err := st.account.Process(&types.AccountManagerContext{
+	// 		Action:      st.action,
+	// 		Number:      st.evm.Context.BlockNumber.Uint64(),
+	// 		CurForkID:   st.evm.Context.ForkID,
+	// 		ChainConfig: st.chainConfig,
+	// 	})
+	// 	vmerr = err
+	// 	evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+	// }
 	if vmerr != nil {
 		log.Debug("VM returned with error", "err", vmerr)
 		// The only possible consensus-error would be if there wasn't
@@ -173,21 +178,23 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 			return nil, 0, false, vmerr, vmerr
 		}
 	}
-	nonce, err := st.account.GetNonce(st.from)
+	nonce, err := plugin.GetNonce(st.account, st.from)
+	//nonce, err := st.account.GetNonce(st.from)
 	if err != nil {
 		return nil, st.gasUsed(), true, err, vmerr
 	}
-	err = st.account.SetNonce(st.from, nonce+1)
+	err = plugin.SetNonce(st.account, st.from, nonce+1)
+	//err = st.account.SetNonce(st.from, nonce+1)
 	if err != nil {
 		return nil, st.gasUsed(), true, err, vmerr
 	}
 	st.refundGas()
 
-	st.distributeGas(intrinsicGas)
+	// st.distributeGas(intrinsicGas)
 
-	if err := st.distributeFee(); err != nil {
-		return ret, st.gasUsed(), true, err, vmerr
-	}
+	// if err := st.distributeFee(); err != nil {
+	// 	return ret, st.gasUsed(), true, err, vmerr
+	// }
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 
@@ -332,7 +339,8 @@ func (st *StateTransition) distributeFee() error {
 
 func (st *StateTransition) refundGas() {
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-	st.account.TransferAsset(common.Name(st.chainConfig.FeeName), st.from, st.assetID, remaining)
+	plugin.TransferAsset(st.account, common.Name(st.chainConfig.FeeName), st.from, st.assetID, remaining)
+	//st.account.TransferAsset(common.Name(st.chainConfig.FeeName), st.from, st.assetID, remaining)
 	st.gp.AddGas(st.gas)
 }
 
