@@ -25,17 +25,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fractalplatform/fractal/params"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/fractalplatform/fractal/accountmanager"
-	//"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/abi"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/stretchr/testify/assert"
 )
 
 func input(abifile string, method string, params ...interface{}) ([]byte, error) {
@@ -115,7 +113,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 }
 
 func TestAsset(t *testing.T) {
-	state, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	state, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	account, _ := accountmanager.NewAccountManager(state)
 
 	senderName := common.Name("jacobwolf12345")
@@ -308,7 +306,7 @@ func TestAsset(t *testing.T) {
 	}
 }
 func TestVEN(t *testing.T) {
-	state, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	state, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	account, _ := accountmanager.NewAccountManager(state)
 
 	senderName := common.Name("jacobwolf12345")

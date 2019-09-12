@@ -24,18 +24,18 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/fractalplatform/fractal/rawdb"
 )
 
 func newEmptySecure() *SecureTrie {
-	trie, _ := NewSecure(common.Hash{}, NewDatabase(mdb.NewMemDatabase()), 0)
+	trie, _ := NewSecure(common.Hash{}, NewDatabase(rawdb.NewMemoryDatabase()), 0)
 	return trie
 }
 
 // makeTestSecureTrie creates a large enough secure trie for testing.
 func makeTestSecureTrie() (*Database, *SecureTrie, map[string][]byte) {
 	// Create an empty trie
-	triedb := NewDatabase(mdb.NewMemDatabase())
+	triedb := NewDatabase(rawdb.NewMemoryDatabase())
 
 	trie, _ := NewSecure(common.Hash{}, triedb, 0)
 
