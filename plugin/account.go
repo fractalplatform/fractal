@@ -5,6 +5,7 @@ import (
 
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/types"
 )
 
 func CreateAccount(context *Context) ([]byte, uint64, error) {
@@ -25,4 +26,12 @@ func SetNonce(account *accountmanager.AccountManager, accountName common.Name, n
 
 func TransferAsset(account *accountmanager.AccountManager, from common.Name, to common.Name, assetID uint64, value *big.Int) error {
 	return account.TransferAsset(from, to, assetID, value)
+}
+
+func RecoverTx(account *accountmanager.AccountManager, signer types.Signer, tx *types.Transaction) error {
+	return account.RecoverTx(signer, tx)
+}
+
+func GetAuthorVersion(account *accountmanager.AccountManager, name common.Name) (common.Hash, error) {
+	return account.GetAuthorVersion(name)
 }

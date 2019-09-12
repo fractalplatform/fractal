@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -110,12 +111,12 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	var detailActions []*types.DetailAction
 	for i, action := range tx.GetActions() {
 		if needCheckSign(accountDB, action) {
-			if err := accountDB.RecoverTx(types.NewSigner(config.ChainID), tx); err != nil {
+			if err := plugin.RecoverTx(accountDB, types.NewSigner(config.ChainID), tx); err != nil {
 				return nil, 0, err
 			}
 		}
 
-		nonce, err := accountDB.GetNonce(action.Sender())
+		nonce, err := plugin.GetNonce(accountDB, action.Sender())
 		if err != nil {
 			return nil, 0, err
 		}
@@ -198,7 +199,7 @@ func needCheckSign(accountDB *accountmanager.AccountManager, action *types.Actio
 		return true
 	}
 	for name, version := range authorVersion {
-		if tmpVersion, err := accountDB.GetAuthorVersion(name); err != nil || version != tmpVersion {
+		if tmpVersion, err := plugin.GetAuthorVersion(accountDB, name); err != nil || version != tmpVersion {
 			return true
 		}
 	}
