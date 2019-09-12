@@ -38,7 +38,7 @@ import (
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	memDB "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 var (
@@ -56,7 +56,7 @@ func (fe *fakeEngine) VerifySeal(chain consensus.IChainReader, header *types.Hea
 
 func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	// Initialize a fresh chain with only a genesis block
-	chainDb := memDB.NewMemDatabase()
+	chainDb := rawdb.NewMemoryDatabase()
 
 	chainCfg, dposCfg, _, err := SetupGenesisBlock(chainDb, genesis)
 	if err != nil {
@@ -130,7 +130,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int
 }
 
 func deepCopyDB(db fdb.Database) (fdb.Database, error) {
-	mdb, ok := db.(*memDB.MemDatabase)
+	mdb, ok := db.(*memdb.MemDatabase)
 	if !ok {
 		return nil, errors.New("db must fdb.MemDatabase")
 	}

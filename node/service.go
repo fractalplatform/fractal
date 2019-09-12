@@ -22,10 +22,9 @@ import (
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // ServiceContext is a collection of service independent options inherited from
@@ -42,9 +41,9 @@ type ServiceContext struct {
 // node is an ephemeral one, a memory database is returned.
 func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (fdb.Database, error) {
 	if ctx.config.DataDir == "" {
-		return mdb.NewMemDatabase(), nil
+		return rawdb.NewMemoryDatabase(), nil
 	}
-	db, err := ldb.NewLDBDatabase(ctx.config.resolvePath(name), cache, handles)
+	db, err := rawdb.NewLevelDBDatabase(ctx.config.resolvePath(name), cache, handles)
 	if err != nil {
 		return nil, err
 	}

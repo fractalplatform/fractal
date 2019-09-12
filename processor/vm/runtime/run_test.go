@@ -21,19 +21,18 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/fractalplatform/fractal/params"
-
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 //TestRunCode run runtime code directly
 func TestRunCode(t *testing.T) {
 	//fmt.Println("in TestRunCode ...")
-	state, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	state, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	account, _ := accountmanager.NewAccountManager(state)
 	//fmt.Println("in TestRunCode2 ...")
 	//sender

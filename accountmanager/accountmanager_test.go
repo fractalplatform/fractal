@@ -27,9 +27,9 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -40,7 +40,7 @@ var sysName = "fractal.account"
 var blockNumber = uint64(0)
 
 func getStateDB() *state.StateDB {
-	db := memdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	trieDB := state.NewDatabase(db)
 	stateDB, err := state.New(common.Hash{}, trieDB)
 	if err != nil {

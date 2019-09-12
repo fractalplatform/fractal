@@ -37,7 +37,6 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -183,7 +182,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 // to the given database (or discards it if nil).
 func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, error) {
 	if db == nil {
-		db = memdb.NewMemDatabase()
+		db = rawdb.NewMemoryDatabase()
 	}
 	detailTx := &types.DetailTx{}
 	var internals []*types.DetailAction
