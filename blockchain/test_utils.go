@@ -38,7 +38,7 @@ import (
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	memDB "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 var (
@@ -56,7 +56,7 @@ func (fe *fakeEngine) VerifySeal(chain consensus.IChainReader, header *types.Hea
 
 func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	// Initialize a fresh chain with only a genesis block
-	chainDb := memDB.NewMemDatabase()
+	chainDb := rawdb.NewMemoryDatabase()
 
 	chainCfg, dposCfg, _, err := SetupGenesisBlock(chainDb, genesis)
 	if err != nil {
@@ -103,7 +103,7 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 }
 
 func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int) (*BlockChain, []*types.Block) {
-	tmpdb, err := deepCopyDB(chain.db)
+	tmpDB, err := deepCopyDB(chain.db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,9 +111,12 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int
 	engine := dpos.New(dposConfig(genesis.Config), chain)
 
 	newblocks, _ := generateChain(genesis.Config,
-		chain.CurrentBlock(), engine, chain, tmpdb,
+		chain.CurrentBlock(), engine, chain, tmpDB,
 		n, seed, func(i int, b *BlockGenerator) {
-			b.SetCoinbase(common.StrToName(genesis.Config.SysName))
+
+			name := common.StrToName(genesis.Config.SysName)
+			b.SetCoinbase(name)
+
 			engine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
 				return crypto.Sign(content, systemPrivateKey)
 			})
@@ -127,7 +130,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int
 }
 
 func deepCopyDB(db fdb.Database) (fdb.Database, error) {
-	mdb, ok := db.(*memDB.MemDatabase)
+	mdb, ok := db.(*memdb.MemDatabase)
 	if !ok {
 		return nil, errors.New("db must fdb.MemDatabase")
 	}
@@ -153,7 +156,7 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos
 			BlockChain: chain,
 		}
 
-		b.header = makeHeader(b, parent, stateDB, b.engine, seed)
+		b.header = makeHeader(b, parent, b.stateDB, b.engine, seed)
 
 		// Execute any user modifications to the block
 		if gen != nil {
@@ -165,6 +168,17 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos
 			if err := b.engine.Prepare(b, b.header, b.txs, nil, b.stateDB); err != nil {
 				panic(fmt.Sprintf("engine prepare error: %v", err))
 			}
+
+			name := common.StrToName(chain.chainConfig.SysName)
+
+			tx := types.NewTransaction(uint64(0), big.NewInt(1), types.NewAction(types.Transfer, name, common.StrToName(chain.chainConfig.AccountName), b.TxNonce(name), uint64(0), 109000, big.NewInt(100), nil, nil))
+
+			keyPair := types.MakeKeyPair(systemPrivateKey, []uint64{0})
+			if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
+				panic(err)
+			}
+
+			b.AddTxWithChain(tx)
 
 			block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.stateDB)
 			if err != nil {

@@ -23,11 +23,10 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 func TestSnapshot(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	batch := db.NewBatch()
 	cachedb := state.NewDatabase(db)
 	prevHash := common.Hash{}
@@ -96,7 +95,7 @@ func TestSnapshot(t *testing.T) {
 }
 
 func TestSnapshotError(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	batch := db.NewBatch()
 	cachedb := state.NewDatabase(db)
 	prevHash := common.Hash{}

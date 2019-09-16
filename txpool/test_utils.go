@@ -29,9 +29,9 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // testTxPoolConfig is a transaction pool configuration without stateful disk
@@ -109,7 +109,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 
 func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
 
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	asset := asset.NewAsset(statedb)
 	asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000), common.Name(""), "")
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}

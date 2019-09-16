@@ -22,9 +22,9 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,7 +40,7 @@ func (h headerMap) setHeader(num uint64, header *types.Header) {
 func TestForkController1(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = memdb.NewMemDatabase()
+		db         = rawdb.NewMemoryDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 		hm         = make(headerMap)
 	)
@@ -80,7 +80,7 @@ func TestForkController1(t *testing.T) {
 func TestForkController2(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = memdb.NewMemDatabase()
+		db         = rawdb.NewMemoryDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 		hm         = make(headerMap)
 	)
@@ -143,7 +143,7 @@ func TestForkController2(t *testing.T) {
 func TestUpdateDifferentForkBlock(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = memdb.NewMemDatabase()
+		db         = rawdb.NewMemoryDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 		hm         = make(headerMap)
 	)
@@ -175,7 +175,7 @@ func TestUpdateDifferentForkBlock(t *testing.T) {
 func TestFillForkID(t *testing.T) {
 	var (
 		testcfg    = &ForkConfig{ForkBlockNum: 10, Forkpercentage: 80}
-		db         = memdb.NewMemDatabase()
+		db         = rawdb.NewMemoryDatabase()
 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(db))
 	)
 	if err := initForkController(params.DefaultChainconfig.ChainName, statedb, 0); err != nil {
