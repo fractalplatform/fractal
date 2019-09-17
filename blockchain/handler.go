@@ -28,7 +28,7 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type Station struct {
+type station struct {
 	peerCh     chan *router.Event
 	blockchain *BlockChain
 	networkID  uint64
@@ -42,8 +42,8 @@ func errResp(code errCode, format string, v ...interface{}) error {
 	return fmt.Errorf("%v - %v", code, fmt.Sprintf(format, v...))
 }
 
-func newStation(bc *BlockChain, networkID uint64) *Station {
-	bs := &Station{
+func newStation(bc *BlockChain, networkID uint64) *station {
+	bs := &station{
 		peerCh:     make(chan *router.Event),
 		blockchain: bc,
 		networkID:  networkID,
@@ -67,7 +67,7 @@ func newStation(bc *BlockChain, networkID uint64) *Station {
 	return bs
 }
 
-func (bs *Station) chainStatus() *statusData {
+func (bs *station) chainStatus() *statusData {
 	genesis := bs.blockchain.Genesis()
 	head := bs.blockchain.CurrentHeader()
 	hash := head.Hash()
@@ -96,7 +96,7 @@ func checkChainStatus(local *statusData, remote *statusData) error {
 	return nil
 }
 
-func (bs *Station) handshake(e *router.Event) {
+func (bs *station) handshake(e *router.Event) {
 	station := router.NewLocalStation("shake"+e.From.Name(), nil)
 	ch := make(chan *router.Event)
 	sub := router.Subscribe(station, ch, router.P2PStatusMsg, &statusData{})
@@ -125,7 +125,7 @@ func (bs *Station) handshake(e *router.Event) {
 	}
 }
 
-func (bs *Station) loop() {
+func (bs *station) loop() {
 	for {
 		select {
 		case <-bs.quit:
@@ -163,7 +163,7 @@ func (bs *Station) loop() {
 
 // handleMsg is invoked whenever an inbound message is received from a remote
 // peer. The remote connection is torn down upon returning any error.
-func (bs *Station) handleMsg(e *router.Event) error {
+func (bs *station) handleMsg(e *router.Event) error {
 	start := time.Now()
 	defer func() {
 		router.AddCPU(e.From, time.Since(start))
@@ -254,7 +254,7 @@ func (bs *Station) handleMsg(e *router.Event) error {
 	return nil
 }
 
-func (bs *Station) Stop() {
+func (bs *station) Stop() {
 	log.Info("BlockchainHandler stopping...")
 	close(bs.quit)
 	for _, sub := range bs.subs {
