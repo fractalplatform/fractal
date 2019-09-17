@@ -355,7 +355,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 	find := func(headNum, length uint64) (uint64, common.Hash, *Error) {
 		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNumber, length, 0, true}, errCh)
 		if err != nil {
-			return 0, nil, err
+			return 0, emptyHash, err
 		}
 
 		for i, hash := range hashes {
@@ -364,7 +364,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 				return headNum - uint64(i), hash, nil
 			}
 		}
-		return 0, nil, &Error{errors.New("not find"), notFind}
+		return 0, emptyHash, &Error{errors.New("not find"), notFind}
 	}
 
 	irreversibleNumber := dl.blockchain.IrreversibleNumber()
@@ -390,7 +390,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 			searchLength = 32
 		}
 	}
-	return 0, nil, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
+	return 0, emptyHash, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
 }
 
 func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64, startHash common.Hash, endNumber uint64, endHash common.Hash) (uint64, *Error) {
