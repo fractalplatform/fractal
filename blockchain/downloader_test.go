@@ -37,12 +37,12 @@ func TestDownloadTask(t *testing.T) {
 
 	router.AdaptorRegister(simuAdaptor{})
 	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
-	chain, _ = makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
+	chain, _ = makeNewChain(t, genesis, chain, 10, canonicalSeed)
+
 	dl := chain.station.downloader
 	status := &stationStatus{
 		station: router.NewRemoteStation("teststatus", nil),

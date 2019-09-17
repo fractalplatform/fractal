@@ -209,8 +209,19 @@ type CandidateInfoForBrowser struct {
 	ActualCounter    uint64 `json:"actualCounter"`
 	NowCounter       uint64 `json:"nowShouldCounter"`
 	NowActualCounter uint64 `json:"nowActualCounter"`
-	URL              string `json:"url"`
+	// URL              string `json:"url"`
 	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
+}
+
+type VoterInfoFractal struct {
+	Candidate     string `json:"candidate"`
+	Holder        string `json:"holder"`
+	Quantity      string `json:"quantity"`
+	TotalQuantity string `json:"totalQuantity"`
+	URL           string `json:"url"`
+	State         uint64 `json:"state"`
+	Vote          uint64 `json:"vote"`
+	CanVote       bool   `json:"canVote"`
 }
 
 // CandidateInfoArray array of candidate

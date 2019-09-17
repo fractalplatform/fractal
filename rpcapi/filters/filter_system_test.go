@@ -23,13 +23,11 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/rawdb"
-
 	"github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 type testBackend struct {
@@ -102,7 +100,7 @@ func TestBlockSubscription(t *testing.T) {
 	t.Parallel()
 
 	var (
-		db         = memdb.NewMemDatabase()
+		db         = rawdb.NewMemoryDatabase()
 		txFeed     = new(event.Feed)
 		rmLogsFeed = new(event.Feed)
 		logsFeed   = new(event.Feed)
@@ -167,7 +165,7 @@ func TestPendingTxFilter(t *testing.T) {
 	t.Parallel()
 
 	var (
-		db         = memdb.NewMemDatabase()
+		db         = rawdb.NewMemoryDatabase()
 		txFeed     = new(event.Feed)
 		rmLogsFeed = new(event.Feed)
 		logsFeed   = new(event.Feed)
@@ -226,7 +224,7 @@ func TestPendingTxFilter(t *testing.T) {
 // 	t.Parallel()
 
 // 	var (
-// 		db         = memdb.NewMemDatabase()
+// 		db         = rawdb.NewMemoryDatabase()
 // 		txFeed     = new(event.Feed)
 // 		rmLogsFeed = new(event.Feed)
 // 		logsFeed   = new(event.Feed)

@@ -60,21 +60,21 @@ type Worker struct {
 	pubKeys       [][]byte
 	extra         []byte
 
-	wg         sync.WaitGroup
-	mining     int32
-	quitWork   chan struct{}
-	quitWorkRW sync.RWMutex
-	wgWork     sync.WaitGroup
-	quit       chan struct{}
-	force      bool
+	wg        sync.WaitGroup
+	mining    int32
+	quitWork1 chan struct{}
+	quitWork  chan struct{}
+	wgWork    sync.WaitGroup
+	quit      chan struct{}
+	force     bool
 }
 
 func newWorker(consensus consensus.IConsensus) *Worker {
 	worker := &Worker{
 		IConsensus: consensus,
+		quitWork1:  make(chan struct{}),
 		quit:       make(chan struct{}),
 	}
-	go worker.update()
 	return worker
 }
 
@@ -90,15 +90,11 @@ out:
 			// Handle ChainHeadEvent
 			if atomic.LoadInt32(&worker.mining) != 0 {
 				if blk := ev.Data.(*types.Block); strings.Compare(blk.Coinbase().String(), worker.coinbase) != 0 {
-					worker.quitWorkRW.Lock()
-					if worker.quitWork != nil {
-						log.Debug("old parent hash coming, will be closing current work")
-						close(worker.quitWork)
-						worker.quitWork = nil
-					}
-					worker.quitWorkRW.Unlock()
+					worker.quitWork1 <- struct{}{}
 				}
 			}
+		case <-worker.quit:
+			break out
 		case <-chainHeadSub.Err():
 			break out
 		}
@@ -110,13 +106,21 @@ func (worker *Worker) start(force bool) {
 		log.Warn("worker already started")
 		return
 	}
+	worker.quit = make(chan struct{})
 	worker.force = force
-	go worker.mintLoop()
+	worker.wg.Add(1)
+	go func() {
+		worker.mintLoop()
+		worker.wg.Done()
+	}()
+	worker.wg.Add(1)
+	go func() {
+		worker.update()
+		worker.wg.Done()
+	}()
 }
 
 func (worker *Worker) mintLoop() {
-	worker.wg.Add(1)
-	defer worker.wg.Done()
 	dpos, ok := worker.Engine().(*dpos.Dpos)
 	if !ok {
 		panic("only support dpos engine")
@@ -139,44 +143,42 @@ func (worker *Worker) mintLoop() {
 	worker.utimerTo(to.Add(time.Duration(interval-(to.UnixNano()%interval))), c)
 	for {
 		select {
+		case <-worker.quitWork1:
+			if worker.quitWork != nil {
+				log.Debug("old parent hash coming, will be closing current work")
+				close(worker.quitWork)
+				worker.quitWork = nil
+			}
 		case now := <-c:
-			worker.quitWorkRW.Lock()
 			if worker.quitWork != nil {
 				close(worker.quitWork)
 				worker.quitWork = nil
-				log.Debug("next time coming, will be closing current work")
 			}
-			worker.quitWorkRW.Unlock()
 			worker.wgWork.Wait()
-
-			quit := make(chan struct{})
-			worker.wgWork.Add(1)
+			worker.quitWork = make(chan struct{})
 			timestamp := int64(dpos.Slot(uint64(now.UnixNano())))
-			go worker.mintBlock(timestamp, quit)
+			worker.wg.Add(1)
+			worker.wgWork.Add(1)
+			go func(quit chan struct{}) {
+				worker.mintBlock(timestamp, quit)
+				worker.wgWork.Done()
+				worker.wg.Done()
+			}(worker.quitWork)
 			to := time.Now()
 			worker.utimerTo(to.Add(time.Duration(interval-(to.UnixNano()%interval))), c)
 		case <-worker.quit:
-			worker.quit = make(chan struct{})
 			return
 		}
 	}
 }
 
 func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
-	worker.quitWorkRW.Lock()
-	worker.quitWork = quit
-	worker.quitWorkRW.Unlock()
-	defer func() {
-		worker.quitWorkRW.Lock()
-		worker.quitWork = nil
-		worker.quitWorkRW.Unlock()
-		worker.wgWork.Done()
-	}()
-
 	bstart := time.Now()
 	log.Debug("mint block", "timestamp", timestamp)
 	for {
 		select {
+		case <-worker.quit:
+			return
 		case <-quit:
 			return
 		default:
@@ -228,6 +230,7 @@ func (worker *Worker) stop() {
 		return
 	}
 	close(worker.quit)
+	worker.wg.Wait()
 }
 func (worker *Worker) setDelayDuration(delay uint64) error {
 	worker.mu.Lock()
@@ -299,7 +302,6 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 		currentReceipts: []*types.Receipt{},
 		currentGasPool:  new(common.GasPool).AddGas(header.GasLimit),
 		currentCnt:      0,
-		quit:            quit,
 	}
 
 	if err := worker.Prepare(worker.IConsensus, work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState); err != nil {
@@ -318,7 +320,7 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 	log.Debug("worker get pending txs from txpool", "len", txsLen, "since", time.Since(start))
 
 	txs := types.NewTransactionsByPriceAndNonce(pending)
-	if err := worker.commitTransactions(work, txs, dpos.BlockInterval()); err != nil {
+	if err := worker.commitTransactions(work, txs, dpos.BlockInterval(), quit); err != nil {
 		return nil, err
 	}
 
@@ -358,13 +360,15 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 	return work.currentBlock, nil
 }
 
-func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPriceAndNonce, interval uint64) error {
+func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPriceAndNonce, interval uint64, quit chan struct{}) error {
 	var coalescedLogs []*types.Log
 	endTimeStamp := work.currentHeader.Time.Uint64() + interval - 2*interval/5
 	endTime := time.Unix((int64)(endTimeStamp)/(int64)(time.Second), (int64)(endTimeStamp)%(int64)(time.Second))
 	for {
 		select {
-		case <-work.quit:
+		case <-worker.quit:
+			return fmt.Errorf("mint the quit block")
+		case <-quit:
 			return fmt.Errorf("mint the quit block")
 		default:
 		}
@@ -474,11 +478,15 @@ type Work struct {
 	currentReceipts []*types.Receipt
 	currentBlock    *types.Block
 	currentState    *state.StateDB
-	quit            chan struct{}
 }
 
 func (worker *Worker) usleepTo(to time.Time) {
 	for {
+		select {
+		case <-worker.quit:
+			return
+		default:
+		}
 		if time.Now().UnixNano() >= to.UnixNano() {
 			break
 		}
@@ -486,8 +494,14 @@ func (worker *Worker) usleepTo(to time.Time) {
 	}
 }
 func (worker *Worker) utimerTo(to time.Time, c chan time.Time) {
+	worker.wg.Add(1)
 	go func(c chan time.Time) {
 		worker.usleepTo(to)
-		c <- to
+		select {
+		case c <- to:
+		case <-worker.quit:
+			//default: // worker.quit is closed
+		}
+		worker.wg.Done()
 	}(c)
 }

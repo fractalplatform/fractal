@@ -17,17 +17,14 @@
 package blockchain
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"math/big"
 	"os"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
 	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
@@ -41,91 +38,26 @@ import (
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 var (
-	issurevalue        = "10000000000000000000000000000"
-	syscandidatePrefix = "syscandidate"
-	systemPrikey, _    = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
+	systemPrivateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 )
 
-type candidateInfo struct {
-	name   string
-	prikey *ecdsa.PrivateKey
+type fakeEngine struct {
+	*dpos.Dpos
 }
 
-func getCandidates() map[string]*candidateInfo {
-	candidates := make(map[string]*candidateInfo)
-	// pri0, _ := crypto.HexToECDSA("189c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
-	// pri1, _ := crypto.HexToECDSA("9c22ff5f21f0b81b113e63f7db6da94fedef11b2119b4088b89664fb9a3cb658")
-	// pri2, _ := crypto.HexToECDSA("8605cf6e76c9fc8ac079d0f841bd5e99bd3ad40fdd56af067993ed14fc5bfca8")
-
-	// candidates["syscandidate0"] = &candidateInfo{"syscandidate0", pri0}
-	// candidates["syscandidate1"] = &candidateInfo{"syscandidate1", pri1}
-	// candidates["syscandidate2"] = &candidateInfo{"syscandidate2", pri2}
-	return candidates
-}
-
-func getDefaultGenesisAccounts() (gas []*GenesisAccount) {
-	for i := 0; i < len(getCandidates()); i++ {
-		candidate := getCandidates()[syscandidatePrefix+strconv.Itoa(i)]
-		gas = append(gas, &GenesisAccount{
-			Name:   candidate.name,
-			PubKey: common.BytesToPubKey(crypto.FromECDSAPub(&candidate.prikey.PublicKey)),
-		})
-	}
-	return
-}
-
-func calculateEpochInterval(dposCfg *dpos.Config) uint64 {
-	return dposCfg.CandidateScheduleSize * dposCfg.BlockFrequency * dposCfg.BlockInterval * uint64(time.Millisecond)
-}
-
-func makeSystemCandidatesAndTime(parentTime uint64, genesis *Genesis) ([]string, []uint64) {
-	var (
-		candidates     []string
-		baseCandidates = getCandidates()
-	)
-	dcfg := dposConfig(genesis.Config)
-	for i := uint64(0); i < (dcfg.EpochInterval/dcfg.BlockInterval*dcfg.BlockFrequency)+1; i++ {
-		for j := 0; j < len(baseCandidates); j++ {
-			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
-				candidates = append(candidates, genesis.Config.SysName)
-			}
-		}
-	}
-	candidates = candidates[0:]
-	headerTimes := make([]uint64, len(candidates))
-	for i := 0; i < len(candidates); i++ {
-		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*uint64(time.Millisecond)*uint64(i+1) + parentTime
-	}
-	return candidates, headerTimes
-}
-
-func makeCandidatesAndTime(parentTime uint64, genesis *Genesis, rounds uint64) ([]string, []uint64) {
-	var (
-		candidates     []string
-		baseCandidates = getCandidates()
-	)
-	for i := 0; uint64(i) < rounds; i++ {
-		for j := 0; j < len(baseCandidates); j++ {
-			for k := 0; k < int(genesis.Config.DposCfg.BlockFrequency); k++ {
-				candidates = append(candidates, baseCandidates[syscandidatePrefix+strconv.Itoa(j)].name)
-			}
-		}
-	}
-	headerTimes := make([]uint64, len(candidates))
-	for i := 0; i < len(candidates); i++ {
-		headerTimes[i] = genesis.Config.DposCfg.BlockInterval*uint64(time.Millisecond)*uint64(i+1) + parentTime
-	}
-	return candidates, headerTimes
+func (fe *fakeEngine) VerifySeal(chain consensus.IChainReader, header *types.Header) error {
+	log.Debug("blockchain uint test use fake engine VerifySeal function", "number", header.Number.Uint64())
+	return nil
 }
 
 func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	// Initialize a fresh chain with only a genesis block
-	chainDb := memdb.NewMemDatabase()
+	chainDb := rawdb.NewMemoryDatabase()
+
 	chainCfg, dposCfg, _, err := SetupGenesisBlock(chainDb, genesis)
 	if err != nil {
 		t.Fatal(err)
@@ -136,11 +68,11 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 		t.Fatal(err)
 	}
 
-	statedb, err := blockchain.State()
+	stateDB, err := blockchain.State()
 	if err != nil {
 		t.Fatalf("state db err %v", err)
 	}
-	accountManager, err := am.NewAccountManager(statedb)
+	accountManager, err := am.NewAccountManager(stateDB)
 	if err != nil {
 		t.Fatalf("genesis accountManager new err: %v", err)
 	}
@@ -157,154 +89,44 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	chainCfg.SysTokenDecimals = assetInfo.Decimals
 
 	engine := dpos.New(dposCfg, blockchain)
+
 	bc := struct {
 		*BlockChain
 		consensus.IEngine
 	}{blockchain, engine}
 
-	validator := processor.NewBlockValidator(&bc, engine)
+	validator := processor.NewBlockValidator(&bc, &fakeEngine{engine})
 	txProcessor := processor.NewStateProcessor(&bc, engine)
 	blockchain.SetValidator(validator)
 	blockchain.SetProcessor(txProcessor)
-
 	return blockchain
 }
 
-func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, candidates []string, headerTimes []uint64) (*BlockChain, []*types.Block) {
-
-	tmpdb, err := deepCopyDB(chain.db)
+func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int) (*BlockChain, []*types.Block) {
+	tmpDB, err := deepCopyDB(chain.db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	engine := dpos.New(dposConfig(genesis.Config), chain)
 
-	newblocks, _ := generateChain(genesis.Config, chain.CurrentBlock(), engine, chain, tmpdb,
-		len(headerTimes), func(i int, b *BlockGenerator) {
+	newblocks, _ := generateChain(genesis.Config,
+		chain.CurrentBlock(), engine, chain, tmpDB,
+		n, seed, func(i int, b *blockGenerator) {
 
-			baseCandidates := getCandidates()
+			name := common.StrToName(genesis.Config.SysName)
+			b.SetCoinbase(name)
 
-			baseCandidates[genesis.Config.SysName] = &candidateInfo{genesis.Config.SysName, systemPrikey}
-
-			minerInfo := baseCandidates[candidates[i]]
-
-			b.SetCoinbase(common.StrToName(minerInfo.name))
 			engine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
-				return crypto.Sign(content, minerInfo.prikey)
+				return crypto.Sign(content, systemPrivateKey)
 			})
-			b.OffsetTime(int64(engine.Slot(headerTimes[i])))
-
-			if i == 0 {
-				txs := makeCandidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
-				for _, tx := range txs {
-					b.AddTx(tx)
-				}
-			}
-
 		})
 
 	_, err = chain.InsertChain(newblocks)
 	if err != nil {
-		t.Fatal("insert chain err", err)
+		t.Fatal("makeNewChain func insert chain err", err)
 	}
-
 	return chain, newblocks
-}
-
-func generateForkBlocks(t *testing.T, genesis *Genesis, candidates []string, headerTimes []uint64) []*types.Block {
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
-	chain := newCanonical(t, genesis)
-	defer chain.Stop()
-
-	tmpdb, err := deepCopyDB(chain.db)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	engine := dpos.New(dposConfig(genesis.Config), chain)
-
-	newblocks, _ := generateChain(genesis.Config, chain.CurrentBlock(), engine, chain, tmpdb,
-		len(headerTimes), func(i int, b *BlockGenerator) {
-			baseCandidates := getCandidates()
-
-			baseCandidates[genesis.Config.SysName] = &candidateInfo{genesis.Config.SysName, systemPrikey}
-			minerInfo := baseCandidates[candidates[i]]
-
-			b.SetCoinbase(common.StrToName(minerInfo.name))
-			engine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
-				return crypto.Sign(content, minerInfo.prikey)
-			})
-
-			b.OffsetTime(int64(engine.Slot(headerTimes[i])))
-
-			if i == 0 {
-				txs := makeCandidatesTx(t, genesis.Config.SysName, systemPrikey, b.statedb)
-				for _, tx := range txs {
-					b.AddTx(tx)
-				}
-			}
-		})
-
-	return newblocks
-}
-
-func makeCandidatesTx(t *testing.T, from string, fromprikey *ecdsa.PrivateKey, state *state.StateDB) []*types.Transaction {
-	var txs []*types.Transaction
-	signer := types.NewSigner(params.DefaultChainconfig.ChainID)
-	am, err := accountmanager.NewAccountManager(state)
-	if err != nil {
-		t.Fatal("new accountmanager failed")
-	}
-	nonce, err := am.GetNonce(common.StrToName(from))
-	if err != nil {
-		t.Fatalf("get name %s nonce failed", from)
-	}
-
-	delegateValue := new(big.Int)
-	delegateValue.SetString(issurevalue, 10)
-
-	var actions []*types.Action
-	for i := 0; i < len(getCandidates()); i++ {
-		amount := new(big.Int).Mul(delegateValue, big.NewInt(2))
-		action := types.NewAction(types.Transfer, common.StrToName(from), common.StrToName(getCandidates()[syscandidatePrefix+strconv.Itoa(i)].name), nonce, uint64(0), uint64(210000), amount, nil, nil)
-		actions = append(actions, action)
-		nonce++
-	}
-	tx := types.NewTransaction(uint64(0), big.NewInt(2), actions...)
-	keyPair := types.MakeKeyPair(fromprikey, []uint64{0})
-	for _, action := range actions {
-		err := types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{keyPair})
-		if err != nil {
-			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
-		}
-	}
-
-	txs = append(txs, tx)
-
-	var actions1 []*types.Action
-	for i := 0; i < len(getCandidates()); i++ {
-		to := getCandidates()[syscandidatePrefix+strconv.Itoa(i)]
-		url := "www." + to.name + ".io"
-		arg := &dpos.RegisterCandidate{
-			URL: url,
-		}
-		payload, _ := rlp.EncodeToBytes(arg)
-		action := types.NewAction(types.RegCandidate, common.StrToName(to.name), common.StrToName(params.DefaultChainconfig.DposName), 0, uint64(0), uint64(210000), delegateValue, payload, nil)
-		actions1 = append(actions1, action)
-	}
-
-	tx1 := types.NewTransaction(uint64(0), big.NewInt(2), actions1...)
-	for _, action := range actions1 {
-		keyPair = types.MakeKeyPair(getCandidates()[action.Sender().String()].prikey, []uint64{0})
-		err := types.SignActionWithMultiKey(action, tx1, signer, 0, []*types.KeyPair{keyPair})
-		if err != nil {
-			t.Fatalf(fmt.Sprintf("SignAction err %v", err))
-		}
-	}
-
-	txs = append(txs, tx1)
-
-	return txs
 }
 
 func deepCopyDB(db fdb.Database) (fdb.Database, error) {
@@ -315,17 +137,26 @@ func deepCopyDB(db fdb.Database) (fdb.Database, error) {
 	return mdb.Copy(), nil
 }
 
-func generateChain(config *params.ChainConfig, parent *types.Block, engine consensus.IEngine, chain *BlockChain, db fdb.Database, n int, gen func(int, *BlockGenerator)) ([]*types.Block, [][]*types.Receipt) {
+func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos.Dpos,
+	chain *BlockChain, db fdb.Database, n, seed int, gen func(int, *blockGenerator)) ([]*types.Block, [][]*types.Receipt) {
+
 	if config == nil {
 		config = params.DefaultChainconfig
 	}
 
 	chain.db = db
-
 	blocks, receipts := make(types.Blocks, n), make([][]*types.Receipt, n)
-	genblock := func(i int, parent *types.Block, statedb *state.StateDB) (*types.Block, []*types.Receipt) {
-		b := &BlockGenerator{i: i, parent: parent, statedb: statedb, config: config, engine: engine, BlockChain: chain}
-		b.header = makeHeader(b, parent, statedb, b.engine)
+	genblock := func(i int, parent *types.Block, stateDB *state.StateDB) (*types.Block, []*types.Receipt) {
+		b := &blockGenerator{
+			i:          i,
+			parent:     parent,
+			stateDB:    stateDB,
+			config:     config,
+			engine:     engine,
+			BlockChain: chain,
+		}
+
+		b.header = makeHeader(b, parent, b.stateDB, b.engine, seed)
 
 		// Execute any user modifications to the block
 		if gen != nil {
@@ -334,11 +165,22 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		if b.engine != nil {
 			// Finalize and seal the block
-			if err := b.engine.Prepare(b, b.header, b.txs, nil, b.statedb); err != nil {
+			if err := b.engine.Prepare(b, b.header, b.txs, nil, b.stateDB); err != nil {
 				panic(fmt.Sprintf("engine prepare error: %v", err))
 			}
 
-			block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.statedb)
+			name := common.StrToName(chain.chainConfig.SysName)
+
+			tx := types.NewTransaction(uint64(0), big.NewInt(1), types.NewAction(types.Transfer, name, common.StrToName(chain.chainConfig.AccountName), b.TxNonce(name), uint64(0), 109000, big.NewInt(100), nil, nil))
+
+			keyPair := types.MakeKeyPair(systemPrivateKey, []uint64{0})
+			if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
+				panic(err)
+			}
+
+			b.AddTxWithChain(tx)
+
+			block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.stateDB)
 			if err != nil {
 				panic(fmt.Sprintf("engine finalize error: %v", err))
 			}
@@ -353,12 +195,12 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			block.Head.Bloom = types.CreateBloom(b.receipts)
 			batch := db.NewBatch()
 
-			root, err := b.statedb.Commit(batch, block.Hash(), block.NumberU64())
+			root, err := b.stateDB.Commit(batch, block.Hash(), block.NumberU64())
 			if err != nil {
 				panic(fmt.Sprintf("state Commit error: %v", err))
 			}
 
-			if err := b.statedb.Database().TrieDB().Commit(root, false); err != nil {
+			if err := b.stateDB.Database().TrieDB().Commit(root, false); err != nil {
 				panic(fmt.Sprintf("trie write error: %v", err))
 			}
 
@@ -374,11 +216,11 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 	}
 
 	for i := 0; i < n; i++ {
-		statedb, err := chain.StateAt(parent.Root())
+		stateDB, err := chain.StateAt(parent.Root())
 		if err != nil {
 			panic(err)
 		}
-		block, receipt := genblock(i, parent, statedb)
+		block, receipt := genblock(i, parent, stateDB)
 		blocks[i] = block
 		receipts[i] = receipt
 		parent = block
@@ -387,21 +229,33 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine conse
 	return blocks, receipts
 }
 
-func makeHeader(chain consensus.IChainReader, parent *types.Block, state *state.StateDB, engine consensus.IEngine) *types.Header {
-	return &types.Header{
+func makeHeader(chain consensus.IChainReader, parent *types.Block, state *state.StateDB, engine *dpos.Dpos, seed int) *types.Header {
+	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
-		Difficulty: engine.CalcDifficulty(chain, 0, parent.Header()),
 		GasLimit:   params.BlockGasLimit,
 		Number:     new(big.Int).Add(parent.Number(), big.NewInt(1)),
 		Time:       big.NewInt(0),
+		Difficulty: big.NewInt(0),
+		Extra:      big.NewInt(int64(seed)).Bytes(),
 	}
+
+	header.Time.Add(header.Time, big.NewInt(int64(engine.Config().BlockInterval*uint64(time.Millisecond))))
+	header.Time.Add(header.Time, parent.Time())
+	header.Time = big.NewInt(int64(engine.Slot(header.Time.Uint64())))
+
+	if header.Time.Cmp(parent.Header().Time) <= 0 {
+		panic(fmt.Sprintf("header time %d less than parent header time %v ", header.Time.Uint64(), parent.Time().Uint64()))
+	}
+
+	header.Difficulty = engine.CalcDifficulty(chain, header.Time.Uint64(), parent.Header())
+	return header
 }
 
 func printLog(level log.Lvl) {
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stdout, log.TerminalFormat(false)))
-	glogger.Verbosity(level)
-	log.Root().SetHandler(log.Handler(glogger))
+	logger := log.NewGlogHandler(log.StreamHandler(os.Stdout, log.TerminalFormat(false)))
+	logger.Verbosity(level)
+	log.Root().SetHandler(log.Handler(logger))
 }
 
 func checkBlocksInsert(t *testing.T, chain *BlockChain, blocks []*types.Block) {

@@ -27,9 +27,9 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -40,7 +40,7 @@ var sysName = "fractal.account"
 var blockNumber = uint64(0)
 
 func getStateDB() *state.StateDB {
-	db := memdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	trieDB := state.NewDatabase(db)
 	stateDB, err := state.New(common.Hash{}, trieDB)
 	if err != nil {
@@ -2179,4 +2179,50 @@ func Test_IssueAssetForkID1(t *testing.T) {
 		t.Errorf("Test_IssueAssetForkID1 error, create invalid asset name failed")
 	}
 
+}
+
+func Test_GetAccountNameLevel(t *testing.T) {
+	level, err := GetAccountNameLevel("fractal")
+
+	if level != 1 || err != nil {
+		t.Errorf("account level 1 test failed, level:%v, err:%v", level, err)
+	}
+
+	level, err = GetAccountNameLevel("fractal.test")
+
+	if level != 2 || err != nil {
+		t.Errorf("account level 1 test failed, level:%v, err:%v", level, err)
+	}
+}
+
+func Test_CheckAssetContract(t *testing.T) {
+	type args struct {
+		contractName string
+		owner        string
+		from         string
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{"assetContract", args{"fractal.contract", "fractal.contract", "fractal.test"}, true},
+		{"assetContract", args{"fractal.contract", "fractal.test1", "fractal.test"}, false},
+	}
+
+	am := &AccountManager{
+		sdb: sdb,
+		ast: ast,
+	}
+
+	for _, tt := range tests {
+		assetContract := am.CheckAssetContract(common.Name(tt.args.contractName),
+			common.Name(tt.args.owner), common.Name(tt.args.from))
+
+		if assetContract != tt.wantErr {
+			t.Errorf("asset contract test failed")
+		}
+	}
 }

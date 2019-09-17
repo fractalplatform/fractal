@@ -18,88 +18,50 @@ package blockchain
 
 import (
 	"testing"
-	"time"
+
+	"github.com/ethereum/go-ethereum/log"
+)
+
+// So we can deterministically seed different blockchains
+var (
+	canonicalSeed = 1
+	forkSeed      = 2
 )
 
 func TestTheLastBlock(t *testing.T) {
-	// printLog(log.LvlDebug)
+	printLog(log.LvlDebug)
+
 	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
-	_, blocks := makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
+	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
 	// check chain block hash
 	checkBlocksInsert(t, chain, blocks)
 }
 
 func TestSystemForkChain(t *testing.T) {
-	var (
-		allCandidates, allCandidates1   []string
-		allHeaderTimes, allHeaderTimes1 []uint64
-	)
-	// printLog(log.LvlTrace)
+	printLog(log.LvlDebug)
+
 	genesis := DefaultGenesis()
-
-	allCandidates, allHeaderTimes = genCanonicalCandidatesAndTimes(genesis)
-
-	allCandidates1 = append(allCandidates1, allCandidates...)
-	//allCandidates1 = append(allCandidates1, "syscandidate0")
-	//allCandidates1 = append(allCandidates1, params.DefaultChainconfig.SysName)
-
-	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes...)
-	//allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes[len(allHeaderTimes)-1]+1000*uint64(time.Millisecond)*3*7)
-	//allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes1[len(allHeaderTimes1)-1]+1000*uint64(time.Millisecond)*3)
-
-	testFork(t, allCandidates, allCandidates1, allHeaderTimes, allHeaderTimes1)
-}
-
-func genCanonicalCandidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
-	var (
-		//dposEpochNum   uint64 = 1
-		allCandidates  []string
-		allHeaderTimes []uint64
-	)
-
-	// geaerate block's candidates and block header time
-	// system's candidates headertimes
-	sysCandidates, sysHeaderTimes := makeSystemCandidatesAndTime(genesis.Timestamp*uint64(time.Millisecond), genesis)
-	allCandidates = append(allCandidates, sysCandidates...)
-	allHeaderTimes = append(allHeaderTimes, sysHeaderTimes...)
-
-	// elected candidates headertimes
-	// candidates, headerTimes := makeCandidatesAndTime(sysHeaderTimes[len(sysHeaderTimes)-1], genesis, dposEpochNum)
-	// allCandidates = append(allCandidates, candidates[:12]...)
-	// allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
-
-	// // elected candidates headertimes
-	// candidates, headerTimes = makeCandidatesAndTime(headerTimes[len(headerTimes)-1], genesis, dposEpochNum)
-	// allCandidates = append(allCandidates, candidates[:12]...)
-	// allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
-
-	return allCandidates, allHeaderTimes
-}
-
-func testFork(t *testing.T, candidates, forkCandidates []string, headerTimes, forkHeaderTimes []uint64) {
-	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	chain, _ = makeNewChain(t, genesis, chain, candidates, headerTimes)
+	chain, _ = makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
 	// generate fork blocks
-	blocks := generateForkBlocks(t, DefaultGenesis(), forkCandidates, forkHeaderTimes)
+	forkChain := newCanonical(t, genesis)
+	defer forkChain.Stop()
 
-	_, err := chain.InsertChain(blocks)
+	_, forkBlocks := makeNewChain(t, genesis, forkChain, 11, forkSeed)
+	_, err := chain.InsertChain(forkBlocks)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// check chain block hash
-	checkBlocksInsert(t, chain, blocks)
+	checkBlocksInsert(t, chain, forkBlocks)
 
 	// check if is complete block chain
 	checkCompleteChain(t, chain)
