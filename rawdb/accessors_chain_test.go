@@ -23,14 +23,13 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
 // Tests block header storage and retrieval operations.
 func TestHeaderStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	// Create a test header to move around the database and make sure it's really new
 	header := &types.Header{
@@ -68,7 +67,7 @@ func TestHeaderStorage(t *testing.T) {
 
 // Tests block body storage and retrieval operations.
 func TestBodyStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 
@@ -123,7 +122,7 @@ func TestBodyStorage(t *testing.T) {
 
 // Tests block storage and retrieval operations.
 func TestBlockStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	// Create a test block to move around the database and make sure it's really new
 	header := &types.Header{
@@ -173,7 +172,7 @@ func TestBlockStorage(t *testing.T) {
 
 // Tests block total difficulty storage and retrieval operations.
 func TestTdStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	// Create a test TD to move around the database and make sure it's really new
 	hash, td := common.Hash{}, big.NewInt(314)
@@ -196,7 +195,7 @@ func TestTdStorage(t *testing.T) {
 
 // Tests that canonical numbers can be mapped to hashes and retrieved.
 func TestCanonicalMappingStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	// Create a test canonical number and assinged hash to move around
 	hash, number := common.Hash{0: 0xff}, uint64(314)
@@ -219,7 +218,7 @@ func TestCanonicalMappingStorage(t *testing.T) {
 
 // Tests that head headers and head blocks can be assigned, individually.
 func TestHeadStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	blockHead := &types.Block{
 		Head: &types.Header{Extra: []byte("test block header")},
@@ -250,7 +249,7 @@ func TestHeadStorage(t *testing.T) {
 
 // Tests that receipts associated with a single block can be stored and retrieved.
 func TestBlockReceiptStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	receipt1 := &types.Receipt{
 		ActionResults:     []*types.ActionResult{&types.ActionResult{Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)}},
@@ -304,7 +303,7 @@ func TestBlockReceiptStorage(t *testing.T) {
 }
 
 func TestIrreversibleNumberStore(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	number := uint64(100)
 

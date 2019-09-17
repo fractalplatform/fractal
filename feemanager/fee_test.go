@@ -24,8 +24,8 @@ import (
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 var sdb = getStateDB()
@@ -38,7 +38,7 @@ func getAsset() *asset.Asset {
 }
 
 func getStateDB() *state.StateDB {
-	db := memdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	tridb := state.NewDatabase(db)
 	statedb, err := state.New(common.Hash{}, tridb)
 	if err != nil {

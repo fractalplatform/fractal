@@ -14,18 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package memdb
+package rawdb
 
 import (
-	"testing"
-
 	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/fractalplatform/fractal/utils/fdb/leveldb"
+	"github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-func TestMemoryDB_PutGet(t *testing.T) {
-	fdb.TestPutGet(NewMemDatabase(), t)
+// NewMemoryDatabase creates an ephemeral in-memory key-value database .
+func NewMemoryDatabase() fdb.Database {
+	return memdb.NewMemDatabase()
+
 }
 
-func TestMemoryDB_ParallelPutGet(t *testing.T) {
-	fdb.TestParallelPutGet(NewMemDatabase(), t)
+// NewMemoryDatabaseWithCap creates an ephemeral in-memory key-value database
+// with an initial starting capacity.
+func NewMemoryDatabaseWithCap(size int) fdb.Database {
+	return memdb.NewMemDatabaseWithCap(size)
+}
+
+// NewLevelDBDatabase creates a persistent key-value database.
+func NewLevelDBDatabase(file string, cache int, handles int) (fdb.Database, error) {
+	return leveldb.NewLDBDatabase(file, cache, handles)
 }

@@ -26,11 +26,10 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 func TestNew(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	cacheDb := NewDatabase(db)
 
 	rootHash := common.BytesToHash([]byte("not exist hash"))
@@ -47,7 +46,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	cacheDb := NewDatabase(db)
 	rootNullHash := common.Hash{}
 
@@ -91,7 +90,7 @@ func TestReset(t *testing.T) {
 }
 
 func TestRefund(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	cacheDb := NewDatabase(db)
 	rootNullHash := common.Hash{}
 
@@ -110,7 +109,7 @@ func TestRefund(t *testing.T) {
 }
 
 func TestPutAndGet(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
 	prevRoot := common.Hash{}
@@ -167,7 +166,7 @@ func TestPutAndGet(t *testing.T) {
 }
 
 func TestSetAndGetState(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
 	prevRoot := common.Hash{}
@@ -215,7 +214,7 @@ func TestSetAndGetState(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	cachedb := NewDatabase(db)
 	prevRoot := common.Hash{}
 	currentBlockHash := common.BytesToHash([]byte("01"))
@@ -276,7 +275,7 @@ func TestLog(t *testing.T) {
 }
 
 func TestRevertSnap(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	cachedb := NewDatabase(db)
 	prevHash := common.Hash{}
 	state, _ := New(prevHash, cachedb)
@@ -377,7 +376,7 @@ func TestRevertSnap(t *testing.T) {
 
 //element : 1->2->3
 func TestTransToSpecBlock1(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	batch := db.NewBatch()
 	cachedb := NewDatabase(db)
 	addr := "addr01"
@@ -423,7 +422,7 @@ func TestTransToSpecBlock1(t *testing.T) {
 }
 
 func TestStateDB_IntermediateRoot(t *testing.T) {
-	state, err := New(common.Hash{}, NewDatabase(mdb.NewMemDatabase()))
+	state, err := New(common.Hash{}, NewDatabase(rawdb.NewMemoryDatabase()))
 	if err != nil {
 		t.Error("New err")
 	}
