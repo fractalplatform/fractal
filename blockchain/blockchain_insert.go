@@ -49,7 +49,7 @@ func (st *insertStats) report(chain []*types.Block, index int) {
 
 		// Assemble the log context and send it to the logger
 		context := []interface{}{
-			"blocks", st.processed, "txs", st.txsCnt, "gas", float64(st.usedGas),
+			"blocks", st.processed, "txs", st.txsCnt, "gas", st.usedGas,
 			"elapsed", common.PrettyDuration(elapsed), "number", end.Number(), "hash", end.Hash(),
 		}
 

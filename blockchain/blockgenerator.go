@@ -28,8 +28,8 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-// BlockGenerator creates blocks for testing.
-type BlockGenerator struct {
+// blockGenerator creates blocks for testing.
+type blockGenerator struct {
 	i       int
 	parent  *types.Block
 	header  *types.Header
@@ -46,7 +46,7 @@ type BlockGenerator struct {
 }
 
 // SetCoinbase sets the coinbase of the generated block.
-func (bg *BlockGenerator) SetCoinbase(name common.Name) {
+func (bg *blockGenerator) SetCoinbase(name common.Name) {
 	if bg.gasPool != nil {
 		if len(bg.txs) > 0 {
 			panic("coinbase must be set before adding transactions")
@@ -58,7 +58,7 @@ func (bg *BlockGenerator) SetCoinbase(name common.Name) {
 }
 
 // TxNonce retrun nonce
-func (bg *BlockGenerator) TxNonce(name common.Name) uint64 {
+func (bg *blockGenerator) TxNonce(name common.Name) uint64 {
 	am, _ := accountmanager.NewAccountManager(bg.stateDB)
 	a, err := am.GetAccountByName(name)
 	if err != nil {
@@ -71,7 +71,7 @@ func (bg *BlockGenerator) TxNonce(name common.Name) uint64 {
 }
 
 // AddTxWithChain adds a transaction to the generated block.
-func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
+func (bg *blockGenerator) AddTxWithChain(tx *types.Transaction) {
 	if bg.gasPool == nil {
 		bg.SetCoinbase(bg.genesisBlock.Coinbase())
 	}
@@ -88,6 +88,6 @@ func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
 }
 
 // CurrentHeader return current header
-func (bg *BlockGenerator) CurrentHeader() *types.Header {
+func (bg *blockGenerator) CurrentHeader() *types.Header {
 	return bg.parent.Head
 }

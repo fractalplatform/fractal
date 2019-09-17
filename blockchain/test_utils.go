@@ -112,7 +112,7 @@ func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int
 
 	newblocks, _ := generateChain(genesis.Config,
 		chain.CurrentBlock(), engine, chain, tmpDB,
-		n, seed, func(i int, b *BlockGenerator) {
+		n, seed, func(i int, b *blockGenerator) {
 
 			name := common.StrToName(genesis.Config.SysName)
 			b.SetCoinbase(name)
@@ -138,7 +138,7 @@ func deepCopyDB(db fdb.Database) (fdb.Database, error) {
 }
 
 func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos.Dpos,
-	chain *BlockChain, db fdb.Database, n, seed int, gen func(int, *BlockGenerator)) ([]*types.Block, [][]*types.Receipt) {
+	chain *BlockChain, db fdb.Database, n, seed int, gen func(int, *blockGenerator)) ([]*types.Block, [][]*types.Receipt) {
 
 	if config == nil {
 		config = params.DefaultChainconfig
@@ -147,7 +147,7 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos
 	chain.db = db
 	blocks, receipts := make(types.Blocks, n), make([][]*types.Receipt, n)
 	genblock := func(i int, parent *types.Block, stateDB *state.StateDB) (*types.Block, []*types.Receipt) {
-		b := &BlockGenerator{
+		b := &blockGenerator{
 			i:          i,
 			parent:     parent,
 			stateDB:    stateDB,
