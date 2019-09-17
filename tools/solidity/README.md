@@ -14,7 +14,7 @@ Solidity is still under development. So please do not hesitate and open an [issu
 See the [Solidity documentation](https://solidity.readthedocs.io/en/latest/installing-solidity.html#building-from-source) for build instructions.
 
 ## Modification to solidity
-See the [Solidity Modification](https://github.com/fractalplatform/solidity/wiki/solidity%E4%BF%AE%E6%94%B9%E9%A1%B9) for our modifications to ethereum soidity.
+See the [Solidity Modification](https://github.com/fractalplatform/fractal/wiki/solidity-API) for our modifications to ethereum soidity.
 
 ## How to Contribute
 Please see our [contribution guidelines](https://solidity.readthedocs.io/en/latest/contributing.html) in the Solidity documentation.
