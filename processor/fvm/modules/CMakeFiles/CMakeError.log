@@ -1,0 +1,63 @@
+Performing C SOURCE FILE Test CMAKE_HAVE_LIBC_PTHREAD failed with the following output:
+Change Dir: /root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_4566d/fast && /usr/bin/make -f CMakeFiles/cmTC_4566d.dir/build.make CMakeFiles/cmTC_4566d.dir/build
+make[1]: Entering directory '/root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_4566d.dir/src.c.o
+/usr/bin/cc   -DCMAKE_HAVE_LIBC_PTHREAD   -o CMakeFiles/cmTC_4566d.dir/src.c.o   -c /root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp/src.c
+Linking C executable cmTC_4566d
+/opt/cmake-3.15.2-Linux-x86_64/bin/cmake -E cmake_link_script CMakeFiles/cmTC_4566d.dir/link.txt --verbose=1
+/usr/bin/cc  -DCMAKE_HAVE_LIBC_PTHREAD    CMakeFiles/cmTC_4566d.dir/src.c.o  -o cmTC_4566d 
+CMakeFiles/cmTC_4566d.dir/src.c.o: In function `main':
+src.c:(.text+0x3c): undefined reference to `pthread_create'
+src.c:(.text+0x48): undefined reference to `pthread_detach'
+src.c:(.text+0x59): undefined reference to `pthread_join'
+src.c:(.text+0x6d): undefined reference to `pthread_atfork'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_4566d.dir/build.make:86: recipe for target 'cmTC_4566d' failed
+make[1]: *** [cmTC_4566d] Error 1
+make[1]: Leaving directory '/root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp'
+Makefile:121: recipe for target 'cmTC_4566d/fast' failed
+make: *** [cmTC_4566d/fast] Error 2
+
+
+Source file was:
+#include <pthread.h>
+
+void* test_func(void* data)
+{
+  return data;
+}
+
+int main(void)
+{
+  pthread_t thread;
+  pthread_create(&thread, NULL, test_func, NULL);
+  pthread_detach(thread);
+  pthread_join(thread, NULL);
+  pthread_atfork(NULL, NULL, NULL);
+  pthread_exit(NULL);
+
+  return 0;
+}
+
+Determining if the function pthread_create exists in the pthreads failed with the following output:
+Change Dir: /root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_72d7b/fast && /usr/bin/make -f CMakeFiles/cmTC_72d7b.dir/build.make CMakeFiles/cmTC_72d7b.dir/build
+make[1]: Entering directory '/root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_72d7b.dir/CheckFunctionExists.c.o
+/usr/bin/cc   -DCHECK_FUNCTION_EXISTS=pthread_create   -o CMakeFiles/cmTC_72d7b.dir/CheckFunctionExists.c.o   -c /opt/cmake-3.15.2-Linux-x86_64/share/cmake-3.15/Modules/CheckFunctionExists.c
+Linking C executable cmTC_72d7b
+/opt/cmake-3.15.2-Linux-x86_64/bin/cmake -E cmake_link_script CMakeFiles/cmTC_72d7b.dir/link.txt --verbose=1
+/usr/bin/cc  -DCHECK_FUNCTION_EXISTS=pthread_create    CMakeFiles/cmTC_72d7b.dir/CheckFunctionExists.c.o  -o cmTC_72d7b -lpthreads 
+/usr/bin/ld: cannot find -lpthreads
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_72d7b.dir/build.make:86: recipe for target 'cmTC_72d7b' failed
+make[1]: *** [cmTC_72d7b] Error 1
+make[1]: Leaving directory '/root/gocode/src/github.com/fractalplatform/fractal/processor/fvm/modules/CMakeFiles/CMakeTmp'
+Makefile:121: recipe for target 'cmTC_72d7b/fast' failed
+make: *** [cmTC_72d7b/fast] Error 2
+
+
+
