@@ -143,6 +143,7 @@ func (fs *FtService) Start() error {
 
 // Stop implements node.Service, terminating all internal goroutine
 func (fs *FtService) Stop() error {
+	fs.miner.Stop()
 	fs.blockchain.Stop()
 	fs.txPool.Stop()
 	fs.chainDb.Close()

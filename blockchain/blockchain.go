@@ -49,7 +49,7 @@ const (
 	tdCacheLimit        = 1024
 	numberCacheLimit    = 2048
 	maxFutureBlocks     = 256
-	maxTimeFutureBlocks = 30
+	maxTimeFutureBlocks = 30 // 30's
 	badBlockLimit       = 10
 
 	//BlockChainVersion ensures that an incompatible database forces a resync from scratch.
@@ -83,10 +83,10 @@ type BlockChain struct {
 	procInterrupt int32               // procInterrupt must be atomically called, interrupt signaler for block processing
 	wg            sync.WaitGroup      // chain processing wait group for shutting down
 	senderCacher  TxSenderCacher      // senderCacher is a concurrent tranaction sender recoverer sender cacher.
-	fcontroller   *ForkController     // fcontroller
+	fcontroller   *forkController     // fcontroller
 	processor     processor.Processor // block processor interface
 	validator     processor.Validator // block and state validator interface
-	station       *Station            // p2p station
+	station       *station            // p2p station
 
 	headerCache  *lru.Cache    // Cache for the most recent block headers
 	tdCache      *lru.Cache    // Cache for the most recent block total difficulties
@@ -800,7 +800,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 			stats.ignored++
 			continue
 		case err == processor.ErrFutureBlock:
-			max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
+			max := big.NewInt(time.Now().Add(maxTimeFutureBlocks * time.Second).UnixNano())
 			if block.Time().Cmp(max) > 0 {
 				return i, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
@@ -1095,71 +1095,6 @@ func (bc *BlockChain) GetHeaderByHash(hash common.Hash) *types.Header {
 		return nil
 	}
 	return bc.GetHeader(hash, *number)
-
-}
-
-// HasHeader checks if a block header is present in the database or not.
-func (bc *BlockChain) HasHeader(hash common.Hash, number uint64) bool {
-	if bc.numberCache.Contains(hash) || bc.headerCache.Contains(hash) {
-		return true
-	}
-	return rawdb.HasHeader(bc.db, hash, number)
-
-}
-
-// GetBlockHashesFromHash retrieves a number of block hashes starting at a given hash, fetching towards the genesis block.
-func (bc *BlockChain) GetBlockHashesFromHash(hash common.Hash, max uint64) []common.Hash {
-	header := bc.GetHeaderByHash(hash)
-	if header == nil {
-		return nil
-	}
-	chain := make([]common.Hash, 0, max)
-	for i := uint64(0); i < max; i++ {
-		next := header.ParentHash
-		if header = bc.GetHeader(next, header.Number.Uint64()-1); header == nil {
-			break
-		}
-		chain = append(chain, next)
-		if header.Number.Sign() == 0 {
-			break
-		}
-	}
-	return chain
-}
-
-// GetAncestor retrieves the Nth ancestor of a given block.
-func (bc *BlockChain) GetAncestor(hash common.Hash, number, ancestor uint64, maxNonCanonical *uint64) (common.Hash, uint64) {
-	bc.chainmu.Lock()
-	defer bc.chainmu.Unlock()
-
-	if ancestor > number {
-		return common.Hash{}, 0
-	}
-	if ancestor == 1 {
-		// in this case it is cheaper to just read the header
-		if header := bc.GetHeader(hash, number); header != nil {
-			return header.ParentHash, number - 1
-		}
-		return common.Hash{}, 0
-	}
-	for ancestor != 0 {
-		if rawdb.ReadCanonicalHash(bc.db, number) == hash {
-			number -= ancestor
-			return rawdb.ReadCanonicalHash(bc.db, number), number
-		}
-		if *maxNonCanonical == 0 {
-			return common.Hash{}, 0
-		}
-		*maxNonCanonical--
-		ancestor--
-		header := bc.GetHeader(hash, number)
-		if header == nil {
-			return common.Hash{}, 0
-		}
-		hash = header.ParentHash
-		number--
-	}
-	return hash, number
 
 }
 

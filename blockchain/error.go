@@ -24,16 +24,13 @@ import (
 )
 
 var (
-	ErrSideBlock = errors.New("write side block and state")
-
+	// ErrNoGenesis genesis block not found in chain db.
 	ErrNoGenesis = errors.New("Genesis not found in chain")
-
-	errReorgSystemBlock = errors.New("not reorg system block")
-
-	errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
 	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
 	ErrBlacklistedHash = errors.New("blacklisted hash")
+
+	errGenesisNoConfig = errors.New("genesis has no chain configuration")
 )
 
 // GenesisMismatchError is raised when trying to overwrite an existing

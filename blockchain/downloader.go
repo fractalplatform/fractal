@@ -34,6 +34,9 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
+// NewMinedBlockEvent is posted when a block has been imported.
+type NewMinedBlockEvent struct{ Block *types.Block }
+
 var (
 	emptyHash = common.Hash{}
 )
@@ -345,23 +348,23 @@ func getBlocks(from router.Station, to router.Station, req []common.Hash, errch 
 	return bodies, nil
 }
 
-func (dl *Downloader) findAncestor(from router.Station, to router.Station, headNumber uint64, preAncestor uint64, errCh chan struct{}) (uint64, *Error) {
+func (dl *Downloader) findAncestor(from router.Station, to router.Station, headNumber uint64, preAncestor uint64, errCh chan struct{}) (uint64, common.Hash, *Error) {
 	if headNumber < 1 {
-		return 0, nil
+		return 0, dl.blockchain.Genesis().Hash(), nil
 	}
-	find := func(headNum, length uint64) (uint64, *Error) {
+	find := func(headNum, length uint64) (uint64, common.Hash, *Error) {
 		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNumber, length, 0, true}, errCh)
 		if err != nil {
-			return 0, err
+			return 0, emptyHash, err
 		}
 
 		for i, hash := range hashes {
 			if dl.blockchain.HasBlock(hash, headNum-uint64(i)) {
 				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headNum-uint64(i))
-				return headNum - uint64(i), nil
+				return headNum - uint64(i), hash, nil
 			}
 		}
-		return 0, &Error{errors.New("not find"), notFind}
+		return 0, emptyHash, &Error{errors.New("not find"), notFind}
 	}
 
 	irreversibleNumber := dl.blockchain.IrreversibleNumber()
@@ -374,12 +377,12 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 		searchLength = 32
 	}
 	for headNumber >= irreversibleNumber {
-		ancestor, err := find(headNumber, searchLength)
+		ancestor, hash, err := find(headNumber, searchLength)
 		if err == nil {
-			return ancestor, nil
+			return ancestor, hash, nil
 		}
 		if err != nil && err.eid != notFind {
-			return 0, err
+			return 0, hash, err
 		}
 		headNumber -= searchLength
 		searchLength = headNumber - irreversibleNumber + 1
@@ -387,7 +390,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 			searchLength = 32
 		}
 	}
-	return 0, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
+	return 0, emptyHash, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
 }
 
 func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64, startHash common.Hash, endNumber uint64, endHash common.Hash) (uint64, *Error) {
@@ -436,6 +439,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	if headNumber < statusNumber && statusNumber < headNumber+6 {
 		_, err := dl.shortcutDownload(status, headNumber, head.Hash(), statusNumber, statusHash)
 		if err == nil { // download and insert completed
+			head = dl.blockchain.CurrentBlock()
 			dl.broadcastStatus(&NewBlockHashesData{
 				Hash:      head.Hash(),
 				Number:    head.NumberU64(),
@@ -460,7 +464,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	router.StationRegister(stationSearch)
 	defer router.StationUnregister(stationSearch)
 
-	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
+	ancestor, ancestorHash, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
 		log.Warn("ancestor err", "err", err, "errID:", err.eid)
 		if err.eid == notFind {
@@ -471,6 +475,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	}
 	log.Debug("downloader ancestor:", "ancestor", ancestor)
 	downloadStart := ancestor
+	downloadStartHash := ancestorHash
 	downloadAmount := statusNumber - ancestor
 	if downloadAmount == 0 { // maybe the status of remote was changed
 		return false
@@ -487,7 +492,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	for i := downloadStart; i <= downloadEnd; i += downloadSkip + 1 {
 		numbers = append(numbers, i)
 	}
-	hashes = append(hashes, dl.blockchain.GetHeaderByNumber(numbers[0]).Hash())
+	hashes = append(hashes, downloadStartHash)
 
 	if len(numbers[1:]) > 0 {
 		hash, err := getBlockHashes(stationSearch, status.station, &getBlockHashByNumber{

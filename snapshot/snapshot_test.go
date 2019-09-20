@@ -23,11 +23,10 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 func TestSnapshot(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := rawdb.NewMemoryDatabase()
 	batch := db.NewBatch()
 	cachedb := state.NewDatabase(db)
 	prevHash := common.Hash{}
@@ -67,30 +66,83 @@ func TestSnapshot(t *testing.T) {
 
 	timestamp, err := snapshotManager.GetLastSnapshotTime()
 	if err != nil {
-		t.Error("set snapshot err", err)
+		t.Error("get snapshot err", err)
 	}
 
 	if timestamp != 100000000 {
-		t.Error("set snapshot err", err)
+		t.Error("get snapshot time err", err)
 	}
 
 	timestamp, err = snapshotManager.GetPrevSnapshotTime(100000000)
 	if err != nil {
-		t.Error("set snapshot err", err)
+		t.Error("get prev snapshot err", err)
 	}
 
 	_, _, err = snapshotManager.GetCurrentSnapshotHash()
 	if err != nil {
-		t.Error("set snapshot err", err)
+		t.Error("get current snapshot err", err)
 	}
 
 	_, err = snapshotManager.GetSnapshotMsg(addr, key, 100000000)
 	if err != nil {
-		t.Error("set snapshot err", err)
+		t.Error("get snapshot msg err", err)
 	}
 
 	_, err = snapshotManager.GetSnapshotState(100000000)
 	if err != nil {
-		t.Error("set snapshot err", err)
+		t.Error("get snapshot state err", err)
+	}
+}
+
+func TestSnapshotError(t *testing.T) {
+	db := rawdb.NewMemoryDatabase()
+	batch := db.NewBatch()
+	cachedb := state.NewDatabase(db)
+	prevHash := common.Hash{}
+	state1, _ := state.New(prevHash, cachedb)
+
+	addr := "snapshot01"
+	key := "aaaaaa"
+	value := []byte("1")
+	state1.Put(addr, key, value)
+
+	root, err := state1.Commit(batch, prevHash, 0)
+	if err != nil {
+		t.Error("commit trie err", err)
+	}
+
+	triedb := state1.Database().TrieDB()
+	triedb.Reference(root, common.Hash{})
+	if err := triedb.Commit(root, false); err != nil {
+		t.Error("commit db err", err)
+	}
+	triedb.Dereference(root)
+
+	state2, _ := state.New(root, cachedb)
+	snapshotManager := NewSnapshotManager(state2)
+
+	_, err = snapshotManager.GetLastSnapshotTime()
+	if err == nil {
+		t.Error("get snapshot err", err)
+	}
+
+	_, err = snapshotManager.GetPrevSnapshotTime(100000000)
+	if err == nil {
+		t.Error("get prev snapshot err", err)
+	}
+
+	_, _, err = snapshotManager.GetCurrentSnapshotHash()
+	if err == nil {
+		t.Error("get current snapshot err", err)
+	}
+
+	_, err = snapshotManager.GetSnapshotMsg(addr, key, 100000000)
+	if err == nil {
+		t.Error("get snapshot msg err", err)
+	}
+
+	_, err = snapshotManager.GetSnapshotState(100000000)
+	if err == nil {
+		t.Error("get snapshot state err", err)
 	}
 }

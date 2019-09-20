@@ -13,44 +13,28 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
-package common
+
+package rawdb
 
 import (
-	"testing"
+	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/fractalplatform/fractal/utils/fdb/leveldb"
+	"github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
-func TestStorageSizeString(t *testing.T) {
-	tests := []struct {
-		size StorageSize
-		str  string
-	}{
-		{2381273, "2.38 mB"},
-		{2192, "2.19 kB"},
-		{12, "12.00 B"},
-		{32 * 1024, "32.77 kB"},
-	}
+// NewMemoryDatabase creates an ephemeral in-memory key-value database .
+func NewMemoryDatabase() fdb.Database {
+	return memdb.NewMemDatabase()
 
-	for _, test := range tests {
-		if test.size.String() != test.str {
-			t.Errorf("%f: got %q, want %q", float64(test.size), test.size.String(), test.str)
-		}
-	}
 }
 
-func TestStorageSizeTerminalString(t *testing.T) {
-	tests := []struct {
-		size StorageSize
-		str  string
-	}{
-		{2381273, "2.38mB"},
-		{2192, "2.19kB"},
-		{12, "12.00B"},
-		{32 * 1024, "32.77kB"},
-	}
+// NewMemoryDatabaseWithCap creates an ephemeral in-memory key-value database
+// with an initial starting capacity.
+func NewMemoryDatabaseWithCap(size int) fdb.Database {
+	return memdb.NewMemDatabaseWithCap(size)
+}
 
-	for _, test := range tests {
-		if test.size.TerminalString() != test.str {
-			t.Errorf("%f: got %q, want %q", float64(test.size), test.size.String(), test.str)
-		}
-	}
+// NewLevelDBDatabase creates a persistent key-value database.
+func NewLevelDBDatabase(file string, cache int, handles int) (fdb.Database, error) {
+	return leveldb.NewLDBDatabase(file, cache, handles)
 }

@@ -24,9 +24,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 )
 
 type levelDB struct {
@@ -75,7 +75,7 @@ func newTestLDB() (*levelDB, func()) {
 	if err != nil {
 		panic("failed to create test file: " + err.Error())
 	}
-	db, err := ldb.NewLDBDatabase(dirname, 0, 0)
+	db, err := rawdb.NewLevelDBDatabase(dirname, 0, 0)
 	if err != nil {
 		panic("failed to create test database: " + err.Error())
 	}

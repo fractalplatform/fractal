@@ -29,9 +29,9 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // testTxPoolConfig is a transaction pool configuration without stateful disk
@@ -109,7 +109,7 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 
 func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
 
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	asset := asset.NewAsset(statedb)
 	asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000), common.Name(""), "")
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -179,40 +179,6 @@ func validateEvents(events chan *event.Event, count int) error {
 		// really nothing gets injected.
 	}
 	return nil
-}
-
-type testChain struct {
-	*testBlockChain
-
-	name    common.Name
-	trigger *bool
-}
-
-// testChain.State() is used multiple times to reset the pending state.
-// when simulate is true it will create a state that indicates
-// that tx0 and tx1 are included in the chain.
-func (c *testChain) State() (*state.StateDB, error) {
-	// delay "state change" by one. The tx pool fetches the
-	// state multiple times and by delaying it a bit we simulate
-	// a state change between those fetches.
-	stdb := c.statedb
-	if *c.trigger {
-		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
-		am, err := am.NewAccountManager(c.statedb)
-		if err != nil {
-			return nil, err
-		}
-
-		// simulate that the new head block included tx0 and tx1
-		if err := am.SetNonce(c.name, 2); err != nil {
-			return nil, err
-		}
-		if err := am.AddAccountBalanceByID(c.name, uint64(0), new(big.Int).SetUint64(params.Fractal)); err != nil {
-			return nil, err
-		}
-		*c.trigger = false
-	}
-	return stdb, nil
 }
 
 func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {

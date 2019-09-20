@@ -44,15 +44,15 @@ type ForkInfo struct {
 	NextForkIDBlockNum uint64
 }
 
-// ForkController control the hard forking.
-type ForkController struct {
+// forkController control the hard forking.
+type forkController struct {
 	cfg      *ForkConfig
 	chainCfg *params.ChainConfig
 }
 
 // NewForkController return a new fork controller.
-func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *ForkController {
-	return &ForkController{cfg: cfg, chainCfg: chaincfg}
+func NewForkController(cfg *ForkConfig, chaincfg *params.ChainConfig) *forkController {
+	return &forkController{cfg: cfg, chainCfg: chaincfg}
 }
 
 func initForkController(chainName string, statedb *state.StateDB, curforkID uint64) error {
@@ -76,7 +76,7 @@ func initForkController(chainName string, statedb *state.StateDB, curforkID uint
 	return nil
 }
 
-func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) {
+func (fc *forkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) {
 	info := ForkInfo{}
 
 	infoBytes, err := statedb.Get(fc.chainCfg.ChainName, forkInfo)
@@ -94,7 +94,7 @@ func (fc *ForkController) getForkInfo(statedb *state.StateDB) (ForkInfo, error) 
 	return info, nil
 }
 
-func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) error {
+func (fc *forkController) putForkInfo(info ForkInfo, statedb *state.StateDB) error {
 	infoBytes, err := rlp.EncodeToBytes(info)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (fc *ForkController) putForkInfo(info ForkInfo, statedb *state.StateDB) err
 	return nil
 }
 
-func (fc *ForkController) update(block *types.Block, statedb *state.StateDB, getHeader func(number uint64) *types.Header) error {
+func (fc *forkController) update(block *types.Block, statedb *state.StateDB, getHeader func(number uint64) *types.Header) error {
 	info, err := fc.getForkInfo(statedb)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (fc *ForkController) update(block *types.Block, statedb *state.StateDB, get
 	return fc.putForkInfo(info, statedb)
 }
 
-func (fc *ForkController) currentForkID(statedb *state.StateDB) (uint64, uint64, error) {
+func (fc *forkController) currentForkID(statedb *state.StateDB) (uint64, uint64, error) {
 	info, err := fc.getForkInfo(statedb)
 	if err != nil {
 		return 0, 0, err
@@ -160,7 +160,7 @@ func (fc *ForkController) currentForkID(statedb *state.StateDB) (uint64, uint64,
 	return info.CurForkID, params.NextForkID, nil
 }
 
-func (fc *ForkController) checkForkID(header *types.Header, state *state.StateDB) error {
+func (fc *forkController) checkForkID(header *types.Header, state *state.StateDB) error {
 	// check current fork id and next fork id
 	if curForkID, _, err := fc.currentForkID(state); err != nil {
 		return err
@@ -171,7 +171,7 @@ func (fc *ForkController) checkForkID(header *types.Header, state *state.StateDB
 	return nil
 }
 
-func (fc *ForkController) fillForkID(header *types.Header, state *state.StateDB) error {
+func (fc *forkController) fillForkID(header *types.Header, state *state.StateDB) error {
 	// check current fork id and next fork id
 	curForkID, nextForkID, err := fc.currentForkID(state)
 	if err != nil {
