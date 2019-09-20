@@ -435,15 +435,15 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 
 // BrowserAllEpoch2 get all epoch info for browser api
 func (api *API) BrowserAllEpoch2() (interface{}, error) {
-	epochs := Epochs{}
-	epochs.Data = make([]*Epoch, 0)
+	epochs := VoteEpochs{}
+	epochs.Data = make([]*VoteEpoch, 0)
 	epochNumber, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
 	for {
-		data := &Epoch{}
+		data := &VoteEpoch{}
 		timestamp := sys.config.epochTimeStamp(epochNumber)
 		gstate, err := sys.GetState(epochNumber)
 		if err != nil {
@@ -451,6 +451,15 @@ func (api *API) BrowserAllEpoch2() (interface{}, error) {
 		}
 		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
 			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+		}
+
+		dataEpoch, err := sys.GetState(gstate.PreEpoch)
+		if err != nil {
+			return nil, err
+		}
+
+		if dataEpoch.Dpos {
+			data.Dpos = 1
 		}
 
 		data.Start = timestamp / 1000000000
