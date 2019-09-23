@@ -51,6 +51,10 @@ func TestConfig(t *testing.T) {
 		panic(fmt.Errorf("Config consensusSize mismatch"))
 	}
 
+	if 3 != DefaultConfig.consensusSize() {
+		panic(fmt.Errorf("Config Cache consensusSize mismatch"))
+	}
+
 	if 0 != DefaultConfig.slot(1567591745) {
 		panic(fmt.Errorf("Config slot mismatch"))
 	}
@@ -60,6 +64,10 @@ func TestConfig(t *testing.T) {
 	}
 
 	if 0 != DefaultConfig.getoffset(1567591745, 1) {
+		panic(fmt.Errorf("Config getoffset mismatch"))
+	}
+
+	if 0 != DefaultConfig.getoffset(1567591745, 2) {
 		panic(fmt.Errorf("Config getoffset mismatch"))
 	}
 
