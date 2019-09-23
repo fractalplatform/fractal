@@ -286,7 +286,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 	candidateInfos := ArrayCandidateInfoForBrowser{}
 	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
 
-	candidateInfos.TakeOver = dataEpoch.TakeOver
+	candidateInfos.TakeOver = reqEpoch.TakeOver
 	candidateInfos.Dpos = dataEpoch.Dpos
 
 	if dataEpoch.Dpos {
@@ -326,7 +326,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 				}
 			}
 			candidateInfo.Holder = balance.String()
-			candidateInfo.URL = tmp.URL
+			// candidateInfo.URL = tmp.URL
 			candidateInfos.Data = append(candidateInfos.Data, candidateInfo)
 		}
 
@@ -415,10 +415,10 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 
 		candidateInfo.Quantity = c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake()).String()
 		candidateInfo.TotalQuantity = c.TotalQuantity.String()
-		candidateInfo.URL = c.URL
+		// candidateInfo.URL = c.URL
 		candidateInfo.Holder = balance.String()
 
-		tmp, err := sys.GetCandidate(history, c.Name)
+		tmp, err := sys.GetCandidate(req, c.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -431,6 +431,124 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	}
 	log.Info("BrowserVote", "elapsed", common.PrettyDuration(time.Since(bstart)).String())
 	return candidateInfos, nil
+}
+
+// BrowserAllEpoch2 get all epoch info for browser api
+func (api *API) BrowserAllEpoch2() (interface{}, error) {
+	epochs := Epochs{}
+	epochs.Data = make([]*Epoch, 0)
+	epochNumber, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+	for {
+		data := &Epoch{}
+		timestamp := sys.config.epochTimeStamp(epochNumber)
+		gstate, err := sys.GetState(epochNumber)
+		if err != nil {
+			return nil, err
+		}
+		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+		}
+
+		data.Start = timestamp / 1000000000
+		data.Epoch = epochNumber + 1
+		epochs.Data = append(epochs.Data, data)
+		if epochNumber == 1 {
+			break
+		}
+		epochNumber = gstate.PreEpoch
+	}
+	return epochs, nil
+}
+
+// VoterInfo get epoch info for fractal api
+func (api *API) VoterInfo(reqEpochNumber uint64) (interface{}, error) {
+	var req, history uint64
+	bstart := time.Now()
+	reqEpochNumber = reqEpochNumber - 1
+	if reqEpochNumber == 0 {
+		log.Warn("VoterInfo 0")
+		return nil, fmt.Errorf("request:0")
+	}
+	vote, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
+	if reqEpochNumber > vote {
+		log.Warn("VoterInfo", " request:", reqEpochNumber, "> vote:", vote)
+		return nil, fmt.Errorf("request:%d > vote:%d", reqEpochNumber, vote)
+	}
+	req = reqEpochNumber
+	// log.Info("VoterInfo", "req:", req)
+	sys, err := api.system()
+	if err != nil {
+		return nil, err
+	}
+
+	reqEpoch, err := sys.GetState(req)
+	if err != nil {
+		return nil, err
+	}
+	history = reqEpoch.PreEpoch
+	log.Info("VoterInfo", "history:", history)
+	timestamp := sys.config.epochTimeStamp(req)
+	candidates, err := sys.GetCandidates(req)
+
+	if err != nil {
+		return nil, err
+	}
+	sort.Sort(candidates)
+
+	var declims uint64 = 1000000000000000000
+	var declimsBigInt = big.NewInt(0).SetUint64(declims)
+	minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
+	data := make([]*VoterInfoFractal, 0)
+	for _, c := range candidates {
+		if c.Name == "fractal.founder" {
+			continue
+		}
+
+		balance, err := sys.GetBalanceByTime(c.Name, timestamp)
+		if err != nil {
+			if err.Error() != "Not snapshot info, error = EOF" {
+				log.Warn("VoterInfo", "candidate", c.Name, "ignore", err)
+				return nil, err
+			}
+		}
+
+		voter := &VoterInfoFractal{}
+		voter.Vote = 1
+		if balance.Cmp(minQuantity) < 0 {
+			voter.Vote = 0
+		}
+		if c.Type == Normal {
+			voter.State = uint64(Normal)
+		} else if c.Type == Freeze {
+			voter.State = uint64(Freeze)
+		} else if c.Type == Black {
+			voter.State = uint64(Black)
+		} else if c.Type == Jail {
+			voter.State = uint64(Jail)
+		} else if c.Type == Unkown {
+			voter.State = uint64(Unkown)
+		}
+		voter.Candidate = c.Name
+
+		if voter.Vote == 1 && voter.State == uint64(Normal) {
+			voter.CanVote = true
+		} else {
+			voter.CanVote = false
+		}
+		tmp := c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake())
+		voter.Quantity = tmp.Div(tmp, declimsBigInt).String()
+		voter.TotalQuantity = c.TotalQuantity.String()
+		voter.URL = c.URL
+		voter.Holder = balance.Div(balance, declimsBigInt).String()
+
+		data = append(data, voter)
+	}
+	log.Info("VoterInfo", "elapsed", common.PrettyDuration(time.Since(bstart)).String())
+	return data, nil
 }
 
 // SnapShotStake get snapshot stake

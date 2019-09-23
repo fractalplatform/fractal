@@ -1,4 +1,16 @@
 # [fractal](https://github.com/fractalplatform/fractal) Changelog
+## [0.0.30] - 2019-09-20
+### Fixed
+- [DOWNLOADER] blockchain/downloader: if there were two different blocks in same height, it may cause download error (#481)(#490)
+- [BLOCKCHAIN] blockchain: fixed bug that use nanosecond compared with second (#474)
+### Changed
+- [RAWDB] modify fractal db interface (#487)
+- [BLOCKCHAIN] modify the blockchain code (#489)
+### Added
+- [GASPRICE] returns the recommended gas price (#486)
+- [TEST] add each code module unit test or note (#471)(#472)(#473)(#475)(#476)(#478)(#482)(#483)(#485)
+
+
 ## [0.0.29] - 2019-09-04
 ### Fixed
 - [P2P] blockchain/downloader: fixed bug that may don't download the new block (#469)
@@ -254,6 +266,7 @@
 - [MAKEFILE] add check fmt tag_release release command
 
 
+[0.0.30]: https://github.com/fractalplatform/fractal/compare/v0.0.29...v0.0.30
 [0.0.29]: https://github.com/fractalplatform/fractal/compare/v0.0.28...v0.0.29
 [0.0.28]: https://github.com/fractalplatform/fractal/compare/v0.0.27...v0.0.28
 [0.0.27]: https://github.com/fractalplatform/fractal/compare/v0.0.26...v0.0.27
