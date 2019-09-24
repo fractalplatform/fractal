@@ -26,6 +26,7 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 type revision struct {
@@ -44,9 +45,9 @@ type StateDB struct {
 	db   Database
 	trie Trie
 
-	readSet  map[string][]byte   // save old/unmodified data
-	writeSet map[string][]byte   // last modify data
-	dirtySet map[string]struct{} // writeSet which key is modified
+	readSet  map[string]interface{} // save old/unmodified data
+	writeSet map[string]interface{} // last modify data
+	dirtySet map[string]struct{}    // writeSet which key is modified
 
 	dbErr  error
 	refund uint64 // unuse gas
@@ -79,8 +80,8 @@ func New(root common.Hash, db Database) (*StateDB, error) {
 	return &StateDB{
 		db:         db,
 		trie:       tr,
-		readSet:    make(map[string][]byte),
-		writeSet:   make(map[string][]byte),
+		readSet:    make(map[string]interface{}),
+		writeSet:   make(map[string]interface{}),
 		dirtySet:   make(map[string]struct{}),
 		logs:       make(map[common.Hash][]*types.Log),
 		preimages:  make(map[common.Hash][]byte),
@@ -108,8 +109,8 @@ func (s *StateDB) Reset(root common.Hash) error {
 	}
 
 	s.trie = tr
-	s.readSet = make(map[string][]byte)
-	s.writeSet = make(map[string][]byte)
+	s.readSet = make(map[string]interface{})
+	s.writeSet = make(map[string]interface{})
 	s.dirtySet = make(map[string]struct{})
 	s.thash = common.Hash{}
 	s.bhash = common.Hash{}
@@ -176,10 +177,11 @@ func (s *StateDB) GetRefund() uint64 {
 func (s *StateDB) GetState(account string, key common.Hash) common.Hash {
 	optKey := statePrefix + linkSymbol + account + linkSymbol + key.String()
 	value, _ := s.get(optKey)
-	if (value == nil) || (len(value) != common.HashLength) {
+	if value == nil {
 		return common.Hash{}
 	}
-	return common.BytesToHash(value)
+
+	return value.(common.Hash)
 }
 
 // set contract variable key value
@@ -189,17 +191,11 @@ func (s *StateDB) SetState(account string, key, value common.Hash) {
 }
 
 // set writeSet
-func (s *StateDB) set(key string, value []byte) {
-	if value == nil {
-		s.writeSet[key] = nil
-	} else {
-		valueCopy := make([]byte, len(value))
-		copy(valueCopy, value)
-		s.writeSet[key] = valueCopy
-	}
+func (s *StateDB) set(key string, value interface{}) {
+	s.writeSet[key] = value
 }
 
-func (s *StateDB) put(key string, value []byte) {
+func (s *StateDB) put(key string, value interface{}) {
 	oldValue, _ := s.get(key)
 	s.journal.append(stateChange{key: &key,
 		prevalue: oldValue})
@@ -207,9 +203,9 @@ func (s *StateDB) put(key string, value []byte) {
 }
 
 //get return nil when key not exsit
-func (s *StateDB) get(key string) ([]byte, error) {
+func (s *StateDB) get(key string) (interface{}, error) {
 	if value, exsit := s.writeSet[key]; exsit {
-		return common.CopyBytes(value), nil
+		return value, nil
 	}
 
 	// replay transaction
@@ -226,10 +222,18 @@ func (s *StateDB) get(key string) ([]byte, error) {
 		return nil, err
 	}
 
-	s.readSet[key] = common.CopyBytes(value)
-	s.writeSet[key] = common.CopyBytes(value)
+	//decode
+	var valInterface interface{}
+	err = rlp.DecodeBytes(value, valInterface)
+	if err != nil {
+		panic("decode failed when get key")
+	}
 
-	return common.CopyBytes(value), nil
+	//read and write can not one interface------
+	s.readSet[key] = valInterface
+	s.writeSet[key] = valInterface
+
+	return valInterface, nil
 }
 
 func (s *StateDB) Database() Database {
@@ -243,8 +247,8 @@ func (s *StateDB) Copy() *StateDB {
 	state := &StateDB{
 		db:        s.db,
 		trie:      s.trie,
-		readSet:   make(map[string][]byte, len(s.writeSet)),
-		writeSet:  make(map[string][]byte, len(s.writeSet)),
+		readSet:   make(map[string]interface{}, len(s.writeSet)),
+		writeSet:  make(map[string]interface{}, len(s.writeSet)),
 		dirtySet:  make(map[string]struct{}, len(s.dirtySet)),
 		refund:    s.refund,
 		logs:      make(map[common.Hash][]*types.Log, len(s.logs)),
@@ -254,8 +258,8 @@ func (s *StateDB) Copy() *StateDB {
 
 	for key := range s.journal.dirties {
 		value := s.writeSet[key]
-		state.readSet[key] = common.CopyBytes(value)
-		state.writeSet[key] = common.CopyBytes(value)
+		state.readSet[key] = value
+		state.writeSet[key] = value
 	}
 
 	for hash, logs := range s.logs {
@@ -289,13 +293,13 @@ func (s *StateDB) RevertToSnapshot(revisionID int) {
 }
 
 //Put account's data to db
-func (s *StateDB) Put(account string, key string, value []byte) {
+func (s *StateDB) Put(account string, key string, value interface{}) {
 	optKey := acctDataPrefix + linkSymbol + account + linkSymbol + key
 	s.put(optKey, value)
 }
 
 //Get account's data from db
-func (s *StateDB) Get(account string, key string) ([]byte, error) {
+func (s *StateDB) Get(account string, key string) (interface{}, error) {
 	optKey := acctDataPrefix + linkSymbol + account + linkSymbol + key
 	return s.get(optKey)
 }
@@ -342,7 +346,12 @@ func (s *StateDB) Finalise() {
 		}
 		//update the value to trie
 		if value != nil {
-			s.trie.TryUpdate([]byte(key), value)
+			//encode value
+			valueBytes, err := rlp.EncodeToBytes(value)
+			if err != nil {
+				panic(err)
+			}
+			s.trie.TryUpdate([]byte(key), valueBytes)
 		} else {
 			s.trie.TryDelete([]byte(key))
 		}
@@ -363,8 +372,13 @@ func (s *StateDB) genBlockStateOut(parentHash, blockHash common.Hash, blockNum u
 
 	// replay
 	for key, value := range s.readSet {
+		//encode value
+		valueBytes, err := rlp.EncodeToBytes(value)
+		if err != nil {
+			panic(err)
+		}
 		stateOut.ReadSet = append(stateOut.ReadSet,
-			&types.KvNode{Key: key, Value: common.CopyBytes(value)})
+			&types.KvNode{Key: key, Value: valueBytes})
 	}
 
 	return stateOut
@@ -431,8 +445,8 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 
 	stateDb := &StateDB{
 		db:         cache,
-		readSet:    make(map[string][]byte),
-		writeSet:   make(map[string][]byte),
+		readSet:    make(map[string]interface{}),
+		writeSet:   make(map[string]interface{}),
 		dirtySet:   make(map[string]struct{}),
 		logs:       make(map[common.Hash][]*types.Log),
 		preimages:  make(map[common.Hash][]byte),
@@ -440,7 +454,13 @@ func TraceNew(blockHash common.Hash, cache Database) (*StateDB, error) {
 		stateTrace: true}
 
 	for _, node := range stateOut.ReadSet {
-		stateDb.writeSet[node.Key] = common.CopyBytes(node.Value)
+		//decode
+		var valInterface interface{}
+		err := rlp.DecodeBytes(node.Value, valInterface)
+		if err != nil {
+			panic("decode failed when trace")
+		}
+		stateDb.writeSet[node.Key] = valInterface
 	}
 
 	return stateDb, nil

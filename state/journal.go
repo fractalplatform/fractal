@@ -67,7 +67,7 @@ func (j *journal) length() int {
 type (
 	stateChange struct {
 		key      *string
-		prevalue []byte
+		prevalue interface{}
 	}
 
 	refundChange struct {
