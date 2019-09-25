@@ -96,6 +96,7 @@ func TestBadBlockHashes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer newChain.Stop()
 
 	// if db have bad block then block will be reset, newChain.CurrentBlock().Hash() must equal chain or newchain genesis block hash.
 	if newChain.CurrentBlock().Hash() != chain.GetBlockByNumber(0).Hash() ||
