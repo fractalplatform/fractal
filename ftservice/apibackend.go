@@ -336,6 +336,16 @@ func (b *APIBackend) RemoveTrustedPeer(url string) error {
 	return err
 }
 
+// SeedNodes returns all seed nodes.
+func (b *APIBackend) SeedNodes() []string {
+	nodes := b.ftservice.p2pServer.SeedNodes()
+	ns := make([]string, len(nodes))
+	for i, node := range nodes {
+		ns[i] = node.String()
+	}
+	return ns
+}
+
 // PeerCount returns the number of connected peers.
 func (b *APIBackend) PeerCount() int {
 	return b.ftservice.p2pServer.PeerCount()
