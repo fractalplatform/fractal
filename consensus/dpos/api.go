@@ -227,6 +227,7 @@ func (api *API) BrowserAllEpoch() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	for {
 		data := &Epoch{}
 		timestamp := sys.config.epochTimeStamp(epochNumber)
@@ -234,18 +235,36 @@ func (api *API) BrowserAllEpoch() (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
-			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+		if gstate.PreEpoch == gstate.Epoch {
+			timestamp = sys.config.ReferenceTime
 		}
-
 		data.Start = timestamp / 1000000000
 		data.Epoch = epochNumber
 		epochs.Data = append(epochs.Data, data)
-		if epochNumber == 1 {
+		if gstate.PreEpoch == gstate.Epoch {
 			break
 		}
 		epochNumber = gstate.PreEpoch
 	}
+	// for {
+	// 	data := &Epoch{}
+	// 	timestamp := sys.config.epochTimeStamp(epochNumber)
+	// 	gstate, err := sys.GetState(epochNumber)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
+	// 		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+	// 	}
+
+	// 	data.Start = timestamp / 1000000000
+	// 	data.Epoch = epochNumber
+	// 	epochs.Data = append(epochs.Data, data)
+	// 	if epochNumber == 1 {
+	// 		break
+	// 	}
+	// 	epochNumber = gstate.PreEpoch
+	// }
 	return epochs, nil
 }
 
@@ -435,28 +454,37 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 
 // BrowserAllEpoch2 get all epoch info for browser api
 func (api *API) BrowserAllEpoch2() (interface{}, error) {
-	epochs := Epochs{}
-	epochs.Data = make([]*Epoch, 0)
+	epochs := VoteEpochs{}
+	epochs.Data = make([]*VoteEpoch, 0)
 	epochNumber, _ := api.epoch(api.chain.CurrentHeader().Number.Uint64())
 	sys, err := api.system()
 	if err != nil {
 		return nil, err
 	}
 	for {
-		data := &Epoch{}
+		data := &VoteEpoch{}
 		timestamp := sys.config.epochTimeStamp(epochNumber)
 		gstate, err := sys.GetState(epochNumber)
 		if err != nil {
 			return nil, err
 		}
-		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
-			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
+		if gstate.PreEpoch == gstate.Epoch {
+			timestamp = sys.config.ReferenceTime
+		}
+
+		dataEpoch, err := sys.GetState(gstate.PreEpoch)
+		if err != nil {
+			return nil, err
+		}
+
+		if dataEpoch.Dpos {
+			data.Dpos = 1
 		}
 
 		data.Start = timestamp / 1000000000
 		data.Epoch = epochNumber + 1
 		epochs.Data = append(epochs.Data, data)
-		if epochNumber == 1 {
+		if gstate.PreEpoch == gstate.Epoch {
 			break
 		}
 		epochNumber = gstate.PreEpoch
