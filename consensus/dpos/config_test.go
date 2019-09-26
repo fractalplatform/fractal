@@ -51,6 +51,10 @@ func TestConfig(t *testing.T) {
 		panic(fmt.Errorf("Config consensusSize mismatch"))
 	}
 
+	if 3 != DefaultConfig.consensusSize() {
+		panic(fmt.Errorf("Config Cache consensusSize mismatch"))
+	}
+
 	if 0 != DefaultConfig.slot(1567591745) {
 		panic(fmt.Errorf("Config slot mismatch"))
 	}
@@ -63,6 +67,10 @@ func TestConfig(t *testing.T) {
 		panic(fmt.Errorf("Config getoffset mismatch"))
 	}
 
+	if 0 != DefaultConfig.getoffset(1567591745, 2) {
+		panic(fmt.Errorf("Config getoffset mismatch"))
+	}
+
 	if 15639786 != DefaultConfig.epoch(1567591745) {
 		panic(fmt.Errorf("Config epoch mismatch"))
 	}
@@ -71,7 +79,11 @@ func TestConfig(t *testing.T) {
 		panic(fmt.Errorf("Config epochTimeStamp mismatch"))
 	}
 
-	if 0 != DefaultConfig.shouldCounter(1567591745, 1567591745) {
+	if 0 != DefaultConfig.shouldCounter(1567591745000, 1567591745000) {
+		panic(fmt.Errorf("Config epochTimeStamp mismatch"))
+	}
+
+	if 3 != DefaultConfig.shouldCounter(1521370523000, 1567591745000) {
 		panic(fmt.Errorf("Config epochTimeStamp mismatch"))
 	}
 
@@ -84,6 +96,11 @@ func TestConfig(t *testing.T) {
 	}
 
 	if err := DefaultConfig.IsValid(); err != nil {
+		panic(fmt.Errorf("Config IsValid err %v", err))
+	}
+
+	DefaultConfig.epochInter.Store(uint64(1070000))
+	if err := DefaultConfig.IsValid(); err == nil {
 		panic(fmt.Errorf("Config IsValid err %v", err))
 	}
 }
