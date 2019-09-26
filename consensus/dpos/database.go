@@ -238,6 +238,18 @@ type Epoch struct {
 	Epoch uint64 `json:"epoch"`
 }
 
+// VoteEpochs array of epcho
+type VoteEpochs struct {
+	Data []*VoteEpoch `json:"data"`
+}
+
+// VoteEpoch timestamp & epoch number & dpos status
+type VoteEpoch struct {
+	Start uint64 `json:"start"`
+	Epoch uint64 `json:"epoch"`
+	Dpos  uint64 `json:"dpos"`
+}
+
 func (prods CandidateInfoArray) Len() int {
 	return len(prods)
 }
