@@ -280,11 +280,6 @@ func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 	return batch.Write()
 }
 
-// GasLimit returns the gas limit of the current HEAD block.
-func (bc *BlockChain) GasLimit() uint64 {
-	return bc.CurrentBlock().GasLimit()
-}
-
 // CurrentBlock retrieves the current head block of the canonical chain.
 func (bc *BlockChain) CurrentBlock() *types.Block {
 	return bc.currentBlock.Load().(*types.Block)

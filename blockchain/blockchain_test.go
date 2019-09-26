@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/processor/vm"
+	"github.com/fractalplatform/fractal/txpool"
 )
 
 // So we can deterministically seed different blockchains
@@ -65,4 +67,44 @@ func TestSystemForkChain(t *testing.T) {
 
 	// check if is complete block chain
 	checkCompleteChain(t, chain)
+}
+
+func TestBadBlockHashes(t *testing.T) {
+	genesis := DefaultGenesis()
+	chain := newCanonical(t, genesis)
+	defer chain.Stop()
+
+	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
+
+	chain.badHashes[blocks[2].Header().Hash()] = true
+
+	_, err := chain.InsertChain(blocks)
+	if err != ErrBlacklistedHash {
+		t.Errorf("error mismatch: have: %v, want: %v", err, ErrBlacklistedHash)
+	}
+
+	// test NewBlockChain()badblock err
+	delete(chain.badHashes, blocks[2].Header().Hash())
+
+	_, err = chain.InsertChain(blocks)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newChain, err := NewBlockChain(chain.db, false, vm.Config{}, chain.chainConfig,
+		[]string{blocks[2].Header().Hash().String()}, 0, txpool.SenderCacher)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer newChain.Stop()
+
+	// if db have bad block then block will be reset, newChain.CurrentBlock().Hash() must equal chain or newchain genesis block hash.
+	if newChain.CurrentBlock().Hash() != chain.GetBlockByNumber(0).Hash() ||
+		newChain.CurrentBlock().Hash() != newChain.GetBlockByNumber(0).Hash() {
+		t.Fatalf("cur hash %x , genesis hash %v", newChain.CurrentBlock().Hash(),
+			newChain.Genesis().Hash())
+	}
+
+	t.Log(newChain.CurrentBlock().Hash().String())
+	t.Log(newChain.Genesis().Hash().String())
 }
