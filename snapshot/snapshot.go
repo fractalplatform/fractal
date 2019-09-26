@@ -25,7 +25,6 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var snapshotManagerName = "sysSnapshot"
@@ -51,95 +50,64 @@ func NewSnapshotManager(state *state.StateDB) *SnapshotManager {
 }
 
 func (sn *SnapshotManager) SetSnapshot(time uint64, blockInfo BlockInfo) error {
-	blockInfoEnc, err := rlp.EncodeToBytes(blockInfo)
-	if err != nil {
-		return err
-	}
-
-	timestampEnc, err := rlp.EncodeToBytes(time)
-	if err != nil {
-		return err
-	}
-
 	key := snapshotTime + strconv.FormatUint(time, 10)
-	sn.stateDB.Put(snapshotManagerName, key, blockInfoEnc)
-	sn.stateDB.Put(snapshotManagerName, snapshotTime, timestampEnc)
+	sn.stateDB.Put(snapshotManagerName, key, blockInfo)
+	sn.stateDB.Put(snapshotManagerName, snapshotTime, time)
 	return nil
 }
 
 func (sn *SnapshotManager) GetCurrentSnapshotHash() (uint64, common.Hash, error) {
-	timestampEnc, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
+	timestampInterface, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
 	}
 
-	var timestamp uint64
-	if err = rlp.DecodeBytes(timestampEnc, &timestamp); err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
-	}
+	timestamp := timestampInterface.(uint64)
 
 	key1 := snapshotTime + strconv.FormatUint(timestamp, 10)
-	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
+	blockInfo, err := sn.stateDB.Get(snapshotManagerName, key1)
 	if err != nil {
 		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
 	}
-	var blockInfo BlockInfo
-	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
-	}
 
-	return blockInfo.Number, blockInfo.BlockHash, nil
+	return blockInfo.(BlockInfo).Number, blockInfo.(BlockInfo).BlockHash, nil
 }
 
 // GetLastSnapshot get last snapshot time
 func (sn *SnapshotManager) GetLastSnapshotTime() (uint64, error) {
-	timestampEnc, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
+	timestamp, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
 	if err != nil {
 		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
 	}
 
-	var timestamp uint64
-	if err = rlp.DecodeBytes(timestampEnc, &timestamp); err != nil {
-		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
-	}
-
-	return timestamp, nil
+	return timestamp.(uint64), nil
 }
 
 // GetPrevSnapshot get previous snapshot time
 func (sn *SnapshotManager) GetPrevSnapshotTime(time uint64) (uint64, error) {
 	key := snapshotTime + strconv.FormatUint(time, 10)
-	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key)
+	blockInfo, err := sn.stateDB.Get(snapshotManagerName, key)
 	if err != nil {
 		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
 	}
 
-	var blockInfo BlockInfo
-	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
-		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
-	}
-
-	return blockInfo.Timestamp, nil
+	return blockInfo.(BlockInfo).Timestamp, nil
 }
 
-func (sn *SnapshotManager) GetSnapshotMsg(account string, key string, time uint64) ([]byte, error) {
+func (sn *SnapshotManager) GetSnapshotMsg(account string, key string, time uint64) (interface{}, error) {
 	if time == 0 {
 		return nil, fmt.Errorf("Not snapshot info, time = %v", time)
 	}
 
 	key1 := snapshotTime + strconv.FormatUint(time, 10)
-	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
+	blockInfo, err := sn.stateDB.Get(snapshotManagerName, key1)
 	if err != nil {
-		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
-	}
-	var blockInfo BlockInfo
-	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
 		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
 	}
 
 	snapshotBlock := types.SnapshotBlock{
-		Number:    blockInfo.Number,
-		BlockHash: blockInfo.BlockHash,
+		Number:    blockInfo.(BlockInfo).Number,
+		BlockHash: blockInfo.(BlockInfo).BlockHash,
 	}
 
 	db := sn.stateDB.Database().GetDB()
@@ -168,18 +136,14 @@ func (sn *SnapshotManager) GetSnapshotState(time uint64) (*state.StateDB, error)
 	}
 
 	key1 := snapshotTime + strconv.FormatUint(time, 10)
-	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
+	blockInfo, err := sn.stateDB.Get(snapshotManagerName, key1)
 	if err != nil {
-		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
-	}
-	var blockInfo BlockInfo
-	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
 		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
 	}
 
 	snapshotBlock := types.SnapshotBlock{
-		Number:    blockInfo.Number,
-		BlockHash: blockInfo.BlockHash,
+		Number:    blockInfo.(BlockInfo).Number,
+		BlockHash: blockInfo.(BlockInfo).BlockHash,
 	}
 
 	db := sn.stateDB.Database().GetDB()
