@@ -1597,10 +1597,11 @@ func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name, objec
 		if errEnc != nil {
 			return errEnc
 		}
-
-		action := types.NewAction(types.Transfer, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload, nil)
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transfer", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
-		evm.InternalTxs = append(evm.InternalTxs, internalAction)
+		for _, info := range withdrawInfo.AssetInfo {
+			action := types.NewAction(types.Transfer, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, info.AssetID, 0, info.Amount, paload, nil)
+			internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transfer", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
+			evm.InternalTxs = append(evm.InternalTxs, internalAction)
+		}
 	}
 	return err
 }
