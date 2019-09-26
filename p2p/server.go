@@ -302,6 +302,10 @@ func (srv *Server) Peers() []*Peer {
 	return ps
 }
 
+func (srv *Server) SeedNodes() []*enode.Node {
+	return srv.ntab.SeedNodes()
+}
+
 // PeerCount returns the number of connected peers.
 func (srv *Server) PeerCount() int {
 	var count int
