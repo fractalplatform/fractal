@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/accountmanager"
@@ -18,6 +19,31 @@ func GetAccountBalanceByID(account *accountmanager.AccountManager, accountName c
 
 func GetNonce(account *accountmanager.AccountManager, accountName common.Name) (uint64, error) {
 	return account.GetNonce(accountName)
+}
+
+func CompareNonce(account *accountmanager.AccountManager, accountName common.Name, actionNonce uint64) error {
+	nonce, err := account.GetNonce(accountName)
+	if err != nil {
+		return err
+	}
+	if nonce < actionNonce {
+		return errors.New("nonce too high")
+	} else if nonce > actionNonce {
+		return errors.New("nonce too low")
+	}
+	return nil
+}
+
+func UpdateNonce(account *accountmanager.AccountManager, accountName common.Name) error {
+	nonce, err := account.GetNonce(accountName)
+	if err != nil {
+		return err
+	}
+	err = account.SetNonce(accountName, nonce+1)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func SetNonce(account *accountmanager.AccountManager, accountName common.Name, nonce uint64) error {

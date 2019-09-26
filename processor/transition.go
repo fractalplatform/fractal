@@ -178,16 +178,19 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 			return nil, 0, false, vmerr, vmerr
 		}
 	}
-	nonce, err := plugin.GetNonce(st.account, st.from)
-	//nonce, err := st.account.GetNonce(st.from)
-	if err != nil {
+	if err := plugin.UpdateNonce(st.account, st.from); err != nil {
 		return nil, st.gasUsed(), true, err, vmerr
 	}
-	err = plugin.SetNonce(st.account, st.from, nonce+1)
-	//err = st.account.SetNonce(st.from, nonce+1)
-	if err != nil {
-		return nil, st.gasUsed(), true, err, vmerr
-	}
+	// nonce, err := plugin.GetNonce(st.account, st.from)
+	// //nonce, err := st.account.GetNonce(st.from)
+	// if err != nil {
+	// 	return nil, st.gasUsed(), true, err, vmerr
+	// }
+	// err = plugin.SetNonce(st.account, st.from, nonce+1)
+	// //err = st.account.SetNonce(st.from, nonce+1)
+	// if err != nil {
+	// 	return nil, st.gasUsed(), true, err, vmerr
+	// }
 	st.refundGas()
 
 	// st.distributeGas(intrinsicGas)

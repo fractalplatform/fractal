@@ -110,21 +110,24 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	detailTx := &types.DetailTx{}
 	var detailActions []*types.DetailAction
 	for i, action := range tx.GetActions() {
-		if needCheckSign(accountDB, action) {
-			if err := plugin.RecoverTx(accountDB, types.NewSigner(config.ChainID), tx); err != nil {
-				return nil, 0, err
-			}
-		}
+		// if needCheckSign(accountDB, action) {
+		// 	if err := plugin.RecoverTx(accountDB, types.NewSigner(config.ChainID), tx); err != nil {
+		// 		return nil, 0, err
+		// 	}
+		// }
 
-		nonce, err := plugin.GetNonce(accountDB, action.Sender())
-		if err != nil {
+		if err := plugin.CompareNonce(accountDB, action.Sender(), action.Nonce()); err != nil {
 			return nil, 0, err
 		}
-		if nonce < action.Nonce() {
-			return nil, 0, ErrNonceTooHigh
-		} else if nonce > action.Nonce() {
-			return nil, 0, ErrNonceTooLow
-		}
+		// nonce, err := plugin.GetNonce(accountDB, action.Sender())
+		// if err != nil {
+		// 	return nil, 0, err
+		// }
+		// if nonce < action.Nonce() {
+		// 	return nil, 0, ErrNonceTooHigh
+		// } else if nonce > action.Nonce() {
+		// 	return nil, 0, ErrNonceTooLow
+		// }
 
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
