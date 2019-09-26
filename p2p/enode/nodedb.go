@@ -337,6 +337,7 @@ func (db *DB) QueryAllSeeds() []*Node {
 		it    = db.lvl.NewIterator(nil, nil)
 	)
 	defer it.Release()
+seek:
 	for it.Next() {
 		n := nextNode(it)
 		if n == nil {
@@ -344,7 +345,7 @@ func (db *DB) QueryAllSeeds() []*Node {
 		}
 		for i := range nodes {
 			if nodes[i].ID() == n.ID() {
-				continue
+				continue seek
 			}
 		}
 		nodes = append(nodes, n)
