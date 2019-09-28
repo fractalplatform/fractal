@@ -535,11 +535,13 @@ func (srv *Server) DiscoverOnly() error {
 	if err != nil {
 		return err
 	}
-
+	srv.ntab = ntab
+	srv.loopWG.Add(1)
 	go func() {
 		timeout := time.NewTicker(10 * time.Minute)
+		defer srv.loopWG.Done()
 		defer timeout.Stop()
-		defer ntab.Close()
+		defer srv.ntab.Close()
 		for {
 			select {
 			case <-timeout.C:
