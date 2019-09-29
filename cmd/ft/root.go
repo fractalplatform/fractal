@@ -94,7 +94,7 @@ var RootCmd = &cobra.Command{
 }
 
 func makeNode() (*node.Node, error) {
-	var genesis *blockchain.Genesis
+	genesis := blockchain.DefaultGenesis()
 	// set miner config
 	SetupMetrics()
 	// Make sure we have a valid genesis JSON
@@ -106,7 +106,6 @@ func makeNode() (*node.Node, error) {
 		}
 		defer file.Close()
 
-		genesis = blockchain.DefaultGenesis()
 		if err := json.NewDecoder(file).Decode(genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
 		}
