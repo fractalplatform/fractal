@@ -83,7 +83,9 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 	// used to generate MagicNetID
-	ftservice.p2pServer.GenesisHash = ftservice.blockchain.Genesis().Hash()
+	if ftservice.p2pServer != nil {
+		ftservice.p2pServer.GenesisHash = ftservice.blockchain.Genesis().Hash()
+	}
 
 	// txpool
 	if config.TxPool.Journal != "" {
