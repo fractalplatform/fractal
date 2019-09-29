@@ -370,6 +370,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	var coalescedLogs []*types.Log
 	endTimeStamp := work.currentHeader.Time.Uint64() + interval - 2*interval/5
 	endTime := time.Unix((int64)(endTimeStamp)/(int64)(time.Second), (int64)(endTimeStamp)%(int64)(time.Second))
+	isSnapshot := worker.CurrentHeader().Time.Uint64()%worker.Config().SnapshotInterval*uint64(time.Millisecond) == 0
 	for {
 		select {
 		case <-worker.quit:
@@ -397,11 +398,21 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 		action := tx.GetActions()[0]
 
+		if isSnapshot {
+			if action.Type() == types.RegCandidate {
+				log.Trace("Skipping regcandidate transaction when snapshot block", "hash", tx.Hash())
+				txs.Pop()
+				continue
+			}
+		}
+
 		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName) != 0 {
 			switch action.Type() {
 			case types.KickedCandidate:
 				fallthrough
 			case types.ExitTakeOver:
+				log.Trace("Skipping system transaction when not take over", "hash", tx.Hash())
+				txs.Pop()
 				continue
 			default:
 			}
