@@ -101,7 +101,6 @@ func (miner *Miner) Start(force bool) bool {
 // Stop stop worker
 func (miner *Miner) Stop() bool {
 	if !atomic.CompareAndSwapInt32(&miner.mining, 2, 3) {
-		log.Error("miner already stopped")
 		return false
 	}
 	log.Info("Stopping mining operation")
