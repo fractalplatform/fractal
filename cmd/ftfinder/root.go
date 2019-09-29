@@ -58,8 +58,12 @@ var RootCmd = &cobra.Command{
 		for i, n := range srv.Config.BootstrapNodes {
 			fmt.Println(i, n.String())
 		}
-		srv.DiscoverOnly()
+		err := srv.DiscoverOnly()
 		defer srv.Stop()
+		if err != nil {
+			log.Error("ftfinder start failed", "error", err)
+			return
+		}
 		rpcListener, rpcHandler, err := rpc.StartIPCEndpoint(nodeConfig.IPCEndpoint(), []rpc.API{
 			rpc.API{
 				Namespace: "p2p",

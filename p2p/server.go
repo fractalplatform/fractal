@@ -505,6 +505,8 @@ func (srv *Server) DiscoverOnly() error {
 		srv.log = log.New()
 	}
 
+	srv.quit = make(chan struct{})
+
 	srv.log.Info("Starting P2P discovery networking", "NetID", srv.magicNetID(), "UsrNetID", srv.NetworkID)
 
 	// static fields
@@ -520,7 +522,6 @@ func (srv *Server) DiscoverOnly() error {
 	if err != nil {
 		return err
 	}
-	srv.quit = make(chan struct{})
 	cfg := discover.Config{
 		TCPPort:      0,
 		MagicNetID:   srv.magicNetID(),
