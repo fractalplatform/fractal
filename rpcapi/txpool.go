@@ -79,7 +79,7 @@ func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
 	return content
 }
 
-// PendingTransactions returns the pending transactions that are in the transaction pool
+// PendingTransactions returns the pending transactions that are in the transaction pool.
 func (s *PrivateTxPoolAPI) PendingTransactions(fullTx bool) (interface{}, error) {
 	pending, err := s.b.TxPool().Pending()
 	if err != nil {
@@ -106,8 +106,8 @@ func (s *PrivateTxPoolAPI) PendingTransactions(fullTx bool) (interface{}, error)
 	return txsHashes, nil
 }
 
-// GetPoolTransactions txpool returns the transaction for the given hash
-func (s *PrivateTxPoolAPI) GetPoolTransactions(hashes []common.Hash) []*types.RPCTransaction {
+// GetTransactions txpool returns the transaction by the given hash.
+func (s *PrivateTxPoolAPI) GetTransactions(hashes []common.Hash) []*types.RPCTransaction {
 	var txs []*types.RPCTransaction
 	for _, hash := range hashes {
 		if tx := s.b.TxPool().Get(hash); tx != nil {
@@ -115,6 +115,36 @@ func (s *PrivateTxPoolAPI) GetPoolTransactions(hashes []common.Hash) []*types.RP
 		}
 	}
 	return txs
+}
+
+// GetTransactionsByAccount  txpool returns the transaction by the given account name.
+func (s *PrivateTxPoolAPI) GetTransactionsByAccount(name common.Name, fullTx bool) interface{} {
+	content := map[string]map[string]interface{}{
+		"pending": make(map[string]interface{}),
+		"queued":  make(map[string]interface{}),
+	}
+
+	txsFunc := func(name common.Name, m map[common.Name][]*types.Transaction, fullTx bool) map[string]interface{} {
+		dump := make(map[string]interface{})
+		txs, ok := m[name]
+		if ok {
+			for _, tx := range txs {
+				if fullTx {
+					dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+				} else {
+					dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
+				}
+			}
+		}
+		return dump
+	}
+
+	pending, queue := s.b.TxPool().Content()
+
+	content["pending"] = txsFunc(name, pending, fullTx)
+	content["queued"] = txsFunc(name, queue, fullTx)
+
+	return content
 }
 
 // SetGasPrice set txpool gas price
