@@ -32,10 +32,17 @@ var contentCmd = &cobra.Command{
 	Use:   "content <fullTx bool>",
 	Short: "Returns the transactions contained within the transaction pool.",
 	Long:  `Returns the transactions contained within the transaction pool.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var result interface{}
-		clientCall(ipcEndpoint, &result, "txpool_content", parseBool(args[0]))
+		var (
+			result interface{}
+			fullTx bool
+		)
+		if len(args) == 1 {
+			fullTx = parseBool(args[0])
+		}
+
+		clientCall(ipcEndpoint, &result, "txpool_content", fullTx)
 		printJSON(result)
 	},
 }
@@ -64,16 +71,37 @@ var setGasPriceCmd = &cobra.Command{
 	},
 }
 
-var getTxCmd = &cobra.Command{
-	Use:   "gettx <txhashes string array> ",
+var getTxsCmd = &cobra.Command{
+	Use:   "gettxs <txhashes string array> ",
 	Short: "Returns the transaction for the given hash",
 	Long:  `Returns the transaction for the given hash`,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		var result []*types.RPCTransaction
-		clientCall(ipcEndpoint, &result, "txpool_getPoolTransactions", args)
+		clientCall(ipcEndpoint, &result, "txpool_getTransactions", args)
 		printJSONList(result)
 	},
 }
+
+var getTxsByAccountCmd = &cobra.Command{
+	Use:   "gettxsbyname <account string> <fullTx bool> ",
+	Short: "Returns the transaction for the given account",
+	Long:  `Returns the transaction for the given account`,
+	Args:  cobra.RangeArgs(1, 2),
+	Run: func(cmd *cobra.Command, args []string) {
+		var (
+			result interface{}
+			fullTx bool
+		)
+		if len(args) > 1 {
+			fullTx = parseBool(args[1])
+		}
+
+		clientCall(ipcEndpoint, &result, "txpool_getTransactionsByAccount", args[0], fullTx)
+		printJSON(result)
+	},
+}
+
 var getPendingTxsCmd = &cobra.Command{
 	Use:   "getpending <fullTx bool>",
 	Short: "Returns the pending transactions that are in the transaction pool",
@@ -88,6 +116,6 @@ var getPendingTxsCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(txpoolCommand)
-	txpoolCommand.AddCommand(contentCmd, statusCmd, setGasPriceCmd, getTxCmd, getPendingTxsCmd)
+	txpoolCommand.AddCommand(contentCmd, statusCmd, setGasPriceCmd, getTxsCmd, getTxsByAccountCmd, getPendingTxsCmd)
 	txpoolCommand.PersistentFlags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
 }
