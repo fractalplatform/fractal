@@ -17,11 +17,7 @@
 // Package common contains various helper functions.
 package common
 
-import (
-	"encoding/binary"
-	"encoding/hex"
-	"io"
-)
+import "encoding/hex"
 
 // ToHex returns the hex representation of b, prefixed with '0x'.
 // For empty slices, the return value is "0x0".
@@ -35,13 +31,20 @@ func ToHex(b []byte) string {
 	return "0x" + hex
 }
 
+// ToHexArray creates a array of hex-string based on []byte
+func ToHexArray(b [][]byte) []string {
+	r := make([]string, len(b))
+	for i := range b {
+		r[i] = ToHex(b[i])
+	}
+	return r
+}
+
 // FromHex returns the bytes represented by the hexadecimal string s.
 // s may be prefixed with "0x".
 func FromHex(s string) []byte {
-	if len(s) > 1 {
-		if s[0:2] == "0x" || s[0:2] == "0X" {
-			s = s[2:]
-		}
+	if has0xPrefix(s) {
+		s = s[2:]
 	}
 	if len(s)%2 == 1 {
 		s = "0" + s
@@ -60,8 +63,8 @@ func CopyBytes(b []byte) (copiedBytes []byte) {
 	return
 }
 
-// hasHexPrefix validates str begins with '0x' or '0X'.
-func hasHexPrefix(str string) bool {
+// has0xPrefix validates str begins with '0x' or '0X'.
+func has0xPrefix(str string) bool {
 	return len(str) >= 2 && str[0] == '0' && (str[1] == 'x' || str[1] == 'X')
 }
 
@@ -104,7 +107,7 @@ func Hex2BytesFixed(str string, flen int) []byte {
 		return h[len(h)-flen:]
 	}
 	hh := make([]byte, flen)
-	copy(hh[flen-len(h):flen], h[:])
+	copy(hh[flen-len(h):flen], h)
 	return hh
 }
 
@@ -132,29 +135,13 @@ func LeftPadBytes(slice []byte, l int) []byte {
 	return padded
 }
 
-func ReadVarInt(r io.Reader) (uint64, error) {
-	var (
-		count = make([]byte, 1)
-		buf   []byte
-		err   error
-	)
-	if n, err := r.Read(count); err != nil {
-		return uint64(n), err
+// TrimLeftZeroes returns a subslice of s without leading zeroes
+func TrimLeftZeroes(s []byte) []byte {
+	idx := 0
+	for ; idx < len(s); idx++ {
+		if s[idx] != 0 {
+			break
+		}
 	}
-	switch count[0] {
-	case 0xFD:
-		buf := make([]byte, 2)
-		_, err = io.ReadFull(r, buf)
-		return (uint64)(binary.LittleEndian.Uint16(buf)), err
-	case 0xFE:
-		buf = make([]byte, 4)
-		_, err = io.ReadFull(r, buf)
-		return (uint64)(binary.LittleEndian.Uint32(buf)), err
-	case 0xFF:
-		buf = make([]byte, 8)
-		_, err = io.ReadFull(r, buf)
-		return binary.LittleEndian.Uint64(buf), err
-	default:
-		return uint64(uint8(count[0])), err
-	}
+	return s[idx:]
 }
