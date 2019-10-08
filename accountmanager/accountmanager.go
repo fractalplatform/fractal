@@ -136,6 +136,7 @@ func SetAccountNameConfig(config *Config) bool {
 	accountNameLength = config.AccountNameMaxLength
 	return true
 }
+
 func GetAccountNameRegExp() *regexp.Regexp {
 	return acctRegExp
 }

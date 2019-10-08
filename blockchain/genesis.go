@@ -202,6 +202,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		SubAssetNameMinLength:  1,
 		SubAssetNameMaxLength:  8,
 	})
+
 	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
 	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
 	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))

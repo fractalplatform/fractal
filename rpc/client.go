@@ -283,6 +283,36 @@ func (c *Client) Call(result interface{}, method string, args ...interface{}) er
 	return c.CallContext(ctx, result, method, args...)
 }
 
+func (c *Client) CallRaw(method string, args ...interface{}) (json.RawMessage, error) {
+	ctx := context.Background()
+	msg, err := c.newMessage(method, args...)
+	if err != nil {
+		return nil, err
+	}
+	op := &requestOp{ids: []json.RawMessage{msg.ID}, resp: make(chan *jsonrpcMessage, 1)}
+
+	if c.isHTTP {
+		err = c.sendHTTP(ctx, op, msg)
+	} else {
+		err = c.send(ctx, op, msg)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// dispatch has accepted the request and will close the channel it when it quits.
+	switch resp, err := op.wait(ctx); {
+	case err != nil:
+		return nil, err
+	case resp.Error != nil:
+		return nil, resp.Error
+	case len(resp.Result) == 0:
+		return nil, ErrNoResult
+	default:
+		return resp.Result, nil
+	}
+}
+
 // CallContext performs a JSON-RPC call with the given arguments. If the context is
 // canceled before the call has successfully returned, CallContext returns immediately.
 //
