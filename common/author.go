@@ -133,15 +133,7 @@ func (a *Author) decode(sa *StorageAuthor) error {
 }
 
 func (a *Author) MarshalJSON() ([]byte, error) {
-	switch aTy := a.Owner.(type) {
-	case Name:
-		return json.Marshal(&AuthorJSON{authorType: AccountNameType, OwnerStr: aTy.String(), Weight: a.Weight})
-	case PubKey:
-		return json.Marshal(&AuthorJSON{authorType: PubKeyType, OwnerStr: aTy.String(), Weight: a.Weight})
-	case Address:
-		return json.Marshal(&AuthorJSON{authorType: AddressType, OwnerStr: aTy.String(), Weight: a.Weight})
-	}
-	return nil, errors.New("Author marshal failed")
+	return json.Marshal(&AuthorJSON{OwnerStr: a.Owner.String(), Weight: a.Weight})
 }
 
 func (a *Author) UnmarshalJSON(data []byte) error {
@@ -149,16 +141,7 @@ func (a *Author) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, aj); err != nil {
 		return err
 	}
-	switch aj.authorType {
-	case AccountNameType:
-		a.Owner = Name(aj.OwnerStr)
-		a.Weight = aj.Weight
-	case PubKeyType:
-		a.Owner = HexToPubKey(aj.OwnerStr)
-		a.Weight = aj.Weight
-	case AddressType:
-		a.Owner = HexToAddress(aj.OwnerStr)
-		a.Weight = aj.Weight
-	}
+	a.Owner = Name(aj.OwnerStr)
+	a.Weight = aj.Weight
 	return nil
 }
