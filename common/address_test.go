@@ -17,12 +17,13 @@
 package common
 
 import (
-	"encoding/json"
-
 	"bytes"
+	"encoding/json"
 	"math"
 	"math/big"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 )
 
 func TestIsHexAddress(t *testing.T) {
@@ -133,16 +134,16 @@ func TestAddressConvert(t *testing.T) {
 
 func TestAddressMarshal(t *testing.T) {
 	testAddr := HexToAddress("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
-	if marshaltext, err := testAddr.MarshalText(); err != nil {
+	if marshaltext, err := yaml.Marshal(testAddr); err != nil {
 		t.Errorf("MarshalText err: %v", err)
 	} else {
-		target := []byte{48, 120, 53, 97, 97, 101, 98, 54, 48, 53, 51, 102, 51, 101, 57, 52, 99, 57, 98, 57, 97, 48, 57, 102, 51, 51, 54, 54, 57, 52, 51, 53, 101, 55, 101, 102, 49, 98, 101, 97, 101, 100}
+		target := []byte{48, 120, 53, 97, 97, 101, 98, 54, 48, 53, 51, 102, 51, 101, 57, 52, 99, 57, 98, 57, 97, 48, 57, 102, 51, 51, 54, 54, 57, 52, 51, 53, 101, 55, 101, 102, 49, 98, 101, 97, 101, 100, 10}
 		if !bytes.Equal(marshaltext, target) {
 			t.Errorf("MarshalText mismatch when it should (%x != %x)", marshaltext, target)
 		}
 
 		newAddress := Address{}
-		if err := newAddress.UnmarshalText(marshaltext); err != nil {
+		if err := yaml.Unmarshal(marshaltext, &newAddress); err != nil {
 			t.Errorf("UnmarshalText err: %v", err)
 		}
 		if 0 != newAddress.Compare(testAddr) {
@@ -152,14 +153,13 @@ func TestAddressMarshal(t *testing.T) {
 }
 
 func TestUnprefixedAddressMarshal(t *testing.T) {
-	marshaltext := []byte{53, 97, 97, 101, 98, 54, 48, 53, 51, 102, 51, 101, 57, 52, 99, 57, 98, 57, 97, 48, 57, 102, 51, 51, 54, 54, 57, 52, 51, 53, 101, 55, 101, 102, 49, 98, 101, 97, 101, 100}
-
+	marshaltext := []byte{53, 97, 97, 101, 98, 54, 48, 53, 51, 102, 51, 101, 57, 52, 99, 57, 98, 57, 97, 48, 57, 102, 51, 51, 54, 54, 57, 52, 51, 53, 101, 55, 101, 102, 49, 98, 101, 97, 101, 100, 10}
 	unprefixedAddr := UnprefixedAddress{}
-	if err := unprefixedAddr.UnmarshalText(marshaltext); err != nil {
+	if err := yaml.Unmarshal(marshaltext, &unprefixedAddr); err != nil {
 		t.Errorf("UnmarshalText err: %v", err)
 	}
 
-	if fetchedMarshaltext, err := unprefixedAddr.MarshalText(); err != nil {
+	if fetchedMarshaltext, err := yaml.Marshal(unprefixedAddr); err != nil {
 		t.Errorf("MarshalText err: %v", err)
 	} else {
 		if !bytes.Equal(marshaltext, fetchedMarshaltext) {
