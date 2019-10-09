@@ -59,7 +59,7 @@ type IDB interface {
 	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
 }
 
-// CandidateType candiate status
+// CandidateType candidate status
 type CandidateType uint64
 
 const (
@@ -75,7 +75,8 @@ const (
 	Unkown
 )
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the hex representation of a. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (t CandidateType) MarshalText() ([]byte, error) {
 	return t.MarshalJSON()
 }

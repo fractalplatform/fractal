@@ -17,10 +17,13 @@
 package common
 
 import (
+	"bytes"
 	"encoding/json"
-
+	"math"
 	"math/big"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 )
 
 func TestIsHexAddress(t *testing.T) {
@@ -99,6 +102,88 @@ func TestAddressHexChecksum(t *testing.T) {
 		if output != test.Output {
 			t.Errorf("test #%d: failed to match when it should (%s != %s)", i, output, test.Output)
 		}
+	}
+}
+
+func TestAddressConvert(t *testing.T) {
+	var tests = []struct {
+		BigInt    *big.Int
+		HexString string
+		Bytes     []byte
+	}{
+		{big.NewInt(math.MaxInt64),
+			"0x0000000000000000000000007FFfFFFffFfFfFff",
+			[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 127, 255, 255, 255, 255, 255, 255, 255}},
+		{big.NewInt(10),
+			"0x000000000000000000000000000000000000000A",
+			[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10}},
+		{big.NewInt(15),
+			"0x000000000000000000000000000000000000000F",
+			[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15}},
+	}
+	for i, test := range tests {
+		addr := BigToAddress(test.BigInt)
+		if addr.Hex() != test.HexString {
+			t.Errorf("test #%d: failed to match when it should (%s != %s)", i, addr.Hex(), test.HexString)
+		}
+		if !bytes.Equal(addr.Bytes(), test.Bytes) {
+			t.Errorf("test #%d: failed to match when it should (%x != %x)", i, addr.Bytes(), test.Bytes)
+		}
+	}
+}
+
+func TestAddressMarshal(t *testing.T) {
+	testAddr := HexToAddress("0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+	if marshaltext, err := yaml.Marshal(testAddr); err != nil {
+		t.Errorf("MarshalText err: %v", err)
+	} else {
+		target := []byte{48, 120, 53, 97, 97, 101, 98, 54, 48, 53, 51, 102, 51, 101, 57, 52, 99, 57, 98, 57, 97, 48, 57, 102, 51, 51, 54, 54, 57, 52, 51, 53, 101, 55, 101, 102, 49, 98, 101, 97, 101, 100, 10}
+		if !bytes.Equal(marshaltext, target) {
+			t.Errorf("MarshalText mismatch when it should (%x != %x)", marshaltext, target)
+		}
+
+		newAddress := Address{}
+		if err := yaml.Unmarshal(marshaltext, &newAddress); err != nil {
+			t.Errorf("UnmarshalText err: %v", err)
+		}
+		if 0 != newAddress.Compare(testAddr) {
+			t.Errorf("UnmarshalText address mismatch")
+		}
+	}
+}
+
+func TestUnprefixedAddressMarshal(t *testing.T) {
+	marshaltext := []byte{53, 97, 97, 101, 98, 54, 48, 53, 51, 102, 51, 101, 57, 52, 99, 57, 98, 57, 97, 48, 57, 102, 51, 51, 54, 54, 57, 52, 51, 53, 101, 55, 101, 102, 49, 98, 101, 97, 101, 100, 10}
+	unprefixedAddr := UnprefixedAddress{}
+	if err := yaml.Unmarshal(marshaltext, &unprefixedAddr); err != nil {
+		t.Errorf("UnmarshalText err: %v", err)
+	}
+
+	if fetchedMarshaltext, err := yaml.Marshal(unprefixedAddr); err != nil {
+		t.Errorf("MarshalText err: %v", err)
+	} else {
+		if !bytes.Equal(marshaltext, fetchedMarshaltext) {
+			t.Errorf("MarshalText mismatch when it should (%s != %s)", marshaltext, fetchedMarshaltext)
+		}
+	}
+}
+
+func TestMixedcaseAddress(t *testing.T) {
+	hexString := "0x5aaeb6053f3e94c9b9a09f33669435e7ef1beaed"
+	originalAddr := HexToAddress(hexString)
+	testAddr := NewMixedcaseAddress(originalAddr)
+	mixedcaseRes := "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed [chksum ok]"
+	if mixedcaseRes != testAddr.String() {
+		t.Errorf("MixedcaseAddress String mismatched")
+	}
+
+	mixedcaseRes = "0x5aAeb6053F3E94C9b9A09f33669435E7Ef1BeAed"
+	if mixedcaseRes != testAddr.Original() {
+		t.Errorf("MixedcaseAddress Original mismatched")
+	}
+
+	if 0 != testAddr.Address().Compare(originalAddr) {
+		t.Errorf("MixedcaseAddress address mismatch")
 	}
 }
 

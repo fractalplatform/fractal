@@ -20,7 +20,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"reflect"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -87,7 +86,8 @@ func (h *Hash) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(hashT, input, h[:])
 }
 
-// MarshalText returns the hex representation of h.
+// MarshalText returns the hex representation of h.Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (h Hash) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(h[:]).MarshalText()
 }
@@ -102,15 +102,6 @@ func (h *Hash) SetBytes(b []byte) {
 	copy(h[HashLength-len(b):], b)
 }
 
-// Generate implements testing/quick.Generator.
-func (h Hash) Generate(rand *rand.Rand, size int) reflect.Value {
-	m := rand.Intn(len(h))
-	for i := len(h) - 1; i > m; i-- {
-		h[i] = byte(rand.Uint32())
-	}
-	return reflect.ValueOf(h)
-}
-
 // UnprefixedHash allows marshaling a Hash without 0x prefix.
 type UnprefixedHash Hash
 
@@ -119,7 +110,8 @@ func (h *UnprefixedHash) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedUnprefixedText("UnprefixedHash", input, h[:])
 }
 
-// MarshalText encodes the hash as hex.
+// MarshalText encodes the hash as hex. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (h UnprefixedHash) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(h[:])), nil
 }
