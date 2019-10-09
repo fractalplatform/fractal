@@ -20,16 +20,18 @@ import (
 	"fmt"
 	"math/big"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 )
 
-func TestCandidateType(t *testing.T) {
+func TestCandidateMarshalText(t *testing.T) {
 	typeList := []CandidateType{Normal, Freeze, Black, Jail, Unkown}
 	for _, t := range typeList {
-		if text, err := t.MarshalText(); err != nil {
+		if text, err := yaml.Marshal(t); err != nil {
 			panic(fmt.Errorf("MarshalText --- %v", err))
 		} else {
 			var newCt CandidateType
-			if err := newCt.UnmarshalText(text); err != nil {
+			if err := yaml.Unmarshal(text, &newCt); err != nil {
 				panic(fmt.Errorf("UnmarshalText --- %v", err))
 			} else {
 				if newCt != t {
