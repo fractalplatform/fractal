@@ -48,7 +48,9 @@ func version() {
 		fmt.Println("Go Version:", goversion)
 	}
 	fmt.Println("Operating System:", runtime.GOOS)
-	fmt.Printf("GOPATH=%s\n", os.Getenv("GOPATH"))
+	if goPath := os.Getenv("GOPATH"); goPath != "" {
+		fmt.Printf("GOPATH=%s\n", goPath)
+	}
 	fmt.Printf("GOROOT=%s\n", runtime.GOROOT())
 }
 
@@ -59,7 +61,7 @@ func FullVersion() string {
 		version += "+commit." + commit
 	}
 	if date != "" {
-		version += "+" + date
+		version += "+date." + date
 	}
 	return version
 }
