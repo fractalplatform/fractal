@@ -73,7 +73,8 @@ func (p PubKey) String() string {
 	return p.Hex()
 }
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the hex representation of p. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (p PubKey) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(p[:]).MarshalText()
 }
