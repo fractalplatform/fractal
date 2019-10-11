@@ -195,9 +195,10 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 	// st.distributeGas(intrinsicGas)
 
-	// if err := st.distributeFee(); err != nil {
-	// 	return ret, st.gasUsed(), true, err, vmerr
-	// }
+	if err := st.distributeFee(); err != nil {
+		return ret, st.gasUsed(), true, err, vmerr
+	}
+
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 

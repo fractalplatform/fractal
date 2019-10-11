@@ -27,11 +27,14 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
+	"github.com/fractalplatform/fractal/rpc"
 	"github.com/spf13/cobra"
 )
 
 var nodeConfig = node.Config{
-	P2PConfig: &p2p.Config{},
+	P2PConfig:       &p2p.Config{},
+	IPCPath:         "ftfinder.ipc",
+	P2PNodeDatabase: "nodedb",
 }
 
 // RootCmd represents the base command when called without any subcommands
@@ -49,19 +52,38 @@ var RootCmd = &cobra.Command{
 		nodeConfig.P2PConfig.GenesisHash = common.HexToHash(hexStr)
 		nodeConfig.P2PConfig.Logger = log.New()
 		nodeConfig.P2PConfig.NodeDatabase = nodeConfig.NodeDB()
-		srv := p2p.Server{
+		srv := &p2p.Server{
 			Config: nodeConfig.P2PConfig,
 		}
 		for i, n := range srv.Config.BootstrapNodes {
 			fmt.Println(i, n.String())
 		}
-		srv.DiscoverOnly()
+		err := srv.DiscoverOnly()
+		defer srv.Stop()
+		if err != nil {
+			log.Error("ftfinder start failed", "error", err)
+			return
+		}
+		rpcListener, rpcHandler, err := rpc.StartIPCEndpoint(nodeConfig.IPCEndpoint(), []rpc.API{
+			rpc.API{
+				Namespace: "p2p",
+				Version:   "1.0",
+				Service:   &FinderRPC{srv},
+				Public:    false,
+			},
+		})
+		if err != nil {
+			log.Error("ipc start failed", "error", err)
+			return
+		}
+		defer rpcHandler.Stop()
+		defer rpcListener.Close()
+
 		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 		defer signal.Stop(sigc)
 		<-sigc
 		log.Info("Got interrupt, shutting down...")
-		srv.Stop()
 	},
 }
 

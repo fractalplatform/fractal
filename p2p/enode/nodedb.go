@@ -329,6 +329,30 @@ seek:
 	return nodes
 }
 
+// QueryAllSeeds retrieves all nodes to be used as potential seed nodes
+// for bootstrapping.
+func (db *DB) QueryAllSeeds() []*Node {
+	var (
+		nodes []*Node
+		it    = db.lvl.NewIterator(nil, nil)
+	)
+	defer it.Release()
+seek:
+	for it.Next() {
+		n := nextNode(it)
+		if n == nil {
+			break
+		}
+		for i := range nodes {
+			if nodes[i].ID() == n.ID() {
+				continue seek
+			}
+		}
+		nodes = append(nodes, n)
+	}
+	return nodes
+}
+
 // reads the next node record from the iterator, skipping over other
 // database entries.
 func nextNode(it iterator.Iterator) *Node {
