@@ -370,7 +370,9 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 	var coalescedLogs []*types.Log
 	endTimeStamp := work.currentHeader.Time.Uint64() + interval - 2*interval/5
 	endTime := time.Unix((int64)(endTimeStamp)/(int64)(time.Second), (int64)(endTimeStamp)%(int64)(time.Second))
-	isSnapshot := worker.CurrentHeader().Time.Uint64()%worker.Config().SnapshotInterval*uint64(time.Millisecond) == 0
+	t := worker.CurrentHeader().Time.Uint64()
+	s := worker.Config().SnapshotInterval * uint64(time.Millisecond)
+	isSnapshot := t%s == 0
 	for {
 		select {
 		case <-worker.quit:
