@@ -16,5 +16,5 @@
 
 package plugin
 
-type AssetManager struct {
+type FeeManager struct {
 }

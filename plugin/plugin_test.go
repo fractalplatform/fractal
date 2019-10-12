@@ -16,5 +16,9 @@
 
 package plugin
 
-type AssetManager struct {
+import "testing"
+
+func TestNewPM(t *testing.T) {
+	pm := NewPM(nil)
+	t.Log(pm.GetNonce(0))
 }

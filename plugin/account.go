@@ -1,63 +1,32 @@
+// Copyright 2019 The Fractal Team Authors
+// This file is part of the fractal project.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 package plugin
 
 import (
-	"errors"
-	"math/big"
-
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/state"
 )
 
-func CreateAccount(context *Context) ([]byte, uint64, error) {
-	return nil, context.Gas, nil
+type AcountManager struct {
 }
 
-func GetAccountBalanceByID(account *accountmanager.AccountManager, accountName common.Name, assetID uint64, typeID uint64) (*big.Int, error) {
-	return account.GetAccountBalanceByID(accountName, assetID, typeID)
+func NewAM(stateDB *state.StateDB) IAccount {
+	return &AcountManager{}
 }
 
-func GetNonce(account *accountmanager.AccountManager, accountName common.Name) (uint64, error) {
-	return account.GetNonce(accountName)
-}
-
-func CompareNonce(account *accountmanager.AccountManager, accountName common.Name, actionNonce uint64) error {
-	nonce, err := account.GetNonce(accountName)
-	if err != nil {
-		return err
-	}
-	if nonce < actionNonce {
-		return errors.New("nonce too high")
-	} else if nonce > actionNonce {
-		return errors.New("nonce too low")
-	}
-	return nil
-}
-
-func UpdateNonce(account *accountmanager.AccountManager, accountName common.Name) error {
-	nonce, err := account.GetNonce(accountName)
-	if err != nil {
-		return err
-	}
-	err = account.SetNonce(accountName, nonce+1)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func SetNonce(account *accountmanager.AccountManager, accountName common.Name, nonce uint64) error {
-	return account.SetNonce(accountName, nonce)
-}
-
-func TransferAsset(account *accountmanager.AccountManager, from common.Name, to common.Name, assetID uint64, value *big.Int) error {
-	return account.TransferAsset(from, to, assetID, value)
-}
-
-func RecoverTx(account *accountmanager.AccountManager, signer types.Signer, tx *types.Transaction) error {
-	return account.RecoverTx(signer, tx)
-}
-
-func GetAuthorVersion(account *accountmanager.AccountManager, name common.Name) (common.Hash, error) {
-	return account.GetAuthorVersion(name)
+func (am *AcountManager) GetNonce(arg interface{}) uint64 {
+	return 0
 }

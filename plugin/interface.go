@@ -16,5 +16,32 @@
 
 package plugin
 
-type AssetManager struct {
+// IPM plugin manager interface.
+type IPM interface {
+	IAccount
+	IAsset
+	IConsensus
+	IContract
+	IFee
+	ISinger
+}
+
+// IAccount account manager interface.
+type IAccount interface {
+	GetNonce(arg interface{}) uint64
+}
+
+type IAsset interface {
+}
+
+type IConsensus interface {
+}
+
+type IContract interface {
+}
+
+type IFee interface {
+}
+
+type ISinger interface {
 }

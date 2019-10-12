@@ -1,4 +1,4 @@
-// Copyright 2018 The Fractal Team Authors
+// Copyright 2019 The Fractal Team Authors
 // This file is part of the fractal project.
 //
 // This program is free software: you can redistribute it and/or modify
@@ -14,12 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-//VM is a Virtual Machine based on Ethereum Virtual Machine
 package plugin
 
-func CallNative(context *Context) ([]byte, uint64, error) {
-	if op := methodSet[context.Action.MethodID()]; op != nil {
-		return op.execute(context)
+import (
+	"github.com/fractalplatform/fractal/state"
+)
+
+// Manager manage all plugins.
+type Manager struct {
+	IAccount
+	IAsset
+	IConsensus
+	IContract
+	IFee
+	ISinger
+}
+
+// NewPM create new plugin manager.
+func NewPM(stateDB *state.StateDB) IPM {
+	return &Manager{
+		IAccount: NewAM(stateDB),
 	}
-	return nil, context.Gas, errFuncNotExist
 }
