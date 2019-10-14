@@ -26,6 +26,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -85,7 +86,7 @@ type EVM struct {
 	// Context provides auxiliary blockchain related information
 	Context
 	// Asset operation func
-	AccountDB *accountmanager.AccountManager
+	PM plugin.IPM
 	// StateDB gives access to the underlying state
 	StateDB *state.StateDB
 	// Depth is the current call stack
@@ -141,10 +142,10 @@ func (keys DistributeKeys) Swap(i, j int) {
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
 // only ever be used *once*.
-func NewEVM(ctx Context, accountdb *accountmanager.AccountManager, statedb *state.StateDB, chainCfg *params.ChainConfig, vmConfig Config) *EVM {
+func NewEVM(ctx Context, pm plugin.IPM, statedb *state.StateDB, chainCfg *params.ChainConfig, vmConfig Config) *EVM {
 	evm := &EVM{
 		Context:     ctx,
-		AccountDB:   accountdb,
+		PM:          pm,
 		StateDB:     statedb,
 		chainConfig: chainCfg,
 		vmConfig:    vmConfig,

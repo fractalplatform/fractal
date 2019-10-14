@@ -90,6 +90,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
 	bc := p.bc
 	config := bc.Config()
+	pm := plugin.NewPM(statedb)
 	accountDB, err := accountmanager.NewAccountManager(statedb)
 	if err != nil {
 		return nil, 0, err
@@ -116,25 +117,22 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		// 	}
 		// }
 
-		if err := plugin.CompareNonce(accountDB, action.Sender(), action.Nonce()); err != nil {
+		nonce, err := pm.GetNonce(action.Sender())
+		if err != nil {
 			return nil, 0, err
 		}
-		// nonce, err := plugin.GetNonce(accountDB, action.Sender())
-		// if err != nil {
-		// 	return nil, 0, err
-		// }
-		// if nonce < action.Nonce() {
-		// 	return nil, 0, ErrNonceTooHigh
-		// } else if nonce > action.Nonce() {
-		// 	return nil, 0, ErrNonceTooLow
-		// }
+		if nonce < action.Nonce() {
+			return nil, 0, ErrNonceTooHigh
+		} else if nonce > action.Nonce() {
+			return nil, 0, ErrNonceTooLow
+		}
 
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
 			EngineContext: p.engine,
 		}
 		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
-		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)
+		vmenv := vm.NewEVM(context, pm, statedb, config, cfg)
 
 		//will abort the vm if overtime
 		if false == cfg.EndTime.IsZero() {
@@ -143,7 +141,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			})
 		}
 
-		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, assetID, config, p.engine)
+		_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, action, gp, gasPrice, assetID, config, p.engine)
 
 		if false == cfg.EndTime.IsZero() {
 			//close timer
@@ -162,7 +160,6 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			status = types.ReceiptStatusFailed
 		} else {
 			status = types.ReceiptStatusSuccessful
-
 		}
 		vmerrstr := ""
 		if vmerr != nil {

@@ -23,7 +23,6 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/params"
@@ -46,13 +45,13 @@ type StateTransition struct {
 	initialGas  uint64
 	gasPrice    *big.Int
 	assetID     uint64
-	account     *accountmanager.AccountManager
+	pm          plugin.IPM
 	evm         *vm.EVM
 	chainConfig *params.ChainConfig
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM,
+func NewStateTransition(pm plugin.IPM, evm *vm.EVM,
 	action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64,
 	config *params.ChainConfig, engine EngineContext) *StateTransition {
 	return &StateTransition{
@@ -63,16 +62,16 @@ func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM,
 		action:      action,
 		gasPrice:    gasPrice,
 		assetID:     assetID,
-		account:     accountDB,
+		pm:          pm,
 		chainConfig: config,
 	}
 }
 
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
-func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM,
+func ApplyMessage(pm plugin.IPM, evm *vm.EVM,
 	action *types.Action, gp *common.GasPool, gasPrice *big.Int,
 	assetID uint64, config *params.ChainConfig, engine EngineContext) ([]byte, uint64, bool, error, error) {
-	return NewStateTransition(accountDB, evm, action, gp, gasPrice,
+	return NewStateTransition(pm, evm, action, gp, gasPrice,
 		assetID, config, engine).TransitionDb()
 }
 
@@ -90,7 +89,7 @@ func (st *StateTransition) preCheck() error {
 
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
-	balance, err := plugin.GetAccountBalanceByID(st.account, st.from, st.assetID, 0)
+	balance, err := st.pm.GetAccountBalanceByID(st.account, st.from, st.assetID, 0)
 	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
 	if err != nil {
 		return err
@@ -103,7 +102,7 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.action.Gas()
 	st.initialGas = st.action.Gas()
-	return plugin.TransferAsset(st.account, st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
+	return st.pm.TransferAsset(st.account, st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
 	//return st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
