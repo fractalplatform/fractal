@@ -403,7 +403,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
 			Epoch:         epoch,
 			Name:          candidate.Name,
-			URL:           candidate.URL,
+			Info:          candidate.URL,
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 			Number:        number.Uint64(),

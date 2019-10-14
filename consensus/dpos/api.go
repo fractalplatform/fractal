@@ -570,7 +570,7 @@ func (api *API) VoterInfo(reqEpochNumber uint64) (interface{}, error) {
 		tmp := c.Quantity.Mul(c.Quantity, api.dpos.config.unitStake())
 		voter.Quantity = tmp.Div(tmp, declimsBigInt).String()
 		voter.TotalQuantity = c.TotalQuantity.String()
-		voter.URL = c.URL
+		voter.Info = c.Info
 		voter.Holder = balance.Div(balance, declimsBigInt).String()
 
 		data = append(data, voter)

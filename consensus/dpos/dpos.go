@@ -135,7 +135,7 @@ func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, number uint64)
 	if err := sys.SetCandidate(&CandidateInfo{
 		Epoch:         epoch,
 		Name:          cfg.SystemName,
-		URL:           cfg.SystemURL,
+		Info:          cfg.SystemURL,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
 		Number:        number,

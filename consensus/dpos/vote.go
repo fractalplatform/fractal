@@ -96,7 +96,7 @@ func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stak
 	prod = &CandidateInfo{
 		Epoch:         epoch,
 		Name:          candidate,
-		URL:           url,
+		Info:          url,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
 		Number:        number,
@@ -185,7 +185,7 @@ func (sys *System) UpdateCandidate(epoch uint64, candidate string, url string, n
 	// 	})
 	// }
 
-	prod.URL = url
+	prod.Info = url
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
 	prod.Number = number
