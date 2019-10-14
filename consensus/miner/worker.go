@@ -401,7 +401,8 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 		action := tx.GetActions()[0]
 
 		if isSnapshot {
-			if action.Type() == types.RegCandidate {
+			if action.Type() == types.RegCandidate ||
+				action.Type() == types.VoteCandidate {
 				log.Trace("Skipping regcandidate transaction when snapshot block", "hash", tx.Hash())
 				txs.Pop()
 				continue
