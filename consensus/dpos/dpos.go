@@ -789,20 +789,6 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return errInvalidMintBlockTime
 	}
 
-	db := &stateDB{
-		name:  dpos.config.AccountName,
-		state: state,
-	}
-	has := false
-	for _, pubkey := range pubkeys {
-		if db.IsValidSign(candidate, pubkey) {
-			has = true
-		}
-	}
-	if !has {
-		return ErrIllegalCandidatePubKey
-	}
-
 	sys := NewSystem(state, dpos.config)
 	pepoch := dpos.config.epoch(parent.Time.Uint64())
 	gstate, err := sys.GetState(pepoch)
@@ -1014,6 +1000,20 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 
 	if strings.Compare(tname, candidate) != 0 {
 		return fmt.Errorf("%v %v, except %v %v(%v) index %v (%v epoch) ", errInvalidBlockCandidate, candidate, tname, pstate.ActivatedCandidateSchedule, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
+	}
+
+	db := &stateDB{
+		name:  dpos.config.AccountName,
+		state: state,
+	}
+	has := false
+	for _, pubkey := range pubkeys {
+		if db.IsValidSign(candidate, pubkey) {
+			has = true
+		}
+	}
+	if !has {
+		return ErrIllegalCandidatePubKey
 	}
 	return nil
 }
