@@ -193,7 +193,7 @@ func TestRegCandidate(t *testing.T) {
 		// RegCandidate
 		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
 		hash, err := act.RegCandidate(common.StrToName(chainCfg.DposName), new(big.Int).Mul(new(big.Int).Div(val, big.NewInt(4)), decimals), chainCfg.SysTokenID, gas, &dpos.RegisterCandidate{
-			URL: fmt.Sprintf("www.%s.com", name),
+			Info: fmt.Sprintf("www.%s.com", name),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
@@ -204,7 +204,7 @@ func TestUpdateCandidate(t *testing.T) {
 		// UpdateCandidate
 		act := NewAccount(api, common.StrToName(name), priv, chainCfg.SysTokenID, math.MaxUint64, true, chainCfg.ChainID)
 		hash, err := act.UpdateCandidate(common.StrToName(chainCfg.DposName), new(big.Int).Mul(new(big.Int).Div(val, big.NewInt(4)), decimals), chainCfg.SysTokenID, gas, &dpos.UpdateCandidate{
-			URL: fmt.Sprintf("www.%s.com", name),
+			Info: fmt.Sprintf("www.%s.com", name),
 		})
 		So(err, ShouldBeNil)
 		So(hash, ShouldNotBeNil)
