@@ -89,7 +89,7 @@ func (st *StateTransition) preCheck() error {
 
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
-	balance, err := st.pm.GetAccountBalanceByID(st.account, st.from, st.assetID, 0)
+	balance, err := st.pm.GetAccountBalanceByID(st.from, st.assetID)
 	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
 	if err != nil {
 		return err
@@ -131,43 +131,18 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		// not assigned to err, except for insufficient balance
 		// error.
 	)
-	//actionType := st.action.Type()
-	context := &plugin.Context{Account: st.account, Action: st.action, Evm: evm, Gas: st.gas}
-	ret, st.gas, vmerr = plugin.CallNative(context)
-	// switch {
-	// case actionType == types.CreateContract:
-	// 	ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
-	// case actionType == types.CallContract:
-	// 	ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
-	// case actionType == types.RegCandidate:
-	// 	fallthrough
-	// case actionType == types.UpdateCandidate:
-	// 	fallthrough
-	// case actionType == types.UnregCandidate:
-	// 	fallthrough
-	// case actionType == types.VoteCandidate:
-	// 	fallthrough
-	// case actionType == types.RefundCandidate:
-	// 	fallthrough
-	// case actionType == types.KickedCandidate:
-	// 	fallthrough
-	// case actionType == types.RemoveKickedCandidate:
-	// 	fallthrough
-	// case actionType == types.ExitTakeOver:
-	// 	internalLogs, err := st.engine.ProcessAction(st.evm.Context.ForkID, st.evm.Context.BlockNumber.Uint64(),
-	// 		st.evm.ChainConfig(), st.evm.StateDB, st.action)
-	// 	vmerr = err
-	// 	evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
-	// default:
-	// 	internalLogs, err := st.account.Process(&types.AccountManagerContext{
-	// 		Action:      st.action,
-	// 		Number:      st.evm.Context.BlockNumber.Uint64(),
-	// 		CurForkID:   st.evm.Context.ForkID,
-	// 		ChainConfig: st.chainConfig,
-	// 	})
-	// 	vmerr = err
-	// 	evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
-	// }
+	actionType := st.action.Type()
+	// context := &plugin.Context{Account: st.account, Action: st.action, Evm: evm, Gas: st.gas}
+	// ret, st.gas, vmerr = plugin.CallNative(context)
+	switch {
+	case actionType == types.CreateContract:
+		ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
+	case actionType == types.CallContract:
+		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
+	default:
+		ret, vmerr = st.pm.ExecTx(st.action)
+	}
+
 	if vmerr != nil {
 		log.Debug("VM returned with error", "err", vmerr)
 		// The only possible consensus-error would be if there wasn't
@@ -177,19 +152,16 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 			return nil, 0, false, vmerr, vmerr
 		}
 	}
-	if err := plugin.UpdateNonce(st.account, st.from); err != nil {
+
+	nonce, err := st.pm.GetNonce(st.from)
+	if err != nil {
 		return nil, st.gasUsed(), true, err, vmerr
 	}
-	// nonce, err := plugin.GetNonce(st.account, st.from)
-	// //nonce, err := st.account.GetNonce(st.from)
-	// if err != nil {
-	// 	return nil, st.gasUsed(), true, err, vmerr
-	// }
-	// err = plugin.SetNonce(st.account, st.from, nonce+1)
-	// //err = st.account.SetNonce(st.from, nonce+1)
-	// if err != nil {
-	// 	return nil, st.gasUsed(), true, err, vmerr
-	// }
+	err = st.pm.SetNonce(st.from, nonce+1)
+	if err != nil {
+		return nil, st.gasUsed(), true, err, vmerr
+	}
+
 	st.refundGas()
 
 	// st.distributeGas(intrinsicGas)
