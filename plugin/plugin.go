@@ -30,6 +30,10 @@ type Manager struct {
 	ISinger
 }
 
+func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
+	return nil, nil
+}
+
 // NewPM create new plugin manager.
 func NewPM(stateDB *state.StateDB) IPM {
 	return &Manager{

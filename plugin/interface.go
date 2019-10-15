@@ -24,6 +24,7 @@ type IPM interface {
 	IContract
 	IFee
 	ISinger
+	ExecTx(arg interface{}) ([]byte, error)
 }
 
 // IAccount account manager interface.
