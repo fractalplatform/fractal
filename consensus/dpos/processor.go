@@ -31,12 +31,12 @@ import (
 
 // RegisterCandidate candidate info
 type RegisterCandidate struct {
-	URL string
+	Info string
 }
 
 // UpdateCandidate candidate info
 type UpdateCandidate struct {
-	URL string
+	Info string
 }
 
 // VoteCandidate vote info
@@ -95,7 +95,7 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.RegCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number, fid); err != nil {
+		if err := sys.RegCandidate(epoch, action.Sender().String(), arg.Info, action.Value(), number, fid); err != nil {
 			return nil, err
 		}
 	case types.UpdateCandidate:
@@ -108,7 +108,7 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
 			return nil, err
 		}
-		if err := sys.UpdateCandidate(epoch, action.Sender().String(), arg.URL, action.Value(), number, fid); err != nil {
+		if err := sys.UpdateCandidate(epoch, action.Sender().String(), arg.Info, action.Value(), number, fid); err != nil {
 			return nil, err
 		}
 	case types.UnregCandidate:

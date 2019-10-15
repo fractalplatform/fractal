@@ -22,7 +22,7 @@
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "URL": "www.candidate0002.com"
+        "Info": "www.candidate0002.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -36,7 +36,7 @@
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": true
@@ -50,25 +50,25 @@
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "URL": "www.candidate0002.com"
+        "Info": "www.candidate0002.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
     "contain": "fractal.dpos"
 },
 {
-    "comment": "candidate0002 updatecandidate & transfer 0 ft, wrong url",
+    "comment": "candidate0002 updatecandidate & transfer 0 ft, wrong Info",
     "type": "updatecandidate",
     "from": "candidate0002",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "URL": "www.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.com"
+        "Info": "www.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
-    "contain": "invalid url"
+    "contain": "invalid Info"
 }, {
     "comment": "candidate0002 updatecandidate & transfer 1001 ft, non divisibility",
     "type": "updatecandidate",
@@ -77,7 +77,7 @@
     "gas": 30000000,
     "value": 1001000000000000000000,
     "payload": {
-        "URL": "www.candidate0002.com"
+        "Info": "www.candidate0002.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -90,7 +90,7 @@
     "gas": 30000000,
     "value": 1100000000000000000000000,
     "payload": {
-        "URL": "www.candidate0002.com"
+        "Info": "www.candidate0002.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -104,7 +104,7 @@
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "URL": "www.candidate0002.com"
+        "Info": "www.candidate0002.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": true
@@ -117,7 +117,7 @@
     "gas": 30000000,
     "value": 1000000000000000000000,
     "payload": {
-        "URL": "www.candidate0002.com"
+        "Info": "www.candidate0002.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": true

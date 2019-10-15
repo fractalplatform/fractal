@@ -214,7 +214,7 @@ func sampleRegCandidate() *TTX {
 		AssetID: chainCfg.SysTokenID,
 		Value:   big.NewInt(0),
 		Payload: &dpos.RegisterCandidate{
-			URL: fmt.Sprintf("www.xxxxxx.com"),
+			Info: fmt.Sprintf("www.xxxxxx.com"),
 		},
 		Succeed: false,
 		Childs:  []*TTX{},
@@ -232,7 +232,7 @@ func sampleUpdateCandidate() *TTX {
 		AssetID: chainCfg.SysTokenID,
 		Value:   big.NewInt(0),
 		Payload: &dpos.UpdateCandidate{
-			URL: fmt.Sprintf("www.xxxxxx.com"),
+			Info: fmt.Sprintf("www.xxxxxx.com"),
 		},
 		Succeed: true,
 		Childs:  []*TTX{},

@@ -96,7 +96,7 @@ func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stak
 	prod = &CandidateInfo{
 		Epoch:         epoch,
 		Name:          candidate,
-		URL:           url,
+		Info:          url,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
 		Number:        number,
@@ -125,9 +125,9 @@ func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stak
 }
 
 // UpdateCandidate  update a candidate
-func (sys *System) UpdateCandidate(epoch uint64, candidate string, url string, nstake *big.Int, number uint64, fid uint64) error {
+func (sys *System) UpdateCandidate(epoch uint64, candidate string, info string, nstake *big.Int, number uint64, fid uint64) error {
 	// url validity
-	if uint64(len(url)) > sys.config.MaxURLLen {
+	if uint64(len(info)) > sys.config.MaxURLLen {
 		return fmt.Errorf("invalid url (too long, max %v)", sys.config.MaxURLLen)
 	}
 
@@ -185,7 +185,7 @@ func (sys *System) UpdateCandidate(epoch uint64, candidate string, url string, n
 	// 	})
 	// }
 
-	prod.URL = url
+	prod.Info = info
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
 	prod.Number = number

@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"testing"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestCandidateMarshalText(t *testing.T) {
@@ -47,7 +47,7 @@ func TestCandidateInfo(t *testing.T) {
 	candidateInfo := &CandidateInfo{
 		Epoch:         1,
 		Name:          "candidate1",
-		URL:           "",
+		Info:          "",
 		Quantity:      big.NewInt(100),
 		TotalQuantity: big.NewInt(100),
 		Number:        1,
