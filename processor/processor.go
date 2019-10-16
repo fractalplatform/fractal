@@ -91,7 +91,6 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	bc := p.bc
 	config := bc.Config()
 	pm := plugin.NewPM(statedb)
-	accountDB, err := accountmanager.NewAccountManager(statedb)
 	if err != nil {
 		return nil, 0, err
 	}

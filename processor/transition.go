@@ -90,7 +90,6 @@ func (st *StateTransition) preCheck() error {
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
 	balance, err := st.pm.GetAccountBalanceByID(st.from, st.assetID)
-	//balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
 	if err != nil {
 		return err
 	}
@@ -102,8 +101,7 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.action.Gas()
 	st.initialGas = st.action.Gas()
-	return st.pm.TransferAsset(st.account, st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
-	//return st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
+	return st.pm.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
 // TransitionDb will transition the state by applying the current message and
@@ -115,7 +113,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return
 	}
 
-	intrinsicGas, err := txpool.IntrinsicGas(st.account, st.action)
+	intrinsicGas, err := txpool.IntrinsicGas(st.pm, st.action)
 	if err != nil {
 		return nil, 0, true, err, vmerr
 	}

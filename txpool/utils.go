@@ -21,13 +21,13 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"
 )
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(accountDB *accountmanager.AccountManager, action *types.Action) (uint64, error) {
+func IntrinsicGas(pm plugin.IPM, action *types.Action) (uint64, error) {
 	// Bump the required gas by the amount of transactional data
 	gasTable := params.GasTableInstance
 	dataGasFunc := func(data []byte) (uint64, error) {
@@ -56,20 +56,20 @@ func IntrinsicGas(accountDB *accountmanager.AccountManager, action *types.Action
 	}
 
 	receiptGasFunc := func(action *types.Action) uint64 {
-		toAcct, err := accountDB.GetAccountByName(action.Recipient())
-		if err != nil {
-			return 0
-		}
-		if toAcct == nil {
-			return 0
-		}
-		if toAcct.IsDestroyed() {
-			return 0
-		}
-		_, err = toAcct.GetBalanceByID(action.AssetID())
-		if err == accountmanager.ErrAccountAssetNotExist {
-			return gasTable.CallValueTransferGas
-		}
+		// toAcct, err := pm.GetAccountByName(action.Recipient())
+		// if err != nil {
+		// 	return 0
+		// }
+		// if toAcct == nil {
+		// 	return 0
+		// }
+		// if toAcct.IsDestroyed() {
+		// 	return 0
+		// }
+		// _, err = toAcct.GetBalanceByID(action.AssetID())
+		// if err == accountmanager.ErrAccountAssetNotExist {
+		// 	return gasTable.CallValueTransferGas
+		// }
 		return 0
 	}
 
