@@ -728,7 +728,7 @@ func (task *downloadTask) Do() {
 		log.Debug("download header don't match task",
 			"recv.Start.Number", headers[0].Number.Uint64(),
 			"recv.End.Number", headers[len(headers)-1].Number.Uint64(),
-			"recv.Start.ParentHash", headers[0].parentHash,
+			"recv.Start.ParentHash", headers[0].ParentHash,
 			"recv.End.Hash", headers[len(headers)-1].Hash(),
 			"task.Start.Number", task.startNumber,
 			"task.End.Number", task.endNumber,
