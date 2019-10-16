@@ -18,6 +18,7 @@ package plugin
 
 import (
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/types"
 )
 
 // Manager manage all plugins.
@@ -31,7 +32,13 @@ type Manager struct {
 }
 
 func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
-	return nil, nil
+	action := arg.(*types.Action)
+	switch action.MethodID() {
+	case "createAccount":
+		return pm.CreateAccount(action)
+	default:
+		return nil, nil
+	}
 }
 
 // NewPM create new plugin manager.

@@ -16,6 +16,8 @@
 
 package plugin
 
+import "github.com/fractalplatform/fractal/types"
+
 // IPM plugin manager interface.
 type IPM interface {
 	IAccount
@@ -30,6 +32,7 @@ type IPM interface {
 // IAccount account manager interface.
 type IAccount interface {
 	GetNonce(arg interface{}) uint64
+	CreateAccount(action *types.Action) ([]byte, error)
 }
 
 type IAsset interface {

@@ -18,9 +18,11 @@ package plugin
 
 import (
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/types"
 )
 
 type AcountManager struct {
+	pm IPM
 }
 
 func NewAM(stateDB *state.StateDB) IAccount {
@@ -29,4 +31,8 @@ func NewAM(stateDB *state.StateDB) IAccount {
 
 func (am *AcountManager) GetNonce(arg interface{}) uint64 {
 	return 0
+}
+
+func (am *AcountManager) CreateAccount(action *types.Action) ([]byte, error) {
+	return nil, nil
 }
