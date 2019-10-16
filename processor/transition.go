@@ -121,22 +121,12 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return nil, 0, true, err, vmerr
 	}
 
-	//sender := vm.AccountRef(st.from)
-
-	var (
-		evm = st.evm
-		// vm errors do not effect consensus and are therefor
-		// not assigned to err, except for insufficient balance
-		// error.
-	)
 	actionType := st.action.Type()
-	// context := &plugin.Context{Account: st.account, Action: st.action, Evm: evm, Gas: st.gas}
-	// ret, st.gas, vmerr = plugin.CallNative(context)
 	switch {
 	case actionType == types.CreateContract:
-		ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
+		ret, st.gas, vmerr = st.evm.Create(sender, st.action, st.gas)
 	case actionType == types.CallContract:
-		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
+		ret, st.gas, vmerr = st.evm.Call(sender, st.action, st.gas)
 	default:
 		ret, vmerr = st.pm.ExecTx(st.action)
 	}

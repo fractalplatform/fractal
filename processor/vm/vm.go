@@ -192,7 +192,7 @@ func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 	if action.Value().Sign() == 0 {
 		return 0
 	}
-	toAcct, err := evm.AccountDB.GetAccountByName(action.Recipient())
+	toAcct, err := evm.PM.GetAccountByName(action.Recipient())
 	if err != nil {
 		return 0
 	}
@@ -294,7 +294,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	}
 	// Fail if we're trying to transfer more than the available balance
 
-	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), action.AssetID(), action.Value()); !ok || err != nil {
+	if ok, err := evm.PM.CanTransfer(caller.Name(), action.AssetID(), action.Value()); !ok || err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -314,15 +314,15 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		}
 	}
 
-	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
 		return nil, gas, err
 	}
 
 	var assetName common.Name
-	assetFounder, _ := evm.AccountDB.GetAssetFounder(action.AssetID()) //get asset founder name
+	assetFounder, _ := evm.PM.GetAssetFounder(action.AssetID()) //get asset founder name
 
 	if len(assetFounder.String()) > 0 {
-		assetInfo, _ := evm.AccountDB.GetAssetInfoByID(action.AssetID())
+		assetInfo, _ := evm.PM.GetAssetInfoByID(action.AssetID())
 		assetName = common.Name(assetInfo.GetAssetName())
 	}
 
@@ -332,7 +332,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	// The contract is a scoped environment for this execution context only.
 
 	contract := NewContract(caller, to, action.Value(), gas, action.AssetID())
-	acct, err := evm.AccountDB.GetAccountByName(toName)
+	acct, err := evm.PM.GetAccountByName(toName)
 	if err != nil {
 		return nil, gas, err
 	}
@@ -388,7 +388,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
-	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
+	if ok, err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -402,7 +402,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 	// E The contract is a scoped evmironment for this execution context
 	// only.
 	contract := NewContract(caller, to, action.Value(), gas, evm.AssetID)
-	acct, err := evm.AccountDB.GetAccountByName(toName)
+	acct, err := evm.PM.GetAccountByName(toName)
 	if err != nil {
 		return nil, gas, err
 	}
@@ -411,8 +411,8 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 		return nil, gas, err
 	}
 	code, _ := acct.GetCode()
-	//codeHash, _ := evm.AccountDB.GetCodeHash(toName)
-	//code, _ := evm.AccountDB.GetCode(toName)
+	//codeHash, _ := evm.PM.GetCodeHash(toName)
+	//code, _ := evm.PM.GetCode(toName)
 	contract.SetCallCode(&toName, codeHash, code)
 
 	ret, err = run(evm, contract, action.Data())
@@ -455,7 +455,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte,
 
 	// Initialise a new contract and make initialise the delegate values
 	contract := NewContract(caller, to, nil, gas, evm.AssetID).AsDelegate()
-	acct, err := evm.AccountDB.GetAccountByName(name)
+	acct, err := evm.PM.GetAccountByName(name)
 	if err != nil {
 		return nil, gas, err
 	}
@@ -464,8 +464,8 @@ func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte,
 		return nil, gas, err
 	}
 	code, _ := acct.GetCode()
-	//codeHash, _ := evm.AccountDB.GetCodeHash(name)
-	//code, _ := evm.AccountDB.GetCode(name)
+	//codeHash, _ := evm.PM.GetCodeHash(name)
+	//code, _ := evm.PM.GetCode(name)
 	contract.SetCallCode(&name, codeHash, code)
 
 	ret, err = run(evm, contract, input)
@@ -515,7 +515,7 @@ func (evm *EVM) StaticCall(caller ContractRef, name common.Name, input []byte, g
 	// EVM. The contract is a scoped environment for this execution context
 	// only.
 	contract := NewContract(caller, to, new(big.Int), gas, evm.AssetID)
-	acct, err := evm.AccountDB.GetAccountByName(name)
+	acct, err := evm.PM.GetAccountByName(name)
 	if err != nil {
 		return nil, gas, err
 	}
@@ -524,8 +524,8 @@ func (evm *EVM) StaticCall(caller ContractRef, name common.Name, input []byte, g
 		return nil, gas, err
 	}
 	code, _ := acct.GetCode()
-	//codeHash, _ := evm.AccountDB.GetCodeHash(name)
-	//code, _ := evm.AccountDB.GetCode(name)
+	//codeHash, _ := evm.PM.GetCodeHash(name)
+	//code, _ := evm.PM.GetCode(name)
 	contract.SetCallCode(&name, codeHash, code)
 
 	// When an error was returned by the EVM or when setting the creation code
@@ -558,20 +558,20 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
-	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
+	if ok, err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
 	contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 
-	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
+	if b, err := evm.PM.AccountHaveCode(contractName); err != nil {
 		return nil, 0, err
 	} else if b {
 		return nil, 0, ErrContractCodeCollision
 	}
 
-	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
+	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		return nil, gas, err
 	}
@@ -602,7 +602,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			if _, err = evm.AccountDB.SetCode(contractName, ret); err != nil {
+			if _, err = evm.PM.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
 		} else {
