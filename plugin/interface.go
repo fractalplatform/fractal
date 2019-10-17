@@ -45,7 +45,7 @@ type IAccount interface {
 	SetCode(accountAddress common.Address, code []byte) (bool, error)
 	GetBalanceByID(accountAddress common.Address, assetID uint64) (*big.Int, error)
 	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
-	IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string, asm IAsset) ([]byte, error)
+	IssueAsset(accountAddress common.Address, assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string, asm IAsset) ([]byte, error)
 	CanTransfer(accountAddress common.Address, assetID uint64, value *big.Int) (bool, error)
 	TransferAsset(fromAccount, toAccount common.Address, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...common.Address) error
 	RecoverTx(signer types.Signer, tx *types.Transaction) error
@@ -54,7 +54,7 @@ type IAccount interface {
 type IAsset interface {
 	IncStats(assetID uint64) error
 	CheckIssueAssetInfo(account common.Address, assetInfo *IssueAsset) error
-	IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error)
+	IssueAssetForAccount(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error)
 }
 
 type IConsensus interface {
