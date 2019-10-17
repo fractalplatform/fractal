@@ -417,7 +417,8 @@ func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64
 }
 
 // return true means need call again
-func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
+func (dl *Downloader) multiplexDownload() bool {
+	status := dl.bestStation()
 	log.Debug("multiplexDownload start")
 	defer log.Debug("multiplexDownload end")
 	if status == nil {
@@ -556,19 +557,16 @@ func (dl *Downloader) loopStart() {
 
 func (dl *Downloader) loop() {
 	defer dl.loopWG.Done()
-	download := func() {
-		//for status := dl.bestStation(); dl.download(status); {
-		for status := dl.bestStation(); dl.multiplexDownload(status); {
-		}
-	}
 	timer := time.NewTimer(10 * time.Second)
 	for {
 		select {
 		case <-dl.quit:
 			return
 		case <-dl.downloadTrigger:
-			download()
 			timer.Stop()
+			if dl.multiplexDownload() {
+				dl.loopStart()
+			}
 			timer.Reset(10 * time.Second)
 		case <-timer.C:
 			dl.loopStart()
