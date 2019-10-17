@@ -16,7 +16,12 @@
 
 package plugin
 
-import "github.com/fractalplatform/fractal/types"
+import (
+	"math/big"
+
+	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/types"
+)
 
 // IPM plugin manager interface.
 type IPM interface {
@@ -33,9 +38,14 @@ type IPM interface {
 type IAccount interface {
 	GetNonce(arg interface{}) uint64
 	CreateAccount(action *types.Action) ([]byte, error)
+	IssueAsset(action *types.Action, asm IAsset) ([]byte, error)
+	TransferAsset(fromAccount, toAccount common.Address, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...common.Address) error
 }
 
 type IAsset interface {
+	IncStats(assetID uint64) error
+	CheckIssueAssetInfo(account common.Address, assetInfo *IssueAsset) error
+	IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error)
 }
 
 type IConsensus interface {
