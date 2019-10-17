@@ -36,10 +36,19 @@ type IPM interface {
 
 // IAccount account manager interface.
 type IAccount interface {
-	GetNonce(arg interface{}) uint64
-	CreateAccount(action *types.Action) ([]byte, error)
-	IssueAsset(action *types.Action, asm IAsset) ([]byte, error)
+	GetNonce(accountAddress common.Address) (uint64, error)
+	SetNonce(accountAddress common.Address, nonce uint64) error
+	GetAccount(accountAddress common.Address) (*Account, error)
+	DeleteAccount(accountAddress common.Address) error
+	AccountHaveCode(accountAddress common.Address) (bool, error)
+	GetCode(accountAddress common.Address) ([]byte, error)
+	SetCode(accountAddress common.Address, code []byte) (bool, error)
+	GetBalanceByID(accountAddress common.Address, assetID uint64) (*big.Int, error)
+	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
+	IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string, asm IAsset) ([]byte, error)
+	CanTransfer(accountAddress common.Address, assetID uint64, value *big.Int) (bool, error)
 	TransferAsset(fromAccount, toAccount common.Address, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...common.Address) error
+	RecoverTx(signer types.Signer, tx *types.Transaction) error
 }
 
 type IAsset interface {
