@@ -39,33 +39,25 @@ type IPM interface {
 type IAccount interface {
 	GetNonce(account string) (uint64, error)
 	SetNonce(account string, nonce uint64) error
-	GetAccount(account string) (*Account, error)
-	DeleteAccount(account string) error
-	AccountHaveCode(account string) (bool, error)
-	GetCode(account string) ([]byte, error)
-	SetCode(account string, code []byte) (bool, error)
-	GetBalanceByAddress(account string, assetID uint64) (*big.Int, error)
+
 	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
-	IssueAsset(account string, assetName string, symbol string, amount *big.Int, dec uint64, founder string, owner string, limit *big.Int, description string, asm IAsset) ([]byte, error)
+
+	GetCode(account string) ([]byte, error)
+	SetCode(account string, code []byte) error
+
+	GetBalance(account string, assetID uint64) (*big.Int, error)
+
 	CanTransfer(account string, assetID uint64, value *big.Int) (bool, error)
-	TransferAsset(from, to string, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...string) error
-	GetBalanceByID(accountID, assetID uint64) *big.Int
-	GetAccountID(account string) uint64
-	GetCodeSizeByID(accountID uint64) uint64
-	GetCodeByID(accountID uint64) []byte
-	GetAccountByID(accountID uint64) string
+
+	TransferAsset(from, to string, assetID uint64, value *big.Int) error
 }
 
 type IAsset interface {
-	IncStats(assetID uint64) error
-	CheckIssueAssetInfo(account string, assetInfo *IssueAsset) error
-	IssueAssetForAccount(assetName string, symbol string, amount *big.Int, dec uint64, founder string, owner string, limit *big.Int, description string) (uint64, error)
+	IssueAsset(account string, assetName string, symbol string, amount *big.Int,
+		dec uint64, founder string, owner string, limit *big.Int, description string, asm IAsset) ([]byte, error)
 }
 
 type IConsensus interface {
-	// CalcDifficulty is the difficulty adjustment algorithm.
-	// It returns the difficulty that a new block should have.
-	CalcDifficulty(time uint64, parent *types.Header) *big.Int
 
 	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
 	VerifySeal(header *types.Header) error
