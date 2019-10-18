@@ -40,6 +40,7 @@ const (
 	CallContract ActionType = iota
 	// CreateContract repesents the create contract action.
 	CreateContract
+	// CallNative
 	CallNative
 )
 
@@ -67,6 +68,7 @@ const (
 	UpdateAsset
 	// Transfer repesents transfer asset action.
 	Transfer
+	// UpdateAssetContracts
 	UpdateAssetContract
 )
 

@@ -116,7 +116,6 @@ func NewACM(db *state.StateDB) (IAccount, error) {
 //	return internalActions, nil
 //}
 
-<<<<<<< Updated upstream
 // CreateAccount
 // Prase Payload to create a account
 func (am *AccountManager) CreateAccount(pubKey common.PubKey, description string) ([]byte, error) {
@@ -163,19 +162,11 @@ func (am *AccountManager) CreateAccount(pubKey common.PubKey, description string
 		return nil, err
 	}
 
-<<<<<<< Updated upstream
 	address, err := rlp.EncodeToBytes(&acctObject.Address)
-=======
-// IssueAsset pares payload to issue a asset
-func (am *AccountManager) IssueAsset(action *types.Action, asm IAsset) ([]byte, error) {
-	var issueAsset IssueAsset
-	err := rlp.DecodeBytes(action.Data(), &issueAsset)
->>>>>>> Stashed changes
 	if err != nil {
 		return nil, err
 	}
 
-<<<<<<< Updated upstream
 	am.sdb.Put(acctManagerName, accountIDPrefix+strconv.FormatUint(accountCounter, 10), address)
 	am.sdb.Put(acctManagerName, counterPrefix, aid)
 
@@ -223,7 +214,6 @@ func (am *AccountManager) IssueAsset(accountAddress common.Address, assetName st
 	} else {
 		issueAsset.Founder = issueAsset.Owner
 	}
-
 
 	assetID, err := asm.IssueAssetForAccount(issueAsset.AssetName, issueAsset.Symbol, issueAsset.Amount, issueAsset.Decimals, issueAsset.Founder, issueAsset.Owner, issueAsset.UpperLimit, issueAsset.Description)
 	if err != nil {

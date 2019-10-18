@@ -37,30 +37,29 @@ type IPM interface {
 
 // IAccount account manager interface.
 type IAccount interface {
-	GetNonce(accountAddress common.Address) (uint64, error)
-	SetNonce(accountAddress common.Address, nonce uint64) error
-	GetAccount(accountAddress common.Address) (*Account, error)
-	DeleteAccount(accountAddress common.Address) error
-	AccountHaveCode(accountAddress common.Address) (bool, error)
-	GetCode(accountAddress common.Address) ([]byte, error)
-	SetCode(accountAddress common.Address, code []byte) (bool, error)
-	GetBalanceByAddress(accountAddress common.Address, assetID uint64) (*big.Int, error)
+	GetNonce(account string) (uint64, error)
+	SetNonce(account string, nonce uint64) error
+	GetAccount(account string) (*Account, error)
+	DeleteAccount(account string) error
+	AccountHaveCode(account string) (bool, error)
+	GetCode(account string) ([]byte, error)
+	SetCode(account string, code []byte) (bool, error)
+	GetBalanceByAddress(account string, assetID uint64) (*big.Int, error)
 	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
-	IssueAsset(accountAddress common.Address, assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string, asm IAsset) ([]byte, error)
-	CanTransfer(accountAddress common.Address, assetID uint64, value *big.Int) (bool, error)
-	TransferAsset(fromAccount, toAccount common.Address, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...common.Address) error
-	RecoverTx(signer types.Signer, tx *types.Transaction) error
+	IssueAsset(account string, assetName string, symbol string, amount *big.Int, dec uint64, founder string, owner string, limit *big.Int, description string, asm IAsset) ([]byte, error)
+	CanTransfer(account string, assetID uint64, value *big.Int) (bool, error)
+	TransferAsset(from, to string, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...string) error
 	GetBalanceByID(accountID, assetID uint64) *big.Int
-	GetAccountID(accountAddress string) uint64
+	GetAccountID(account string) uint64
 	GetCodeSizeByID(accountID uint64) uint64
 	GetCodeByID(accountID uint64) []byte
-	GetAccountAddressByID(accountID uint64) string
+	GetAccountByID(accountID uint64) string
 }
 
 type IAsset interface {
 	IncStats(assetID uint64) error
-	CheckIssueAssetInfo(account common.Address, assetInfo *IssueAsset) error
-	IssueAssetForAccount(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error)
+	CheckIssueAssetInfo(account string, assetInfo *IssueAsset) error
+	IssueAssetForAccount(assetName string, symbol string, amount *big.Int, dec uint64, founder string, owner string, limit *big.Int, description string) (uint64, error)
 }
 
 type IConsensus interface {
