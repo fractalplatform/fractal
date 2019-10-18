@@ -78,8 +78,8 @@ type AccountManager struct {
 	sdb *state.StateDB
 }
 
-// NewAM New a AccountManager
-func NewAM(db *state.StateDB) (IAccount, error) {
+// NewACM New a AccountManager
+func NewACM(db *state.StateDB) (IAccount, error) {
 	if db == nil {
 		return nil, ErrNewAccountManagerErr
 	}
@@ -116,6 +116,7 @@ func NewAM(db *state.StateDB) (IAccount, error) {
 //	return internalActions, nil
 //}
 
+<<<<<<< Updated upstream
 // CreateAccount
 // Prase Payload to create a account
 func (am *AccountManager) CreateAccount(pubKey common.PubKey, description string) ([]byte, error) {
@@ -162,11 +163,19 @@ func (am *AccountManager) CreateAccount(pubKey common.PubKey, description string
 		return nil, err
 	}
 
+<<<<<<< Updated upstream
 	address, err := rlp.EncodeToBytes(&acctObject.Address)
+=======
+// IssueAsset pares payload to issue a asset
+func (am *AccountManager) IssueAsset(action *types.Action, asm IAsset) ([]byte, error) {
+	var issueAsset IssueAsset
+	err := rlp.DecodeBytes(action.Data(), &issueAsset)
+>>>>>>> Stashed changes
 	if err != nil {
 		return nil, err
 	}
 
+<<<<<<< Updated upstream
 	am.sdb.Put(acctManagerName, accountIDPrefix+strconv.FormatUint(accountCounter, 10), address)
 	am.sdb.Put(acctManagerName, counterPrefix, aid)
 
@@ -214,6 +223,7 @@ func (am *AccountManager) IssueAsset(accountAddress common.Address, assetName st
 	} else {
 		issueAsset.Founder = issueAsset.Owner
 	}
+
 
 	assetID, err := asm.IssueAssetForAccount(issueAsset.AssetName, issueAsset.Symbol, issueAsset.Amount, issueAsset.Decimals, issueAsset.Founder, issueAsset.Owner, issueAsset.UpperLimit, issueAsset.Description)
 	if err != nil {
@@ -342,6 +352,16 @@ func (am *AccountManager) GetNonce(accountAddress common.Address) (uint64, error
 	}
 
 	return account.Nonce, nil
+}
+func (am *AccountManager) AccountHaveCode(accountAddress common.Address) (bool, error) {
+	return true, nil
+}
+
+func (am *AccountManager) SetNonce(arg interface{}, nonce uint64) {
+
+}
+func (am *AccountManager) GetBalanceByID(arg interface{}, id uint64) (*big.Int, error) {
+	return nil, nil
 }
 
 func (am *AccountManager) SetNonce(accountAddress common.Address, nonce uint64) error {

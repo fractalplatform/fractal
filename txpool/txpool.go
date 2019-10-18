@@ -16,6 +16,7 @@
 
 package txpool
 
+
 import (
 	"errors"
 	"fmt"
@@ -26,7 +27,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	am "github.com/fractalplatform/fractal/accountmanager"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
@@ -77,8 +78,8 @@ type TxPool struct {
 	chain    blockChain
 	signer   types.Signer
 
-	curAccountManager     *am.AccountManager // Current state in the blockchain head
-	pendingAccountManager *am.AccountManager // Pending state tracking virtual nonces
+	curPM    pm.IPM // Current state in the blockchain head
+	pendingPM pm.IPM // Pending state tracking virtual nonces
 	currentMaxGas         uint64             // Current gas limit for transaction caps
 
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
@@ -159,7 +160,7 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 
 // scheduleReorgLoop schedules runs of reset and promoteExecutables. Code above should not
 // call those methods directly, but request them being run using requestReset and
-// requestPromoteExecutables instead.
+// requestPromoteExecutable instead.
 func (tp *TxPool) scheduleReorgLoop() {
 	defer tp.wg.Done()
 
@@ -346,7 +347,7 @@ func resendTxsFunc(txs []*types.Transaction) {
 	}
 }
 
-// requestPromoteExecutables requests a pool reset to the new head block.
+// requestReset requests a pool reset to the new head block.
 // The returned channel is closed when the reset has occurred.
 func (tp *TxPool) requestReset(oldHead *types.Header, newHead *types.Header) chan struct{} {
 	select {
@@ -391,8 +392,7 @@ func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyA
 
 		// Nonces were reset, discard any events that became stale
 		for name := range events {
-			nonce, _ := tp.pendingAccountManager.GetNonce(name)
-			events[name].Forward(nonce)
+			events[name].Forward(tp.pendingPM.GetNonce(name))
 			if events[name].Len() == 0 {
 				delete(events, name)
 			}
@@ -426,8 +426,9 @@ func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyA
 	// Update all accounts to the latest known pending nonce
 	for name, list := range tp.pending {
 		txs := list.Flatten() // Heavy but will be cached and is needed by the miner anyway
-		tp.pendingAccountManager.SetNonce(name, txs[len(txs)-1].GetActions()[0].Nonce()+1)
+		tp.pendingPM.SetNonce(name, txs[len(txs)-1].GetActions()[0].Nonce()+1)
 	}
+
 	tp.mu.Unlock()
 
 	// Notify subsystems for newly added transactions
@@ -520,16 +521,16 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 		log.Error("Failed to reset txpool state", "err", err)
 		return
 	}
-	tp.curAccountManager, err = am.NewAccountManager(statedb)
-	if err != nil {
-		log.Error("Failed to create current NewAccountManager", "err", err)
-		return
-	}
-	tp.pendingAccountManager, err = am.NewAccountManager(statedb.Copy())
-	if err != nil {
-		log.Error("Failed to create pending  NewAccountManager state", "err", err)
-		return
-	}
+	tp.curPM= pm.NewPM(statedb)
+	// if err != nil {
+	// 	log.Error("Failed to create current NewAccountManager", "err", err)
+	// 	return
+	// }
+	tp.pendingPM= pm.NewPM(statedb.Copy())
+	// if err != nil {
+	// 	log.Error("Failed to create pending  NewAccountManager state", "err", err)
+	// 	return
+	// }
 	tp.currentMaxGas = newHead.GasLimit
 	// Inject any transactions discarded due to reorgs
 	log.Debug("Reinjecting stale transactions", "count", len(reinject))
@@ -572,10 +573,10 @@ func (tp *TxPool) SetGasPrice(price *big.Int) {
 }
 
 // State returns the virtual managed state of the transaction tp.
-func (tp *TxPool) State() *am.AccountManager {
+func (tp *TxPool) State() pm.IPM {
 	tp.mu.RLock()
 	defer tp.mu.RUnlock()
-	return tp.pendingAccountManager
+	return tp.pendingPM
 }
 
 // Stats retrieves the current pool stats, namely the number of pending and the
@@ -656,21 +657,19 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
 			return ErrUnderpriced
 		}
-		// Ensure the transaction adheres to nonce ordering
-		nonce, err := tp.curAccountManager.GetNonce(from)
-		if err != nil {
-			return err
-		}
+
+	
 		// todo change action nonce
-		if nonce > action.Nonce() {
+		if tp.curPM.GetNonce(from) > action.Nonce() {
 			return ErrNonceTooLow
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
+		balance, err := tp.curPM.GetBalanceByID(from, tx.GasAssetID())
 		if err != nil {
 			return err
 		}
+
 
 		gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
 		if balance.Cmp(gascost) < 0 {
@@ -678,7 +677,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curAccountManager.GetAccountBalanceByID(from, action.AssetID(), 0)
+		balance, err = tp.curPM.GetBalanceByID(from, action.AssetID())
 		if err != nil {
 			return err
 		}
@@ -692,7 +691,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrInsufficientFundsForValue
 		}
 
-		intrGas, err := IntrinsicGas(tp.curAccountManager, action)
+		intrGas, err := IntrinsicGas(tp.curPM, action)
 		if err != nil {
 			return err
 		}
@@ -705,7 +704,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	}
 
 	// Make sure the transaction is signed properly
-	if err := tp.curAccountManager.RecoverTx(tp.signer, tx); err != nil {
+	if err := tp.curPM.Recover(tp.signer, tx); err != nil {
 		return ErrInvalidSender
 	}
 
@@ -856,7 +855,7 @@ func (tp *TxPool) promoteTx(name common.Name, hash common.Hash, tx *types.Transa
 	// Set the potentially new pending nonce and notify any subsystems of the new tx
 	tp.beats[name] = time.Now()
 	// todo action
-	tp.pendingAccountManager.SetNonce(name, tx.GetActions()[0].Nonce()+1)
+	tp.pendingPM.SetNonce(name, tx.GetActions()[0].Nonce()+1)
 	return true
 }
 
@@ -1024,15 +1023,9 @@ func (tp *TxPool) removeTx(hash common.Hash, outofbound bool) {
 
 			nonce := tx.GetActions()[0].Nonce()
 
-			// Update the account nonce if needed
-			pnonce, err := tp.pendingAccountManager.GetNonce(from)
-			if err != nil && err != am.ErrAccountNotExist {
-				log.Error("removeTx pending account manager get nonce err ", "name", from, "err", err)
-			}
-			if pnonce > nonce {
-				if err := tp.pendingAccountManager.SetNonce(from, nonce); err != nil {
-					log.Error("removeTx pending account manager set nonce err ", "name", from, "err", err)
-				}
+
+			if tp.pendingPM.GetNonce(from) > nonce {
+				tp.pendingPM.SetNonce(from, nonce)
 			}
 			return
 		}
@@ -1060,16 +1053,15 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) []*types.Transactio
 			continue // Just in case someone calls with a non existing account
 		}
 		// Drop all transactions that are deemed too old (low nonce)
-		nonce, _ := tp.curAccountManager.GetNonce(name)
-		forwards := list.Forward(nonce)
+		forwards := list.Forward(tp.curPM.GetNonce(name))
 		for _, tx := range forwards {
 			hash := tx.Hash()
 			tp.all.Remove(hash)
 			log.Trace("Removed old queued transaction", "hash", hash)
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
-		balance, _ := tp.curAccountManager.GetAccountBalanceByID(name, tp.config.GasAssetID, 0)
-		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
+		balance, _ := tp.curPM.GetBalanceByID(name, tp.config.GasAssetID)
+		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalanceByID, tp.curPM.Recover)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			tp.all.Remove(hash)
@@ -1077,8 +1069,7 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) []*types.Transactio
 		}
 
 		// Gather all executable transactions and promote them
-		nonce, _ = tp.pendingAccountManager.GetNonce(name)
-		readies := list.Ready(nonce)
+		readies := list.Ready(tp.pendingPM.GetNonce(name))
 		for _, tx := range readies {
 			hash := tx.Hash()
 			if tp.promoteTx(name, hash, tx) {
@@ -1152,9 +1143,8 @@ func (tp *TxPool) truncatePending() {
 						tp.all.Remove(hash)
 
 						// Update the account nonce to the dropped transaction
-						pnonce, _ := tp.pendingAccountManager.GetNonce(offenders[i])
-						if nonce := tx.GetActions()[0].Nonce(); pnonce > nonce {
-							tp.pendingAccountManager.SetNonce(offenders[i], nonce)
+						if nonce := tx.GetActions()[0].Nonce(); tp.pendingPM.GetNonce(offenders[i]) > nonce {
+							tp.pendingPM.SetNonce(offenders[i], nonce)
 						}
 						log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
 					}
@@ -1178,10 +1168,8 @@ func (tp *TxPool) truncatePending() {
 					tp.all.Remove(hash)
 
 					// Update the account nonce to the dropped transaction
-					pnonce, _ := tp.pendingAccountManager.GetNonce(name)
-
-					if nonce := tx.GetActions()[0].Nonce(); pnonce > nonce {
-						tp.pendingAccountManager.SetNonce(name, nonce)
+					if nonce := tx.GetActions()[0].Nonce(); tp.pendingPM.GetNonce(name) > nonce {
+						tp.pendingPM.SetNonce(name, nonce)
 					}
 					log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
 				}
@@ -1241,12 +1229,8 @@ func (tp *TxPool) truncateQueue() {
 func (tp *TxPool) demoteUnexecutables() {
 	// Iterate over all accounts and demote any non-executable transactions
 	for name, list := range tp.pending {
-		nonce, err := tp.curAccountManager.GetNonce(name)
-		if err != nil && err != am.ErrAccountNotExist {
-			log.Error("promoteExecutables current account manager get nonce err ", "name", name, "err", err)
-		}
-
 		// Drop all transactions that are deemed too old (low nonce)
+		nonce :=tp.curPM.GetNonce(name)
 		for _, tx := range list.Forward(nonce) {
 			hash := tx.Hash()
 			log.Trace("Removed old pending transaction", "hash", hash)
@@ -1254,13 +1238,14 @@ func (tp *TxPool) demoteUnexecutables() {
 			tp.priced.Removed(1)
 		}
 
+
 		// Drop all transactions that are too costly (low balance or out of gas or no permissions), and queue any invalids back for later
-		gasBalance, err := tp.curAccountManager.GetAccountBalanceByID(name, tp.config.GasAssetID, 0)
-		if err != nil && err != am.ErrAccountNotExist {
+		gasBalance, err := tp.curPM.GetBalanceByID(name, tp.config.GasAssetID)
+		if err != nil && err != pm.ErrAccountNotExist {
 			log.Error("promoteExecutables current account manager get balance err ", "name", name, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
-		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curAccountManager.GetAccountBalanceByID, tp.curAccountManager.RecoverTx)
+		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalanceByID, tp.curPM.Recover)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending or no permissions transaction", "hash", hash)

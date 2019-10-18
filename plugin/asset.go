@@ -26,7 +26,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
-	"github.com/go-ethereum/log"
+	"github.com/meitu/go-ethereum/log"
 )
 
 var (
@@ -56,7 +56,7 @@ type Asset struct {
 	Description string         `json:"description"`
 }
 
-func NewAssetManager(sdb *state.StateDB) (IAsset, error) {
+func NewASM(sdb *state.StateDB) (IAsset, error) {
 	if sdb == nil {
 		return nil, ErrNewAssetManagerErr
 	}

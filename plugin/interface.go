@@ -20,6 +20,7 @@ import (
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -63,6 +64,18 @@ type IAsset interface {
 }
 
 type IConsensus interface {
+	// CalcDifficulty is the difficulty adjustment algorithm.
+	// It returns the difficulty that a new block should have.
+	CalcDifficulty(time uint64, parent *types.Header) *big.Int
+
+	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
+	VerifySeal(header *types.Header) error
+
+	// Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
+	Prepare(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error
+
+	// Finalize assembles the final block.
+	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error)
 }
 
 type IContract interface {
@@ -72,4 +85,6 @@ type IFee interface {
 }
 
 type ISinger interface {
+	Sign(interface{}) ([]byte, error)
+	Recover(signer types.Signer, tx *types.Transaction) error
 }

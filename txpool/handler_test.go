@@ -135,10 +135,7 @@ func TestP2PTxMsg(t *testing.T) {
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	nonce, err := pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce := pool.State().GetNonce(fname)
 	if nonce != 0 {
 		t.Fatalf("Invalid nonce, want 0, got %d", nonce)
 	}
@@ -161,24 +158,18 @@ func TestP2PTxMsg(t *testing.T) {
 		}
 	}
 
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce = pool.State().GetNonce(fname)
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
 
 	pool.requestReset(nil, nil)
 
-	_, err = pool.Pending()
+	_, err := pool.Pending()
 	if err != nil {
 		t.Fatalf("Could not fetch pending transactions: %v", err)
 	}
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce = pool.State().GetNonce(fname)
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}

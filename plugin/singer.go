@@ -16,5 +16,18 @@
 
 package plugin
 
+import (
+	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/types"
+)
+
 type Singer struct {
+}
+
+func NewSinger(sdb *state.StateDB) ISinger {
+	return &Singer{}
+}
+
+func (s *Singer) Recover(signer types.Signer, tx *types.Transaction) error {
+	return nil
 }
