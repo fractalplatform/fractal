@@ -114,8 +114,8 @@ type actionData struct {
 	AType    ActionType
 	Nonce    uint64
 	AssetID  uint64
-	From     common.Name
-	To       common.Name
+	From     string
+	To       string
 	GasLimit uint64
 	Amount   *big.Int
 	Payload  []byte
@@ -133,7 +133,7 @@ type Action struct {
 }
 
 // NewAction initialize transaction's action.
-func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasLimit uint64, amount *big.Int, payload, remark []byte) *Action {
+func NewAction(actionType ActionType, from, to string, nonce, assetID, gasLimit uint64, amount *big.Int, payload, remark []byte) *Action {
 	if len(payload) > 0 {
 		payload = common.CopyBytes(payload)
 	}
@@ -184,7 +184,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 	case DeleteAccount:
 		fallthrough
 	case UpdateAccountAuthor:
-		if a.data.To.String() != conf.AccountName {
+		if a.data.To != conf.AccountName {
 			return fmt.Errorf("Receipt should is %v", conf.AccountName)
 		}
 	//asset
@@ -199,7 +199,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 	case UpdateAssetContract:
 		fallthrough
 	case UpdateAsset:
-		if a.data.To.String() != conf.AssetName {
+		if a.data.To != conf.AssetName {
 			return fmt.Errorf("Receipt should is %v", conf.AssetName)
 		}
 	case Transfer:
@@ -219,7 +219,7 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 	case RemoveKickedCandidate:
 		fallthrough
 	case ExitTakeOver:
-		if a.data.To.String() != conf.DposName {
+		if a.data.To != conf.DposName {
 			return fmt.Errorf("Receipt should is %v", conf.DposName)
 		}
 		if a.data.AssetID != conf.SysTokenID {
@@ -265,10 +265,10 @@ func (a *Action) Nonce() uint64 { return a.data.Nonce }
 func (a *Action) AssetID() uint64 { return a.data.AssetID }
 
 // Sender returns action's Sender.
-func (a *Action) Sender() common.Name { return a.data.From }
+func (a *Action) Sender() string { return a.data.From }
 
 // Recipient returns action's Recipient.
-func (a *Action) Recipient() common.Name { return a.data.To }
+func (a *Action) Recipient() string { return a.data.To }
 
 // Data returns action's payload.
 func (a *Action) Data() []byte { return common.CopyBytes(a.data.Payload) }
@@ -326,8 +326,8 @@ func (a *Action) WithParentIndex(parentIndex uint64) {
 type RPCAction struct {
 	Type       uint64        `json:"type"`
 	Nonce      uint64        `json:"nonce"`
-	From       common.Name   `json:"from"`
-	To         common.Name   `json:"to"`
+	From       string        `json:"from"`
+	To         string        `json:"to"`
 	AssetID    uint64        `json:"assetID"`
 	GasLimit   uint64        `json:"gas"`
 	Amount     *big.Int      `json:"value"`
