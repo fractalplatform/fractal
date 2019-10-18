@@ -52,7 +52,7 @@ type IAccount interface {
 	GetBalanceByID(accountID, assetID uint64) *big.Int
 	GetAccountID(accountAddress string) uint64
 	GetCodeSizeByID(accountID uint64) uint64
-	GetCodeById(accountID uint64) []byte
+	GetCodeByID(accountID uint64) []byte
 	GetAccountAddressByID(accountID uint64) string
 }
 
