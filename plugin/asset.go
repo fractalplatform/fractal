@@ -44,7 +44,7 @@ type AssetManager struct {
 
 type Asset struct {
 	AssetID     uint64         `json:"assetId"`
-	Stats       uint64         `json:"stats"` // 记录拥有此资产的用户数量
+	Stats       uint64         `json:"stats"`
 	AssetName   string         `json:"assetName"`
 	Symbol      string         `json:"symbol"`
 	Amount      *big.Int       `json:"amount"`
@@ -100,7 +100,7 @@ func (asm *AssetManager) CheckIssueAssetInfo(account common.Address, assetInfo *
 	return nil
 }
 
-func (asm *AssetManager) IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error) {
+func (asm *AssetManager) IssueAssetForAccount(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error) {
 	_, err := asm.getAssetIDByName(assetName)
 	if err != nil && err != ErrAssetNotExist {
 		return 0, err
@@ -123,7 +123,7 @@ func (asm *AssetManager) IssueAsset(assetName string, symbol string, amount *big
 func (asm *AssetManager) initAssetCount() {
 	_, err := asm.getAssetCount()
 	if err == ErrAssetCountNotExist {
-		var assetID uint64 //store assetCount
+		var assetID uint64
 		b, err := rlp.EncodeToBytes(&assetID)
 		if err != nil {
 			panic(err)

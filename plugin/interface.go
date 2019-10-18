@@ -43,12 +43,17 @@ type IAccount interface {
 	AccountHaveCode(accountAddress common.Address) (bool, error)
 	GetCode(accountAddress common.Address) ([]byte, error)
 	SetCode(accountAddress common.Address, code []byte) (bool, error)
-	GetBalanceByID(accountAddress common.Address, assetID uint64) (*big.Int, error)
+	GetBalanceByAddress(accountAddress common.Address, assetID uint64) (*big.Int, error)
 	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
 	IssueAsset(accountAddress common.Address, assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string, asm IAsset) ([]byte, error)
 	CanTransfer(accountAddress common.Address, assetID uint64, value *big.Int) (bool, error)
 	TransferAsset(fromAccount, toAccount common.Address, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...common.Address) error
 	RecoverTx(signer types.Signer, tx *types.Transaction) error
+	GetBalanceByID(accountID, assetID uint64) *big.Int
+	GetAccountID(accountAddress string) uint64
+	GetCodeSizeByID(accountID uint64) uint64
+	GetCodeById(accountID uint64) []byte
+	GetAccountAddressByID(accountID uint64) string
 }
 
 type IAsset interface {
