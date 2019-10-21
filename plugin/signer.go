@@ -24,7 +24,7 @@ import (
 type Signer struct {
 }
 
-func NewSinger(sdb *state.StateDB) ISinger {
+func NewSigner(sdb *state.StateDB) ISinger {
 	return &Signer{}
 }
 
