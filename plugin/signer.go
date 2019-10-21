@@ -21,13 +21,17 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type Singer struct {
+type Signer struct {
 }
 
-func NewSinger(sdb *state.StateDB) ISinger {
-	return &Singer{}
+func NewSigner(sdb *state.StateDB) ISinger {
+	return &Signer{}
 }
 
-func (s *Singer) Recover(signer types.Signer, tx *types.Transaction) error {
+func (s *Signer) Sign(interface{}) ([]byte, error) {
+	return nil, nil
+}
+
+func (s *Signer) Recover(signer types.Signer, tx *types.Transaction) error {
 	return nil
 }
