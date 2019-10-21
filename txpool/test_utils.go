@@ -23,12 +23,12 @@ import (
 	"testing"
 	"time"
 
-	am "github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -93,7 +93,7 @@ func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasp
 	return tx
 }
 
-func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountManager) *ecdsa.PrivateKey {
+func generateAccount(t *testing.T, name common.Name, managers ...pm.IPM) *ecdsa.PrivateKey {
 	key, err := crypto.GenerateKey()
 	if err != nil {
 		t.Fatal(err)
@@ -107,13 +107,13 @@ func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountMana
 	return key
 }
 
-func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
+func setupTxPool(assetOwner common.Name) (*TxPool, pm.IPM) {
 
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	asset := asset.NewAsset(statedb)
 	asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000), common.Name(""), "")
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
-	manager, _ := am.NewAccountManager(statedb)
+	manager := pm.NewPM(statedb)
 	return New(testTxPoolConfig, params.DefaultChainconfig, blockchain), manager
 }
 
@@ -141,10 +141,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 			}
 		}
 
-		nonce, err := pool.pendingAccountManager.GetNonce(name)
-		if err != nil {
-			return err
-		}
+		nonce := pool.pendingPM.GetNonce(name)
 		if nonce != last+1 {
 			return fmt.Errorf("pending nonce mismatch: have %v, want %v", nonce, last+1)
 		}

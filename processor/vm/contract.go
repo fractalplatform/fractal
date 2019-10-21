@@ -24,7 +24,7 @@ import (
 
 // ContractRef is a reference to the contract's backing object
 type ContractRef interface {
-	Name() common.Name
+	Name() string
 }
 
 // AccountRef implements ContractRef.
@@ -34,10 +34,10 @@ type ContractRef interface {
 // proves difficult because of the cached jump destinations which
 // are fetched from the parent contract (i.e. the caller), which
 // is a ContractRef.
-type AccountRef common.Name
+type AccountRef string
 
 // Name casts AccountRef to a Name
-func (ar AccountRef) Name() common.Name { return (common.Name)(ar) }
+func (ar AccountRef) Name() string { return (string)(ar) }
 
 // Contract represents an contract in the state database. It contains
 // the the contract code, calling arguments. Contract implements ContractRef
@@ -45,29 +45,26 @@ type Contract struct {
 	// CallerName is the result of the caller which initialised this
 	// contract. However when the "call method" is delegated this value
 	// needs to be initialised to that of the caller's caller.
-	CallerName common.Name
+	CallerName string
 	caller     ContractRef
-	self       ContractRef
+	self       string
 
 	jumpdests destinations // result of JUMPDEST analysis.
 
 	Code     []byte
 	CodeHash common.Hash
-	CodeName *common.Name
 	Input    []byte
 
 	Gas     uint64
 	value   *big.Int
 	AssetID uint64
 
-	Args []byte
-
 	DelegateCall bool
 }
 
 // NewContract returns a new contract environment for the execution of EVM.
-func NewContract(caller ContractRef, object ContractRef, value *big.Int, gas uint64, assetID uint64) *Contract {
-	c := &Contract{CallerName: caller.Name(), caller: caller, self: object, Args: nil}
+func NewContract(caller ContractRef, object string, value *big.Int, gas uint64, assetID uint64) *Contract {
+	c := &Contract{CallerName: caller.Name(), caller: caller, self: object}
 
 	if parent, ok := caller.(*Contract); ok {
 		// Reuse JUMPDEST analysis from parent context if available.
@@ -116,7 +113,7 @@ func (c *Contract) GetByte(n uint64) byte {
 //
 // Caller will recursively call caller when the contract is a delegate
 // call, including that of caller's caller.
-func (c *Contract) Caller() common.Name {
+func (c *Contract) Caller() string {
 	return c.CallerName
 }
 
@@ -130,8 +127,8 @@ func (c *Contract) UseGas(gas uint64) (ok bool) {
 }
 
 // Name returns the contracts name
-func (c *Contract) Name() common.Name {
-	return c.self.Name()
+func (c *Contract) Name() string {
+	return c.self
 }
 
 // Value returns the contracts value (sent to it from it's caller)
@@ -140,9 +137,7 @@ func (c *Contract) Value() *big.Int {
 }
 
 // SetCallCode sets the code of the contract and name of the backing dataobject
-func (c *Contract) SetCallCode(name *common.Name, hash common.Hash, code []byte) {
+func (c *Contract) SetCallCode(hash common.Hash, code []byte) {
 	c.Code = code
 	c.CodeHash = hash
-	c.CodeName = name
-
 }

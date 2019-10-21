@@ -20,6 +20,7 @@ import (
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -36,19 +37,36 @@ type IPM interface {
 
 // IAccount account manager interface.
 type IAccount interface {
-	GetNonce(arg interface{}) uint64
-	CreateAccount(action *types.Action) ([]byte, error)
-	IssueAsset(action *types.Action, asm IAsset) ([]byte, error)
-	TransferAsset(fromAccount, toAccount common.Address, assetID uint64, value *big.Int, asm IAsset, fromAccountExtra ...common.Address) error
+	GetNonce(account string) (uint64, error)
+	SetNonce(account string, nonce uint64) error
+
+	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
+
+	GetCode(account string) ([]byte, error)
+	SetCode(account string, code []byte) error
+
+	GetBalance(account string, assetID uint64) (*big.Int, error)
+
+	CanTransfer(account string, assetID uint64, value *big.Int) (bool, error)
+
+	TransferAsset(from, to string, assetID uint64, value *big.Int) error
 }
 
 type IAsset interface {
-	IncStats(assetID uint64) error
-	CheckIssueAssetInfo(account common.Address, assetInfo *IssueAsset) error
-	IssueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string) (uint64, error)
+	IssueAsset(account string, assetName string, symbol string, amount *big.Int,
+		dec uint64, founder string, owner string, limit *big.Int, description string, asm IAsset) ([]byte, error)
 }
 
 type IConsensus interface {
+
+	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
+	VerifySeal(header *types.Header) error
+
+	// Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
+	Prepare(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error
+
+	// Finalize assembles the final block.
+	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error)
 }
 
 type IContract interface {
@@ -58,4 +76,6 @@ type IFee interface {
 }
 
 type ISinger interface {
+	Sign(interface{}) ([]byte, error)
+	Recover(signer types.Signer, tx *types.Transaction) error
 }

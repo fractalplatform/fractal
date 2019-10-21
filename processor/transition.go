@@ -121,12 +121,13 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return nil, 0, true, err, vmerr
 	}
 
+	caller := vm.AccountRef(st.action.Sender())
 	actionType := st.action.Type()
 	switch {
 	case actionType == types.CreateContract:
-		ret, st.gas, vmerr = st.evm.Create(sender, st.action, st.gas)
+		ret, st.gas, vmerr = st.evm.Create(caller, st.action, st.gas)
 	case actionType == types.CallContract:
-		ret, st.gas, vmerr = st.evm.Call(sender, st.action, st.gas)
+		ret, st.gas, vmerr = st.evm.Call(caller, st.action, st.gas)
 	default:
 		ret, vmerr = st.pm.ExecTx(st.action)
 	}

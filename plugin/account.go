@@ -20,6 +20,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"math/big"
+	"strconv"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -31,6 +32,9 @@ import (
 var (
 	acctManagerName = "sysAccount"
 	acctInfoPrefix  = "acctInfo"
+	accountIDPrefix = "accountId"
+	counterPrefix   = "accountCounter"
+	counterID       = uint64(4096)
 )
 
 const SystemAssetID uint64 = 0
@@ -59,6 +63,7 @@ type AssetBalance struct {
 
 type Account struct {
 	Address     common.Address
+	AccountID   uint64
 	Nonce       uint64
 	Code        []byte
 	CodeHash    common.Hash
@@ -73,12 +78,14 @@ type AccountManager struct {
 	sdb *state.StateDB
 }
 
-// NewAM New a AccountManager
-func NewAM(db *state.StateDB) (IAccount, error) {
+// NewACM New a AccountManager
+func NewACM(db *state.StateDB) (IAccount, error) {
 	if db == nil {
 		return nil, ErrNewAccountManagerErr
 	}
-	return &AccountManager{db}, nil
+	am := &AccountManager{db}
+	am.initAccountCounter()
+	return am, nil
 }
 
 //func (am *AccountManager) Process(accountManagerContext *types.AccountManagerContext) ([]*types.InternalAction, error)  {
@@ -111,19 +118,7 @@ func NewAM(db *state.StateDB) (IAccount, error) {
 
 // CreateAccount
 // Prase Payload to create a account
-func (am *AccountManager) CreateAccount(action *types.Action) ([]byte, error) {
-	var acct CreateAccountAction
-	err := rlp.DecodeBytes(action.Data(), &acct)
-	if err != nil {
-		return nil, err
-	}
-
-	// 验证公钥是否有效，如果格式不正确。那么转换的时候为空？
-	if !common.IsHexPubKey(acct.PublicKey) {
-		return nil, ErrInvalidPubKey
-	}
-	// 生成地址，判断地址是否已存在
-	pubKey := common.HexToPubKey(acct.PublicKey)
+func (am *AccountManager) CreateAccount(pubKey common.PubKey, description string) ([]byte, error) {
 	tempKey, err := crypto.UnmarshalPubkey(pubKey.Bytes())
 	if err != nil {
 		return nil, err
@@ -131,7 +126,6 @@ func (am *AccountManager) CreateAccount(action *types.Action) ([]byte, error) {
 
 	newAddress := crypto.PubkeyToAddress(*tempKey)
 
-	// 判断账户是否已存在
 	_, err = am.getAccount(newAddress)
 	if err == nil {
 		return nil, ErrAccountIsExist
@@ -139,9 +133,16 @@ func (am *AccountManager) CreateAccount(action *types.Action) ([]byte, error) {
 		return nil, err
 	}
 
-	// new一个新对象，存储sdb
+	accountCounter, err := am.getAccountCounter()
+	if err != nil {
+		return nil, err
+	}
+
+	accountCounter += 1
+
 	acctObject := Account{
 		Address:     newAddress,
+		AccountID:   accountCounter,
 		Nonce:       0,
 		Code:        make([]byte, 0),
 		CodeHash:    crypto.Keccak256Hash(nil),
@@ -149,24 +150,49 @@ func (am *AccountManager) CreateAccount(action *types.Action) ([]byte, error) {
 		Balances:    nil,
 		Suicide:     false,
 		Destroy:     false,
-		Description: acct.Description,
+		Description: description,
 	}
 
-	am.setAccount(&acctObject)
+	if err = am.setAccount(&acctObject); err != nil {
+		return nil, err
+	}
+
+	aid, err := rlp.EncodeToBytes(&accountCounter)
+	if err != nil {
+		return nil, err
+	}
+
+	address, err := rlp.EncodeToBytes(&acctObject.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	am.sdb.Put(acctManagerName, accountIDPrefix+strconv.FormatUint(accountCounter, 10), address)
+	am.sdb.Put(acctManagerName, counterPrefix, aid)
 
 	return newAddress.Bytes(), nil
 }
 
 // IssueAsset
 // Pares Payload to issue a asset
-func (am *AccountManager) IssueAsset(action *types.Action, asm IAsset) ([]byte, error) {
-	var issueAsset IssueAsset
-	err := rlp.DecodeBytes(action.Data(), &issueAsset)
-	if err != nil {
-		return nil, err
+func (am *AccountManager) IssueAsset(accountAddress common.Address, assetName string, symbol string, amount *big.Int, dec uint64, founder common.Address, owner common.Address, limit *big.Int, description string, asm IAsset) ([]byte, error) {
+	//var issueAsset IssueAsset
+	//err := rlp.DecodeBytes(action.Data(), &issueAsset)
+	//if err != nil {
+	//	return nil, err
+	//}
+	issueAsset := &IssueAsset{
+		AssetName:   assetName,
+		Symbol:      symbol,
+		Amount:      amount,
+		Decimals:    dec,
+		Founder:     founder,
+		Owner:       owner,
+		UpperLimit:  limit,
+		Description: description,
 	}
 
-	err = asm.CheckIssueAssetInfo(common.HexToAddress(action.Sender()), &issueAsset)
+	err := asm.CheckIssueAssetInfo(accountAddress, issueAsset)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +215,7 @@ func (am *AccountManager) IssueAsset(action *types.Action, asm IAsset) ([]byte, 
 		issueAsset.Founder = issueAsset.Owner
 	}
 
-	assetID, err := asm.IssueAsset(issueAsset.AssetName, issueAsset.Symbol, issueAsset.Amount, issueAsset.Decimals, issueAsset.Founder, issueAsset.Owner, issueAsset.UpperLimit, issueAsset.Description)
+	assetID, err := asm.IssueAssetForAccount(issueAsset.AssetName, issueAsset.Symbol, issueAsset.Amount, issueAsset.Decimals, issueAsset.Founder, issueAsset.Owner, issueAsset.UpperLimit, issueAsset.Description)
 	if err != nil {
 		return nil, err
 	}
@@ -197,6 +223,27 @@ func (am *AccountManager) IssueAsset(action *types.Action, asm IAsset) ([]byte, 
 	binary.BigEndian.PutUint64(buf, uint64(assetID))
 
 	return buf, nil
+}
+
+func (am *AccountManager) CanTransfer(accountAddress common.Address, assetID uint64, value *big.Int) (bool, error) {
+	if assetID != SystemAssetID {
+		return false, ErrAssetIDInvalid
+	}
+
+	if value.Cmp(big.NewInt(0)) < 0 {
+		return false, ErrAmountValueInvalid
+	}
+
+	val, err := am.GetBalanceByAddress(accountAddress, assetID)
+	if err != nil {
+		return false, err
+	}
+
+	if val.Cmp(value) < 0 {
+		return false, ErrInsufficientBalance
+	}
+
+	return true, nil
 }
 
 // TransferAsset
@@ -229,8 +276,7 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount common.Address, a
 		return nil
 	}
 
-	err = am.subBalanceByID(fromAcct, value)
-	if err != nil {
+	if err = am.subBalanceByID(fromAcct, value); err != nil {
 		return err
 	}
 
@@ -261,15 +307,270 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount common.Address, a
 	return am.setAccount(toAcct)
 }
 
-func (am *AccountManager) GetNonce(arg interface{}) uint64 {
-	return 0
+// RecoverTx
+// Make sure the transaction is signed properly and validate account authorization.
+func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
+	for _, action := range tx.GetActions() {
+		pubs, err := types.RecoverMultiKey(signer, action, tx)
+		if err != nil {
+			return err
+		}
+
+		tempKey, err := crypto.UnmarshalPubkey(pubs[0].Bytes())
+		if err != nil {
+			return err
+		}
+		tempAddress := crypto.PubkeyToAddress(*tempKey)
+
+		account, err := am.getAccount(common.HexToAddress(action.Sender()))
+		if err != nil {
+			return err
+		}
+
+		if tempAddress.Compare(account.Address) != 0 {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (am *AccountManager) GetNonce(accountAddress common.Address) (uint64, error) {
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return 0, err
+	}
+
+	return account.Nonce, nil
+}
+func (am *AccountManager) AccountHaveCode(accountAddress common.Address) (bool, error) {
+	return true, nil
+}
+
+func (am *AccountManager) SetNonce(arg interface{}, nonce uint64) {
+
+}
+func (am *AccountManager) GetBalanceByID(arg interface{}, id uint64) (*big.Int, error) {
+	return nil, nil
+}
+
+func (am *AccountManager) SetNonce(accountAddress common.Address, nonce uint64) error {
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return err
+	}
+
+	account.Nonce = nonce
+
+	err = am.setAccount(account)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AccountManager) GetAccount(accountAddress common.Address) (*Account, error) {
+	return am.getAccount(accountAddress)
+}
+
+func (am *AccountManager) AccountHaveCode(accountAddress common.Address) (bool, error) {
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return false, err
+	}
+
+	if account.CodeSize == 0 {
+		return false, nil
+	} else {
+		return true, nil
+	}
+
+}
+
+func (am *AccountManager) GetCode(accountAddress common.Address) ([]byte, error) {
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	if account.CodeSize == 0 || account.Suicide {
+		return nil, ErrCodeIsEmpty
+	}
+
+	return account.Code, nil
+}
+
+func (am *AccountManager) SetCode(accountAddress common.Address, code []byte) (bool, error) {
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return false, err
+	}
+
+	if len(code) == 0 {
+		return false, ErrCodeIsEmpty
+	}
+	account.Code = code
+	account.CodeHash = crypto.Keccak256Hash(code)
+	account.CodeSize = uint64(len(code))
+
+	err = am.setAccount(account)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (am *AccountManager) GetBalanceByAddress(accountAddress common.Address, assetID uint64) (*big.Int, error) {
+	if assetID != SystemAssetID {
+		return big.NewInt(0), ErrAssetIDInvalid
+	}
+
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return big.NewInt(0), err
+	}
+
+	if account.Balances == nil {
+		return big.NewInt(0), ErrAccountAssetNotExist
+	}
+
+	return account.Balances.Balance, nil
+}
+
+func (am *AccountManager) DeleteAccount(accountAddress common.Address) error {
+	account, err := am.getAccount(accountAddress)
+	if err != nil {
+		return err
+	}
+
+	account.Destroy = true
+
+	if err = am.setAccount(account); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (am *AccountManager) GetBalanceByID(accountID, assetID uint64) *big.Int {
+	if assetID != SystemAssetID {
+		return big.NewInt(0)
+	}
+
+	account, err := am.getAccountByID(accountID)
+	if err != nil {
+		return big.NewInt(0)
+	}
+
+	return account.Balances.Balance
+}
+
+func (am *AccountManager) GetAccountID(accountAddress string) uint64 {
+	account, err := am.getAccount(common.HexToAddress(accountAddress))
+	if err != nil {
+		return 0
+	}
+	return account.AccountID
+}
+
+func (am *AccountManager) GetCodeSizeByID(accountID uint64) uint64 {
+	account, err := am.getAccountByID(accountID)
+	if err != nil {
+		return 0
+	}
+	return account.CodeSize
+}
+
+func (am *AccountManager) GetCodeByID(accountID uint64) []byte {
+	account, err := am.getAccountByID(accountID)
+	if err != nil {
+		return nil
+	}
+
+	if account.CodeSize == 0 {
+		return nil
+	}
+
+	return account.Code
+}
+
+func (am *AccountManager) GetAccountAddressByID(accountID uint64) string {
+	if accountID == 0 {
+		return ""
+	}
+
+	b, err := am.sdb.Get(acctManagerName, accountIDPrefix+strconv.FormatUint(accountID, 10))
+	if err != nil {
+		return ""
+	}
+
+	if len(b) == 0 {
+		return ""
+	}
+
+	var address common.Address
+	if err = rlp.DecodeBytes(b, &address); err != nil {
+		return ""
+	}
+
+	return address.String()
+}
+
+//initAccountCounter init account manage counter
+func (am *AccountManager) initAccountCounter() {
+	_, err := am.getAccountCounter()
+	if err == ErrCounterNotExist {
+		//var counterID uint64
+		//counterID = 0
+		//store assetCount
+		b, err := rlp.EncodeToBytes(&counterID)
+		if err != nil {
+			panic(err)
+		}
+		am.sdb.Put(acctManagerName, counterPrefix, b)
+	}
+}
+
+//getAccountCounter get account counter cur value
+func (am *AccountManager) getAccountCounter() (uint64, error) {
+	b, err := am.sdb.Get(acctManagerName, counterPrefix)
+	if err != nil {
+		return 0, err
+	}
+	if len(b) == 0 {
+		return 0, ErrCounterNotExist
+	}
+	var accountCounter uint64
+	err = rlp.DecodeBytes(b, &accountCounter)
+	if err != nil {
+		return 0, err
+	}
+	return accountCounter, nil
+}
+
+func (am *AccountManager) getAccountByID(accountID uint64) (*Account, error) {
+	if accountID == 0 {
+		return nil, ErrAccountIDInvalid
+	}
+
+	b, err := am.sdb.Get(acctManagerName, accountIDPrefix+strconv.FormatUint(accountID, 10))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(b) == 0 {
+		//log.Debug("account not exist", "id", ErrAccountNotExist, accountID)
+		return nil, ErrAccountNotExist
+	}
+
+	var address common.Address
+	if err = rlp.DecodeBytes(b, &address); err != nil {
+		return nil, err
+	}
+
+	return am.getAccount(address)
 }
 
 func (am *AccountManager) getAccount(address common.Address) (*Account, error) {
-	//if err := checkAddress(address); err != nil {
-	//	return nil, err
-	//}
-
 	b, err := am.sdb.Get(acctManagerName, acctInfoPrefix+address.String())
 
 	if err != nil {
@@ -278,7 +579,7 @@ func (am *AccountManager) getAccount(address common.Address) (*Account, error) {
 
 	if len(b) == 0 {
 		//log.Debug("account not exist", "address", ErrAccountNotExist, address)
-		return nil, ErrAccountNotExist // 原先版本返回nil，改为直接返回error
+		return nil, ErrAccountNotExist
 	}
 
 	var account Account
@@ -358,4 +659,6 @@ var (
 	ErrNegativeValue          = errors.New("negative value")
 	ErrNegativeAmount         = errors.New("negative amount")
 	ErrAssetOwnerInvalid      = errors.New("asset owner Invalid ")
+	ErrCounterNotExist        = errors.New("account global counter not exist")
+	ErrAccountIDInvalid       = errors.New("account id invalid")
 )

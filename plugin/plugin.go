@@ -43,7 +43,10 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 
 // NewPM create new plugin manager.
 func NewPM(stateDB *state.StateDB) IPM {
+	acm, _ := NewACM(stateDB)
+	asm, _ := NewASM(stateDB)
 	return &Manager{
-		IAccount: NewAM(stateDB),
+		IAccount: acm,
+		IAsset:   asm,
 	}
 }

@@ -75,34 +75,28 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	nonce, err := pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce := pool.State().GetNonce(fname)
+
 	if nonce != 0 {
 		t.Fatalf("Invalid nonce, want 0, got %d", nonce)
 	}
 
 	pool.addRemotesSync([]*types.Transaction{tx0, tx1})
 
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce = pool.State().GetNonce(fname)
+
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
 
 	<-pool.requestReset(nil, nil)
 
-	_, err = pool.Pending()
+	_, err := pool.Pending()
 	if err != nil {
 		t.Fatalf("Could not fetch pending transactions: %v", err)
 	}
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce = pool.State().GetNonce(fname)
+
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
@@ -117,19 +111,19 @@ func TestInvalidTransactions(t *testing.T) {
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
-	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	fkey := generateAccount(t, fname, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	tx := transaction(0, fname, tname, 100, fkey)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1))
+	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(1))
 	if err := pool.addRemoteSync(tx); err != ErrInsufficientFundsForGas {
 		t.Fatal("expected: ", ErrInsufficientFundsForGas, "actual: ", err)
 	}
 
 	value := new(big.Int).Add(tx.Cost(), tx.GetActions()[0].Value())
 
-	if err := pool.curAccountManager.AddAccountBalanceByID(fname, assetID, value); err != nil {
+	if err := pool.curPM.AddAccountBalanceByID(fname, assetID, value); err != nil {
 		t.Fatal(err)
 	}
 
