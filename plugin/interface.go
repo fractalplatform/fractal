@@ -37,24 +37,30 @@ type IPM interface {
 
 // IAccount account manager interface.
 type IAccount interface {
-	GetNonce(account string) (uint64, error)
-	SetNonce(account string, nonce uint64) error
+	GetNonce(accountName string) (uint64, error)
+	SetNonce(accountName string, nonce uint64) error
 
-	CreateAccount(pubKey common.PubKey, description string) ([]byte, error)
+	CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error)
 
-	GetCode(account string) ([]byte, error)
-	SetCode(account string, code []byte) error
+	GetCode(accountName string) ([]byte, error)
+	SetCode(accountName string, code []byte) error
 
-	GetBalance(account string, assetID uint64) (*big.Int, error)
+	GetBalance(accountName string, assetID uint64) (*big.Int, error)
 
-	CanTransfer(account string, assetID uint64, value *big.Int) (bool, error)
+	CanTransfer(accountName string, assetID uint64, value *big.Int) (bool, error)
 
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
+
+	GetAccount(accountName string) (*Account, error)                          // for asset plugin
+	AddBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
+	SubBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 }
 
 type IAsset interface {
-	IssueAsset(account string, assetName string, symbol string, amount *big.Int,
-		dec uint64, founder string, owner string, limit *big.Int, description string, asm IAsset) ([]byte, error)
+	IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
+		decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error)
+	IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) error
+	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) error
 }
 
 type IConsensus interface {
