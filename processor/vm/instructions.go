@@ -395,15 +395,7 @@ func opSha3(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 }
 
 func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	if acct, err := evm.AccountDB.GetAccountByName(contract.Name()); err == nil {
-		if acct != nil {
-			stack.push(evm.interpreter.intPool.get().SetUint64(acct.GetAccountID()))
-		} else {
-			stack.push(evm.interpreter.intPool.getZero())
-		}
-	} else {
-		stack.push(evm.interpreter.intPool.getZero())
-	}
+	stack.push(evm.interpreter.intPool.get().SetBytes([]byte(contract.Name())))
 	return nil, nil
 }
 
