@@ -62,23 +62,23 @@ type Context struct {
 	GetHeaderByNumber       GetHeaderByNumberFunc
 
 	// Message information
-	Origin    common.Name // Provides information for ORIGIN
-	Recipient common.Name
-	From      common.Name // Provides information for ORIGIN
-	AssetID   uint64      // provides assetId
-	GasPrice  *big.Int    // Provides information for GASPRICE
+	Origin    string // Provides information for ORIGIN
+	Recipient string
+	From      string   // Provides information for ORIGIN
+	AssetID   uint64   // provides assetId
+	GasPrice  *big.Int // Provides information for GASPRICE
 
 	// Block information
-	Coinbase    common.Name // Provides information for COINBASE
-	GasLimit    uint64      // Provides information for GASLIMIT
-	BlockNumber *big.Int    // Provides information for NUMBER
-	ForkID      uint64      // Provides information for FORKID
-	Time        *big.Int    // Provides information for TIME
-	Difficulty  *big.Int    // Provides information for DIFFICULTY
+	Coinbase    string   // Provides information for COINBASE
+	GasLimit    uint64   // Provides information for GASLIMIT
+	BlockNumber *big.Int // Provides information for NUMBER
+	ForkID      uint64   // Provides information for FORKID
+	Time        *big.Int // Provides information for TIME
+	Difficulty  *big.Int // Provides information for DIFFICULTY
 }
 
 type FounderGas struct {
-	Founder common.Name
+	Founder string
 	Gas     uint64
 }
 
