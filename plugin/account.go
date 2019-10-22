@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	acctRegExp           = regexp.MustCompile(`^([a-z][a-z0-9]{6,30})`)
+	acctRegExp           = regexp.MustCompile(`^([a-z][a-z0-9]{6,31})`)
 	acctManagerName      = "sysAccount"
 	acctInfoPrefix       = "acctInfo"
-	accountNameMaxLength = uint64(31)
+	accountNameMaxLength = uint64(32)
 	counterID            = uint64(4096)
 )
 
@@ -79,7 +79,7 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 
 	_, err := am.getAccount(accountName)
 	if err == nil {
-		return nil, ErrAccountAlreadyExist
+		return nil, ErrAccountIsExist
 	} else if err != ErrAccountNotExist {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ var (
 	ErrAccountNameinvalid   = errors.New("account name invalid")
 	ErrNewAccountManagerErr = errors.New("new account manager err")
 	ErrAccountNotExist      = errors.New("account not exist")
-	ErrAccountAlreadyExist  = errors.New("account already exist")
+	ErrAccountIsExist       = errors.New("account is exist")
 	ErrAccountObjectIsNil   = errors.New("account object is nil")
 	ErrAccountDestroyed     = errors.New("account Destroyed")
 	ErrAssetIDInvalid       = errors.New("assetID invalid")

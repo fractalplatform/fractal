@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	assetRegExp        = regexp.MustCompile(`^([a-z][a-z0-9]{1,30})`)
-	assetNameMaxLength = uint64(31)
+	assetRegExp        = regexp.MustCompile(`^([a-z][a-z0-9]{1,31})`)
+	assetNameMaxLength = uint64(32)
 	assetManagerName   = "assetAccount"
 	assetCountPrefix   = "assetCount"
 	assetNameIDPrefix  = "assetNameId"
