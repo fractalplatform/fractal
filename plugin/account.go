@@ -140,11 +140,8 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 	if err != nil {
 		return err
 	}
-	if fromAcct == nil {
-		return ErrAccountNotExist
-	}
 
-	if fromAccount == toAccount || value.Cmp(big.NewInt(0)) == 0 {
+	if fromAccount == toAccount {
 		return nil
 	}
 
