@@ -269,9 +269,9 @@ func (am *AccountManager) AddBalanceByID(accountName string, assetID uint64, amo
 	if err != nil {
 		return err
 	}
-	if account.Destroy == true {
-		return ErrAccountIsDestroy
-	}
+	//if account.Destroy == true {
+	//	return ErrAccountIsDestroy
+	//}
 
 	if err = am.addBalance(account, assetID, amount); err != nil {
 		return err
@@ -285,9 +285,9 @@ func (am *AccountManager) SubBalanceByID(accountName string, assetID uint64, amo
 	if err != nil {
 		return err
 	}
-	if account.Destroy == true {
-		return ErrAccountIsDestroy
-	}
+	//if account.Destroy == true {
+	//	return ErrAccountIsDestroy
+	//}
 
 	if err = am.subBalance(account, assetID, amount); err != nil {
 		return err
@@ -349,9 +349,9 @@ func (am *AccountManager) setAccount(account *Account) error {
 	if account == nil {
 		return ErrAccountObjectIsNil
 	}
-	if account.Destroy == true {
-		return ErrAccountDestroyed
-	}
+	//if account.Destroy == true {
+	//	return ErrAccountDestroyed
+	//}
 
 	b, err := rlp.EncodeToBytes(account)
 	if err != nil {
