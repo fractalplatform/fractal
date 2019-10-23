@@ -98,8 +98,8 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		UpperLimit:  limit,
 		Description: description,
 	}
-	assetID, err := asm.addNewAssetObject(&ao)
 
+	assetID, err := asm.addNewAssetObject(&ao)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 	assetObj.AddIssue = addissue
 
 	total := new(big.Int).Add(assetObj.Amount, amount)
-	if assetObj.UpperLimit.Cmp(big.NewInt(0)) > 0 && total.Cmp(assetObj.UpperLimit) > 0 {
+	if total.Cmp(assetObj.UpperLimit) > 0 {
 		return nil, ErrUpperLimit
 	}
 	assetObj.Amount = total
@@ -171,8 +171,8 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 		return nil, err
 	}
 
-	var total *big.Int
-	if total = new(big.Int).Sub(assetObj.Amount, amount); total.Cmp(big.NewInt(0)) < 0 {
+	total := new(big.Int).Sub(assetObj.Amount, amount)
+	if total.Cmp(big.NewInt(0)) < 0 {
 		return nil, ErrDestroyLimit
 	}
 	assetObj.Amount = total

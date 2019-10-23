@@ -129,10 +129,14 @@ func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value 
 // TransferAsset
 // Transaction designated asset to other account
 func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID uint64, value *big.Int) error {
-	if sign := value.Sign(); sign == 0 {
+	if value.Cmp(big.NewInt(0)) == 0 {
 		return nil
-	} else if sign == -1 {
+	} else if value.Cmp(big.NewInt(0)) < 0 {
 		return ErrNegativeValue
+	}
+
+	if fromAccount == toAccount {
+		return nil
 	}
 
 	// check fromAccount
@@ -141,16 +145,12 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 		return err
 	}
 
-	if fromAccount == toAccount {
-		return nil
-	}
-
-	if err = am.subBalance(fromAcct, assetID, value); err != nil {
+	toAcct, err := am.getAccount(toAccount)
+	if err != nil {
 		return err
 	}
 
-	toAcct, err := am.getAccount(toAccount)
-	if err != nil {
+	if err = am.subBalance(fromAcct, assetID, value); err != nil {
 		return err
 	}
 
