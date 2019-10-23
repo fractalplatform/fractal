@@ -22,7 +22,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
@@ -188,24 +187,24 @@ func (evm *EVM) GetCurrentGasTable() params.GasTable {
 }
 
 func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
-	gasTable := evm.GetCurrentGasTable()
-	if action.Value().Sign() == 0 {
-		return 0
-	}
-	toAcct, err := evm.PM.GetAccountByName(action.Recipient())
-	if err != nil {
-		return 0
-	}
-	if toAcct == nil {
-		return 0
-	}
-	if toAcct.IsDestroyed() {
-		return 0
-	}
-	_, err = toAcct.GetBalanceByID(action.AssetID())
-	if err == accountmanager.ErrAccountAssetNotExist {
-		return gasTable.CallValueTransferGas
-	}
+	// gasTable := evm.GetCurrentGasTable()
+	// if action.Value().Sign() == 0 {
+	// 	return 0
+	// }
+	// toAcct, err := evm.PM.GetAccountByName(action.Recipient())
+	// if err != nil {
+	// 	return 0
+	// }
+	// if toAcct == nil {
+	// 	return 0
+	// }
+	// if toAcct.IsDestroyed() {
+	// 	return 0
+	// }
+	// _, err = toAcct.GetBalanceByID(action.AssetID())
+	// if err == accountmanager.ErrAccountAssetNotExist {
+	// 	return gasTable.CallValueTransferGas
+	// }
 	return 0
 }
 
