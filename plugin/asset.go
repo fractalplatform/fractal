@@ -35,6 +35,8 @@ var (
 	assetObjectPrefix  = "assetDefinitionObject"
 )
 
+const SystemAssetID uint64 = 0
+
 type AssetManager struct {
 	sdb *state.StateDB
 }
@@ -102,6 +104,9 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	assetID, err := asm.addNewAssetObject(&ao)
 	if err != nil {
 		return nil, err
+	}
+	if assetID != SystemAssetID {
+		return nil, ErrIssueAsset
 	}
 
 	if err = am.AddBalanceByID(accountName, assetID, amount); err != nil {
@@ -380,4 +385,5 @@ var (
 	ErrUpperLimit                = errors.New("asset amount over the issuance limit")
 	ErrDestroyLimit              = errors.New("asset destroy exceeding the lower limit")
 	ErrAssetNameEqualAccountName = errors.New("asset name equal account name")
+	ErrIssueAsset                = errors.New("issue asset err")
 )

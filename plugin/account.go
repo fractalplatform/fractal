@@ -33,7 +33,6 @@ var (
 	acctManagerName      = "sysAccount"
 	acctInfoPrefix       = "acctInfo"
 	accountNameMaxLength = uint64(32)
-	counterID            = uint64(4096)
 )
 
 const MaxDescriptionLength uint64 = 255
@@ -155,7 +154,7 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 	}
 
 	if err = am.addBalance(toAcct, assetID, value); err != nil {
-		return nil
+		return err
 	}
 
 	if err = am.setAccount(fromAcct); err != nil {
