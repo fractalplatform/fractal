@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
@@ -80,11 +79,11 @@ func (bc *testBlockChain) Config() *params.ChainConfig {
 	return cfg
 }
 
-func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
+func transaction(nonce uint64, from, to string, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
 	return pricedTransaction(nonce, from, to, gaslimit, big.NewInt(1), key)
 }
 
-func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
+func pricedTransaction(nonce uint64, from, to string, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
 	tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
 	keyPair := types.MakeKeyPair(key, []uint64{0})
 	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
@@ -93,27 +92,26 @@ func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasp
 	return tx
 }
 
-func generateAccount(t *testing.T, name common.Name, managers ...pm.IPM) *ecdsa.PrivateKey {
+func generateAccount(t *testing.T, name string, managers ...pm.IPM) *ecdsa.PrivateKey {
 	key, err := crypto.GenerateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if err := m.CreateAccount(common.Name("fractal.founder"), name, common.Name(""), 0, 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
+		if _, err := m.CreateAccount("fractal.founder", common.BytesToPubKey(pubkeyBytes), ""); err != nil {
 			t.Fatal(err)
 		}
 	}
 	return key
 }
 
-func setupTxPool(assetOwner common.Name) (*TxPool, pm.IPM) {
-
+func setupTxPool(assetOwner string) (*TxPool, pm.IPM) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
-	asset := asset.NewAsset(statedb)
-	asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000), common.Name(""), "")
-	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 	manager := pm.NewPM(statedb)
+	manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+		10, assetOwner, assetOwner, big.NewInt(1000000), string(""), manager)
+	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
 	return New(testTxPoolConfig, params.DefaultChainconfig, blockchain), manager
 }
 
@@ -141,7 +139,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 			}
 		}
 
-		nonce := pool.pendingPM.GetNonce(name)
+		nonce, _ := pool.pendingPM.GetNonce(name)
 		if nonce != last+1 {
 			return fmt.Errorf("pending nonce mismatch: have %v, want %v", nonce, last+1)
 		}
@@ -178,7 +176,7 @@ func validateEvents(events chan *event.Event, count int) error {
 	return nil
 }
 
-func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
+func newAction(nonce uint64, from, to string, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
 	return types.NewAction(types.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
 }
 

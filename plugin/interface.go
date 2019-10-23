@@ -39,18 +39,12 @@ type IPM interface {
 type IAccount interface {
 	GetNonce(accountName string) (uint64, error)
 	SetNonce(accountName string, nonce uint64) error
-
 	CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error)
-
 	GetCode(accountName string) ([]byte, error)
 	SetCode(accountName string, code []byte) error
-
 	GetBalance(accountName string, assetID uint64) (*big.Int, error)
-
 	CanTransfer(accountName string, assetID uint64, value *big.Int) (bool, error)
-
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
-
 	GetAccount(accountName string) (*Account, error)                          // for asset plugin
 	AddBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	SubBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin

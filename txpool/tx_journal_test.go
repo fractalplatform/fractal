@@ -22,7 +22,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,11 +35,11 @@ func TestTxJournal(t *testing.T) {
 	txj := newTxJournal(file.Name())
 	defer os.Remove(file.Name())
 
-	txsMap := make(map[common.Name][]*types.Transaction)
+	txsMap := make(map[string][]*types.Transaction)
 	tx := newTx(big.NewInt(200), types.NewAction(
 		types.Transfer,
-		common.Name("fromtest"),
-		common.Name("tototest"),
+		"fromtest",
+		"tototest",
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -48,7 +47,7 @@ func TestTxJournal(t *testing.T) {
 		[]byte("test action"),
 		[]byte("test remark"),
 	))
-	txsMap[common.Name("test")] = []*types.Transaction{
+	txsMap["test"] = []*types.Transaction{
 		tx,
 	}
 	if err := txj.rotate(txsMap); err != nil {

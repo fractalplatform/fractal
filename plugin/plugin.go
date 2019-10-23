@@ -35,7 +35,8 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 	action := arg.(*types.Action)
 	switch action.MethodID() {
 	case "createAccount":
-		return pm.CreateAccount(action)
+		//	return pm.CreateAccount(action)
+		return nil, nil
 	default:
 		return nil, nil
 	}

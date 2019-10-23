@@ -21,7 +21,6 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -29,8 +28,8 @@ import (
 func getPriceTx(price *big.Int, nonce uint64) *types.Transaction {
 	return types.NewTransaction(0, price, types.NewAction(
 		types.Transfer,
-		common.Name("fromtest"),
-		common.Name("tototest"),
+		"fromtest",
+		"tototest",
 		nonce,
 		uint64(3),
 		uint64(2000),

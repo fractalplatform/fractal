@@ -94,7 +94,7 @@ func (l *txList) Forward(threshold uint64) []*types.Transaction {
 // post-removal maintenance. Strict-mode invalidated transactions are also
 // returned.
 func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, signer types.Signer,
-	getBalance func(arg interface{}, assetID uint64) (*big.Int, error),
+	getBalance func(name string, assetID uint64) (*big.Int, error),
 	recoverTx func(signer types.Signer, tx *types.Transaction) error) ([]*types.Transaction, []*types.Transaction) {
 	// If all transactions are below the threshold, short circuit
 	if l.gascostcap.Cmp(costLimit) > 0 {

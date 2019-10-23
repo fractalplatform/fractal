@@ -19,7 +19,6 @@ package blockchain
 import (
 	"fmt"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/params"
@@ -34,7 +33,7 @@ type blockGenerator struct {
 	parent  *types.Block
 	header  *types.Header
 	stateDB *state.StateDB
-	am      *accountmanager.AccountManager
+	manager pm.IPM
 
 	gasPool  *common.GasPool
 	txs      []*types.Transaction
@@ -46,7 +45,7 @@ type blockGenerator struct {
 }
 
 // SetCoinbase sets the coinbase of the generated block.
-func (bg *blockGenerator) SetCoinbase(name common.Name) {
+func (bg *blockGenerator) SetCoinbase(name string) {
 	if bg.gasPool != nil {
 		if len(bg.txs) > 0 {
 			panic("coinbase must be set before adding transactions")
@@ -58,16 +57,8 @@ func (bg *blockGenerator) SetCoinbase(name common.Name) {
 }
 
 // TxNonce retrun nonce
-func (bg *blockGenerator) TxNonce(name common.Name) uint64 {
-	am, _ := accountmanager.NewAccountManager(bg.stateDB)
-	a, err := am.GetAccountByName(name)
-	if err != nil {
-		panic(fmt.Sprintf("name: %v, GetTxNonce failed: %v", name, err))
-	}
-	if a == nil {
-		panic("Account Not exist")
-	}
-	return a.GetNonce()
+func (bg *blockGenerator) TxNonce(name string) uint64 {
+	return 0
 }
 
 // AddTxWithChain adds a transaction to the generated block.

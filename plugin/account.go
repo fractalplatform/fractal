@@ -103,7 +103,6 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 	if err = am.setAccount(&acctObject); err != nil {
 		return nil, err
 	}
-
 	return nil, nil
 }
 

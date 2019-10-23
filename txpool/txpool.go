@@ -16,7 +16,6 @@
 
 package txpool
 
-
 import (
 	"errors"
 	"fmt"
@@ -27,10 +26,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"gopkg.in/karalabe/cookiejar.v2/collections/prque"
@@ -78,17 +77,17 @@ type TxPool struct {
 	chain    blockChain
 	signer   types.Signer
 
-	curPM    pm.IPM // Current state in the blockchain head
-	pendingPM pm.IPM // Pending state tracking virtual nonces
-	currentMaxGas         uint64             // Current gas limit for transaction caps
+	curPM         pm.IPM // Current state in the blockchain head
+	pendingPM     pm.IPM // Pending state tracking virtual nonces
+	currentMaxGas uint64 // Current gas limit for transaction caps
 
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *txJournal  // Journal of local transaction to back up to disk
 
-	pending map[common.Name]*txList
-	queue   map[common.Name]*txList
-	beats   map[common.Name]time.Time // Last heartbeat from each known account
-	all     *txLookup                 // All transactions to allow lookups
+	pending map[string]*txList
+	queue   map[string]*txList
+	beats   map[string]time.Time // Last heartbeat from each known account
+	all     *txLookup            // All transactions to allow lookups
 	priced  *txPricedList
 	station *TxpoolStation
 
@@ -118,9 +117,9 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 		chain:           bc,
 		signer:          signer,
 		locals:          newAccountSet(signer),
-		pending:         make(map[common.Name]*txList),
-		queue:           make(map[common.Name]*txList),
-		beats:           make(map[common.Name]time.Time),
+		pending:         make(map[string]*txList),
+		queue:           make(map[string]*txList),
+		beats:           make(map[string]time.Time),
 		all:             all,
 		priced:          newTxPricedList(all),
 		gasPrice:        new(big.Int).SetUint64(config.PriceLimit),
@@ -170,7 +169,7 @@ func (tp *TxPool) scheduleReorgLoop() {
 		launchNextRun bool
 		reset         *txpoolResetRequest
 		dirtyAccounts *accountSet
-		queuedEvents  = make(map[common.Name]*txSortedMap)
+		queuedEvents  = make(map[string]*txSortedMap)
 	)
 
 	for {
@@ -184,7 +183,7 @@ func (tp *TxPool) scheduleReorgLoop() {
 			launchNextRun = false
 
 			reset, dirtyAccounts = nil, nil
-			queuedEvents = make(map[common.Name]*txSortedMap)
+			queuedEvents = make(map[string]*txSortedMap)
 		}
 
 		select {
@@ -378,10 +377,10 @@ func (tp *TxPool) queueTxEvent(tx *types.Transaction) {
 }
 
 // runReorg runs reset and promoteExecutables on behalf of scheduleReorgLoop.
-func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyAccounts *accountSet, events map[common.Name]*txSortedMap) {
+func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyAccounts *accountSet, events map[string]*txSortedMap) {
 	defer close(done)
 
-	var promoteNames []common.Name
+	var promoteNames []string
 	if dirtyAccounts != nil {
 		promoteNames = dirtyAccounts.flatten()
 	}
@@ -392,7 +391,8 @@ func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyA
 
 		// Nonces were reset, discard any events that became stale
 		for name := range events {
-			events[name].Forward(tp.pendingPM.GetNonce(name))
+			nonce, _ := tp.curPM.GetNonce(name)
+			events[name].Forward(nonce)
 			if events[name].Len() == 0 {
 				delete(events, name)
 			}
@@ -521,12 +521,12 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 		log.Error("Failed to reset txpool state", "err", err)
 		return
 	}
-	tp.curPM= pm.NewPM(statedb)
+	tp.curPM = pm.NewPM(statedb)
 	// if err != nil {
 	// 	log.Error("Failed to create current NewAccountManager", "err", err)
 	// 	return
 	// }
-	tp.pendingPM= pm.NewPM(statedb.Copy())
+	tp.pendingPM = pm.NewPM(statedb.Copy())
 	// if err != nil {
 	// 	log.Error("Failed to create pending  NewAccountManager state", "err", err)
 	// 	return
@@ -603,15 +603,15 @@ func (tp *TxPool) stats() (int, int) {
 
 // Content retrieves the data content of the transaction pool, returning all the
 // pending as well as queued transactions, grouped by account and sorted by nonce.
-func (tp *TxPool) Content() (map[common.Name][]*types.Transaction, map[common.Name][]*types.Transaction) {
+func (tp *TxPool) Content() (map[string][]*types.Transaction, map[string][]*types.Transaction) {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
 
-	pending := make(map[common.Name][]*types.Transaction)
+	pending := make(map[string][]*types.Transaction)
 	for name, list := range tp.pending {
 		pending[name] = list.Flatten()
 	}
-	queued := make(map[common.Name][]*types.Transaction)
+	queued := make(map[string][]*types.Transaction)
 	for name, list := range tp.queue {
 		queued[name] = list.Flatten()
 	}
@@ -621,10 +621,10 @@ func (tp *TxPool) Content() (map[common.Name][]*types.Transaction, map[common.Na
 // Pending retrieves all currently processable transactions, groupped by origin
 // account and sorted by nonce. The returned transaction set is a copy and can be
 // freely modified by calling code.
-func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
+func (tp *TxPool) Pending() (map[string][]*types.Transaction, error) {
 	tp.mu.Lock()
 	defer tp.mu.Unlock()
-	pending := make(map[common.Name][]*types.Transaction)
+	pending := make(map[string][]*types.Transaction)
 	for name, list := range tp.pending {
 		pending[name] = list.Flatten()
 	}
@@ -634,8 +634,8 @@ func (tp *TxPool) Pending() (map[common.Name][]*types.Transaction, error) {
 // local retrieves all currently known local transactions, groupped by origin
 // account and sorted by nonce. The returned transaction set is a copy and can be
 // freely modified by calling code.
-func (tp *TxPool) local() map[common.Name][]*types.Transaction {
-	txs := make(map[common.Name][]*types.Transaction)
+func (tp *TxPool) local() map[string][]*types.Transaction {
+	txs := make(map[string][]*types.Transaction)
 	for name := range tp.locals.accounts {
 		if list := tp.pending[name]; list != nil {
 			txs[name] = append(txs[name], list.Flatten()...)
@@ -658,18 +658,16 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrUnderpriced
 		}
 
-	
 		// todo change action nonce
-		if tp.curPM.GetNonce(from) > action.Nonce() {
+		if nonce, _ := tp.curPM.GetNonce(from); nonce > action.Nonce() {
 			return ErrNonceTooLow
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curPM.GetBalanceByID(from, tx.GasAssetID())
+		balance, err := tp.curPM.GetBalance(from, tx.GasAssetID())
 		if err != nil {
 			return err
 		}
-
 
 		gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
 		if balance.Cmp(gascost) < 0 {
@@ -677,7 +675,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curPM.GetBalanceByID(from, action.AssetID())
+		balance, err = tp.curPM.GetBalance(from, action.AssetID())
 		if err != nil {
 			return err
 		}
@@ -813,7 +811,7 @@ func (tp *TxPool) enqueueTx(hash common.Hash, tx *types.Transaction) (bool, erro
 
 // journalTx adds the specified transaction to the local disk journal if it is
 // deemed to have been sent from a local account.
-func (tp *TxPool) journalTx(from common.Name, tx *types.Transaction) {
+func (tp *TxPool) journalTx(from string, tx *types.Transaction) {
 	// Only journal if it's enabled and the transaction is local
 	if tp.journal == nil || !tp.locals.contains(from) {
 		return
@@ -827,7 +825,7 @@ func (tp *TxPool) journalTx(from common.Name, tx *types.Transaction) {
 // and returns whether it was inserted or an older was better.
 //
 // Note, this method assumes the pool lock is held!
-func (tp *TxPool) promoteTx(name common.Name, hash common.Hash, tx *types.Transaction) bool {
+func (tp *TxPool) promoteTx(name string, hash common.Hash, tx *types.Transaction) bool {
 	// Try to insert the transaction into the pending queue
 	if tp.pending[name] == nil {
 		tp.pending[name] = newTxList(true)
@@ -1023,8 +1021,7 @@ func (tp *TxPool) removeTx(hash common.Hash, outofbound bool) {
 
 			nonce := tx.GetActions()[0].Nonce()
 
-
-			if tp.pendingPM.GetNonce(from) > nonce {
+			if pn, _ := tp.pendingPM.GetNonce(from); pn > nonce {
 				tp.pendingPM.SetNonce(from, nonce)
 			}
 			return
@@ -1042,7 +1039,7 @@ func (tp *TxPool) removeTx(hash common.Hash, outofbound bool) {
 // promoteExecutables moves transactions that have become processable from the
 // future queue to the set of pending transactions. During this process, all
 // invalidated transactions (low nonce, low balance) are deleted.
-func (tp *TxPool) promoteExecutables(accounts []common.Name) []*types.Transaction {
+func (tp *TxPool) promoteExecutables(accounts []string) []*types.Transaction {
 	// Track the promoted transactions to broadcast them at once
 	var promoted []*types.Transaction
 
@@ -1053,15 +1050,16 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) []*types.Transactio
 			continue // Just in case someone calls with a non existing account
 		}
 		// Drop all transactions that are deemed too old (low nonce)
-		forwards := list.Forward(tp.curPM.GetNonce(name))
+		nonce, _ := tp.curPM.GetNonce(name)
+		forwards := list.Forward(nonce)
 		for _, tx := range forwards {
 			hash := tx.Hash()
 			tp.all.Remove(hash)
 			log.Trace("Removed old queued transaction", "hash", hash)
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
-		balance, _ := tp.curPM.GetBalanceByID(name, tp.config.GasAssetID)
-		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalanceByID, tp.curPM.Recover)
+		balance, _ := tp.curPM.GetBalance(name, tp.config.GasAssetID)
+		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalance, tp.curPM.Recover)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			tp.all.Remove(hash)
@@ -1069,7 +1067,8 @@ func (tp *TxPool) promoteExecutables(accounts []common.Name) []*types.Transactio
 		}
 
 		// Gather all executable transactions and promote them
-		readies := list.Ready(tp.pendingPM.GetNonce(name))
+		nonce, _ = tp.pendingPM.GetNonce(name)
+		readies := list.Ready(nonce)
 		for _, tx := range readies {
 			hash := tx.Hash()
 			if tp.promoteTx(name, hash, tx) {
@@ -1120,16 +1119,16 @@ func (tp *TxPool) truncatePending() {
 		}
 	}
 	// Gradually drop transactions from offenders
-	offenders := []common.Name{}
+	offenders := []string{}
 	for pending > tp.config.GlobalSlots && !spammers.Empty() {
 		// Retrieve the next offender if not local address
 		offender, _ := spammers.Pop()
-		offenders = append(offenders, offender.(common.Name))
+		offenders = append(offenders, offender.(string))
 
 		// Equalize balances until all the same or below threshold
 		if len(offenders) > 1 {
 			// Calculate the equalization threshold for all current offenders
-			threshold := tp.pending[offender.(common.Name)].Len()
+			threshold := tp.pending[offender.(string)].Len()
 
 			// Iteratively reduce all offenders until below limit or threshold reached
 			for pending > tp.config.GlobalSlots && tp.pending[offenders[len(offenders)-2]].Len() > threshold {
@@ -1143,7 +1142,8 @@ func (tp *TxPool) truncatePending() {
 						tp.all.Remove(hash)
 
 						// Update the account nonce to the dropped transaction
-						if nonce := tx.GetActions()[0].Nonce(); tp.pendingPM.GetNonce(offenders[i]) > nonce {
+						pn, _ := tp.pendingPM.GetNonce(offenders[i])
+						if nonce := tx.GetActions()[0].Nonce(); pn > nonce {
 							tp.pendingPM.SetNonce(offenders[i], nonce)
 						}
 						log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
@@ -1168,7 +1168,8 @@ func (tp *TxPool) truncatePending() {
 					tp.all.Remove(hash)
 
 					// Update the account nonce to the dropped transaction
-					if nonce := tx.GetActions()[0].Nonce(); tp.pendingPM.GetNonce(name) > nonce {
+					pn, _ := tp.pendingPM.GetNonce(name)
+					if nonce := tx.GetActions()[0].Nonce(); pn > nonce {
 						tp.pendingPM.SetNonce(name, nonce)
 					}
 					log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
@@ -1230,7 +1231,7 @@ func (tp *TxPool) demoteUnexecutables() {
 	// Iterate over all accounts and demote any non-executable transactions
 	for name, list := range tp.pending {
 		// Drop all transactions that are deemed too old (low nonce)
-		nonce :=tp.curPM.GetNonce(name)
+		nonce, _ := tp.curPM.GetNonce(name)
 		for _, tx := range list.Forward(nonce) {
 			hash := tx.Hash()
 			log.Trace("Removed old pending transaction", "hash", hash)
@@ -1238,14 +1239,13 @@ func (tp *TxPool) demoteUnexecutables() {
 			tp.priced.Removed(1)
 		}
 
-
 		// Drop all transactions that are too costly (low balance or out of gas or no permissions), and queue any invalids back for later
-		gasBalance, err := tp.curPM.GetBalanceByID(name, tp.config.GasAssetID)
+		gasBalance, err := tp.curPM.GetBalance(name, tp.config.GasAssetID)
 		if err != nil && err != pm.ErrAccountNotExist {
 			log.Error("promoteExecutables current account manager get balance err ", "name", name, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
-		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalanceByID, tp.curPM.Recover)
+		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalance, tp.curPM.Recover)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending or no permissions transaction", "hash", hash)

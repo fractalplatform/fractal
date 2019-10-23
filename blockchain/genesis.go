@@ -25,11 +25,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	am "github.com/fractalplatform/fractal/accountmanager"
-	at "github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus/dpos"
-	fm "github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
@@ -232,9 +229,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		return nil, nil, fmt.Errorf("genesis dpos err %v", err)
 	}
 
-	chainName := common.Name(g.Config.ChainName)
-	accoutName := common.Name(g.Config.AccountName)
-	assetName := common.Name(g.Config.AssetName)
+	chainName := string(g.Config.ChainName)
+	accoutName := string(g.Config.AccountName)
+	assetName := string(g.Config.AssetName)
 	// chain name
 	act := &am.CreateAccountAction{
 		AccountName: chainName,
@@ -243,7 +240,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	payload, _ := rlp.EncodeToBytes(act)
 	actActions = append(actActions, types.NewAction(
 		types.CreateAccount,
-		common.Name(""),
+		string(""),
 		accoutName,
 		0,
 		0,
@@ -254,10 +251,10 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	))
 
 	for _, account := range g.AllocAccounts {
-		pName := common.Name("")
+		pName := string("")
 		slt := strings.Split(account.Name, ".")
 		if len(slt) > 1 {
-			pName = common.Name(slt[0])
+			pName = string(slt[0])
 		}
 		act := &am.CreateAccountAction{
 			AccountName: common.StrToName(account.Name),
@@ -293,9 +290,9 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 
 	astActions := []*types.Action{}
 	for _, asset := range g.AllocAssets {
-		pName := common.Name("")
+		pName := string("")
 		if g.ForkID >= params.ForkID1 {
-			pName = common.Name(g.Config.SysName)
+			pName = string(g.Config.SysName)
 			names := strings.Split(asset.Name, ":")
 			if len(names) != 2 {
 				return nil, nil, fmt.Errorf("asset name invalid %v", asset.Name)

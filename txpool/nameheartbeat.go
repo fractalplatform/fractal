@@ -18,13 +18,11 @@ package txpool
 
 import (
 	"time"
-
-	"github.com/fractalplatform/fractal/common"
 )
 
 // nameByHeartbeat is an account name tagged with its last activity timestamp.
 type nameByHeartbeat struct {
-	name      common.Name
+	name      string
 	heartbeat time.Time
 }
 
