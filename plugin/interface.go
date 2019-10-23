@@ -41,6 +41,7 @@ type IAccount interface {
 	SetNonce(accountName string, nonce uint64) error
 	CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error)
 	GetCode(accountName string) ([]byte, error)
+	GetCodeHash(accountName string) (common.Hash, error)
 	SetCode(accountName string, code []byte) error
 	GetBalance(accountName string, assetID uint64) (*big.Int, error)
 	CanTransfer(accountName string, assetID uint64, value *big.Int) (bool, error)

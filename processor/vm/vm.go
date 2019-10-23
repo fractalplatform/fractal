@@ -129,12 +129,13 @@ type DistributeKeys []DistributeKey
 func (keys DistributeKeys) Len() int {
 	return len(keys)
 }
-func (keys DistributeKeys) Less(i, j int) bool {
-	if keys[i].ObjectName == keys[j].ObjectName {
-		return keys[i].ObjectType < keys[j].ObjectType
-	}
-	return keys[i].ObjectName < keys[j].ObjectName
-}
+
+// func (keys DistributeKeys) Less(i, j int) bool {
+// 	if keys[i].ObjectName == keys[j].ObjectName {
+// 		return keys[i].ObjectType < keys[j].ObjectType
+// 	}
+// 	return keys[i].ObjectName < keys[j].ObjectName
+// }
 func (keys DistributeKeys) Swap(i, j int) {
 	keys[i], keys[j] = keys[j], keys[i]
 }
@@ -209,7 +210,7 @@ func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 }
 
 func (evm *EVM) distributeContractGas(runGas uint64, contractName string, callerName string) {
-	if runGas > 0 && len(contractName.String()) > 0 {
+	if runGas > 0 && len(contractName) > 0 {
 		key := DistributeKey{ObjectName: contractName,
 			ObjectType: params.ContractFeeType}
 		if _, ok := evm.FounderGasMap[key]; !ok {
@@ -237,19 +238,17 @@ func (evm *EVM) distributeContractGas(runGas uint64, contractName string, caller
 
 func (evm *EVM) distributeAssetGas(callValueGas int64, assetID uint64, callerName string) {
 	if evm.depth != 0 {
-		key := DistributeKey{ObjectName: assetName,
+		key := DistributeKey{ObjectName: assetID,
 			ObjectType: params.AssetFeeType}
-		if len(assetName.String()) > 0 {
-			if _, ok := evm.FounderGasMap[key]; !ok {
-				dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
-				evm.FounderGasMap[key] = dGas
-			} else {
-				dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
-				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
-				evm.FounderGasMap[key] = dGas
-			}
+		if _, ok := evm.FounderGasMap[key]; !ok {
+			dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
+			evm.FounderGasMap[key] = dGas
+		} else {
+			dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
+			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+			evm.FounderGasMap[key] = dGas
 		}
-		if len(callerName.String()) > 0 {
+		if len(callerName) > 0 {
 			key = DistributeKey{ObjectName: callerName,
 				ObjectType: params.ContractFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
@@ -315,7 +314,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 
-	contract := NewContract(caller, to, action.Value(), gas, action.AssetID())
+	contract := NewContract(caller, toName, action.Value(), gas, action.AssetID())
 
 	// acct, err := evm.PM.GetAccountByName(toName)
 	// if err != nil {
@@ -387,7 +386,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 	// initialise a new contract and set the code that is to be used by the
 	// E The contract is a scoped evmironment for this execution context
 	// only.
-	contract := NewContract(caller, to, action.Value(), gas, evm.AssetID)
+	contract := NewContract(caller, caller.Name(), action.Value(), gas, evm.AssetID)
 
 	codeHash, err := evm.PM.GetCodeHash(toName)
 	if err != nil {
@@ -430,7 +429,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, name string, input []byte, gas 
 	)
 
 	// Initialise a new contract and make initialise the delegate values
-	contract := NewContract(caller, to, nil, gas, evm.AssetID).AsDelegate()
+	contract := NewContract(caller, caller.Name(), nil, gas, evm.AssetID).AsDelegate()
 
 	codeHash, err := evm.PM.GetCodeHash(name)
 	if err != nil {
@@ -479,7 +478,7 @@ func (evm *EVM) StaticCall(caller ContractRef, name string, input []byte, gas ui
 	// Initialise a new contract and set the code that is to be used by the
 	// EVM. The contract is a scoped environment for this execution context
 	// only.
-	contract := NewContract(caller, to, new(big.Int), gas, evm.AssetID)
+	contract := NewContract(caller, name, new(big.Int), gas, evm.AssetID)
 	codeHash, err := evm.PM.GetCodeHash(name)
 	if err != nil {
 		return nil, gas, err
@@ -520,7 +519,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 
 	if b, err := evm.PM.GetCode(contractName); err != nil {
 		return nil, 0, err
-	} else if b {
+	} else if b != nil {
 		return nil, 0, ErrContractCodeCollision
 	}
 
@@ -532,7 +531,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// initialise a new contract and set the code that is to be used by the
 	// E The contract is a scoped evmironment for this execution context
 	// only.
-	contract := NewContract(caller, AccountRef(contractName), action.Value(), gas, evm.AssetID)
+	contract := NewContract(caller, contractName, action.Value(), gas, evm.AssetID)
 	contract.SetCallCode(crypto.Keccak256Hash(action.Data()), action.Data())
 
 	start := time.Now()
@@ -548,7 +547,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			if _, err = evm.PM.SetCode(contractName, ret); err != nil {
+			if err = evm.PM.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
 		} else {

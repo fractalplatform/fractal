@@ -206,19 +206,19 @@ const (
 	SETASSETOWNER        = 0xc2
 	BALANCEEX            = 0xc3
 	CALLEX               = 0xc4
-	//ASSETINFO            = 0xc5
+	ASSETINFO            = 0xc5
 	//snapshot num
-	//SNAPSHOTTIME = 0xc6
-	//SNAPBALANCE = 0xc7
+	SNAPSHOTTIME = 0xc6
+	SNAPBALANCE  = 0xc7
 	//
 	DESTROYASSET = 0xc8
 	GETACCOUNTID = 0xc9
 
-	//GETACCOUNTTIME = 0xcb
-	CRYPTOCALC  = 0xcc
-	DEDUCTGAS   = 0xcd
-	WITHDRAWFEE = 0xce
-	GETASSETID  = 0xcf
+	GETACCOUNTTIME = 0xcb
+	CRYPTOCALC     = 0xcc
+	DEDUCTGAS      = 0xcd
+	WITHDRAWFEE    = 0xce
+	GETASSETID     = 0xcf
 )
 
 const (

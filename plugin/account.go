@@ -224,6 +224,10 @@ func (am *AccountManager) GetCode(accountName string) ([]byte, error) {
 	return account.Code, nil
 }
 
+func (am *AccountManager) GetCodeHash(accountName string) (common.Hash, error) {
+	return common.Hash{}, nil
+}
+
 func (am *AccountManager) SetCode(accountName string, code []byte) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
