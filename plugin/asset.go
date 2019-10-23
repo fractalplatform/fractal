@@ -22,7 +22,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -67,19 +66,11 @@ func NewASM(sdb *state.StateDB) (IAsset, error) {
 
 func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error) {
-	if accountName == "" || assetName == "" || symbol == "" || owner == "" {
-		return nil, ErrParamIsNil
-	}
 
-	err := asm.checkAssetName(assetName)
+	err := asm.checkIssueAssetParam(accountName, assetName, symbol, amount, decimals, owner, limit, description, am)
 	if err != nil {
 		return nil, err
 	}
-
-	if _, err = am.GetAccount(assetName); err == nil {
-		return nil, ErrAssetNameEqualAccountName
-	}
-
 	// check owner and founder
 	_, err = am.GetAccount(owner)
 	if err != nil {
@@ -87,7 +78,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	}
 
 	if len(founder) > 0 {
-		_, err = am.GetAccount(owner)
+		_, err = am.GetAccount(founder)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +86,20 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		founder = owner
 	}
 
-	assetID, err := asm.issueAsset(assetName, symbol, amount, decimals, founder, owner, limit, description)
+	ao := Asset{
+		AssetID:     0,
+		AssetName:   assetName,
+		Symbol:      symbol,
+		Amount:      amount,
+		Decimals:    decimals,
+		Founder:     founder,
+		Owner:       owner,
+		AddIssue:    amount,
+		UpperLimit:  limit,
+		Description: description,
+	}
+	assetID, err := asm.addNewAssetObject(&ao)
+
 	if err != nil {
 		return nil, err
 	}
@@ -107,73 +111,117 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	return nil, nil
 }
 
-func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) error {
+func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
 	if from == "" || to == "" {
-		return ErrParamIsNil
+		return nil, ErrParamIsNil
+	}
+
+	if amount.Cmp(big.NewInt(0)) <= 0 {
+		return nil, ErrAmountValueInvalid
 	}
 
 	assetObj, err := asm.getAssetObjectByID(assetID)
 	if err != nil {
-		return err
-	}
-
-	if amount.Sign() <= 0 {
-		return ErrAmountValueInvalid
+		return nil, err
 	}
 
 	// check asset owner
 	if assetObj.Owner != from {
-		return ErrOwnerMismatch
+		return nil, ErrOwnerMismatch
 	}
 
 	addissue := new(big.Int).Add(assetObj.AddIssue, amount)
 	if assetObj.UpperLimit.Cmp(big.NewInt(0)) > 0 && addissue.Cmp(assetObj.UpperLimit) > 0 {
-		return ErrUpperLimit
+		return nil, ErrUpperLimit
 	}
 	assetObj.AddIssue = addissue
 
 	total := new(big.Int).Add(assetObj.Amount, amount)
 	if assetObj.UpperLimit.Cmp(big.NewInt(0)) > 0 && total.Cmp(assetObj.UpperLimit) > 0 {
-		return ErrUpperLimit
+		return nil, ErrUpperLimit
 	}
 	assetObj.Amount = total
 
 	if err = asm.setAsset(assetObj); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = am.AddBalanceByID(to, assetID, amount); err != nil {
-		return nil
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
-func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) error {
+func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
 	if accountName == "" {
-		return ErrParamIsNil
+		return nil, ErrParamIsNil
+	}
+
+	if amount.Cmp(big.NewInt(0)) <= 0 {
+		return nil, ErrAmountValueInvalid
 	}
 
 	if err := am.SubBalanceByID(accountName, assetID, amount); err != nil {
-		return err
+		return nil, err
 	}
 
 	assetObj, err := asm.getAssetObjectByID(assetID)
 	if err != nil {
-		return err
-	}
-
-	if amount.Sign() <= 0 {
-		return ErrAmountValueInvalid
+		return nil, err
 	}
 
 	var total *big.Int
 	if total = new(big.Int).Sub(assetObj.Amount, amount); total.Cmp(big.NewInt(0)) < 0 {
-		return ErrDestroyLimit
+		return nil, ErrDestroyLimit
 	}
 	assetObj.Amount = total
 
 	if err = asm.setAsset(assetObj); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName string, symbol string, amount *big.Int,
+	decimals uint64, owner string, limit *big.Int, description string, am IAccount) error {
+
+	if accountName == "" || assetName == "" || symbol == "" || owner == "" {
+		return ErrParamIsNil
+	}
+
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 {
+		return ErrNewAssetObject
+	}
+
+	if limit.Cmp(big.NewInt(0)) > 0 {
+		if amount.Cmp(limit) > 0 {
+			return ErrNewAssetObject
+		}
+	}
+
+	if uint64(len(description)) > MaxDescriptionLength {
+		return ErrDetailTooLong
+	}
+
+	err := asm.checkAssetName(assetName)
+	if err != nil {
+		return err
+	}
+	err = asm.checkAssetName(symbol)
+	if err != nil {
+		return err
+	}
+
+	if _, err = am.GetAccount(assetName); err == nil {
+		return ErrAssetNameEqualAccountName
+	}
+
+	_, err = asm.getAssetIDByName(assetName)
+	if err == nil {
+		return ErrAssetIsExist
+	} else if err != ErrAssetIsExist {
 		return err
 	}
 
@@ -189,26 +237,6 @@ func (asm *AssetManager) checkAssetName(assetName string) error {
 		return ErrAccountNameinvalid
 	}
 	return nil
-}
-
-func (asm *AssetManager) issueAsset(assetName string, symbol string, amount *big.Int, dec uint64, founder, owner string, limit *big.Int, description string) (uint64, error) {
-	_, err := asm.getAssetIDByName(assetName)
-	if err != nil && err != ErrAssetNotExist {
-		return 0, err
-	}
-
-	if err == nil {
-		return 0, ErrAssetAlreadyExist
-	}
-
-	var ao *Asset
-
-	ao, err = asm.newAssetObject(assetName, symbol, amount, dec, founder, owner, limit, description)
-	if err != nil {
-		return 0, err
-	}
-
-	return asm.addNewAssetObject(ao)
 }
 
 func (asm *AssetManager) initAssetCount() {
@@ -301,46 +329,6 @@ func (asm *AssetManager) getAssetObjectByID(ID uint64) (*Asset, error) {
 	return &asset, nil
 }
 
-func (asm *AssetManager) newAssetObject(assetName string, symbol string, amount *big.Int, dec uint64, founder, owner string,
-	limit *big.Int, description string) (*Asset, error) {
-	if assetName == "" || symbol == "" {
-		return nil, ErrNewAssetObject
-	}
-
-	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 {
-		return nil, ErrNewAssetObject
-	}
-
-	if limit.Cmp(big.NewInt(0)) > 0 {
-		if amount.Cmp(limit) > 0 {
-			return nil, ErrNewAssetObject
-		}
-	}
-	if !common.StrToName(assetName).IsValid(assetRegExp, assetNameMaxLength) {
-		return nil, ErrNewAssetObject
-	}
-	if !common.StrToName(symbol).IsValid(assetRegExp, assetNameMaxLength) {
-		return nil, ErrNewAssetObject
-	}
-	if uint64(len(description)) > MaxDescriptionLength {
-		return nil, ErrDetailTooLong
-	}
-
-	ao := Asset{
-		AssetID:     0,
-		AssetName:   assetName,
-		Symbol:      symbol,
-		Amount:      amount,
-		Decimals:    dec,
-		Founder:     founder,
-		Owner:       owner,
-		AddIssue:    amount,
-		UpperLimit:  limit,
-		Description: description,
-	}
-	return &ao, nil
-}
-
 func (asm *AssetManager) addNewAssetObject(ao *Asset) (uint64, error) {
 	if ao == nil {
 		return 0, ErrAssetObjectEmpty
@@ -380,7 +368,7 @@ func (asm *AssetManager) addNewAssetObject(ao *Asset) (uint64, error) {
 
 var (
 	ErrNewAssetManagerErr        = errors.New("new AssetManager error")
-	ErrAssetAlreadyExist         = errors.New("asset already exist")
+	ErrAssetIsExist              = errors.New("asset is exist")
 	ErrAssetNotExist             = errors.New("asset not exist")
 	ErrNewAssetObject            = errors.New("create asset object input invalid")
 	ErrDetailTooLong             = errors.New("detail info exceed maximum")

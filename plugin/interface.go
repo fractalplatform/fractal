@@ -59,8 +59,8 @@ type IAccount interface {
 type IAsset interface {
 	IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 		decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error)
-	IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) error
-	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) error
+	IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
+	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
 }
 
 type IConsensus interface {
