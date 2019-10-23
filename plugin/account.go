@@ -69,13 +69,15 @@ func NewACM(db *state.StateDB) (IAccount, error) {
 }
 
 // CreateAccount
-// Prase Payload to create a account
+// Parse Payload to create a account
 func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error) {
+	if uint64(len(description)) > MaxDescriptionLength {
+		return nil, ErrDetailTooLong
+	}
+
 	if err := am.checkAccountName(accountName); err != nil {
 		return nil, err
 	}
-
-	newAddress := common.BytesToAddress(crypto.Keccak256(pubKey.Bytes()[1:])[12:])
 
 	_, err := am.getAccount(accountName)
 	if err == nil {
@@ -83,6 +85,8 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 	} else if err != ErrAccountNotExist {
 		return nil, err
 	}
+
+	newAddress := common.BytesToAddress(crypto.Keccak256(pubKey.Bytes()[1:])[12:])
 
 	acctObject := Account{
 		Name:        accountName,
@@ -151,9 +155,6 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 	toAcct, err := am.getAccount(toAccount)
 	if err != nil {
 		return err
-	}
-	if toAcct.Destroy == true {
-		return ErrAccountIsDestroy
 	}
 
 	if err = am.addBalance(toAcct, assetID, value); err != nil {
@@ -255,12 +256,12 @@ func (am *AccountManager) GetBalance(accountName string, assetID uint64) (*big.I
 		return big.NewInt(0), err
 	}
 
-	if account.Balances.AssetID != assetID {
-		return big.NewInt(0), ErrAssetIDInvalid
-	}
-
 	if account.Balances == nil {
 		return big.NewInt(0), ErrAccountAssetNotExist
+	}
+
+	if account.Balances.AssetID != assetID {
+		return big.NewInt(0), ErrAssetIDInvalid
 	}
 
 	return account.Balances.Balance, nil
@@ -386,6 +387,10 @@ func (am *AccountManager) addBalance(account *Account, assetID uint64, value *bi
 }
 
 func (am *AccountManager) subBalance(account *Account, assetID uint64, value *big.Int) error {
+	if value.Cmp(big.NewInt(0)) < 0 {
+		return ErrAmountValueInvalid
+	}
+
 	if account.Balances == nil {
 		return ErrAccountAssetNotExist
 	}
@@ -397,6 +402,8 @@ func (am *AccountManager) subBalance(account *Account, assetID uint64, value *bi
 	if account.Balances.Balance.Cmp(big.NewInt(0)) < 0 || account.Balances.Balance.Cmp(value) < 0 {
 		return ErrInsufficientBalance
 	}
+
+	account.Balances.Balance = new(big.Int).Sub(account.Balances.Balance, value)
 	return nil
 }
 
