@@ -20,7 +20,6 @@ package vm
 import (
 	"math/big"
 	"sync/atomic"
-	"time"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
@@ -292,7 +291,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	toName := action.Recipient()
 
 	var (
-		to       = AccountRef(toName)
+		// to       = AccountRef(toName)
 		snapshot = evm.StateDB.Snapshot()
 	)
 
@@ -381,7 +380,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 
 	var (
 		snapshot = evm.StateDB.Snapshot()
-		to       = AccountRef(caller.Name())
+		// to       = AccountRef(caller.Name())
 	)
 	// initialise a new contract and set the code that is to be used by the
 	// E The contract is a scoped evmironment for this execution context
@@ -425,7 +424,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, name string, input []byte, gas 
 
 	var (
 		snapshot = evm.StateDB.Snapshot()
-		to       = AccountRef(caller.Name())
+		// to       = AccountRef(caller.Name())
 	)
 
 	// Initialise a new contract and make initialise the delegate values
@@ -472,7 +471,7 @@ func (evm *EVM) StaticCall(caller ContractRef, name string, input []byte, gas ui
 	}
 
 	var (
-		to       = AccountRef(name)
+		//to       = AccountRef(name)
 		snapshot = evm.StateDB.Snapshot()
 	)
 	// Initialise a new contract and set the code that is to be used by the
@@ -490,9 +489,9 @@ func (evm *EVM) StaticCall(caller ContractRef, name string, input []byte, gas ui
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in Homestead this also counts for code storage gas errors.
 	ret, err = run(evm, contract, input)
-	runGas := gas - contract.Gas
+	// runGas := gas - contract.Gas
 
-	contractName := to.Name()
+	// contractName := to.Name()
 
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
@@ -533,8 +532,6 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// only.
 	contract := NewContract(caller, contractName, action.Value(), gas, evm.AssetID)
 	contract.SetCallCode(crypto.Keccak256Hash(action.Data()), action.Data())
-
-	start := time.Now()
 
 	ret, err = run(evm, contract, nil)
 

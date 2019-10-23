@@ -21,8 +21,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -34,14 +34,14 @@ var allowedFutureBlockTime = 15 * time.Second
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	bc     ChainContext         // Canonical block chain
-	engine consensus.IValidator // Consensus engine used for validating
+	bc     ChainContext // Canonical block chain
+	manger pm.IPM       // Consensus engine used for validating
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(blockchain ChainContext, engine consensus.IValidator) *BlockValidator {
+func NewBlockValidator(blockchain ChainContext, manger pm.IPM) *BlockValidator {
 	validator := &BlockValidator{
-		engine: engine,
+		manger: manger,
 		bc:     blockchain,
 	}
 	return validator

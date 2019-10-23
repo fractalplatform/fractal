@@ -70,7 +70,7 @@ type ChainContext interface {
 }
 
 type EngineContext interface {
-	Author(header *types.Header) (common.Name, error)
+	Author(header *types.Header) (string, error)
 
 	ProcessAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
 
@@ -91,9 +91,9 @@ type EvmContext struct {
 }
 
 // NewEVMContext creates a new context for use in the EVM.
-func NewEVMContext(sender common.Name, to common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *common.Name) vm.Context {
+func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *string) vm.Context {
 	// If we don't have an explicit author (i.e. not mining), extract from the header
-	var beneficiary common.Name
+	var beneficiary string
 	if author == nil {
 		beneficiary, _ = chain.Author(header) // Ignore error, we're past header validation
 	} else {
