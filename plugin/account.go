@@ -59,24 +59,6 @@ type AccountManager struct {
 	sdb *state.StateDB
 }
 
-type AddAsset struct {
-	AssetID uint64
-	Amount  *big.Int
-	To      string
-}
-
-type IssueAsset struct {
-	AssetName   string
-	Symbol      string
-	Amount      *big.Int
-	Owner       string
-	Founder     string
-	Decimals    uint64
-	UpperLimit  *big.Int
-	Contract    string
-	Description string
-}
-
 // NewACM New a AccountManager
 func NewACM(db *state.StateDB) (IAccount, error) {
 	if db == nil {
@@ -104,6 +86,7 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 	}
 
 	newAddress := common.BytesToAddress(crypto.Keccak256(pubKey.Bytes()[1:])[12:])
+	balance := &AssetBalance{0, big.NewInt(0)}
 
 	acctObject := Account{
 		Name:        accountName,
@@ -112,7 +95,7 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 		Code:        make([]byte, 0),
 		CodeHash:    crypto.Keccak256Hash(nil),
 		CodeSize:    0,
-		Balances:    nil,
+		Balances:    balance,
 		Suicide:     false,
 		Destroy:     false,
 		Description: description,
@@ -282,9 +265,9 @@ func (am *AccountManager) GetBalance(accountName string, assetID uint64) (*big.I
 		return big.NewInt(0), err
 	}
 
-	if account.Balances == nil {
-		return big.NewInt(0), ErrAccountAssetNotExist
-	}
+	//if account.Balances == nil {
+	//	return big.NewInt(0), ErrAccountAssetNotExist
+	//}
 
 	if account.Balances.AssetID != assetID {
 		return big.NewInt(0), ErrAssetIDInvalid
@@ -397,17 +380,10 @@ func (am *AccountManager) addBalance(account *Account, assetID uint64, value *bi
 		return ErrAmountValueInvalid
 	}
 
-	if account.Balances == nil {
-		account.Balances = &AssetBalance{
-			AssetID: assetID,
-			Balance: value,
-		}
-	} else {
-		if account.Balances.AssetID != assetID {
-			return ErrAssetIDInvalid
-		}
-		account.Balances.Balance = new(big.Int).Add(account.Balances.Balance, value)
+	if account.Balances.AssetID != assetID {
+		return ErrAssetIDInvalid
 	}
+	account.Balances.Balance = new(big.Int).Add(account.Balances.Balance, value)
 
 	return nil
 }
@@ -417,9 +393,9 @@ func (am *AccountManager) subBalance(account *Account, assetID uint64, value *bi
 		return ErrAmountValueInvalid
 	}
 
-	if account.Balances == nil {
-		return ErrAccountAssetNotExist
-	}
+	//if account.Balances == nil {
+	//	return ErrAccountAssetNotExist
+	//}
 
 	if account.Balances.AssetID != assetID {
 		return ErrAssetIDInvalid
