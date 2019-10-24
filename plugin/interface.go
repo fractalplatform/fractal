@@ -56,6 +56,8 @@ type IAsset interface {
 		decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error)
 	IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
 	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
+	GetAssetID(assetName string) (uint64, error)
+	GetAssetName(assetID uint64) (string, error)
 }
 
 type IConsensus interface {

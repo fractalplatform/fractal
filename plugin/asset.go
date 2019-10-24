@@ -189,6 +189,18 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 	return nil, nil
 }
 
+func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
+	return asm.getAssetIDByName(assetName)
+}
+
+func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
+	asset, err := asm.getAssetByID(assetID)
+	if err != nil {
+		return "", err
+	}
+	return asset.AssetName, nil
+}
+
 func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, owner string, limit *big.Int, description string, am IAccount) error {
 
