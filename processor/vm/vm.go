@@ -119,7 +119,7 @@ type DistributeGas struct {
 }
 
 type DistributeKey struct {
-	ObjectName interface{}
+	ObjectName string
 	ObjectType uint64
 }
 
@@ -129,12 +129,13 @@ func (keys DistributeKeys) Len() int {
 	return len(keys)
 }
 
-// func (keys DistributeKeys) Less(i, j int) bool {
-// 	if keys[i].ObjectName == keys[j].ObjectName {
-// 		return keys[i].ObjectType < keys[j].ObjectType
-// 	}
-// 	return keys[i].ObjectName < keys[j].ObjectName
-// }
+func (keys DistributeKeys) Less(i, j int) bool {
+	if keys[i].ObjectName == keys[j].ObjectName {
+		return keys[i].ObjectType < keys[j].ObjectType
+	}
+	return keys[i].ObjectName < keys[j].ObjectName
+}
+
 func (keys DistributeKeys) Swap(i, j int) {
 	keys[i], keys[j] = keys[j], keys[i]
 }
@@ -187,25 +188,12 @@ func (evm *EVM) GetCurrentGasTable() params.GasTable {
 }
 
 func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
-	// gasTable := evm.GetCurrentGasTable()
-	// if action.Value().Sign() == 0 {
-	// 	return 0
-	// }
-	// toAcct, err := evm.PM.GetAccountByName(action.Recipient())
-	// if err != nil {
-	// 	return 0
-	// }
-	// if toAcct == nil {
-	// 	return 0
-	// }
-	// if toAcct.IsDestroyed() {
-	// 	return 0
-	// }
-	// _, err = toAcct.GetBalanceByID(action.AssetID())
-	// if err == accountmanager.ErrAccountAssetNotExist {
-	// 	return gasTable.CallValueTransferGas
-	// }
-	return 0
+	gasTable := evm.GetCurrentGasTable()
+	if _, err := evm.PM.GetBalance(action.Recipient(), action.AssetID()); err != nil {
+		return gasTable.CallValueTransferGas
+	} else {
+		return 0
+	}
 }
 
 func (evm *EVM) distributeContractGas(runGas uint64, contractName string, callerName string) {
@@ -235,9 +223,9 @@ func (evm *EVM) distributeContractGas(runGas uint64, contractName string, caller
 	}
 }
 
-func (evm *EVM) distributeAssetGas(callValueGas int64, assetID uint64, callerName string) {
+func (evm *EVM) distributeAssetGas(callValueGas int64, assetName string, callerName string) {
 	if evm.depth != 0 {
-		key := DistributeKey{ObjectName: assetID,
+		key := DistributeKey{ObjectName: assetName,
 			ObjectType: params.AssetFeeType}
 		if _, ok := evm.FounderGasMap[key]; !ok {
 			dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
@@ -258,17 +246,6 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetID uint64, callerNam
 				dGas.Value = evm.FounderGasMap[key].Value - dGas.Value
 				evm.FounderGasMap[key] = dGas
 			}
-		}
-	}
-}
-
-func (evm *EVM) distributeGasByScale(actualUsedGas uint64, runGas uint64) {
-	if evm.depth == 0 && actualUsedGas != runGas {
-		for key, gas := range evm.FounderGasMap {
-			mulGas := new(big.Int).Mul(big.NewInt(gas.Value), big.NewInt(int64(actualUsedGas)))
-			divgas := new(big.Int).Div(mulGas, big.NewInt(int64(runGas)))
-			v := DistributeGas{divgas.Int64(), gas.TypeID}
-			evm.FounderGasMap[key] = v
 		}
 	}
 }
@@ -343,7 +320,10 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	gasTable := evm.GetCurrentGasTable()
 	callValueGas := int64(gasTable.CallValueTransferGas - gasTable.CallStipend)
 	if action.Value().Sign() != 0 && callValueGas > 0 {
-		evm.distributeAssetGas(callValueGas, action.AssetID(), caller.Name())
+		assetName, err := evm.PM.GetAssetName(action.AssetID())
+		if err == nil {
+			evm.distributeAssetGas(callValueGas, assetName, caller.Name())
+		}
 	}
 
 	// When an error was returned by the EVM or when setting the creation code

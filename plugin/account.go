@@ -59,6 +59,24 @@ type AccountManager struct {
 	sdb *state.StateDB
 }
 
+type AddAsset struct {
+	AssetID uint64
+	Amount  *big.Int
+	To      string
+}
+
+type IssueAsset struct {
+	AssetName   string
+	Symbol      string
+	Amount      *big.Int
+	Owner       string
+	Founder     string
+	Decimals    uint64
+	UpperLimit  *big.Int
+	Contract    string
+	Description string
+}
+
 // NewACM New a AccountManager
 func NewACM(db *state.StateDB) (IAccount, error) {
 	if db == nil {

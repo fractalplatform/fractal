@@ -17,11 +17,14 @@
 package vm
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
@@ -29,7 +32,9 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/crypto/ecies"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
@@ -1102,53 +1107,55 @@ func opGetVoterStake(pc *uint64, evm *EVM, contract *Contract, memory *Memory, s
 
 //Increase asset already exist
 func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	// 	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
-	// 	assetID := assetId.Uint64()
-	// 	//toName, _ := common.BigToName(to)
-	// 	value = math.U256(value)
-	// 	accountName := string(to.Bytes())
+	value, to, assetId := stack.pop(), stack.pop(), stack.pop()
+	assetID := assetId.Uint64()
+	//toName, _ := common.BigToName(to)
+	value = math.U256(value)
+	accountName := string(to.Bytes())
 
-	// 	err = execAddAsset(evm, contract, assetID, accountName, value)
+	err := execAddAsset(evm, contract, assetID, accountName, value)
 
-	// 	if err != nil {
-	// 		stack.push(evm.interpreter.intPool.getZero())
-	// 	} else {
-	// 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
-	// 	}
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(1))
+	}
 	return nil, nil
 }
 
-// func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName common.Name, value *big.Int) error {
-// 	asset := &accountmanager.IncAsset{AssetID: assetID, Amount: value, To: toName}
-// 	b, err := rlp.EncodeToBytes(asset)
-// 	if err != nil {
-// 		return err
-// 	}
+func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName string, value *big.Int) error {
+	asset := &plugin.AddAsset{AssetID: assetID, Amount: value, To: toName}
+	b, err := rlp.EncodeToBytes(asset)
+	if err != nil {
+		return err
+	}
 
-// 	action := types.NewAction(types.IncreaseAsset, contract.Name(), common.Name(evm.chainConfig.AssetName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b, nil)
+	action := types.NewAction(types.IncreaseAsset, contract.Name(), evm.chainConfig.AssetName, 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b, nil)
 
-// 	internalActions, err := evm.PM.Process(&types.AccountManagerContext{
-// 		Action:      action,
-// 		Number:      evm.Context.BlockNumber.Uint64(),
-// 		CurForkID:   evm.Context.ForkID,
-// 		ChainConfig: evm.chainConfig,
-// 	})
-// 	if evm.vmConfig.ContractLogFlag {
-// 		errmsg := ""
-// 		if err != nil {
-// 			errmsg = err.Error()
-// 		}
-// 		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "addasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
-// 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
-// 		if len(internalActions) > 0 {
-// 			for _, iLog := range internalActions {
-// 				iLog.Depth = uint64(evm.depth)
-// 			}
-// 			evm.InternalTxs = append(evm.InternalTxs, internalActions...)
-// 		}
-// 	}
-// 	return err
-// }
+	_, err = evm.PM.ExecTx(action)
+	return err
+	// internalActions, err := evm.PM.Process(&types.AccountManagerContext{
+	// 	Action:      action,
+	// 	Number:      evm.Context.BlockNumber.Uint64(),
+	// 	CurForkID:   evm.Context.ForkID,
+	// 	ChainConfig: evm.chainConfig,
+	// })
+	// if evm.vmConfig.ContractLogFlag {
+	// 	errmsg := ""
+	// 	if err != nil {
+	// 		errmsg = err.Error()
+	// 	}
+	// 	internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "addasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
+	// 	evm.InternalTxs = append(evm.InternalTxs, internalAction)
+	// 	if len(internalActions) > 0 {
+	// 		for _, iLog := range internalActions {
+	// 			iLog.Depth = uint64(evm.depth)
+	// 		}
+	// 		evm.InternalTxs = append(evm.InternalTxs, internalActions...)
+	// 	}
+	// }
+	return err
+}
 
 func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	// 	value, assetID := stack.pop(), stack.pop()
@@ -1188,18 +1195,18 @@ func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 
 // opGetAssetID get asset ID by name
 func opGetAssetID(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	// 	Offset, Size := stack.pop(), stack.pop()
-	// 	assetName := memory.Get(Offset.Int64(), Size.Int64())
-	// 	assetName = bytes.TrimRight(assetName, "\x00")
-	// 	name := string(assetName)
-	// 	assetID, err := evm.PM.GetAssetIDByName(assetName)
-	// 	if err != nil {
-	// 		stack.push(big.NewInt(-1))
-	// 	} else {
-	// 		stack.push(big.NewInt(assetID))
-	// 	}
+	Offset, Size := stack.pop(), stack.pop()
+	assetName := memory.Get(Offset.Int64(), Size.Int64())
+	assetName = bytes.TrimRight(assetName, "\x00")
+	name := string(assetName)
+	assetID, err := evm.PM.GetAssetID(name)
+	if err != nil {
+		stack.push(big.NewInt(-1))
+	} else {
+		stack.push(big.NewInt(int64(assetID)))
+	}
 
-	// 	evm.interpreter.intPool.put(Offset, Size)
+	evm.interpreter.intPool.put(Offset, Size)
 	return nil, nil
 }
 
@@ -1307,84 +1314,86 @@ func opCryptoCalc(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 
 //issue an asset for multi-asset
 func opIssueAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	// 	offset, size := stack.pop(), stack.pop()
-	// 	ret := memory.Get(offset.Int64(), size.Int64())
-	// 	ret = bytes.TrimRight(ret, "\x00")
-	// 	desc := string(ret)
+	offset, size := stack.pop(), stack.pop()
+	ret := memory.Get(offset.Int64(), size.Int64())
+	ret = bytes.TrimRight(ret, "\x00")
+	desc := string(ret)
 
-	// 	assetId, err := executeIssuseAsset(evm, contract, desc)
-	// 	if err != nil {
-	// 		stack.push(evm.interpreter.intPool.getZero())
-	// 	} else {
-	// 		stack.push(evm.interpreter.intPool.get().SetUint64(assetId))
-	// 	}
-	// 	evm.interpreter.intPool.put(offset, size)
+	assetId, err := executeIssuseAsset(evm, contract, desc)
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(assetId))
+	}
+	evm.interpreter.intPool.put(offset, size)
 	return nil, nil
 }
 
-// func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, error) {
-// 	input := strings.Split(desc, ",")
-// 	if len(input) != 9 {
-// 		return 0, fmt.Errorf("invalid desc string")
-// 	}
-// 	name := input[0]
-// 	symbol := input[1]
-// 	total, ifOK := new(big.Int).SetString(input[2], 10)
-// 	if !ifOK {
-// 		return 0, fmt.Errorf("amount not correct")
-// 	}
-// 	decimal, err := strconv.ParseUint(input[3], 10, 64)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	owner := common.Name(input[4])
-// 	limit, ifOK := new(big.Int).SetString(input[5], 10)
-// 	if !ifOK {
-// 		return 0, fmt.Errorf("amount not correct")
-// 	}
-// 	founder := common.Name(input[6])
-// 	contractName := common.Name(input[7])
-// 	description := input[8]
+func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, error) {
+	input := strings.Split(desc, ",")
+	if len(input) != 9 {
+		return 0, fmt.Errorf("invalid desc string")
+	}
+	name := input[0]
+	symbol := input[1]
+	total, ifOK := new(big.Int).SetString(input[2], 10)
+	if !ifOK {
+		return 0, fmt.Errorf("amount not correct")
+	}
+	decimal, err := strconv.ParseUint(input[3], 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	owner := input[4]
+	limit, ifOK := new(big.Int).SetString(input[5], 10)
+	if !ifOK {
+		return 0, fmt.Errorf("amount not correct")
+	}
+	founder := input[6]
+	contractName := input[7]
+	description := input[8]
 
-// 	asset := &accountmanager.IssueAsset{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
+	asset := &plugin.IssueAsset{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
 
-// 	b, err := rlp.EncodeToBytes(asset)
-// 	if err != nil {
-// 		return 0, err
-// 	}
-// 	action := types.NewAction(types.IssueAsset, contract.Name(), common.Name(evm.chainConfig.AssetName), 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b, nil)
+	b, err := rlp.EncodeToBytes(asset)
+	if err != nil {
+		return 0, err
+	}
+	action := types.NewAction(types.IssueAsset, contract.Name(), evm.chainConfig.AssetName, 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b, nil)
 
-// 	internalActions, err := evm.PM.Process(&types.AccountManagerContext{
-// 		Action:      action,
-// 		Number:      evm.Context.BlockNumber.Uint64(),
-// 		CurForkID:   evm.Context.ForkID,
-// 		ChainConfig: evm.chainConfig,
-// 	})
-// 	if err != nil {
-// 		return 0, err
-// 	} else {
-// 		assetInfo, err := evm.PM.GetAssetInfoByName(name)
-// 		if err != nil || assetInfo == nil {
-// 			return 0, err
-// 		} else {
-// 			if evm.vmConfig.ContractLogFlag {
-// 				errmsg := ""
-// 				if err != nil {
-// 					errmsg = err.Error()
-// 				}
-// 				internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "issueasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
-// 				evm.InternalTxs = append(evm.InternalTxs, internalAction)
-// 				if len(internalActions) > 0 {
-// 					for _, iLog := range internalActions {
-// 						iLog.Depth = uint64(evm.depth)
-// 					}
-// 					evm.InternalTxs = append(evm.InternalTxs, internalActions...)
-// 				}
-// 			}
-// 			return assetInfo.AssetID, nil
-// 		}
-// 	}
-// }
+	_, err = evm.PM.ExecTx(action)
+	return 0, err
+	// internalActions, err := evm.PM.Process(&types.AccountManagerContext{
+	// 	Action:      action,
+	// 	Number:      evm.Context.BlockNumber.Uint64(),
+	// 	CurForkID:   evm.Context.ForkID,
+	// 	ChainConfig: evm.chainConfig,
+	// })
+	// if err != nil {
+	// 	return 0, err
+	// } else {
+	// 	assetInfo, err := evm.PM.GetAssetInfoByName(name)
+	// 	if err != nil || assetInfo == nil {
+	// 		return 0, err
+	// 	} else {
+	// 		if evm.vmConfig.ContractLogFlag {
+	// 			errmsg := ""
+	// 			if err != nil {
+	// 				errmsg = err.Error()
+	// 			}
+	// 			internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "issueasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
+	// 			evm.InternalTxs = append(evm.InternalTxs, internalAction)
+	// 			if len(internalActions) > 0 {
+	// 				for _, iLog := range internalActions {
+	// 					iLog.Depth = uint64(evm.depth)
+	// 				}
+	// 				evm.InternalTxs = append(evm.InternalTxs, internalActions...)
+	// 			}
+	// 		}
+	// 		return assetInfo.AssetID, nil
+	// 	}
+	// }
+}
 
 //issue an asset for multi-asset
 func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
@@ -1518,8 +1527,10 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	}
 
 	err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-
-	evm.distributeAssetGas(int64(evm.interpreter.gasTable.CallValueTransferGas-evm.interpreter.gasTable.CallStipend), assetID, contract.Name())
+	assetName, err := evm.PM.GetAssetName(assetID)
+	if err == nil {
+		evm.distributeAssetGas(int64(evm.interpreter.gasTable.CallValueTransferGas-evm.interpreter.gasTable.CallStipend), assetName, contract.Name())
+	}
 	if err != nil {
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
