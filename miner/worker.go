@@ -28,14 +28,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/blockchain"
+	"github.com/fractalplatform/fractal/blockchain/downloader"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
@@ -43,16 +41,34 @@ import (
 )
 
 const (
-	// txChanSize is the size of channel listening to NewTxsEvent.
-	// txChanSize = 4096
+
 	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
 	chainHeadChanSize = 10
+	// BlockInterval todo move config
+	BlockInterval = 3000
 )
+
+type ChainContext interface {
+	Config() *params.ChainConfig
+	CurrentHeader() *types.Header
+	StateAt(common.Hash) (*state.StateDB, error)
+	WriteBlockWithState(*types.Block, []*types.Receipt, *state.StateDB) (bool, error)
+}
+
+type txpoolContext interface {
+	Pending() (map[string][]*types.Transaction, error)
+}
+
+func slot(timestamp uint64) uint64 {
+	return ((timestamp + BlockInterval/10) / BlockInterval * BlockInterval)
+}
 
 // Worker is the main object which takes care of applying messages to the new state
 type Worker struct {
-	consensus.IConsensus
-
+	ChainContext
+	txpoolContext
+	processor.Processor
+	manger        pm.IPM
 	mu            sync.Mutex
 	delayDuration uint64
 	coinbase      string
@@ -69,11 +85,11 @@ type Worker struct {
 	force     bool
 }
 
-func newWorker(consensus consensus.IConsensus) *Worker {
+func newWorker(manger pm.IPM) *Worker {
 	worker := &Worker{
-		IConsensus: consensus,
-		quitWork1:  make(chan struct{}),
-		quit:       make(chan struct{}),
+		manger:    manger,
+		quitWork1: make(chan struct{}),
+		quit:      make(chan struct{}),
 	}
 	return worker
 }
@@ -89,7 +105,7 @@ out:
 		case ev := <-chainHeadCh:
 			// Handle ChainHeadEvent
 			if atomic.LoadInt32(&worker.mining) != 0 {
-				if blk := ev.Data.(*types.Block); strings.Compare(blk.Coinbase().String(), worker.coinbase) != 0 {
+				if blk := ev.Data.(*types.Block); strings.Compare(blk.Coinbase(), worker.coinbase) != 0 {
 					worker.quitWork1 <- struct{}{}
 				}
 			}
@@ -121,23 +137,7 @@ func (worker *Worker) start(force bool) {
 }
 
 func (worker *Worker) mintLoop() {
-	dpos, ok := worker.Engine().(*dpos.Dpos)
-	if !ok {
-		panic("only support dpos engine")
-	}
-	dpos.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
-		accountDB, err := accountmanager.NewAccountManager(state)
-		if err != nil {
-			return nil, err
-		}
-		for index, privKey := range worker.privKeys {
-			if err := accountDB.IsValidSign(common.StrToName(worker.coinbase), common.BytesToPubKey(worker.pubKeys[index])); err == nil {
-				return crypto.Sign(content, privKey)
-			}
-		}
-		return nil, fmt.Errorf("not found match private key for sign")
-	})
-	interval := int64(dpos.BlockInterval())
+	interval := int64(BlockInterval)
 	c := make(chan time.Time)
 	to := time.Now()
 	worker.utimerTo(to.Add(time.Duration(interval-(to.UnixNano()%interval))), c)
@@ -156,7 +156,7 @@ func (worker *Worker) mintLoop() {
 			}
 			worker.wgWork.Wait()
 			worker.quitWork = make(chan struct{})
-			timestamp := int64(dpos.Slot(uint64(now.UnixNano())))
+			timestamp := int64(slot(uint64(now.UnixNano())))
 			worker.wg.Add(1)
 			worker.wgWork.Add(1)
 			go func(quit chan struct{}) {
@@ -184,30 +184,28 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		default:
 		}
 
-		cdpos := worker.Engine().(*dpos.Dpos)
 		header := worker.CurrentHeader()
-		state, err := worker.StateAt(header.Root)
-		if err != nil {
-			log.Error("failed to mint block", "timestamp", timestamp, "err", err)
-			return
-		}
-		theader := &types.Header{}
-		worker.FillForkID(theader, state)
-		if err := cdpos.IsValidateCandidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force, theader.CurForkID()); err != nil {
-			switch err {
-			case dpos.ErrSystemTakeOver:
-				fallthrough
-			case dpos.ErrTooMuchRreversible:
-				fallthrough
-			case dpos.ErrIllegalCandidateName:
-				fallthrough
-			case dpos.ErrIllegalCandidatePubKey:
-				log.Warn("failed to mint the block", "timestamp", timestamp, "err", err, "candidate", worker.coinbase)
-			default:
-				log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
-			}
-			return
-		}
+		// state, err := worker.StateAt(header.Root)
+		// if err != nil {
+		// 	log.Error("failed to mint block", "timestamp", timestamp, "err", err)
+		// 	return
+		// }
+		// theader := &types.Header{}
+		// if err := cdpos.IsValidateCandidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force, theader.CurForkID()); err != nil {
+		// 	switch err {
+		// 	case dpos.ErrSystemTakeOver:
+		// 		fallthrough
+		// 	case dpos.ErrTooMuchRreversible:
+		// 		fallthrough
+		// 	case dpos.ErrIllegalCandidateName:
+		// 		fallthrough
+		// 	case dpos.ErrIllegalCandidatePubKey:
+		// 		log.Warn("failed to mint the block", "timestamp", timestamp, "err", err, "candidate", worker.coinbase)
+		// 	default:
+		// 		log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
+		// 	}
+		// 	return
+		// }
 		block, err := worker.commitNewWork(timestamp, header, quit)
 		if err == nil {
 			log.Info("Mined new block", "candidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "diff", block.Difficulty(), "elapsed", common.PrettyDuration(time.Since(bstart)))
@@ -217,7 +215,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 			log.Error("failed to mint block", "timestamp", timestamp, "err", err)
 			break
 		} else if strings.Contains(err.Error(), "wait") {
-			worker.usleepTo(time.Now().Add(time.Duration(cdpos.BlockInterval() / 10)))
+			worker.usleepTo(time.Now().Add(time.Duration(BlockInterval / 10)))
 		}
 
 		log.Warn("failed to mint block", "timestamp", timestamp, "err", err)
@@ -239,21 +237,22 @@ func (worker *Worker) setDelayDuration(delay uint64) error {
 	return nil
 }
 
-func (worker *Worker) setCoinbase(name string, privKeys []*ecdsa.PrivateKey) {
-	state, _ := worker.StateAt(worker.CurrentHeader().Root)
-	mgr, _ := accountmanager.NewAccountManager(state)
+func (worker *Worker) setCoinbase(name string, privateKeys []*ecdsa.PrivateKey) {
+	// _, _ := worker.StateAt(worker.CurrentHeader().Root)
+	// 	manger := pm.NewPM(state)
 	worker.mu.Lock()
 	defer worker.mu.Unlock()
 	worker.coinbase = name
-	worker.privKeys = privKeys
+	worker.privKeys = privateKeys
 	worker.pubKeys = nil
-	for index, privkey := range privKeys {
-		pubkey := crypto.FromECDSAPub(&privkey.PublicKey)
-		if err := mgr.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)); err == nil {
-			log.Info("setCoinbase[valid]", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String())
-		} else {
-			log.Warn("setCoinbase[invalid]", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String(), "detail", err)
-		}
+	for _, privateKey := range privateKeys {
+		pubkey := crypto.FromECDSAPub(&privateKey.PublicKey)
+		// 		// todo manger.Recover()
+		// 		// if err := mgr.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)); err == nil {
+		// 		// 	log.Info("setCoinbase[valid]", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String())
+		// 		// } else {
+		// 		// 	log.Warn("setCoinbase[invalid]", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String(), "detail", err)
+		// 		// }
 		worker.pubKeys = append(worker.pubKeys, pubkey)
 	}
 }
@@ -265,17 +264,16 @@ func (worker *Worker) setExtra(extra []byte) {
 }
 
 func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit chan struct{}) (*types.Block, error) {
-	dpos := worker.Engine().(*dpos.Dpos)
-	if t := time.Now(); t.UnixNano() >= timestamp+int64(dpos.BlockInterval()) {
+	// 	dpos := worker.Engine().(*dpos.Dpos)
+	if t := time.Now(); t.UnixNano() >= timestamp+int64(BlockInterval) {
 		return nil, fmt.Errorf("mint the ingore block, need %v, now %v, sub %v", timestamp, t.UnixNano(), t.Sub(time.Unix(timestamp/int64(time.Second), timestamp%int64(time.Second))))
 	}
 	if parent.Time.Int64() >= timestamp {
 		return nil, errors.New("mint the old block")
 	}
-	// if dpos.IsFirst(uint64(timestamp)) && parent.Time.Int64() != timestamp-int64(dpos.BlockInterval()) && timestamp-time.Now().UnixNano() >= int64(dpos.BlockInterval())/10 {
 	if parent.Number.Uint64() > 0 &&
-		parent.Time.Int64()+int64(dpos.BlockInterval()) < timestamp &&
-		time.Now().UnixNano()-timestamp <= 2*int64(dpos.BlockInterval())/5 {
+		parent.Time.Int64()+int64(BlockInterval) < timestamp &&
+		time.Now().UnixNano()-timestamp <= 2*int64(BlockInterval)/5 {
 		return nil, errors.New("wait for last block arrived")
 	}
 
@@ -286,19 +284,14 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 		GasLimit:   params.BlockGasLimit,
 		Extra:      worker.extra,
 		Time:       big.NewInt(timestamp),
-		Difficulty: worker.CalcDifficulty(worker.IConsensus, uint64(timestamp), parent),
+		//	Difficulty: worker.CalcDifficulty(worker.IConsensus, uint64(timestamp), parent),
 	}
-	header.Coinbase = common.StrToName(worker.coinbase)
-	header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, parent, false)
+	header.Coinbase = worker.coinbase
+	// header.ProposedIrreversible = dpos.CalcProposedIrreversible(worker, parent, false)
 
 	state, err := worker.StateAt(parent.Root)
 	if err != nil {
 		return nil, fmt.Errorf("get parent state %v, err: %v ", header.Root, err)
-	}
-
-	// fill ForkID
-	if err := worker.FillForkID(header, state); err != nil {
-		return nil, err
 	}
 
 	work := &Work{
@@ -310,7 +303,7 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 		currentCnt:      0,
 	}
 
-	if err := worker.Prepare(worker.IConsensus, work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState); err != nil {
+	if err := worker.manger.Prepare(work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState); err != nil {
 		return nil, fmt.Errorf("prepare header for mining, err: %v", err)
 	}
 
@@ -326,19 +319,19 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 	log.Debug("worker get pending txs from txpool", "len", txsLen, "since", time.Since(start))
 
 	txs := types.NewTransactionsByPriceAndNonce(pending)
-	if err := worker.commitTransactions(work, txs, dpos.BlockInterval(), quit); err != nil {
+	if err := worker.commitTransactions(work, txs, BlockInterval, quit); err != nil {
 		return nil, err
 	}
 
 	if atomic.LoadInt32(&worker.mining) == 1 {
-		blk, err := worker.Finalize(worker.IConsensus, work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState)
+		blk, err := worker.manger.Finalize(work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState)
 		if err != nil {
 			return nil, fmt.Errorf("finalize block, err: %v", err)
 		}
 
 		work.currentBlock = blk
 
-		block, err := worker.Seal(worker.IConsensus, work.currentBlock, nil)
+		block, err := worker.manger.Seal(work.currentBlock)
 		if err != nil {
 			return nil, fmt.Errorf("seal block, err: %v", err)
 		}
@@ -357,7 +350,7 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 		time.Sleep(time.Duration(worker.delayDuration * uint64(time.Millisecond)))
 
 		event.SendEvent(&event.Event{Typecode: event.ChainHeadEv, Data: block})
-		event.SendEvent(&event.Event{Typecode: event.NewMinedEv, Data: blockchain.NewMinedBlockEvent{
+		event.SendEvent(&event.Event{Typecode: event.NewMinedEv, Data: downloader.NewMinedBlockEvent{
 			Block: block,
 		}})
 		return block, nil
@@ -406,7 +399,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			}
 		}
 
-		if strings.Compare(work.currentHeader.Coinbase.String(), worker.Config().SysName) != 0 {
+		if strings.Compare(work.currentHeader.Coinbase, worker.Config().SysName) != 0 {
 			switch action.Type() {
 			case types.KickedCandidate:
 				fallthrough
@@ -462,13 +455,8 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 func (worker *Worker) commitTransaction(work *Work, tx *types.Transaction, endTime time.Time) ([]*types.Log, error) {
 	snap := work.currentState.Snapshot()
-	var name *common.Name
-	if len(work.currentHeader.Coinbase.String()) > 0 {
-		name = new(common.Name)
-		*name = common.StrToName(work.currentHeader.Coinbase.String())
-	}
 
-	receipt, _, err := worker.ApplyTransaction(name, work.currentGasPool, work.currentState, work.currentHeader, tx, &work.currentHeader.GasUsed, vm.Config{
+	receipt, _, err := worker.ApplyTransaction(&work.currentHeader.Coinbase, work.currentGasPool, work.currentState, work.currentHeader, tx, &work.currentHeader.GasUsed, vm.Config{
 		EndTime: endTime,
 	})
 	if err != nil {

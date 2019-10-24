@@ -23,9 +23,9 @@ import (
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 )
 
 // Miner creates blocks and searches for proof values.
@@ -38,9 +38,9 @@ type Miner struct {
 }
 
 // NewMiner creates a miner.
-func NewMiner(consensus consensus.IConsensus) *Miner {
+func NewMiner(manager pm.IPM) *Miner {
 	miner := &Miner{
-		worker:   newWorker(consensus),
+		worker:   newWorker(manager),
 		canStart: 1,
 	}
 	go miner.update()

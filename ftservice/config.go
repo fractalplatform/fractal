@@ -17,7 +17,7 @@
 package ftservice
 
 import (
-	"github.com/fractalplatform/fractal/blockchain"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/txpool"
@@ -27,7 +27,7 @@ import (
 type Config struct {
 	// The genesis block, which is inserted if the database is empty.
 	// If nil, the main net block is used.
-	Genesis *blockchain.Genesis `toml:",omitempty"`
+	Genesis *g.Genesis `toml:",omitempty"`
 
 	// Database options
 	DatabaseHandles int

@@ -62,7 +62,7 @@ func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
 			}
 
 		}
-		content["pending"][account.String()] = dump
+		content["pending"][account] = dump
 	}
 	// Flatten the queued transactions
 	for account, txs := range queue {
@@ -74,7 +74,7 @@ func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
 				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
 			}
 		}
-		content["queued"][account.String()] = dump
+		content["queued"][account] = dump
 	}
 	return content
 }
@@ -118,13 +118,13 @@ func (s *PrivateTxPoolAPI) GetTransactions(hashes []common.Hash) []*types.RPCTra
 }
 
 // GetTransactionsByAccount  txpool returns the transaction by the given account name.
-func (s *PrivateTxPoolAPI) GetTransactionsByAccount(name common.Name, fullTx bool) interface{} {
+func (s *PrivateTxPoolAPI) GetTransactionsByAccount(name string, fullTx bool) interface{} {
 	content := map[string]map[string]interface{}{
 		"pending": make(map[string]interface{}),
 		"queued":  make(map[string]interface{}),
 	}
 
-	txsFunc := func(name common.Name, m map[common.Name][]*types.Transaction, fullTx bool) map[string]interface{} {
+	txsFunc := func(name string, m map[string][]*types.Transaction, fullTx bool) map[string]interface{} {
 		dump := make(map[string]interface{})
 		txs, ok := m[name]
 		if ok {

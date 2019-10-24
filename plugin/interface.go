@@ -61,6 +61,7 @@ type IAsset interface {
 }
 
 type IConsensus interface {
+	Seal(block *types.Block) (*types.Block, error)
 
 	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
 	VerifySeal(header *types.Header) error

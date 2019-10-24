@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package blockchain
+package downloader
 
 import (
 	"errors"
@@ -33,6 +33,19 @@ import (
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/types"
 )
+
+// ChainContext blockchain suport downloader interface.
+type ChainContext interface {
+	GetTd(common.Hash, uint64) *big.Int
+	CurrentBlock() *types.Block
+	Genesis() *types.Block
+	HasBlock(common.Hash, uint64) bool
+	IrreversibleNumber() uint64
+	InsertChain(chain types.Blocks) (int, error)
+	GetHeaderByNumber(number uint64) *types.Header
+	GetHeaderByHash(hash common.Hash) *types.Header
+	GetBody(hash common.Hash) *types.Body
+}
 
 // NewMinedBlockEvent is posted when a block has been imported.
 type NewMinedBlockEvent struct{ Block *types.Block }
@@ -83,7 +96,7 @@ type Downloader struct {
 	statusCh        chan *router.Event
 	remotes         *simpleHeap //map[string]*stationStatus
 	remotesMutex    sync.RWMutex
-	blockchain      *BlockChain
+	blockchain      ChainContext
 	quit            chan struct{}
 	loopWG          sync.WaitGroup
 	downloadTrigger chan struct{}
@@ -94,7 +107,7 @@ type Downloader struct {
 }
 
 // NewDownloader create a new downloader
-func NewDownloader(chain *BlockChain) *Downloader {
+func NewDownloader(chain ChainContext) *Downloader {
 	dl := &Downloader{
 		statusCh:   make(chan *router.Event),
 		blockchain: chain,

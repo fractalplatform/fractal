@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package blockchain
+package downloader
 
 import (
 	"fmt"
@@ -28,9 +28,9 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
-type station struct {
+type Station struct {
 	peerCh     chan *router.Event
-	blockchain *BlockChain
+	blockchain ChainContext
 	networkID  uint64
 	quit       chan struct{}
 	loopWG     sync.WaitGroup
@@ -42,8 +42,8 @@ func errResp(code errCode, format string, v ...interface{}) error {
 	return fmt.Errorf("%v - %v", code, fmt.Sprintf(format, v...))
 }
 
-func newStation(bc *BlockChain, networkID uint64) *station {
-	bs := &station{
+func NewStation(bc ChainContext, networkID uint64) *Station {
+	bs := &Station{
 		peerCh:     make(chan *router.Event),
 		blockchain: bc,
 		networkID:  networkID,
@@ -67,9 +67,9 @@ func newStation(bc *BlockChain, networkID uint64) *station {
 	return bs
 }
 
-func (bs *station) chainStatus() *statusData {
+func (bs *Station) chainStatus() *statusData {
 	genesis := bs.blockchain.Genesis()
-	head := bs.blockchain.CurrentHeader()
+	head := bs.blockchain.CurrentBlock().Header()
 	hash := head.Hash()
 	number := head.Number.Uint64()
 	td := bs.blockchain.GetTd(hash, number)
@@ -96,7 +96,7 @@ func checkChainStatus(local *statusData, remote *statusData) error {
 	return nil
 }
 
-func (bs *station) handshake(e *router.Event) {
+func (bs *Station) handshake(e *router.Event) {
 	station := router.NewLocalStation("shake"+e.From.Name(), nil)
 	ch := make(chan *router.Event)
 	sub := router.Subscribe(station, ch, router.P2PStatusMsg, &statusData{})
@@ -125,7 +125,7 @@ func (bs *station) handshake(e *router.Event) {
 	}
 }
 
-func (bs *station) loop() {
+func (bs *Station) loop() {
 	for {
 		select {
 		case <-bs.quit:
@@ -163,7 +163,7 @@ func (bs *station) loop() {
 
 // handleMsg is invoked whenever an inbound message is received from a remote
 // peer. The remote connection is torn down upon returning any error.
-func (bs *station) handleMsg(e *router.Event) error {
+func (bs *Station) handleMsg(e *router.Event) error {
 	start := time.Now()
 	defer func() {
 		router.AddCPU(e.From, time.Since(start))
@@ -254,7 +254,7 @@ func (bs *station) handleMsg(e *router.Event) error {
 	return nil
 }
 
-func (bs *station) Stop() {
+func (bs *Station) Stop() {
 	log.Info("BlockchainHandler stopping...")
 	close(bs.quit)
 	for _, sub := range bs.subs {

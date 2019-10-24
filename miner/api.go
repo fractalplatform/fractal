@@ -17,14 +17,12 @@
 package miner
 
 import (
-	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/rpc"
 )
 
 // API exposes miner related methods for the RPC interface.
 type API struct {
 	miner *Miner
-	chain consensus.IChainReader
 }
 
 // Start start mining
@@ -63,17 +61,16 @@ func (api *API) SetExtra(extra string) error {
 }
 
 // APIs provide the miner RPC API.
-func (miner *Miner) APIs(chain consensus.IChainReader) []rpc.API {
+func (miner *Miner) APIs() []rpc.API {
 	apis := []rpc.API{
 		{
 			Namespace: "miner",
 			Version:   "1.0",
 			Service: &API{
 				miner: miner,
-				chain: chain,
 			},
 		},
 	}
-	apis = append(apis, miner.worker.Engine().APIs(chain)...)
+	//apis = append(apis, miner.worker.Engine().APIs(chain)...)
 	return apis
 }

@@ -21,14 +21,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/consensus/dpos"
-	"github.com/fractalplatform/fractal/consensus/miner"
+	"github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
+	"github.com/fractalplatform/fractal/miner"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -45,7 +45,6 @@ type FtService struct {
 	blockchain   *blockchain.BlockChain
 	txPool       *txpool.TxPool
 	chainDb      fdb.Database // Block chain database
-	engine       consensus.IEngine
 	miner        *miner.Miner
 	p2pServer    *adaptor.ProtoAdaptor
 	APIBackend   *APIBackend
@@ -58,7 +57,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
-	chainCfg, dposCfg, _, err := blockchain.SetupGenesisBlock(chainDb, config.Genesis)
+	chainCfg, _, err := genesis.SetupGenesisBlock(chainDb, config.Genesis)
 	if err != nil {
 		return nil, err
 	}
@@ -90,31 +89,23 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	ftservice.txPool = txpool.New(*config.TxPool, ftservice.chainConfig, ftservice.blockchain)
 
-	engine := dpos.New(dposCfg, ftservice.blockchain)
-	ftservice.engine = engine
-
 	type bc struct {
 		*blockchain.BlockChain
-		consensus.IEngine
 		*txpool.TxPool
 		processor.Processor
 	}
+	statedb, _ := ftservice.blockchain.State()
+	pm := pm.NewPM(statedb)
 
-	bcc := &bc{
-		ftservice.blockchain,
-		ftservice.engine,
-		ftservice.txPool,
-		nil,
-	}
-
-	validator := processor.NewBlockValidator(bcc, ftservice.engine)
-	txProcessor := processor.NewStateProcessor(bcc, ftservice.engine)
+	validator := processor.NewBlockValidator(ftservice.blockchain, pm)
+	txProcessor := processor.NewStateProcessor(ftservice.blockchain, pm)
 
 	ftservice.blockchain.SetValidator(validator)
 	ftservice.blockchain.SetProcessor(txProcessor)
 
-	bcc.Processor = txProcessor
-	ftservice.miner = miner.NewMiner(bcc)
+	// todo add blockchain txpool process
+	ftservice.miner = miner.NewMiner(pm)
+
 	ftservice.miner.SetDelayDuration(config.Miner.Delay)
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
 	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
@@ -172,6 +163,5 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (fdb.Databa
 
 func (s *FtService) BlockChain() *blockchain.BlockChain { return s.blockchain }
 func (s *FtService) TxPool() *txpool.TxPool             { return s.txPool }
-func (s *FtService) Engine() consensus.IEngine          { return s.engine }
 func (s *FtService) ChainDb() fdb.Database              { return s.chainDb }
 func (s *FtService) Protocols() []p2p.Protocol          { return nil }

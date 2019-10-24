@@ -31,8 +31,6 @@ import (
 
 // StateProcessor is a basic Processor, which takes care of transitioning
 // state from one point to another.
-//
-// StateProcessor implements Processor.
 type StateProcessor struct {
 	bc      ChainContext // Canonical block chain
 	manager pm.IPM
@@ -122,8 +120,7 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 		}
 
 		evmcontext := &EvmContext{
-			ChainContext:  p.bc,
-			EngineContext: p.manager,
+			ChainContext: p.bc,
 		}
 		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, pm, statedb, config, cfg)
@@ -135,7 +132,7 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 			})
 		}
 
-		_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, action, gp, gasPrice, assetID, config, p.manager)
+		_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, action, gp, gasPrice, assetID, config)
 
 		if false == cfg.EndTime.IsZero() {
 			//close timer
@@ -161,9 +158,11 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 		}
 		var gasAllot []*types.GasDistribution
-		for key, gas := range vmenv.FounderGasMap {
-			gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
-		}
+		// todo
+		// for key, gas := range vmenv.FounderGasMap {
+		// 	gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
+		// }
+
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 
 		internalTxLog := make([]*types.InternalAction, 0, len(vmenv.InternalTxs))

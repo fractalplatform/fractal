@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/blockchain"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
@@ -94,7 +94,7 @@ var RootCmd = &cobra.Command{
 }
 
 func makeNode() (*node.Node, error) {
-	genesis := blockchain.DefaultGenesis()
+	genesis := g.DefaultGenesis()
 	// set miner config
 	SetupMetrics()
 	// Make sure we have a valid genesis JSON

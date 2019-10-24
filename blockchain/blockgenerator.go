@@ -20,8 +20,8 @@ import (
 	"fmt"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -40,7 +40,6 @@ type blockGenerator struct {
 	receipts []*types.Receipt
 
 	config *params.ChainConfig
-	engine *dpos.Dpos
 	*BlockChain
 }
 

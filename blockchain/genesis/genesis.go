@@ -21,12 +21,10 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
@@ -34,7 +32,6 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // GenesisAccount is an account in the state of the genesis block.
@@ -75,36 +72,10 @@ type Genesis struct {
 	ForkID          uint64              `json:"forkID,omitempty"`
 }
 
-func dposConfig(cfg *params.ChainConfig) *dpos.Config {
-	return &dpos.Config{
-		MaxURLLen:                     cfg.DposCfg.MaxURLLen,
-		UnitStake:                     cfg.DposCfg.UnitStake,
-		CandidateAvailableMinQuantity: cfg.DposCfg.CandidateAvailableMinQuantity,
-		CandidateMinQuantity:          cfg.DposCfg.CandidateMinQuantity,
-		VoterMinQuantity:              cfg.DposCfg.VoterMinQuantity,
-		ActivatedMinCandidate:         cfg.DposCfg.ActivatedMinCandidate,
-		ActivatedMinQuantity:          cfg.DposCfg.ActivatedMinQuantity,
-		BlockInterval:                 cfg.DposCfg.BlockInterval,
-		BlockFrequency:                cfg.DposCfg.BlockFrequency,
-		CandidateScheduleSize:         cfg.DposCfg.CandidateScheduleSize,
-		BackupScheduleSize:            cfg.DposCfg.BackupScheduleSize,
-		EpochInterval:                 cfg.DposCfg.EpochInterval,
-		FreezeEpochSize:               cfg.DposCfg.FreezeEpochSize,
-		AccountName:                   cfg.DposName,
-		SystemName:                    cfg.SysName,
-		SystemURL:                     cfg.ChainURL,
-		ExtraBlockReward:              cfg.DposCfg.ExtraBlockReward,
-		BlockReward:                   cfg.DposCfg.BlockReward,
-		Decimals:                      cfg.SysTokenDecimals,
-		AssetID:                       cfg.SysTokenID,
-		ReferenceTime:                 cfg.ReferenceTime,
-	}
-}
-
 // SetupGenesisBlock The returned chain configuration is never nil.
-func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, common.Hash, error) {
 	if genesis != nil && genesis.Config == nil {
-		return params.DefaultChainconfig, dposConfig(params.DefaultChainconfig), common.Hash{}, errGenesisNoConfig
+		return params.DefaultChainconfig, common.Hash{}, errGenesisNoConfig
 	}
 
 	// Just commit the new block if there is no stored genesis block.
@@ -115,64 +86,37 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 		}
 		block, err := genesis.Commit(db)
 		if err != nil {
-			return nil, nil, common.Hash{}, err
+			return nil, common.Hash{}, err
 		}
-		dfg := dposConfig(genesis.Config)
-		if err := dfg.IsValid(); err != nil {
-			return nil, nil, common.Hash{}, err
-		}
+
 		log.Info("Writing genesis block", "hash", block.Hash().Hex())
-		return genesis.Config, dfg, block.Hash(), err
+		return genesis.Config, block.Hash(), err
 	}
 
 	// Check whether the genesis block is already written.
 	if genesis != nil {
 		blk, _, err := genesis.ToBlock(nil)
 		if err != nil {
-			return nil, nil, common.Hash{}, err
+			return nil, common.Hash{}, err
 
 		}
 		hash := blk.Hash()
 		if hash != stored {
-			return genesis.Config, dposConfig(genesis.Config), hash, &GenesisMismatchError{stored, hash}
+			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
 		}
 	}
 
 	number := rawdb.ReadHeaderNumber(db, rawdb.ReadHeadHeaderHash(db))
 	if number == nil {
-		return nil, nil, common.Hash{}, errors.New("missing block number for head header hash")
+		return nil, common.Hash{}, errors.New("missing block number for head header hash")
 	}
 
 	storedCfg := rawdb.ReadChainConfig(db, stored)
 	if storedCfg == nil {
-		return nil, nil, common.Hash{}, errors.New("Found genesis block without chain config")
+		return nil, common.Hash{}, errors.New("Found genesis block without chain config")
 	}
-	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:         storedCfg.AccountNameCfg.Level,
-		AccountNameMaxLength:     storedCfg.AccountNameCfg.AllLength,
-		MainAccountNameMinLength: storedCfg.AccountNameCfg.MainMinLength,
-		MainAccountNameMaxLength: storedCfg.AccountNameCfg.MainMaxLength,
-		SubAccountNameMinLength:  storedCfg.AccountNameCfg.SubMinLength,
-		SubAccountNameMaxLength:  storedCfg.AccountNameCfg.SubMaxLength,
-	})
-	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:         storedCfg.AssetNameCfg.Level,
-		AssetNameLength:        storedCfg.AssetNameCfg.AllLength,
-		MainAssetNameMinLength: storedCfg.AssetNameCfg.MainMinLength,
-		MainAssetNameMaxLength: storedCfg.AssetNameCfg.MainMaxLength,
-		SubAssetNameMinLength:  storedCfg.AssetNameCfg.SubMinLength,
-		SubAssetNameMaxLength:  storedCfg.AssetNameCfg.SubMaxLength,
-	})
-	am.SetAcctMangerName(common.StrToName(storedCfg.AccountName))
-	at.SetAssetMangerName(common.StrToName(storedCfg.AssetName))
-	fm.SetFeeManagerName(common.StrToName(storedCfg.FeeName))
 
-	dfg := dposConfig(storedCfg)
-	if err := dfg.IsValid(); err != nil {
-		log.Error("genesis get stored config failed ", "hash", stored, "err", err)
-		return nil, nil, stored, err
-	}
-	return storedCfg, dfg, stored, nil
+	return storedCfg, stored, nil
 }
 
 // ToBlock creates the genesis block and writes state of a genesis specification
@@ -183,35 +127,14 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	}
 	detailTx := &types.DetailTx{}
 	var internals []*types.DetailAction
-	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:         2,
-		AccountNameMaxLength:     31,
-		MainAccountNameMinLength: 7,
-		MainAccountNameMaxLength: 16,
-		SubAccountNameMinLength:  2,
-		SubAccountNameMaxLength:  16,
-	})
-	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:         2,
-		AssetNameLength:        31,
-		MainAssetNameMinLength: 2,
-		MainAssetNameMaxLength: 16,
-		SubAssetNameMinLength:  1,
-		SubAssetNameMaxLength:  8,
-	})
 
-	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
-	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
-	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
 	number := big.NewInt(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
 		return nil, nil, fmt.Errorf("genesis statedb new err: %v", err)
 	}
-	accountManager, err := am.NewAccountManager(statedb)
-	if err != nil {
-		return nil, nil, fmt.Errorf("genesis accountManager new err: %v", err)
-	}
+	//	mananger := pm.NewPM(statedb)
+
 	//p2p
 	for _, node := range g.Config.BootNodes {
 		if len(node) == 0 {
@@ -225,203 +148,15 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	actActions := []*types.Action{}
 	timestamp := g.Timestamp * uint64(time.Millisecond)
 	g.Config.ReferenceTime = timestamp
-	if err := dpos.Genesis(dposConfig(g.Config), statedb, timestamp, number.Uint64()); err != nil {
-		return nil, nil, fmt.Errorf("genesis dpos err %v", err)
-	}
 
-	chainName := string(g.Config.ChainName)
-	accoutName := string(g.Config.AccountName)
-	assetName := string(g.Config.AssetName)
+	// chainName := string(g.Config.ChainName)
+	// accoutName := string(g.Config.AccountName)
+	// assetName := string(g.Config.AssetName)
 	// chain name
-	act := &am.CreateAccountAction{
-		AccountName: chainName,
-		PublicKey:   common.PubKey{},
-	}
-	payload, _ := rlp.EncodeToBytes(act)
-	actActions = append(actActions, types.NewAction(
-		types.CreateAccount,
-		string(""),
-		accoutName,
-		0,
-		0,
-		0,
-		big.NewInt(0),
-		payload,
-		[]byte(g.Remark),
-	))
+	// todo
 
-	for _, account := range g.AllocAccounts {
-		pName := string("")
-		slt := strings.Split(account.Name, ".")
-		if len(slt) > 1 {
-			pName = string(slt[0])
-		}
-		act := &am.CreateAccountAction{
-			AccountName: common.StrToName(account.Name),
-			Founder:     common.StrToName(account.Founder),
-			PublicKey:   account.PubKey,
-		}
-		payload, _ := rlp.EncodeToBytes(act)
-		actActions = append(actActions, types.NewAction(
-			types.CreateAccount,
-			pName,
-			accoutName,
-			0,
-			0,
-			0,
-			big.NewInt(0),
-			payload,
-			nil,
-		))
-	}
-
-	for index, action := range actActions {
-		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
-			Action:      action,
-			Number:      0,
-			CurForkID:   g.ForkID,
-			ChainConfig: g.Config,
-		})
-		if err != nil {
-			return nil, nil, fmt.Errorf("genesis create account %v,err %v", index, err)
-		}
-		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
-	}
-
-	astActions := []*types.Action{}
-	for _, asset := range g.AllocAssets {
-		pName := string("")
-		if g.ForkID >= params.ForkID1 {
-			pName = string(g.Config.SysName)
-			names := strings.Split(asset.Name, ":")
-			if len(names) != 2 {
-				return nil, nil, fmt.Errorf("asset name invalid %v", asset.Name)
-			}
-			slt := strings.Split(names[1], ".")
-			if len(slt) > 1 {
-				if ast, _ := accountManager.GetAssetInfoByName(names[0] + ":" + slt[0]); ast == nil {
-					return nil, nil, fmt.Errorf("parent asset not exist %v", ast.AssetName)
-				} else {
-					pName = ast.Owner
-				}
-			}
-		} else {
-			slt := strings.Split(asset.Name, ".")
-			if len(slt) > 1 {
-				if ast, _ := accountManager.GetAssetInfoByName(slt[0]); ast == nil {
-					return nil, nil, fmt.Errorf("parent asset not exist %v", ast.AssetName)
-				} else {
-					pName = ast.Owner
-				}
-			}
-		}
-
-		ast := &am.IssueAsset{
-			AssetName:  asset.Name,
-			Symbol:     asset.Symbol,
-			Amount:     asset.Amount,
-			Decimals:   asset.Decimals,
-			Founder:    common.StrToName(asset.Founder),
-			Owner:      common.StrToName(asset.Owner),
-			UpperLimit: asset.UpperLimit,
-		}
-
-		payload, _ := rlp.EncodeToBytes(ast)
-		astActions = append(astActions, types.NewAction(
-			types.IssueAsset,
-			pName,
-			assetName,
-			0,
-			0,
-			0,
-			big.NewInt(0),
-			payload,
-			nil,
-		))
-	}
-
-	for index, action := range astActions {
-		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
-			Action:      action,
-			Number:      0,
-			CurForkID:   g.ForkID,
-			ChainConfig: g.Config,
-		})
-		if err != nil {
-			return nil, nil, fmt.Errorf("genesis create asset %v,err %v", index, err)
-		}
-		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
-	}
-	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:         g.Config.AccountNameCfg.Level,
-		AccountNameMaxLength:     g.Config.AccountNameCfg.AllLength,
-		MainAccountNameMinLength: g.Config.AccountNameCfg.MainMinLength,
-		MainAccountNameMaxLength: g.Config.AccountNameCfg.MainMaxLength,
-		SubAccountNameMinLength:  g.Config.AccountNameCfg.SubMinLength,
-		SubAccountNameMaxLength:  g.Config.AccountNameCfg.SubMaxLength,
-	})
-	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:         g.Config.AssetNameCfg.Level,
-		AssetNameLength:        g.Config.AssetNameCfg.AllLength,
-		MainAssetNameMinLength: g.Config.AssetNameCfg.MainMinLength,
-		MainAssetNameMaxLength: g.Config.AssetNameCfg.MainMaxLength,
-		SubAssetNameMinLength:  g.Config.AssetNameCfg.SubMinLength,
-		SubAssetNameMaxLength:  g.Config.AssetNameCfg.SubMaxLength,
-	})
-	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
-		return nil, nil, fmt.Errorf("system is not exist %v", err)
-	}
-	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AccountName)); !ok {
-		return nil, nil, fmt.Errorf("account is not exist %v", err)
-	}
-	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.AssetName)); !ok {
-		return nil, nil, fmt.Errorf("asset account is not exist %v", err)
-	}
-	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.DposName)); !ok {
-		return nil, nil, fmt.Errorf("dpos is not exist %v", err)
-	}
-	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.FeeName)); !ok {
-		return nil, nil, fmt.Errorf("fee is not exist %v", err)
-	}
-	assetInfo, err := accountManager.GetAssetInfoByName(g.Config.SysToken)
-	if err != nil {
-		return nil, nil, fmt.Errorf("genesis system asset err %v", err)
-	}
-
-	g.Config.SysTokenID = assetInfo.AssetID
-	g.Config.SysTokenDecimals = assetInfo.Decimals
-
-	sys := dpos.NewSystem(statedb, dposConfig(g.Config))
-	epoch, _ := sys.GetLastestEpoch()
-	for _, candidate := range g.AllocCandidates {
-		if ok, err := accountManager.AccountIsExist(common.StrToName(candidate.Name)); !ok {
-			return nil, nil, fmt.Errorf("candidate %v is not exist %v", candidate.Name, err)
-		}
-		if err := sys.SetCandidate(&dpos.CandidateInfo{
-			Epoch:         epoch,
-			Name:          candidate.Name,
-			URL:           candidate.URL,
-			Quantity:      big.NewInt(0),
-			TotalQuantity: big.NewInt(0),
-			Number:        number.Uint64(),
-		}); err != nil {
-			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
-		}
-	}
-	if fid := g.ForkID; fid >= params.ForkID2 {
-		if err := sys.UpdateElectedCandidates1(epoch, epoch, number.Uint64(), ""); err != nil {
-			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
-		}
-	} else {
-		if err := sys.UpdateElectedCandidates0(epoch, epoch, number.Uint64(), ""); err != nil {
-			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
-		}
-	}
-
-	// init  fork controller
-	if err := initForkController(chainName.String(), statedb, g.ForkID); err != nil {
-		return nil, nil, fmt.Errorf("genesis init fork controller failed %v", err)
-	}
+	// g.Config.SysTokenID = assetInfo.AssetID
+	// g.Config.SysTokenDecimals = assetInfo.Decimals
 
 	// snapshot
 	currentTime := timestamp
@@ -446,7 +181,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Difficulty: g.Difficulty,
-		Coinbase:   common.StrToName(g.Config.ChainName),
+		Coinbase:   g.Config.ChainName,
 		Root:       root,
 	}
 
@@ -467,22 +202,22 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		}
 		actions = append(actions, action)
 	}
-	for _, action := range astActions {
-		if action.AssetID() == 0 {
-			action = types.NewAction(
-				action.Type(),
-				action.Sender(),
-				action.Recipient(),
-				action.Nonce(),
-				g.Config.SysTokenID,
-				action.Gas(),
-				action.Value(),
-				action.Data(),
-				action.Remark(),
-			)
-		}
-		actions = append(actions, action)
-	}
+	// for _, action := range astActions {
+	// 	if action.AssetID() == 0 {
+	// 		action = types.NewAction(
+	// 			action.Type(),
+	// 			action.Sender(),
+	// 			action.Recipient(),
+	// 			action.Nonce(),
+	// 			g.Config.SysTokenID,
+	// 			action.Gas(),
+	// 			action.Value(),
+	// 			action.Data(),
+	// 			action.Remark(),
+	// 		)
+	// 	}
+	// 	actions = append(actions, action)
+	// }
 	tx := types.NewTransaction(g.Config.SysTokenID, big.NewInt(0), actions...)
 	receipt := types.NewReceipt(root[:], 0, 0)
 	receipt.TxHash = tx.Hash()

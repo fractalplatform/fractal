@@ -38,7 +38,7 @@ type ForkID struct {
 // Header represents a block header in the blockchain.
 type Header struct {
 	ParentHash           common.Hash
-	Coinbase             common.Name
+	Coinbase             string
 	ProposedIrreversible uint64
 	Root                 common.Hash
 	TxsRoot              common.Hash
@@ -132,7 +132,7 @@ func (b *Block) Time() *big.Int { return new(big.Int).Set(b.Head.Time) }
 func (b *Block) NumberU64() uint64 { return b.Head.Number.Uint64() }
 
 // Coinbase returns the block's Coinbase.
-func (b *Block) Coinbase() common.Name { return b.Head.Coinbase }
+func (b *Block) Coinbase() string { return b.Head.Coinbase }
 
 // Root returns the block's Root.
 func (b *Block) Root() common.Hash { return b.Head.Root }
