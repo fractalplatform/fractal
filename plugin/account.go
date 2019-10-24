@@ -225,7 +225,16 @@ func (am *AccountManager) GetCode(accountName string) ([]byte, error) {
 }
 
 func (am *AccountManager) GetCodeHash(accountName string) (common.Hash, error) {
-	return common.Hash{}, nil
+	account, err := am.getAccount(accountName)
+	if err != nil {
+		return common.Hash{}, err
+	}
+
+	if len(account.CodeHash) == 0 {
+		return common.Hash{}, ErrHashIsEmpty
+	}
+
+	return account.CodeHash, nil
 }
 
 func (am *AccountManager) SetCode(accountName string, code []byte) error {
@@ -421,4 +430,5 @@ var (
 	ErrNegativeValue        = errors.New("negative value")
 	ErrCodeIsEmpty          = errors.New("code is empty")
 	ErrAccountIsDestroy     = errors.New("account in destroy")
+	ErrHashIsEmpty          = errors.New("hash is empty")
 )
