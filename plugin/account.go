@@ -230,7 +230,7 @@ func (am *AccountManager) GetCodeHash(accountName string) (common.Hash, error) {
 		return common.Hash{}, err
 	}
 
-	if len(account.CodeHash) == 0 {
+	if account.CodeSize == 0 {
 		return common.Hash{}, ErrHashIsEmpty
 	}
 
