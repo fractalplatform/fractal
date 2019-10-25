@@ -1154,7 +1154,6 @@ func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName string, v
 	// 		evm.InternalTxs = append(evm.InternalTxs, internalActions...)
 	// 	}
 	// }
-	return err
 }
 
 func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {

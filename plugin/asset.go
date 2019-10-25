@@ -256,7 +256,7 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 	_, err = asm.getAssetIDByName(assetName)
 	if err == nil {
 		return ErrAssetIsExist
-	} else if err != ErrAssetIsExist {
+	} else if err != ErrAssetNotExist {
 		return err
 	}
 
