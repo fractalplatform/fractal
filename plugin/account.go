@@ -218,7 +218,7 @@ func (am *AccountManager) GetCode(accountName string) ([]byte, error) {
 		return nil, err
 	}
 
-	if account.CodeSize == 0 || account.Suicide {
+	if account.Suicide {
 		return nil, ErrCodeIsEmpty
 	}
 

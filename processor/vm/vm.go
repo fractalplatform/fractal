@@ -18,6 +18,7 @@
 package vm
 
 import (
+	"fmt"
 	"math/big"
 	"sync/atomic"
 
@@ -291,7 +292,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	// The contract is a scoped environment for this execution context only.
 
 	contract := NewContract(caller, toName, action.Value(), gas, action.AssetID())
-
+	fmt.Println("to ", toName)
 	// acct, err := evm.PM.GetAccountByName(toName)
 	// if err != nil {
 	// 	return nil, gas, err
@@ -498,7 +499,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 
 	if b, err := evm.PM.GetCode(contractName); err != nil {
 		return nil, 0, err
-	} else if b != nil {
+	} else if len(b) != 0 {
 		return nil, 0, ErrContractCodeCollision
 	}
 

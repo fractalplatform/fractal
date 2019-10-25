@@ -375,7 +375,7 @@ func TestVEN(t *testing.T) {
 	pm.AddBalanceByID(venContractName, 0, big.NewInt(1))
 	pm.AddBalanceByID(venSaleContractName, 0, big.NewInt(1))
 
-	setVenOwnerInput, err := input(VenAbifile, "setOwner", common.HexToAddress("vensalevontract"))
+	setVenOwnerInput, err := input(VenAbifile, "setOwner", common.BytesToAddress([]byte("vensalevontract")))
 	if err != nil {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
@@ -389,7 +389,7 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	initializeVenSaleInput, err := input(VenSaleAbifile, "initialize", common.HexToAddress("vencontract12345"), common.HexToAddress("ethvault12345"), common.HexToAddress("venvault12345"))
+	initializeVenSaleInput, err := input(VenSaleAbifile, "initialize", common.BytesToAddress([]byte("vencontract12345")), common.BytesToAddress([]byte("ethvault12345")), common.BytesToAddress([]byte("venvault12345")))
 	if err != nil {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
@@ -406,14 +406,16 @@ func TestVEN(t *testing.T) {
 	runtimeConfig.Value = big.NewInt(100000000000000000)
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
 
+	fmt.Println("start")
 	_, _, err = runtime.Call(action, &runtimeConfig)
+	fmt.Println("finish")
 	if err != nil {
 		fmt.Println("call buy ven sale error ", err)
 		return
 	}
 
 	runtimeConfig.Value = big.NewInt(0)
-	getBalanceInput, err := input(VenAbifile, "balanceOf", common.HexToAddress("jacobwolf12345"))
+	getBalanceInput, err := input(VenAbifile, "balanceOf", common.BytesToAddress([]byte("jacobwolf12345")))
 	if err != nil {
 		fmt.Println("getBalanceInput error ", err)
 		return

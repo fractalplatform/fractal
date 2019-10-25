@@ -753,7 +753,7 @@ func opSstore(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	loc := common.BigToHash(stack.pop())
 	val := stack.pop()
 	evm.StateDB.SetState(contract.Name(), loc, common.BigToHash(val))
-
+	fmt.Println(contract.Name(), loc, val)
 	evm.interpreter.intPool.put(val)
 	return nil, nil
 }
@@ -1531,6 +1531,7 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		evm.distributeAssetGas(int64(evm.interpreter.gasTable.CallValueTransferGas-evm.interpreter.gasTable.CallStipend), assetName, contract.Name())
 	}
 	if err != nil {
+		fmt.Println("err ", err)
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
