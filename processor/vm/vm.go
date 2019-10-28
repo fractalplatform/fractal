@@ -261,7 +261,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	}
 	// Fail if we're trying to transfer more than the available balance
 
-	if ok, err := evm.PM.CanTransfer(caller.Name(), action.AssetID(), action.Value()); !ok || err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), action.AssetID(), action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -339,7 +339,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
-	if ok, err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -476,7 +476,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
-	if ok, err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
