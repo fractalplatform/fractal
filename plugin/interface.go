@@ -44,7 +44,7 @@ type IAccount interface {
 	GetCodeHash(accountName string) (common.Hash, error)
 	SetCode(accountName string, code []byte) error
 	GetBalance(accountName string, assetID uint64) (*big.Int, error)
-	CanTransfer(accountName string, assetID uint64, value *big.Int) (bool, error)
+	CanTransfer(accountName string, assetID uint64, value *big.Int) error
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
 	GetAccount(accountName string) (*Account, error)                          // for asset plugin
 	AddBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin

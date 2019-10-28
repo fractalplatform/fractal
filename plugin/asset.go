@@ -265,11 +265,11 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 
 func (asm *AssetManager) checkAssetName(assetName string) error {
 	if uint64(len(assetName)) > assetNameMaxLength {
-		return ErrAccountNameLengthErr
+		return ErrAssetNameLengthErr
 	}
 
 	if assetRegExp.MatchString(assetName) != true {
-		return ErrAccountNameinvalid
+		return ErrAssetNameinvalid
 	}
 	return nil
 }
@@ -416,4 +416,6 @@ var (
 	ErrDestroyLimit              = errors.New("asset destroy exceeding the lower limit")
 	ErrAssetNameEqualAccountName = errors.New("asset name equal account name")
 	ErrIssueAsset                = errors.New("issue asset err")
+	ErrAssetNameinvalid          = errors.New("asset name invalid")
+	ErrAssetNameLengthErr        = errors.New("asset name length err")
 )

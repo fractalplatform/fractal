@@ -107,22 +107,22 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 	return nil, nil
 }
 
-func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value *big.Int) (bool, error) {
+func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value *big.Int) error {
 
 	if value.Cmp(big.NewInt(0)) < 0 {
-		return false, ErrAmountValueInvalid
+		return ErrAmountValueInvalid
 	}
 
 	val, err := am.GetBalance(accountName, assetID)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if val.Cmp(value) < 0 {
-		return false, ErrInsufficientBalance
+		return ErrInsufficientBalance
 	}
 
-	return true, nil
+	return nil
 }
 
 // TransferAsset
