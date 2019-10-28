@@ -46,6 +46,7 @@ type IAccount interface {
 	GetBalance(accountName string, assetID uint64) (*big.Int, error)
 	CanTransfer(accountName string, assetID uint64, value *big.Int) error
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
+	RecoverTx(signer types.Signer, tx *types.Transaction) error
 	GetAccount(accountName string) (*Account, error)                          // for asset plugin
 	AddBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	SubBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin

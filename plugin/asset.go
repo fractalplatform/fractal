@@ -119,15 +119,20 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		Description: description,
 	}
 
+	snap := asm.sdb.Snapshot()
+
 	assetID, err := asm.addNewAssetObject(&ao)
 	if err != nil {
+		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 	if assetID != SystemAssetID {
+		asm.sdb.RevertToSnapshot(snap)
 		return nil, ErrIssueAsset
 	}
 
 	if err = am.AddBalanceByID(accountName, assetID, amount); err != nil {
+		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 
@@ -158,18 +163,20 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 		return nil, ErrUpperLimit
 	}
 	assetObj.AddIssue = addissue
+	// total := new(big.Int).Add(assetObj.Amount, amount)
+	// if total.Cmp(assetObj.UpperLimit) > 0 {
+	// 	return nil, ErrUpperLimit
+	// }
+	assetObj.Amount = new(big.Int).Add(assetObj.Amount, amount)
 
-	total := new(big.Int).Add(assetObj.Amount, amount)
-	if total.Cmp(assetObj.UpperLimit) > 0 {
-		return nil, ErrUpperLimit
-	}
-	assetObj.Amount = total
+	snap := asm.sdb.Snapshot()
 
 	if err = asm.setAsset(assetObj); err != nil {
 		return nil, err
 	}
 
 	if err = am.AddBalanceByID(to, assetID, amount); err != nil {
+		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 
@@ -185,10 +192,6 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 		return nil, ErrAmountValueInvalid
 	}
 
-	if err := am.SubBalanceByID(accountName, assetID, amount); err != nil {
-		return nil, err
-	}
-
 	assetObj, err := asm.getAssetObjectByID(assetID)
 	if err != nil {
 		return nil, err
@@ -200,7 +203,14 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 	}
 	assetObj.Amount = total
 
+	snap := asm.sdb.Snapshot()
+
 	if err = asm.setAsset(assetObj); err != nil {
+		return nil, err
+	}
+
+	if err := am.SubBalanceByID(accountName, assetID, amount); err != nil {
+		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 

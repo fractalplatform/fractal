@@ -157,11 +157,18 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 		return err
 	}
 
+	snap := am.sdb.Snapshot()
+
 	if err = am.setAccount(fromAcct); err != nil {
 		return err
 	}
 
-	return am.setAccount(toAcct)
+	if err = am.setAccount(toAcct); err != nil {
+		am.sdb.RevertToSnapshot(snap)
+		return err
+	}
+
+	return nil
 }
 
 // RecoverTx
