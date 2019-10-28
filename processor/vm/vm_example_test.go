@@ -134,7 +134,7 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 // 	}
 
 // 	//action := issueAssetAction(senderName, receiverName)
-// 	if _, err := pm.IssueAsset(senderName, "bitcoin", "btc", big.NewInt(1000000000000000000), 10, senderName, senderName, big.NewInt(2000000000000000000), ""); err != nil {
+// 	if _, err := pm.IssueAsset(senderName, "bitcoin", "btc", big.NewInt(1000000000000000000), 10, senderName, senderName, big.NewInt(2000000000000000000), "", pm); err != nil {
 // 		fmt.Println("issue asset error", err)
 // 		return
 // 	}
@@ -143,7 +143,7 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 // 		Origin:      senderName,
 // 		FromPubkey:  senderPubkey,
 // 		State:       state,
-// 		Account:     account,
+// 		PM:          pm,
 // 		AssetID:     0,
 // 		GasLimit:    10000000000,
 // 		GasPrice:    big.NewInt(0),
@@ -169,33 +169,28 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 // 		fmt.Println("issuseAssetInput error ", err)
 // 		return
 // 	}
-// 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, 0, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput, nil)
+// 	action := types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, 0, runtimeConfig.GasLimit, runtimeConfig.Value, issuseAssetInput, nil)
 
 // 	ret, _, err := runtime.Call(action, &runtimeConfig)
 // 	if err != nil {
 // 		fmt.Println("call error ", err)
 // 		return
 // 	}
-// 	num := new(big.Int).SetBytes(ret)
-// 	if num.Cmp(big.NewInt(1)) != 0 {
-// 		t.Error("getBalance fail, want 1, get ", num)
-// 	}
 
-// 	senderAcc, err := pm.GetAccountByName(senderName)
+// 	balance_1, err := pm.GetBalance(senderName, 0)
 // 	if err != nil {
-// 		fmt.Println("GetAccountByName sender account error", err)
+// 		fmt.Println("GetBalance assetID 0 sender account error", err)
 // 		return
 // 	}
-
-// 	result := senderAcc.GetBalancesList()
+// 	balance_2, err := pm.GetBalance(senderName, 1)
 // 	if err != nil {
-// 		fmt.Println("GetAllAccountBalancesset error", err)
+// 		fmt.Println("GetBalance assetID 1 sender account error", err)
 // 		return
 // 	}
-// 	assert.Equal(t, result[0], &accountmanager.AssetBalance{AssetID: 0, Balance: big.NewInt(1000000000000000000)})
-// 	assert.Equal(t, result[1], &accountmanager.AssetBalance{AssetID: 1, Balance: big.NewInt(10000000000)})
+// 	assert.Equal(t, balance_1, big.NewInt(1000000000000000000))
+// 	assert.Equal(t, balance_2, big.NewInt(10000000000))
 
-// 	addAssetInput, err := input(abifile, "add", big.NewInt(1), common.BigToAddress(big.NewInt(4097)), big.NewInt(210000))
+// 	addAssetInput, err := input(abifile, "add", big.NewInt(1), common.BytesToAddress([]byte("jacobwolf12345")), big.NewInt(210000))
 // 	if err != nil {
 // 		fmt.Println("addAssetInput error ", err)
 // 		return
@@ -208,18 +203,14 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 // 		return
 // 	}
 
-// 	senderAcc, err = account.GetAccountByName(senderName)
+// 	balance_2, err = pm.GetBalance(senderName, 1)
 // 	if err != nil {
-// 		fmt.Println("GetAccountByName sender account error", err)
+// 		fmt.Println("GetBalance assetID 1 sender account error", err)
 // 		return
 // 	}
+// 	assert.Equal(t, balance_2, big.NewInt(10000000000))
 
-// 	result = senderAcc.GetBalancesList()
-// 	for _, b := range result {
-// 		fmt.Println("asset result ", b)
-// 	}
-
-// 	transferExAssetInput, err := input(abifile, "transAsset", common.BigToAddress(big.NewInt(4098)), big.NewInt(1), big.NewInt(10000))
+// 	transferExAssetInput, err := input(abifile, "transAsset", common.BytesToAddress([]byte("denverfolk12345")), big.NewInt(1), big.NewInt(10000))
 // 	if err != nil {
 // 		fmt.Println("transferExAssetInput error ", err)
 // 		return
@@ -234,40 +225,36 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 // 		return
 // 	}
 
-// 	senderAcc, err = account.GetAccountByName(senderName)
+// 	balance_sender, err := pm.GetBalance(senderName, 1)
 // 	if err != nil {
-// 		fmt.Println("GetAccountByName sender account error", err)
+// 		fmt.Println("GetBalance assetID 1 sender account error", err)
 // 		return
 // 	}
 
-// 	receiverAcc, err := account.GetAccountByName(receiverName)
+// 	balance_receiver, err := pm.GetBalance(receiverName, 1)
 // 	if err != nil {
-// 		fmt.Println("GetAccountByName receiver account error", err)
+// 		fmt.Println("GetBalance assetID 1 receiver account error", err)
 // 		return
 // 	}
 
-// 	result = senderAcc.GetBalancesList()
-// 	assert.Equal(t, result[0], &accountmanager.AssetBalance{AssetID: 0, Balance: big.NewInt(1000000000000000000)})
-// 	assert.Equal(t, result[1], &accountmanager.AssetBalance{AssetID: 1, Balance: big.NewInt(9999900000)})
+// 	assert.Equal(t, balance_sender, big.NewInt(9999900000))
+// 	assert.Equal(t, balance_receiver, big.NewInt(10000))
 
-// 	result = receiverAcc.GetBalancesList()
-// 	assert.Equal(t, result[0], &accountmanager.AssetBalance{AssetID: 1, Balance: big.NewInt(10000)})
+// 	// setOwnerInput, err := input(abifile, "setname", common.BigToAddress(big.NewInt(4098)), big.NewInt(1))
+// 	// if err != nil {
+// 	// 	fmt.Println("setOwnerInput error ", err)
+// 	// 	return
+// 	// }
+// 	// runtimeConfig.Value = big.NewInt(0)
+// 	// action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput, nil)
 
-// 	setOwnerInput, err := input(abifile, "setname", common.BigToAddress(big.NewInt(4098)), big.NewInt(1))
-// 	if err != nil {
-// 		fmt.Println("setOwnerInput error ", err)
-// 		return
-// 	}
-// 	runtimeConfig.Value = big.NewInt(0)
-// 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, contractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setOwnerInput, nil)
+// 	// _, _, err = runtime.Call(action, &runtimeConfig)
+// 	// if err != nil {
+// 	// 	fmt.Println("call error ", err)
+// 	// 	return
+// 	// }
 
-// 	_, _, err = runtime.Call(action, &runtimeConfig)
-// 	if err != nil {
-// 		fmt.Println("call error ", err)
-// 		return
-// 	}
-
-// 	getBalanceInput, err := input(abifile, "getbalance", common.BigToAddress(big.NewInt(4098)), big.NewInt(1))
+// 	getBalanceInput, err := input(abifile, "getbalance", common.BytesToAddress([]byte("denverfolk12345")), big.NewInt(1))
 // 	if err != nil {
 // 		fmt.Println("getBalanceInput error ", err)
 // 		return
@@ -406,9 +393,7 @@ func TestVEN(t *testing.T) {
 	runtimeConfig.Value = big.NewInt(100000000000000000)
 	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
 
-	fmt.Println("start")
 	_, _, err = runtime.Call(action, &runtimeConfig)
-	fmt.Println("finish")
 	if err != nil {
 		fmt.Println("call buy ven sale error ", err)
 		return

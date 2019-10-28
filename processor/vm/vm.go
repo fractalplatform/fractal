@@ -18,7 +18,6 @@
 package vm
 
 import (
-	"fmt"
 	"math/big"
 	"sync/atomic"
 
@@ -292,19 +291,6 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	// The contract is a scoped environment for this execution context only.
 
 	contract := NewContract(caller, toName, action.Value(), gas, action.AssetID())
-	fmt.Println("to ", toName)
-	// acct, err := evm.PM.GetAccountByName(toName)
-	// if err != nil {
-	// 	return nil, gas, err
-	// }
-	// if acct == nil {
-	// 	return nil, gas, ErrAccountNotExist
-	// }
-	// codeHash, err := acct.GetCodeHash()
-	// if err != nil {
-	// 	return nil, gas, err
-	// }
-	// code, _ := acct.GetCode()
 
 	codeHash, err := evm.PM.GetCodeHash(toName)
 	if err != nil {

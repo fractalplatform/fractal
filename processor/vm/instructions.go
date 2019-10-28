@@ -32,9 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/crypto/ecies"
 	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
@@ -753,7 +751,6 @@ func opSstore(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	loc := common.BigToHash(stack.pop())
 	val := stack.pop()
 	evm.StateDB.SetState(contract.Name(), loc, common.BigToHash(val))
-	fmt.Println(contract.Name(), loc, val)
 	evm.interpreter.intPool.put(val)
 	return nil, nil
 }
@@ -1124,36 +1121,8 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 }
 
 func execAddAsset(evm *EVM, contract *Contract, assetID uint64, toName string, value *big.Int) error {
-	asset := &plugin.AddAsset{AssetID: assetID, Amount: value, To: toName}
-	b, err := rlp.EncodeToBytes(asset)
-	if err != nil {
-		return err
-	}
-
-	action := types.NewAction(types.IncreaseAsset, contract.Name(), evm.chainConfig.AssetName, 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b, nil)
-
-	_, err = evm.PM.ExecTx(action)
+	_, err := evm.PM.IncreaseAsset(contract.Name(), toName, assetID, value, evm.PM)
 	return err
-	// internalActions, err := evm.PM.Process(&types.AccountManagerContext{
-	// 	Action:      action,
-	// 	Number:      evm.Context.BlockNumber.Uint64(),
-	// 	CurForkID:   evm.Context.ForkID,
-	// 	ChainConfig: evm.chainConfig,
-	// })
-	// if evm.vmConfig.ContractLogFlag {
-	// 	errmsg := ""
-	// 	if err != nil {
-	// 		errmsg = err.Error()
-	// 	}
-	// 	internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "addasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
-	// 	evm.InternalTxs = append(evm.InternalTxs, internalAction)
-	// 	if len(internalActions) > 0 {
-	// 		for _, iLog := range internalActions {
-	// 			iLog.Depth = uint64(evm.depth)
-	// 		}
-	// 		evm.InternalTxs = append(evm.InternalTxs, internalActions...)
-	// 	}
-	// }
 }
 
 func opDestroyAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
@@ -1349,70 +1318,27 @@ func executeIssuseAsset(evm *EVM, contract *Contract, desc string) (uint64, erro
 		return 0, fmt.Errorf("amount not correct")
 	}
 	founder := input[6]
-	contractName := input[7]
+	//contractName := input[7]
 	description := input[8]
 
-	asset := &plugin.IssueAsset{AssetName: name, Symbol: symbol, Amount: total, Owner: owner, Founder: founder, Decimals: decimal, UpperLimit: limit, Contract: contractName, Description: description}
-
-	b, err := rlp.EncodeToBytes(asset)
-	if err != nil {
-		return 0, err
-	}
-	action := types.NewAction(types.IssueAsset, contract.Name(), evm.chainConfig.AssetName, 0, evm.chainConfig.SysTokenID, 0, big.NewInt(0), b, nil)
-
-	_, err = evm.PM.ExecTx(action)
-	return 0, err
-	// internalActions, err := evm.PM.Process(&types.AccountManagerContext{
-	// 	Action:      action,
-	// 	Number:      evm.Context.BlockNumber.Uint64(),
-	// 	CurForkID:   evm.Context.ForkID,
-	// 	ChainConfig: evm.chainConfig,
-	// })
-	// if err != nil {
-	// 	return 0, err
-	// } else {
-	// 	assetInfo, err := evm.PM.GetAssetInfoByName(name)
-	// 	if err != nil || assetInfo == nil {
-	// 		return 0, err
-	// 	} else {
-	// 		if evm.vmConfig.ContractLogFlag {
-	// 			errmsg := ""
-	// 			if err != nil {
-	// 				errmsg = err.Error()
-	// 			}
-	// 			internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "issueasset", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth), Error: errmsg}
-	// 			evm.InternalTxs = append(evm.InternalTxs, internalAction)
-	// 			if len(internalActions) > 0 {
-	// 				for _, iLog := range internalActions {
-	// 					iLog.Depth = uint64(evm.depth)
-	// 				}
-	// 				evm.InternalTxs = append(evm.InternalTxs, internalActions...)
-	// 			}
-	// 		}
-	// 		return assetInfo.AssetID, nil
-	// 	}
-	// }
+	_, err = evm.PM.IssueAsset(contract.Name(), name, symbol, total, decimal, founder, owner, limit, description, evm.PM)
+	return 0, nil
 }
 
 //issue an asset for multi-asset
 func opSetAssetOwner(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	// 	newOwner, assetId := stack.pop(), stack.pop()
-	// 	//newOwnerName, _ := common.BigToName(newOwner)
-	// 	userID := newOwner.Uint64()
-	// 	acct, err := evm.PM.GetAccountById(userID)
-	// 	if err != nil || acct == nil {
-	// 		stack.push(evm.interpreter.intPool.getZero())
-	// 		return nil, nil
-	// 	}
-	// 	assetID := assetId.Uint64()
+	// newOwner, assetId := stack.pop(), stack.pop()
+	// newOwnerName := string(newOwner.Bytes())
+	// assetID := assetId.Uint64()
 
-	// 	err = execSetAssetOwner(evm, contract, assetID, acct.GetName())
-	// 	if err != nil {
-	// 		stack.push(evm.interpreter.intPool.getZero())
-	// 	} else {
-	// 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
-	// 	}
-	// 	evm.interpreter.intPool.put(newOwner, assetId)
+	// err = execSetAssetOwner(evm, contract, assetID, acct.GetName())
+	// if err != nil {
+	// 	stack.push(evm.interpreter.intPool.getZero())
+	// } else {
+	// 	stack.push(evm.interpreter.intPool.get().SetUint64(1))
+	// }
+	// evm.interpreter.intPool.put(newOwner, assetId)
+	stack.push(evm.interpreter.intPool.getZero())
 	return nil, nil
 }
 
@@ -1531,7 +1457,6 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		evm.distributeAssetGas(int64(evm.interpreter.gasTable.CallValueTransferGas-evm.interpreter.gasTable.CallStipend), assetName, contract.Name())
 	}
 	if err != nil {
-		fmt.Println("err ", err)
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
 		stack.push(evm.interpreter.intPool.get().SetUint64(1))
