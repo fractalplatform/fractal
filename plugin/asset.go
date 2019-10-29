@@ -35,9 +35,6 @@ var (
 
 const SystemAssetID uint64 = 0
 
-var SystemAssetName string
-var hasIssued = false
-
 type AssetManager struct {
 	sdb *state.StateDB
 }
@@ -70,11 +67,12 @@ func NewASM(sdb *state.StateDB) (IAsset, error) {
 func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error) {
 
-	if hasIssued {
-		return nil, ErrAssetIsExist
+	_, err := asm.getAssetObjectByID(SystemAssetID)
+	if err == nil { // system asset has issued
+		return nil, ErrIssueAsset
 	}
 
-	err := asm.checkIssueAssetParam(accountName, assetName, symbol, amount, decimals, owner, limit, description, am)
+	err = asm.checkIssueAssetParam(accountName, assetName, symbol, amount, decimals, owner, limit, description, am)
 	if err != nil {
 		return nil, err
 	}
@@ -118,9 +116,6 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		return nil, err
 	}
 
-	hasIssued = true
-	SystemAssetName = assetName
-
 	return nil, nil
 }
 
@@ -134,7 +129,7 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 	}
 
 	if assetID != SystemAssetID {
-		return nil, ErrAssetIDInvalid
+		return nil, ErrAssetNotExist
 	}
 
 	assetObj, err := asm.getAssetObjectByID(assetID)
@@ -178,7 +173,7 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 	}
 
 	if assetID != SystemAssetID {
-		return nil, ErrAssetIDInvalid
+		return nil, ErrAssetNotExist
 	}
 
 	assetObj, err := asm.getAssetObjectByID(assetID)
@@ -207,17 +202,27 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 }
 
 func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
-	if assetName == "" || assetName != SystemAssetName {
+	if assetName == "" {
 		return 0, ErrAssetNotExist
 	}
-	return SystemAssetID, nil
+
+	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	if err != nil {
+		return 0, err
+	}
+	return obj.AssetID, nil
 }
 
 func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
-	if hasIssued == false || assetID != SystemAssetID {
+	if assetID != SystemAssetID {
 		return "", ErrAssetNotExist
 	}
-	return SystemAssetName, nil
+
+	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	if err != nil {
+		return "", err
+	}
+	return obj.AssetName, nil
 }
 
 func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName string, symbol string, amount *big.Int,
