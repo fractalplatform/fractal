@@ -17,8 +17,15 @@
 package plugin
 
 import (
+	"errors"
+
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/utils/rlp"
+)
+
+var (
+	ErrWrongAction = errors.New("action is invalid")
 )
 
 // Manager manage all plugins.
@@ -32,11 +39,32 @@ type Manager struct {
 }
 
 func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
-	action := arg.(*types.Action)
-	switch action.MethodID() {
-	case "createAccount":
-		//	return pm.CreateAccount(action)
-		return nil, nil
+	action, ok := arg.(*types.Action)
+	if !ok {
+		return nil, ErrWrongAction
+	}
+	switch action.Type() {
+	case CreateAccount:
+		param := &CreateAccountAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		} else {
+			return pm.CreateAccount(param.Name, param.Pubkey, param.Desc)
+		}
+	case IssueAsset:
+		param := &IssueAssetAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		} else {
+			return pm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount)
+		}
+	case IncreaseAsset:
+		param := &IncreaseAssetAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		} else {
+			return pm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount)
+		}
 	default:
 		return nil, nil
 	}
