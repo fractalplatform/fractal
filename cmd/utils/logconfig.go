@@ -64,7 +64,7 @@ func (lc *LogConfig) Setup() error {
 	if lc.Logdir != "" {
 		rfh, err := log.RotatingFileHandler(
 			lc.Logdir,
-			1048576,
+			1024*1024,
 			log.JSONFormatOrderedEx(false, true),
 		)
 		if err != nil {

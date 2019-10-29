@@ -26,9 +26,8 @@ type accountSet struct {
 	cache    *[]string
 }
 
-// newAccountSet creates a new name set with an associated signer for sender
-// derivations.
-func newAccountSet(signer types.Signer, names ...string) *accountSet {
+// newAccountSet creates a new name set。
+func newAccountSet(names ...string) *accountSet {
 	as := &accountSet{accounts: make(map[string]struct{})}
 	for _, name := range names {
 		as.add(name)
