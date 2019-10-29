@@ -716,18 +716,35 @@ func (task *downloadTask) Do() {
 		}, downloadAmount, 0, false,
 	}, task.worker.errCh)
 	if err != nil || len(headers) != int(downloadAmount) {
-		log.Debug(fmt.Sprint("err-2:", err, len(headers), downloadAmount))
+		log.Debug("download header failed",
+			"err", err,
+			"recvAmount", len(headers),
+			"taskAmount", downloadAmount,
+		)
 		return
 	}
 	if headers[0].Number.Uint64() != task.startNumber+1 || headers[0].ParentHash != task.startHash ||
 		headers[len(headers)-1].Number.Uint64() != task.endNumber || headers[len(headers)-1].Hash() != task.endHash {
-		log.Debug(fmt.Sprintf("e2-1 0d:%d\n0ed:%d\nsd:%d\nsed:%d", headers[0].Number.Uint64(), headers[len(headers)-1].Number.Uint64(), task.startNumber, task.endNumber))
-		log.Debug(fmt.Sprintf("e2-2 0:%x\n0e:%x\ns:%x\nse:%x", headers[0].Hash(), headers[len(headers)-1].Hash(), task.startHash, task.endHash))
+		log.Debug("download header don't match task",
+			"recv.Start.Number", headers[0].Number.Uint64(),
+			"recv.End.Number", headers[len(headers)-1].Number.Uint64(),
+			"recv.Start.ParentHash", headers[0].ParentHash,
+			"recv.End.Hash", headers[len(headers)-1].Hash(),
+			"task.Start.Number", task.startNumber,
+			"task.End.Number", task.endNumber,
+			"task.Start.Hash", task.startHash,
+			"task.End.Hash", task.endHash,
+		)
 		return
 	}
 	for i := 1; i < len(headers); i++ {
 		if headers[i].ParentHash != headers[i-1].Hash() || headers[i].Number.Uint64() != headers[i-1].Number.Uint64()+1 {
-			log.Debug(fmt.Sprintf("err-3: phash:%x n->phash:%x\npn+1:%d n:%d", headers[i-1].Hash(), headers[i].ParentHash, headers[i-1].Number.Uint64()+1, headers[i].Number.Uint64()))
+			log.Debug("download headers are discontinuous",
+				"parent.number", headers[i-1].Number.Uint64(),
+				"parent.hash", headers[i-1].Hash(),
+				"n.number", headers[i].Number.Uint64(),
+				"n.parentHash", headers[i].ParentHash,
+			)
 			return
 		}
 	}
@@ -741,7 +758,10 @@ func (task *downloadTask) Do() {
 
 	bodies, err = getBlocks(station, remote, reqHashes, task.worker.errCh)
 	if err != nil || len(bodies) != len(reqHashes) {
-		log.Debug(fmt.Sprint("err-4:", err, len(bodies), len(reqHashes)))
+		log.Debug("download blocks failed",
+			"err", err,
+			"recvAmount", len(bodies),
+			"taskAmount", len(reqHashes))
 		return
 	}
 

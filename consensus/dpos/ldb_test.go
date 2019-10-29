@@ -119,7 +119,7 @@ func TestLDBCandidate(t *testing.T) {
 		candidateInfo := &CandidateInfo{
 			Epoch:         uint64(index),
 			Name:          candidate,
-			URL:           fmt.Sprintf("www.%v.com", candidate),
+			Info:          fmt.Sprintf("www.%v.com", candidate),
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 		}
@@ -281,7 +281,7 @@ func TestLDBVoter(t *testing.T) {
 		candidateInfo := &CandidateInfo{
 			Epoch:         0,
 			Name:          candidate,
-			URL:           fmt.Sprintf("www.%v.com", candidate),
+			Info:          fmt.Sprintf("www.%v.com", candidate),
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 		}

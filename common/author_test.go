@@ -51,11 +51,12 @@ func TestAuthorMarshalAndUnMarshal(t *testing.T) {
 		inputAuthor *Author
 	}{
 		{&Author{Owner: Name("test"), Weight: 1}},
-		{&Author{Owner: HexToPubKey("test"), Weight: 1}},
-		{&Author{Owner: HexToAddress("test"), Weight: 1}},
+		{&Author{Owner: HexToPubKey("123455"), Weight: 1}},
+		{&Author{Owner: HexToAddress("13123123123"), Weight: 1}},
 	}
 	for _, test := range tests {
 		authorBytes, err := json.Marshal(test.inputAuthor)
+
 		if err != nil {
 			t.Fatal(err)
 		}

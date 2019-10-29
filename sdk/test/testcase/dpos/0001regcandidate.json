@@ -22,7 +22,7 @@
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -36,7 +36,7 @@
     "gas": 30000000,
     "value": 11111000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -50,7 +50,7 @@
     "gas": 30000000,
     "value": 0,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -64,7 +64,7 @@
     "gas": 30000000,
     "value": 1000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
@@ -78,25 +78,25 @@
     "gas": 30000000,
     "value": 2000000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
     "contain": "insufficient funds for value"
 },
 {
-    "comment": "candidate0001 regcandidate & transfer 10000 ft, wrong url",
+    "comment": "candidate0001 regcandidate & transfer 10000 ft, wrong Info",
     "type": "regcandidate",
     "from": "candidate0001",
     "to": "fractal.dpos",
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.com"
+        "Info": "www.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.comwww.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
-    "contain": "invalid url"
+    "contain": "invalid Info"
 },
 {
     "comment": "candidate0001 regcandidate & transfer 10000 ft",
@@ -106,7 +106,7 @@
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": true
@@ -119,7 +119,7 @@
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,

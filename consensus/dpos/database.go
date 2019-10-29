@@ -59,7 +59,7 @@ type IDB interface {
 	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
 }
 
-// CandidateType candiate status
+// CandidateType candidate status
 type CandidateType uint64
 
 const (
@@ -75,7 +75,8 @@ const (
 	Unkown
 )
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the hex representation of a. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (t CandidateType) MarshalText() ([]byte, error) {
 	return t.MarshalJSON()
 }
@@ -127,7 +128,7 @@ func (t *CandidateType) UnmarshalJSON(data []byte) error {
 type CandidateInfo struct {
 	Epoch         uint64        `json:"epoch"`
 	Name          string        `json:"name"`          // candidate name
-	URL           string        `json:"url"`           // candidate url
+	Info          string        `json:"info"`          // candidate url
 	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
 	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
 	Number        uint64        `json:"number"`        // timestamp
@@ -142,7 +143,7 @@ func (candidateInfo *CandidateInfo) copy() *CandidateInfo {
 	return &CandidateInfo{
 		Epoch:         candidateInfo.Epoch,
 		Name:          candidateInfo.Name,
-		URL:           candidateInfo.URL,
+		Info:          candidateInfo.Info,
 		Quantity:      candidateInfo.Quantity,
 		TotalQuantity: candidateInfo.TotalQuantity,
 		Number:        candidateInfo.Number,
@@ -209,7 +210,7 @@ type CandidateInfoForBrowser struct {
 	ActualCounter    uint64 `json:"actualCounter"`
 	NowCounter       uint64 `json:"nowShouldCounter"`
 	NowActualCounter uint64 `json:"nowActualCounter"`
-	// URL              string `json:"url"`
+	// Info              string `json:"info"`
 	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
@@ -218,7 +219,7 @@ type VoterInfoFractal struct {
 	Holder        string `json:"holder"`
 	Quantity      string `json:"quantity"`
 	TotalQuantity string `json:"totalQuantity"`
-	URL           string `json:"url"`
+	Info          string `json:"info"`
 	State         uint64 `json:"state"`
 	Vote          uint64 `json:"vote"`
 	CanVote       bool   `json:"canVote"`

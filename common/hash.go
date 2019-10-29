@@ -86,7 +86,8 @@ func (h *Hash) UnmarshalJSON(input []byte) error {
 	return hexutil.UnmarshalFixedJSON(hashT, input, h[:])
 }
 
-// MarshalText returns the hex representation of h.
+// MarshalText returns the hex representation of h.Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (h Hash) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(h[:]).MarshalText()
 }
@@ -109,7 +110,8 @@ func (h *UnprefixedHash) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedUnprefixedText("UnprefixedHash", input, h[:])
 }
 
-// MarshalText encodes the hash as hex.
+// MarshalText encodes the hash as hex. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (h UnprefixedHash) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(h[:])), nil
 }

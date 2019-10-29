@@ -33,7 +33,7 @@
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
-        "URL": "www.xxxxxx.com"
+        "Info": "www.xxxxxx.com"
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": true
