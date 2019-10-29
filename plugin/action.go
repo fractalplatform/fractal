@@ -24,7 +24,7 @@ type CreateAccountAction struct {
 	Desc   string
 }
 
-type AddAssetAction struct {
+type IncreaseAssetAction struct {
 	AssetID uint64
 	Amount  *big.Int
 	To      string
