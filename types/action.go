@@ -40,8 +40,6 @@ const (
 	CallContract ActionType = iota
 	// CreateContract repesents the create contract action.
 	CreateContract
-	// CallNative
-	CallNative
 )
 
 const (
