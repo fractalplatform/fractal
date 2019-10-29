@@ -30,12 +30,13 @@ var (
 	assetRegExp        = regexp.MustCompile(`^([a-z][a-z0-9]{1,31})`)
 	assetNameMaxLength = uint64(32)
 	assetManagerName   = "assetAccount"
-	assetCountPrefix   = "assetCount"
-	assetNameIDPrefix  = "assetNameId"
 	assetObjectPrefix  = "assetDefinitionObject"
 )
 
 const SystemAssetID uint64 = 0
+
+var SystemAssetName string
+var hasIssued = false
 
 type AssetManager struct {
 	sdb *state.StateDB
@@ -80,12 +81,16 @@ func NewASM(sdb *state.StateDB) (IAsset, error) {
 	asset := AssetManager{
 		sdb: sdb,
 	}
-	asset.initAssetCount()
+	//asset.initAssetCount()
 	return &asset, nil
 }
 
 func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error) {
+
+	if hasIssued {
+		return nil, ErrAssetIsExist
+	}
 
 	err := asm.checkIssueAssetParam(accountName, assetName, symbol, amount, decimals, owner, limit, description, am)
 	if err != nil {
@@ -107,7 +112,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	}
 
 	ao := Asset{
-		AssetID:     0,
+		AssetID:     SystemAssetID,
 		AssetName:   assetName,
 		Symbol:      symbol,
 		Amount:      amount,
@@ -121,20 +126,18 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 
 	snap := asm.sdb.Snapshot()
 
-	assetID, err := asm.addNewAssetObject(&ao)
+	err = asm.setAsset(&ao)
 	if err != nil {
-		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
-	}
-	if assetID != SystemAssetID {
-		asm.sdb.RevertToSnapshot(snap)
-		return nil, ErrIssueAsset
 	}
 
-	if err = am.AddBalanceByID(accountName, assetID, amount); err != nil {
+	if err = am.AddBalanceByID(accountName, SystemAssetID, amount); err != nil {
 		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
+
+	hasIssued = true
+	SystemAssetName = assetName
 
 	return nil, nil
 }
@@ -146,6 +149,10 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 
 	if amount.Cmp(big.NewInt(0)) <= 0 {
 		return nil, ErrAmountValueInvalid
+	}
+
+	if assetID != SystemAssetID {
+		return nil, ErrAssetIDInvalid
 	}
 
 	assetObj, err := asm.getAssetObjectByID(assetID)
@@ -163,10 +170,6 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 		return nil, ErrUpperLimit
 	}
 	assetObj.AddIssue = addissue
-	// total := new(big.Int).Add(assetObj.Amount, amount)
-	// if total.Cmp(assetObj.UpperLimit) > 0 {
-	// 	return nil, ErrUpperLimit
-	// }
 	assetObj.Amount = new(big.Int).Add(assetObj.Amount, amount)
 
 	snap := asm.sdb.Snapshot()
@@ -190,6 +193,10 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 
 	if amount.Cmp(big.NewInt(0)) <= 0 {
 		return nil, ErrAmountValueInvalid
+	}
+
+	if assetID != SystemAssetID {
+		return nil, ErrAssetIDInvalid
 	}
 
 	assetObj, err := asm.getAssetObjectByID(assetID)
@@ -218,15 +225,17 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 }
 
 func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
-	return asm.getAssetIDByName(assetName)
+	if assetName == "" || assetName != SystemAssetName {
+		return 0, ErrAssetNotExist
+	}
+	return SystemAssetID, nil
 }
 
 func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
-	asset, err := asm.getAssetByID(assetID)
-	if err != nil {
-		return "", err
+	if hasIssued == false || assetID != SystemAssetID {
+		return "", ErrAssetNotExist
 	}
-	return asset.AssetName, nil
+	return SystemAssetName, nil
 }
 
 func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName string, symbol string, amount *big.Int,
@@ -263,13 +272,6 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 		return ErrAssetNameEqualAccountName
 	}
 
-	_, err = asm.getAssetIDByName(assetName)
-	if err == nil {
-		return ErrAssetIsExist
-	} else if err != ErrAssetNotExist {
-		return err
-	}
-
 	return nil
 }
 
@@ -282,49 +284,6 @@ func (asm *AssetManager) checkAssetName(assetName string) error {
 		return ErrAssetNameinvalid
 	}
 	return nil
-}
-
-func (asm *AssetManager) initAssetCount() {
-	_, err := asm.getAssetCount()
-	if err == ErrAssetCountNotExist {
-		var assetID uint64
-		b, err := rlp.EncodeToBytes(&assetID)
-		if err != nil {
-			panic(err)
-		}
-		asm.sdb.Put(assetManagerName, assetCountPrefix, b)
-	}
-}
-
-func (asm *AssetManager) getAssetCount() (uint64, error) {
-	b, err := asm.sdb.Get(assetManagerName, assetCountPrefix)
-	if err != nil {
-		return 0, err
-	}
-	if len(b) == 0 {
-		return 0, ErrAssetCountNotExist
-	}
-	var assetCount uint64
-	err = rlp.DecodeBytes(b, &assetCount)
-	if err != nil {
-		return 0, err
-	}
-	return assetCount, nil
-}
-
-func (asm *AssetManager) getAssetByID(assetID uint64) (*Asset, error) {
-	b, err := asm.sdb.Get(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetID, 10))
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 {
-		return nil, ErrAssetNotExist
-	}
-	var asset Asset
-	if err := rlp.DecodeBytes(b, &asset); err != nil {
-		return nil, err
-	}
-	return &asset, nil
 }
 
 func (asm *AssetManager) setAsset(asset *Asset) error {
@@ -341,24 +300,6 @@ func (asm *AssetManager) setAsset(asset *Asset) error {
 	return nil
 }
 
-func (asm *AssetManager) getAssetIDByName(assetName string) (uint64, error) {
-	if assetName == "" {
-		return 0, ErrAssetNameEmpty
-	}
-	b, err := asm.sdb.Get(assetManagerName, assetNameIDPrefix+assetName)
-	if err != nil {
-		return 0, err
-	}
-	if len(b) == 0 {
-		return 0, ErrAssetNotExist
-	}
-	var assetID uint64
-	if err := rlp.DecodeBytes(b, &assetID); err != nil {
-		return 0, err
-	}
-	return assetID, nil
-}
-
 func (asm *AssetManager) getAssetObjectByID(ID uint64) (*Asset, error) {
 	b, err := asm.sdb.Get(assetManagerName, assetObjectPrefix+strconv.FormatUint(ID, 10))
 	if err != nil {
@@ -372,43 +313,6 @@ func (asm *AssetManager) getAssetObjectByID(ID uint64) (*Asset, error) {
 		return nil, err
 	}
 	return &asset, nil
-}
-
-func (asm *AssetManager) addNewAssetObject(ao *Asset) (uint64, error) {
-	if ao == nil {
-		return 0, ErrAssetObjectEmpty
-	}
-	//get assetCount
-	assetCount, err := asm.getAssetCount()
-	if err != nil {
-		return 0, err
-	}
-
-	ao.AssetID = assetCount
-	//store asset object
-	object, err := rlp.EncodeToBytes(ao)
-	if err != nil {
-		return 0, err
-	}
-
-	//store asset name with asset id
-	assetID, err := rlp.EncodeToBytes(&assetCount)
-	if err != nil {
-		return 0, err
-	}
-
-	assetCount2 := assetCount + 1
-	aid, err := rlp.EncodeToBytes(&assetCount2)
-	if err != nil {
-		return 0, err
-	}
-
-	asm.sdb.Put(assetManagerName, assetObjectPrefix+strconv.FormatUint(assetCount, 10), object)
-	asm.sdb.Put(assetManagerName, assetNameIDPrefix+ao.AssetName, assetID)
-	//store assetCount
-	asm.sdb.Put(assetManagerName, assetCountPrefix, aid)
-
-	return assetCount, nil
 }
 
 var (
