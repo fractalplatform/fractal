@@ -67,11 +67,10 @@ func NewACM(db *state.StateDB) (IAccount, error) {
 	return &AccountManager{db}, nil
 }
 
-// CreateAccount
-// Parse Payload to create a account
+// CreateAccount Parse Payload to create a account
 func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error) {
 	if uint64(len(description)) > MaxDescriptionLength {
-		return nil, ErrDetailTooLong
+		return nil, ErrDescriptionTooLong
 	}
 
 	if err := am.checkAccountName(accountName); err != nil {
@@ -131,7 +130,7 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 	if value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	} else if value.Cmp(big.NewInt(0)) < 0 {
-		return ErrNegativeValue
+		return ErrAmountValueInvalid
 	}
 
 	if fromAccount == toAccount {
@@ -271,10 +270,6 @@ func (am *AccountManager) GetBalance(accountName string, assetID uint64) (*big.I
 		return big.NewInt(0), err
 	}
 
-	//if account.Balances == nil {
-	//	return big.NewInt(0), ErrAccountAssetNotExist
-	//}
-
 	if account.Balances.AssetID != assetID {
 		return big.NewInt(0), ErrAssetIDInvalid
 	}
@@ -287,9 +282,6 @@ func (am *AccountManager) AddBalanceByID(accountName string, assetID uint64, amo
 	if err != nil {
 		return err
 	}
-	//if account.Destroy == true {
-	//	return ErrAccountIsDestroy
-	//}
 
 	if err = am.addBalance(account, assetID, amount); err != nil {
 		return err
@@ -303,9 +295,6 @@ func (am *AccountManager) SubBalanceByID(accountName string, assetID uint64, amo
 	if err != nil {
 		return err
 	}
-	//if account.Destroy == true {
-	//	return ErrAccountIsDestroy
-	//}
 
 	if err = am.subBalance(account, assetID, amount); err != nil {
 		return err
@@ -351,7 +340,6 @@ func (am *AccountManager) getAccount(accountName string) (*Account, error) {
 	}
 
 	if len(b) == 0 {
-		//log.Debug("account not exist", "address", ErrAccountNotExist, address)
 		return nil, ErrAccountNotExist
 	}
 
@@ -367,9 +355,6 @@ func (am *AccountManager) setAccount(account *Account) error {
 	if account == nil {
 		return ErrAccountObjectIsNil
 	}
-	//if account.Destroy == true {
-	//	return ErrAccountDestroyed
-	//}
 
 	b, err := rlp.EncodeToBytes(account)
 	if err != nil {
@@ -399,10 +384,6 @@ func (am *AccountManager) subBalance(account *Account, assetID uint64, value *bi
 		return ErrAmountValueInvalid
 	}
 
-	//if account.Balances == nil {
-	//	return ErrAccountAssetNotExist
-	//}
-
 	if account.Balances.AssetID != assetID {
 		return ErrAssetIDInvalid
 	}
@@ -422,13 +403,9 @@ var (
 	ErrAccountNotExist      = errors.New("account not exist")
 	ErrAccountIsExist       = errors.New("account is exist")
 	ErrAccountObjectIsNil   = errors.New("account object is nil")
-	ErrAccountDestroyed     = errors.New("account Destroyed")
 	ErrAssetIDInvalid       = errors.New("assetID invalid")
 	ErrAmountValueInvalid   = errors.New("amount value invalid")
-	ErrAccountAssetNotExist = errors.New("account asset not exist")
 	ErrInsufficientBalance  = errors.New("insufficient balance")
-	ErrNegativeValue        = errors.New("negative value")
 	ErrCodeIsEmpty          = errors.New("code is empty")
-	ErrAccountIsDestroy     = errors.New("account in destroy")
 	ErrHashIsEmpty          = errors.New("hash is empty")
 )

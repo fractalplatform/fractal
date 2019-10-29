@@ -52,6 +52,7 @@ type Asset struct {
 	Description string   `json:"description"`
 }
 
+// NewASM New a AssetManager
 func NewASM(sdb *state.StateDB) (IAsset, error) {
 	if sdb == nil {
 		return nil, ErrNewAssetManagerErr
@@ -60,10 +61,10 @@ func NewASM(sdb *state.StateDB) (IAsset, error) {
 	asset := AssetManager{
 		sdb: sdb,
 	}
-	//asset.initAssetCount()
 	return &asset, nil
 }
 
+// IssueAsset Issue system asset
 func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error) {
 
@@ -233,17 +234,15 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 	}
 
 	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 {
-		return ErrNewAssetObject
+		return ErrAmountValueInvalid
 	}
 
-	if limit.Cmp(big.NewInt(0)) > 0 {
-		if amount.Cmp(limit) > 0 {
-			return ErrNewAssetObject
-		}
+	if amount.Cmp(limit) > 0 {
+		return ErrAmountValueInvalid
 	}
 
 	if uint64(len(description)) > MaxDescriptionLength {
-		return ErrDetailTooLong
+		return ErrDescriptionTooLong
 	}
 
 	err := asm.checkAssetName(assetName)
@@ -306,17 +305,14 @@ var (
 	ErrNewAssetManagerErr        = errors.New("new AssetManager error")
 	ErrAssetIsExist              = errors.New("asset is exist")
 	ErrAssetNotExist             = errors.New("asset not exist")
-	ErrNewAssetObject            = errors.New("create asset object input invalid")
-	ErrDetailTooLong             = errors.New("detail info exceed maximum")
+	ErrDescriptionTooLong        = errors.New("description exceed max length")
 	ErrAssetObjectEmpty          = errors.New("asset object is empty")
-	ErrAssetCountNotExist        = errors.New("asset total count not exist")
-	ErrAssetNameEmpty            = errors.New("asset name is empty")
 	ErrOwnerMismatch             = errors.New("asset owner mismatch")
 	ErrParamIsNil                = errors.New("param is nil")
 	ErrUpperLimit                = errors.New("asset amount over the issuance limit")
 	ErrDestroyLimit              = errors.New("asset destroy exceeding the lower limit")
 	ErrAssetNameEqualAccountName = errors.New("asset name equal account name")
-	ErrIssueAsset                = errors.New("issue asset err")
+	ErrIssueAsset                = errors.New("system asset has issued")
 	ErrAssetNameinvalid          = errors.New("asset name invalid")
 	ErrAssetNameLengthErr        = errors.New("asset name length err")
 )
