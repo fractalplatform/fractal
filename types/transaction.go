@@ -150,6 +150,21 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	return nil
 }
 
+// RecoverMultiKey recover and store cache.
+func RecoverMultiKey(recover func(*Action) ([]byte, error), a *Action) ([]byte, error) {
+	if sc := a.senderPubkeys.Load(); sc != nil {
+		return sc.([]byte), nil
+	}
+
+	pubKey, err := recover(a)
+	if err != nil {
+		return nil, err
+	}
+
+	a.senderPubkeys.Store(pubKey)
+	return pubKey, nil
+}
+
 // RPCTransaction that will serialize to the RPC representation of a transaction.
 type RPCTransaction struct {
 	BlockHash        common.Hash  `json:"blockHash"`

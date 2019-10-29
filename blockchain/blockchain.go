@@ -33,11 +33,13 @@ import (
 	"github.com/fractalplatform/fractal/common/prque"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -84,7 +86,6 @@ type BlockChain struct {
 	running       int32               // running must be called atomically
 	procInterrupt int32               // procInterrupt must be atomically called, interrupt signaler for block processing
 	wg            sync.WaitGroup      // chain processing wait group for shutting down
-	senderCacher  TxSenderCacher      // senderCacher is a concurrent tranaction sender recoverer sender cacher.
 	processor     processor.Processor // block processor interface
 	validator     processor.Validator // block and state validator interface
 	station       *downloader.Station // p2p station
@@ -102,7 +103,7 @@ type BlockChain struct {
 
 // NewBlockChain returns a fully initialised block chain using information　available in the database.
 func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chainConfig *params.ChainConfig,
-	badhashes []string, startNumber uint64, senderCacher TxSenderCacher) (*BlockChain, error) {
+	badhashes []string, startNumber uint64) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	headerCache, _ := lru.New(headerCacheLimit)
@@ -137,7 +138,6 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		blockCache:       blockCache,
 		futureBlocks:     futureBlocks,
 		badBlocks:        badBlocks,
-		senderCacher:     senderCacher,
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)
@@ -746,9 +746,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 		coalescedLogs []*types.Log
 	)
 
-	if bc.senderCacher != nil {
-		bc.senderCacher.RecoverFromBlocks(types.MakeSigner(bc.chainConfig.ChainID), chain)
-	}
+	statedb, _ := bc.State()
+	txpool.SenderCacher.RecoverFromBlocks(pm.NewPM(statedb), chain)
 
 	// Iterate over the blocks and insert when the verifier permits
 	for i, block := range chain {

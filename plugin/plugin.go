@@ -35,7 +35,7 @@ type Manager struct {
 	IConsensus
 	IContract
 	IFee
-	ISinger
+	ISigner
 }
 
 func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {

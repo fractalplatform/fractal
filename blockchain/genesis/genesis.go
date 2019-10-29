@@ -235,7 +235,6 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 
 	receipts := []*types.Receipt{receipt}
 	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
-	block.Head.WithForkID(g.ForkID, g.ForkID)
 	batch := db.NewBatch()
 
 	// write snapshot to db

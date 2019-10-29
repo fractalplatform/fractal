@@ -167,11 +167,12 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 
 		internalTxLog := make([]*types.InternalAction, 0, len(vmenv.InternalTxs))
 		for _, internalAction := range vmenv.InternalTxs {
-			internalAction.Action.SetHash(action.Hash())
+			internalAction.Action.Hash = action.Hash()
 			internalTxLog = append(internalTxLog, internalAction)
 		}
 		detailActions = append(detailActions, &types.DetailAction{InternalActions: internalTxLog})
 	}
+
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
 	receipt.TxHash = tx.Hash()

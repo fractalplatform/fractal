@@ -31,7 +31,7 @@ type IPM interface {
 	IConsensus
 	IContract
 	IFee
-	ISinger
+	ISigner
 	ExecTx(arg interface{}) ([]byte, error)
 }
 
@@ -46,7 +46,7 @@ type IAccount interface {
 	GetBalance(accountName string, assetID uint64) (*big.Int, error)
 	CanTransfer(accountName string, assetID uint64, value *big.Int) error
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
-	RecoverTx(signer types.Signer, tx *types.Transaction) error
+	RecoverTx(signer ISigner, tx *types.Transaction) error
 	GetAccount(accountName string) (*Account, error)                          // for asset plugin
 	AddBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	SubBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
@@ -80,7 +80,7 @@ type IContract interface {
 type IFee interface {
 }
 
-type ISinger interface {
+type ISigner interface {
 	Sign(interface{}) ([]byte, error)
-	Recover(signer types.Signer, tx *types.Transaction) error
+	Recover(*types.Action) ([]byte, error)
 }

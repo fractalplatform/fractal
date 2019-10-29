@@ -32,7 +32,6 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/fdb/memdb"
@@ -60,7 +59,7 @@ func newCanonical(t *testing.T, genesis *g.Genesis) *BlockChain {
 		t.Fatal(err)
 	}
 
-	blockchain, err := NewBlockChain(chainDb, false, vm.Config{}, chainCfg, nil, 0, txpool.SenderCacher)
+	blockchain, err := NewBlockChain(chainDb, false, vm.Config{}, chainCfg, nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

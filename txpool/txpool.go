@@ -75,7 +75,6 @@ type TxPool struct {
 	config   Config
 	gasPrice *big.Int
 	chain    blockChain
-	signer   types.Signer
 
 	curPM         pm.IPM // Current state in the blockchain head
 	pendingPM     pm.IPM // Pending state tracking virtual nonces
@@ -109,14 +108,12 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 	//  check the input to ensure no vulnerable gas prices are set
 	config.GasAssetID = chainconfig.SysTokenID
 	config = (&config).check()
-	signer := types.NewSigner(chainconfig.ChainID)
 	all := newTxLookup()
 
 	tp := &TxPool{
 		config:          config,
 		chain:           bc,
-		signer:          signer,
-		locals:          newAccountSet(signer),
+		locals:          newAccountSet(),
 		pending:         make(map[string]*txList),
 		queue:           make(map[string]*txList),
 		beats:           make(map[string]time.Time),
@@ -534,7 +531,7 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 	tp.currentMaxGas = newHead.GasLimit
 	// Inject any transactions discarded due to reorgs
 	log.Debug("Reinjecting stale transactions", "count", len(reinject))
-	SenderCacher.recover(tp.signer, reinject)
+	SenderCacher.recover(tp.pendingPM, reinject)
 	tp.addTxsLocked(reinject, false)
 }
 
@@ -702,7 +699,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	}
 
 	// Make sure the transaction is signed properly
-	if err := tp.curPM.Recover(tp.signer, tx); err != nil {
+	if err := tp.curPM.RecoverTx(tp.curPM, tx); err != nil {
 		return ErrInvalidSender
 	}
 
@@ -923,7 +920,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 		}
 
 		for i, action := range tx.GetActions() {
-			if _, err := types.RecoverMultiKey(tp.signer, action, tx); err != nil {
+			if _, err := types.RecoverMultiKey(tp.curPM.Recover, action); err != nil {
 				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
 				errs[index] = fmt.Errorf("action %v,recoverMultiKey reocver faild: %v", i, err)
 				continue
@@ -952,7 +949,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 // addTxsLocked attempts to queue a batch of transactions if they are valid.
 // The transaction pool lock must be held.
 func (tp *TxPool) addTxsLocked(txs []*types.Transaction, local bool) ([]error, *accountSet) {
-	dirty := newAccountSet(tp.signer)
+	dirty := newAccountSet()
 	errs := make([]error, len(txs))
 	for i, tx := range txs {
 		replaced, err := tp.add(tx, local)
@@ -1059,7 +1056,7 @@ func (tp *TxPool) promoteExecutables(accounts []string) []*types.Transaction {
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
 		balance, _ := tp.curPM.GetBalance(name, tp.config.GasAssetID)
-		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalance, tp.curPM.Recover)
+		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.curPM, tp.curPM.GetBalance)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			tp.all.Remove(hash)
@@ -1245,7 +1242,7 @@ func (tp *TxPool) demoteUnexecutables() {
 			log.Error("promoteExecutables current account manager get balance err ", "name", name, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
-		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.signer, tp.curPM.GetBalance, tp.curPM.Recover)
+		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.curPM, tp.curPM.GetBalance)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending or no permissions transaction", "hash", hash)

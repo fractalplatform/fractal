@@ -56,7 +56,6 @@ func RPCMarshalBlock(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool)
 		"timestamp":            head.Time,
 		"transactionsRoot":     head.TxsRoot,
 		"receiptsRoot":         head.ReceiptsRoot,
-		"forkID":               head.ForkID,
 	}
 
 	if inclTx {

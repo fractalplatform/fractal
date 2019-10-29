@@ -171,16 +171,15 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 	return nil
 }
 
-// RecoverTx
-// Make sure the transaction is signed properly and validate account authorization.
-func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
+// RecoverTx Make sure the transaction is signed properly and validate account authorization.
+func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
-		pubs, err := types.RecoverMultiKey(signer, action, tx)
+		pubs, err := signer.Recover(action)
 		if err != nil {
 			return err
 		}
 
-		tempAddress := common.BytesToAddress(crypto.Keccak256(pubs[0].Bytes()[1:])[12:])
+		tempAddress := common.BytesToAddress(crypto.Keccak256(pubs[1:])[12:])
 
 		account, err := am.getAccount(action.Sender())
 		if err != nil {
