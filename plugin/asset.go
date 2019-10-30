@@ -120,6 +120,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	return nil, nil
 }
 
+// IncreaseAsset increase system asset
 func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
 	if from == "" || to == "" {
 		return nil, ErrParamIsNil
@@ -164,6 +165,7 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 	return nil, nil
 }
 
+// DestroyAsset destroy system asset
 func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
 	if accountName == "" {
 		return nil, ErrParamIsNil
@@ -202,6 +204,7 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 	return nil, nil
 }
 
+// GetAssetID Get asset id
 func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
 	if assetName == "" {
 		return 0, ErrAssetNotExist
@@ -211,9 +214,15 @@ func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	if obj.AssetName != assetName {
+		return 0, ErrAssetNotExist
+	}
+
 	return obj.AssetID, nil
 }
 
+// GetAssetID Get asset name
 func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
 	if assetID != SystemAssetID {
 		return "", ErrAssetNotExist
