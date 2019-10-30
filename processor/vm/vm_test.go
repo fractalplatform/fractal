@@ -20,39 +20,40 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/fractalplatform/fractal/types"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDistributeKeys(t *testing.T) {
-	key1 := DistributeKey{ObjectName: string("ftoken"), ObjectType: 0}
-	key2 := DistributeKey{ObjectName: string("ftoken"), ObjectType: 1}
-	key3 := DistributeKey{ObjectName: string("contract"), ObjectType: 1}
-	key4 := DistributeKey{ObjectName: string("miner"), ObjectType: 2}
+	key1 := types.DistributeKey{ObjectName: string("ftoken"), ObjectType: 0}
+	key2 := types.DistributeKey{ObjectName: string("ftoken"), ObjectType: 1}
+	key3 := types.DistributeKey{ObjectName: string("contract"), ObjectType: 1}
+	key4 := types.DistributeKey{ObjectName: string("miner"), ObjectType: 2}
 
-	founderGasMap := make(map[DistributeKey]DistributeGas, 0)
-	founderGasMap[key1] = DistributeGas{0, 0}
-	founderGasMap[key2] = DistributeGas{0, 1}
-	founderGasMap[key3] = DistributeGas{0, 1}
-	founderGasMap[key4] = DistributeGas{0, 2}
+	founderGasMap := make(map[types.DistributeKey]types.DistributeGas, 0)
+	founderGasMap[key1] = types.DistributeGas{0, 0}
+	founderGasMap[key2] = types.DistributeGas{0, 1}
+	founderGasMap[key3] = types.DistributeGas{0, 1}
+	founderGasMap[key4] = types.DistributeGas{0, 2}
 
-	var keys DistributeKeys
+	var keys types.DistributeKeys
 	for key := range founderGasMap {
 		keys = append(keys, key)
 	}
 	sort.Sort(keys)
 
-	key4 = DistributeKey{ObjectName: string("ftoken"), ObjectType: 0}
-	key3 = DistributeKey{ObjectName: string("ftoken"), ObjectType: 1}
-	key2 = DistributeKey{ObjectName: string("contract"), ObjectType: 1}
-	key1 = DistributeKey{ObjectName: string("miner"), ObjectType: 2}
+	key4 = types.DistributeKey{ObjectName: string("ftoken"), ObjectType: 0}
+	key3 = types.DistributeKey{ObjectName: string("ftoken"), ObjectType: 1}
+	key2 = types.DistributeKey{ObjectName: string("contract"), ObjectType: 1}
+	key1 = types.DistributeKey{ObjectName: string("miner"), ObjectType: 2}
 
-	founderGasMap = make(map[DistributeKey]DistributeGas, 0)
-	founderGasMap[key1] = DistributeGas{0, 0}
-	founderGasMap[key2] = DistributeGas{0, 1}
-	founderGasMap[key3] = DistributeGas{0, 1}
-	founderGasMap[key4] = DistributeGas{0, 2}
+	founderGasMap = make(map[types.DistributeKey]types.DistributeGas, 0)
+	founderGasMap[key1] = types.DistributeGas{0, 0}
+	founderGasMap[key2] = types.DistributeGas{0, 1}
+	founderGasMap[key3] = types.DistributeGas{0, 1}
+	founderGasMap[key4] = types.DistributeGas{0, 2}
 
-	var keys1 DistributeKeys
+	var keys1 types.DistributeKeys
 	for key := range founderGasMap {
 		keys1 = append(keys1, key)
 	}

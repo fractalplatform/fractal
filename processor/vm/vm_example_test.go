@@ -93,7 +93,7 @@ func createAccount(pm plugin.IPM, name string) error {
 }
 
 func issueAssetAction(ownerName, toName string) *types.Action {
-	asset := plugin.IssueAsset{
+	asset := plugin.IssueAssetAction{
 		AssetName:  "bitcoin",
 		Symbol:     "btc",
 		Amount:     big.NewInt(1000000000000000000),
@@ -108,7 +108,7 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(types.IssueAsset, ownerName, string("fractal.asset"), 0, 0, 0, big.NewInt(0), b, nil)
+	action := types.NewAction(plugin.IssueAsset, ownerName, string("fractal.asset"), 0, 0, 0, big.NewInt(0), b, nil)
 	return action
 }
 
