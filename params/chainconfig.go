@@ -107,7 +107,7 @@ var DefaultChainconfig = &ChainConfig{
 		ContractRatio: 80,
 	},
 	ForkedCfg: &FrokedConfig{
-		ForkBlockNum:   100000,
+		ForkBlockNum:   10000,
 		Forkpercentage: 80,
 	},
 	DposCfg: &DposConfig{
