@@ -107,7 +107,7 @@ var DefaultChainconfig = &ChainConfig{
 		ContractRatio: 80,
 	},
 	ForkedCfg: &FrokedConfig{
-		ForkBlockNum:   10000,
+		ForkBlockNum:   100000,
 		Forkpercentage: 80,
 	},
 	DposCfg: &DposConfig{
@@ -152,7 +152,9 @@ const (
 	ForkID2 = uint64(2)
 	//ForkID3 dpos config candidateAvailableMinQuantity modified
 	ForkID3 = uint64(3)
+	//ForkID4 precompileContracts gas
+	ForkID4 = uint64(4)
 
 	// NextForkID is the id of next fork
-	NextForkID uint64 = ForkID3
+	NextForkID uint64 = ForkID4
 )
