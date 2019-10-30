@@ -277,7 +277,7 @@ func (am *AccountManager) GetBalance(accountName string, assetID uint64) (*big.I
 	return account.Balances.Balance, nil
 }
 
-func (am *AccountManager) AddBalanceByID(accountName string, assetID uint64, amount *big.Int) error {
+func (am *AccountManager) addBalanceByID(accountName string, assetID uint64, amount *big.Int) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
 		return err
@@ -290,7 +290,7 @@ func (am *AccountManager) AddBalanceByID(accountName string, assetID uint64, amo
 	return am.setAccount(account)
 }
 
-func (am *AccountManager) SubBalanceByID(accountName string, assetID uint64, amount *big.Int) error {
+func (am *AccountManager) subBalanceByID(accountName string, assetID uint64, amount *big.Int) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
 		return err
@@ -328,9 +328,9 @@ func (am *AccountManager) checkAccountName(accountName string) error {
 	return nil
 }
 
-func (am *AccountManager) GetAccount(accountName string) (*Account, error) {
-	return am.getAccount(accountName)
-}
+// func (am *AccountManager) GetAccount(accountName string) (*Account, error) {
+// 	return am.getAccount(accountName)
+// }
 
 func (am *AccountManager) getAccount(accountName string) (*Account, error) {
 	b, err := am.sdb.Get(acctManagerName, acctInfoPrefix+accountName)

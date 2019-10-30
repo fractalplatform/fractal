@@ -78,13 +78,13 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		return nil, err
 	}
 	// check owner and founder
-	_, err = am.GetAccount(owner)
+	_, err = am.getAccount(owner)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(founder) > 0 {
-		_, err = am.GetAccount(founder)
+		_, err = am.getAccount(founder)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		return nil, err
 	}
 
-	if err = am.AddBalanceByID(accountName, SystemAssetID, amount); err != nil {
+	if err = am.addBalanceByID(accountName, SystemAssetID, amount); err != nil {
 		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 		return nil, err
 	}
 
-	if err = am.AddBalanceByID(to, assetID, amount); err != nil {
+	if err = am.addBalanceByID(to, assetID, amount); err != nil {
 		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 		return nil, err
 	}
 
-	if err := am.SubBalanceByID(accountName, assetID, amount); err != nil {
+	if err := am.subBalanceByID(accountName, assetID, amount); err != nil {
 		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 		return err
 	}
 
-	if _, err = am.GetAccount(assetName); err == nil {
+	if _, err = am.getAccount(assetName); err == nil {
 		return ErrAssetNameEqualAccountName
 	}
 
