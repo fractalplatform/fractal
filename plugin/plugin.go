@@ -65,6 +65,9 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 		} else {
 			return pm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount)
 		}
+	case Transfer:
+		err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		return nil, err
 	default:
 		return nil, nil
 	}

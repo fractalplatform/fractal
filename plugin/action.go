@@ -16,6 +16,7 @@ const (
 	// CreateAccount repesents the create account.
 	IssueAsset types.ActionType = 0x200 + iota
 	IncreaseAsset
+	Transfer
 )
 
 type CreateAccountAction struct {
