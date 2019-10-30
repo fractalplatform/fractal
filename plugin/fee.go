@@ -16,5 +16,11 @@
 
 package plugin
 
+import "github.com/fractalplatform/fractal/types"
+
 type FeeManager struct {
+}
+
+func (fm *FeeManager) DistributeGas(gasMap map[types.DistributeKey]types.DistributeGas) error {
+	return nil
 }

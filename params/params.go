@@ -64,13 +64,6 @@ const (
 	MaxAuthorNum  = uint64(10)
 )
 
-//type for fee
-const (
-	AssetFeeType    = uint64(0)
-	ContractFeeType = uint64(1)
-	CoinbaseFeeType = uint64(2)
-)
-
 //rpc max fee result count
 const (
 	MaxFeeResultCount = uint64(1000)

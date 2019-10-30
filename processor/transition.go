@@ -148,71 +148,16 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 	st.refundGas()
 
+	key := types.DistributeKey{ObjectName: st.evm.Coinbase,
+		ObjectType: types.CoinbaseFeeType}
+	st.evm.FounderGasMap[key] = types.DistributeGas{
+		Value:  int64(intrinsicGas),
+		TypeID: types.CoinbaseFeeType}
 	// st.distributeGas(intrinsicGas)
-
-	if err := st.distributeFee(); err != nil {
+	if err := st.pm.DistributeGas(st.evm.FounderGasMap); err != nil {
 		return ret, st.gasUsed(), true, err, vmerr
 	}
-
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
-}
-
-func (st *StateTransition) distributeGas(intrinsicGas uint64) {
-	// todo
-}
-
-func (st *StateTransition) distributeToContract(name string, intrinsicGas uint64) {
-	contractFounderRation := st.chainConfig.ChargeCfg.ContractRatio
-	key := vm.DistributeKey{ObjectName: name,
-		ObjectType: params.ContractFeeType}
-	contractGas := int64(intrinsicGas * contractFounderRation / 100)
-
-	if _, ok := st.evm.FounderGasMap[key]; !ok {
-		st.evm.FounderGasMap[key] = vm.DistributeGas{
-			Value:  contractGas,
-			TypeID: params.ContractFeeType}
-	} else {
-		dGas := vm.DistributeGas{
-			Value:  contractGas,
-			TypeID: params.ContractFeeType}
-		dGas.Value = st.evm.FounderGasMap[key].Value + dGas.Value
-		st.evm.FounderGasMap[key] = dGas
-	}
-
-	var totalGas int64
-	for _, gas := range st.evm.FounderGasMap {
-		totalGas += gas.Value
-	}
-
-	key = vm.DistributeKey{ObjectName: st.evm.Coinbase,
-		ObjectType: params.CoinbaseFeeType}
-	st.evm.FounderGasMap[key] = vm.DistributeGas{
-		Value:  int64(st.gasUsed()) - totalGas,
-		TypeID: params.CoinbaseFeeType}
-}
-
-func (st *StateTransition) distributeToSystemAccount(name string) {
-	contractFounderRation := st.chainConfig.ChargeCfg.ContractRatio
-	key := vm.DistributeKey{ObjectName: name,
-		ObjectType: params.ContractFeeType}
-	contractGas := int64(st.gasUsed() * contractFounderRation / 100)
-	dGas := vm.DistributeGas{
-		Value:  contractGas,
-		TypeID: params.ContractFeeType}
-	st.evm.FounderGasMap[key] = dGas
-
-	key = vm.DistributeKey{ObjectName: st.evm.Coinbase,
-		ObjectType: params.CoinbaseFeeType}
-	st.evm.FounderGasMap[key] = vm.DistributeGas{
-		Value:  int64(st.gasUsed()) - contractGas,
-		TypeID: params.CoinbaseFeeType}
-
-}
-
-func (st *StateTransition) distributeFee() error {
-	// todo
-
-	return nil
 }
 
 func (st *StateTransition) refundGas() {

@@ -167,23 +167,23 @@ func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 func (evm *EVM) distributeContractGas(runGas uint64, contractName string, callerName string) {
 	if runGas > 0 && len(contractName) > 0 {
 		key := types.DistributeKey{ObjectName: contractName,
-			ObjectType: params.ContractFeeType}
+			ObjectType: types.ContractFeeType}
 		if _, ok := evm.FounderGasMap[key]; !ok {
-			dGas := types.DistributeGas{int64(runGas), params.ContractFeeType}
+			dGas := types.DistributeGas{int64(runGas), types.ContractFeeType}
 			evm.FounderGasMap[key] = dGas
 		} else {
-			dGas := types.DistributeGas{int64(runGas), params.ContractFeeType}
+			dGas := types.DistributeGas{int64(runGas), types.ContractFeeType}
 			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 			evm.FounderGasMap[key] = dGas
 		}
 		if evm.depth != 0 {
 			key = types.DistributeKey{ObjectName: callerName,
-				ObjectType: params.ContractFeeType}
+				ObjectType: types.ContractFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
-				dGas := types.DistributeGas{-int64(runGas), params.ContractFeeType}
+				dGas := types.DistributeGas{-int64(runGas), types.ContractFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := types.DistributeGas{-int64(runGas), params.ContractFeeType}
+				dGas := types.DistributeGas{-int64(runGas), types.ContractFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 				evm.FounderGasMap[key] = dGas
 			}
@@ -194,23 +194,23 @@ func (evm *EVM) distributeContractGas(runGas uint64, contractName string, caller
 func (evm *EVM) distributeAssetGas(callValueGas int64, assetName string, callerName string) {
 	if evm.depth != 0 {
 		key := types.DistributeKey{ObjectName: assetName,
-			ObjectType: params.AssetFeeType}
+			ObjectType: types.AssetFeeType}
 		if _, ok := evm.FounderGasMap[key]; !ok {
-			dGas := types.DistributeGas{int64(callValueGas), params.AssetFeeType}
+			dGas := types.DistributeGas{int64(callValueGas), types.AssetFeeType}
 			evm.FounderGasMap[key] = dGas
 		} else {
-			dGas := types.DistributeGas{int64(callValueGas), params.AssetFeeType}
+			dGas := types.DistributeGas{int64(callValueGas), types.AssetFeeType}
 			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 			evm.FounderGasMap[key] = dGas
 		}
 		if len(callerName) > 0 {
 			key = types.DistributeKey{ObjectName: callerName,
-				ObjectType: params.ContractFeeType}
+				ObjectType: types.ContractFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
-				dGas := types.DistributeGas{-int64(callValueGas), params.ContractFeeType}
+				dGas := types.DistributeGas{-int64(callValueGas), types.ContractFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := types.DistributeGas{int64(callValueGas), params.ContractFeeType}
+				dGas := types.DistributeGas{int64(callValueGas), types.ContractFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value - dGas.Value
 				evm.FounderGasMap[key] = dGas
 			}

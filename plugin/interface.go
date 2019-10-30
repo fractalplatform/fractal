@@ -78,6 +78,7 @@ type IContract interface {
 }
 
 type IFee interface {
+	DistributeGas(gasMap map[types.DistributeKey]types.DistributeGas) error
 }
 
 type ISigner interface {
