@@ -27,7 +27,7 @@ export GOFLAGS=-mod=vendor
 define build
 	@go build -ldflags " \
 	-X github.com/fractalplatform/fractal/cmd/utils.commit=$(shell cat commit_hash.txt) \
-	-X github.com/fractalplatform/fractal/cmd/utils.date=$(shell date '+%Y-%m-%d') \
+	-X github.com/fractalplatform/fractal/cmd/utils.date=$(shell date '+%Y-%m-%d-%H:%M:%S') \
 	-X 'github.com/fractalplatform/fractal/cmd/utils.goversion=$(shell go version)'" \
 	-o ${REPO}/build/bin/$(1) ./cmd/$(1)
 endef
