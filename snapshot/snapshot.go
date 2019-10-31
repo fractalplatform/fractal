@@ -70,22 +70,22 @@ func (sn *SnapshotManager) SetSnapshot(time uint64, blockInfo BlockInfo) error {
 func (sn *SnapshotManager) GetCurrentSnapshotHash() (uint64, common.Hash, error) {
 	timestampEnc, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info,1 error = %v", err)
 	}
 
 	var timestamp uint64
 	if err = rlp.DecodeBytes(timestampEnc, &timestamp); err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, 2error = %v", err)
 	}
 
 	key1 := snapshotTime + strconv.FormatUint(timestamp, 10)
 	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, 3error = %v", err)
 	}
 	var blockInfo BlockInfo
 	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, common.Hash{}, fmt.Errorf("Not snapshot info, 4error = %v", err)
 	}
 
 	return blockInfo.Number, blockInfo.BlockHash, nil
@@ -95,12 +95,12 @@ func (sn *SnapshotManager) GetCurrentSnapshotHash() (uint64, common.Hash, error)
 func (sn *SnapshotManager) GetLastSnapshotTime() (uint64, error) {
 	timestampEnc, err := sn.stateDB.Get(snapshotManagerName, snapshotTime)
 	if err != nil {
-		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, fmt.Errorf("Not snapshot info, 5error = %v", err)
 	}
 
 	var timestamp uint64
 	if err = rlp.DecodeBytes(timestampEnc, &timestamp); err != nil {
-		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, fmt.Errorf("Not snapshot info,6 error = %v", err)
 	}
 
 	return timestamp, nil
@@ -111,12 +111,12 @@ func (sn *SnapshotManager) GetPrevSnapshotTime(time uint64) (uint64, error) {
 	key := snapshotTime + strconv.FormatUint(time, 10)
 	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key)
 	if err != nil {
-		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, fmt.Errorf("Not snapshot info, 7error = %v", err)
 	}
 
 	var blockInfo BlockInfo
 	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
-		return 0, fmt.Errorf("Not snapshot info, error = %v", err)
+		return 0, fmt.Errorf("Not snapshot info, 8error = %v", err)
 	}
 
 	return blockInfo.Timestamp, nil
@@ -124,17 +124,17 @@ func (sn *SnapshotManager) GetPrevSnapshotTime(time uint64) (uint64, error) {
 
 func (sn *SnapshotManager) GetSnapshotMsg(account string, key string, time uint64) ([]byte, error) {
 	if time == 0 {
-		return nil, fmt.Errorf("Not snapshot info, time = %v", time)
+		return nil, fmt.Errorf("Not snapshot info,9 time = %v", time)
 	}
 
 	key1 := snapshotTime + strconv.FormatUint(time, 10)
 	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
 	if err != nil {
-		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
+		return nil, fmt.Errorf("Not snapshot info, 10error = %v", err)
 	}
 	var blockInfo BlockInfo
 	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
-		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
+		return nil, fmt.Errorf("Not snapshot info, 11error = %v", err)
 	}
 
 	snapshotBlock := types.SnapshotBlock{
@@ -170,11 +170,11 @@ func (sn *SnapshotManager) GetSnapshotState(time uint64) (*state.StateDB, error)
 	key1 := snapshotTime + strconv.FormatUint(time, 10)
 	blockInfoEnc, err := sn.stateDB.Get(snapshotManagerName, key1)
 	if err != nil {
-		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
+		return nil, fmt.Errorf("Not snapshot info, 12error = %v", err)
 	}
 	var blockInfo BlockInfo
 	if err = rlp.DecodeBytes(blockInfoEnc, &blockInfo); err != nil {
-		return nil, fmt.Errorf("Not snapshot info, error = %v", err)
+		return nil, fmt.Errorf("Not snapshot info, 13error = %v", err)
 	}
 
 	snapshotBlock := types.SnapshotBlock{

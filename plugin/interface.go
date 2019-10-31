@@ -71,7 +71,7 @@ type IConsensus interface {
 	Prepare(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error
 
 	// Finalize assembles the final block.
-	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error)
+	Finalize(parent, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error)
 }
 
 type IContract interface {

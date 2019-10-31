@@ -38,9 +38,9 @@ type Miner struct {
 }
 
 // NewMiner creates a miner.
-func NewMiner(manager pm.IPM) *Miner {
+func NewMiner(manager pm.IPM, c context) *Miner {
 	miner := &Miner{
-		worker:   newWorker(manager),
+		worker:   newWorker(manager, c),
 		canStart: 1,
 	}
 	go miner.update()
@@ -110,7 +110,7 @@ func (miner *Miner) Stop() bool {
 	return true
 }
 
-// Mining wroker is wroking
+// Mining worker is working
 func (miner *Miner) Mining() bool {
 	return atomic.LoadInt32(&miner.mining) > 0
 }
@@ -134,7 +134,7 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 	return nil
 }
 
-// SetDelayDuration delay broacast block when mint block (unit:ms)
+// SetDelayDuration delay broadcast block when mint block (unit:ms)
 func (miner *Miner) SetDelayDuration(delayDuration uint64) error {
 	return miner.worker.setDelayDuration(delayDuration)
 }

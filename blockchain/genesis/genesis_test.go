@@ -25,53 +25,51 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/utils/fdb"
 )
 
-var defaultgenesisBlockHash = common.HexToHash("0xfff77195a34bae2cbe56990436ef0ae4f41f1a466a1a7943f7040ecdd19eceba")
+var defaultGenesisBlockHash = common.HexToHash("0x0b930990add49685a4bd88efd7d83951038cf242d5047386e5e1f60ef73b3cec")
 
 func TestDefaultGenesisBlock(t *testing.T) {
 	block, _, err := DefaultGenesis().ToBlock(nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if block.Hash() != defaultgenesisBlockHash {
-		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash().Hex(), defaultgenesisBlockHash.Hex())
+	if block.Hash() != defaultGenesisBlockHash {
+		t.Errorf("wrong mainnet genesis hash, got %v, want %v", block.Hash().Hex(), defaultGenesisBlockHash.Hex())
 	}
 }
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customghash = common.HexToHash("0x64f60318de8612ad12a0d5332563597e9ffdbc1ebb302392982e75b2e43327f8")
+		customGHash = common.HexToHash("0x852ad1f4b9eebee1bf91dca8d00141a3da9c1db5f31b5f9342f71c62e17afaca")
 
-		customg = Genesis{
+		customG = Genesis{
 			Config:          params.DefaultChainconfig.Copy(),
 			AllocAccounts:   DefaultGenesisAccounts(),
 			AllocAssets:     DefaultGenesisAssets(),
 			AllocCandidates: DefaultGenesisCandidates(),
 		}
-		oldcustomg = customg
+		oldCustomG = customG
 
-		oldcustomghash = common.HexToHash("764340cd44e6401dec7aee1c43aa6759e083bbb60e2f0efa9aa4bbe808a2bb79")
+		oldCustomGHash = common.HexToHash("0x7f4206da20f3e344e0fb2fb467c399b9c708634801c0e3d453282c9d0c41531f")
 	)
-	customg.Config.ChainID = big.NewInt(5)
-	oldcustomg.Config = customg.Config.Copy()
-	oldcustomg.Config.ChainID = big.NewInt(6)
+	customG.Config.ChainID = big.NewInt(5)
+	oldCustomG.Config = customG.Config.Copy()
+	oldCustomG.Config.ChainID = big.NewInt(6)
 
 	tests := []struct {
 		name       string
-		fn         func(fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error)
+		fn         func(fdb.Database) (*params.ChainConfig, common.Hash, error)
 		wantConfig *params.ChainConfig
-		wantDpos   *dpos.Config
 		wantHash   common.Hash
 		wantErr    error
 	}{
 		{
 			name: "genesis without ChainConfig",
-			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+			fn: func(db fdb.Database) (*params.ChainConfig, common.Hash, error) {
 				return SetupGenesisBlock(db, new(Genesis))
 			},
 			wantErr:    errGenesisNoConfig,
@@ -79,44 +77,43 @@ func TestSetupGenesis(t *testing.T) {
 		},
 		{
 			name: "no block in DB, genesis == nil",
-			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+			fn: func(db fdb.Database) (*params.ChainConfig, common.Hash, error) {
 				return SetupGenesisBlock(db, nil)
 			},
-			wantHash:   defaultgenesisBlockHash,
+			wantHash:   defaultGenesisBlockHash,
 			wantConfig: params.DefaultChainconfig,
 		},
 		{
 			name: "mainnet block in DB, genesis == nil",
-			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
+			fn: func(db fdb.Database) (*params.ChainConfig, common.Hash, error) {
 				if _, err := DefaultGenesis().Commit(db); err != nil {
-					return nil, nil, common.Hash{}, err
+					return nil, common.Hash{}, err
 				}
 				return SetupGenesisBlock(db, nil)
 			},
-			wantHash:   defaultgenesisBlockHash,
+			wantHash:   defaultGenesisBlockHash,
 			wantConfig: params.DefaultChainconfig,
 		},
 		{
 			name: "compatible config in DB",
-			fn: func(db fdb.Database) (*params.ChainConfig, *dpos.Config, common.Hash, error) {
-				if _, err := oldcustomg.Commit(db); err != nil {
-					return nil, nil, common.Hash{}, err
+			fn: func(db fdb.Database) (*params.ChainConfig, common.Hash, error) {
+				if _, err := oldCustomG.Commit(db); err != nil {
+					return nil, common.Hash{}, err
 				}
-				return SetupGenesisBlock(db, &customg)
+				return SetupGenesisBlock(db, &customG)
 			},
 			wantErr: &GenesisMismatchError{
-				oldcustomghash,
-				customghash,
+				oldCustomGHash,
+				customGHash,
 			},
-			wantHash:   customghash,
-			wantConfig: customg.Config,
+			wantHash:   customGHash,
+			wantConfig: customG.Config,
 		},
 	}
 
 	for _, test := range tests {
 		db := rawdb.NewMemoryDatabase()
-
-		config, _, hash, err := test.fn(db)
+		config, hash, err := test.fn(db)
 
 		// Check the return values.
 		if !reflect.DeepEqual(err, test.wantErr) {
