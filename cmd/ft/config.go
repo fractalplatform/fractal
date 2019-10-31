@@ -59,7 +59,7 @@ func defaultNodeConfig() *node.Config {
 		IPCPath:          params.ClientIdentifier + ".ipc",
 		HTTPHost:         "localhost",
 		HTTPPort:         8545,
-		HTTPModules:      []string{"ft", "dpos", "fee", "account"},
+		HTTPModules:      []string{"ft"},
 		HTTPVirtualHosts: []string{"localhost"},
 		HTTPCors:         []string{"*"},
 		WSHost:           "localhost",
@@ -75,7 +75,7 @@ func defaultP2pConfig() *p2p.Config {
 	cfg := &p2p.Config{
 		MaxPeers:   10,
 		Name:       "Fractal-P2P",
-		ListenAddr: ":2018",
+		ListenAddr: ":8500",
 	}
 	return cfg
 }

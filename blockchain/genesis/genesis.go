@@ -277,7 +277,6 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 	rawdb.WriteHeadHeaderHash(db, block.Hash())
 	rawdb.WriteChainConfig(db, block.Hash(), g.Config)
 	rawdb.WriteIrreversibleNumber(db, uint64(0))
-
 	return block, nil
 }
 

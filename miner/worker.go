@@ -34,7 +34,7 @@ import (
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
 	pm "github.com/fractalplatform/fractal/plugin"
-	"github.com/fractalplatform/fractal/processor"
+	p "github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -45,17 +45,23 @@ const (
 	// chainHeadChanSize is the size of channel listening to ChainHeadEvent.
 	chainHeadChanSize = 10
 	// BlockInterval todo move config
-	BlockInterval = 3000
+	BlockInterval = 3000000000
 )
 
-type ChainContext interface {
+type context interface {
+	chainContext
+	txPoolContext
+	p.Processor
+}
+
+type chainContext interface {
 	Config() *params.ChainConfig
 	CurrentHeader() *types.Header
 	StateAt(common.Hash) (*state.StateDB, error)
 	WriteBlockWithState(*types.Block, []*types.Receipt, *state.StateDB) (bool, error)
 }
 
-type txpoolContext interface {
+type txPoolContext interface {
 	Pending() (map[string][]*types.Transaction, error)
 }
 
@@ -65,9 +71,7 @@ func slot(timestamp uint64) uint64 {
 
 // Worker is the main object which takes care of applying messages to the new state
 type Worker struct {
-	ChainContext
-	txpoolContext
-	processor.Processor
+	context
 	manger        pm.IPM
 	mu            sync.Mutex
 	delayDuration uint64
@@ -85,8 +89,9 @@ type Worker struct {
 	force     bool
 }
 
-func newWorker(manger pm.IPM) *Worker {
+func newWorker(manger pm.IPM, c context) *Worker {
 	worker := &Worker{
+		context:   c,
 		manger:    manger,
 		quitWork1: make(chan struct{}),
 		quit:      make(chan struct{}),
@@ -200,6 +205,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		// 	case dpos.ErrIllegalCandidateName:
 		// 		fallthrough
 		// 	case dpos.ErrIllegalCandidatePubKey:
+
 		// 		log.Warn("failed to mint the block", "timestamp", timestamp, "err", err, "candidate", worker.coinbase)
 		// 	default:
 		// 		log.Debug("failed to mint the block", "timestamp", timestamp, "err", err)
@@ -324,7 +330,7 @@ func (worker *Worker) commitNewWork(timestamp int64, parent *types.Header, quit 
 	}
 
 	if atomic.LoadInt32(&worker.mining) == 1 {
-		blk, err := worker.manger.Finalize(work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState)
+		blk, err := worker.manger.Finalize(parent, work.currentHeader, work.currentTxs, work.currentReceipts, work.currentState)
 		if err != nil {
 			return nil, fmt.Errorf("finalize block, err: %v", err)
 		}
@@ -404,12 +410,12 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			log.Trace("Gas limit exceeded for current block", "sender", from)
 			txs.Pop()
 
-		case processor.ErrNonceTooLow:
+		case p.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and miner, shift
 			log.Trace("Skipping transaction with low nonce", "sender", from, "nonce", action.Nonce())
 			txs.Shift()
 
-		case processor.ErrNonceTooHigh:
+		case p.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
 			log.Trace("Skipping account with hight nonce", "sender", from, "nonce", action.Nonce())
 			txs.Pop()

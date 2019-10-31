@@ -24,8 +24,8 @@ import (
 type Signer struct {
 }
 
-func NewSigner(sdb *state.StateDB) ISigner {
-	return &Signer{}
+func NewSigner(sdb *state.StateDB) (ISigner, error) {
+	return &Signer{}, nil
 }
 
 func (s *Signer) Sign(interface{}) ([]byte, error) {

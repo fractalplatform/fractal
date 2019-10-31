@@ -50,7 +50,7 @@ type FtService struct {
 	APIBackend   *APIBackend
 }
 
-// New creates a new ftservice object (including the initialisation of the common ftservice object)
+// New creates a new ft service object (including the initialisation of the common ftservice object)
 func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	chainDb, err := CreateDB(ctx, config, "chaindata")
 	if err != nil {
@@ -89,11 +89,6 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	ftservice.txPool = txpool.New(*config.TxPool, ftservice.chainConfig, ftservice.blockchain)
 
-	type bc struct {
-		*blockchain.BlockChain
-		*txpool.TxPool
-		processor.Processor
-	}
 	statedb, _ := ftservice.blockchain.State()
 	pm := pm.NewPM(statedb)
 
@@ -103,8 +98,13 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	ftservice.blockchain.SetValidator(validator)
 	ftservice.blockchain.SetProcessor(txProcessor)
 
-	// todo add blockchain txpool process
-	ftservice.miner = miner.NewMiner(pm)
+	type bc struct {
+		*blockchain.BlockChain
+		*txpool.TxPool
+		processor.Processor
+	}
+
+	ftservice.miner = miner.NewMiner(pm, &bc{ftservice.blockchain, ftservice.txPool, txProcessor})
 
 	ftservice.miner.SetDelayDuration(config.Miner.Delay)
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
