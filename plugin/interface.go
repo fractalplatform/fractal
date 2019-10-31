@@ -78,7 +78,7 @@ type IContract interface {
 }
 
 type IFee interface {
-	DistributeGas(gasMap map[types.DistributeKey]types.DistributeGas) error
+	DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) error
 }
 
 type ISigner interface {

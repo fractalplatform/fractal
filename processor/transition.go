@@ -154,7 +154,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		Value:  int64(intrinsicGas),
 		TypeID: types.CoinbaseFeeType}
 	// st.distributeGas(intrinsicGas)
-	if err := st.pm.DistributeGas(st.evm.FounderGasMap); err != nil {
+	if err := st.pm.DistributeGas(st.chainConfig.FeeName, st.evm.FounderGasMap, st.assetID, st.gasPrice, st.pm); err != nil {
 		return ret, st.gasUsed(), true, err, vmerr
 	}
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
