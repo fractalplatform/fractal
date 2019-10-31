@@ -1,4 +1,12 @@
 # [Relic](https://github.com/monax/relic) Changelog
+## [Unreleased]
+
+
+## [2.1.0] - 2019-03-25
+### Changed
+- Make into Go module at version 2
+
+
 ## [2.0.0] - 2018-08-15
 ### Changed
 - Versions must start from 0.0.1 (0.0.0 is reserved for unreleased)
@@ -32,6 +40,8 @@ First release of Relic extracted from various initial projects, it can:
 - Ensure valid semantic version numbers
 
 
+[Unreleased]: https://github.com/monax/relic/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/monax/relic/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/monax/relic/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/monax/relic/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/monax/relic/compare/v1.0.0...v1.0.1

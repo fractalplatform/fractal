@@ -19,7 +19,7 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/txpool"
 )

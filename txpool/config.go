@@ -19,7 +19,7 @@ package txpool
 import (
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 )
 
 // Config  are the configuration parameters of the transaction pool.

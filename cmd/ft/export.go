@@ -26,9 +26,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/spf13/cobra"
 )
 

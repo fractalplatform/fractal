@@ -29,9 +29,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/types"
 	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
 	"github.com/fractalplatform/fractal/utils/rlp"

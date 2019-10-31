@@ -20,7 +20,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"

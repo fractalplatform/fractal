@@ -24,11 +24,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/metrics/influxdb"
 	"github.com/fractalplatform/fractal/node"

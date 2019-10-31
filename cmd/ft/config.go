@@ -17,11 +17,11 @@
 package main
 
 import (
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"

@@ -20,7 +20,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/p2p/netutil"
 )
 

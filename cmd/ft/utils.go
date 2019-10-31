@@ -30,7 +30,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"

@@ -26,12 +26,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain/downloader"
 	"github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/common/prque"
 	"github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
 	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"

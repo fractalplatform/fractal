@@ -19,10 +19,10 @@ package ftservice
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/miner"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"

@@ -19,8 +19,8 @@ package downloader
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/log"
 	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 )
 
 type simuAdaptor struct{}
