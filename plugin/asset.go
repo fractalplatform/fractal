@@ -35,6 +35,8 @@ var (
 
 const SystemAssetID uint64 = 0
 
+var UINT256_MAX *big.Int = big.NewInt(0).Sub((big.NewInt(0).Exp(big.NewInt(2), big.NewInt(256), nil)), big.NewInt(1))
+
 type AssetManager struct {
 	sdb *state.StateDB
 }
@@ -150,6 +152,9 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 	}
 	assetObj.AddIssue = addissue
 	assetObj.Amount = new(big.Int).Add(assetObj.Amount, amount)
+	if assetObj.AddIssue.Cmp(UINT256_MAX) > 0 {
+		return nil, ErrAssetTotalExceedLimitErr
+	}
 
 	snap := asm.sdb.Snapshot()
 
@@ -242,7 +247,7 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 		return ErrParamIsNil
 	}
 
-	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 {
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(UINT256_MAX) > 0 || limit.Cmp(UINT256_MAX) > 0 {
 		return ErrAmountValueInvalid
 	}
 
@@ -324,4 +329,5 @@ var (
 	ErrIssueAsset                = errors.New("system asset has issued")
 	ErrAssetNameinvalid          = errors.New("asset name invalid")
 	ErrAssetNameLengthErr        = errors.New("asset name length err")
+	ErrAssetTotalExceedLimitErr  = errors.New("asset total exceed uint256 err")
 )

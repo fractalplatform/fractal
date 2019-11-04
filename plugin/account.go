@@ -106,6 +106,7 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 	return nil, nil
 }
 
+// CanTransfer check if can transfer.
 func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value *big.Int) error {
 
 	if value.Cmp(big.NewInt(0)) < 0 {
@@ -124,7 +125,6 @@ func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value 
 	return nil
 }
 
-// TransferAsset
 // Transaction designated asset to other account
 func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID uint64, value *big.Int) error {
 	if value.Cmp(big.NewInt(0)) == 0 {
@@ -193,6 +193,7 @@ func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error
 	return nil
 }
 
+// GetNonce
 func (am *AccountManager) GetNonce(accountName string) (uint64, error) {
 	account, err := am.getAccount(accountName)
 	if err != nil {
@@ -202,6 +203,7 @@ func (am *AccountManager) GetNonce(accountName string) (uint64, error) {
 	return account.Nonce, nil
 }
 
+// SetNonce
 func (am *AccountManager) SetNonce(accountName string, nonce uint64) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
@@ -217,6 +219,7 @@ func (am *AccountManager) SetNonce(accountName string, nonce uint64) error {
 	return nil
 }
 
+// GetCode
 func (am *AccountManager) GetCode(accountName string) ([]byte, error) {
 	account, err := am.getAccount(accountName)
 	if err != nil {
@@ -230,6 +233,7 @@ func (am *AccountManager) GetCode(accountName string) ([]byte, error) {
 	return account.Code, nil
 }
 
+// GetCodeHash
 func (am *AccountManager) GetCodeHash(accountName string) (common.Hash, error) {
 	account, err := am.getAccount(accountName)
 	if err != nil {
@@ -243,6 +247,7 @@ func (am *AccountManager) GetCodeHash(accountName string) (common.Hash, error) {
 	return account.CodeHash, nil
 }
 
+// SetCode
 func (am *AccountManager) SetCode(accountName string, code []byte) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
@@ -263,6 +268,7 @@ func (am *AccountManager) SetCode(accountName string, code []byte) error {
 	return nil
 }
 
+// GetBalance get account asset balance
 func (am *AccountManager) GetBalance(accountName string, assetID uint64) (*big.Int, error) {
 
 	account, err := am.getAccount(accountName)
