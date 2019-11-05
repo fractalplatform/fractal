@@ -94,12 +94,12 @@ func (s *stateDB) IncAsset2Acct(from string, to string, amount *big.Int) (*types
 	}
 	return action, accountDB.IncAsset2Acct(common.StrToName(from), common.StrToName(to), s.assetid, amount)
 }
-func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
+func (s *stateDB) IsValidSign(name string, pubkey []byte) error {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
-		return false
+		return err
 	}
-	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)) == nil
+	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey))
 }
 func (s *stateDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, error) {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
@@ -1002,13 +1002,9 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 		return fmt.Errorf("%v %v, except %v %v(%v) index %v (%v epoch) ", errInvalidBlockCandidate, candidate, tname, pstate.ActivatedCandidateSchedule, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
 	}
 
-	db := &stateDB{
-		name:  dpos.config.AccountName,
-		state: state,
-	}
 	has := false
 	for _, pubkey := range pubkeys {
-		if db.IsValidSign(candidate, pubkey) {
+		if sys.CanMine(candidate, pubkey) == nil {
 			has = true
 		}
 	}

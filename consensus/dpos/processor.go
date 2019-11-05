@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
 
 	"github.com/fractalplatform/fractal/params"
@@ -37,6 +38,11 @@ type RegisterCandidate struct {
 // UpdateCandidate candidate info
 type UpdateCandidate struct {
 	Info string
+}
+
+// UpdateCandidatePubKey candidate info
+type UpdateCandidatePubKey struct {
+	PubKey common.PubKey
 }
 
 // VoteCandidate vote info
@@ -66,7 +72,7 @@ func (dpos *Dpos) ProcessAction(fid uint64, number uint64, chainCfg *params.Chai
 }
 
 func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error) {
-	if err := action.Check(chainCfg); err != nil {
+	if err := action.Check(fid, chainCfg); err != nil {
 		return nil, err
 	}
 	sys := NewSystem(state, dpos.config)
@@ -111,6 +117,22 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 		if err := sys.UpdateCandidate(epoch, action.Sender().String(), arg.Info, action.Value(), number, fid); err != nil {
 			return nil, err
 		}
+	case types.UpdateCandidatePubKey:
+		if fid >= params.ForkID4 {
+			arg := &UpdateCandidatePubKey{}
+			if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
+				return nil, err
+			}
+			candidate, err := sys.GetCandidate(epoch, action.Sender().String())
+			if err != nil {
+				return nil, err
+			}
+			candidate.PubKey.SetBytes(arg.PubKey.Bytes())
+
+			err = sys.SetCandidate(candidate)
+			return nil, err
+		}
+		return nil, accountmanager.ErrUnKnownTxType
 	case types.UnregCandidate:
 		if strings.Compare(action.Sender().String(), dpos.config.SystemName) == 0 {
 			return nil, fmt.Errorf("no permission")

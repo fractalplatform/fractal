@@ -1366,7 +1366,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	var fromAccountExtra []common.Name
 	fromAccountExtra = append(fromAccountExtra, accountManagerContext.FromAccountExtra...)
 
-	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
+	if err := action.Check(curForkID, accountManagerContext.ChainConfig); err != nil {
 		return nil, err
 	}
 

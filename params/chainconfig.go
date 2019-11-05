@@ -152,6 +152,8 @@ const (
 	ForkID2 = uint64(2)
 	//ForkID3 dpos config candidateAvailableMinQuantity modified
 	ForkID3 = uint64(3)
+	//ForkID4 miner pubkey separate
+	ForkID4 = uint64(4)
 
 	// NextForkID is the id of next fork
 	NextForkID uint64 = ForkID3

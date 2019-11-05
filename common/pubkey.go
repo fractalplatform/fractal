@@ -95,3 +95,6 @@ func (p *PubKey) UnmarshalJSON(input []byte) error {
 func (p PubKey) Compare(x PubKey) int {
 	return bytes.Compare(p.Bytes(), x.Bytes())
 }
+
+// EmptyPubKey empty
+var EmptyPubKey PubKey
