@@ -156,5 +156,5 @@ const (
 	ForkID4 = uint64(4)
 
 	// NextForkID is the id of next fork
-	NextForkID uint64 = ForkID3
+	NextForkID uint64 = ForkID4
 )
