@@ -919,7 +919,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 			continue
 		}
 
-		if err := tx.Check(tp.chain.Config()); err != nil {
+		if err := tx.Check(tp.chain.CurrentBlock().Header().CurForkID(), tp.chain.Config()); err != nil {
 			log.Trace("add txs check ", "err", err, "hash", tx.Hash())
 			errs[index] = fmt.Errorf("transaction check err: %v", err)
 			continue

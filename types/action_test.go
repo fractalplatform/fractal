@@ -114,7 +114,7 @@ func TestAction_Check(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := actAction.Check(params.DefaultChainconfig); err != nil {
+	if err := actAction.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction_CheckValue err, wantErr %v", true)
 	}
 
@@ -129,7 +129,7 @@ func TestAction_Check(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := actAction2.Check(params.DefaultChainconfig); err == nil {
+	if err := actAction2.Check(params.NextForkID, params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction2_CheckValue err, wantErr %v", false)
 	}
 
@@ -144,7 +144,7 @@ func TestAction_Check(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := actAction3.Check(params.DefaultChainconfig); err != nil {
+	if err := actAction3.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
@@ -159,7 +159,7 @@ func TestAction_Check(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := actAction3.Check(params.DefaultChainconfig); err != nil {
+	if err := actAction3.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
@@ -174,7 +174,7 @@ func TestAction_Check(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := actAction3.Check(params.DefaultChainconfig); err != nil {
+	if err := actAction3.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 }
@@ -252,23 +252,23 @@ func TestAction_Check2(t *testing.T) {
 	// 	t.Fatal(err)
 	// }
 
-	if err := testAction10.Check(params.DefaultChainconfig); err != nil {
+	if err := testAction10.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction11.Check(params.DefaultChainconfig); err != nil {
+	if err := testAction11.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction12.Check(params.DefaultChainconfig); err != nil {
+	if err := testAction12.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction13.Check(params.DefaultChainconfig); err != nil {
+	if err := testAction13.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction14.Check(params.DefaultChainconfig); err != nil {
+	if err := testAction14.Check(params.NextForkID, params.DefaultChainconfig); err != nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
@@ -347,23 +347,23 @@ func TestAction_Check3(t *testing.T) {
 	// 	t.Fatal(err)
 	// }
 
-	if err := testAction20.Check(params.DefaultChainconfig); err == nil {
+	if err := testAction20.Check(params.NextForkID, params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction21.Check(params.DefaultChainconfig); err == nil {
+	if err := testAction21.Check(params.NextForkID, params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction22.Check(params.DefaultChainconfig); err == nil {
+	if err := testAction22.Check(params.NextForkID, params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction23.Check(params.DefaultChainconfig); err == nil {
+	if err := testAction23.Check(params.NextForkID, params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 
-	if err := testAction24.Check(params.DefaultChainconfig); err == nil {
+	if err := testAction24.Check(params.NextForkID, params.DefaultChainconfig); err == nil {
 		t.Errorf("TestAction3_CheckValue err, wantErr %v", false)
 	}
 

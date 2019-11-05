@@ -629,6 +629,63 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	return ret, contract.Gas, err
 }
 
+func (evm *EVM) CallContractAsset(caller ContractRef, action *types.Action, gas uint64, assetContract common.Name) (ret []byte, leftOverGas uint64, err error) {
+	if ok, err := evm.AccountDB.CanTransfer(caller.Name(), action.AssetID(), action.Value()); !ok || err != nil {
+		return nil, gas, ErrInsufficientBalance
+	}
+
+	toName := assetContract
+
+	var (
+		to       = AccountRef(toName)
+		snapshot = evm.StateDB.Snapshot()
+	)
+	contractName := toName
+
+	// Initialise a new contract and set the code that is to be used by the EVM.
+	// The contract is a scoped environment for this execution context only.
+	contract := NewContract(caller, to, big.NewInt(0), gas, action.AssetID())
+	acct, err := evm.AccountDB.GetAccountByName(toName)
+	if err != nil {
+		return nil, gas, err
+	}
+	if acct == nil {
+		return nil, gas, ErrAccountNotExist
+	}
+	codeHash, err := acct.GetCodeHash()
+	if err != nil {
+		return nil, gas, err
+	}
+	code, _ := acct.GetCode()
+	contract.SetCallCode(&toName, codeHash, code)
+
+	data := common.Hex2Bytes("df68c1a2")
+	ret, err = run(evm, contract, data)
+	runGas := gas - contract.Gas
+
+	evm.distributeContractGas(runGas, contractName, caller.Name())
+
+	// When an error was returned by the EVM or when setting the creation code
+	// above we revert to the snapshot and consume any gas remaining. Additionally
+	// when we're in homestead this also counts for code storage gas errors.
+	if err != nil {
+		evm.StateDB.RevertToSnapshot(snapshot)
+		if err != errExecutionReverted {
+			contract.UseGas(contract.Gas)
+		}
+	}
+	actualUsedGas := gas - contract.Gas
+	evm.distributeGasByScale(actualUsedGas, runGas)
+
+	if new(big.Int).SetBytes(ret).Cmp(big.NewInt(0)) > 0 && err == nil {
+		err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), assetContract)
+		return nil, contract.Gas, err
+	} else {
+		err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		return nil, contract.Gas, err
+	}
+}
+
 // ChainConfig returns the environment's chain configuration
 func (evm *EVM) ChainConfig() *params.ChainConfig { return evm.chainConfig }
 

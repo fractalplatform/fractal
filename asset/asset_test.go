@@ -455,7 +455,7 @@ func TestAsset_IncreaseAsset(t *testing.T) {
 		a := &Asset{
 			sdb: tt.fields.sdb,
 		}
-		if err := a.IncreaseAsset(tt.args.accountName, tt.args.AssetID, tt.args.amount); (err != nil) != tt.wantErr {
+		if err := a.IncreaseAsset(tt.args.accountName, tt.args.AssetID, tt.args.amount, 4); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Asset.IncreaseAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -501,6 +501,7 @@ func TestAsset_UpdateAsset(t *testing.T) {
 		AssetID     uint64
 		Owner       common.Name
 		founder     common.Name
+		forkID      uint64
 	}
 	tests := []struct {
 		name    string
@@ -509,17 +510,19 @@ func TestAsset_UpdateAsset(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases
-		{"nilname", fields{assetDB}, args{common.Name(""), 1, common.Name(""), common.Name("")}, true},
-		{"wrongAssetID", fields{assetDB}, args{common.Name("11"), 0, common.Name(""), common.Name("")}, false},
-		{"wrongamount", fields{assetDB}, args{common.Name("11"), 123, common.Name(""), common.Name("")}, true},
-		{"nilfounder", fields{assetDB}, args{common.Name("a123456789afff"), 1, common.Name("a123456789aeee"), common.Name("")}, false},
-		{"normal", fields{assetDB}, args{common.Name("a123456789afff"), 1, common.Name("a123456789afff"), common.Name("a123456789afff")}, false},
+		{"nilname", fields{assetDB}, args{common.Name(""), 1, common.Name(""), common.Name(""), 0}, true},
+		{"wrongAssetID", fields{assetDB}, args{common.Name("11"), 0, common.Name(""), common.Name(""), 0}, false},
+		{"wrongamount", fields{assetDB}, args{common.Name("11"), 123, common.Name(""), common.Name(""), 0}, true},
+		{"nilfounder", fields{assetDB}, args{common.Name("a123456789afff"), 1, common.Name("a123456789aeee"), common.Name(""), 0}, false},
+		{"nilfounder", fields{assetDB}, args{common.Name("a123456789afff"), 1, common.Name("a123456789aeee"), common.Name(""), 4}, false},
+		{"nilfounder", fields{assetDB}, args{common.Name("a123456789afff"), 1, common.Name("a123456789aeee"), common.Name("a123456789afff"), 4}, false},
+		{"normal", fields{assetDB}, args{common.Name("a123456789afff"), 1, common.Name("a123456789afff"), common.Name("a123456789afff"), 0}, false},
 	}
 	for _, tt := range tests {
 		a := &Asset{
 			sdb: tt.fields.sdb,
 		}
-		if err := a.UpdateAsset(tt.args.accountName, tt.args.AssetID, tt.args.founder); (err != nil) != tt.wantErr {
+		if err := a.UpdateAsset(tt.args.accountName, tt.args.AssetID, tt.args.founder, tt.args.forkID); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Asset.updateAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}

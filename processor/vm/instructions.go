@@ -522,6 +522,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	evm.interpreter.intPool.put(time, assetId)
 	return nil, nil
 }
+
 func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	assetId := stack.pop()
 	slot := stack.peek()

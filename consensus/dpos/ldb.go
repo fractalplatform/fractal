@@ -17,12 +17,14 @@
 package dpos
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -34,9 +36,9 @@ type IDatabase interface {
 	Delete(key string) error
 
 	Undelegate(string, *big.Int) (*types.Action, error)
-	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
+	IncAsset2Acct(string, string, *big.Int, uint64) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
-
+	IsValidSign(name string, pubkey []byte) error
 	GetSnapshot(key string, timestamp uint64) ([]byte, error)
 }
 
@@ -47,6 +49,9 @@ var (
 	CandidateHead = "s"
 	// ActivatedCandidateKeyPrefix candidateInfo
 	ActivatedCandidateKeyPrefix = "ap"
+
+	// CandidatePubKeyPrefix candidateInfo
+	CandidatePubKeyPrefix = "pk"
 
 	// VoterKeyPrefix voterInfo
 	VoterKeyPrefix = "v"
@@ -78,6 +83,20 @@ func NewLDB(db IDatabase) (*LDB, error) {
 		IDatabase: db,
 	}
 	return ldb, nil
+}
+
+// CanMine allow mining block
+func (db *LDB) CanMine(name string, pub []byte) error {
+	pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", name)}, Separator)
+	if val, _ := db.Get(pubkey); val != nil {
+		if bytes.Compare(common.EmptyPubKey.Bytes(), val) != 0 {
+			if bytes.Compare(pub, val) == 0 {
+				return nil
+			}
+			return fmt.Errorf("need pubkey %s", common.BytesToPubKey(val).String())
+		}
+	}
+	return db.IsValidSign(name, pub)
 }
 
 // SetCandidate update candidate info
@@ -119,6 +138,18 @@ func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 	} else if err := db.Put(key, val); err != nil {
 		return err
 	}
+
+	if common.EmptyPubKey.Compare(candidate.PubKey) != 0 {
+		pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", candidate.Name)}, Separator)
+		if err := db.Put(pubkey, candidate.PubKey.Bytes()); err != nil {
+			return err
+		}
+	} else {
+		pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", candidate.Name)}, Separator)
+		if err := db.Delete(pubkey); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -155,6 +186,11 @@ func (db *LDB) DelCandidate(epoch uint64, name string) error {
 	if err := db.Delete(key); err != nil {
 		return err
 	}
+	pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", name)}, Separator)
+	if err := db.Delete(pubkey); err != nil {
+		return err
+	}
+
 	head, err := db.GetCandidate(epoch, CandidateHead)
 	if err != nil {
 		return err
@@ -174,6 +210,12 @@ func (db *LDB) GetCandidate(epoch uint64, name string) (*CandidateInfo, error) {
 	} else if err := rlp.DecodeBytes(val, candidateInfo); err != nil {
 		return nil, err
 	}
+
+	pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", name)}, Separator)
+	if val, _ := db.Get(pubkey); val != nil {
+		candidateInfo.PubKey.SetBytes(val)
+	}
+
 	return candidateInfo, nil
 }
 

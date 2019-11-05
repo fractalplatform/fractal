@@ -80,6 +80,9 @@ const (
 	RefundCandidate
 	// VoteCandidate repesents voter vote candidate action.
 	VoteCandidate
+
+	// UpdateCandidatePubKey repesents update candidate action.
+	UpdateCandidatePubKey
 )
 
 const (
@@ -167,7 +170,7 @@ func (a *Action) GetSignParent() uint64 {
 }
 
 // Check the validity of all fields
-func (a *Action) Check(conf *params.ChainConfig) error {
+func (a *Action) Check(fid uint64, conf *params.ChainConfig) error {
 	//check To
 	switch a.Type() {
 	case CreateContract:
@@ -203,6 +206,11 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		}
 	case Transfer:
 		//dpos
+	case UpdateCandidatePubKey:
+		if fid < params.ForkID4 {
+			return fmt.Errorf("Receipt undefined")
+		}
+		fallthrough
 	case RegCandidate:
 		fallthrough
 	case UpdateCandidate:
