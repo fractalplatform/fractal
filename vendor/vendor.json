@@ -99,12 +99,6 @@
 			"revisionTime": "2019-10-30T11:21:25Z"
 		},
 		{
-			"checksumSHA1": "PRK/z/REMTPweS5LbnZFihkbNrw=",
-			"path": "github.com/ethereum/go-ethereum/log",
-			"revision": "93422e9d15063f707c381cd25758d6a34daece18",
-			"revisionTime": "2019-10-30T11:21:25Z"
-		},
-		{
 			"checksumSHA1": "pYniK45ICvuQkUJzySPww7EGRO8=",
 			"path": "github.com/fjl/memsize",
 			"revision": "bcb5799ab5e5bd6a0fbd8ba513f95a50d9eac048",
@@ -217,6 +211,12 @@
 			"path": "github.com/golang/snappy",
 			"revision": "ff6b7dc882cf4cfba7ee0b9f7dcc1ac096c554aa",
 			"revisionTime": "2019-09-04T06:34:54Z"
+		},
+		{
+			"checksumSHA1": "MS90sumd+9T+oLd42tAa2criFXE=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "c3e18be99d19e6b3e8f1559eea2c161a665c4b6b",
+			"revisionTime": "2019-08-25T01:20:11Z"
 		},
 		{
 			"checksumSHA1": "wRTuICOR7smqEyi630pCvuFIApY=",
@@ -997,12 +997,6 @@
 			"path": "gopkg.in/check.v1",
 			"revision": "41f04d3bba152ddec2103e299fed053415705330",
 			"revisionTime": "2019-09-02T08:05:02Z"
-		},
-		{
-			"checksumSHA1": "7pei+93pP5NL8rmADnQ58bFZDrc=",
-			"path": "gopkg.in/fatih/set.v0",
-			"revision": "2c768e3c5489976167bfc42b5c7c92ca783f4389",
-			"revisionTime": "2018-08-03T06:55:37Z"
 		},
 		{
 			"checksumSHA1": "o48HV7RTuWgAA//aJsiXBdceHSM=",
