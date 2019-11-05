@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -57,6 +58,8 @@ type IDB interface {
 	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
 	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
+
+	CanMine(name string, pub []byte) error
 }
 
 // CandidateType candidate status
@@ -137,6 +140,7 @@ type CandidateInfo struct {
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
 	NextKey       string        `json:"-"`
+	PubKey        common.PubKey `json:"pubkey" rlp:"-"`
 }
 
 func (candidateInfo *CandidateInfo) copy() *CandidateInfo {

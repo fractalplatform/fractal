@@ -128,7 +128,7 @@ func (tx *Transaction) Size() common.StorageSize {
 }
 
 // Check the validity of all fields
-func (tx *Transaction) Check(conf *params.ChainConfig) error {
+func (tx *Transaction) Check(fid uint64, conf *params.ChainConfig) error {
 	if len(tx.actions) == 0 {
 		return ErrEmptyActions
 	}
@@ -143,7 +143,7 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	}
 
 	for _, action := range tx.actions {
-		if err := action.Check(conf); err != nil {
+		if err := action.Check(fid, conf); err != nil {
 			return err
 		}
 	}

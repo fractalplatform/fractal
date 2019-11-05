@@ -139,6 +139,8 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		fallthrough
 	case actionType == types.UpdateCandidate:
 		fallthrough
+	case actionType == types.UpdateCandidatePubKey:
+		fallthrough
 	case actionType == types.UnregCandidate:
 		fallthrough
 	case actionType == types.VoteCandidate:
@@ -247,6 +249,8 @@ func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 	case types.RegCandidate:
 		fallthrough
 	case types.UpdateCandidate:
+		fallthrough
+	case types.UpdateCandidatePubKey:
 		fallthrough
 	case types.UnregCandidate:
 		fallthrough
