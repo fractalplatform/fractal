@@ -89,10 +89,12 @@ func NewLDB(db IDatabase) (*LDB, error) {
 func (db *LDB) CanMine(name string, pub []byte) error {
 	pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", name)}, Separator)
 	if val, _ := db.Get(pubkey); val != nil {
-		if bytes.Compare(pub, val) == 0 {
-			return nil
+		if bytes.Compare(common.EmptyPubKey.Bytes(), val) != 0 {
+			if bytes.Compare(pub, val) == 0 {
+				return nil
+			}
+			return fmt.Errorf("need pubkey %s", common.BytesToPubKey(val).String())
 		}
-		return fmt.Errorf("need pubkey %s", common.BytesToPubKey(val).String())
 	}
 	return db.IsValidSign(name, pub)
 }
@@ -140,6 +142,11 @@ func (db *LDB) SetCandidate(candidate *CandidateInfo) error {
 	if common.EmptyPubKey.Compare(candidate.PubKey) != 0 {
 		pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", candidate.Name)}, Separator)
 		if err := db.Put(pubkey, candidate.PubKey.Bytes()); err != nil {
+			return err
+		}
+	} else {
+		pubkey := strings.Join([]string{CandidatePubKeyPrefix, fmt.Sprintf("%s", candidate.Name)}, Separator)
+		if err := db.Delete(pubkey); err != nil {
 			return err
 		}
 	}
