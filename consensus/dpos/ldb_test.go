@@ -70,6 +70,11 @@ func (ldb *levelDB) GetSnapshot(string, uint64) ([]byte, error) {
 func (ldb *levelDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, error) {
 	return new(big.Int).Mul(big.NewInt(1000000000), DefaultConfig.decimals()), nil
 }
+
+func (ldb *levelDB) IsValidSign(name string, pubkey []byte) error {
+	return nil
+}
+
 func newTestLDB() (*levelDB, func()) {
 	dirname, err := ioutil.TempDir(os.TempDir(), "dpos_test_")
 	if err != nil {

@@ -405,7 +405,7 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *b
 }
 
 //UpdateAsset change asset info
-func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName common.Name) error {
+func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName common.Name, curForkID uint64) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
@@ -419,8 +419,16 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName
 	// if asset.GetAssetOwner() != accountName {
 	// 	return ErrOwnerMismatch
 	// }
-
-	asset.SetAssetFounder(founderName)
+	if curForkID >= params.ForkID4 {
+		if len(founderName.String()) == 0 {
+			assetOwner := asset.GetAssetOwner()
+			asset.SetAssetFounder(assetOwner)
+		} else {
+			asset.SetAssetFounder(founderName)
+		}
+	} else {
+		asset.SetAssetFounder(founderName)
+	}
 	return a.SetAssetObject(asset)
 }
 
