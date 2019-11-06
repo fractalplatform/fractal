@@ -1509,7 +1509,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder); err != nil {
+		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder, curForkID); err != nil {
 			return nil, err
 		}
 	case types.SetAssetOwner:
