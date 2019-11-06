@@ -1455,7 +1455,7 @@ func TestAccountManager_IncAsset2Acct(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.IncAsset2Acct(tt.args.fromName, tt.args.toName, tt.args.AssetID, tt.args.amount); (err != nil) != tt.wantErr {
+		if err := am.IncAsset2Acct(tt.args.fromName, tt.args.toName, tt.args.AssetID, tt.args.amount, 4); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IncAsset2Acct() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}

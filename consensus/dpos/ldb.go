@@ -36,7 +36,7 @@ type IDatabase interface {
 	Delete(key string) error
 
 	Undelegate(string, *big.Int) (*types.Action, error)
-	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
+	IncAsset2Acct(string, string, *big.Int, uint64) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
 	IsValidSign(name string, pubkey []byte) error
 	GetSnapshot(key string, timestamp uint64) ([]byte, error)

@@ -29,6 +29,7 @@ import (
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/vntchain/go-vnt/common/math"
 )
 
 var (
@@ -294,6 +295,9 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 
 //IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, number uint64, forkID uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
+	if forkID > params.ForkID3 && amount.Cmp(math.MaxBig256) > 0 {
+		return 0, ErrAmountOverMax256
+	}
 	_, err := a.GetAssetIDByName(assetName)
 	if err != nil && err != ErrAssetNotExist {
 		return 0, err
@@ -355,7 +359,7 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetID uint64, amount *bi
 }
 
 //IncreaseAsset increase asset, upperlimit == 0 means no upper limit
-func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *big.Int) error {
+func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *big.Int, forkID uint64) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
@@ -371,6 +375,9 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *b
 	}
 	if asset == nil {
 		return ErrAssetNotExist
+	}
+	if forkID > params.ForkID3 && (new(big.Int).Add(asset.GetAssetAmount(), amount)).Cmp(math.MaxBig256) > 0 {
+		return ErrAmountOverMax256
 	}
 	// if asset.GetAssetOwner() != accountName {
 	// 	return ErrOwnerMismatch
