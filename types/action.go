@@ -206,14 +206,14 @@ func (a *Action) Check(fid uint64, conf *params.ChainConfig) error {
 		}
 	case Transfer:
 		//dpos
-	case RegCandidate:
-		fallthrough
-	case UpdateCandidate:
-		fallthrough
 	case UpdateCandidatePubKey:
 		if fid < params.ForkID4 {
 			return fmt.Errorf("Receipt undefined")
 		}
+		fallthrough
+	case RegCandidate:
+		fallthrough
+	case UpdateCandidate:
 		fallthrough
 	case UnregCandidate:
 		fallthrough
