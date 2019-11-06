@@ -55,7 +55,7 @@ type IDB interface {
 	GetTakeOver() (uint64, error)
 
 	Undelegate(string, *big.Int) (*types.Action, error)
-	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
+	IncAsset2Acct(string, string, *big.Int, uint64) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
 	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
 

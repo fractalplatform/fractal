@@ -34,4 +34,5 @@ var (
 	ErrAssetManagerNotExist = errors.New("asset manager name not exist")
 	ErrDetailTooLong        = errors.New("detail info exceed maximum")
 	ErrNegativeAmount       = errors.New("negative amount")
+	ErrAmountOverMax256     = errors.New("amount over max uint256")
 )
