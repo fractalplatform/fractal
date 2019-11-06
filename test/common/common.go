@@ -18,6 +18,7 @@ package common
 
 import (
 	"context"
+	"math/big"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -78,6 +79,13 @@ func SendRawTx(rawTx []byte) (common.Hash, error) {
 	hash := new(common.Hash)
 	err := ClientCall("ft_sendRawTransaction", hash, hexutil.Bytes(rawTx))
 	return *hash, err
+}
+
+// GasPrice suggest gas price
+func GasPrice() (*big.Int, error) {
+	gp := big.NewInt(0)
+	err := ClientCall("ft_gasPrice", gp)
+	return gp, err
 }
 
 // defaultDataDir is the default data directory to use for the databases and other
