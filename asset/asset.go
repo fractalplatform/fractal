@@ -295,7 +295,7 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 
 //IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, number uint64, forkID uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
-	if forkID > params.ForkID3 && amount.Cmp(math.MaxBig256) > 0 {
+	if forkID >= params.ForkID4 && amount.Cmp(math.MaxBig256) > 0 {
 		return 0, ErrAmountOverMax256
 	}
 	_, err := a.GetAssetIDByName(assetName)
@@ -376,7 +376,7 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *b
 	if asset == nil {
 		return ErrAssetNotExist
 	}
-	if forkID > params.ForkID3 && (new(big.Int).Add(asset.GetAssetAmount(), amount)).Cmp(math.MaxBig256) > 0 {
+	if forkID >= params.ForkID4 && (new(big.Int).Add(asset.GetAssetAmount(), amount)).Cmp(math.MaxBig256) > 0 {
 		return ErrAmountOverMax256
 	}
 	// if asset.GetAssetOwner() != accountName {
