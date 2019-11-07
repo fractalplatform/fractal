@@ -19,7 +19,7 @@
 # Gets the git commit hash of the working dir and adds an additional hash of any tracked modified files
 commit=$(git describe --tags)
 dirty=$(git ls-files -m)
-branch=$(git branch --show-current)
+branch=$(git branch | grep '*' | cut -d ' ' -f 2)
 
 commit="$commit+branch.$branch"
 if [[ -n ${dirty} ]]; then

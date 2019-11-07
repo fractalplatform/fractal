@@ -417,7 +417,8 @@ func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64
 }
 
 // return true means need call again
-func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
+func (dl *Downloader) multiplexDownload() bool {
+	status := dl.bestStation()
 	log.Debug("multiplexDownload start")
 	defer log.Debug("multiplexDownload end")
 	if status == nil {
@@ -467,10 +468,15 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	ancestor, ancestorHash, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
 		log.Warn("ancestor err", "err", err, "errID:", err.eid)
+		router.AddErr(status.station, 1)
 		if err.eid == notFind {
 			log.Warn("Disconnect because ancestor not find:", "node:", adaptor.GetFnode(status.station))
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
+		} else if router.Err(status.station) > 50 {
+			log.Warn("Disconnect because too much error:", "node:", adaptor.GetFnode(status.station))
+			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 		}
+
 		return false
 	}
 	log.Debug("downloader ancestor:", "ancestor", ancestor)
@@ -556,19 +562,16 @@ func (dl *Downloader) loopStart() {
 
 func (dl *Downloader) loop() {
 	defer dl.loopWG.Done()
-	download := func() {
-		//for status := dl.bestStation(); dl.download(status); {
-		for status := dl.bestStation(); dl.multiplexDownload(status); {
-		}
-	}
 	timer := time.NewTimer(10 * time.Second)
 	for {
 		select {
 		case <-dl.quit:
 			return
 		case <-dl.downloadTrigger:
-			download()
 			timer.Stop()
+			if dl.multiplexDownload() {
+				dl.loopStart()
+			}
 			timer.Reset(10 * time.Second)
 		case <-timer.C:
 			dl.loopStart()
