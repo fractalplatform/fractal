@@ -154,6 +154,7 @@ func (candidateInfo *CandidateInfo) copy() *CandidateInfo {
 		Counter:       candidateInfo.Counter,
 		ActualCounter: candidateInfo.ActualCounter,
 		Type:          candidateInfo.Type,
+		PubKey:        candidateInfo.PubKey,
 	}
 }
 
