@@ -152,7 +152,7 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 	}
 	assetObj.AddIssue = addissue
 	assetObj.Amount = new(big.Int).Add(assetObj.Amount, amount)
-	if assetObj.AddIssue.Cmp(UINT256_MAX) > 0 {
+	if assetObj.Amount.Cmp(UINT256_MAX) > 0 {
 		return nil, ErrAssetTotalExceedLimitErr
 	}
 
