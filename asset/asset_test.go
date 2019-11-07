@@ -455,7 +455,7 @@ func TestAsset_IncreaseAsset(t *testing.T) {
 		a := &Asset{
 			sdb: tt.fields.sdb,
 		}
-		if err := a.IncreaseAsset(tt.args.accountName, tt.args.AssetID, tt.args.amount); (err != nil) != tt.wantErr {
+		if err := a.IncreaseAsset(tt.args.accountName, tt.args.AssetID, tt.args.amount, 4); (err != nil) != tt.wantErr {
 			t.Errorf("%q. Asset.IncreaseAsset() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}

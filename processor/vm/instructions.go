@@ -469,13 +469,8 @@ func opGetAssetInfo(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 		stack.push(evm.interpreter.intPool.getZero())
 		stack.push(evm.interpreter.intPool.getZero())
 	} else {
-		if evm.ForkID > params.ForkID3 && amount.Cmp(math.MaxBig256) > 0 {
-			stack.push(evm.interpreter.intPool.getZero())
-			stack.push(evm.interpreter.intPool.getZero())
-		} else {
-			stack.push(amount)
-			stack.push(evm.interpreter.intPool.get().SetUint64(uint64(len(name))))
-		}
+		stack.push(amount)
+		stack.push(evm.interpreter.intPool.get().SetUint64(uint64(len(name))))
 	}
 	evm.interpreter.intPool.put(time, assetID)
 	return nil, nil
@@ -527,6 +522,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	evm.interpreter.intPool.put(time, assetId)
 	return nil, nil
 }
+
 func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	assetId := stack.pop()
 	slot := stack.peek()

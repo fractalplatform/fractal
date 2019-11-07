@@ -1338,12 +1338,12 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
-func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int) error {
+func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int, forkID uint64) error {
 	if err := am.ast.CheckOwner(fromName, assetID); err != nil {
 		return err
 	}
 
-	if err := am.ast.IncreaseAsset(fromName, assetID, amount); err != nil {
+	if err := am.ast.IncreaseAsset(fromName, assetID, amount, forkID); err != nil {
 		return err
 	}
 	return nil
@@ -1459,7 +1459,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, ErrNegativeAmount
 		}
 
-		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetID, inc.Amount); err != nil {
+		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetID, inc.Amount, curForkID); err != nil {
 			return nil, err
 		}
 
