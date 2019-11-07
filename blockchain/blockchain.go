@@ -123,7 +123,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		statePruning:     statePruning,
 		stateCacheClean:  false,
 		snapshotInterval: chainConfig.SnapshotInterval * uint64(time.Millisecond),
-		triesInMemory:    ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
+		triesInMemory:    256,
 		triegc:           prque.New(nil),
 		vmConfig:         vmConfig,
 		db:               db,
