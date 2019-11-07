@@ -195,7 +195,7 @@ func (router *Router) StationUnregister(station Station) {
 	router.stationMutex.Lock()
 	delete(router.stations, station.Name())
 	router.stationMutex.Unlock()
-	if station.IsRemote() {
+	if station.IsRemote() && !station.IsBroadcast() {
 		router.eval.unregister(station)
 	}
 }
