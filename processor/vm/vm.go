@@ -20,9 +20,7 @@ package vm
 import (
 	"math/big"
 	"sync/atomic"
-	"time"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
@@ -62,24 +60,19 @@ type Context struct {
 	GetHeaderByNumber       GetHeaderByNumberFunc
 
 	// Message information
-	Origin    common.Name // Provides information for ORIGIN
-	Recipient common.Name
-	From      common.Name // Provides information for ORIGIN
-	AssetID   uint64      // provides assetId
-	GasPrice  *big.Int    // Provides information for GASPRICE
+	Origin    string // Provides information for ORIGIN
+	Recipient string
+	From      string   // Provides information for ORIGIN
+	AssetID   uint64   // provides assetId
+	GasPrice  *big.Int // Provides information for GASPRICE
 
 	// Block information
-	Coinbase    common.Name // Provides information for COINBASE
-	GasLimit    uint64      // Provides information for GASLIMIT
-	BlockNumber *big.Int    // Provides information for NUMBER
-	ForkID      uint64      // Provides information for FORKID
-	Time        *big.Int    // Provides information for TIME
-	Difficulty  *big.Int    // Provides information for DIFFICULTY
-}
-
-type FounderGas struct {
-	Founder common.Name
-	Gas     uint64
+	Coinbase    string   // Provides information for COINBASE
+	GasLimit    uint64   // Provides information for GASLIMIT
+	BlockNumber *big.Int // Provides information for NUMBER
+	ForkID      uint64   // Provides information for FORKID
+	Time        *big.Int // Provides information for TIME
+	Difficulty  *big.Int // Provides information for DIFFICULTY
 }
 
 type EVM struct {
@@ -110,34 +103,9 @@ type EVM struct {
 	// applied in opCall*.
 	callGasTemp uint64
 
-	FounderGasMap map[DistributeKey]DistributeGas
+	FounderGasMap map[types.DistributeKey]types.DistributeGas
 
 	InternalTxs []*types.InternalAction
-}
-
-type DistributeGas struct {
-	Value  int64
-	TypeID uint64
-}
-
-type DistributeKey struct {
-	ObjectName interface{}
-	ObjectType uint64
-}
-
-type DistributeKeys []DistributeKey
-
-func (keys DistributeKeys) Len() int {
-	return len(keys)
-}
-func (keys DistributeKeys) Less(i, j int) bool {
-	if keys[i].ObjectName == keys[j].ObjectName {
-		return keys[i].ObjectType < keys[j].ObjectType
-	}
-	return keys[i].ObjectName < keys[j].ObjectName
-}
-func (keys DistributeKeys) Swap(i, j int) {
-	keys[i], keys[j] = keys[j], keys[i]
 }
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
@@ -151,7 +119,7 @@ func NewEVM(ctx Context, pm plugin.IPM, statedb *state.StateDB, chainCfg *params
 		vmConfig:    vmConfig,
 	}
 	evm.interpreter = NewInterpreter(evm, vmConfig)
-	evm.FounderGasMap = map[DistributeKey]DistributeGas{}
+	evm.FounderGasMap = map[types.DistributeKey]types.DistributeGas{}
 	return evm
 }
 
@@ -189,46 +157,33 @@ func (evm *EVM) GetCurrentGasTable() params.GasTable {
 
 func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
 	gasTable := evm.GetCurrentGasTable()
-	if action.Value().Sign() == 0 {
-		return 0
-	}
-	toAcct, err := evm.PM.GetAccountByName(action.Recipient())
-	if err != nil {
-		return 0
-	}
-	if toAcct == nil {
-		return 0
-	}
-	if toAcct.IsDestroyed() {
-		return 0
-	}
-	_, err = toAcct.GetBalanceByID(action.AssetID())
-	if err == accountmanager.ErrAccountAssetNotExist {
+	if _, err := evm.PM.GetBalance(action.Recipient(), action.AssetID()); err != nil {
 		return gasTable.CallValueTransferGas
+	} else {
+		return 0
 	}
-	return 0
 }
 
 func (evm *EVM) distributeContractGas(runGas uint64, contractName string, callerName string) {
-	if runGas > 0 && len(contractName.String()) > 0 {
-		key := DistributeKey{ObjectName: contractName,
-			ObjectType: params.ContractFeeType}
+	if runGas > 0 && len(contractName) > 0 {
+		key := types.DistributeKey{ObjectName: contractName,
+			ObjectType: types.ContractFeeType}
 		if _, ok := evm.FounderGasMap[key]; !ok {
-			dGas := DistributeGas{int64(runGas), params.ContractFeeType}
+			dGas := types.DistributeGas{int64(runGas), types.ContractFeeType}
 			evm.FounderGasMap[key] = dGas
 		} else {
-			dGas := DistributeGas{int64(runGas), params.ContractFeeType}
+			dGas := types.DistributeGas{int64(runGas), types.ContractFeeType}
 			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 			evm.FounderGasMap[key] = dGas
 		}
 		if evm.depth != 0 {
-			key = DistributeKey{ObjectName: callerName,
-				ObjectType: params.ContractFeeType}
+			key = types.DistributeKey{ObjectName: callerName,
+				ObjectType: types.ContractFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
-				dGas := DistributeGas{-int64(runGas), params.ContractFeeType}
+				dGas := types.DistributeGas{-int64(runGas), types.ContractFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := DistributeGas{-int64(runGas), params.ContractFeeType}
+				dGas := types.DistributeGas{-int64(runGas), types.ContractFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
 				evm.FounderGasMap[key] = dGas
 			}
@@ -236,42 +191,29 @@ func (evm *EVM) distributeContractGas(runGas uint64, contractName string, caller
 	}
 }
 
-func (evm *EVM) distributeAssetGas(callValueGas int64, assetID uint64, callerName string) {
+func (evm *EVM) distributeAssetGas(callValueGas int64, assetName string, callerName string) {
 	if evm.depth != 0 {
-		key := DistributeKey{ObjectName: assetName,
-			ObjectType: params.AssetFeeType}
-		if len(assetName.String()) > 0 {
-			if _, ok := evm.FounderGasMap[key]; !ok {
-				dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
-				evm.FounderGasMap[key] = dGas
-			} else {
-				dGas := DistributeGas{int64(callValueGas), params.AssetFeeType}
-				dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
-				evm.FounderGasMap[key] = dGas
-			}
+		key := types.DistributeKey{ObjectName: assetName,
+			ObjectType: types.AssetFeeType}
+		if _, ok := evm.FounderGasMap[key]; !ok {
+			dGas := types.DistributeGas{int64(callValueGas), types.AssetFeeType}
+			evm.FounderGasMap[key] = dGas
+		} else {
+			dGas := types.DistributeGas{int64(callValueGas), types.AssetFeeType}
+			dGas.Value = evm.FounderGasMap[key].Value + dGas.Value
+			evm.FounderGasMap[key] = dGas
 		}
-		if len(callerName.String()) > 0 {
-			key = DistributeKey{ObjectName: callerName,
-				ObjectType: params.ContractFeeType}
+		if len(callerName) > 0 {
+			key = types.DistributeKey{ObjectName: callerName,
+				ObjectType: types.ContractFeeType}
 			if _, ok := evm.FounderGasMap[key]; !ok {
-				dGas := DistributeGas{-int64(callValueGas), params.ContractFeeType}
+				dGas := types.DistributeGas{-int64(callValueGas), types.ContractFeeType}
 				evm.FounderGasMap[key] = dGas
 			} else {
-				dGas := DistributeGas{int64(callValueGas), params.ContractFeeType}
+				dGas := types.DistributeGas{int64(callValueGas), types.ContractFeeType}
 				dGas.Value = evm.FounderGasMap[key].Value - dGas.Value
 				evm.FounderGasMap[key] = dGas
 			}
-		}
-	}
-}
-
-func (evm *EVM) distributeGasByScale(actualUsedGas uint64, runGas uint64) {
-	if evm.depth == 0 && actualUsedGas != runGas {
-		for key, gas := range evm.FounderGasMap {
-			mulGas := new(big.Int).Mul(big.NewInt(gas.Value), big.NewInt(int64(actualUsedGas)))
-			divgas := new(big.Int).Div(mulGas, big.NewInt(int64(runGas)))
-			v := DistributeGas{divgas.Int64(), gas.TypeID}
-			evm.FounderGasMap[key] = v
 		}
 	}
 }
@@ -287,14 +229,14 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	}
 	// Fail if we're trying to transfer more than the available balance
 
-	if ok, err := evm.PM.CanTransfer(caller.Name(), action.AssetID(), action.Value()); !ok || err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), action.AssetID(), action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
 	toName := action.Recipient()
 
 	var (
-		to       = AccountRef(toName)
+		// to       = AccountRef(toName)
 		snapshot = evm.StateDB.Snapshot()
 	)
 
@@ -316,26 +258,13 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 
-	contract := NewContract(caller, to, action.Value(), gas, action.AssetID())
+	contract := NewContract(caller, toName, action.Value(), gas, action.AssetID())
 
-	// acct, err := evm.PM.GetAccountByName(toName)
-	// if err != nil {
-	// 	return nil, gas, err
-	// }
-	// if acct == nil {
-	// 	return nil, gas, ErrAccountNotExist
-	// }
-	// codeHash, err := acct.GetCodeHash()
-	// if err != nil {
-	// 	return nil, gas, err
-	// }
-	// code, _ := acct.GetCode()
-
-	codeHash, err := evm.PM.GetCodeHash(action.Sender())
+	codeHash, err := evm.PM.GetCodeHash(toName)
 	if err != nil {
 		return nil, gas, err
 	}
-	code, _ := evm.PM.GetCode(action.Sender())
+	code, _ := evm.PM.GetCode(toName)
 	contract.SetCallCode(codeHash, code)
 
 	ret, err = run(evm, contract, action.Data())
@@ -346,7 +275,10 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	gasTable := evm.GetCurrentGasTable()
 	callValueGas := int64(gasTable.CallValueTransferGas - gasTable.CallStipend)
 	if action.Value().Sign() != 0 && callValueGas > 0 {
-		evm.distributeAssetGas(callValueGas, action.AssetID(), caller.Name())
+		assetName, err := evm.PM.GetAssetName(action.AssetID())
+		if err == nil {
+			evm.distributeAssetGas(callValueGas, assetName, caller.Name())
+		}
 	}
 
 	// When an error was returned by the EVM or when setting the creation code
@@ -370,16 +302,12 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 // CallCode differs from Call in the sense that it executes the given address'
 // code with the caller as context.
 func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (ret []byte, leftOverGas uint64, err error) {
-	if evm.vmConfig.NoRecursion && evm.depth > 0 {
-		return nil, gas, nil
-	}
-
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
-	if ok, err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -387,24 +315,19 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 
 	var (
 		snapshot = evm.StateDB.Snapshot()
-		to       = AccountRef(caller.Name())
+		// to       = AccountRef(caller.Name())
 	)
 	// initialise a new contract and set the code that is to be used by the
 	// E The contract is a scoped evmironment for this execution context
 	// only.
-	contract := NewContract(caller, to, action.Value(), gas, evm.AssetID)
-	acct, err := evm.PM.GetAccountByName(toName)
+	contract := NewContract(caller, caller.Name(), action.Value(), gas, evm.AssetID)
+
+	codeHash, err := evm.PM.GetCodeHash(toName)
 	if err != nil {
 		return nil, gas, err
 	}
-	codeHash, err := acct.GetCodeHash()
-	if err != nil {
-		return nil, gas, err
-	}
-	code, _ := acct.GetCode()
-	//codeHash, _ := evm.PM.GetCodeHash(toName)
-	//code, _ := evm.PM.GetCode(toName)
-	contract.SetCallCode(&toName, codeHash, code)
+	code, _ := evm.PM.GetCode(toName)
+	contract.SetCallCode(codeHash, code)
 
 	ret, err = run(evm, contract, action.Data())
 	runGas := gas - contract.Gas
@@ -420,8 +343,6 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 		}
 	}
 
-	actualUsedGas := gas - contract.Gas
-	evm.distributeGasByScale(actualUsedGas, runGas)
 	return ret, contract.Gas, err
 }
 
@@ -430,10 +351,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 //
 // DelegateCall differs from CallCode in the sense that it executes the given address'
 // code with the caller as context and the caller is set to the caller of the caller.
-func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
-	if evm.vmConfig.NoRecursion && evm.depth > 0 {
-		return nil, gas, nil
-	}
+func (evm *EVM) DelegateCall(caller ContractRef, name string, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
@@ -441,23 +359,18 @@ func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte,
 
 	var (
 		snapshot = evm.StateDB.Snapshot()
-		to       = AccountRef(caller.Name())
+		// to       = AccountRef(caller.Name())
 	)
 
 	// Initialise a new contract and make initialise the delegate values
-	contract := NewContract(caller, to, nil, gas, evm.AssetID).AsDelegate()
-	acct, err := evm.PM.GetAccountByName(name)
+	contract := NewContract(caller, caller.Name(), nil, gas, evm.AssetID).AsDelegate()
+
+	codeHash, err := evm.PM.GetCodeHash(name)
 	if err != nil {
 		return nil, gas, err
 	}
-	codeHash, err := acct.GetCodeHash()
-	if err != nil {
-		return nil, gas, err
-	}
-	code, _ := acct.GetCode()
-	//codeHash, _ := evm.PM.GetCodeHash(name)
-	//code, _ := evm.PM.GetCode(name)
-	contract.SetCallCode(&name, codeHash, code)
+	code, _ := evm.PM.GetCode(name)
+	contract.SetCallCode(codeHash, code)
 
 	ret, err = run(evm, contract, input)
 	runGas := gas - contract.Gas
@@ -472,9 +385,6 @@ func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte,
 			contract.UseGas(contract.Gas)
 		}
 	}
-
-	actualUsedGas := gas - contract.Gas
-	evm.distributeGasByScale(actualUsedGas, runGas)
 	return ret, contract.Gas, err
 }
 
@@ -482,10 +392,7 @@ func (evm *EVM) DelegateCall(caller ContractRef, name common.Name, input []byte,
 // as parameters while disallowing any modifications to the state during the call.
 // Opcodes that attempt to perform such modifications will result in exceptions
 // instead of performing the modifications.
-func (evm *EVM) StaticCall(caller ContractRef, name common.Name, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
-	if evm.vmConfig.NoRecursion && evm.depth > 0 {
-		return nil, gas, nil
-	}
+func (evm *EVM) StaticCall(caller ContractRef, name string, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
@@ -499,35 +406,27 @@ func (evm *EVM) StaticCall(caller ContractRef, name common.Name, input []byte, g
 	}
 
 	var (
-		to       = AccountRef(name)
+		//to       = AccountRef(name)
 		snapshot = evm.StateDB.Snapshot()
 	)
 	// Initialise a new contract and set the code that is to be used by the
 	// EVM. The contract is a scoped environment for this execution context
 	// only.
-	contract := NewContract(caller, to, new(big.Int), gas, evm.AssetID)
-	acct, err := evm.PM.GetAccountByName(name)
+	contract := NewContract(caller, name, new(big.Int), gas, evm.AssetID)
+	codeHash, err := evm.PM.GetCodeHash(name)
 	if err != nil {
 		return nil, gas, err
 	}
-	codeHash, err := acct.GetCodeHash()
-	if err != nil {
-		return nil, gas, err
-	}
-	code, _ := acct.GetCode()
-	//codeHash, _ := evm.PM.GetCodeHash(name)
-	//code, _ := evm.PM.GetCode(name)
-	contract.SetCallCode(&name, codeHash, code)
+	code, _ := evm.PM.GetCode(name)
+	contract.SetCallCode(codeHash, code)
 
 	// When an error was returned by the EVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
 	// when we're in Homestead this also counts for code storage gas errors.
 	ret, err = run(evm, contract, input)
-	runGas := gas - contract.Gas
+	// runGas := gas - contract.Gas
 
-	contractName := to.Name()
-
-	evm.distributeContractGas(runGas, contractName, caller.Name())
+	// contractName := to.Name()
 
 	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
@@ -535,30 +434,26 @@ func (evm *EVM) StaticCall(caller ContractRef, name common.Name, input []byte, g
 			contract.UseGas(contract.Gas)
 		}
 	}
-
-	actualUsedGas := gas - contract.Gas
-	evm.distributeGasByScale(actualUsedGas, runGas)
 	return ret, contract.Gas, err
 }
 
 // Create creates a new contract using code as deployment code.
 func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (ret []byte, leftOverGas uint64, err error) {
-
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
-	if ok, err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); !ok || err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), evm.AssetID, action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
 	contractName := action.Recipient()
 	snapshot := evm.StateDB.Snapshot()
 
-	if b, err := evm.PM.AccountHaveCode(contractName); err != nil {
+	if b, err := evm.PM.GetCode(contractName); err != nil {
 		return nil, 0, err
-	} else if b {
+	} else if len(b) != 0 {
 		return nil, 0, ErrContractCodeCollision
 	}
 
@@ -570,17 +465,8 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// initialise a new contract and set the code that is to be used by the
 	// E The contract is a scoped evmironment for this execution context
 	// only.
-	contract := NewContract(caller, AccountRef(contractName), action.Value(), gas, evm.AssetID)
-	contract.SetCallCode(&contractName, crypto.Keccak256Hash(action.Data()), action.Data())
-
-	if evm.vmConfig.NoRecursion && evm.depth > 0 {
-		return nil, gas, nil
-	}
-
-	if evm.vmConfig.Debug && evm.depth == 0 {
-		evm.vmConfig.Tracer.CaptureStart(caller.Name(), contractName, true, action.Data(), gas, action.Value())
-	}
-	start := time.Now()
+	contract := NewContract(caller, contractName, action.Value(), gas, evm.AssetID)
+	contract.SetCallCode(crypto.Keccak256Hash(action.Data()), action.Data())
 
 	ret, err = run(evm, contract, nil)
 
@@ -593,7 +479,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	if err == nil && !maxCodeSizeExceeded {
 		createDataGas := uint64(len(ret)) * evm.GetCurrentGasTable().CreateDataGas
 		if contract.UseGas(createDataGas) {
-			if _, err = evm.PM.SetCode(contractName, ret); err != nil {
+			if err = evm.PM.SetCode(contractName, ret); err != nil {
 				return nil, gas, err
 			}
 		} else {
@@ -613,9 +499,6 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// Assign err if contract code size exceeds the max while the err is still empty.
 	if maxCodeSizeExceeded && err == nil {
 		err = errMaxCodeSizeExceeded
-	}
-	if evm.vmConfig.Debug && evm.depth == 0 {
-		evm.vmConfig.Tracer.CaptureEnd(ret, gas-contract.Gas, time.Since(start), err)
 	}
 
 	evm.distributeContractGas(gas-contract.Gas, contractName, contractName)

@@ -22,20 +22,16 @@ import (
 	"math/big"
 	"os"
 	"testing"
-	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/consensus/dpos"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/fdb/memdb"
@@ -46,24 +42,24 @@ var (
 )
 
 type fakeEngine struct {
-	*dpos.Dpos
+	pm.IPM
 }
 
-func (fe *fakeEngine) VerifySeal(chain consensus.IChainReader, header *types.Header) error {
+func (fe *fakeEngine) VerifySeal(header *types.Header) error {
 	log.Debug("blockchain uint test use fake engine VerifySeal function", "number", header.Number.Uint64())
 	return nil
 }
 
-func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
+func newCanonical(t *testing.T, genesis *g.Genesis) *BlockChain {
 	// Initialize a fresh chain with only a genesis block
 	chainDb := rawdb.NewMemoryDatabase()
 
-	chainCfg, dposCfg, _, err := SetupGenesisBlock(chainDb, genesis)
+	chainCfg, _, err := g.SetupGenesisBlock(chainDb, genesis)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	blockchain, err := NewBlockChain(chainDb, false, vm.Config{}, chainCfg, nil, 0, txpool.SenderCacher)
+	blockchain, err := NewBlockChain(chainDb, false, vm.Config{}, chainCfg, nil, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -72,54 +68,35 @@ func newCanonical(t *testing.T, genesis *Genesis) *BlockChain {
 	if err != nil {
 		t.Fatalf("state db err %v", err)
 	}
-	accountManager, err := am.NewAccountManager(stateDB)
-	if err != nil {
-		t.Fatalf("genesis accountManager new err: %v", err)
-	}
-	if ok, err := accountManager.AccountIsExist(common.StrToName(chainCfg.SysName)); !ok {
-		t.Fatalf("system account is not exist %v", err)
-	}
 
-	assetInfo, err := accountManager.GetAssetInfoByName(chainCfg.SysToken)
-	if err != nil {
-		t.Fatalf("genesis system asset err %v", err)
-	}
+	manager := pm.NewPM(stateDB)
 
-	chainCfg.SysTokenID = assetInfo.AssetID
-	chainCfg.SysTokenDecimals = assetInfo.Decimals
-
-	engine := dpos.New(dposCfg, blockchain)
-
-	bc := struct {
-		*BlockChain
-		consensus.IEngine
-	}{blockchain, engine}
-
-	validator := processor.NewBlockValidator(&bc, &fakeEngine{engine})
-	txProcessor := processor.NewStateProcessor(&bc, engine)
+	validator := processor.NewBlockValidator(blockchain, &fakeEngine{manager})
+	txProcessor := processor.NewStateProcessor(blockchain, manager)
 	blockchain.SetValidator(validator)
 	blockchain.SetProcessor(txProcessor)
 	return blockchain
 }
 
-func makeNewChain(t *testing.T, genesis *Genesis, chain *BlockChain, n, seed int) (*BlockChain, []*types.Block) {
+func makeNewChain(t *testing.T, genesis *g.Genesis, chain *BlockChain, n, seed int) (*BlockChain, []*types.Block) {
 	tmpDB, err := deepCopyDB(chain.db)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	engine := dpos.New(dposConfig(genesis.Config), chain)
+	stateDB, err := chain.State()
+	if err != nil {
+		t.Fatalf("state db err %v", err)
+	}
+
+	manager := pm.NewPM(stateDB)
 
 	newblocks, _ := generateChain(genesis.Config,
-		chain.CurrentBlock(), engine, chain, tmpDB,
+		chain.CurrentBlock(), manager, chain, tmpDB,
 		n, seed, func(i int, b *blockGenerator) {
 
-			name := common.StrToName(genesis.Config.SysName)
-			b.SetCoinbase(name)
+			b.SetCoinbase(genesis.Config.SysName)
 
-			engine.SetSignFn(func(content []byte, state *state.StateDB) ([]byte, error) {
-				return crypto.Sign(content, systemPrivateKey)
-			})
 		})
 
 	_, err = chain.InsertChain(newblocks)
@@ -137,7 +114,7 @@ func deepCopyDB(db fdb.Database) (fdb.Database, error) {
 	return mdb.Copy(), nil
 }
 
-func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos.Dpos,
+func generateChain(config *params.ChainConfig, parent *types.Block, manager pm.IPM,
 	chain *BlockChain, db fdb.Database, n, seed int, gen func(int, *blockGenerator)) ([]*types.Block, [][]*types.Receipt) {
 
 	if config == nil {
@@ -152,66 +129,65 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos
 			parent:     parent,
 			stateDB:    stateDB,
 			config:     config,
-			engine:     engine,
 			BlockChain: chain,
 		}
 
-		b.header = makeHeader(b, parent, b.stateDB, b.engine, seed)
+		b.header = makeHeader(parent, b.stateDB, seed)
 
 		// Execute any user modifications to the block
 		if gen != nil {
 			gen(i, b)
 		}
 
-		if b.engine != nil {
-			// Finalize and seal the block
-			if err := b.engine.Prepare(b, b.header, b.txs, nil, b.stateDB); err != nil {
-				panic(fmt.Sprintf("engine prepare error: %v", err))
-			}
+		// if b.engine != nil {
+		// 	// Finalize and seal the block
+		// 	if err := b.engine.Prepare(b, b.header, b.txs, nil, b.stateDB); err != nil {
+		// 		panic(fmt.Sprintf("engine prepare error: %v", err))
+		// 	}
 
-			name := common.StrToName(chain.chainConfig.SysName)
+		// 	name := common.StrToName(chain.chainConfig.SysName)
 
-			tx := types.NewTransaction(uint64(0), big.NewInt(1), types.NewAction(types.Transfer, name, common.StrToName(chain.chainConfig.AccountName), b.TxNonce(name), uint64(0), 109000, big.NewInt(100), nil, nil))
+		// 	tx := types.NewTransaction(uint64(0), big.NewInt(1), types.NewAction(types.Transfer, name, common.StrToName(chain.chainConfig.AccountName), b.TxNonce(name), uint64(0), 109000, big.NewInt(100), nil, nil))
 
-			keyPair := types.MakeKeyPair(systemPrivateKey, []uint64{0})
-			if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
-				panic(err)
-			}
+		// 	keyPair := types.MakeKeyPair(systemPrivateKey, []uint64{0})
+		// 	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
+		// 		panic(err)
+		// 	}
 
-			b.AddTxWithChain(tx)
+		// 	b.AddTxWithChain(tx)
 
-			block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.stateDB)
-			if err != nil {
-				panic(fmt.Sprintf("engine finalize error: %v", err))
-			}
+		// 	block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.stateDB)
+		// 	if err != nil {
+		// 		panic(fmt.Sprintf("engine finalize error: %v", err))
+		// 	}
 
-			block, err = b.engine.Seal(b, block, nil)
-			if err != nil {
-				panic(fmt.Sprintf("engine seal error: %v", err))
-			}
+		// 	block, err = b.engine.Seal(b, block, nil)
+		// 	if err != nil {
+		// 		panic(fmt.Sprintf("engine seal error: %v", err))
+		// 	}
 
-			block.Head.ReceiptsRoot = types.DeriveReceiptsMerkleRoot(b.receipts)
-			block.Head.TxsRoot = types.DeriveTxsMerkleRoot(b.txs)
-			block.Head.Bloom = types.CreateBloom(b.receipts)
-			batch := db.NewBatch()
+		// 	block.Head.ReceiptsRoot = types.DeriveReceiptsMerkleRoot(b.receipts)
+		// 	block.Head.TxsRoot = types.DeriveTxsMerkleRoot(b.txs)
+		// 	block.Head.Bloom = types.CreateBloom(b.receipts)
+		// 	batch := db.NewBatch()
 
-			root, err := b.stateDB.Commit(batch, block.Hash(), block.NumberU64())
-			if err != nil {
-				panic(fmt.Sprintf("state Commit error: %v", err))
-			}
+		// 	root, err := b.stateDB.Commit(batch, block.Hash(), block.NumberU64())
+		// 	if err != nil {
+		// 		panic(fmt.Sprintf("state Commit error: %v", err))
+		// 	}
 
-			if err := b.stateDB.Database().TrieDB().Commit(root, false); err != nil {
-				panic(fmt.Sprintf("trie write error: %v", err))
-			}
+		// 	if err := b.stateDB.Database().TrieDB().Commit(root, false); err != nil {
+		// 		panic(fmt.Sprintf("trie write error: %v", err))
+		// 	}
 
-			if err := batch.Write(); err != nil {
-				panic(fmt.Sprintf("batch Write error: %v", err))
-			}
+		// 	if err := batch.Write(); err != nil {
+		// 		panic(fmt.Sprintf("batch Write error: %v", err))
+		// 	}
 
-			rawdb.WriteHeader(db, block.Head)
+		// 	rawdb.WriteHeader(db, block.Head)
 
-			return block, b.receipts
-		}
+		// 	return block, b.receipts
+		// }
 		return nil, nil
 	}
 
@@ -229,7 +205,7 @@ func generateChain(config *params.ChainConfig, parent *types.Block, engine *dpos
 	return blocks, receipts
 }
 
-func makeHeader(chain consensus.IChainReader, parent *types.Block, state *state.StateDB, engine *dpos.Dpos, seed int) *types.Header {
+func makeHeader(parent *types.Block, state *state.StateDB, seed int) *types.Header {
 	header := &types.Header{
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
@@ -240,15 +216,15 @@ func makeHeader(chain consensus.IChainReader, parent *types.Block, state *state.
 		Extra:      big.NewInt(int64(seed)).Bytes(),
 	}
 
-	header.Time.Add(header.Time, big.NewInt(int64(engine.Config().BlockInterval*uint64(time.Millisecond))))
-	header.Time.Add(header.Time, parent.Time())
-	header.Time = big.NewInt(int64(engine.Slot(header.Time.Uint64())))
+	// header.Time.Add(header.Time, big.NewInt(int64(engine.Config().BlockInterval*uint64(time.Millisecond))))
+	// header.Time.Add(header.Time, parent.Time())
+	// header.Time = big.NewInt(int64(engine.Slot(header.Time.Uint64())))
 
 	if header.Time.Cmp(parent.Header().Time) <= 0 {
 		panic(fmt.Sprintf("header time %d less than parent header time %v ", header.Time.Uint64(), parent.Time().Uint64()))
 	}
 
-	header.Difficulty = engine.CalcDifficulty(chain, header.Time.Uint64(), parent.Header())
+	// header.Difficulty = engine.CalcDifficulty(chain, header.Time.Uint64(), parent.Header())
 	return header
 }
 

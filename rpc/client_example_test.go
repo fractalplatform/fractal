@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program. If not, see <http://www.gnu.org/licenses/>.>.
+// along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 package rpc_test
 
@@ -25,13 +25,13 @@ import (
 	"github.com/fractalplatform/fractal/rpc"
 )
 
-// In this example, our client whishes to track the latest 'block number'
+// In this example, our client wishes to track the latest 'block number'
 // known to the server. The server supports two methods:
 //
-// ft_getBlockByNumber("latest", {})
+// eth_getBlockByNumber("latest", {})
 //    returns the latest block object.
 //
-// ft_subscribe("newBlocks")
+// eth_subscribe("newBlocks")
 //    creates a subscription which fires block objects when new blocks arrive.
 
 type Block struct {
@@ -66,7 +66,7 @@ func subscribeBlocks(client *rpc.Client, subch chan Block) {
 	defer cancel()
 
 	// Subscribe to new blocks.
-	sub, err := client.FtSubscribe(ctx, subch, "newBlocks")
+	sub, err := client.EthSubscribe(ctx, subch, "newHeads")
 	if err != nil {
 		fmt.Println("subscribe error:", err)
 		return
@@ -75,7 +75,7 @@ func subscribeBlocks(client *rpc.Client, subch chan Block) {
 	// The connection is established now.
 	// Update the channel with the current block.
 	var lastBlock Block
-	if err := client.CallContext(ctx, &lastBlock, "ft_getBlockByNumber", "latest"); err != nil {
+	if err := client.CallContext(ctx, &lastBlock, "eth_getBlockByNumber", "latest"); err != nil {
 		fmt.Println("can't get latest block:", err)
 		return
 	}

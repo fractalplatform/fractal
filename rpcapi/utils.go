@@ -21,8 +21,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -56,7 +56,6 @@ func RPCMarshalBlock(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool)
 		"timestamp":            head.Time,
 		"transactionsRoot":     head.TxsRoot,
 		"receiptsRoot":         head.ReceiptsRoot,
-		"forkID":               head.ForkID,
 	}
 
 	if inclTx {

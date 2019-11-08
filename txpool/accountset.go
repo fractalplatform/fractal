@@ -17,20 +17,18 @@
 package txpool
 
 import (
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 )
 
 // accountSet is simply a set of name to check for existence
 type accountSet struct {
-	accounts map[common.Name]struct{}
-	cache    *[]common.Name
+	accounts map[string]struct{}
+	cache    *[]string
 }
 
-// newAccountSet creates a new name set with an associated signer for sender
-// derivations.
-func newAccountSet(signer types.Signer, names ...common.Name) *accountSet {
-	as := &accountSet{accounts: make(map[common.Name]struct{})}
+// newAccountSet creates a new name set。
+func newAccountSet(names ...string) *accountSet {
+	as := &accountSet{accounts: make(map[string]struct{})}
 	for _, name := range names {
 		as.add(name)
 	}
@@ -43,7 +41,7 @@ func (as *accountSet) addTx(tx *types.Transaction) {
 }
 
 // contains checks if a given name is contained within the set.
-func (as *accountSet) contains(name common.Name) bool {
+func (as *accountSet) contains(name string) bool {
 	_, exist := as.accounts[name]
 	return exist
 }
@@ -55,16 +53,16 @@ func (as *accountSet) containsName(tx *types.Transaction) bool {
 }
 
 // add inserts a new name into the set to track.
-func (as *accountSet) add(name common.Name) {
+func (as *accountSet) add(name string) {
 	as.accounts[name] = struct{}{}
 	as.cache = nil
 }
 
 // flatten returns the list of addresses within this set, also caching it for later
 // reuse. The returned slice should not be changed!
-func (as *accountSet) flatten() []common.Name {
+func (as *accountSet) flatten() []string {
 	if as.cache == nil {
-		accounts := make([]common.Name, 0, len(as.accounts))
+		accounts := make([]string, 0, len(as.accounts))
 		for account := range as.accounts {
 			accounts = append(accounts, account)
 		}

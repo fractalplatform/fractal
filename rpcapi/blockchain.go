@@ -24,10 +24,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
@@ -146,45 +146,10 @@ func (s *PublicBlockChainAPI) checkRangeInputArgs(blockNr, lookbackNum uint64) e
 	return nil
 }
 
-// GetTxsByAccount return all txs, sent from or received by a specific account
-// the range is indicate by blockNr and lookforwardNum,
-// from blocks with number from blockNr to blockNr+lookforwardNum
-func (s *PublicBlockChainAPI) GetTxsByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookforwardNum uint64) (*types.AccountTxs, error) {
-	// check input arguments
-	ui64BlockNr := uint64(blockNr)
-	if err := s.checkRangeInputArgs(ui64BlockNr, lookforwardNum); err != nil {
-		return nil, err
-	}
-
-	filterFn := func(name common.Name) bool {
-		return name == acctName
-	}
-
-	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookforwardNum), nil
-}
-
-// GetTxsByBloom return all txs, filtered by a bloomByte
-// bloomByte is constructed by some quantities of account names
-// the range is indicate by blockNr and lookbackNum,
-// from blocks with number from blockNr to blockNr+lookforwardNum
-func (s *PublicBlockChainAPI) GetTxsByBloom(ctx context.Context, bloomByte hexutil.Bytes, blockNr rpc.BlockNumber, lookforwardNum uint64) (*types.AccountTxs, error) {
-	// check input arguments
-	ui64BlockNr := uint64(blockNr)
-	if err := s.checkRangeInputArgs(ui64BlockNr, lookforwardNum); err != nil {
-		return nil, err
-	}
-
-	bloom := types.BytesToBloom(bloomByte)
-	filterFn := func(name common.Name) bool {
-		return bloom.TestBytes([]byte(name))
-	}
-	return s.b.GetTxsByFilter(ctx, filterFn, ui64BlockNr, lookforwardNum), nil
-}
-
 // GetInternalTxByAccount return all logs of internal txs, sent from or received by a specific account
 // the range is indicate by blockNr and lookbackNum,
 // from blocks with number from blockNr-lookbackNum to blockNr
-func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName common.Name, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
 	// check input arguments
 	ui64BlockNr := uint64(blockNr)
 	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
@@ -195,7 +160,7 @@ func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctNa
 		lookbackNum = 128
 	}
 
-	filterFn := func(name common.Name) bool {
+	filterFn := func(name string) bool {
 		return name == acctName
 	}
 	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
@@ -218,7 +183,7 @@ func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByt
 	}
 
 	bloom := types.BytesToBloom(bloomByte)
-	filterFn := func(name common.Name) bool {
+	filterFn := func(name string) bool {
 		return bloom.TestBytes([]byte(name))
 	}
 	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
@@ -253,8 +218,8 @@ func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]
 
 type CallArgs struct {
 	ActionType types.ActionType `json:"actionType"`
-	From       common.Name      `json:"from"`
-	To         common.Name      `json:"to"`
+	From       string           `json:"from"`
+	To         string           `json:"to"`
 	AssetID    uint64           `json:"assetId"`
 	Gas        uint64           `json:"gas"`
 	GasPrice   *big.Int         `json:"gasPrice"`
@@ -270,10 +235,7 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	if state == nil || err != nil {
 		return nil, 0, false, err
 	}
-	account, err := accountmanager.NewAccountManager(state)
-	if err != nil {
-		return nil, 0, false, err
-	}
+	account := pm.NewPM(state)
 
 	gasPrice := args.GasPrice
 	value := args.Value
@@ -306,7 +268,7 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	// and apply the message.
 	gp := new(common.GasPool).AddGas(math.MaxUint64)
 	action := types.NewAction(args.ActionType, args.From, args.To, 0, assetID, gas, value, args.Data, args.Remark)
-	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, assetID, s.b.ChainConfig(), s.b.Engine())
+	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, assetID, s.b.ChainConfig())
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}
@@ -386,30 +348,4 @@ func NewPrivateBlockChainAPI(b Backend) *PrivateBlockChainAPI {
 func (s *PrivateBlockChainAPI) SetStatePruning(enable bool) types.BlockState {
 	prestatus, number := s.b.SetStatePruning(enable)
 	return types.BlockState{PreStatePruning: prestatus, CurrentNumber: number}
-}
-
-type RPCForkStatus struct {
-	Count            uint64 `json:"count"`
-	Percentage       uint64 `json:"percentage"`
-	CurID            uint64 `json:"curID"`
-	NexID            uint64 `json:"nextID"`
-	CurIDBlockCount  uint64 `json:"curIDBlockCount"`
-	NextIDBlockCount uint64 `json:"nextIDBlockCount"`
-}
-
-func (s *PrivateBlockChainAPI) ForkStatus(ctx context.Context) (*RPCForkStatus, error) {
-	state, _, err := s.b.StateAndHeaderByNumber(ctx, rpc.LatestBlockNumber)
-	if state == nil || err != nil {
-		return nil, err
-	}
-	cfg, status, err := s.b.ForkStatus(state)
-	if err != nil {
-		return nil, err
-	}
-	return &RPCForkStatus{Count: cfg.ForkBlockNum,
-		Percentage:       cfg.Forkpercentage,
-		CurID:            status.CurForkID,
-		NexID:            status.NextForkID,
-		CurIDBlockCount:  status.CurForkIDBlockNum,
-		NextIDBlockCount: status.NextForkIDBlockNum}, nil
 }

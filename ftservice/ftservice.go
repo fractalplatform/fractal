@@ -19,16 +19,16 @@ package ftservice
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/consensus/dpos"
-	"github.com/fractalplatform/fractal/consensus/miner"
+	"github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
+	"github.com/fractalplatform/fractal/log"
+	"github.com/fractalplatform/fractal/miner"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -45,20 +45,19 @@ type FtService struct {
 	blockchain   *blockchain.BlockChain
 	txPool       *txpool.TxPool
 	chainDb      fdb.Database // Block chain database
-	engine       consensus.IEngine
 	miner        *miner.Miner
 	p2pServer    *adaptor.ProtoAdaptor
 	APIBackend   *APIBackend
 }
 
-// New creates a new ftservice object (including the initialisation of the common ftservice object)
+// New creates a new ft service object (including the initialisation of the common ftservice object)
 func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	chainDb, err := CreateDB(ctx, config, "chaindata")
 	if err != nil {
 		return nil, err
 	}
 
-	chainCfg, dposCfg, _, err := blockchain.SetupGenesisBlock(chainDb, config.Genesis)
+	chainCfg, _, err := genesis.SetupGenesisBlock(chainDb, config.Genesis)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +77,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		ContractLogFlag: config.ContractLogFlag,
 	}
 
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, config.BadHashes, config.StartNumber, txpool.SenderCacher)
+	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, config.BadHashes, config.StartNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -90,31 +89,23 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	ftservice.txPool = txpool.New(*config.TxPool, ftservice.chainConfig, ftservice.blockchain)
 
-	engine := dpos.New(dposCfg, ftservice.blockchain)
-	ftservice.engine = engine
+	statedb, _ := ftservice.blockchain.State()
+	pm := pm.NewPM(statedb)
 
-	type bc struct {
-		*blockchain.BlockChain
-		consensus.IEngine
-		*txpool.TxPool
-		processor.Processor
-	}
-
-	bcc := &bc{
-		ftservice.blockchain,
-		ftservice.engine,
-		ftservice.txPool,
-		nil,
-	}
-
-	validator := processor.NewBlockValidator(bcc, ftservice.engine)
-	txProcessor := processor.NewStateProcessor(bcc, ftservice.engine)
+	validator := processor.NewBlockValidator(ftservice.blockchain, pm)
+	txProcessor := processor.NewStateProcessor(ftservice.blockchain, pm)
 
 	ftservice.blockchain.SetValidator(validator)
 	ftservice.blockchain.SetProcessor(txProcessor)
 
-	bcc.Processor = txProcessor
-	ftservice.miner = miner.NewMiner(bcc)
+	type bc struct {
+		*blockchain.BlockChain
+		*txpool.TxPool
+		processor.Processor
+	}
+
+	ftservice.miner = miner.NewMiner(pm, &bc{ftservice.blockchain, ftservice.txPool, txProcessor})
+
 	ftservice.miner.SetDelayDuration(config.Miner.Delay)
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
 	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
@@ -172,6 +163,5 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (fdb.Databa
 
 func (s *FtService) BlockChain() *blockchain.BlockChain { return s.blockchain }
 func (s *FtService) TxPool() *txpool.TxPool             { return s.txPool }
-func (s *FtService) Engine() consensus.IEngine          { return s.engine }
 func (s *FtService) ChainDb() fdb.Database              { return s.chainDb }
 func (s *FtService) Protocols() []p2p.Protocol          { return nil }

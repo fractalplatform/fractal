@@ -20,11 +20,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/plugin"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -32,19 +31,16 @@ import (
 
 // StateProcessor is a basic Processor, which takes care of transitioning
 // state from one point to another.
-//
-// StateProcessor implements Processor.
 type StateProcessor struct {
-	bc     ChainContext      // Canonical block chain
-	engine consensus.IEngine // Consensus engine used for block rewards
+	bc      ChainContext // Canonical block chain
+	manager pm.IPM
 }
 
 // NewStateProcessor initialises a new StateProcessor.
-func NewStateProcessor(bc ChainContext, engine consensus.IEngine) *StateProcessor {
+func NewStateProcessor(bc ChainContext, manager pm.IPM) *StateProcessor {
 	return &StateProcessor{
-		bc:     bc,
-		engine: engine,
-	}
+		bc:      bc,
+		manager: manager}
 }
 
 // Process processes the state changes according to the rules by running
@@ -64,7 +60,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	)
 
 	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
-	p.engine.Prepare(p.bc, header, block.Transactions(), receipts, statedb)
+	p.manager.Prepare(header, block.Transactions(), receipts, statedb)
 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
@@ -78,7 +74,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.engine.Finalize(p.bc, header, block.Transactions(), receipts, statedb)
+	p.manager.Finalize(p.bc.GetHeaderByHash(header.ParentHash), header, block.Transactions(), receipts, statedb)
 
 	return receipts, allLogs, *usedGas, nil
 }
@@ -87,13 +83,10 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
-func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
+func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
 	bc := p.bc
 	config := bc.Config()
 	pm := plugin.NewPM(statedb)
-	if err != nil {
-		return nil, 0, err
-	}
 
 	// todo for the moment，only system asset
 	// assetID := tx.GasAssetID()
@@ -127,8 +120,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 		}
 
 		evmcontext := &EvmContext{
-			ChainContext:  p.bc,
-			EngineContext: p.engine,
+			ChainContext: p.bc,
 		}
 		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
 		vmenv := vm.NewEVM(context, pm, statedb, config, cfg)
@@ -140,7 +132,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			})
 		}
 
-		_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, action, gp, gasPrice, assetID, config, p.engine)
+		_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, action, gp, gasPrice, assetID, config)
 
 		if false == cfg.EndTime.IsZero() {
 			//close timer
@@ -166,18 +158,21 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 		}
 		var gasAllot []*types.GasDistribution
-		for key, gas := range vmenv.FounderGasMap {
-			gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
-		}
+		// todo
+		// for key, gas := range vmenv.FounderGasMap {
+		// 	gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
+		// }
+
 		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
 
 		internalTxLog := make([]*types.InternalAction, 0, len(vmenv.InternalTxs))
 		for _, internalAction := range vmenv.InternalTxs {
-			internalAction.Action.SetHash(action.Hash())
+			internalAction.Action.Hash = action.Hash()
 			internalTxLog = append(internalTxLog, internalAction)
 		}
 		detailActions = append(detailActions, &types.DetailAction{InternalActions: internalTxLog})
 	}
+
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
 	receipt.TxHash = tx.Hash()
@@ -192,15 +187,16 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	return receipt, totalGas, nil
 }
 
-func needCheckSign(accountDB *accountmanager.AccountManager, action *types.Action) bool {
-	authorVersion := types.GetAuthorCache(action)
-	if len(authorVersion) == 0 {
-		return true
-	}
-	for name, version := range authorVersion {
-		if tmpVersion, err := plugin.GetAuthorVersion(accountDB, name); err != nil || version != tmpVersion {
-			return true
-		}
-	}
-	return false
+func needCheckSign(manager pm.IPM, action *types.Action) bool {
+	// authorVersion := types.GetAuthorCache(action)
+	// if len(authorVersion) == 0 {
+	// 	return true
+	// }
+	// for name, version := range authorVersion {
+	// 	if tmpVersion, err := plugin.GetAuthorVersion(manager, name); err != nil || version != tmpVersion {
+	// 		return true
+	// 	}
+	// }
+	// return false
+	return true
 }

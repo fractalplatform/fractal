@@ -20,7 +20,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"
@@ -75,31 +75,46 @@ func IntrinsicGas(pm plugin.IPM, action *types.Action) (uint64, error) {
 
 	var gas uint64
 
-	if action.Type() == types.CreateContract || action.Type() == types.CreateAccount {
+	if action.Type() == types.CreateContract {
 		gas += gasTable.ActionGasCreation
-	} else if action.Type() == types.IssueAsset {
-		gas += gasTable.ActionGasIssueAsset
 	} else if action.Type() == types.CallContract {
 		gas += gasTable.ActionGasCallContract
 	} else {
 		gas += gasTable.ActionGas
 	}
+	// if action.Type() == types.CreateContract || action.Type() == types.CreateAccount {
+	// 	gas += gasTable.ActionGasCreation
+	// } else if action.Type() == types.IssueAsset {
+	// 	gas += gasTable.ActionGasIssueAsset
+	// } else if action.Type() == types.CallContract {
+	// 	gas += gasTable.ActionGasCallContract
+	// } else {
+	// 	gas += gasTable.ActionGas
+	// }
 
-	dataGas, err := dataGasFunc(action.Data())
-	if err != nil {
-		return 0, err
-	}
-	gas += dataGas
+	// dataGas, err := dataGasFunc(action.Data())
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// gas += dataGas
 
-	remarkGas, err := dataGasFunc(action.Remark())
-	if err != nil {
-		return 0, err
-	}
-	gas += remarkGas
+	// remarkGas, err := dataGasFunc(action.Remark())
+	// if err != nil {
+	// 	return 0, err
+	// }
+	// gas += remarkGas
 
-	if signLen := len(action.GetSign()); signLen > 1 {
-		gas += (uint64(len(action.GetSign()) - 1)) * gasTable.SignGas
+	for _, v := range [][]byte{action.Data(), action.Remark(), action.GetSign()} {
+		remarkGas, err := dataGasFunc(v)
+		if err != nil {
+			return 0, err
+		}
+		gas += remarkGas
 	}
+
+	// if signLen := len(action.GetSign()); signLen > 1 {
+	// 	gas += (uint64(len(action.GetSign()) - 1)) * gasTable.SignGas
+	// }
 
 	if action.Value().Sign() != 0 {
 		gas += receiptGasFunc(action)

@@ -26,8 +26,8 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/fractalplatform/fractal/p2p/enode"
 )

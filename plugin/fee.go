@@ -16,5 +16,23 @@
 
 package plugin
 
+import (
+	"math/big"
+
+	"github.com/fractalplatform/fractal/types"
+)
+
 type FeeManager struct {
+}
+
+func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) error {
+	var coinbase string
+	var totalGas int64
+	for key, gas := range gasMap {
+		if key.ObjectType == types.CoinbaseFeeType {
+			coinbase = key.ObjectName
+		}
+		totalGas += gas.Value
+	}
+	return am.TransferAsset(from, coinbase, assetID, big.NewInt(totalGas))
 }

@@ -5,7 +5,7 @@ import (
 	uurl "net/url"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/metrics"
 	client "github.com/influxdata/influxdb1-client"
 )

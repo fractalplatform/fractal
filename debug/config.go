@@ -22,8 +22,8 @@ import (
 	_ "net/http/pprof"
 	"runtime"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fjl/memsize/memsizeui"
+	"github.com/fractalplatform/fractal/log"
 )
 
 var Memsize memsizeui.Handler

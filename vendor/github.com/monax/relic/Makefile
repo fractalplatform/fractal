@@ -2,21 +2,19 @@ SHELL := /bin/bash
 GO_FILES := $(shell go list -f "{{.Dir}}" ./...)
 
 ### Formatting, linting and vetting
-# Run goimports (also checks formatting) first display output first, then check for success
 .PHONY: check
 check:
-	@go get golang.org/x/tools/cmd/goimports
-	@goimports -l -d ${GO_FILES}
-	@goimports -l ${GO_FILES} | read && echo && \
-	echo "Your marmot has found a problem with the formatting style of the code."\
-	 1>&2 && exit 1 || true
+	@echo "Checking code for formatting style compliance."
+	@gofmt -l -d ${GOFILES}
+	@gofmt -l ${GOFILES} | read && echo && echo "Your marmot has found a problem with the formatting style of the code." 1>&2 && exit 1 || true
+	@go mod tidy
 
 # Just fix it
 .PHONY: fix
 fix:
 	@goimports -l -w ${GO_FILES}
 
-# test burrow
+# test relic
 .PHONY: test
 test: check docs
 	@go test ./...

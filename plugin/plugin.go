@@ -17,8 +17,15 @@
 package plugin
 
 import (
+	"errors"
+
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/utils/rlp"
+)
+
+var (
+	ErrWrongAction = errors.New("action is invalid")
 )
 
 // Manager manage all plugins.
@@ -28,14 +35,39 @@ type Manager struct {
 	IConsensus
 	IContract
 	IFee
-	ISinger
+	ISigner
 }
 
 func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
-	action := arg.(*types.Action)
-	switch action.MethodID() {
-	case "createAccount":
-		return pm.CreateAccount(action)
+	action, ok := arg.(*types.Action)
+	if !ok {
+		return nil, ErrWrongAction
+	}
+	switch action.Type() {
+	case CreateAccount:
+		param := &CreateAccountAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		} else {
+			return pm.CreateAccount(param.Name, param.Pubkey, param.Desc)
+		}
+	case IssueAsset:
+		param := &IssueAssetAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		} else {
+			return pm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount)
+		}
+	case IncreaseAsset:
+		param := &IncreaseAssetAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		} else {
+			return pm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount)
+		}
+	case Transfer:
+		err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		return nil, err
 	default:
 		return nil, nil
 	}
@@ -45,8 +77,12 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 func NewPM(stateDB *state.StateDB) IPM {
 	acm, _ := NewACM(stateDB)
 	asm, _ := NewASM(stateDB)
+	consensus, _ := NewConsensus(stateDB)
+	signer, _ := NewSigner(stateDB)
 	return &Manager{
-		IAccount: acm,
-		IAsset:   asm,
+		IAccount:   acm,
+		IAsset:     asm,
+		IConsensus: consensus,
+		ISigner:    signer,
 	}
 }

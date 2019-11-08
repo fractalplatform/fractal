@@ -29,16 +29,10 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-// ForkID  represents a blockchain fork
-type ForkID struct {
-	Cur  uint64 `json:"cur"`
-	Next uint64 `json:"next"`
-}
-
 // Header represents a block header in the blockchain.
 type Header struct {
 	ParentHash           common.Hash
-	Coinbase             common.Name
+	Coinbase             string
 	ProposedIrreversible uint64
 	Root                 common.Hash
 	TxsRoot              common.Hash
@@ -50,23 +44,11 @@ type Header struct {
 	GasUsed              uint64
 	Time                 *big.Int
 	Extra                []byte
-	ForkID               ForkID
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
 func (h *Header) Hash() common.Hash { return RlpHash(h) }
-
-// WithForkID store fork id
-func (h *Header) WithForkID(cur, next uint64) {
-	h.ForkID = ForkID{Cur: cur, Next: next}
-}
-
-// CurForkID returns the header's current fork ID.
-func (h *Header) CurForkID() uint64 { return h.ForkID.Cur }
-
-// NextForkID returns the header's next fork ID.
-func (h *Header) NextForkID() uint64 { return h.ForkID.Next }
 
 // Block represents an entire block in the blockchain.
 type Block struct {
@@ -132,7 +114,7 @@ func (b *Block) Time() *big.Int { return new(big.Int).Set(b.Head.Time) }
 func (b *Block) NumberU64() uint64 { return b.Head.Number.Uint64() }
 
 // Coinbase returns the block's Coinbase.
-func (b *Block) Coinbase() common.Name { return b.Head.Coinbase }
+func (b *Block) Coinbase() string { return b.Head.Coinbase }
 
 // Root returns the block's Root.
 func (b *Block) Root() common.Hash { return b.Head.Root }
@@ -155,12 +137,6 @@ func (b *Block) Header() *Header { return CopyHeader(b.Head) }
 // Body returns the block's Body.
 func (b *Block) Body() *Body { return &Body{b.Txs} }
 
-// CurForkID returns the block's current fork ID.
-func (b *Block) CurForkID() uint64 { return b.Head.CurForkID() }
-
-// NextForkID returns the block's current fork ID.
-func (b *Block) NextForkID() uint64 { return b.Head.NextForkID() }
-
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
 func (b *Block) Size() common.StorageSize {
@@ -178,7 +154,7 @@ func (b *Block) EncodeRLP() ([]byte, error) {
 	return rlp.EncodeToBytes(b)
 }
 
-// EncodeRLP serializes b into RLP block format.
+// ExtEncodeRLP serializes b into RLP block format.
 func (b *Block) ExtEncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extblock{
 		Header: b.Head,

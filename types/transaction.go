@@ -150,6 +150,21 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	return nil
 }
 
+// RecoverMultiKey recover and store cache.
+func RecoverMultiKey(recover func(*Action) ([]byte, error), a *Action) ([]byte, error) {
+	if sc := a.senderPubkeys.Load(); sc != nil {
+		return sc.([]byte), nil
+	}
+
+	pubKey, err := recover(a)
+	if err != nil {
+		return nil, err
+	}
+
+	a.senderPubkeys.Store(pubKey)
+	return pubKey, nil
+}
+
 // RPCTransaction that will serialize to the RPC representation of a transaction.
 type RPCTransaction struct {
 	BlockHash        common.Hash  `json:"blockHash"`
@@ -236,8 +251,8 @@ func TxDifference(a, b []*Transaction) []*Transaction {
 // transactions in a profit-maximizing sorted order, while supporting removing
 // entire batches of transactions for non-executable accounts.
 type TransactionsByPriceAndNonce struct {
-	txs   map[common.Name][]*Transaction // Per account nonce-sorted list of transactions
-	heads TxByPrice                      // Next transaction for each unique account (price heap)
+	txs   map[string][]*Transaction // Per account nonce-sorted list of transactions
+	heads TxByPrice                 // Next transaction for each unique account (price heap)
 }
 
 // NewTransactionsByPriceAndNonce creates a transaction set that can retrieve
@@ -245,7 +260,7 @@ type TransactionsByPriceAndNonce struct {
 //
 // Note, the input map is reowned so the caller should not interact any more with
 // if after providing it to the constructor.
-func NewTransactionsByPriceAndNonce(txs map[common.Name][]*Transaction) *TransactionsByPriceAndNonce {
+func NewTransactionsByPriceAndNonce(txs map[string][]*Transaction) *TransactionsByPriceAndNonce {
 	// Initialize a price based heap with the head transactions
 	heads := make(TxByPrice, 0, len(txs))
 	for from, accTxs := range txs {

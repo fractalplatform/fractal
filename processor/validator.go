@@ -21,8 +21,8 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -34,14 +34,14 @@ var allowedFutureBlockTime = 15 * time.Second
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	bc     ChainContext         // Canonical block chain
-	engine consensus.IValidator // Consensus engine used for validating
+	bc     ChainContext // Canonical block chain
+	manger pm.IPM       // Consensus engine used for validating
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(blockchain ChainContext, engine consensus.IValidator) *BlockValidator {
+func NewBlockValidator(blockchain ChainContext, manger pm.IPM) *BlockValidator {
 	validator := &BlockValidator{
-		engine: engine,
+		manger: manger,
 		bc:     blockchain,
 	}
 	return validator
@@ -73,12 +73,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	if header.Time.Cmp(parent.Time) <= 0 {
 		return errZeroBlockTime
 	}
-	// Verify the block's difficulty based in it's timestamp and parent's difficulty
-	expected := v.engine.CalcDifficulty(v.bc, header.Time.Uint64(), parent)
 
-	if expected.Cmp(header.Difficulty) != 0 {
-		return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
-	}
 	// Verify that the gas limit is <= 2^63-1
 	cap := uint64(0x7fffffffffffffff)
 	if header.GasLimit > cap {
@@ -111,14 +106,9 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 		return ErrPrunedAncestor
 	}
 
-	// Checks the validity of forkID
-	if err := v.bc.CheckForkID(header); err != nil {
-		return err
-	}
-
 	// Verify the engine specific seal securing the block
 	if seal {
-		if err := v.engine.VerifySeal(v.bc, header); err != nil {
+		if err := v.manger.VerifySeal(header); err != nil {
 			return err
 		}
 	}

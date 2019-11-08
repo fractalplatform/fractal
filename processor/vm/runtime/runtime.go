@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -36,9 +36,9 @@ import (
 type Config struct {
 	ChainConfig *params.ChainConfig
 	Difficulty  *big.Int
-	Origin      common.Name
+	Origin      string
 	FromPubkey  common.PubKey
-	Coinbase    common.Name
+	Coinbase    string
 	BlockNumber *big.Int
 	Time        *big.Int
 	GasLimit    uint64
@@ -47,7 +47,7 @@ type Config struct {
 	Value       *big.Int
 	Debug       bool
 	EVMConfig   vm.Config
-	Account     *accountmanager.AccountManager
+	PM          plugin.IPM
 	State       *state.StateDB
 	GetHashFn   func(n uint64) common.Hash
 }
@@ -132,7 +132,7 @@ func NewEnv(cfg *Config) *vm.EVM {
 		GasPrice:    cfg.GasPrice,
 	}
 
-	return vm.NewEVM(context, cfg.Account, cfg.State, cfg.ChainConfig, cfg.EVMConfig)
+	return vm.NewEVM(context, cfg.PM, cfg.State, cfg.ChainConfig, cfg.EVMConfig)
 }
 
 // Create executes the code using the EVM create method

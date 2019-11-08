@@ -22,8 +22,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
