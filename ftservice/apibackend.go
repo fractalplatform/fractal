@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
@@ -352,4 +353,12 @@ func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
 // APIs returns apis
 func (b *APIBackend) APIs() []rpc.API {
 	return b.ftservice.miner.APIs()
+}
+
+func (b *APIBackend) GetPM() (plugin.IPM, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+	return plugin.NewPM(sdb), nil
 }

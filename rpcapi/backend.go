@@ -25,6 +25,7 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -76,6 +77,9 @@ type Backend interface {
 	AddBadNode(url string) error
 	RemoveBadNode(url string) error
 	SelfNode() string
+
+	//PM
+	GetPM() (plugin.IPM, error)
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {
@@ -110,6 +114,12 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Namespace: "debug",
 			Version:   "1.0",
 			Service:   debug.Handler,
+		},
+		{
+			Namespace: "account",
+			Version:   "1.0",
+			Service:   NewAccountAPI(apiBackend),
+			Public:    true,
 		},
 	}
 	return apis
