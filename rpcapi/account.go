@@ -28,35 +28,63 @@ func NewAccountAPI(b Backend) *AccountAPI {
 
 //AccountIsExist
 func (api *AccountAPI) AccountIsExist(accountName string) (bool, error) {
-	return api.b.GetPM().AccountIsExist(accountName)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return false, err
+	}
+	return pm.AccountIsExist(accountName)
 }
 
 //GetAccountByName
 func (api *AccountAPI) GetAccountByName(accountName string) (interface{}, error) {
-	return api.b.GetPM().GetAccountByName(accountName)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return nil, err
+	}
+	return pm.GetAccountByName(accountName)
 }
 
 //GetAccountBalanceByID
 func (api *AccountAPI) GetAccountBalanceByID(accountName string, assetID uint64) (*big.Int, error) {
-	return api.b.GetPM().GetBalance(accountName, assetID)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return big.NewInt(0), err
+	}
+	return pm.GetBalance(accountName, assetID)
 }
 
 //GetCode
 func (api *AccountAPI) GetCode(accountName string) ([]byte, error) {
-	return api.b.GetPM().GetCode(accountName)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return nil, err
+	}
+	return pm.GetCode(accountName)
 }
 
 //GetNonce
 func (api *AccountAPI) GetNonce(accountName string) (uint64, error) {
-	return api.b.GetPM().GetNonce(accountName)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetNonce(accountName)
 }
 
 //GetAssetInfoByName
 func (api *AccountAPI) GetAssetInfoByName(assetName string) (interface{}, error) {
-	return api.b.GetPM().GetAssetInfoByName(assetName)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return nil, err
+	}
+	return pm.GetAssetInfoByName(assetName)
 }
 
 //GetAssetInfoByID
 func (api *AccountAPI) GetAssetInfoByID(assetID uint64) (interface{}, error) {
-	return api.b.GetPM().GetAssetInfoByID(assetID)
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return nil, err
+	}
+	return pm.GetAssetInfoByID(assetID)
 }
