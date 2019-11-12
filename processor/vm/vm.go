@@ -678,15 +678,12 @@ func (evm *EVM) CallContractAsset(caller ContractRef, action *types.Action, gas 
 	evm.distributeGasByScale(actualUsedGas, runGas)
 
 	if new(big.Int).SetBytes(ret).Cmp(big.NewInt(0)) > 0 && err == nil {
-		if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), assetContract); err != nil {
-			return nil, gas, err
-		}
+		err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), assetContract)
+		return nil, contract.Gas, err
 	} else {
-		if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
-			return nil, gas, err
-		}
+		err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		return nil, contract.Gas, err
 	}
-	return ret, contract.Gas, err
 }
 
 // ChainConfig returns the environment's chain configuration
