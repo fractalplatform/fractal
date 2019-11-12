@@ -92,7 +92,7 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 		return lastPrice, nil
 	}
 
-	blockNum := head.Number.Uint64()
+	blockNum := head.Number
 	ch := make(chan getBlockPricesResult, gpo.checkBlocks)
 	sent := 0
 	exp := 0

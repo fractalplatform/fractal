@@ -92,6 +92,7 @@ type TxPool struct {
 
 	chainHeadCh     chan *event.Event
 	chainHeadSub    event.Subscription
+	newMineBlockSub event.Subscription
 	reqResetCh      chan *txpoolResetRequest
 	reqPromoteCh    chan *accountSet
 	queueTxEventCh  chan *types.Transaction
@@ -147,6 +148,7 @@ func New(config Config, chainconfig *params.ChainConfig, bc blockChain) *TxPool 
 
 	// Subscribe feeds from blockchain
 	tp.chainHeadSub = event.Subscribe(nil, tp.chainHeadCh, event.ChainHeadEv, &types.Block{})
+	tp.newMineBlockSub = event.Subscribe(nil, tp.chainHeadCh, event.NewMinedEv, &types.Block{})
 	tp.station = NewTxpoolStation(tp)
 	// Start the feed loop and return
 	tp.wg.Add(1)
@@ -266,6 +268,9 @@ func (tp *TxPool) loop() {
 			close(tp.reorgShutdownCh)
 			return
 			// Handle stats reporting ticks
+		case <-tp.newMineBlockSub.Err():
+			close(tp.reorgShutdownCh)
+			return
 		case <-report.C:
 			tp.mu.RLock()
 			pending, queued := tp.stats()
@@ -449,8 +454,8 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 
 	if oldHead != nil && oldHead.Hash() != newHead.ParentHash {
 		// If the reorg is too deep, avoid doing it (will happen during fast sync)
-		oldNum := oldHead.Number.Uint64()
-		newNum := newHead.Number.Uint64()
+		oldNum := oldHead.Number
+		newNum := newHead.Number
 
 		if depth := uint64(math.Abs(float64(oldNum) - float64(newNum))); depth > 64 {
 			log.Debug("Skipping deep transaction reorg", "depth", depth)
@@ -459,8 +464,8 @@ func (tp *TxPool) reset(oldHead, newHead *types.Header) {
 			var discarded, included []*types.Transaction
 
 			var (
-				rem = tp.chain.GetBlock(oldHead.Hash(), oldHead.Number.Uint64())
-				add = tp.chain.GetBlock(newHead.Hash(), newHead.Number.Uint64())
+				rem = tp.chain.GetBlock(oldHead.Hash(), oldHead.Number)
+				add = tp.chain.GetBlock(newHead.Hash(), newHead.Number)
 			)
 
 			if rem == nil {
@@ -540,6 +545,7 @@ func (tp *TxPool) Stop() {
 	// Unsubscribe subscriptions registered from blockchain
 	tp.station.Stop()
 	tp.chainHeadSub.Unsubscribe()
+	tp.newMineBlockSub.Unsubscribe()
 	tp.wg.Wait()
 
 	if tp.journal != nil {

@@ -60,7 +60,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	)
 
 	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
-	p.manager.Prepare(header, block.Transactions(), receipts, statedb)
+	p.manager.Prepare(header.Coinbase)
 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
@@ -74,7 +74,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.manager.Finalize(p.bc.GetHeaderByHash(header.ParentHash), header, block.Transactions(), receipts, statedb)
+	p.manager.Finalize(header, block.Transactions(), receipts)
 
 	return receipts, allLogs, *usedGas, nil
 }

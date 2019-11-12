@@ -28,86 +28,59 @@ import (
 	pm "github.com/fractalplatform/fractal/plugin"
 )
 
+type minerStatus int32
+
+const (
+	Stopped int32 = iota
+	Starting
+	Started
+	Stopping
+)
+
 // Miner creates blocks and searches for proof values.
 type Miner struct {
 	worker *Worker
-
-	mining      int32 // 0: stoped; 1: starting; 2: started; 3: stopping
-	canStart    int32 // can start indicates whether we can start the mining operation
-	shouldStart int32 // should start indicates whether we should start after sync
+	mining int32
 }
+
+var (
+	minerOpErr = []string{
+		Stopped:  "miner already stoped",
+		Starting: "miner is starting...",
+		Started:  "miner already started",
+		Stopping: "miner is stopping...",
+	}
+)
 
 // NewMiner creates a miner.
 func NewMiner(manager pm.IPM, c context) *Miner {
-	miner := &Miner{
-		worker:   newWorker(manager, c),
-		canStart: 1,
+	return &Miner{
+		worker: newWorker(manager, c),
+		mining: Stopped,
 	}
-	go miner.update()
-	return miner
-}
-
-// update keeps track of events.
-func (miner *Miner) update() {
-	// 	downloaderEventChan := make(chan)
-	// 	downloaderEventSub := event.Subscription{}
-	//  defer downloaderEventSub.Unsubscribe()
-	// out:
-	// 	for {
-	// 		select {
-	// 		case ev := range downloaderEventChan:
-	// 			switch ev.Data.(type) {
-	// 			case downloader.StartEvent:
-	// 				atomic.StoreInt32(&miner.canStart, 0)
-	// 				if miner.Mining() {
-	// 					miner.Stop()
-	// 					atomic.StoreInt32(&miner.shouldStart, 1)
-	// 					log.Info("Mining aborted due to sync")
-	// 				}
-	// 			case downloader.DoneEvent, downloader.FailedEvent:
-	// 				shouldStart := atomic.LoadInt32(&miner.shouldStart) == 1
-	// 				atomic.StoreInt32(&miner.canStart, 1)
-	// 				atomic.StoreInt32(&miner.shouldStart, 0)
-	// 				if shouldStart {
-	// 					miner.Start()
-	// 				}
-	// 				// unsubscribe. we're only interested in this event once
-	// 				// stop immediately and ignore all further pending events
-	// 				break out
-	// 			}
-	// 		case ev := range downloaderEventSub.Err()
-	// 			break out
-	// 		}
-	// 	}
 }
 
 // Start start worker
 func (miner *Miner) Start(force bool) bool {
-	atomic.StoreInt32(&miner.shouldStart, 1)
-	if atomic.LoadInt32(&miner.canStart) == 0 {
-		log.Error("Network syncing, will start miner afterwards")
-		return false
-	}
-	if !atomic.CompareAndSwapInt32(&miner.mining, 0, 1) {
-		log.Error("miner already started")
+	if !atomic.CompareAndSwapInt32(&miner.mining, Stopped, Starting) {
+		log.Error(minerOpErr[miner.mining])
 		return false
 	}
 	log.Info("Starting mining operation")
 	miner.worker.start(force)
-	atomic.StoreInt32(&miner.mining, 2)
+	atomic.StoreInt32(&miner.mining, Started)
 	return true
 }
 
 // Stop stop worker
 func (miner *Miner) Stop() bool {
-	if !atomic.CompareAndSwapInt32(&miner.mining, 2, 3) {
-		log.Error("miner already stopped")
+	if !atomic.CompareAndSwapInt32(&miner.mining, Started, Stopping) {
+		log.Error(minerOpErr[miner.mining])
 		return false
 	}
 	log.Info("Stopping mining operation")
-	atomic.StoreInt32(&miner.shouldStart, 0)
 	miner.worker.stop()
-	atomic.StoreInt32(&miner.mining, 0)
+	atomic.StoreInt32(&miner.mining, Stopped)
 	return true
 }
 

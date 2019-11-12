@@ -46,7 +46,7 @@ type fakeEngine struct {
 }
 
 func (fe *fakeEngine) VerifySeal(header *types.Header) error {
-	log.Debug("blockchain uint test use fake engine VerifySeal function", "number", header.Number.Uint64())
+	log.Debug("blockchain uint test use fake engine VerifySeal function", "number", header.Number)
 	return nil
 }
 
@@ -210,9 +210,8 @@ func makeHeader(parent *types.Block, state *state.StateDB, seed int) *types.Head
 		ParentHash: parent.Hash(),
 		Coinbase:   parent.Coinbase(),
 		GasLimit:   params.BlockGasLimit,
-		Number:     new(big.Int).Add(parent.Number(), big.NewInt(1)),
-		Time:       big.NewInt(0),
-		Difficulty: big.NewInt(0),
+		Number:     parent.Head.Number + 1,
+		Time:       0,
 		Extra:      big.NewInt(int64(seed)).Bytes(),
 	}
 
@@ -220,8 +219,8 @@ func makeHeader(parent *types.Block, state *state.StateDB, seed int) *types.Head
 	// header.Time.Add(header.Time, parent.Time())
 	// header.Time = big.NewInt(int64(engine.Slot(header.Time.Uint64())))
 
-	if header.Time.Cmp(parent.Header().Time) <= 0 {
-		panic(fmt.Sprintf("header time %d less than parent header time %v ", header.Time.Uint64(), parent.Time().Uint64()))
+	if header.Time <= parent.Header().Time {
+		panic(fmt.Sprintf("header time %d less than parent header time %v ", header.Time, parent.Header().Time))
 	}
 
 	// header.Difficulty = engine.CalcDifficulty(chain, header.Time.Uint64(), parent.Header())

@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"time"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/log"
@@ -102,7 +101,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		db = rawdb.NewMemoryDatabase()
 	}
 
-	number := big.NewInt(0)
+	number := uint64(0)
 	statedb, err := state.New(common.Hash{}, state.NewDatabase(db))
 	if err != nil {
 		return nil, nil, fmt.Errorf("genesis statedb new err: %v", err)
@@ -118,7 +117,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		}
 	}
 
-	timestamp := g.Timestamp * uint64(time.Millisecond)
+	timestamp := g.Timestamp
 	g.Config.ReferenceTime = timestamp
 
 	// create account and asset
@@ -151,7 +150,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	currentTime := timestamp
 	currentTimeFormat := (currentTime / g.Config.SnapshotInterval) * g.Config.SnapshotInterval
 	snapshotManager := snapshot.NewSnapshotManager(statedb)
-	err = snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: number.Uint64(), BlockHash: common.Hash{}, Timestamp: 0})
+	err = snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: number, BlockHash: common.Hash{}, Timestamp: 0})
 	if err != nil {
 		return nil, nil, fmt.Errorf("genesis snapshot err %v", err)
 	}
@@ -164,12 +163,11 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 
 	head := &types.Header{
 		Number:     number,
-		Time:       new(big.Int).SetUint64(timestamp),
+		Time:       timestamp,
 		ParentHash: common.Hash{},
 		Extra:      aBytes,
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
-		Difficulty: g.Difficulty,
 		Coinbase:   g.Config.ChainName,
 		Root:       root,
 	}

@@ -47,9 +47,6 @@ type ChainContext interface {
 	GetBody(hash common.Hash) *types.Body
 }
 
-// NewMinedBlockEvent is posted when a block has been imported.
-type NewMinedBlockEvent struct{ Block *types.Block }
-
 var (
 	emptyHash = common.Hash{}
 )
@@ -168,7 +165,7 @@ func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
 func (dl *Downloader) syncstatus() {
 	defer dl.loopWG.Done()
 	sub1 := router.Subscribe(nil, dl.statusCh, router.P2PNewBlockHashesMsg, &NewBlockHashesData{})
-	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, NewMinedBlockEvent{})
+	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, types.Block{})
 	dl.subs = append(dl.subs, sub1, sub2)
 	for {
 		select {
@@ -177,7 +174,7 @@ func (dl *Downloader) syncstatus() {
 		case e := <-dl.statusCh:
 			// NewMinedEv
 			if e.Typecode == router.NewMinedEv {
-				block := e.Data.(NewMinedBlockEvent).Block
+				block := e.Data.(types.Block)
 				for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
 					dl.knownBlocks.Pop()
 				}
@@ -480,10 +477,15 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	ancestor, ancestorHash, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
 		log.Warn("ancestor err", "err", err, "errID:", err.eid)
+		router.AddErr(status.station, 1)
 		if err.eid == notFind {
 			log.Warn("Disconnect because ancestor not find:", "node:", adaptor.GetFnode(status.station))
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
+		} else if router.Err(status.station) > 50 {
+			log.Warn("Disconnect because too much error:", "node:", adaptor.GetFnode(status.station))
+			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 		}
+
 		return false
 	}
 	log.Debug("downloader ancestor:", "ancestor", ancestor)
@@ -732,15 +734,15 @@ func (task *downloadTask) Do() {
 		log.Debug(fmt.Sprint("err-2:", err, len(headers), downloadAmount))
 		return
 	}
-	if headers[0].Number.Uint64() != task.startNumber+1 || headers[0].ParentHash != task.startHash ||
-		headers[len(headers)-1].Number.Uint64() != task.endNumber || headers[len(headers)-1].Hash() != task.endHash {
-		log.Debug(fmt.Sprintf("e2-1 0d:%d\n0ed:%d\nsd:%d\nsed:%d", headers[0].Number.Uint64(), headers[len(headers)-1].Number.Uint64(), task.startNumber, task.endNumber))
+	if headers[0].Number != task.startNumber+1 || headers[0].ParentHash != task.startHash ||
+		headers[len(headers)-1].Number != task.endNumber || headers[len(headers)-1].Hash() != task.endHash {
+		log.Debug(fmt.Sprintf("e2-1 0d:%d\n0ed:%d\nsd:%d\nsed:%d", headers[0].Number, headers[len(headers)-1].Number, task.startNumber, task.endNumber))
 		log.Debug(fmt.Sprintf("e2-2 0:%x\n0e:%x\ns:%x\nse:%x", headers[0].Hash(), headers[len(headers)-1].Hash(), task.startHash, task.endHash))
 		return
 	}
 	for i := 1; i < len(headers); i++ {
-		if headers[i].ParentHash != headers[i-1].Hash() || headers[i].Number.Uint64() != headers[i-1].Number.Uint64()+1 {
-			log.Debug(fmt.Sprintf("err-3: phash:%x n->phash:%x\npn+1:%d n:%d", headers[i-1].Hash(), headers[i].ParentHash, headers[i-1].Number.Uint64()+1, headers[i].Number.Uint64()))
+		if headers[i].ParentHash != headers[i-1].Hash() || headers[i].Number != headers[i-1].Number+1 {
+			log.Debug(fmt.Sprintf("err-3: phash:%x n->phash:%x\npn+1:%d n:%d", headers[i-1].Hash(), headers[i].ParentHash, headers[i-1].Number+1, headers[i].Number))
 			return
 		}
 	}

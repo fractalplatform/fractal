@@ -146,7 +146,7 @@ func WriteHeader(db DatabaseWriter, header *types.Header) {
 	// Write the hash -> number mapping
 	var (
 		hash    = header.Hash()
-		number  = header.Number.Uint64()
+		number  = header.Number
 		encoded = encodeBlockNumber(number)
 	)
 	key := headerNumberKey(hash)
@@ -380,24 +380,24 @@ func DeleteDetailTxs(db DatabaseDeleter, hash common.Hash, number uint64) {
 
 // FindCommonAncestor returns the last common ancestor of two block headers
 func FindCommonAncestor(db DatabaseReader, a, b *types.Header) *types.Header {
-	for bn := b.Number.Uint64(); a.Number.Uint64() > bn; {
-		a = ReadHeader(db, a.ParentHash, a.Number.Uint64()-1)
+	for bn := b.Number; a.Number > bn; {
+		a = ReadHeader(db, a.ParentHash, a.Number-1)
 		if a == nil {
 			return nil
 		}
 	}
-	for an := a.Number.Uint64(); an < b.Number.Uint64(); {
-		b = ReadHeader(db, b.ParentHash, b.Number.Uint64()-1)
+	for an := a.Number; an < b.Number; {
+		b = ReadHeader(db, b.ParentHash, b.Number-1)
 		if b == nil {
 			return nil
 		}
 	}
 	for a.Hash() != b.Hash() {
-		a = ReadHeader(db, a.ParentHash, a.Number.Uint64()-1)
+		a = ReadHeader(db, a.ParentHash, a.Number-1)
 		if a == nil {
 			return nil
 		}
-		b = ReadHeader(db, b.ParentHash, b.Number.Uint64()-1)
+		b = ReadHeader(db, b.ParentHash, b.Number-1)
 		if b == nil {
 			return nil
 		}

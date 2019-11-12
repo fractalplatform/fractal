@@ -18,9 +18,9 @@ package plugin
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -62,16 +62,15 @@ type IAsset interface {
 }
 
 type IConsensus interface {
+	Init(genesisTime uint64, parent *types.Header)
+	MineDelay(miner string) time.Duration
+	Prepare(miner string) *types.Header
+	CallTx(action *types.Action) ([]byte, error)
+	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error)
 	Seal(block *types.Block) (*types.Block, error)
-
-	// VerifySeal checks whether the crypto seal on a header is valid according to the consensus rules of the given engine.
+	Difficult(header *types.Header) int64
+	Verify(header *types.Header, miner string) error
 	VerifySeal(header *types.Header) error
-
-	// Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
-	Prepare(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error
-
-	// Finalize assembles the final block.
-	Finalize(parent, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error)
 }
 
 type IContract interface {

@@ -38,11 +38,12 @@ type Header struct {
 	TxsRoot              common.Hash
 	ReceiptsRoot         common.Hash
 	Bloom                Bloom
-	Difficulty           *big.Int
-	Number               *big.Int
+	Number               uint64
 	GasLimit             uint64
 	GasUsed              uint64
-	Time                 *big.Int
+	Time                 uint64
+	Version              uint64
+	Sign                 []byte
 	Extra                []byte
 }
 
@@ -96,7 +97,7 @@ func NewBlockWithHeader(header *Header) *Block {
 func (b *Block) Transactions() []*Transaction { return b.Txs }
 
 // Number returns the block's Number.
-func (b *Block) Number() *big.Int { return new(big.Int).Set(b.Head.Number) }
+func (b *Block) Number() *big.Int { return big.NewInt(int64(b.Head.Number)) }
 
 // GasLimit returns the block's GasLimit.
 func (b *Block) GasLimit() uint64 { return b.Head.GasLimit }
@@ -105,13 +106,13 @@ func (b *Block) GasLimit() uint64 { return b.Head.GasLimit }
 func (b *Block) GasUsed() uint64 { return b.Head.GasUsed }
 
 // Difficulty returns the block's Difficulty.
-func (b *Block) Difficulty() *big.Int { return new(big.Int).Set(b.Head.Difficulty) }
+func (b *Block) Difficulty() *big.Int { return big.NewInt(0) }
 
 // Time returns the block's Time.
-func (b *Block) Time() *big.Int { return new(big.Int).Set(b.Head.Time) }
+func (b *Block) Time() *big.Int { return big.NewInt(int64(b.Head.Time)) }
 
 // NumberU64 returns the block's NumberU64.
-func (b *Block) NumberU64() uint64 { return b.Head.Number.Uint64() }
+func (b *Block) NumberU64() uint64 { return b.Head.Number }
 
 // Coinbase returns the block's Coinbase.
 func (b *Block) Coinbase() string { return b.Head.Coinbase }
@@ -216,18 +217,13 @@ func (b *Block) Check() error {
 // modifying a header variable.
 func CopyHeader(h *Header) *Header {
 	cpy := *h
-	if cpy.Time = new(big.Int); h.Time != nil {
-		cpy.Time.Set(h.Time)
-	}
-	if cpy.Difficulty = new(big.Int); h.Difficulty != nil {
-		cpy.Difficulty.Set(h.Difficulty)
-	}
-	if cpy.Number = new(big.Int); h.Number != nil {
-		cpy.Number.Set(h.Number)
-	}
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)
+	}
+	if len(h.Sign) > 0 {
+		cpy.Sign = make([]byte, len(h.Sign))
+		copy(cpy.Sign, h.Sign)
 	}
 	return &cpy
 }
@@ -262,7 +258,7 @@ func (bs blockSorter) Swap(i, j int)      { bs.blocks[i], bs.blocks[j] = bs.bloc
 func (bs blockSorter) Less(i, j int) bool { return bs.by(bs.blocks[i], bs.blocks[j]) }
 
 // Number represents block sort by number.
-func Number(b1, b2 *Block) bool { return b1.Head.Number.Cmp(b2.Head.Number) < 0 }
+func Number(b1, b2 *Block) bool { return b1.Head.Number < b2.Head.Number }
 
 // DeriveTxsMerkleRoot returns txs merkle tree root hash.
 func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {

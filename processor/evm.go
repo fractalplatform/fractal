@@ -80,9 +80,8 @@ func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, 
 		Recipient:         to,
 		AssetID:           assetID,
 		Coinbase:          beneficiary,
-		BlockNumber:       new(big.Int).Set(header.Number),
-		Time:              new(big.Int).Set(header.Time),
-		Difficulty:        new(big.Int).Set(header.Difficulty),
+		BlockNumber:       big.NewInt(int64(header.Number)),
+		Time:              big.NewInt(int64(header.Time)),
 		GasLimit:          header.GasLimit,
 		GasPrice:          new(big.Int).Set(gasPrice),
 	}
@@ -96,7 +95,7 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 		// If there's no hash cache yet, make one
 		if cache == nil {
 			cache = map[uint64]common.Hash{
-				ref.Number.Uint64() - 1: ref.ParentHash,
+				ref.Number - 1: ref.ParentHash,
 			}
 		}
 		// Try to fulfill the request from the cache
@@ -104,9 +103,9 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 			return hash
 		}
 		// Not cached, iterate the blocks and cache the hashes
-		for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1) {
-			cache[header.Number.Uint64()-1] = header.ParentHash
-			if n == header.Number.Uint64()-1 {
+		for header := chain.GetHeader(ref.ParentHash, ref.Number-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number-1) {
+			cache[header.Number-1] = header.ParentHash
+			if n == header.Number-1 {
 				return header.ParentHash
 			}
 		}

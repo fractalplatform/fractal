@@ -37,18 +37,18 @@ func TestHeaderStorage(t *testing.T) {
 		Extra:    []byte("test header"),
 		Coinbase: "coinbase",
 	}
-	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry != nil {
+	if entry := ReadHeader(db, header.Hash(), header.Number); entry != nil {
 		t.Fatalf("Non existent header returned: %v", entry)
 	}
 	// Write and verify the header in the database
 	WriteHeader(db, header)
-	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry == nil {
+	if entry := ReadHeader(db, header.Hash(), header.Number); entry == nil {
 		t.Fatalf("Stored header not found")
 	} else if entry.Hash() != header.Hash() {
 		t.Fatalf("Retrieved header mismatch: have %v, want %v", entry, header)
 	}
 
-	if entry := ReadHeaderRLP(db, header.Hash(), header.Number.Uint64()); entry == nil {
+	if entry := ReadHeaderRLP(db, header.Hash(), header.Number); entry == nil {
 		t.Fatalf("Stored header RLP not found")
 	} else {
 		hasher := sha3.NewLegacyKeccak256()
@@ -59,8 +59,8 @@ func TestHeaderStorage(t *testing.T) {
 		}
 	}
 	// Delete the header and verify the execution
-	DeleteHeader(db, header.Hash(), header.Number.Uint64())
-	if entry := ReadHeader(db, header.Hash(), header.Number.Uint64()); entry != nil {
+	DeleteHeader(db, header.Hash(), header.Number)
+	if entry := ReadHeader(db, header.Hash(), header.Number); entry != nil {
 		t.Fatalf("Deleted header returned: %v", entry)
 	}
 }

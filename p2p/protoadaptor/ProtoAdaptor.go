@@ -173,16 +173,12 @@ func checkDDOS(m map[int][]int64, e *router.Event) bool {
 	}
 	//m[t][0] time
 	//m[t][1] request per second
-	if m[t][0] == time.Now().Unix() {
-		m[t][1]++
-	} else {
-		if m[t][1] > limit {
-			return true
-		}
+	if m[t][0] != time.Now().Unix() {
 		m[t][0] = time.Now().Unix()
-		m[t][1] = 1
+		m[t][1] = 0
 	}
-	return false
+	m[t][1]++
+	return m[t][1] > limit
 }
 
 // Protocols .

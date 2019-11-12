@@ -153,11 +153,11 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	for hash := range bc.badHashes {
 		if header := bc.GetHeaderByHash(hash); header != nil {
 			// get the canonical block corresponding to the offending header's number
-			headerByNumber := bc.GetHeaderByNumber(header.Number.Uint64())
+			headerByNumber := bc.GetHeaderByNumber(header.Number)
 			// make sure the headerByNumber (if present) is in our current canonical chain
 			if headerByNumber != nil && headerByNumber.Hash() == header.Hash() {
 				log.Error("Found bad hash, rewinding chain", "hash", hash)
-				if err := bc.SetLastSnapshot(bc.GetBlockByNumber(header.Number.Uint64() - 1)); err != nil {
+				if err := bc.SetLastSnapshot(bc.GetBlockByNumber(header.Number - 1)); err != nil {
 					log.Error("Chain rewind was failed", "err", err)
 					return nil, err
 				}
@@ -598,7 +598,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 			}
 
 			// Find the next state trie we need to commit
-			chosen := bc.GetHeaderByNumber(current - bc.triesInMemory).Number.Uint64()
+			chosen := bc.GetHeaderByNumber(current - bc.triesInMemory).Number
 
 			for !bc.triegc.Empty() {
 				sizegc := bc.triegc.Size()

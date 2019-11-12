@@ -77,7 +77,7 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 func NewPM(stateDB *state.StateDB) IPM {
 	acm, _ := NewACM(stateDB)
 	asm, _ := NewASM(stateDB)
-	consensus, _ := NewConsensus(stateDB)
+	consensus := NewConsensus(stateDB)
 	signer, _ := NewSigner(stateDB)
 	return &Manager{
 		IAccount:   acm,

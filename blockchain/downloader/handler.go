@@ -71,7 +71,7 @@ func (bs *Station) chainStatus() *statusData {
 	genesis := bs.blockchain.Genesis()
 	head := bs.blockchain.CurrentBlock().Header()
 	hash := head.Hash()
-	number := head.Number.Uint64()
+	number := head.Number
 	td := bs.blockchain.GetTd(hash, number)
 	return &statusData{
 		ProtocolVersion: uint32(1),
@@ -203,7 +203,7 @@ func (bs *Station) handleMsg(e *router.Event) error {
 				router.ReplyEvent(e, router.P2PBlockHeadersMsg, []*types.Header{})
 				return nil
 			}
-			query.Origin.Number = header.Number.Uint64()
+			query.Origin.Number = header.Number
 		}
 
 		// Gather headers until the fetch or network limits is reached
