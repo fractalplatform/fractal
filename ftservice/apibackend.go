@@ -353,3 +353,11 @@ func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
 func (b *APIBackend) APIs() []rpc.API {
 	return b.ftservice.miner.APIs()
 }
+
+func (b *APIBackend) GetPM() (pm.IPM, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+	return pm.NewPM(sdb), nil
+}

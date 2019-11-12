@@ -240,6 +240,34 @@ func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
 	return obj.AssetName, nil
 }
 
+func (asm *AssetManager) GetAssetInfoByName(assetName string) (*Asset, error) {
+	if assetName == "" {
+		return nil, ErrAssetNotExist
+	}
+
+	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	if err != nil {
+		return nil, ErrAssetNotExist
+	}
+
+	if obj.AssetName != assetName {
+		return nil, ErrAssetNotExist
+	}
+	return obj, nil
+}
+
+func (asm *AssetManager) GetAssetInfoByID(assetID uint64) (*Asset, error) {
+	if assetID != SystemAssetID {
+		return nil, ErrAssetNotExist
+	}
+
+	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	if err != nil {
+		return nil, err
+	}
+	return obj, nil
+}
+
 func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, owner string, limit *big.Int, description string, am IAccount) error {
 

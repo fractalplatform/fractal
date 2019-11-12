@@ -50,6 +50,8 @@ type IAccount interface {
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
 	addBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	subBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
+	AccountIsExist(accountName string) (bool, error)                          // for api
+	GetAccountByName(accountName string) (*Account, error)                    //for api
 }
 
 type IAsset interface {
@@ -59,6 +61,8 @@ type IAsset interface {
 	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
 	GetAssetID(assetName string) (uint64, error)
 	GetAssetName(assetID uint64) (string, error)
+	GetAssetInfoByName(assetName string) (*Asset, error) // for api
+	GetAssetInfoByID(assetID uint64) (*Asset, error)     // for api
 }
 
 type IConsensus interface {

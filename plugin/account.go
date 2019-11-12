@@ -283,6 +283,22 @@ func (am *AccountManager) GetBalance(accountName string, assetID uint64) (*big.I
 	return account.Balances.Balance, nil
 }
 
+func (am *AccountManager) AccountIsExist(accountName string) (bool, error) {
+	_, err := am.getAccount(accountName)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (am *AccountManager) GetAccountByName(accountName string) (*Account, error) {
+	account, err := am.getAccount(accountName)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
+}
+
 func (am *AccountManager) addBalanceByID(accountName string, assetID uint64, amount *big.Int) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
