@@ -165,7 +165,7 @@ func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
 func (dl *Downloader) syncstatus() {
 	defer dl.loopWG.Done()
 	sub1 := router.Subscribe(nil, dl.statusCh, router.P2PNewBlockHashesMsg, &NewBlockHashesData{})
-	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, types.Block{})
+	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, &types.Block{})
 	dl.subs = append(dl.subs, sub1, sub2)
 	for {
 		select {
