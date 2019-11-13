@@ -196,6 +196,7 @@ func (adaptor *ProtoAdaptor) Protocols() []p2p.Protocol {
 // Stop .
 func (adaptor *ProtoAdaptor) Stop() {
 	close(adaptor.quit)
+	router.StationRegister(adaptor.peerMangaer.station)
 	for _, sub := range adaptor.subs {
 		sub.Unsubscribe()
 	}
