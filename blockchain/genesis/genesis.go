@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/log"
@@ -97,6 +98,7 @@ func SetupGenesisBlock(db fdb.Database, genesis *Genesis) (*params.ChainConfig, 
 // ToBlock creates the genesis block and writes state of a genesis specification
 // to the given database (or discards it if nil).
 func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, error) {
+	g.Timestamp = uint64(time.Now().Unix())
 	if db == nil {
 		db = rawdb.NewMemoryDatabase()
 	}

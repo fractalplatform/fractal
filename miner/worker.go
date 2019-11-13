@@ -139,6 +139,7 @@ func (worker *Worker) mintLoop() {
 			log.Error("Can't find state", "err", err, "root", header.Root, "hash", header.Hash(), "number", header.Number)
 			return
 		}
+		fmt.Println("NewPM:", header.Number, header.Root)
 		pm := plugin.NewPM(state)
 		pm.Init(0, "", header)
 		if delay := pm.MineDelay(worker.coinbase); delay > 0 {
@@ -206,6 +207,7 @@ func (worker *Worker) setExtra(extra []byte) {
 
 func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent *types.Header) (*types.Block, error) {
 	start := time.Now()
+	fmt.Println("Prepare:", worker.coinbase)
 	header := pm.Prepare(worker.coinbase)
 	work := &Work{
 		currentHeader:   header,

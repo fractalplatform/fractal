@@ -23,6 +23,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -174,7 +175,7 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 		info := &CandidateInfo{}
 		info.Load(c.stateDB, n)
 		c.candidates.info[n] = info
-		if n == c.parent.Coinbase {
+		if c.parent != nil && n == c.parent.Coinbase {
 			c.minerIndex = uint64(i)
 		}
 	}
@@ -187,21 +188,33 @@ func (c *Consensus) initRequrie() {
 	}
 }
 
-func (c *Consensus) Init(genesisTime uint64, genesisAccount string, parent *types.Header) {
+func (c *Consensus) Init(_genesisTime uint64, genesisAccount string, parent *types.Header) {
 	if len(MinerAccount) == 0 {
 		MinerAccount = genesisAccount
-		genesisTime = genesisTime
+		genesisTime = _genesisTime
+		fmt.Println("genesisTime", genesisTime, MinerAccount)
 	}
 	c.parent = parent
 	c.isInit = true
+
+	for i, n := range c.candidates.listSort {
+		info := &CandidateInfo{}
+		info.Load(c.stateDB, n)
+		c.candidates.info[n] = info
+		if c.parent != nil && n == c.parent.Coinbase {
+			c.minerIndex = uint64(i)
+		}
+	}
 }
 
+// return timestamp of parent+n
 func (c *Consensus) timeSlot(n uint64) uint64 {
 	ontime := genesisTime + (c.parent.Number+c.LackBlock+n)*blockDuration
 	return ontime
 }
 
-func (c *Consensus) miner(n uint64) string {
+// return miner of parent+n
+func (c *Consensus) minerSlot(n uint64) string {
 	numMiner := maxMiner
 	if numMiner > uint64(c.candidates.Len()) {
 		numMiner = uint64(c.candidates.Len())
@@ -226,7 +239,7 @@ func (c *Consensus) storeCandidates() {
 
 func (c *Consensus) loadCandidates() {
 	b, _ := c.stateDB.Get(ConsensusKey, CandidateKey)
-	rlp.DecodeBytes(b, c.candidates.listSort)
+	rlp.DecodeBytes(b, &c.candidates.listSort)
 }
 
 func (c *Consensus) removeCandidate(delCandidate string) (bool, *CandidateInfo) {
@@ -253,40 +266,70 @@ func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (boo
 	return c.candidates.insert(newCandidate, info)
 }
 
-func (c *Consensus) nextMiner(miner string) int {
+// return next miner
+func (c *Consensus) nextMiner() int {
 	now := uint64(time.Now().Unix())
 	for i := 1; i <= c.candidates.Len(); i++ {
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
-			return i // current miner
+			for j := 0; j < c.candidates.Len(); j++ {
+				miner := c.minerSlot(uint64(i + j))
+				if c.candidates.info[miner].Skip {
+					continue
+				}
+				return i + j
+			}
+			return -1
 		}
 	}
 	return -1
 }
 
+// return distance between miner and parent.Coinbase
 func (c *Consensus) searchMiner(miner string) int {
 	for i := 1; i <= c.candidates.Len(); i++ {
-		if miner == c.miner(uint64(i)) {
+		if miner == c.minerSlot(uint64(i)) {
+			if c.candidates.info[miner].Skip {
+				return -1
+			}
 			return i
 		}
 	}
 	return -1
 }
 
+func (c *Consensus) Show() {
+	fmt.Println("-----------------")
+	fmt.Println("parent:", c.parent.Number)
+	fmt.Println("parent:", c.parent.Time)
+	fmt.Println("LackBlock:", c.LackBlock)
+	fmt.Println("candidates:", c.candidates.Len())
+	fmt.Println("minerIndex:", c.minerIndex)
+	fmt.Println("genesisTime", genesisTime, MinerAccount)
+}
+
 func (c *Consensus) MineDelay(miner string) time.Duration {
 	// just beta
 	c.initRequrie()
 
-	i := c.nextMiner(miner)
-	if i < 0 {
-		// wrong miner!
-		return -1
+	c.Show()
+	i := c.nextMiner()
+	if i < 1 {
+		fmt.Println("i<1:", i)
+		panic("xx")
+		return time.Duration(c.timeSlot(1)) * time.Second
 	}
-	nextMiner := c.miner(uint64(i))
+	nextMiner := c.minerSlot(uint64(i))
+	now := time.Now().Unix()
 	if nextMiner == miner {
+		ontime := int64(c.timeSlot(uint64(i) - 1))
+		if ontime > now {
+			fmt.Println("ontime > now:", ontime, now)
+			return time.Duration(ontime-now) * time.Second
+		}
+		fmt.Println("do block")
 		return 0
 	}
-	now := time.Now().Unix()
 	return time.Duration(int64(c.timeSlot(uint64(i)))-now) * time.Second
 }
 
@@ -298,12 +341,16 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 	if minerIndex < 0 {
 		return nil
 	}
-	blcoktime := c.timeSlot(uint64(minerIndex))
+	blocktime := c.timeSlot(uint64(minerIndex))
 	for i := 1; i < minerIndex; i++ {
-		skipMiner := c.miner(uint64(i))
+		skipMiner := c.minerSlot(uint64(i))
 		info := c.candidates.info[skipMiner]
-		info.Skip = true // TODO: skip once
-		info.DecWeight()
+		if !info.Skip {
+			info.Skip = true // skip and dec weight
+			info.DecWeight()
+		} else {
+			info.Skip = false // skip and reset skip
+		}
 		info.Store(c.stateDB)
 	}
 	if minerIndex > 1 {
@@ -315,8 +362,10 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 	return &types.Header{
 		ParentHash: c.parent.Hash(),
 		Number:     c.parent.Number + 1,
-		Time:       blcoktime,
-		Coinbase:   miner,
+		GasLimit:   params.BlockGasLimit,
+		//Time:       blocktime,
+		Time:     now,
+		Coinbase: miner,
 	}
 }
 
@@ -346,10 +395,8 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 		c.storeCandidates()
 		if info != nil {
 			err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance)
-			fmt.Println("success2", err)
 			return nil, err
 		}
-		fmt.Println("success!")
 		return nil, nil
 	}
 	return nil, errors.New("wrong candidate")
@@ -369,7 +416,7 @@ func (c *Consensus) Difficult(header *types.Header) int64 {
 	// just beta
 	c.initRequrie()
 
-	if c.miner(0) == header.Coinbase {
+	if c.minerSlot(0) == header.Coinbase {
 		return int64(c.parent.Number) - int64(c.LackBlock)
 	}
 	return int64(c.parent.Number) - int64(c.LackBlock) - int64(c.searchMiner(header.Coinbase))
@@ -391,7 +438,7 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 	// 3. verify miner
 	minerIndex := c.searchMiner(miner)
 	if minerIndex < 0 {
-		return errors.New("can not find miner")
+		return errors.New("can not find miner or miner skiped")
 	}
 	// 4. verify block time
 	timeSlot := c.timeSlot(uint64(minerIndex))

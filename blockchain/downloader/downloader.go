@@ -174,7 +174,7 @@ func (dl *Downloader) syncstatus() {
 		case e := <-dl.statusCh:
 			// NewMinedEv
 			if e.Typecode == router.NewMinedEv {
-				block := e.Data.(types.Block)
+				block := e.Data.(*types.Block)
 				for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
 					dl.knownBlocks.Pop()
 				}
