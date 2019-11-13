@@ -114,7 +114,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		return nil, err
 	}
 
-	if err = am.addBalanceByID(accountName, SystemAssetID, amount); err != nil {
+	if err = am.addBalanceByID(owner, SystemAssetID, amount); err != nil {
 		asm.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
