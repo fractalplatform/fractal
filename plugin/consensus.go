@@ -42,15 +42,19 @@ const (
 	CandidateKey     = "candidates"
 	LackBlock        = "lackblock"
 	CandidateInfoKey = "info_"
+	// account
+	MinerAssetID = uint64(0)
 )
 
 var (
-	minLockAmount = big.NewInt(0)
+	minLockAmount = big.NewInt(1)
 	maxCandidates = 32
 	maxMiner      = uint64(21)
 	maxWeight     = uint64(100)
 	minWeight     = 0
 	blockDuration = uint64(3)
+	MinerAccount  string
+	genesisTime   uint64
 )
 
 type CandidateInfo struct {
@@ -150,9 +154,8 @@ type Consensus struct {
 	isInit        bool
 	BlockGasLimit uint64
 	LackBlock     uint64
-	candidates    Candidates
+	candidates    *Candidates
 	minerIndex    uint64
-	genesisTime   uint64
 	parent        *types.Header
 	stateDB       *state.StateDB
 }
@@ -161,6 +164,9 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 	c := &Consensus{
 		parent:  nil,
 		stateDB: stateDB,
+		candidates: &Candidates{
+			info: make(map[string]*CandidateInfo),
+		},
 	}
 	c.loadCandidates()
 	c.loadLackBlock()
@@ -181,14 +187,17 @@ func (c *Consensus) initRequrie() {
 	}
 }
 
-func (c *Consensus) Init(genesisTime uint64, parent *types.Header) {
-	c.genesisTime = genesisTime
+func (c *Consensus) Init(genesisTime uint64, genesisAccount string, parent *types.Header) {
+	if len(MinerAccount) == 0 {
+		MinerAccount = genesisAccount
+		genesisTime = genesisTime
+	}
 	c.parent = parent
 	c.isInit = true
 }
 
 func (c *Consensus) timeSlot(n uint64) uint64 {
-	ontime := c.genesisTime + (c.parent.Number+c.LackBlock+n)*blockDuration
+	ontime := genesisTime + (c.parent.Number+c.LackBlock+n)*blockDuration
 	return ontime
 }
 
@@ -230,10 +239,13 @@ func (c *Consensus) removeCandidate(delCandidate string) (bool, *CandidateInfo) 
 
 func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (bool, *CandidateInfo) {
 	info := &CandidateInfo{
-		SignAccount:    newCandidate,
-		Weight:         90,
-		RegisterNumber: c.parent.Number + 1,
-		Balance:        big.NewInt(0).Set(lockAmount),
+		SignAccount: newCandidate,
+		Weight:      90,
+		//		RegisterNumber: c.parent.Number + 1,
+		Balance: big.NewInt(0).Set(lockAmount),
+	}
+	if c.parent != nil {
+		info.RegisterNumber = c.parent.Number + 1
 	}
 	if info.WeightedSum().Cmp(minLockAmount) < 0 {
 		return false, nil
@@ -308,10 +320,20 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 	}
 }
 
-func (c *Consensus) CallTx(action *types.Action) ([]byte, error) {
+func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 	// just beta
 	c.initRequrie()
-
+	if action.Recipient() != MinerAccount {
+		return nil, fmt.Errorf("recipient must be %s", MinerAccount)
+	}
+	if action.Value().Sign() > 0 {
+		if action.AssetID() != MinerAssetID {
+			return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
+		}
+		if err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+			return nil, err
+		}
+	}
 	//TODO: return or lock balance
 	var success bool
 	var info *CandidateInfo
@@ -322,9 +344,12 @@ func (c *Consensus) CallTx(action *types.Action) ([]byte, error) {
 	}
 	if success {
 		c.storeCandidates()
-		_ = info
-		// return info.balance
-		// minus sender.value ?
+		if info != nil {
+			err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance)
+			fmt.Println("success2", err)
+			return nil, err
+		}
+		fmt.Println("success!")
 		return nil, nil
 	}
 	return nil, errors.New("wrong candidate")

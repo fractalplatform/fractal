@@ -59,6 +59,7 @@ type context interface {
 type chainContext interface {
 	Config() *params.ChainConfig
 	CurrentHeader() *types.Header
+	GetBlockByNumber(number uint64) *types.Block
 	StateAt(common.Hash) (*state.StateDB, error)
 	WriteBlockWithState(*types.Block, []*types.Receipt, *state.StateDB) (bool, error)
 }
@@ -139,6 +140,7 @@ func (worker *Worker) mintLoop() {
 			return
 		}
 		pm := plugin.NewPM(state)
+		pm.Init(0, "", header)
 		if delay := pm.MineDelay(worker.coinbase); delay > 0 {
 			delayCh := time.NewTimer(delay)
 			select {

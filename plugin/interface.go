@@ -66,10 +66,10 @@ type IAsset interface {
 }
 
 type IConsensus interface {
-	Init(genesisTime uint64, parent *types.Header)
+	Init(genesisTime uint64, genesisAccount string, parent *types.Header)
 	MineDelay(miner string) time.Duration
 	Prepare(miner string) *types.Header
-	CallTx(action *types.Action) ([]byte, error)
+	CallTx(action *types.Action, pm IPM) ([]byte, error)
 	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error)
 	Seal(block *types.Block) (*types.Block, error)
 	Difficult(header *types.Header) int64

@@ -69,6 +69,9 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 		err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		return nil, err
 	default:
+		if action.Type() >= RegisterMiner || action.Type() < ConsensusEnd {
+			return pm.IConsensus.CallTx(action, pm)
+		}
 		return nil, nil
 	}
 }

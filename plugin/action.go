@@ -19,6 +19,12 @@ const (
 	Transfer
 )
 
+const (
+	// RegisterMiner register msg.sender become a miner
+	RegisterMiner types.ActionType = 0x300 + iota
+	ConsensusEnd
+)
+
 type CreateAccountAction struct {
 	Name   string
 	Pubkey common.PubKey

@@ -122,6 +122,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 
 	// create account and asset
 	mananger := pm.NewPM(statedb)
+	mananger.Init(g.Timestamp, g.Config.DposName, nil)
 	actions, err := g.CreateAccount()
 	if err != nil {
 		return nil, nil, err
@@ -132,7 +133,13 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		return nil, nil, err
 	}
 
+	minerActions, err := g.RegisterMiner()
+	if err != nil {
+		return nil, nil, err
+	}
+
 	actions = append(actions, astActions...)
+	actions = append(actions, minerActions...)
 
 	for index, action := range actions {
 		_, err := mananger.ExecTx(action)
@@ -299,6 +306,21 @@ func (g *Genesis) CreateAsset() ([]*types.Action, error) {
 
 	return actions, nil
 
+}
+
+// RegisterMiner register Miner
+func (g *Genesis) RegisterMiner() ([]*types.Action, error) {
+	return []*types.Action{types.NewAction(
+		pm.RegisterMiner,
+		g.Config.SysName,
+		g.Config.DposName,
+		1,             // nonce
+		0,             // assetID
+		0,             // gasLimit
+		big.NewInt(1), // amount
+		nil,
+		nil,
+	)}, nil
 }
 
 // DefaultGenesis returns the ft net genesis block.
