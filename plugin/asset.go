@@ -227,7 +227,7 @@ func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
 	return obj.AssetID, nil
 }
 
-// GetAssetID Get asset name
+// GetAssetName Get asset name
 func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
 	if assetID != SystemAssetID {
 		return "", ErrAssetNotExist

@@ -82,10 +82,12 @@ func NewPM(stateDB *state.StateDB) IPM {
 	asm, _ := NewASM(stateDB)
 	consensus := NewConsensus(stateDB)
 	signer, _ := NewSigner(stateDB)
+	fee, _ := NewFeeManager()
 	return &Manager{
 		IAccount:   acm,
 		IAsset:     asm,
 		IConsensus: consensus,
 		ISigner:    signer,
+		IFee:       fee,
 	}
 }

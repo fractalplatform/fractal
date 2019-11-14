@@ -100,10 +100,7 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 		Description: description,
 	}
 
-	if err = am.setAccount(&acctObject); err != nil {
-		return nil, err
-	}
-	return nil, nil
+	return nil, am.setAccount(&acctObject)
 }
 
 // CanTransfer check if can transfer.
@@ -172,24 +169,23 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error {
-	for _, action := range tx.GetActions() {
-		pubs, err := signer.Recover(action)
-		if err != nil {
-			return err
-		}
+	// for _, action := range tx.GetActions() {
+	// 	pubs, err := signer.Recover(action)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		tempAddress := common.BytesToAddress(crypto.Keccak256(pubs[1:])[12:])
+	// 	tempAddress := common.BytesToAddress(crypto.Keccak256(pubs[1:])[12:])
 
-		account, err := am.getAccount(action.Sender())
-		if err != nil {
-			return err
-		}
+	// 	account, err := am.getAccount(action.Sender())
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		if tempAddress.Compare(account.Address) != 0 {
-			return ErrkeyNotSame
-		}
-	}
-
+	// 	if tempAddress.Compare(account.Address) != 0 {
+	// 		return ErrkeyNotSame
+	// 	}
+	// }
 	return nil
 }
 
@@ -356,7 +352,6 @@ func (am *AccountManager) checkAccountName(accountName string) error {
 
 func (am *AccountManager) getAccount(accountName string) (*Account, error) {
 	b, err := am.sdb.Get(acctManagerName, acctInfoPrefix+accountName)
-
 	if err != nil {
 		return nil, err
 	}

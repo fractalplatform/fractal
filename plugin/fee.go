@@ -25,6 +25,10 @@ import (
 type FeeManager struct {
 }
 
+func NewFeeManager() (IFee, error) {
+	return &FeeManager{}, nil
+}
+
 func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) error {
 	var coinbase string
 	var totalGas int64

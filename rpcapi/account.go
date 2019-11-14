@@ -30,16 +30,20 @@ func NewAccountAPI(b Backend) *AccountAPI {
 	return &AccountAPI{b}
 }
 
-//AccountIsExist
-func (api *AccountAPI) AccountIsExist(accountName string) bool {
+// AccountIsExist
+func (api *AccountAPI) AccountIsExist(accountName string) (bool, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return false
+		return false, err
 	}
-	if err = pm.AccountIsExist(accountName); err != nil {
-		return false
+	err = pm.AccountIsExist(accountName)
+	if err == nil {
+		return true, nil
+	} else if err.Error() == "account not exist" {
+		return false, nil
 	}
-	return true
+
+	return false, err
 }
 
 //GetAccountByName

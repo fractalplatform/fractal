@@ -111,18 +111,6 @@
 			"revisionTime": "2019-07-10T13:02:09Z"
 		},
 		{
-			"checksumSHA1": "pKObUqMstfkWZ62PEwq5Tce6iBY=",
-			"path": "github.com/fractalplatform/fractal/accountmanager",
-			"revision": "4a7b2421e869f868bf916c4684ccdec921623e37",
-			"revisionTime": "2019-09-20T07:02:39Z"
-		},
-		{
-			"checksumSHA1": "GNSK92oyNXfkuoRSkB7aCaBdlTU=",
-			"path": "github.com/fractalplatform/fractal/asset",
-			"revision": "4a7b2421e869f868bf916c4684ccdec921623e37",
-			"revisionTime": "2019-09-20T07:02:39Z"
-		},
-		{
 			"checksumSHA1": "YmQZpIM0ibGhxbbOr1hqsP3xUtY=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "4bf2d1fec78374803a39307bfb8d340688f4f28e",

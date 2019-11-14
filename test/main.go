@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/params"
 	pm "github.com/fractalplatform/fractal/plugin"
 	testcommon "github.com/fractalplatform/fractal/test/common"
 	"github.com/fractalplatform/fractal/types"
@@ -15,7 +14,7 @@ import (
 func sendTx() error {
 
 	act := &pm.CreateAccountAction{
-		Name:   params.DefaultChainconfig.SysName,
+		Name:   "testaccount",
 		Desc:   "system account",
 		Pubkey: common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
 	}
