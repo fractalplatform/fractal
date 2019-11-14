@@ -29,14 +29,20 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-// 1. 基准时间轴
-// 2. 严格时间轴
-// 3. 超过2/3不出块，则所有人出块，并包含惩罚交易提议(时间提后?) //出块人数过低，则链停止
-// 4. 后续出块人依次出块并包含投票(交易?)
+// 1. 基准时间轴 o
+// 2. 严格时间轴 o
+// 3. 不出块则跳过时间窗 o
+// 4. 后续出块人依次出块并包含投票(交易?) o
 
 // 1. 缺块空时间窗(VDF?)
 // 2. 总值 = t * p ; max(p) = 100
 // 3. 支持合约？
+
+// TODO:
+// 1. 签名
+// 2. 出块公钥
+// 3. 难度
+// 4. 回退
 
 const (
 	ConsensusKey     = "consensus"
@@ -341,7 +347,8 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 	if minerIndex < 0 {
 		return nil
 	}
-	blocktime := c.timeSlot(uint64(minerIndex))
+	//blocktime := c.timeSlot(uint64(minerIndex)) // this code must be here
+	now := uint64(time.Now().Unix())
 	for i := 1; i < minerIndex; i++ {
 		skipMiner := c.minerSlot(uint64(i))
 		info := c.candidates.info[skipMiner]
@@ -364,8 +371,8 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 		ParentHash: c.parent.Hash(),
 		Number:     c.parent.Number + 1,
 		GasLimit:   params.BlockGasLimit,
-		Time:       blocktime,
-		//Time:     now,
+		//Time:       blocktime,
+		Time:     now,
 		Coinbase: miner,
 	}
 }
