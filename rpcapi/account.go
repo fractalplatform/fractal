@@ -16,7 +16,11 @@
 
 package rpcapi
 
-import "math/big"
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+)
 
 type AccountAPI struct {
 	b Backend
@@ -27,12 +31,15 @@ func NewAccountAPI(b Backend) *AccountAPI {
 }
 
 //AccountIsExist
-func (api *AccountAPI) AccountIsExist(accountName string) (bool, error) {
+func (api *AccountAPI) AccountIsExist(accountName string) bool {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return false, err
+		return false
 	}
-	return pm.AccountIsExist(accountName)
+	if err = pm.AccountIsExist(accountName); err != nil {
+		return false
+	}
+	return true
 }
 
 //GetAccountByName
@@ -54,12 +61,16 @@ func (api *AccountAPI) GetAccountBalanceByID(accountName string, assetID uint64)
 }
 
 //GetCode
-func (api *AccountAPI) GetCode(accountName string) ([]byte, error) {
+func (api *AccountAPI) GetCode(accountName string) (hexutil.Bytes, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
 		return nil, err
 	}
-	return pm.GetCode(accountName)
+	code, err := pm.GetCode(accountName)
+	if err != nil {
+		return nil, err
+	}
+	return (hexutil.Bytes)(code), nil
 }
 
 //GetNonce
@@ -77,7 +88,6 @@ func (api *AccountAPI) GetAssetInfoByName(assetName string) (interface{}, error)
 	if err != nil {
 		return nil, err
 	}
-
 	return pm.GetAssetInfoByName(assetName)
 }
 

@@ -50,7 +50,7 @@ type IAccount interface {
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
 	addBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	subBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
-	AccountIsExist(accountName string) (bool, error)                          // for api
+	AccountIsExist(accountName string) error                                  // for api
 	GetAccountByName(accountName string) (*Account, error)                    //for api
 }
 
