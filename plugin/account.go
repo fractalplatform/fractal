@@ -186,7 +186,7 @@ func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error
 		}
 
 		if tempAddress.Compare(account.Address) != 0 {
-			return err
+			return ErrkeyNotSame
 		}
 	}
 
@@ -430,4 +430,5 @@ var (
 	ErrInsufficientBalance  = errors.New("insufficient balance")
 	ErrCodeIsEmpty          = errors.New("code is empty")
 	ErrHashIsEmpty          = errors.New("hash is empty")
+	ErrkeyNotSame           = errors.New("key not same")
 )
