@@ -77,6 +77,7 @@ func (api *AccountAPI) GetAssetInfoByName(assetName string) (interface{}, error)
 	if err != nil {
 		return nil, err
 	}
+
 	return pm.GetAssetInfoByName(assetName)
 }
 
