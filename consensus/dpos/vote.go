@@ -688,6 +688,8 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 					activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
 				}
 			}
+			gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+			gstate.ActivatedTotalQuantity = activatedTotalQuantity
 		} else {
 			tstate := &GlobalState{
 				Epoch:                       math.MaxUint64,
@@ -733,10 +735,11 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 						index++
 					}
 				}
+				gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+				gstate.ActivatedTotalQuantity = activatedTotalQuantity
 			}
 		}
-		gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
-		gstate.ActivatedTotalQuantity = activatedTotalQuantity
+
 		if err := sys.SetState(gstate); err != nil {
 			return err
 		}
