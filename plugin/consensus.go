@@ -359,12 +359,13 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 		c.storeLackBlock()
 		c.storeCandidates()
 	}
+
 	return &types.Header{
 		ParentHash: c.parent.Hash(),
 		Number:     c.parent.Number + 1,
 		GasLimit:   params.BlockGasLimit,
-		//Time:       blocktime,
-		Time:     now,
+		Time:       blocktime,
+		//Time:     now,
 		Coinbase: miner,
 	}
 }
