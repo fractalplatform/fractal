@@ -17,6 +17,7 @@
 package plugin
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"math/big"
@@ -346,7 +347,7 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 		return nil
 	}
 	//blocktime := c.timeSlot(uint64(minerIndex)) // this code must be here
-	//now := uint64(time.Now().Unix())
+	now := uint64(time.Now().Unix())
 	for i := 1; i < minerIndex; i++ {
 		skipMiner := c.minerSlot(uint64(i))
 		info := c.candidates.info[skipMiner]
@@ -370,7 +371,7 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 		Number:     c.parent.Number + 1,
 		GasLimit:   params.BlockGasLimit,
 		//Time:       blocktime,
-		//Time:     now,
+		Time:     now,
 		Coinbase: miner,
 	}
 }
@@ -412,7 +413,6 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 func (c *Consensus) Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error) {
 	// just beta
 	c.initRequrie()
-	header.Time = uint64(time.Now().Unix())
 	// info.Dec or Inc
 	header.Root = c.stateDB.IntermediateRoot()
 	return types.NewBlock(header, txs, receipts), nil
@@ -463,10 +463,18 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 	return nil
 }
 
-func (c *Consensus) Seal(block *types.Block) (*types.Block, error) {
+func (c *Consensus) Seal(block *types.Block, miner string, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
 	// just beta
 	c.initRequrie()
-
+	/*
+		signer := c.candidates.info[miner].SignAccount
+		minearAc, err := pm.getAccount(signer)
+		pub := priKey.X
+		if err != nil {
+			return block, err
+		}
+		//minerAc.
+	*/
 	return block, nil
 }
 

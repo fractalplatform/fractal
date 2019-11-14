@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
@@ -75,8 +74,7 @@ type Worker struct {
 	mu            sync.Mutex
 	delayDuration uint64
 	coinbase      string
-	privKeys      []*ecdsa.PrivateKey
-	pubKeys       [][]byte
+	priKey        *ecdsa.PrivateKey
 	extra         []byte
 
 	wg       sync.WaitGroup
@@ -179,24 +177,13 @@ func (worker *Worker) setDelayDuration(delay uint64) error {
 	return nil
 }
 
-func (worker *Worker) setCoinbase(name string, privateKeys []*ecdsa.PrivateKey) {
+func (worker *Worker) setCoinbase(name string, privateKey *ecdsa.PrivateKey) {
 	// _, _ := worker.StateAt(worker.CurrentHeader().Root)
 	// 	manger := plugin.NewPM(state)
 	worker.mu.Lock()
 	defer worker.mu.Unlock()
 	worker.coinbase = name
-	worker.privKeys = privateKeys
-	worker.pubKeys = nil
-	for _, privateKey := range privateKeys {
-		pubkey := crypto.FromECDSAPub(&privateKey.PublicKey)
-		// 		// todo manger.Recover()
-		// 		// if err := mgr.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)); err == nil {
-		// 		// 	log.Info("setCoinbase[valid]", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String())
-		// 		// } else {
-		// 		// 	log.Warn("setCoinbase[invalid]", "coinbase", name, fmt.Sprintf("pubKey_%03d", index), common.BytesToPubKey(pubkey).String(), "detail", err)
-		// 		// }
-		worker.pubKeys = append(worker.pubKeys, pubkey)
-	}
+	worker.priKey = privateKey
 }
 
 func (worker *Worker) setExtra(extra []byte) {
@@ -241,7 +228,7 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 
 	work.currentBlock = blk
 
-	block, err := pm.Seal(work.currentBlock)
+	block, err := pm.Seal(work.currentBlock, worker.coinbase, worker.priKey, pm)
 	if err != nil {
 		return nil, fmt.Errorf("seal block, err: %v", err)
 	}

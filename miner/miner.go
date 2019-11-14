@@ -104,7 +104,7 @@ func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
 		privs = append(privs, priv)
 	}
 
-	miner.worker.setCoinbase(name, privs)
+	miner.worker.setCoinbase(name, privs[0])
 	return nil
 }
 

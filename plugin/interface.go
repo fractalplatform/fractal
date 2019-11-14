@@ -17,6 +17,7 @@
 package plugin
 
 import (
+	"crypto/ecdsa"
 	"math/big"
 	"time"
 
@@ -71,7 +72,7 @@ type IConsensus interface {
 	Prepare(miner string) *types.Header
 	CallTx(action *types.Action, pm IPM) ([]byte, error)
 	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error)
-	Seal(block *types.Block) (*types.Block, error)
+	Seal(block *types.Block, miner string, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error)
 	Difficult(header *types.Header) int64
 	Verify(header *types.Header, miner string) error
 	VerifySeal(header *types.Header) error
