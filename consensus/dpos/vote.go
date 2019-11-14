@@ -733,10 +733,11 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 						index++
 					}
 				}
+				gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
+				gstate.ActivatedTotalQuantity = activatedTotalQuantity
 			}
 		}
-		gstate.ActivatedCandidateSchedule = activatedCandidateSchedule
-		gstate.ActivatedTotalQuantity = activatedTotalQuantity
+
 		if err := sys.SetState(gstate); err != nil {
 			return err
 		}
@@ -984,6 +985,7 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 		}
 
 		if err := insert(tstate, prod); err != nil {
+			log.Info("chaogaofeng 1 +++", "cnt", tstate.Number, "activatedCandidateSchedule", len(tstate.ActivatedCandidateSchedule), "name", prod.Name)
 			return err
 		}
 
