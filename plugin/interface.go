@@ -75,7 +75,7 @@ type IConsensus interface {
 	Seal(block *types.Block, miner string, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error)
 	Difficult(header *types.Header) int64
 	Verify(header *types.Header, miner string) error
-	VerifySeal(header *types.Header) error
+	VerifySeal(header *types.Header, miner string, pm IPM) error
 }
 
 type IContract interface {
