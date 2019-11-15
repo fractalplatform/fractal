@@ -17,7 +17,6 @@
 package types
 
 import (
-	"math/big"
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
@@ -28,13 +27,12 @@ import (
 var (
 	testHeader = &Header{
 		ParentHash: common.HexToHash("0a5843ac1cb04865017cb35a57b50b07084e5fcee39b5acadade33149f4fff9e"),
-		Coinbase:   common.Name("cpinbase"),
+		Coinbase:   "coinbase",
 		Root:       common.HexToHash("ef1552a40b7165c3cd773806b9e0c165b75356e0314bf0706f279c729f51e017"),
-		Difficulty: big.NewInt(131072),
-		Number:     big.NewInt(100),
+		Number:     100,
 		GasLimit:   uint64(3141592),
 		GasUsed:    uint64(21000),
-		Time:       big.NewInt(1426516743),
+		Time:       1426516743,
 		Extra:      []byte("test Header"),
 	}
 	testBlock = &Block{
@@ -58,20 +56,6 @@ func TestBlockEncodeRLPAndDecodeRLP(t *testing.T) {
 	assert.Equal(t, testBlock.Hash(), newBlock.Hash())
 }
 
-func TestBlockForkID(t *testing.T) {
-	testHeader.WithForkID(1, 2)
-	testBlock := NewBlockWithHeader(testHeader)
-	bytes, err := testBlock.EncodeRLP()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	newBlock := &Block{}
-	assert.NoError(t, newBlock.DecodeRLP(bytes))
-	assert.Equal(t, testBlock.CurForkID(), newBlock.CurForkID())
-	assert.Equal(t, testBlock.NextForkID(), newBlock.NextForkID())
-}
-
 func TestBlockHeaderEncodeRLPAndDecodeRLP(t *testing.T) {
 	bytes, err := rlp.EncodeToBytes(testHeader)
 	if err != nil {
@@ -86,13 +70,11 @@ func TestBlockHeaderEncodeRLPAndDecodeRLP(t *testing.T) {
 }
 
 func TestSortByNumber(t *testing.T) {
-
-	block0 := NewBlock(&Header{Number: big.NewInt(0)}, nil, nil)
-	block1 := NewBlock(&Header{Number: big.NewInt(1)}, nil, nil)
-	block2 := NewBlock(&Header{Number: big.NewInt(2)}, nil, nil)
+	block0 := NewBlock(&Header{Number: 0}, nil, nil)
+	block1 := NewBlock(&Header{Number: 1}, nil, nil)
+	block2 := NewBlock(&Header{Number: 2}, nil, nil)
 
 	blocks := []*Block{block1, block2, block0}
-
 	BlockBy(Number).Sort(blocks)
 
 	for i := 0; i < len(blocks); i++ {

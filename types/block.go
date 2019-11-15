@@ -78,11 +78,10 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
 	b := &Block{Head: header}
 	b.Head.TxsRoot = DeriveTxsMerkleRoot(txs)
 	b.Head.ReceiptsRoot = DeriveReceiptsMerkleRoot(receipts)
-
 	b.Txs = make([]*Transaction, len(txs))
+
 	copy(b.Txs, txs)
 	b.Head.Bloom = CreateBloom(receipts)
-
 	return b
 }
 

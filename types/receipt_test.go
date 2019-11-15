@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/utils/rlp"
-
 	"github.com/stretchr/testify/assert"
 )
 

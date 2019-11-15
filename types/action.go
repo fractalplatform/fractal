@@ -24,7 +24,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -91,7 +90,7 @@ func (a *Action) GetSign() []byte {
 }
 
 // Check the validity of all fields
-func (a *Action) Check(conf *params.ChainConfig) error {
+func (a *Action) Check() error {
 	//check To
 	switch a.Type() {
 	case CreateContract:
@@ -165,8 +164,8 @@ type RPCAction struct {
 	Amount      *big.Int      `json:"value"`
 	Remark      hexutil.Bytes `json:"remark"`
 	Payload     hexutil.Bytes `json:"payload"`
-	Hash        common.Hash   `json:"actionHash"`
-	ActionIndex uint64        `json:"actionIndex"`
+	Hash        common.Hash   `json:"hash"`
+	ActionIndex uint64        `json:"index"`
 }
 
 // NewRPCAction returns a action that will serialize to the RPC.

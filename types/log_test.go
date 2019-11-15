@@ -33,7 +33,7 @@ var unmarshalLogTests = map[string]struct {
 	"ok": {
 		input: `{"name":"testname","actionIndex":0,"blockHash":"0x656c34545f90a730a19008c0e7a7cd4fb3895064b48d6d69761bd5abad681056","blockNumber":2019236,"data":"0x6f6b","logIndex":2,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x00000000000000000000000080b2c9d7cbbf30a1b0fc8983c647d754c6525615"],"transactionHash":"0x3b198bfd5d2907285af009e9ae84a0ecd63677110d89d7e030251acb87f6487e","transactionIndex":3}`,
 		want: &RPCLog{
-			Name:        common.StrToName("testname"),
+			Name:        "testname",
 			ActionIndex: 0,
 			BlockHash:   common.HexToHash("0x656c34545f90a730a19008c0e7a7cd4fb3895064b48d6d69761bd5abad681056"),
 			BlockNumber: 2019236,
@@ -50,7 +50,7 @@ var unmarshalLogTests = map[string]struct {
 	"empty data": {
 		input: `{"name":"testname","actionIndex":0,"blockHash":"0x656c34545f90a730a19008c0e7a7cd4fb3895064b48d6d69761bd5abad681056","blockNumber":2019236,"data":"","logIndex":2,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef","0x00000000000000000000000080b2c9d7cbbf30a1b0fc8983c647d754c6525615"],"transactionHash":"0x3b198bfd5d2907285af009e9ae84a0ecd63677110d89d7e030251acb87f6487e","transactionIndex":3}`,
 		want: &RPCLog{
-			Name:        common.StrToName("testname"),
+			Name:        "testname",
 			ActionIndex: 0,
 			BlockHash:   common.HexToHash("0x656c34545f90a730a19008c0e7a7cd4fb3895064b48d6d69761bd5abad681056"),
 			BlockNumber: 2019236,
@@ -67,7 +67,7 @@ var unmarshalLogTests = map[string]struct {
 	"missing block fields (pending logs)": {
 		input: `{"name":"testname","actionIndex":0,"data":"","logIndex":0,"topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"],"transactionHash":"0x3b198bfd5d2907285af009e9ae84a0ecd63677110d89d7e030251acb87f6487e","transactionIndex":3}`,
 		want: &RPCLog{
-			Name:        common.StrToName("testname"),
+			Name:        "testname",
 			ActionIndex: 0,
 			BlockHash:   common.Hash{},
 			BlockNumber: 0,

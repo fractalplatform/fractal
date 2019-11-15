@@ -143,7 +143,7 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	}
 
 	for _, action := range tx.actions {
-		if err := action.Check(conf); err != nil {
+		if err := action.Check(); err != nil {
 			return err
 		}
 	}
