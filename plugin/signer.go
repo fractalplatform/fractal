@@ -20,10 +20,11 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
-	"math/big"
 )
 
 var (
@@ -78,6 +79,22 @@ func (s *Signer) Sign(data interface{}, prv *ecdsa.PrivateKey) ([]byte, error) {
 
 func (s *Signer) Hash() {
 
+}
+
+// SignBlock return signature of block
+func (s *Signer) SignBlock(header *types.Header, prikey *ecdsa.PrivateKey) ([]byte, error) {
+	return crypto.Sign(s.blockHash(header).Bytes(), prikey)
+}
+
+func (s *Signer) blockHash(header *types.Header) common.Hash {
+	signHead := types.CopyHeader(header)
+	signHead.Sign = signHead.Sign[:]
+	return types.RlpHash(signHead)
+}
+
+func (s *Signer) RecoverBlock(header *types.Header) ([]byte, error) {
+	hash := s.blockHash(header)
+	//crypto.Recover()
 }
 
 func getChainID(action *types.Action) *big.Int {
