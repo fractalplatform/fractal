@@ -136,30 +136,33 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.CallContract:
 		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
 	case actionType == types.Transfer:
+		var fromExtra common.Name
 		if evm.ForkID >= params.ForkID4 {
 			asset, err := st.account.GetAssetInfoByID(st.action.AssetID())
-			if err != nil {
-				vmerr = err
-			} else {
-				if len(asset.GetContract()) != 0 {
-					ret, st.gas, vmerr = evm.CallContractAsset(sender, st.action, st.gas, asset.GetContract())
-				} else {
-					internalLogs, err := st.account.Process(&types.AccountManagerContext{
-						Action:      st.action,
-						Number:      st.evm.Context.BlockNumber.Uint64(),
-						CurForkID:   st.evm.Context.ForkID,
-						ChainConfig: st.chainConfig,
-					})
-					vmerr = err
-					evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+			if err == nil && len(asset.GetContract()) != 0 {
+				var cantransfer bool
+				st.gas, cantransfer = evm.CanTransferContractAsset(sender, st.gas, st.action.AssetID(), asset.GetContract())
+				if cantransfer {
+					fromExtra = asset.GetContract()
 				}
 			}
-		} else {
+		}
+		if len(fromExtra) == 0 {
 			internalLogs, err := st.account.Process(&types.AccountManagerContext{
 				Action:      st.action,
 				Number:      st.evm.Context.BlockNumber.Uint64(),
 				CurForkID:   st.evm.Context.ForkID,
 				ChainConfig: st.chainConfig,
+			})
+			vmerr = err
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		} else {
+			internalLogs, err := st.account.Process(&types.AccountManagerContext{
+				Action:           st.action,
+				Number:           st.evm.Context.BlockNumber.Uint64(),
+				CurForkID:        st.evm.Context.ForkID,
+				ChainConfig:      st.chainConfig,
+				FromAccountExtra: []common.Name{fromExtra},
 			})
 			vmerr = err
 			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)

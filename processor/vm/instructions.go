@@ -1632,7 +1632,19 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		return nil, nil
 	}
 
-	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+	var fromExtra common.Name
+	if evm.ForkID >= params.ForkID4 {
+		asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID())
+		if err == nil && len(asset.GetContract()) != 0 {
+			var cantransfer bool
+			contract.Gas, cantransfer = evm.CanTransferContractAsset(contract, contract.Gas, action.AssetID(), asset.GetContract())
+			if cantransfer {
+				fromExtra = asset.GetContract()
+			}
+		}
+	}
+
+	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), fromExtra)
 	//distribute gas
 	var assetName common.Name
 	assetFounder, _ := evm.AccountDB.GetAssetFounder(action.AssetID()) //get asset founder name
