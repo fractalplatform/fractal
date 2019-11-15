@@ -987,6 +987,7 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 		}
 
 		if err := insert(tstate, prod); err != nil {
+			log.Info("chaogaofeng 1 +++", "cnt", tstate.Number, "activatedCandidateSchedule", len(tstate.ActivatedCandidateSchedule), "name", prod.Name)
 			return err
 		}
 
