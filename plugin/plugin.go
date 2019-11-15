@@ -18,6 +18,7 @@ package plugin
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -81,7 +82,8 @@ func NewPM(stateDB *state.StateDB) IPM {
 	acm, _ := NewACM(stateDB)
 	asm, _ := NewASM(stateDB)
 	consensus := NewConsensus(stateDB)
-	signer, _ := NewSigner(stateDB)
+	chainId := big.NewInt(1)
+	signer, _ := NewSigner(chainId)
 	fee, _ := NewFeeManager()
 	return &Manager{
 		IAccount:   acm,
