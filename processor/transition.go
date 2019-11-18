@@ -138,12 +138,14 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.Transfer:
 		var fromExtra common.Name
 		if evm.ForkID >= params.ForkID4 {
-			asset, err := st.account.GetAssetInfoByID(st.action.AssetID())
-			if err == nil && len(asset.GetContract()) != 0 {
-				var cantransfer bool
-				st.gas, cantransfer = evm.CanTransferContractAsset(sender, st.gas, st.action.AssetID(), asset.GetContract())
-				if cantransfer {
-					fromExtra = asset.GetContract()
+			if asset, err := st.account.GetAssetInfoByID(st.action.AssetID()); err == nil {
+				assetContract := asset.GetContract()
+				if len(assetContract) != 0 && assetContract != sender.Name() && assetContract != st.action.Recipient() {
+					var cantransfer bool
+					st.gas, cantransfer = evm.CanTransferContractAsset(sender, st.gas, st.action.AssetID(), asset.GetContract())
+					if cantransfer {
+						fromExtra = asset.GetContract()
+					}
 				}
 			}
 		}
@@ -236,7 +238,8 @@ func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 	case types.Transfer:
 		if st.evm.ForkID >= params.ForkID4 {
 			if asset, err := st.account.GetAssetInfoByID(st.action.AssetID()); err == nil {
-				if len(asset.GetContract()) != 0 {
+				assetContract := asset.GetContract()
+				if len(assetContract) != 0 && assetContract != st.action.Sender() && assetContract != st.action.Recipient() {
 					st.distributeToContract(asset.GetContract(), intrinsicGas)
 				} else {
 					assetInfo, _ := st.evm.AccountDB.GetAssetInfoByID(st.action.AssetID())

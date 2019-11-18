@@ -316,7 +316,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	if evm.ForkID >= params.ForkID4 {
 		if asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID()); err == nil {
 			assetContract := asset.GetContract()
-			if len(assetContract) != 0 && assetContract != caller.Name() {
+			if len(assetContract) != 0 && assetContract != caller.Name() && assetContract != action.Recipient() {
 				var cantransfer bool
 				gas, cantransfer = evm.CanTransferContractAsset(caller, gas, action.AssetID(), assetContract)
 				if cantransfer {

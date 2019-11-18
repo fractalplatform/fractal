@@ -1636,7 +1636,7 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	if evm.ForkID >= params.ForkID4 {
 		if asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID()); err == nil {
 			assetContract := asset.GetContract()
-			if len(assetContract) != 0 && assetContract != action.Sender() {
+			if len(assetContract) != 0 && assetContract != action.Sender() && assetContract != action.Recipient() {
 				var cantransfer bool
 				contract.Gas, cantransfer = evm.CanTransferContractAsset(contract, contract.Gas, action.AssetID(), assetContract)
 				if cantransfer {
