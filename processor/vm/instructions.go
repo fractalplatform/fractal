@@ -1634,12 +1634,14 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 
 	var fromExtra common.Name
 	if evm.ForkID >= params.ForkID4 {
-		asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID())
-		if err == nil && len(asset.GetContract()) != 0 {
-			var cantransfer bool
-			contract.Gas, cantransfer = evm.CanTransferContractAsset(contract, contract.Gas, action.AssetID(), asset.GetContract())
-			if cantransfer {
-				fromExtra = asset.GetContract()
+		if asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID()); err == nil {
+			assetContract := asset.GetContract()
+			if len(assetContract) != 0 && assetContract != action.Sender() {
+				var cantransfer bool
+				contract.Gas, cantransfer = evm.CanTransferContractAsset(contract, contract.Gas, action.AssetID(), assetContract)
+				if cantransfer {
+					fromExtra = assetContract
+				}
 			}
 		}
 	}

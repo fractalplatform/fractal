@@ -235,10 +235,7 @@ func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 	switch st.action.Type() {
 	case types.Transfer:
 		if st.evm.ForkID >= params.ForkID4 {
-			asset, err := st.account.GetAssetInfoByID(st.action.AssetID())
-			if err != nil {
-				return
-			} else {
+			if asset, err := st.account.GetAssetInfoByID(st.action.AssetID()); err == nil {
 				if len(asset.GetContract()) != 0 {
 					st.distributeToContract(asset.GetContract(), intrinsicGas)
 				} else {
