@@ -104,23 +104,23 @@ func getChainID(action *types.Action) *big.Int {
 	return v.Div(v, big.NewInt(2))
 }
 
-func (s *Signer) Recover(action *types.Action, tx *types.Transaction) ([]byte, error) {
-	signData := action.GetSign()
-	R, S, V, err := s.SignatureValues(signData)
-	if err != nil {
-		return nil, err
-	}
-	chainIdMul := new(big.Int).Sub(V, big.NewInt(35))
-	chainID := chainIdMul.Div(chainIdMul, big.NewInt(2))
-	if chainID.Cmp(s.chainId) != 0 {
-		return nil, ErrInvalidChainID
-	}
-	V = new(big.Int).Sub(V, chainIdMul)
-	V.Sub(V, big.NewInt(8))
-	data, err := recoverPlain(types.RlpHash(tx), R, S, V)
-	//pubKey := common.BytesToPubKey(data)
-	return data, nil
-}
+// func (s *Signer) Recover(action *types.Action, tx *types.Transaction) ([]byte, error) {
+// 	signData := action.GetSign()
+// 	R, S, V, err := s.SignatureValues(signData)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	chainIdMul := new(big.Int).Sub(V, big.NewInt(35))
+// 	chainID := chainIdMul.Div(chainIdMul, big.NewInt(2))
+// 	if chainID.Cmp(s.chainId) != 0 {
+// 		return nil, ErrInvalidChainID
+// 	}
+// 	V = new(big.Int).Sub(V, chainIdMul)
+// 	V.Sub(V, big.NewInt(8))
+// 	data, err := recoverPlain(types.RlpHash(tx), R, S, V)
+// 	//pubKey := common.BytesToPubKey(data)
+// 	return data, nil
+// }
 
 func recoverPlain(sighash common.Hash, R, S, Vb *big.Int) ([]byte, error) {
 	if Vb.BitLen() > 8 {
@@ -158,4 +158,59 @@ func (s *Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 	V = new(big.Int).SetBytes([]byte{sig[64] + 27})
 
 	return R, S, V, nil
+}
+
+func (s *Signer) SignTx(tx *types.Transaction, prv *ecdsa.PrivateKey) ([]byte, error) {
+	h := s.txToHash(tx)
+	signData, err := crypto.Sign(h[:], prv)
+	if err != nil {
+		return nil, err
+	}
+	return signData, nil
+}
+
+func (s *Signer) txToHash(tx *types.Transaction) common.Hash {
+	actionHashs := make([]common.Hash, len(tx.GetActions()))
+	for i, a := range tx.GetActions() {
+		hash := types.RlpHash([]interface{}{
+			a.data.From,
+			a.data.AType,
+			a.data.Nonce,
+			a.data.To,
+			a.data.GasLimit,
+			a.data.Amount,
+			a.data.Payload,
+			a.data.AssetID,
+			a.data.Remark,
+			s.chainId, uint(0), uint(0),
+		})
+		actionHashs[i] = hash
+	}
+
+	return types.RlpHash([]interface{}{
+		common.MerkleRoot(actionHashs),
+		tx.gasAssetID,
+		tx.gasPrice,
+	})
+}
+
+func (s *Signer) RecoverTx(action *types.Action, tx *types.Transaction) ([]byte, error) {
+	sign := action.GetSign()
+	if len(sign) == 0 {
+		return nil, ErrSignEmpty
+	}
+	R, S, V, err := s.SignatureValues(signData)
+	if err != nil {
+		return nil, err
+	}
+
+	chainIdMul := new(big.Int).Sub(V, big.NewInt(35))
+	chainID := chainIdMul.Div(chainIdMul, big.NewInt(2))
+	if chainID.Cmp(s.chainId) != 0 {
+		return nil, ErrInvalidChainID
+	}
+	V = new(big.Int).Sub(V, chainIdMul)
+	V.Sub(V, big.NewInt(8))
+	data, err := recoverPlain(types.RlpHash(tx), R, S, V)
+	return data, nil
 }
