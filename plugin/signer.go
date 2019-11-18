@@ -212,5 +212,8 @@ func (s *Signer) RecoverTx(action *types.Action, tx *types.Transaction) ([]byte,
 	V = new(big.Int).Sub(V, chainIdMul)
 	V.Sub(V, big.NewInt(8))
 	data, err := recoverPlain(types.RlpHash(tx), R, S, V)
+	if err != nil {
+		return nil, err
+	}
 	return data, nil
 }

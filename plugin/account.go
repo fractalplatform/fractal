@@ -295,6 +295,22 @@ func (am *AccountManager) GetAccountByName(accountName string) (*Account, error)
 	return account, nil
 }
 
+func (am *AccountManager) ChangeAddress(accountName string, address common.Address) error {
+	account, err := am.getAccount(accountName)
+	if err != nil {
+		return err
+	}
+
+	snap := am.sdb.Snapshot()
+
+	account.Address = address
+	if err = am.setAccount(account); err != nil {
+		am.sdb.RevertToSnapshot(snap)
+		return err
+	}
+	return nil
+}
+
 func (am *AccountManager) addBalanceByID(accountName string, assetID uint64, amount *big.Int) error {
 	account, err := am.getAccount(accountName)
 	if err != nil {
