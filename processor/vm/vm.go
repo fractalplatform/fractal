@@ -30,6 +30,8 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
+var contractAssetTransferable = common.Hex2Bytes("92ff0d31")
+
 type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
@@ -644,9 +646,6 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 }
 
 func (evm *EVM) CanTransferContractAsset(caller ContractRef, gas uint64, assetID uint64, assetContract common.Name) (uint64, bool) {
-	if evm.depth > 0 {
-		return gas, false
-	}
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return gas, false
@@ -673,8 +672,7 @@ func (evm *EVM) CanTransferContractAsset(caller ContractRef, gas uint64, assetID
 	code, _ := acct.GetCode()
 	contract.SetCallCode(&assetContract, codeHash, code)
 
-	data := common.Hex2Bytes("df68c1a2")
-	ret, err := run(evm, contract, data)
+	ret, err := run(evm, contract, contractAssetTransferable)
 	runGas := gas - contract.Gas
 
 	evm.distributeContractGas(runGas, assetContract, caller.Name())
