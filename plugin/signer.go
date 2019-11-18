@@ -59,27 +59,27 @@ func NewSigner(chainId *big.Int) (ISigner, error) {
 	}, nil
 }
 
-func (s *Signer) Sign(data interface{}, prv *ecdsa.PrivateKey) ([]byte, error) {
-	var h common.Hash
-	switch d := data.(type) {
-	case []byte:
-		h = types.RlpHash(d)
-	case types.Action:
-		actionData := d.Data()
-		h = types.RlpHash(actionData)
-	case types.Transaction:
-		h = types.RlpHash(d)
-	default:
-		return nil, errors.New("signer: unknown data type")
+// func (s *Signer) Sign(data interface{}, prv *ecdsa.PrivateKey) ([]byte, error) {
+// 	var h common.Hash
+// 	switch d := data.(type) {
+// 	case []byte:
+// 		h = types.RlpHash(d)
+// 	case types.Action:
+// 		actionData := d.Data()
+// 		h = types.RlpHash(actionData)
+// 	case types.Transaction:
+// 		h = types.RlpHash(d)
+// 	default:
+// 		return nil, errors.New("signer: unknown data type")
 
-	}
-	signData, err := crypto.Sign(h[:], prv)
-	return signData, err
-}
+// 	}
+// 	signData, err := crypto.Sign(h[:], prv)
+// 	return signData, err
+// }
 
-func (s *Signer) Hash() {
+// func (s *Signer) Hash() {
 
-}
+// }
 
 // SignBlock return signature of block
 func (s *Signer) SignBlock(header *types.Header, prikey *ecdsa.PrivateKey) ([]byte, error) {
@@ -93,8 +93,9 @@ func (s *Signer) blockHash(header *types.Header) common.Hash {
 }
 
 func (s *Signer) RecoverBlock(header *types.Header) ([]byte, error) {
-	hash := s.blockHash(header)
+	//hash := s.blockHash(header)
 	//crypto.Recover()
+	return nil, nil
 }
 
 func getChainID(action *types.Action) *big.Int {
@@ -160,7 +161,7 @@ func (s *Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 	return R, S, V, nil
 }
 
-func (s *Signer) SignTx(tx *types.Transaction, prv *ecdsa.PrivateKey) ([]byte, error) {
+func (s *Signer) SignTransaction(tx *types.Transaction, prv *ecdsa.PrivateKey) ([]byte, error) {
 	h := s.txToHash(tx)
 	signData, err := crypto.Sign(h[:], prv)
 	if err != nil {
@@ -173,15 +174,15 @@ func (s *Signer) txToHash(tx *types.Transaction) common.Hash {
 	actionHashs := make([]common.Hash, len(tx.GetActions()))
 	for i, a := range tx.GetActions() {
 		hash := types.RlpHash([]interface{}{
-			a.data.From,
-			a.data.AType,
-			a.data.Nonce,
-			a.data.To,
-			a.data.GasLimit,
-			a.data.Amount,
-			a.data.Payload,
-			a.data.AssetID,
-			a.data.Remark,
+			a.Sender(),
+			a.Type(),
+			a.Nonce(),
+			a.Recipient(),
+			a.Gas(),
+			a.Value(),
+			a.Data(),
+			a.AssetID(),
+			a.Remark(),
 			s.chainId, uint(0), uint(0),
 		})
 		actionHashs[i] = hash
@@ -189,17 +190,17 @@ func (s *Signer) txToHash(tx *types.Transaction) common.Hash {
 
 	return types.RlpHash([]interface{}{
 		common.MerkleRoot(actionHashs),
-		tx.gasAssetID,
-		tx.gasPrice,
+		tx.GasAssetID(),
+		tx.GasPrice(),
 	})
 }
 
-func (s *Signer) RecoverTx(action *types.Action, tx *types.Transaction) ([]byte, error) {
+func (s *Signer) RecoverTransaction(action *types.Action, tx *types.Transaction) ([]byte, error) {
 	sign := action.GetSign()
 	if len(sign) == 0 {
 		return nil, ErrSignEmpty
 	}
-	R, S, V, err := s.SignatureValues(signData)
+	R, S, V, err := s.SignatureValues(sign)
 	if err != nil {
 		return nil, err
 	}

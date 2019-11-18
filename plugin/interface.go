@@ -87,6 +87,6 @@ type IFee interface {
 }
 
 type ISigner interface {
-	Sign(data interface{}, prv *ecdsa.PrivateKey) ([]byte, error)
-	Recover(action *types.Action, tx *types.Transaction) ([]byte, error)
+	SignTransaction(tx *types.Transaction, prv *ecdsa.PrivateKey) ([]byte, error)
+	RecoverTransaction(action *types.Action, tx *types.Transaction) ([]byte, error)
 }
