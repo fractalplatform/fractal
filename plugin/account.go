@@ -169,23 +169,30 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error {
-	// for _, action := range tx.GetActions() {
-	// 	pubs, err := signer.Recover(action)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	for _, action := range tx.GetActions() {
+		err := am.AccountVerify(action.Sender(), signer, action.GetSign(), tx.SignHash)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
-	// 	tempAddress := common.BytesToAddress(crypto.Keccak256(pubs[1:])[12:])
+func (am *AccountManager) AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) error {
+	account, err := am.getAccount(accountName)
+	if err != nil {
+		return err
+	}
 
-	// 	account, err := am.getAccount(action.Sender())
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	pub, err := signer.Recover(signature, signHash)
+	if err != nil {
+		return err
+	}
+	tempAddress := common.BytesToAddress(crypto.Keccak256(pub[1:])[12:])
 
-	// 	if tempAddress.Compare(account.Address) != 0 {
-	// 		return ErrkeyNotSame
-	// 	}
-	// }
+	if tempAddress.Compare(account.Address) != 0 {
+		return ErrkeyNotSame
+	}
 	return nil
 }
 

@@ -54,8 +54,8 @@ func NewSigner(chainID *big.Int) (ISigner, error) {
 	}, nil
 }
 
-func (s *Signer) Sign(signHash common.Hash, prv *ecdsa.PrivateKey) ([]byte, error) {
-	sigBytes, err := crypto.Sign(signHash[:], prv)
+func (s *Signer) Sign(signHash func(chainID *big.Int) common.Hash, prv *ecdsa.PrivateKey) ([]byte, error) {
+	sigBytes, err := crypto.Sign(signHash(s.chainID).Bytes(), prv)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (s *Signer) Sign(signHash common.Hash, prv *ecdsa.PrivateKey) ([]byte, erro
 
 var big8 = big.NewInt(8)
 
-func (s *Signer) Recover(signature []byte, signHash common.Hash) ([]byte, error) {
+func (s *Signer) Recover(signature []byte, signHash func(chainID *big.Int) common.Hash) ([]byte, error) {
 	R := new(big.Int).SetBytes(signature[:32])
 	S := new(big.Int).SetBytes(signature[32:64])
 	V := new(big.Int).SetBytes([]byte{signature[64]})
@@ -89,7 +89,7 @@ func (s *Signer) Recover(signature []byte, signHash common.Hash) ([]byte, error)
 	V = new(big.Int).Sub(V, s.chainIDMul)
 	V.Sub(V, big8)
 
-	return recoverPlain(signHash, R, S, V)
+	return recoverPlain(signHash(s.chainID), R, S, V)
 }
 
 func recoverPlain(sighash common.Hash, R, S, Vb *big.Int) ([]byte, error) {

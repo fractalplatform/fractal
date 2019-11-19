@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/magiconair/properties/assert"
@@ -15,7 +15,9 @@ func TestSign(t *testing.T) {
 
 	signer, _ := NewSigner(big.NewInt(1))
 
-	h := types.RlpHash("sign test")
+	h := func(chainID *big.Int) common.Hash {
+		return types.RlpHash("sign test")
+	}
 	d, err := signer.Sign(h, privateKey)
 	if err != nil {
 		t.Fatal(err)

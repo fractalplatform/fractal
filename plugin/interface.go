@@ -48,6 +48,7 @@ type IAccount interface {
 	CanTransfer(accountName string, assetID uint64, value *big.Int) error
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
 	RecoverTx(signer ISigner, tx *types.Transaction) error
+	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) error
 	ChangeAddress(accountName string, address common.Address) error
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
 	addBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
@@ -87,6 +88,6 @@ type IFee interface {
 }
 
 type ISigner interface {
-	Sign(signHash common.Hash, prv *ecdsa.PrivateKey) ([]byte, error)
-	Recover(signature []byte, signHash common.Hash) ([]byte, error)
+	Sign(signHash func(chainID *big.Int) common.Hash, prv *ecdsa.PrivateKey) ([]byte, error)
+	Recover(signature []byte, signHash func(chainID *big.Int) common.Hash) ([]byte, error)
 }

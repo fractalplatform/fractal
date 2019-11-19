@@ -517,7 +517,7 @@ func (c *Consensus) Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (
 	if signerAccount.Address.Compare(keyAddress) != 0 {
 		return block, errors.New("illegal private key")
 	}
-	block.Head.Sign, err = pm.Sign(block.Header().SignHash(big.NewInt(0)), priKey)
+	block.Head.Sign, err = pm.Sign(block.Header().SignHash, priKey)
 	return block, err
 }
 
@@ -533,7 +533,7 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	if err != nil {
 		return err
 	}
-	b, err := pm.Recover(header.Sign, header.SignHash(big.NewInt(0)))
+	b, err := pm.Recover(header.Sign, header.SignHash)
 	if err != nil {
 		return err
 	}
