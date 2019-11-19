@@ -19,6 +19,7 @@ package crypto
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"encoding/hex"
 	"io/ioutil"
 	"math/big"
@@ -247,4 +248,26 @@ func TestPythonIntegration(t *testing.T) {
 
 	t.Logf("msg: %x, privkey: %s sig: %x\n", msg0, kh, sig0)
 	t.Logf("msg: %x, privkey: %s sig: %x\n", msg1, kh, sig1)
+}
+
+func TestVRF(t *testing.T) {
+	randHash := func(n int) []byte {
+		msg := make([]byte, n)
+		rand.Read(msg)
+		return Keccak256Hash(msg).Bytes()
+	}
+	h1 := randHash(1024)
+	h2 := randHash(1024)
+	pri, _ := GenerateKey()
+	proof := VRF_Proof(pri, h1)
+	if !VRF_Verify(&pri.PublicKey, h1, proof) {
+		t.Fatal("VRF check-1 failed")
+	}
+	if VRF_Verify(&pri.PublicKey, h2, proof) {
+		t.Fatal("VRF check-2 failed")
+	}
+	if VRF_Verify(&pri.PublicKey, h1, h2) {
+		t.Fatal("VRF check-3 failed")
+	}
+
 }

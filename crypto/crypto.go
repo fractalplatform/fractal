@@ -209,3 +209,111 @@ func zeroBytes(bytes []byte) {
 		bytes[i] = 0
 	}
 }
+
+func PubkeyAdd(p1 ecdsa.PublicKey, p2 ecdsa.PublicKey) ecdsa.PublicKey {
+	retPub := p1
+	retPub.X, retPub.Y = p1.Add(p1.X, p1.Y, p2.X, p2.Y)
+	return retPub
+}
+
+func PrikeyAdd(p1 *ecdsa.PrivateKey, p2 *ecdsa.PrivateKey) *ecdsa.PrivateKey {
+	k := new(big.Int).Add(p1.D, p2.D)
+	k.Mod(k, p1.Params().N)
+	return NewPrikey(k)
+}
+
+func NewPrikey(d *big.Int) *ecdsa.PrivateKey {
+	ret := &ecdsa.PrivateKey{}
+	ret.Curve = S256()
+	ret.D = new(big.Int).Set(d)
+	ret.X, ret.Y = ret.ScalarBaseMult(ret.D.Bytes())
+	return ret
+}
+
+func PubkeyMul(p ecdsa.PublicKey, sc *big.Int) ecdsa.PublicKey {
+	ret := p
+	ret.X, ret.Y = p.ScalarMult(p.X, p.Y, sc.Bytes())
+	return ret
+}
+
+func PrikeyMul(p *ecdsa.PrivateKey, sc *big.Int) *ecdsa.PrivateKey {
+	k := new(big.Int).Mul(p.D, sc)
+	k.Mod(k, p.Params().N)
+	return NewPrikey(k)
+}
+
+func fermatInverse(k, N *big.Int) *big.Int {
+	two := big.NewInt(2)
+	nMinus2 := new(big.Int).Sub(N, two)
+	return new(big.Int).Exp(k, nMinus2, N)
+}
+
+func hashToInt(hash []byte, c elliptic.Curve) *big.Int {
+	orderBits := c.Params().N.BitLen()
+	orderBytes := (orderBits + 7) / 8
+	if len(hash) > orderBytes {
+		hash = hash[:orderBytes]
+	}
+
+	ret := new(big.Int).SetBytes(hash)
+	excess := len(hash)*8 - orderBits
+	if excess > 0 {
+		ret.Rsh(ret, uint(excess))
+	}
+	return ret
+}
+
+func vrfSign(priv *ecdsa.PrivateKey, hash []byte) (S *big.Int) {
+	c := priv.Curve
+	N := c.Params().N
+
+	var invK *big.Int
+	R := new(big.Int)
+	for {
+		hg := new(big.Int).SetBytes(Keccak256(hash))
+		r := PrikeyMul(priv, hg)
+		k := r.D
+		R.Mod(r.X, N)
+		if R.Sign() != 0 {
+			invK = fermatInverse(k, N) // N != 0
+			break
+		}
+	}
+
+	e := hashToInt(hash, c)
+	S = new(big.Int).Mul(priv.D, R)
+	S.Add(S, e)
+	S.Mul(S, invK)
+	S.Mod(S, N) // N != 0
+	if S.Sign() != 0 {
+		return S
+	}
+	return nil
+}
+
+func vrfVerify(pub *ecdsa.PublicKey, hash []byte, S *big.Int) bool {
+	c := pub.Curve
+	N := c.Params().N
+	RX := new(big.Int)
+	for {
+		hg := new(big.Int).SetBytes(Keccak256(hash))
+		PubR := PubkeyMul(*pub, hg)
+		RX.Mod(PubR.X, N)
+		if RX.Sign() != 0 {
+			break
+		}
+	}
+	return ecdsa.Verify(pub, hash, RX, S)
+}
+
+// VRFGenerate simulate VRF
+func VRF_Proof(priv *ecdsa.PrivateKey, info []byte) (proof []byte) {
+	if s := vrfSign(priv, info); s != nil {
+		return s.Bytes()
+	}
+	return nil
+}
+
+func VRF_Verify(pub *ecdsa.PublicKey, info, proof []byte) bool {
+	return vrfVerify(pub, info, new(big.Int).SetBytes(proof))
+}
