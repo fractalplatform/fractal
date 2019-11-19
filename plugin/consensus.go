@@ -449,7 +449,7 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 	// 4. verify block time
 	timeSlot := c.timeSlot(uint64(minerIndex))
 	if header.Time != timeSlot {
-		return fmt.Errorf("wrong block.Time, get %s want %s", header.Time, timeSlot)
+		return fmt.Errorf("wrong block.Time, get %d want %d", header.Time, timeSlot)
 	}
 	now := time.Now().Unix()
 	maxTime := uint64(now) + blockDuration*5

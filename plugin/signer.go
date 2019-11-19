@@ -24,16 +24,11 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/types"
 )
 
 var (
-	//ErrInvalidchainID invalid chain id for signer
+	//ErrInvalidChainID invalid chain id for signer
 	ErrInvalidChainID = errors.New("invalid chain id for signer")
-	//ErrSigUnprotected signature is considered unprotected
-	ErrSignUnprotected = errors.New("signature is considered unprotected")
-	//ErrSignEmpty signature is considered unprotected
-	ErrSignEmpty = errors.New("signature is nil")
 	//ErrInvalidSig invalid signature.
 	ErrInvalidSig = errors.New("invalid action v, r, s values")
 )
@@ -45,83 +40,57 @@ type SignData struct {
 }
 
 type Signer struct {
-	chainId    *big.Int
-	chainIdMul *big.Int
+	chainID    *big.Int
+	chainIDMul *big.Int
 }
 
-func NewSigner(chainId *big.Int) (ISigner, error) {
-	if chainId == nil {
-		chainId = new(big.Int)
+func NewSigner(chainID *big.Int) (ISigner, error) {
+	if chainID == nil {
+		chainID = new(big.Int)
 	}
 	return &Signer{
-		chainId:    chainId,
-		chainIdMul: new(big.Int).Mul(chainId, big.NewInt(2)),
+		chainID:    chainID,
+		chainIDMul: new(big.Int).Mul(chainID, big.NewInt(2)),
 	}, nil
 }
 
-// func (s *Signer) Sign(data interface{}, prv *ecdsa.PrivateKey) ([]byte, error) {
-// 	var h common.Hash
-// 	switch d := data.(type) {
-// 	case []byte:
-// 		h = types.RlpHash(d)
-// 	case types.Action:
-// 		actionData := d.Data()
-// 		h = types.RlpHash(actionData)
-// 	case types.Transaction:
-// 		h = types.RlpHash(d)
-// 	default:
-// 		return nil, errors.New("signer: unknown data type")
+func (s *Signer) Sign(signHash common.Hash, prv *ecdsa.PrivateKey) ([]byte, error) {
+	sigBytes, err := crypto.Sign(signHash[:], prv)
+	if err != nil {
+		return nil, err
+	}
 
-// 	}
-// 	signData, err := crypto.Sign(h[:], prv)
-// 	return signData, err
-// }
+	R, S, V, err := s.signatureValues(sigBytes)
+	if err != nil {
+		return nil, err
+	}
 
-// func (s *Signer) Hash() {
+	rb, sb := R.Bytes(), S.Bytes()
+	sig := make([]byte, 65)
+	copy(sig[32-len(rb):32], rb)
+	copy(sig[64-len(sb):64], sb)
+	sig[64] = byte(V.Uint64())
 
-// }
-
-// SignBlock return signature of block
-func (s *Signer) SignBlock(header *types.Header, prikey *ecdsa.PrivateKey) ([]byte, error) {
-	return crypto.Sign(s.blockHash(header).Bytes(), prikey)
+	return sig, nil
 }
 
-func (s *Signer) blockHash(header *types.Header) common.Hash {
-	signHead := types.CopyHeader(header)
-	signHead.Sign = signHead.Sign[:]
-	return types.RlpHash(signHead)
-}
+var big8 = big.NewInt(8)
 
-func (s *Signer) RecoverBlock(header *types.Header) ([]byte, error) {
-	//hash := s.blockHash(header)
-	//crypto.Recover()
-	return nil, nil
-}
+func (s *Signer) Recover(signature []byte, signHash common.Hash) ([]byte, error) {
+	R := new(big.Int).SetBytes(signature[:32])
+	S := new(big.Int).SetBytes(signature[32:64])
+	V := new(big.Int).SetBytes([]byte{signature[64]})
 
-func getChainID(action *types.Action) *big.Int {
-	signData := action.GetSign()
-	v := big.NewInt(int64(signData[64]))
-	v = new(big.Int).Sub(v, big.NewInt(35))
-	return v.Div(v, big.NewInt(2))
-}
+	chainID := deriveChainID(V)
+	if chainID.Cmp(s.chainID) != 0 {
+		return nil, ErrInvalidChainID
+	}
 
-// func (s *Signer) Recover(action *types.Action, tx *types.Transaction) ([]byte, error) {
-// 	signData := action.GetSign()
-// 	R, S, V, err := s.SignatureValues(signData)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	chainIdMul := new(big.Int).Sub(V, big.NewInt(35))
-// 	chainID := chainIdMul.Div(chainIdMul, big.NewInt(2))
-// 	if chainID.Cmp(s.chainId) != 0 {
-// 		return nil, ErrInvalidChainID
-// 	}
-// 	V = new(big.Int).Sub(V, chainIdMul)
-// 	V.Sub(V, big.NewInt(8))
-// 	data, err := recoverPlain(types.RlpHash(tx), R, S, V)
-// 	//pubKey := common.BytesToPubKey(data)
-// 	return data, nil
-// }
+	V = new(big.Int).Sub(V, s.chainIDMul)
+	V.Sub(V, big8)
+
+	return recoverPlain(signHash, R, S, V)
+}
 
 func recoverPlain(sighash common.Hash, R, S, Vb *big.Int) ([]byte, error) {
 	if Vb.BitLen() > 8 {
@@ -137,6 +106,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int) ([]byte, error) {
 	copy(sig[32-len(r):32], r)
 	copy(sig[64-len(s):64], s)
 	sig[64] = V
+
 	// recover the public key from the snature
 	pub, err := crypto.Ecrecover(sighash[:], sig)
 	if err != nil {
@@ -150,7 +120,7 @@ func recoverPlain(sighash common.Hash, R, S, Vb *big.Int) ([]byte, error) {
 
 // SignatureValues returns a new transaction with the given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
-func (s *Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
+func (s *Signer) signatureValues(sig []byte) (R, S, V *big.Int, err error) {
 	if len(sig) != 65 {
 		panic(fmt.Sprintf("wrong size for signature: got %d, want 65", len(sig)))
 	}
@@ -158,63 +128,16 @@ func (s *Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
 	S = new(big.Int).SetBytes(sig[32:64])
 	V = new(big.Int).SetBytes([]byte{sig[64] + 27})
 
+	if s.chainID.Sign() != 0 {
+		V = big.NewInt(int64(sig[64] + 35))
+		V.Add(V, s.chainIDMul)
+	}
+
 	return R, S, V, nil
 }
 
-func (s *Signer) SignTransaction(tx *types.Transaction, prv *ecdsa.PrivateKey) ([]byte, error) {
-	h := s.txToHash(tx)
-	signData, err := crypto.Sign(h[:], prv)
-	if err != nil {
-		return nil, err
-	}
-	return signData, nil
-}
-
-func (s *Signer) txToHash(tx *types.Transaction) common.Hash {
-	actionHashs := make([]common.Hash, len(tx.GetActions()))
-	for i, a := range tx.GetActions() {
-		hash := types.RlpHash([]interface{}{
-			a.Sender(),
-			a.Type(),
-			a.Nonce(),
-			a.Recipient(),
-			a.Gas(),
-			a.Value(),
-			a.Data(),
-			a.AssetID(),
-			a.Remark(),
-			s.chainId, uint(0), uint(0),
-		})
-		actionHashs[i] = hash
-	}
-
-	return types.RlpHash([]interface{}{
-		common.MerkleRoot(actionHashs),
-		tx.GasAssetID(),
-		tx.GasPrice(),
-	})
-}
-
-func (s *Signer) RecoverTransaction(action *types.Action, tx *types.Transaction) ([]byte, error) {
-	sign := action.GetSign()
-	if len(sign) == 0 {
-		return nil, ErrSignEmpty
-	}
-	R, S, V, err := s.SignatureValues(sign)
-	if err != nil {
-		return nil, err
-	}
-
-	chainIdMul := new(big.Int).Sub(V, big.NewInt(35))
-	chainID := chainIdMul.Div(chainIdMul, big.NewInt(2))
-	if chainID.Cmp(s.chainId) != 0 {
-		return nil, ErrInvalidChainID
-	}
-	V = new(big.Int).Sub(V, chainIdMul)
-	V.Sub(V, big.NewInt(8))
-	data, err := recoverPlain(types.RlpHash(tx), R, S, V)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
+// deriveChainID derives the chain id from the given v parameter
+func deriveChainID(v *big.Int) *big.Int {
+	v = new(big.Int).Sub(v, big.NewInt(35))
+	return v.Div(v, big.NewInt(2))
 }

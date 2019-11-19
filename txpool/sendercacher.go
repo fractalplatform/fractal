@@ -63,9 +63,7 @@ func newTxSenderCacher(threads int) *txSenderCacher {
 func (cacher *txSenderCacher) cache() {
 	for task := range cacher.tasks {
 		for i := 0; i < len(task.txs); i += task.inc {
-			for _, a := range task.txs[i].GetActions() {
-				types.RecoverMultiKey(task.manager.Recover, a)
-			}
+			types.RecoverMultiKey(task.manager.Recover, task.txs[i])
 		}
 	}
 }

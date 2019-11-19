@@ -35,8 +35,6 @@ const (
 	CallContract ActionType = iota
 	// CreateContract represents the create contract action.
 	CreateContract
-	// Transfer represents transfer asset action.
-	Transfer
 )
 
 type actionData struct {

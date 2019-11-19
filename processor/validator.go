@@ -99,7 +99,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 
 	// Verify the engine specific seal securing the block
 	if seal {
-		if err := v.manger.VerifySeal(header); err != nil {
+		if err := v.manger.VerifySeal(header, header.Coinbase, v.manger); err != nil {
 			return err
 		}
 	}

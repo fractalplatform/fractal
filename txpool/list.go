@@ -113,7 +113,7 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, manager pm.IPM,
 			return true
 		}
 
-		if _, err := manager.Recover(tx.GetActions()[0], tx); err != nil {
+		if _, err := manager.Recover(tx.GetActions()[0].GetSign(), tx.SignHash()); err != nil {
 			log.Warn("txpool filter recover transaction failed", "err", err)
 			return true
 		}

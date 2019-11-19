@@ -926,7 +926,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 		}
 
 		for i, action := range tx.GetActions() {
-			if _, err := types.RecoverMultiKey(tp.curPM.Recover, action); err != nil {
+			if _, err := tp.curPM.Recover(action.GetSign(), tx.SignHash()); err != nil {
 				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
 				errs[index] = fmt.Errorf("action %v,recoverMultiKey reocver faild: %v", i, err)
 				continue

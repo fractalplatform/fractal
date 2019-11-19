@@ -49,23 +49,20 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 		param := &CreateAccountAction{}
 		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
 			return nil, err
-		} else {
-			return pm.CreateAccount(param.Name, param.Pubkey, param.Desc)
 		}
+		return pm.CreateAccount(param.Name, param.Pubkey, param.Desc)
 	case IssueAsset:
 		param := &IssueAssetAction{}
 		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
 			return nil, err
-		} else {
-			return pm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount)
 		}
+		return pm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount)
 	case IncreaseAsset:
 		param := &IncreaseAssetAction{}
 		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
 			return nil, err
-		} else {
-			return pm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount)
 		}
+		return pm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount)
 	case Transfer:
 		err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		return nil, err

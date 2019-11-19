@@ -177,7 +177,7 @@ func validateEvents(events chan *event.Event, count int) error {
 }
 
 func newAction(nonce uint64, from, to string, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
-	return types.NewAction(types.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
+	return types.NewAction(pm.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
 }
 
 func newTx(gasPrice *big.Int, action ...*types.Action) *types.Transaction {

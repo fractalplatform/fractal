@@ -19,6 +19,6 @@ package plugin
 import "testing"
 
 func TestNewPM(t *testing.T) {
-	//	pm := NewPM(nil)
-	//	t.Log(pm.GetNonce())
+	pm := NewPM(nil)
+	t.Log(pm.GetNonce("test"))
 }

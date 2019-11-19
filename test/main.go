@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/crypto"
 	pm "github.com/fractalplatform/fractal/plugin"
 	testcommon "github.com/fractalplatform/fractal/test/common"
 	"github.com/fractalplatform/fractal/types"
@@ -12,6 +13,8 @@ import (
 )
 
 func sendTx() error {
+
+	privateKey, _ := crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 
 	act := &pm.CreateAccountAction{
 		Name:   "testaccount",
@@ -36,6 +39,14 @@ func sendTx() error {
 
 	tx := types.NewTransaction(0, gasprice, action)
 
+	signer, _ := pm.NewSigner(big.NewInt(1))
+
+	d, err := signer.Sign(tx.SignHash(), privateKey)
+	if err != nil {
+		return err
+	}
+
+	action.WithSignature(d)
 	rawtx, err := rlp.EncodeToBytes(tx)
 	if err != nil {
 		return err

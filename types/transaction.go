@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -150,19 +151,47 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	return nil
 }
 
+// SignHash hashes the action sign hash
+func (tx *Transaction) SignHash() common.Hash {
+	actionHashs := make([]common.Hash, len(tx.GetActions()))
+	for i, a := range tx.GetActions() {
+		hash := RlpHash([]interface{}{
+			a.data.AType,
+			a.data.Nonce,
+			a.data.AssetID,
+			a.data.From,
+			a.data.To,
+			a.data.GasLimit,
+			a.data.Amount,
+			a.data.Payload,
+			a.data.Remark,
+		})
+		actionHashs[i] = hash
+	}
+
+	return RlpHash([]interface{}{
+		common.MerkleRoot(actionHashs),
+		tx.gasAssetID,
+		tx.gasPrice,
+	})
+
+}
+
 // RecoverMultiKey recover and store cache.
-func RecoverMultiKey(recover func(*Action) ([]byte, error), a *Action) ([]byte, error) {
-	if sc := a.senderPubkeys.Load(); sc != nil {
-		return sc.([]byte), nil
-	}
+func RecoverMultiKey(recover func(signature []byte, signHash common.Hash) ([]byte, error), tx *Transaction) {
+	for i, a := range tx.GetActions() {
+		if sc := a.senderPubkeys.Load(); sc != nil {
+			continue
+		}
 
-	pubKey, err := recover(a)
-	if err != nil {
-		return nil, err
-	}
+		pubKey, err := recover(a.GetSign(), tx.SignHash())
+		if err != nil {
+			// There should be no problem here.
+			log.Error("recover failed", "err", err, "hash", tx.Hash(), "action index", i)
+		}
 
-	a.senderPubkeys.Store(pubKey)
-	return pubKey, nil
+		a.senderPubkeys.Store(pubKey)
+	}
 }
 
 // RPCTransaction that will serialize to the RPC representation of a transaction.

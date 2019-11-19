@@ -45,7 +45,7 @@ type fakeEngine struct {
 	pm.IPM
 }
 
-func (fe *fakeEngine) VerifySeal(header *types.Header) error {
+func (fe *fakeEngine) VerifySeal(header *types.Header, miner string, m pm.IPM) error {
 	log.Debug("blockchain uint test use fake engine VerifySeal function", "number", header.Number)
 	return nil
 }
