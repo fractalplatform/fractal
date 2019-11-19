@@ -60,7 +60,9 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	)
 
 	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
-	p.manager.Prepare(header.Coinbase)
+	if err := p.manager.Prepare(header); err != nil {
+		return nil, nil, 0, err
+	}
 
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {

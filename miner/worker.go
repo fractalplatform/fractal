@@ -195,7 +195,10 @@ func (worker *Worker) setExtra(extra []byte) {
 func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent *types.Header) (*types.Block, error) {
 	start := time.Now()
 	fmt.Println("Prepare:", worker.coinbase)
-	header := pm.Prepare(worker.coinbase)
+	header := &types.Header{Coinbase: worker.coinbase}
+	if err := pm.Prepare(header); err != nil {
+		return nil, err
+	}
 	work := &Work{
 		currentHeader:   header,
 		currentState:    state,
@@ -228,7 +231,7 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 
 	work.currentBlock = blk
 
-	block, err := pm.Seal(work.currentBlock, worker.coinbase, worker.priKey, pm)
+	block, err := pm.Seal(work.currentBlock, worker.priKey, pm)
 	if err != nil {
 		return nil, fmt.Errorf("seal block, err: %v", err)
 	}

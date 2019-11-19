@@ -64,6 +64,7 @@ var (
 	blockDuration = uint64(3)
 	MinerAccount  string
 	genesisTime   uint64
+	maxPauseEpoch = 864000
 )
 
 type CandidateInfo struct {
@@ -163,6 +164,7 @@ type Consensus struct {
 	LackBlock     uint64
 	candidates    *Candidates
 	minerIndex    uint64
+	minerOffset   uint64
 	parent        *types.Header
 	stateDB       *state.StateDB
 }
@@ -252,6 +254,11 @@ func (c *Consensus) removeCandidate(delCandidate string) (bool, *CandidateInfo) 
 	if c.candidates.Len() == 0 {
 		return false, nil // impossible?
 	}
+	if info := c.candidates.info[delCandidate]; info != nil {
+		if c.parent.Number-info.RegisterNumber < (15*24*3600)/blockDuration {
+			return false, nil
+		}
+	}
 	info := c.candidates.remove(delCandidate)
 	return info != nil, info
 }
@@ -278,7 +285,7 @@ func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (boo
 // return next miner
 func (c *Consensus) nextMiner() int {
 	now := uint64(time.Now().Unix())
-	for i := 1; i <= c.candidates.Len(); i++ {
+	for i := 1; i <= c.candidates.Len()*maxPauseEpoch; i++ {
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
 			for j := 0; j < c.candidates.Len(); j++ {
@@ -286,6 +293,7 @@ func (c *Consensus) nextMiner() int {
 				if c.candidates.info[miner].Skip {
 					continue
 				}
+				fmt.Println("nextMiner", "i", i, "j", j, "now", now, "next", nextTimeout)
 				return i + j
 			}
 			return -1
@@ -296,7 +304,7 @@ func (c *Consensus) nextMiner() int {
 
 // return distance between miner and parent.Coinbase
 func (c *Consensus) searchMiner(miner string) int {
-	for i := 1; i <= c.candidates.Len(); i++ {
+	for i := 1; i <= c.candidates.Len()*maxPauseEpoch; i++ {
 		if miner == c.minerSlot(uint64(i)) {
 			if c.candidates.info[miner].Skip {
 				return -1
@@ -316,6 +324,10 @@ func (c *Consensus) Show() {
 	fmt.Println("candidates:", c.candidates.Len())
 	fmt.Println("minerIndex:", c.minerIndex)
 	fmt.Println("genesisTime", genesisTime, MinerAccount)
+	for i, n := range c.candidates.listSort {
+		info := c.candidates.info[n]
+		fmt.Println("\t", i, n, info.WeightedSum(), info.Skip)
+	}
 }
 
 func (c *Consensus) MineDelay(miner string) time.Duration {
@@ -333,25 +345,45 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 	if nextMiner == miner {
 		ontime := int64(c.timeSlot(uint64(i) - 1))
 		if ontime > now {
+			fmt.Println("i-1:", i, ontime, now)
 			return time.Duration(ontime-now) * time.Second
 		}
+		fmt.Println("i-x:", i, ontime, now)
+		c.minerOffset = uint64(i)
 		return 0
 	}
+	fmt.Println("i-2:", i)
 	return time.Duration(int64(c.timeSlot(uint64(i)))-now) * time.Second
 }
 
-func (c *Consensus) Prepare(miner string) *types.Header {
+func (c *Consensus) Prepare(header *types.Header) error {
 	// just beta
 	c.initRequrie()
-
-	minerIndex := c.searchMiner(miner)
-	if minerIndex < 0 {
-		return nil
+	minerIndex := header.MinerOffset
+	if minerIndex == 0 {
+		minerIndex = c.minerOffset
 	}
-	//blocktime := c.timeSlot(uint64(minerIndex)) // this code must be here
-	now := uint64(time.Now().Unix())
-	for i := 1; i < minerIndex; i++ {
-		skipMiner := c.minerSlot(uint64(i))
+	if minerIndex == 0 {
+		return errors.New("minerIndex must greater than zero")
+	}
+	/*
+		minerIndex := c.searchMiner(miner)
+		if minerIndex < 0 {
+			return nil
+		}
+	*/
+	header.MinerOffset = minerIndex
+	header.Time = c.timeSlot(header.MinerOffset) // this code must be here
+	header.ParentHash = c.parent.Hash()
+	header.Number = c.parent.Number + 1
+	header.GasLimit = params.BlockGasLimit
+
+	miner := header.Coinbase
+	for i := uint64(1); i < minerIndex; i++ {
+		skipMiner := c.minerSlot(i)
+		if skipMiner == miner {
+			continue
+		}
 		info := c.candidates.info[skipMiner]
 		if !info.Skip {
 			info.Skip = true // skip and dec weight
@@ -365,17 +397,13 @@ func (c *Consensus) Prepare(miner string) *types.Header {
 		c.LackBlock += uint64(minerIndex) - 1
 		c.minerIndex += uint64(minerIndex) - 1
 		c.storeLackBlock()
-		c.storeCandidates()
 	}
-
-	return &types.Header{
-		ParentHash: c.parent.Hash(),
-		Number:     c.parent.Number + 1,
-		GasLimit:   params.BlockGasLimit,
-		//Time:       blocktime,
-		Time:     now,
-		Coinbase: miner,
-	}
+	info := c.candidates.info[miner]
+	info.IncWeight()
+	info.Store(c.stateDB)
+	c.candidates.sort()
+	c.storeCandidates()
+	return nil
 }
 
 func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
@@ -425,17 +453,11 @@ func (c *Consensus) Finalize(header *types.Header, txs []*types.Transaction, rec
 	return types.NewBlock(header, txs, receipts), nil
 }
 
-func (c *Consensus) Difficult(header *types.Header) int64 {
-	// just beta
-	c.initRequrie()
-
-	if c.minerSlot(0) == header.Coinbase {
-		return int64(c.parent.Number) - int64(c.LackBlock)
-	}
-	return int64(c.parent.Number) - int64(c.LackBlock) - int64(c.searchMiner(header.Coinbase))
+func (c *Consensus) Difficult(header *types.Header) uint64 {
+	return header.MinerOffset
 }
 
-func (c *Consensus) Verify(header *types.Header, miner string) error {
+func (c *Consensus) Verify(header *types.Header) error {
 	// just beta
 	c.initRequrie()
 
@@ -449,9 +471,16 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 		return fmt.Errorf("wrong block.ParentHash, get %s want %s", header.ParentHash, c.parent.Hash())
 	}
 	// 3. verify miner
-	minerIndex := c.searchMiner(miner)
-	if minerIndex < 0 {
-		return errors.New("can not find miner or miner skiped")
+	/*
+		minerIndex := c.searchMiner(miner)
+		if minerIndex < 0 {
+			return errors.New("can not find miner or miner skiped")
+		}
+	*/
+	miner := header.Coinbase
+	minerIndex := header.MinerOffset
+	if c.minerSlot(minerIndex) != miner {
+		return errors.New("wrong miner")
 	}
 	// 4. verify block time
 	timeSlot := c.timeSlot(uint64(minerIndex))
@@ -470,13 +499,11 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 	return nil
 }
 
-func (c *Consensus) Seal(block *types.Block, miner string, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
+func (c *Consensus) Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
 	// just beta
 	c.initRequrie()
-	if c.parent == nil {
-		panic("genesis")
-	}
 
+	miner := block.Coinbase()
 	signerInfo, exist := c.candidates.info[miner]
 	if !exist {
 		return block, errors.New("illegal miner")
@@ -494,10 +521,10 @@ func (c *Consensus) Seal(block *types.Block, miner string, priKey *ecdsa.Private
 	return block, err
 }
 
-func (c *Consensus) VerifySeal(header *types.Header, miner string, pm IPM) error {
+func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	// just beta
 	c.initRequrie()
-
+	miner := header.Coinbase
 	signerInfo, exist := c.candidates.info[miner]
 	if !exist {
 		return errors.New("illegal miner")
@@ -506,8 +533,6 @@ func (c *Consensus) VerifySeal(header *types.Header, miner string, pm IPM) error
 	if err != nil {
 		return err
 	}
-	newhead := types.CopyHeader(header)
-	newhead.Sign = nil
 	b, err := pm.Recover(header.Sign, header.SignHash(big.NewInt(0)))
 	if err != nil {
 		return err

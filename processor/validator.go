@@ -86,7 +86,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 		return fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.GasLimit, limit)
 	}
 
-	if err := v.manger.Verify(header, header.Coinbase); err != nil {
+	if err := v.manger.Verify(header); err != nil {
 		return err
 	}
 
@@ -99,7 +99,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 
 	// Verify the engine specific seal securing the block
 	if seal {
-		if err := v.manger.VerifySeal(header, header.Coinbase, v.manger); err != nil {
+		if err := v.manger.VerifySeal(header, v.manger); err != nil {
 			return err
 		}
 	}

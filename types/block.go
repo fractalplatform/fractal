@@ -43,6 +43,7 @@ type Header struct {
 	GasUsed              uint64
 	Time                 uint64
 	Version              uint64
+	MinerOffset          uint64
 	Sign                 []byte
 	Extra                []byte
 }
@@ -54,7 +55,7 @@ func (h *Header) Hash() common.Hash { return RlpHash(h) }
 // SignHash return the hash that used to signature
 func (h *Header) SignHash(chainID *big.Int) common.Hash {
 	signHead := CopyHeader(h)
-	signHead.Sign = signHead.Sign[:]
+	signHead.Sign = make([]byte, 0)
 	return RlpHash([]interface{}{signHead, chainID})
 }
 
