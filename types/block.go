@@ -51,6 +51,13 @@ type Header struct {
 // RLP encoding.
 func (h *Header) Hash() common.Hash { return RlpHash(h) }
 
+// SignHash return the hash that used to signature
+func (h *Header) SignHash(chainID *big.Int) common.Hash {
+	signHead := CopyHeader(h)
+	signHead.Sign = signHead.Sign[:]
+	return RlpHash([]interface{}{signHead, chainID})
+}
+
 // Block represents an entire block in the blockchain.
 type Block struct {
 	Head *Header

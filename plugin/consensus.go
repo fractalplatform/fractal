@@ -24,6 +24,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -466,48 +467,46 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 func (c *Consensus) Seal(block *types.Block, miner string, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
 	// just beta
 	c.initRequrie()
-	/*
-			signerInfo, exist := c.candidates.info[miner]
-			if !exist {
-				return block, errors.New("illegal miner")
-			}
-			signerAccount, err := pm.getAccount(signerInfo.SignAccount)
-			if err != nil {
-				return block, err
-			}
-			keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
-			if signerAccount.Address.Compare(keyAddress) != 0 {
-				return block, errors.New("illegal private key")
-			}
-			block.Head.Sign, err = pm.Sign(block.Header(), priKey)
+
+	signerInfo, exist := c.candidates.info[miner]
+	if !exist {
+		return block, errors.New("illegal miner")
+	}
+	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
+	if err != nil {
 		return block, err
-	*/
-	return block, nil
+	}
+	keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	if signerAccount.Address.Compare(keyAddress) != 0 {
+		return block, errors.New("illegal private key")
+	}
+	block.Head.Sign, err = pm.Sign(block.Header().SignHash(big.NewInt(0)), priKey)
+	return block, err
 }
 
 func (c *Consensus) VerifySeal(header *types.Header, miner string, pm IPM) error {
 	// just beta
 	c.initRequrie()
-	/*
-		signerInfo, exist := c.candidates.info[miner]
-		if !exist {
-			return errors.New("illegal miner")
-		}
-		signerAccount, err := pm.getAccount(signerInfo.SignAccount)
-		if err != nil {
-			return err
-		}
-		newhead := types.CopyHeader(header)
-		newhead.Sign = nil
-		b, err := pm.Recover(newhead, header.Sign)
-		if err != nil {
-			return err
-		}
-		recPub, err := crypto.UnmarshalPubkey(b)
-		recAddress := crypto.PubkeyToAddress(recPub)
-		if signerInfo.Address.Compare(recAddress) != 0 {
-			return errors.New("illegal signature")
-		}
-	*/
+
+	signerInfo, exist := c.candidates.info[miner]
+	if !exist {
+		return errors.New("illegal miner")
+	}
+	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
+	if err != nil {
+		return err
+	}
+	newhead := types.CopyHeader(header)
+	newhead.Sign = nil
+	b, err := pm.Recover(header.Sign, header.SignHash(big.NewInt(0)))
+	if err != nil {
+		return err
+	}
+	recPub, _ := crypto.UnmarshalPubkey(b)
+	recAddress := crypto.PubkeyToAddress(*recPub)
+	if signerAccount.Address.Compare(recAddress) != 0 {
+		return errors.New("illegal signature")
+	}
+
 	return nil
 }
