@@ -152,7 +152,7 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 }
 
 // SignHash hashes the action sign hash
-func (tx *Transaction) SignHash() common.Hash {
+func (tx *Transaction) SignHash(chainID *big.Int) common.Hash {
 	actionHashs := make([]common.Hash, len(tx.GetActions()))
 	for i, a := range tx.GetActions() {
 		hash := RlpHash([]interface{}{
@@ -165,6 +165,7 @@ func (tx *Transaction) SignHash() common.Hash {
 			a.data.Amount,
 			a.data.Payload,
 			a.data.Remark,
+			chainID, uint(0), uint(0),
 		})
 		actionHashs[i] = hash
 	}
@@ -178,13 +179,13 @@ func (tx *Transaction) SignHash() common.Hash {
 }
 
 // RecoverMultiKey recover and store cache.
-func RecoverMultiKey(recover func(signature []byte, signHash common.Hash) ([]byte, error), tx *Transaction) {
+func RecoverMultiKey(recover func(signature []byte, signHash func(chainID *big.Int) common.Hash) ([]byte, error), tx *Transaction) {
 	for i, a := range tx.GetActions() {
 		if sc := a.senderPubkeys.Load(); sc != nil {
 			continue
 		}
 
-		pubKey, err := recover(a.GetSign(), tx.SignHash())
+		pubKey, err := recover(a.GetSign(), tx.SignHash)
 		if err != nil {
 			// There should be no problem here.
 			log.Error("recover failed", "err", err, "hash", tx.Hash(), "action index", i)

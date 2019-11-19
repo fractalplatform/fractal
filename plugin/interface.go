@@ -87,6 +87,6 @@ type IFee interface {
 }
 
 type ISigner interface {
-	Sign(signHash common.Hash, prv *ecdsa.PrivateKey) ([]byte, error)
-	Recover(signature []byte, signHash common.Hash) ([]byte, error)
+	Sign(signHash func(chainID *big.Int) common.Hash, prv *ecdsa.PrivateKey) ([]byte, error)
+	Recover(signature []byte, signHash func(chainID *big.Int) common.Hash) ([]byte, error)
 }

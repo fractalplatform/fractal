@@ -41,7 +41,7 @@ func sendTx() error {
 
 	signer, _ := pm.NewSigner(big.NewInt(1))
 
-	d, err := signer.Sign(tx.SignHash(), privateKey)
+	d, err := signer.Sign(tx.SignHash, privateKey)
 	if err != nil {
 		return err
 	}
