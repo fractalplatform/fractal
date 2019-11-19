@@ -136,9 +136,7 @@ func (candidates *Candidates) insert(account string, newinfo *CandidateInfo) (bo
 	if candidates.Len() > maxCandidates {
 		replaced := candidates.listSort[candidates.Len()-1]
 		info := candidates.remove(replaced)
-		if replaced != account {
-			return true, info // return the loser
-		}
+		return replaced != account, info
 	}
 	return true, nil // no one out
 }
@@ -258,20 +256,23 @@ func (c *Consensus) removeCandidate(delCandidate string) (bool, *CandidateInfo) 
 	return info != nil, info
 }
 
-func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (bool, *CandidateInfo) {
+func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (bool, *CandidateInfo, *CandidateInfo) {
 	info := &CandidateInfo{
-		SignAccount: newCandidate,
-		Weight:      90,
-		//		RegisterNumber: c.parent.Number + 1,
-		Balance: big.NewInt(0).Set(lockAmount),
+		OwnerAccount: newCandidate,
+		SignAccount:  newCandidate,
+		Weight:       90,
+		Balance:      big.NewInt(0).Set(lockAmount),
 	}
 	if c.parent != nil {
 		info.RegisterNumber = c.parent.Number + 1
 	}
 	if info.WeightedSum().Cmp(minLockAmount) < 0 {
-		return false, nil
+		return false, nil, nil
 	}
-	return c.candidates.insert(newCandidate, info)
+	if success, replaced := c.candidates.insert(newCandidate, info); success {
+		return success, info, replaced
+	}
+	return false, nil, nil
 }
 
 // return next miner
@@ -393,15 +394,20 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 	}
 	//TODO: return or lock balance
 	var success bool
-	var info *CandidateInfo
+	var info, newinfo *CandidateInfo
 	if action.Value().Sign() > 0 {
-		success, info = c.pushCandidate(action.Sender(), action.Value())
+		fmt.Println("signer", action.Sender())
+		success, newinfo, info = c.pushCandidate(action.Sender(), action.Value())
 	} else {
 		success, info = c.removeCandidate(action.Sender())
 	}
 	if success {
 		c.storeCandidates()
+		if newinfo != nil {
+			newinfo.Store(c.stateDB)
+		}
 		if info != nil {
+			info.Store(c.stateDB)
 			err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance)
 			return nil, err
 		}
@@ -467,6 +473,9 @@ func (c *Consensus) Verify(header *types.Header, miner string) error {
 func (c *Consensus) Seal(block *types.Block, miner string, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
 	// just beta
 	c.initRequrie()
+	if c.parent == nil {
+		panic("genesis")
+	}
 
 	signerInfo, exist := c.candidates.info[miner]
 	if !exist {
@@ -474,6 +483,7 @@ func (c *Consensus) Seal(block *types.Block, miner string, priKey *ecdsa.Private
 	}
 	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
 	if err != nil {
+		fmt.Println("miner:", miner, "signer:", signerInfo.SignAccount, "err:", err)
 		return block, err
 	}
 	keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
