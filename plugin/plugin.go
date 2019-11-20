@@ -70,7 +70,7 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 		if action.Type() >= RegisterMiner || action.Type() < ConsensusEnd {
 			return pm.IConsensus.CallTx(action, pm)
 		}
-		return nil, nil
+		return nil, ErrWrongAction
 	}
 }
 
