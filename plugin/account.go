@@ -23,6 +23,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -364,7 +365,8 @@ func (am *AccountManager) checkAccountName(accountName string) error {
 	}
 
 	if acctRegExp.MatchString(accountName) != true {
-		return ErrAccountNameinvalid
+		log.Info("check account name ", "name", accountName)
+		return ErrAccountNameInvalid
 	}
 	return nil
 }
@@ -438,7 +440,7 @@ func (am *AccountManager) subBalance(account *Account, assetID uint64, value *bi
 
 var (
 	ErrAccountNameLengthErr = errors.New("account name length err")
-	ErrAccountNameinvalid   = errors.New("account name invalid")
+	ErrAccountNameInvalid   = errors.New("account name invalid")
 	ErrNewAccountManagerErr = errors.New("new account manager err")
 	ErrAccountNotExist      = errors.New("account not exist")
 	ErrAccountIsExist       = errors.New("account is exist")

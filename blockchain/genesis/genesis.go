@@ -367,11 +367,6 @@ func DefaultGenesisAccounts() []*pm.CreateAccountAction {
 	}
 }
 
-// DefaultGenesisCandidates returns the ft net genesis candidates.
-// func DefaultGenesisCandidates() []*Candidate {
-// 	return []*Candidate{}
-// }
-
 // DefaultGenesisAssets returns the ft net genesis assets.
 func DefaultGenesisAssets() []*pm.IssueAssetAction {
 	supply := new(big.Int)

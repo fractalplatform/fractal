@@ -27,7 +27,7 @@ func sendTx() error {
 		return err
 	}
 
-	from, to := "fractal.founder", "fractal.account"
+	from, to := "fractalfounder", "fractalaccount"
 	value := big.NewInt(1)
 	gasLimit := uint64(20000000)
 

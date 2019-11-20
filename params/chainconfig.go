@@ -45,11 +45,11 @@ var DefaultChainconfig = &ChainConfig{
 	ChainName:        "fractal",
 	ChainURL:         "https://fractalproject.com",
 	SnapshotInterval: 180000,
-	SysName:          "fractal.founder",
-	AccountName:      "fractal.account",
-	AssetName:        "fractal.asset",
-	DposName:         "fractal.dpos",
-	FeeName:          "fractal.fee",
+	SysName:          "fractalfounder",
+	AccountName:      "fractalaccount",
+	AssetName:        "fractalasset",
+	DposName:         "fractaldpos",
+	FeeName:          "fractalfee",
 	SysToken:         "ftoken",
 }
 
