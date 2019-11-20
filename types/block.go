@@ -43,7 +43,7 @@ type Header struct {
 	GasUsed              uint64
 	Time                 uint64
 	Version              uint64
-	MinerOffset          uint64
+	Difficulty           uint64
 	Sign                 []byte
 	Extra                []byte
 }
@@ -113,7 +113,7 @@ func (b *Block) GasLimit() uint64 { return b.Head.GasLimit }
 func (b *Block) GasUsed() uint64 { return b.Head.GasUsed }
 
 // Difficulty returns the block's Difficulty.
-func (b *Block) Difficulty() *big.Int { return big.NewInt(0) }
+func (b *Block) Difficulty() *big.Int { return big.NewInt(int64(b.Head.Difficulty)) }
 
 // Time returns the block's Time.
 func (b *Block) Time() *big.Int { return big.NewInt(int64(b.Head.Time)) }

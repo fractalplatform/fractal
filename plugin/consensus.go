@@ -64,7 +64,7 @@ var (
 	blockDuration = uint64(3)
 	MinerAccount  string
 	genesisTime   uint64
-	maxPauseEpoch = 864000
+	maxPauseBlock = 864000
 )
 
 type CandidateInfo struct {
@@ -285,7 +285,7 @@ func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (boo
 // return next miner
 func (c *Consensus) nextMiner() int {
 	now := uint64(time.Now().Unix())
-	for i := 1; i <= c.candidates.Len()*maxPauseEpoch; i++ {
+	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
 			for j := 0; j < c.candidates.Len(); j++ {
@@ -304,7 +304,7 @@ func (c *Consensus) nextMiner() int {
 
 // return distance between miner and parent.Coinbase
 func (c *Consensus) searchMiner(miner string) int {
-	for i := 1; i <= c.candidates.Len()*maxPauseEpoch; i++ {
+	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
 		if miner == c.minerSlot(uint64(i)) {
 			if c.candidates.info[miner].Skip {
 				return -1
@@ -359,9 +359,9 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 func (c *Consensus) Prepare(header *types.Header) error {
 	// just beta
 	c.initRequrie()
-	minerIndex := header.MinerOffset
+	minerIndex := c.minerOffset
 	if minerIndex == 0 {
-		minerIndex = c.minerOffset
+		minerIndex = c.toOffset(header.Difficulty)
 	}
 	if minerIndex == 0 {
 		return errors.New("minerIndex must greater than zero")
@@ -372,8 +372,8 @@ func (c *Consensus) Prepare(header *types.Header) error {
 			return nil
 		}
 	*/
-	header.MinerOffset = minerIndex
-	header.Time = c.timeSlot(header.MinerOffset) // this code must be here
+	header.Difficulty = c.toDifficult(minerIndex)
+	header.Time = c.timeSlot(minerIndex) // this code must be here
 	header.ParentHash = c.parent.Hash()
 	header.Number = c.parent.Number + 1
 	header.GasLimit = params.BlockGasLimit
@@ -453,8 +453,38 @@ func (c *Consensus) Finalize(header *types.Header, txs []*types.Transaction, rec
 	return types.NewBlock(header, txs, receipts), nil
 }
 
-func (c *Consensus) Difficult(header *types.Header) uint64 {
-	return header.MinerOffset
+func (c *Consensus) toDifficult(offset uint64) uint64 {
+	return uint64(c.candidates.Len()+maxPauseBlock) - offset + 1
+}
+
+func (c *Consensus) toOffset(difficult uint64) uint64 {
+	max := uint64(c.candidates.Len() + maxPauseBlock)
+	if max >= difficult {
+		return max - difficult + 1
+	}
+	return 0
+}
+
+func (c *Consensus) Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
+	// just beta
+	c.initRequrie()
+
+	miner := block.Coinbase()
+	signerInfo, exist := c.candidates.info[miner]
+	if !exist {
+		return block, errors.New("illegal miner")
+	}
+	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
+	if err != nil {
+		fmt.Println("miner:", miner, "signer:", signerInfo.SignAccount, "err:", err)
+		return block, err
+	}
+	keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
+	if signerAccount.Address.Compare(keyAddress) != 0 {
+		return block, errors.New("illegal private key")
+	}
+	block.Head.Sign, err = pm.Sign(block.Header().SignHash, priKey)
+	return block, err
 }
 
 func (c *Consensus) Verify(header *types.Header) error {
@@ -478,14 +508,14 @@ func (c *Consensus) Verify(header *types.Header) error {
 		}
 	*/
 	miner := header.Coinbase
-	minerIndex := header.MinerOffset
+	minerIndex := c.toOffset(header.Difficulty)
 	if c.minerSlot(minerIndex) != miner {
 		return errors.New("wrong miner")
 	}
 	// 4. verify block time
 	timeSlot := c.timeSlot(uint64(minerIndex))
 	if header.Time != timeSlot {
-		return fmt.Errorf("wrong block.Time, get %d want %d", header.Time, timeSlot)
+		return fmt.Errorf("wrong block.Time, get %d want %d slot:%d", header.Time, timeSlot, minerIndex)
 	}
 	now := time.Now().Unix()
 	maxTime := uint64(now) + blockDuration*5
@@ -497,28 +527,6 @@ func (c *Consensus) Verify(header *types.Header) error {
 	// 7. verify Version
 	// 8. verify ExtData?
 	return nil
-}
-
-func (c *Consensus) Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error) {
-	// just beta
-	c.initRequrie()
-
-	miner := block.Coinbase()
-	signerInfo, exist := c.candidates.info[miner]
-	if !exist {
-		return block, errors.New("illegal miner")
-	}
-	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
-	if err != nil {
-		fmt.Println("miner:", miner, "signer:", signerInfo.SignAccount, "err:", err)
-		return block, err
-	}
-	keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
-	if signerAccount.Address.Compare(keyAddress) != 0 {
-		return block, errors.New("illegal private key")
-	}
-	block.Head.Sign, err = pm.Sign(block.Header().SignHash, priKey)
-	return block, err
 }
 
 func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
