@@ -363,7 +363,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 		return 0, dl.blockchain.Genesis().Hash(), nil
 	}
 	find := func(headNum, length uint64) (uint64, common.Hash, *Error) {
-		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNumber, length, 0, true}, errCh)
+		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNum, length, 0, true}, errCh)
 		if err != nil {
 			return 0, emptyHash, err
 		}
