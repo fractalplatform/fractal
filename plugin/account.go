@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	acctRegExp           = regexp.MustCompile(`^([a-z][a-z0-9]{6,31})`)
+	acctRegExp           = regexp.MustCompile(`^([a-z][a-z0-9]{6,31})$`)
 	acctManagerName      = "sysAccount"
 	acctInfoPrefix       = "acctInfo"
 	accountNameMaxLength = uint64(32)
