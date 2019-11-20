@@ -38,5 +38,6 @@ func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]
 		}
 		totalGas += gas.Value
 	}
-	return am.TransferAsset(from, coinbase, assetID, big.NewInt(totalGas))
+	gasBalance := new(big.Int).Mul(new(big.Int).SetInt64(totalGas), gasPrice)
+	return am.TransferAsset(from, coinbase, assetID, gasBalance)
 }
