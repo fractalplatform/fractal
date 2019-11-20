@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -63,13 +64,12 @@ type jsonWriter interface {
 type BlockNumber int64
 
 const (
-	PendingBlockNumber  = BlockNumber(-2)
 	LatestBlockNumber   = BlockNumber(-1)
 	EarliestBlockNumber = BlockNumber(0)
 )
 
 // UnmarshalJSON parses the given JSON fragment into a BlockNumber. It supports:
-// - "latest", "earliest" or "pending" as string arguments
+// - "latest", "earliest" as string arguments
 // - the block number
 // Returned errors:
 // - an invalid block number error when the given argument isn't a known strings
@@ -87,17 +87,11 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 	case "latest":
 		*bn = LatestBlockNumber
 		return nil
-	case "pending":
-		*bn = PendingBlockNumber
-		return nil
 	}
 
-	blckNum, err := hexutil.DecodeUint64(input)
+	blckNum, err := strconv.ParseInt(input, 10, 64)
 	if err != nil {
 		return err
-	}
-	if blckNum > math.MaxInt64 {
-		return fmt.Errorf("Blocknumber too high")
 	}
 
 	*bn = BlockNumber(blckNum)
@@ -139,10 +133,6 @@ func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
 		return nil
 	case "latest":
 		bn := LatestBlockNumber
-		bnh.BlockNumber = &bn
-		return nil
-	case "pending":
-		bn := PendingBlockNumber
 		bnh.BlockNumber = &bn
 		return nil
 	default:
