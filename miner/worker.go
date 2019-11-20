@@ -160,6 +160,21 @@ func (worker *Worker) mintBlock(state *state.StateDB, pm plugin.IPM, header *typ
 	bstart := time.Now()
 	block, err := worker.commitNewWork(pm, state, header)
 	if err == nil {
+
+		{
+
+			verifyState, err := worker.StateAt(header.Root)
+			if err != nil {
+				panic(err)
+			}
+			verifyPM := plugin.NewPM(verifyState)
+			verifyPM.Init(0, "", header)
+			err1 := verifyPM.VerifySeal(block.Header(), verifyPM)
+			fmt.Println("VerifySeal:", err1)
+			err2 := verifyPM.Verify(block.Header())
+			fmt.Println("Verify:", err2)
+		}
+
 		log.Info("Mined new block", "candidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "elapsed", common.PrettyDuration(time.Since(bstart)))
 		return
 	}
