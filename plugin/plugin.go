@@ -76,7 +76,7 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 			}
 			return ret, err
 		}
-		return nil, nil
+		return nil, ErrWrongAction
 	}
 }
 

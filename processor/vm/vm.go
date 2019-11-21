@@ -452,9 +452,9 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	snapshot := evm.StateDB.Snapshot()
 
 	if b, err := evm.PM.GetCode(contractName); err != nil {
-		return nil, 0, err
+		return nil, gas, err
 	} else if len(b) != 0 {
-		return nil, 0, ErrContractCodeCollision
+		return nil, gas, ErrContractCodeCollision
 	}
 
 	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
