@@ -85,10 +85,9 @@ type Worker struct {
 	force    bool
 }
 
-func newWorker(manger plugin.IPM, c context) *Worker {
+func newWorker(c context) *Worker {
 	worker := &Worker{
 		context:  c,
-		manger:   manger,
 		quitWork: make(chan struct{}, 1), // atleast 1
 	}
 	return worker

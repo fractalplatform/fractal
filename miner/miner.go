@@ -25,7 +25,6 @@ import (
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
-	pm "github.com/fractalplatform/fractal/plugin"
 )
 
 type minerStatus int32
@@ -53,9 +52,9 @@ var (
 )
 
 // NewMiner creates a miner.
-func NewMiner(manager pm.IPM, c context) *Miner {
+func NewMiner(c context) *Miner {
 	return &Miner{
-		worker: newWorker(manager, c),
+		worker: newWorker(c),
 		mining: Stopped,
 	}
 }

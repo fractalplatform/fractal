@@ -28,7 +28,6 @@ import (
 	"github.com/fractalplatform/fractal/p2p"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/params"
-	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rpc"
@@ -89,11 +88,8 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	ftservice.txPool = txpool.New(*config.TxPool, ftservice.chainConfig, ftservice.blockchain)
 
-	statedb, _ := ftservice.blockchain.State()
-	pm := pm.NewPM(statedb)
-
-	validator := processor.NewBlockValidator(ftservice.blockchain, pm)
-	txProcessor := processor.NewStateProcessor(ftservice.blockchain, pm)
+	validator := processor.NewBlockValidator(ftservice.blockchain)
+	txProcessor := processor.NewStateProcessor(ftservice.blockchain)
 
 	ftservice.blockchain.SetValidator(validator)
 	ftservice.blockchain.SetProcessor(txProcessor)
@@ -104,7 +100,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		processor.Processor
 	}
 
-	ftservice.miner = miner.NewMiner(pm, &bc{ftservice.blockchain, ftservice.txPool, txProcessor})
+	ftservice.miner = miner.NewMiner(&bc{ftservice.blockchain, ftservice.txPool, txProcessor})
 
 	ftservice.miner.SetDelayDuration(config.Miner.Delay)
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)

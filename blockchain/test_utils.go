@@ -64,15 +64,8 @@ func newCanonical(t *testing.T, genesis *g.Genesis) *BlockChain {
 		t.Fatal(err)
 	}
 
-	stateDB, err := blockchain.State()
-	if err != nil {
-		t.Fatalf("state db err %v", err)
-	}
-
-	manager := pm.NewPM(stateDB)
-
-	validator := processor.NewBlockValidator(blockchain, &fakeEngine{manager})
-	txProcessor := processor.NewStateProcessor(blockchain, manager)
+	validator := processor.NewBlockValidator(blockchain)
+	txProcessor := processor.NewStateProcessor(blockchain)
 	blockchain.SetValidator(validator)
 	blockchain.SetProcessor(txProcessor)
 	return blockchain

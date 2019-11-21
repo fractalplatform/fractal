@@ -32,15 +32,14 @@ import (
 // StateProcessor is a basic Processor, which takes care of transitioning
 // state from one point to another.
 type StateProcessor struct {
-	bc      ChainContext // Canonical block chain
-	manager pm.IPM
+	bc ChainContext // Canonical block chain
 }
 
 // NewStateProcessor initialises a new StateProcessor.
-func NewStateProcessor(bc ChainContext, manager pm.IPM) *StateProcessor {
+func NewStateProcessor(bc ChainContext) *StateProcessor {
 	return &StateProcessor{
-		bc:      bc,
-		manager: manager}
+		bc: bc,
+	}
 }
 
 // Process processes the state changes according to the rules by running
@@ -59,8 +58,10 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		gp       = new(common.GasPool).AddGas(block.GasLimit())
 	)
 
+	manager := pm.NewPM(statedb)
+
 	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
-	if err := p.manager.Prepare(header); err != nil {
+	if err := manager.Prepare(header); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -76,7 +77,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
-	p.manager.Finalize(header, block.Transactions(), receipts)
+	manager.Finalize(header, block.Transactions(), receipts)
 
 	return receipts, allLogs, *usedGas, nil
 }
