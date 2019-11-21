@@ -31,6 +31,7 @@ var (
 
 // Manager manage all plugins.
 type Manager struct {
+	stateDB *state.StateDB
 	IAccount
 	IAsset
 	IConsensus
@@ -68,7 +69,12 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 		return nil, err
 	default:
 		if action.Type() >= RegisterMiner || action.Type() < ConsensusEnd {
-			return pm.IConsensus.CallTx(action, pm)
+			snapshot := pm.stateDB.Snapshot()
+			ret, err := pm.IConsensus.CallTx(action, pm)
+			if err != nil {
+				pm.stateDB.RevertToSnapshot(snapshot)
+			}
+			return ret, err
 		}
 		return nil, nil
 	}
@@ -88,5 +94,6 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IConsensus: consensus,
 		ISigner:    signer,
 		IFee:       fee,
+		stateDB:    stateDB,
 	}
 }
