@@ -101,7 +101,7 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 		err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		return nil, err
 	default:
-		if action.Type() >= RegisterMiner || action.Type() < ConsensusEnd {
+		if action.Type() >= RegisterMiner && action.Type() < ConsensusEnd {
 			snapshot := pm.stateDB.Snapshot()
 			ret, err := pm.IConsensus.CallTx(action, pm)
 			if err != nil {
