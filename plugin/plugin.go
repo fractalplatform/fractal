@@ -39,6 +39,39 @@ type Manager struct {
 	ISigner
 }
 
+func (pm *Manager) BasicCheck(tx *types.Transaction) error {
+	for _, action := range tx.GetActions() {
+		switch action.Type() {
+		case CreateAccount:
+			param := &CreateAccountAction{}
+			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+				return err
+			}
+			if err := pm.checkCreateAccount(param.Name, param.Pubkey, param.Desc); err != nil {
+				return err
+			}
+		case IssueAsset:
+			param := &IssueAssetAction{}
+			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+				return err
+			}
+			if err := pm.checkIssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount); err != nil {
+				return err
+			}
+		case IncreaseAsset:
+			param := &IncreaseAssetAction{}
+			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+				return err
+			}
+			if err := pm.checkIncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount); err != nil {
+				return err
+			}
+		default:
+		}
+	}
+	return nil
+}
+
 func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 	action, ok := arg.(*types.Action)
 	if !ok {

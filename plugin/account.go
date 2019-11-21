@@ -438,6 +438,17 @@ func (am *AccountManager) subBalance(account *Account, assetID uint64, value *bi
 	return nil
 }
 
+func (am *AccountManager) checkCreateAccount(accountName string, pubKey common.PubKey, description string) error {
+	if uint64(len(description)) > MaxDescriptionLength {
+		return ErrDescriptionTooLong
+	}
+
+	if err := am.checkAccountName(accountName); err != nil {
+		return err
+	}
+	return nil
+}
+
 var (
 	ErrAccountNameLengthErr = errors.New("account name length err")
 	ErrAccountNameInvalid   = errors.New("account name invalid")

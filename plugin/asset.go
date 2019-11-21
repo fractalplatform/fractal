@@ -343,6 +343,51 @@ func (asm *AssetManager) getAssetObjectByID(ID uint64) (*Asset, error) {
 	return &asset, nil
 }
 
+func (asm *AssetManager) checkIssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
+	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) error {
+
+	if accountName == "" || assetName == "" || symbol == "" || owner == "" {
+		return ErrParamIsNil
+	}
+
+	if amount.Cmp(big.NewInt(0)) < 0 || limit.Cmp(big.NewInt(0)) < 0 || amount.Cmp(UINT256_MAX) > 0 || limit.Cmp(UINT256_MAX) > 0 {
+		return ErrAmountValueInvalid
+	}
+
+	if amount.Cmp(limit) > 0 {
+		return ErrAmountValueInvalid
+	}
+
+	if uint64(len(description)) > MaxDescriptionLength {
+		return ErrDescriptionTooLong
+	}
+
+	err := asm.checkAssetName(assetName)
+	if err != nil {
+		return err
+	}
+	err = asm.checkAssetName(symbol)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (asm *AssetManager) checkIncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) error {
+	if from == "" || to == "" {
+		return ErrParamIsNil
+	}
+
+	if amount.Cmp(big.NewInt(0)) <= 0 {
+		return ErrAmountValueInvalid
+	}
+
+	if assetID != SystemAssetID {
+		return ErrAssetNotExist
+	}
+	return nil
+}
+
 var (
 	ErrNewAssetManagerErr        = errors.New("new AssetManager error")
 	ErrAssetIsExist              = errors.New("asset is exist")
