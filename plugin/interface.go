@@ -50,6 +50,7 @@ type IAccount interface {
 	RecoverTx(signer ISigner, tx *types.Transaction) error
 	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) error
 	ChangeAddress(accountName string, address common.Address) error
+	checkCreateAccount(accountName string, pubKey common.PubKey, description string) error
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
 	addBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	subBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
@@ -64,6 +65,9 @@ type IAsset interface {
 	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
 	GetAssetID(assetName string) (uint64, error)
 	GetAssetName(assetID uint64) (string, error)
+	checkIssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
+		decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) error
+	checkIncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) error
 	GetAssetInfoByName(assetName string) (*Asset, error) // for api
 	GetAssetInfoByID(assetID uint64) (*Asset, error)     // for api
 }
