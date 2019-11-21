@@ -27,9 +27,6 @@ var (
 	// ErrNoGenesis genesis block not found in chain db.
 	ErrNoGenesis = errors.New("Genesis not found in chain")
 
-	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
-	ErrBlacklistedHash = errors.New("blacklisted hash")
-
 	errGenesisNoConfig = errors.New("genesis has no chain configuration")
 )
 

@@ -17,8 +17,8 @@
 package types
 
 import (
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/hexutil"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 

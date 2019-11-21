@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -26,7 +27,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fractalplatform/fractal/blockchain/downloader"
 	"github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/common/prque"
@@ -60,6 +60,11 @@ const (
 	BlockChainVersion = 0
 )
 
+var (
+	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
+	ErrBlacklistedHash = errors.New("blacklisted hash")
+)
+
 // BlockChain represents the canonical chain given a database with a genesis
 // block. The Blockchain manages chain imports, reverts, chain reorganisations.
 type BlockChain struct {
@@ -88,7 +93,7 @@ type BlockChain struct {
 	wg            sync.WaitGroup      // chain processing wait group for shutting down
 	processor     processor.Processor // block processor interface
 	validator     processor.Validator // block and state validator interface
-	station       *downloader.Station // p2p station
+	station       *Station            // p2p station
 
 	headerCache  *lru.Cache    // Cache for the most recent block headers
 	tdCache      *lru.Cache    // Cache for the most recent block total difficulties
@@ -175,7 +180,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		log.Info("Start chain with a specified block number", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
 	}
 
-	bc.station = downloader.NewStation(bc, 0)
+	bc.station = NewStation(bc, 0)
 	go bc.update()
 	return bc, nil
 }
@@ -758,8 +763,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 
 		// If the header is a banned one, straight out abort
 		if bc.badHashes[block.Hash()] {
-			bc.reportBlock(block, nil, genesis.ErrBlacklistedHash)
-			return i, coalescedLogs, genesis.ErrBlacklistedHash
+			bc.reportBlock(block, nil, ErrBlacklistedHash)
+			return i, coalescedLogs, ErrBlacklistedHash
 		}
 
 		err := bc.validator.ValidateHeader(block.Header(), true)

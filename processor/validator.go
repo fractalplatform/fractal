@@ -33,15 +33,13 @@ var allowedFutureBlockTime = 15 * time.Second
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	bc     ChainContext // Canonical block chain
-	manger pm.IPM       // Consensus engine used for validating
+	bc ChainContext // Canonical block chain
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(blockchain ChainContext, manger pm.IPM) *BlockValidator {
+func NewBlockValidator(blockchain ChainContext) *BlockValidator {
 	validator := &BlockValidator{
-		manger: manger,
-		bc:     blockchain,
+		bc: blockchain,
 	}
 	return validator
 }
@@ -86,7 +84,14 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 		return fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.GasLimit, limit)
 	}
 
-	if err := v.manger.Verify(header); err != nil {
+	stateDB, err := v.bc.StateAt(header.ParentHash)
+	if err != nil {
+		return err
+	}
+
+	manager := pm.NewPM(stateDB)
+
+	if err := manager.Verify(header); err != nil {
 		return err
 	}
 
@@ -99,7 +104,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 
 	// Verify the engine specific seal securing the block
 	if seal {
-		if err := v.manger.VerifySeal(header, v.manger); err != nil {
+		if err := manager.VerifySeal(header, manager); err != nil {
 			return err
 		}
 	}

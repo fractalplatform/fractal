@@ -68,6 +68,9 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 				return err
 			}
 		default:
+			if action.Type() != Transfer && (action.Type() < RegisterMiner || action.Type() >= ConsensusEnd) {
+				return ErrWrongAction
+			}
 		}
 	}
 	return nil

@@ -26,8 +26,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/hexutil"
 	"github.com/fractalplatform/fractal/rpc"
 	jww "github.com/spf13/jwalterweatherman"
 )

@@ -19,9 +19,9 @@ package blockchain
 import (
 	"testing"
 
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/txpool"
 )
 
 // So we can deterministically seed different blockchains
@@ -33,7 +33,7 @@ var (
 func TestTheLastBlock(t *testing.T) {
 	printLog(log.LvlDebug)
 
-	genesis := DefaultGenesis()
+	genesis := g.DefaultGenesis()
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
@@ -46,7 +46,7 @@ func TestTheLastBlock(t *testing.T) {
 func TestSystemForkChain(t *testing.T) {
 	printLog(log.LvlDebug)
 
-	genesis := DefaultGenesis()
+	genesis := g.DefaultGenesis()
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
@@ -70,7 +70,7 @@ func TestSystemForkChain(t *testing.T) {
 }
 
 func TestBadBlockHashes(t *testing.T) {
-	genesis := DefaultGenesis()
+	genesis := g.DefaultGenesis()
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
@@ -92,7 +92,7 @@ func TestBadBlockHashes(t *testing.T) {
 	}
 
 	newChain, err := NewBlockChain(chain.db, false, vm.Config{}, chain.chainConfig,
-		[]string{blocks[2].Header().Hash().String()}, 0, txpool.SenderCacher)
+		[]string{blocks[2].Header().Hash().String()}, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
