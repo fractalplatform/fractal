@@ -127,7 +127,6 @@ func TestIsChildren(t *testing.T) {
 		}
 	}
 }
-
 func TestIsChildren1(t *testing.T) {
 	acctRegExp := regexp.MustCompile(`^([a-z][a-z0-9]{6,15})(?:\.([a-z0-9]{2,16})){0,1}(?:\.([a-z0-9]{2,16})){0,1}$`)
 
@@ -166,7 +165,6 @@ func TestIsChildren1(t *testing.T) {
 			}
 		}
 	}
-
 }
 
 func TestConver(t *testing.T) {

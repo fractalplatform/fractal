@@ -139,9 +139,9 @@ func generateChain(config *params.ChainConfig, parent *types.Block, manager pm.I
 			gen(i, b)
 		}
 
-		// if b.engine != nil {
+		// if b.manager != nil {
 		// 	// Finalize and seal the block
-		// 	if err := b.engine.Prepare(b, b.header, b.txs, nil, b.stateDB); err != nil {
+		// 	if err := b.manager.Prepare(b.header); err != nil {
 		// 		panic(fmt.Sprintf("engine prepare error: %v", err))
 		// 	}
 
@@ -156,12 +156,12 @@ func generateChain(config *params.ChainConfig, parent *types.Block, manager pm.I
 
 		// 	b.AddTxWithChain(tx)
 
-		// 	block, err := b.engine.Finalize(b, b.header, b.txs, b.receipts, b.stateDB)
+		// 	block, err := b.manager.Finalize(b.header, b.txs, b.receipts)
 		// 	if err != nil {
 		// 		panic(fmt.Sprintf("engine finalize error: %v", err))
 		// 	}
 
-		// 	block, err = b.engine.Seal(b, block, nil)
+		// 	block, err = b.manager.Seal(b, block, nil)
 		// 	if err != nil {
 		// 		panic(fmt.Sprintf("engine seal error: %v", err))
 		// 	}

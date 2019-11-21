@@ -1,4 +1,4 @@
-// Copyright 2018 The Fractal Team Authors
+// Copyright 2019 The Fractal Team Authors
 // This file is part of the fractal project.
 //
 // This program is free software: you can redistribute it and/or modify
@@ -14,28 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package genesis
+package hexutil_test
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 
-	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/hexutil"
 )
 
-var (
-	// ErrNoGenesis genesis block not found in chain db.
-	ErrNoGenesis = errors.New("Genesis not found in chain")
+type MyType [5]byte
 
-	errGenesisNoConfig = errors.New("genesis has no chain configuration")
-)
-
-// GenesisMismatchError is raised when trying to overwrite an existing
-// genesis block with an incompatible one.
-type GenesisMismatchError struct {
-	Stored, New common.Hash
+func (v *MyType) UnmarshalText(input []byte) error {
+	return hexutil.UnmarshalFixedText("MyType", input, v[:])
 }
 
-func (e *GenesisMismatchError) Error() string {
-	return fmt.Sprintf("database already contains an incompatible genesis block (have %x, new %x)", e.Stored[:], e.New[:])
+func (v MyType) String() string {
+	return hexutil.Bytes(v[:]).String()
+}
+
+func ExampleUnmarshalFixedText() {
+	var v1, v2 MyType
+	fmt.Println("v1 error:", json.Unmarshal([]byte(`"0x01"`), &v1))
+	fmt.Println("v2 error:", json.Unmarshal([]byte(`"0x0101010101"`), &v2))
+	fmt.Println("v2:", v2)
+	// Output:
+	// v1 error: hex string has length 2, want 10 for MyType
+	// v2 error: <nil>
+	// v2: 0x0101010101
 }

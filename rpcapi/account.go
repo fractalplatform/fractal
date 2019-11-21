@@ -19,7 +19,7 @@ package rpcapi
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/common/hexutil"
 )
 
 type AccountAPI struct {

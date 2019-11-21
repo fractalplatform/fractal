@@ -28,6 +28,7 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.2.2
 	github.com/syndtr/goleveldb v1.0.0
+	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127

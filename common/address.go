@@ -25,7 +25,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/common/hexutil"
 )
 
 // AddressLength of addresses in bytes

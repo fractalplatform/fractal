@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/hexutil"
 	"github.com/stretchr/testify/assert"
 )
 
