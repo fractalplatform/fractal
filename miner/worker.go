@@ -70,12 +70,12 @@ type txPoolContext interface {
 // Worker is the main object which takes care of applying messages to the new state
 type Worker struct {
 	context
-	manger        plugin.IPM
-	mu            sync.Mutex
-	delayDuration uint64
-	coinbase      string
-	priKey        *ecdsa.PrivateKey
-	extra         []byte
+	manger   plugin.IPM
+	mu       sync.Mutex
+	delayMs  time.Duration
+	coinbase string
+	priKey   *ecdsa.PrivateKey
+	extra    []byte
 
 	wg       sync.WaitGroup
 	mining   int32
@@ -185,10 +185,10 @@ func (worker *Worker) stop() {
 	close(worker.quit)
 	worker.wg.Wait()
 }
-func (worker *Worker) setDelayDuration(delay uint64) error {
+func (worker *Worker) setDelayDuration(delayMS uint64) error {
 	worker.mu.Lock()
 	defer worker.mu.Unlock()
-	worker.delayDuration = delay
+	worker.delayMs = time.Duration(delayMS) * time.Millisecond
 	return nil
 }
 
@@ -264,6 +264,9 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 	}
 
 	// wait send
+	if worker.delayMs > 0 {
+		<-time.NewTimer(worker.delayMs).C
+	}
 	event.SendEvent(&event.Event{Typecode: event.NewMinedEv, Data: block})
 	return block, nil
 }

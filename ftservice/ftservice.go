@@ -107,7 +107,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	ftservice.miner = miner.NewMiner(pm, &bc{ftservice.blockchain, ftservice.txPool, txProcessor})
 
 	ftservice.miner.SetDelayDuration(config.Miner.Delay)
-	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
+	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys[0])
 	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
 	if config.Miner.Start {
 		ftservice.miner.Start(false)

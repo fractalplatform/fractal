@@ -335,13 +335,14 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 	c.initRequrie()
 
 	c.Show()
+
+	now := time.Now().Unix()
 	i := c.nextMiner()
 	if i < 1 {
 		fmt.Println("i<1:", i)
-		return time.Duration(c.timeSlot(1)) * time.Second
+		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
 	nextMiner := c.minerSlot(uint64(i))
-	now := time.Now().Unix()
 	if nextMiner == miner {
 		ontime := int64(c.timeSlot(uint64(i) - 1))
 		if ontime > now {
