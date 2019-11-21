@@ -46,8 +46,8 @@ func (api *API) Mining() bool {
 }
 
 // SetCoinbase bind miner name & privkey of node
-func (api *API) SetCoinbase(name string, privKeys []string) error {
-	return api.miner.SetCoinbase(name, privKeys)
+func (api *API) SetCoinbase(name string, privKey string) error {
+	return api.miner.SetCoinbase(name, privKey)
 }
 
 // SetDelay delay broacast block when mint block

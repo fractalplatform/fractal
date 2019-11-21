@@ -76,6 +76,26 @@ type CandidateInfo struct {
 	Skip           bool
 }
 
+func (info *CandidateInfo) copy() *CandidateInfo {
+	ret := *info
+	ret.Balance = new(big.Int).Set(info.Balance)
+	return &ret
+}
+
+func (info *CandidateInfo) update(newinfo *CandidateInfo) {
+	info.SignAccount = newinfo.SignAccount
+	info.RegisterNumber = newinfo.RegisterNumber
+	if newinfo.Balance.Sign() > 0 {
+		newBalance := new(big.Int).Set(newinfo.Balance)
+		newBalance.Add(newBalance, info.Balance)
+		osum := info.WeightedSum()
+		nsum := newinfo.WeightedSum()
+		nsum.Add(nsum, osum)
+		info.Weight = nsum.Div(nsum, newBalance).Uint64()
+	}
+	info.SignAccount = newinfo.SignAccount
+}
+
 func (info *CandidateInfo) IncWeight() uint64 {
 	if info.Weight >= maxWeight {
 		return maxWeight
@@ -127,12 +147,18 @@ func (candidates *Candidates) sort() {
 	sort.Sort(candidates)
 }
 
+func (candidates *Candidates) getInfoCopy(account string) *CandidateInfo {
+	if info := candidates.info[account]; info != nil {
+		return info.copy()
+	}
+	return nil
+}
+
 func (candidates *Candidates) insert(account string, newinfo *CandidateInfo) (bool, *CandidateInfo) {
-	if candidates.info[account] != nil {
-		return false, nil
+	if _, exist := candidates.info[account]; !exist {
+		candidates.listSort = append(candidates.listSort, account)
 	}
 	candidates.info[account] = newinfo
-	candidates.listSort = append(candidates.listSort, account)
 	candidates.sort()
 	if candidates.Len() > maxCandidates {
 		replaced := candidates.listSort[candidates.Len()-1]
@@ -263,23 +289,25 @@ func (c *Consensus) removeCandidate(delCandidate string) (bool, *CandidateInfo) 
 	return info != nil, info
 }
 
-func (c *Consensus) pushCandidate(newCandidate string, lockAmount *big.Int) (bool, *CandidateInfo, *CandidateInfo) {
-	info := &CandidateInfo{
+func (c *Consensus) pushCandidate(newCandidate string, signAccount string, lockAmount *big.Int) (bool, *CandidateInfo, *CandidateInfo) {
+	newinfo := &CandidateInfo{
 		OwnerAccount: newCandidate,
-		SignAccount:  newCandidate,
+		SignAccount:  signAccount,
 		Weight:       90,
-		Balance:      big.NewInt(0).Set(lockAmount),
+		Balance:      lockAmount,
 	}
 	if c.parent != nil {
-		info.RegisterNumber = c.parent.Number + 1
+		newinfo.RegisterNumber = c.parent.Number + 1
 	}
-	if info.WeightedSum().Cmp(minLockAmount) < 0 {
+	if oldinfo := c.candidates.getInfoCopy(newCandidate); oldinfo != nil {
+		oldinfo.update(newinfo)
+		newinfo = oldinfo
+	}
+	if newinfo.WeightedSum().Cmp(minLockAmount) < 0 {
 		return false, nil, nil
 	}
-	if success, replaced := c.candidates.insert(newCandidate, info); success {
-		return success, info, replaced
-	}
-	return false, nil, nil
+	success, replaced := c.candidates.insert(newCandidate, newinfo)
+	return success, newinfo, replaced
 }
 
 // return next miner
@@ -315,7 +343,7 @@ func (c *Consensus) searchMiner(miner string) int {
 	return -1
 }
 
-func (c *Consensus) Show() {
+func (c *Consensus) Show(miner string) {
 	fmt.Println("-----------------")
 	fmt.Println("parent:", c.parent.Number)
 	fmt.Println("parent:", c.parent.Time)
@@ -323,6 +351,7 @@ func (c *Consensus) Show() {
 	fmt.Println("LackBlock:", c.LackBlock)
 	fmt.Println("candidates:", c.candidates.Len())
 	fmt.Println("minerIndex:", c.minerIndex)
+	fmt.Println("miner:", miner)
 	fmt.Println("genesisTime", genesisTime, MinerAccount)
 	for i, n := range c.candidates.listSort {
 		info := c.candidates.info[n]
@@ -334,14 +363,15 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 	// just beta
 	c.initRequrie()
 
-	c.Show()
+	c.Show(miner)
+
+	now := time.Now().Unix()
 	i := c.nextMiner()
 	if i < 1 {
 		fmt.Println("i<1:", i)
-		return time.Duration(c.timeSlot(1)) * time.Second
+		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
 	nextMiner := c.minerSlot(uint64(i))
-	now := time.Now().Unix()
 	if nextMiner == miner {
 		ontime := int64(c.timeSlot(uint64(i) - 1))
 		if ontime > now {
@@ -425,7 +455,7 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 	var info, newinfo *CandidateInfo
 	if action.Value().Sign() > 0 {
 		fmt.Println("signer", action.Sender())
-		success, newinfo, info = c.pushCandidate(action.Sender(), action.Value())
+		success, newinfo, info = c.pushCandidate(action.Sender(), action.Sender(), action.Value())
 	} else {
 		success, info = c.removeCandidate(action.Sender())
 	}

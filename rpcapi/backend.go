@@ -80,6 +80,9 @@ type Backend interface {
 
 	//PM
 	GetPM() (plugin.IPM, error)
+
+	// miner RPC API
+	APIs() []rpc.API
 }
 
 func GetAPIs(apiBackend Backend) []rpc.API {
@@ -122,5 +125,5 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Public:    true,
 		},
 	}
-	return apis
+	return append(apis, apiBackend.APIs()...)
 }

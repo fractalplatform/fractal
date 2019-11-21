@@ -18,7 +18,6 @@ package main
 
 import (
 	"bufio"
-	"io"
 	"os"
 
 	"github.com/fractalplatform/fractal/common"
@@ -103,21 +102,14 @@ var setCoinbaseCmd = &cobra.Command{
 		}
 		defer fi.Close()
 
-		var keys []string
 		br := bufio.NewReader(fi)
-		for {
-			line, _, c := br.ReadLine()
-			if c == io.EOF {
-				break
-			}
-			keys = append(keys, string(line))
-		}
+		keys, _, _ := br.ReadLine()
 
 		if len(keys) == 0 {
 			jww.ERROR.Println("keys is empty ", "path", path)
 			return
 		}
-		clientCall(ipcEndpoint, nil, "miner_setCoinbase", name, keys)
+		clientCall(ipcEndpoint, nil, "miner_setCoinbase", name, string(keys))
 		printJSON(true)
 	},
 }

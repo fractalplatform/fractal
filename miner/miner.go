@@ -17,7 +17,6 @@
 package miner
 
 import (
-	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"sync/atomic"
@@ -89,21 +88,16 @@ func (miner *Miner) Mining() bool {
 }
 
 // SetCoinbase coinbase name & private key
-func (miner *Miner) SetCoinbase(name string, privKeys []string) error {
-	privs := make([]*ecdsa.PrivateKey, 0, len(privKeys))
-	for _, privKey := range privKeys {
-		bts, err := hex.DecodeString(privKey)
-		if err != nil {
-			return err
-		}
-		priv, err := crypto.ToECDSA(bts)
-		if err != nil {
-			return err
-		}
-		privs = append(privs, priv)
+func (miner *Miner) SetCoinbase(name string, privKey string) error {
+	bts, err := hex.DecodeString(privKey)
+	if err != nil {
+		return err
 	}
-
-	miner.worker.setCoinbase(name, privs[0])
+	priv, err := crypto.ToECDSA(bts)
+	if err != nil {
+		return err
+	}
+	miner.worker.setCoinbase(name, priv)
 	return nil
 }
 
