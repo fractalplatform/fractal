@@ -18,8 +18,10 @@ package plugin
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -40,13 +42,19 @@ type Manager struct {
 	ISigner
 }
 
-func (pm *Manager) BasicCheck(tx *types.Transaction) error {
+func (pm *Manager) BasicCheck(tx *types.Transaction, chainCfg *params.ChainConfig) error {
 	for _, action := range tx.GetActions() {
 		switch action.Type() {
 		case CreateAccount:
 			param := &CreateAccountAction{}
 			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
 				return err
+			}
+			// if action.Recipient() != chainCfg.AccountName {
+			// 	return fmt.Errorf("Receipt should is %v", chainCfg.AccountName)
+			// }
+			if action.Recipient() != "fractalaccount" {
+				return fmt.Errorf("Receipt should is fractalaccount")
 			}
 			if err := pm.checkCreateAccount(param.Name, param.Pubkey, param.Desc); err != nil {
 				return err
@@ -56,6 +64,12 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
 				return err
 			}
+			// if action.Recipient() != chainCfg.AssetName {
+			// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
+			// }
+			if action.Recipient() != "fractalasset" {
+				return fmt.Errorf("Receipt should is fractalasset")
+			}
 			if err := pm.checkIssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount); err != nil {
 				return err
 			}
@@ -63,6 +77,12 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 			param := &IncreaseAssetAction{}
 			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
 				return err
+			}
+			// if action.Recipient() != chainCfg.AssetName {
+			// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
+			// }
+			if action.Recipient() != "fractalasset" {
+				return fmt.Errorf("Receipt should is fractalasset")
 			}
 			if err := pm.checkIncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount); err != nil {
 				return err
