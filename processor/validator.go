@@ -84,7 +84,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 		return fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.GasLimit, limit)
 	}
 
-	stateDB, err := v.bc.StateAt(header.ParentHash)
+	stateDB, err := v.bc.StateAt(parent.Root)
 	if err != nil {
 		return err
 	}
