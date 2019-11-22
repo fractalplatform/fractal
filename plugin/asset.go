@@ -302,8 +302,10 @@ func (asm *AssetManager) checkIssueAssetParam(accountName string, assetName stri
 		return ErrAmountValueInvalid
 	}
 
-	if amount.Cmp(limit) > 0 {
-		return ErrAmountValueInvalid
+	if limit.Cmp(big.NewInt(0)) > 0 {
+		if amount.Cmp(limit) > 0 {
+			return ErrAmountValueInvalid
+		}
 	}
 
 	if uint64(len(description)) > MaxDescriptionLength {
@@ -377,8 +379,10 @@ func (asm *AssetManager) checkIssueAsset(accountName string, assetName string, s
 		return ErrAmountValueInvalid
 	}
 
-	if amount.Cmp(limit) > 0 {
-		return ErrAmountValueInvalid
+	if limit.Cmp(big.NewInt(0)) > 0 {
+		if amount.Cmp(limit) > 0 {
+			return ErrAmountValueInvalid
+		}
 	}
 
 	if uint64(len(description)) > MaxDescriptionLength {

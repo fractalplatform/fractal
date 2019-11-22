@@ -22,6 +22,7 @@ import (
 	"regexp"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/hexutil"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/state"
@@ -314,12 +315,37 @@ func (am *AccountManager) AccountIsExist(accountName string) error {
 	return nil
 }
 
-func (am *AccountManager) GetAccountByName(accountName string) (*Account, error) {
+func (am *AccountManager) GetAccountByName(accountName string) (interface{}, error) {
 	account, err := am.getAccount(accountName)
 	if err != nil {
 		return nil, err
 	}
-	return account, nil
+
+	obj := struct {
+		Name        string
+		Address     common.Address
+		Nonce       uint64
+		Code        hexutil.Bytes
+		CodeHash    common.Hash
+		CodeSize    uint64
+		Balances    *AssetBalance
+		Suicide     bool
+		Destroy     bool
+		Description string
+	}{
+		account.Name,
+		account.Address,
+		account.Nonce,
+		(hexutil.Bytes)(account.Code),
+		account.CodeHash,
+		account.CodeSize,
+		account.Balances,
+		account.Suicide,
+		account.Destroy,
+		account.Description,
+	}
+
+	return obj, nil
 }
 
 func (am *AccountManager) ChangeAddress(accountName string, address common.Address) error {
