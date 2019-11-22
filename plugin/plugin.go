@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -42,7 +41,7 @@ type Manager struct {
 	ISigner
 }
 
-func (pm *Manager) BasicCheck(tx *types.Transaction, chainCfg *params.ChainConfig) error {
+func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
 		switch action.Type() {
 		case CreateAccount:
