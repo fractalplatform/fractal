@@ -130,13 +130,14 @@ func NewPM(stateDB *state.StateDB) IPM {
 	signer, _ := NewSigner(chainID)
 	fee, _ := NewFeeManager()
 	pm := &Manager{
-		contracts:  make(map[string]IContract),
-		IAccount:   acm,
-		IAsset:     asm,
-		IConsensus: consensus,
-		ISigner:    signer,
-		IFee:       fee,
-		stateDB:    stateDB,
+		contracts:       make(map[string]IContract),
+		contractsByType: make(map[types.ActionType]IContract),
+		IAccount:        acm,
+		IAsset:          asm,
+		IConsensus:      consensus,
+		ISigner:         signer,
+		IFee:            fee,
+		stateDB:         stateDB,
 	}
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm
