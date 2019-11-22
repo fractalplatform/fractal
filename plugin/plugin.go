@@ -18,6 +18,7 @@ package plugin
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/state"
@@ -26,16 +27,17 @@ import (
 )
 
 var (
-	ErrWrongAction = errors.New("action is invalid")
+	ErrWrongAction   = errors.New("action is invalid")
+	ErrWrongContract = errors.New("contract is invalid")
 )
 
 // Manager manage all plugins.
 type Manager struct {
-	stateDB *state.StateDB
+	stateDB   *state.StateDB
+	contracts map[string]IContract
 	IAccount
 	IAsset
 	IConsensus
-	IContract
 	IFee
 	ISigner
 }
@@ -81,39 +83,17 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 	if !ok {
 		return nil, ErrWrongAction
 	}
-	switch action.Type() {
-	case CreateAccount:
-		param := &CreateAccountAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
-			return nil, err
+	receipt := action.Recipient()
+	fmt.Println("receipt:", receipt)
+	if contract, exist := pm.contracts[receipt]; exist {
+		snapshot := pm.stateDB.Snapshot()
+		ret, err := contract.CallTx(action, pm)
+		if err != nil {
+			pm.stateDB.RevertToSnapshot(snapshot)
 		}
-		return pm.CreateAccount(param.Name, param.Pubkey, param.Desc)
-	case IssueAsset:
-		param := &IssueAssetAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
-			return nil, err
-		}
-		return pm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount)
-	case IncreaseAsset:
-		param := &IncreaseAssetAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
-			return nil, err
-		}
-		return pm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount)
-	case Transfer:
-		err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
-		return nil, err
-	default:
-		if action.Type() >= RegisterMiner && action.Type() < ConsensusEnd {
-			snapshot := pm.stateDB.Snapshot()
-			ret, err := pm.IConsensus.CallTx(action, pm)
-			if err != nil {
-				pm.stateDB.RevertToSnapshot(snapshot)
-			}
-			return ret, err
-		}
-		return nil, ErrWrongAction
+		return ret, err
 	}
+	return nil, ErrWrongContract
 }
 
 // NewPM create new plugin manager.
@@ -121,10 +101,11 @@ func NewPM(stateDB *state.StateDB) IPM {
 	acm, _ := NewACM(stateDB)
 	asm, _ := NewASM(stateDB)
 	consensus := NewConsensus(stateDB)
-	chainId := big.NewInt(1)
-	signer, _ := NewSigner(chainId)
+	chainID := big.NewInt(1)
+	signer, _ := NewSigner(chainID)
 	fee, _ := NewFeeManager()
-	return &Manager{
+	pm := &Manager{
+		contracts:  make(map[string]IContract),
 		IAccount:   acm,
 		IAsset:     asm,
 		IConsensus: consensus,
@@ -132,4 +113,8 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IFee:       fee,
 		stateDB:    stateDB,
 	}
+	pm.contracts[acm.AccountName()] = acm
+	pm.contracts[asm.AccountName()] = asm
+	pm.contracts[consensus.AccountName()] = consensus
+	return pm
 }

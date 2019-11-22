@@ -61,11 +61,30 @@ type AccountManager struct {
 }
 
 // NewACM New a AccountManager
-func NewACM(db *state.StateDB) (IAccount, error) {
+func NewACM(db *state.StateDB) (*AccountManager, error) {
 	if db == nil {
 		return nil, ErrNewAccountManagerErr
 	}
 	return &AccountManager{db}, nil
+}
+
+func (am *AccountManager) AccountName() string {
+	return "fractalaccount"
+}
+
+func (am *AccountManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
+	switch action.Type() {
+	case CreateAccount:
+		param := &CreateAccountAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		}
+		return am.CreateAccount(param.Name, param.Pubkey, param.Desc)
+	case Transfer:
+		err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		return nil, err
+	}
+	return nil, ErrWrongAction
 }
 
 // CreateAccount Parse Payload to create a account

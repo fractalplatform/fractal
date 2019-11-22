@@ -138,7 +138,7 @@ func (worker *Worker) mintLoop() {
 		}
 		fmt.Println("NewPM:", header.Number, header.Root)
 		pm := plugin.NewPM(state)
-		pm.Init(0, "", header)
+		pm.Init(0, header)
 		if delay := pm.MineDelay(worker.coinbase); delay > 0 {
 			delayCh := time.NewTimer(delay)
 			select {
@@ -167,7 +167,7 @@ func (worker *Worker) mintBlock(state *state.StateDB, pm plugin.IPM, header *typ
 				panic(err)
 			}
 			verifyPM := plugin.NewPM(verifyState)
-			verifyPM.Init(0, "", header)
+			verifyPM.Init(0, header)
 			err1 := verifyPM.VerifySeal(block.Header(), verifyPM)
 			fmt.Println("VerifySeal:", err1)
 			err2 := verifyPM.Verify(block.Header())

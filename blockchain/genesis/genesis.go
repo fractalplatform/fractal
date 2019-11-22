@@ -122,7 +122,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 
 	// create account and asset
 	mananger := pm.NewPM(statedb)
-	mananger.Init(g.Timestamp, g.Config.DposName, nil)
+	mananger.Init(g.Timestamp, nil)
 	actions, err := g.CreateAccount()
 	if err != nil {
 		return nil, nil, err
@@ -251,7 +251,7 @@ func (g *Genesis) CreateAccount() ([]*types.Action, error) {
 	}
 	actions = append(actions, types.NewAction(
 		pm.CreateAccount,
-		"",
+		g.Config.ChainName,
 		g.Config.AccountName,
 		0,
 		0,

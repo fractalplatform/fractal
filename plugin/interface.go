@@ -30,10 +30,15 @@ type IPM interface {
 	IAccount
 	IAsset
 	IConsensus
-	IContract
+	//IContract
 	IFee
 	ISigner
 	ExecTx(arg interface{}) ([]byte, error)
+}
+
+type IContract interface {
+	AccountName() string
+	CallTx(action *types.Action, pm IPM) ([]byte, error)
 }
 
 // IAccount account manager interface.
@@ -73,18 +78,15 @@ type IAsset interface {
 }
 
 type IConsensus interface {
-	Init(genesisTime uint64, genesisAccount string, parent *types.Header)
+	Init(genesisTime uint64, parent *types.Header)
 	MineDelay(miner string) time.Duration
 	Prepare(header *types.Header) error
-	CallTx(action *types.Action, pm IPM) ([]byte, error)
+	//CallTx(action *types.Action, pm IPM) ([]byte, error)
 	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error)
 	Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error)
 	//Difficult(header *types.Header) uint64
 	Verify(header *types.Header) error
 	VerifySeal(header *types.Header, pm IPM) error
-}
-
-type IContract interface {
 }
 
 type IFee interface {

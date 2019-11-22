@@ -23,6 +23,7 @@ import (
 	"strconv"
 
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -55,7 +56,7 @@ type Asset struct {
 }
 
 // NewASM New a AssetManager
-func NewASM(sdb *state.StateDB) (IAsset, error) {
+func NewASM(sdb *state.StateDB) (*AssetManager, error) {
 	if sdb == nil {
 		return nil, ErrNewAssetManagerErr
 	}
@@ -64,6 +65,28 @@ func NewASM(sdb *state.StateDB) (IAsset, error) {
 		sdb: sdb,
 	}
 	return &asset, nil
+}
+
+func (asm *AssetManager) AccountName() string {
+	return "fractalasset"
+}
+
+func (asm *AssetManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
+	switch action.Type() {
+	case IssueAsset:
+		param := &IssueAssetAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		}
+		return asm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm)
+	case IncreaseAsset:
+		param := &IncreaseAssetAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		}
+		return asm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm)
+	}
+	return nil, ErrWrongAction
 }
 
 // IssueAsset Issue system asset

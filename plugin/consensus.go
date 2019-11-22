@@ -62,7 +62,7 @@ var (
 	maxWeight     = uint64(100)
 	minWeight     = 0
 	blockDuration = uint64(3)
-	MinerAccount  string
+	MinerAccount  = "fractaldpos"
 	genesisTime   uint64
 	maxPauseBlock = 864000
 )
@@ -216,15 +216,18 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 	return c
 }
 
+func (c *Consensus) AccountName() string {
+	return MinerAccount
+}
+
 func (c *Consensus) initRequrie() {
 	if !c.isInit {
 		panic("Consensus need Init() before call")
 	}
 }
 
-func (c *Consensus) Init(_genesisTime uint64, genesisAccount string, parent *types.Header) {
-	if len(MinerAccount) == 0 {
-		MinerAccount = genesisAccount
+func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
+	if genesisTime == 0 {
 		genesisTime = _genesisTime
 		fmt.Println("genesisTime", genesisTime, MinerAccount)
 	}
@@ -439,9 +442,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 	// just beta
 	c.initRequrie()
-	if action.Recipient() != MinerAccount {
-		return nil, fmt.Errorf("recipient must be %s", MinerAccount)
-	}
+
 	if action.Value().Sign() > 0 {
 		if action.AssetID() != MinerAssetID {
 			return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
