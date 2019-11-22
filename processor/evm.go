@@ -69,7 +69,7 @@ func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, 
 	// If we don't have an explicit author (i.e. not mining), extract from the header
 	var beneficiary string
 	if author == nil {
-		// 	beneficiary, _ = chain.Author(header) // Ignore error, we're past header validation
+		beneficiary = header.Coinbase // Ignore error, we're past header validation
 	} else {
 		beneficiary = *author
 	}
