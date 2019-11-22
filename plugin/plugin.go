@@ -33,8 +33,9 @@ var (
 
 // Manager manage all plugins.
 type Manager struct {
-	stateDB   *state.StateDB
-	contracts map[string]IContract
+	stateDB         *state.StateDB
+	contracts       map[string]IContract
+	contractsByType map[types.ActionType]IContract
 	IAccount
 	IAsset
 	IConsensus
@@ -96,14 +97,20 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 	return nil
 }
 
+func (pm *Manager) selectContract(action *types.Action) IContract {
+	if contract, exist := pm.contracts[action.Recipient()]; exist {
+		return contract
+	}
+	return pm.contractsByType[action.Type()]
+}
+
 func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 	action, ok := arg.(*types.Action)
 	if !ok {
 		return nil, ErrWrongAction
 	}
-	receipt := action.Recipient()
-	fmt.Println("receipt:", receipt)
-	if contract, exist := pm.contracts[receipt]; exist {
+
+	if contract := pm.selectContract(action); contract != nil {
 		snapshot := pm.stateDB.Snapshot()
 		ret, err := contract.CallTx(action, pm)
 		if err != nil {
@@ -134,5 +141,6 @@ func NewPM(stateDB *state.StateDB) IPM {
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm
 	pm.contracts[consensus.AccountName()] = consensus
+	pm.contractsByType[Transfer] = acm
 	return pm
 }
