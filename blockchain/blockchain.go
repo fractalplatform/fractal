@@ -1002,6 +1002,7 @@ ReceiptHash: %v
 
 ##############################
 `, err, block.NumberU64(), block.Hash().Hex(), block.ParentHash().Hex(), block.Root().Hex(), block.ReceiptHash().Hex()))
+	panic("xx")
 }
 
 // GetBlockNumber retrieves the block number belonging to the given hash from the cache or database

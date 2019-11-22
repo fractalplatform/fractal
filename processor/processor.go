@@ -59,6 +59,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	)
 
 	manager := pm.NewPM(statedb)
+	manager.Init(0, p.bc.GetHeaderByHash(header.ParentHash))
 
 	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
 	if err := manager.Prepare(header); err != nil {

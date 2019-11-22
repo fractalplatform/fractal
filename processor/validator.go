@@ -90,6 +90,7 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	}
 
 	manager := pm.NewPM(stateDB)
+	manager.Init(0, parent)
 
 	if err := manager.Verify(header); err != nil {
 		return err
