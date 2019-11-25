@@ -87,12 +87,10 @@ func (info *CandidateInfo) update(newinfo *CandidateInfo) {
 	info.SignAccount = newinfo.SignAccount
 	info.RegisterNumber = newinfo.RegisterNumber
 	if newinfo.Balance.Sign() > 0 {
-		newBalance := new(big.Int).Set(newinfo.Balance)
-		newBalance.Add(newBalance, info.Balance)
-		osum := info.WeightedSum()
-		nsum := newinfo.WeightedSum()
-		nsum.Add(nsum, osum)
-		info.Weight = nsum.Div(nsum, newBalance).Uint64()
+		info.Balance.Add(info.Balance, newinfo.Balance)
+		oldSum := info.WeightedSum()
+		totalSum := oldSum.Add(oldSum, newinfo.WeightedSum())
+		info.Weight = tsum.Div(totalSum, info.Balance).Uint64()
 	}
 	info.SignAccount = newinfo.SignAccount
 }
