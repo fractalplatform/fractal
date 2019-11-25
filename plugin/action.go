@@ -3,7 +3,6 @@ package plugin
 import (
 	"math/big"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -27,7 +26,7 @@ const (
 
 type CreateAccountAction struct {
 	Name   string
-	Pubkey common.PubKey
+	Pubkey string
 	Desc   string
 }
 

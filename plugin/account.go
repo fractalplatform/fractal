@@ -89,9 +89,13 @@ func (am *AccountManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 }
 
 // CreateAccount Parse Payload to create a account
-func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error) {
+func (am *AccountManager) CreateAccount(accountName string, pubKey string, description string) ([]byte, error) {
 	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrDescriptionTooLong
+	}
+
+	if !common.IsHexPubKey(pubKey) {
+		return nil, ErrPubKey
 	}
 
 	if err := am.checkAccountName(accountName); err != nil {
@@ -105,7 +109,8 @@ func (am *AccountManager) CreateAccount(accountName string, pubKey common.PubKey
 		return nil, err
 	}
 
-	newAddress := common.BytesToAddress(crypto.Keccak256(pubKey.Bytes()[1:])[12:])
+	tempKey := common.HexToPubKey(pubKey)
+	newAddress := common.BytesToAddress(crypto.Keccak256(tempKey.Bytes()[1:])[12:])
 	balance := &AssetBalance{0, big.NewInt(0)}
 
 	acctObject := Account{
@@ -483,13 +488,17 @@ func (am *AccountManager) subBalance(account *Account, assetID uint64, value *bi
 	return nil
 }
 
-func (am *AccountManager) checkCreateAccount(accountName string, pubKey common.PubKey, description string) error {
+func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, description string) error {
 	if uint64(len(description)) > MaxDescriptionLength {
 		return ErrDescriptionTooLong
 	}
 
 	if err := am.checkAccountName(accountName); err != nil {
 		return err
+	}
+
+	if !common.IsHexPubKey(pubKey) {
+		return ErrPubKey
 	}
 	return nil
 }
@@ -507,4 +516,5 @@ var (
 	ErrCodeIsEmpty          = errors.New("code is empty")
 	ErrHashIsEmpty          = errors.New("hash is empty")
 	ErrkeyNotSame           = errors.New("key not same")
+	ErrPubKey               = errors.New("pubkey invalid")
 )

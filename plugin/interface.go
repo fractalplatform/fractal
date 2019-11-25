@@ -45,7 +45,7 @@ type IContract interface {
 type IAccount interface {
 	GetNonce(accountName string) (uint64, error)
 	SetNonce(accountName string, nonce uint64) error
-	CreateAccount(accountName string, pubKey common.PubKey, description string) ([]byte, error)
+	CreateAccount(accountName string, pubKey string, description string) ([]byte, error)
 	GetCode(accountName string) ([]byte, error)
 	GetCodeHash(accountName string) (common.Hash, error)
 	SetCode(accountName string, code []byte) error
@@ -55,7 +55,7 @@ type IAccount interface {
 	RecoverTx(signer ISigner, tx *types.Transaction) error
 	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) error
 	ChangeAddress(accountName string, address common.Address) error
-	checkCreateAccount(accountName string, pubKey common.PubKey, description string) error
+	checkCreateAccount(accountName string, pubKey string, description string) error
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
 	addBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	subBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
