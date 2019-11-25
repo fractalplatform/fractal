@@ -90,7 +90,7 @@ func (info *CandidateInfo) update(newinfo *CandidateInfo) {
 		info.Balance.Add(info.Balance, newinfo.Balance)
 		oldSum := info.WeightedSum()
 		totalSum := oldSum.Add(oldSum, newinfo.WeightedSum())
-		info.Weight = tsum.Div(totalSum, info.Balance).Uint64()
+		info.Weight = totalSum.Div(totalSum, info.Balance).Uint64()
 	}
 	info.SignAccount = newinfo.SignAccount
 }
