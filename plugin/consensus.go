@@ -364,7 +364,7 @@ func (c *Consensus) Show(miner string) {
 	fmt.Println("genesisTime", genesisTime, MinerAccount)
 	for i, n := range c.candidates.listSort {
 		info := c.candidates.info[n]
-		fmt.Println("\t", i, n, info.WeightedSum(), info.Skip)
+		fmt.Println("\t", i, n, info.WeightedSum(), info)
 	}
 }
 
