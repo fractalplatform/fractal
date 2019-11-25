@@ -91,6 +91,7 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 	bc := p.bc
 	config := bc.Config()
 	pm := plugin.NewPM(statedb)
+	pm.Init(0, p.bc.GetHeaderByHash(header.ParentHash))
 
 	// todo for the moment，only system asset
 	// assetID := tx.GasAssetID()
