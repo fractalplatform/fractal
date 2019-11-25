@@ -152,7 +152,7 @@ func (candidates *Candidates) Swap(i, j int) {
 }
 
 func (candidates *Candidates) sort() {
-	sort.Reverse(candidates)
+	sort.Sort(sort.Reverse(candidates))
 }
 
 func (candidates *Candidates) getInfoCopy(account string) *CandidateInfo {
