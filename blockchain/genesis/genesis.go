@@ -242,7 +242,7 @@ func (g *Genesis) CreateAccount() ([]*types.Action, error) {
 	actions := []*types.Action{}
 	act := &pm.CreateAccountAction{
 		Name:   g.Config.ChainName,
-		Pubkey: common.PubKey{},
+		Pubkey: common.HexToPubKey("").String(),
 	}
 
 	payload, err := rlp.EncodeToBytes(act)
@@ -342,27 +342,27 @@ func DefaultGenesisAccounts() []*pm.CreateAccountAction {
 		&pm.CreateAccountAction{
 			Name:   params.DefaultChainconfig.SysName,
 			Desc:   "system account",
-			Pubkey: common.HexToPubKey("047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"),
+			Pubkey: "047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
 		},
 		&pm.CreateAccountAction{
 			Name:   params.DefaultChainconfig.AccountName,
 			Desc:   "account manager account",
-			Pubkey: common.HexToPubKey(""),
+			Pubkey: common.HexToPubKey("").String(),
 		},
 		&pm.CreateAccountAction{
 			Name:   params.DefaultChainconfig.AssetName,
 			Desc:   "asset manager account",
-			Pubkey: common.HexToPubKey(""),
+			Pubkey: common.HexToPubKey("").String(),
 		},
 		&pm.CreateAccountAction{
 			Name:   params.DefaultChainconfig.DposName,
 			Desc:   "consensus account",
-			Pubkey: common.HexToPubKey(""),
+			Pubkey: common.HexToPubKey("").String(),
 		},
 		&pm.CreateAccountAction{
 			Name:   params.DefaultChainconfig.FeeName,
 			Desc:   "fee manager account",
-			Pubkey: common.HexToPubKey(""),
+			Pubkey: common.HexToPubKey("").String(),
 		},
 	}
 }
