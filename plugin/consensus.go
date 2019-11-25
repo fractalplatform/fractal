@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/fractalplatform/fractal/crypto"
@@ -136,7 +137,14 @@ func (candidates *Candidates) Len() int {
 func (candidates *Candidates) Less(i, j int) bool {
 	info_i := candidates.info[candidates.listSort[i]]
 	info_j := candidates.info[candidates.listSort[j]]
-	return info_i.WeightedSum().Cmp(info_j.WeightedSum()) < 0
+	isless := info_i.WeightedSum().Cmp(info_j.WeightedSum())
+	if isless == 0 {
+		if info_i.RegisterNumber == info_j.RegisterNumber {
+			return strings.Compare(info_j.OwnerAccount, info_j.OwnerAccount) < 0
+		}
+		return info_i.RegisterNumber > info_j.RegisterNumber
+	}
+	return isless < 0
 }
 
 func (candidates *Candidates) Swap(i, j int) {
@@ -144,7 +152,7 @@ func (candidates *Candidates) Swap(i, j int) {
 }
 
 func (candidates *Candidates) sort() {
-	sort.Sort(candidates)
+	sort.Reverse(candidates)
 }
 
 func (candidates *Candidates) getInfoCopy(account string) *CandidateInfo {
