@@ -21,6 +21,7 @@ const (
 const (
 	// RegisterMiner register msg.sender become a miner
 	RegisterMiner types.ActionType = 0x300 + iota
+	UnregisterMiner
 	ConsensusEnd
 )
 

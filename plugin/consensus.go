@@ -448,37 +448,42 @@ func (c *Consensus) Prepare(header *types.Header) error {
 func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 	// just beta
 	c.initRequrie()
-
-	if action.Value().Sign() > 0 {
-		if action.AssetID() != MinerAssetID {
-			return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
-		}
-		if err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
-			return nil, err
-		}
-	}
-	//TODO: return or lock balance
 	var success bool
 	var info, newinfo *CandidateInfo
-	if action.Value().Sign() > 0 {
-		fmt.Println("signer", action.Sender())
-		success, newinfo, info = c.pushCandidate(action.Sender(), action.Sender(), action.Value())
-	} else {
-		success, info = c.removeCandidate(action.Sender())
-	}
-	if success {
-		c.storeCandidates()
-		if newinfo != nil {
-			newinfo.Store(c.stateDB)
+	switch action.Type() {
+	case RegisterMiner:
+		if action.Value().Sign() > 0 {
+			if action.AssetID() != MinerAssetID {
+				return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
+			}
+			if err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+				return nil, err
+			}
 		}
-		if info != nil {
-			info.Store(c.stateDB)
-			err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance)
+		success, newinfo, info = c.pushCandidate(action.Sender(), action.Sender(), action.Value())
+	case UnregisterMiner:
+		if action.Value().Sign() > 0 {
+			return nil, errors.New("msg.value must be zero")
+		}
+		success, info = c.removeCandidate(action.Sender())
+	default:
+		return nil, ErrWrongAction
+	}
+	if !success {
+		return nil, errors.New("wrong candidate")
+	}
+	c.storeCandidates()
+	if newinfo != nil {
+		newinfo.Store(c.stateDB)
+	}
+	if info != nil {
+		if err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return nil, err
 		}
-		return nil, nil
+		info.Balance = big.NewInt(0)
+		info.Store(c.stateDB)
 	}
-	return nil, errors.New("wrong candidate")
+	return nil, nil
 }
 
 // Finalize assembles the final block.
