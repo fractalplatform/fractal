@@ -44,6 +44,7 @@ type Header struct {
 	Time                 uint64
 	Version              uint64
 	Difficulty           uint64
+	Proof                []byte
 	Sign                 []byte
 	Extra                []byte
 }

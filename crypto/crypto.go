@@ -263,6 +263,46 @@ func hashToInt(hash []byte, c elliptic.Curve) *big.Int {
 	return ret
 }
 
+func vrfSignX(priv *ecdsa.PrivateKey, hash []byte) (S *big.Int) {
+	c := priv.Curve
+	N := c.Params().N
+
+	var r *ecdsa.PrivateKey
+	R := new(big.Int)
+	for h := hash; R.Sign() == 0; {
+		h = Keccak256(h)
+		hg := new(big.Int).SetBytes(h)
+		r = PrikeyMul(priv, hg)
+		R.Mod(r.X, N)
+	}
+
+	h := Keccak256(hash, priv.X.Bytes(), priv.Y.Bytes())
+	x := new(big.Int).SetBytes(h)
+	x.Mul(x, priv.D)
+	x.Add(x, r.D)
+	return x.Mod(x, N)
+}
+
+func vrfVerifyX(pub *ecdsa.PublicKey, hash []byte, S *big.Int) bool {
+	c := pub.Curve
+	N := c.Params().N
+
+	var rx ecdsa.PublicKey
+	R := new(big.Int)
+	for h := hash; R.Sign() == 0; {
+		h = Keccak256(h)
+		hg := new(big.Int).SetBytes(h)
+		rx = PubkeyMul(*pub, hg)
+		R.Mod(rx.X, N)
+	}
+	h := Keccak256(hash, pub.X.Bytes(), pub.Y.Bytes())
+	x := new(big.Int).SetBytes(h)
+	cx := PubkeyMul(*pub, x)
+	csk := PubkeyAdd(cx, rx)
+	sk := NewPrikey(S)
+	return csk.X.Cmp(sk.X) == 0 && csk.Y.Cmp(sk.Y) == 0
+}
+
 func vrfSign(priv *ecdsa.PrivateKey, hash []byte) (S *big.Int) {
 	c := priv.Curve
 	N := c.Params().N
@@ -308,12 +348,38 @@ func vrfVerify(pub *ecdsa.PublicKey, hash []byte, S *big.Int) bool {
 
 // VRFGenerate simulate VRF
 func VRF_Proof(priv *ecdsa.PrivateKey, info []byte) (proof []byte) {
-	if s := vrfSign(priv, info); s != nil {
+	if s := vrfSignX(priv, info); s != nil {
 		return s.Bytes()
 	}
 	return nil
 }
 
 func VRF_Verify(pub *ecdsa.PublicKey, info, proof []byte) bool {
-	return vrfVerify(pub, info, new(big.Int).SetBytes(proof))
+	return vrfVerifyX(pub, info, new(big.Int).SetBytes(proof))
+}
+
+var suite = string([]byte{0x01})
+
+func ECVRF_hash_to_curve(pub *ecdsa.PublicKey, alpha string) *ecdsa.PublicKey {
+	//hash := Keccak256([]byte(alpha))
+	return nil
+}
+
+func ECVRF_nonce_generation(sk *ecdsa.PrivateKey, h string) *big.Int {
+	clen := (len(h) + 7) / 8
+	V := make([]byte, 0, clen)
+	K := make([]byte, 0, clen)
+	for i := range V {
+		V[i] = 0x1
+		K[i] = 0
+	}
+	HMAC_K := func(p ...[]byte) []byte {
+		p = append([][]byte{K}, p...)
+		return Keccak256(p...)
+	}
+	K = HMAC_K(V, []byte{0x0}, sk.D.Bytes(), []byte(h))
+	V = HMAC_K(V)
+	K = HMAC_K(V, []byte{0x1}, sk.D.Bytes(), []byte(h))
+	V = HMAC_K(V)
+	return nil
 }
