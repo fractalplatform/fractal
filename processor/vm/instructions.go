@@ -859,7 +859,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 
 	var ret []byte
 	var err error
-	if p := PrecompiledContracts[accountName]; p != nil {
+	if p := PrecompiledContracts[name]; p != nil {
 		ret, err = RunPrecompiledContract(p, args, contract)
 	} else {
 		action := types.NewAction(types.CallContract, contract.Name(), accountName, 0, evm.AssetID, gas, value, args, nil)
@@ -909,7 +909,7 @@ func opCallWithPay(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 
 	var ret []byte
 	var err error
-	if p := PrecompiledContracts[accountName]; p != nil {
+	if p := PrecompiledContracts[name]; p != nil {
 		ret, err = RunPrecompiledContract(p, args, contract)
 	} else {
 		action := types.NewAction(types.CallContract, contract.Name(), accountName, 0, assetID, gas, value, args, nil)
