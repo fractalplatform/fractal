@@ -73,6 +73,22 @@ func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, parentIndex ui
 	return nil
 }
 
+func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if sc := a.senderPubkeys.Load(); sc != nil {
+		sigCache := sc.(sigCache)
+		if sigCache.signer.Equal(signer) {
+			return sigCache.pubKeys, nil
+		}
+	}
+
+	pubKeys, err := signer.PubKeys(a, tx)
+	if err != nil {
+		return []common.PubKey{}, err
+	}
+	a.senderPubkeys.Store(sigCache{signer: signer, pubKeys: pubKeys})
+	return pubKeys, nil
+}
+
 func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer *FeePayer, parentIndex uint64, keys []*KeyPair) error {
 	h := s.Hash(tx)
 	for _, key := range keys {
@@ -97,23 +113,19 @@ func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer 
 	return nil
 }
 
-func RecoverPayerMultiKey() {
-
-}
-
-func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
-	if sc := a.senderPubkeys.Load(); sc != nil {
+func RecoverPayerMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if sc := a.payerPubkeys.Load(); sc != nil {
 		sigCache := sc.(sigCache)
 		if sigCache.signer.Equal(signer) {
 			return sigCache.pubKeys, nil
 		}
 	}
 
-	pubKeys, err := signer.PubKeys(a, tx)
+	pubKeys, err := signer.PayerPubKeys(a, tx)
 	if err != nil {
 		return []common.PubKey{}, err
 	}
-	a.senderPubkeys.Store(sigCache{signer: signer, pubKeys: pubKeys})
+	a.payerPubkeys.Store(sigCache{signer: signer, pubKeys: pubKeys})
 	return pubKeys, nil
 }
 
@@ -180,11 +192,15 @@ func (s Signer) PayerPubKeys(a *Action, tx *Transaction) ([]common.PubKey, error
 	if len(a.data.Extend) == 0 {
 		return nil, ErrSignEmpty
 	}
-	if a.ChainID().Cmp(s.chainID) != 0 {
-		return nil, ErrInvalidchainID
+	var fp *FeePayer
+	if err := rlp.DecodeBytes(a.data.Extend[0], fp); err != nil {
+		return nil, err
+	}
+	if len(fp.Sign.SignData) == 0 {
+		return nil, ErrSignEmpty
 	}
 	var pubKeys []common.PubKey
-	for _, sign := range a.data.Sign.SignData {
+	for _, sign := range fp.Sign.SignData {
 		V := new(big.Int).Sub(sign.V, s.chainIDMul)
 		V.Sub(V, big8)
 		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V)

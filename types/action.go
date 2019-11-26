@@ -140,6 +140,7 @@ type Action struct {
 	hash          atomic.Value
 	extendHash    atomic.Value
 	senderPubkeys atomic.Value
+	payerPubkeys  atomic.Value
 	author        atomic.Value
 }
 
