@@ -111,6 +111,12 @@ type SignData struct {
 	Index []uint64
 }
 
+type FeePayer struct {
+	GasPrice *big.Int
+	Payer    common.Name
+	Sign     *Signature
+}
+
 type actionData struct {
 	AType    ActionType
 	Nonce    uint64
@@ -121,15 +127,18 @@ type actionData struct {
 	Amount   *big.Int
 	Payload  []byte
 	Remark   []byte
+	Sign     *Signature
 
-	Sign *Signature
+	Extend []rlp.RawValue `rlp:"tail"`
 }
 
 // Action represents an entire action in the transaction.
 type Action struct {
 	data actionData
 	// cache
+	fp            *FeePayer
 	hash          atomic.Value
+	extendHash    atomic.Value
 	senderPubkeys atomic.Value
 	author        atomic.Value
 }
@@ -150,6 +159,7 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		Payload:  payload,
 		Remark:   remark,
 		Sign:     &Signature{0, make([]*SignData, 0)},
+		Extend:   make([]rlp.RawValue, 0),
 	}
 	if amount != nil {
 		data.Amount.Set(amount)
@@ -287,14 +297,48 @@ func (a *Action) Gas() uint64 { return a.data.GasLimit }
 // Value returns action's Value.
 func (a *Action) Value() *big.Int { return new(big.Int).Set(a.data.Amount) }
 
+// IgnoreExtend returns ignore extend
+func (a *Action) IgnoreExtend() []interface{} {
+	return []interface{}{
+		a.data.AType,
+		a.data.Nonce,
+		a.data.AssetID,
+		a.data.From,
+		a.data.To,
+		a.data.GasLimit,
+		a.data.Amount,
+		a.data.Payload,
+		a.data.Remark,
+		a.data.Sign,
+	}
+}
+
 // EncodeRLP implements rlp.Encoder
 func (a *Action) EncodeRLP(w io.Writer) error {
+	if a.fp != nil {
+		value, err := rlp.EncodeToBytes(a.fp)
+		if err != nil {
+			return err
+		}
+		a.data.Extend = []rlp.RawValue{value}
+	}
+
 	return rlp.Encode(w, &a.data)
 }
 
 // DecodeRLP implements rlp.Decoder
 func (a *Action) DecodeRLP(s *rlp.Stream) error {
-	return s.Decode(&a.data)
+	if err := s.Decode(&a.data); err != nil {
+		return err
+	}
+
+	if len(a.data.Extend) != 0 {
+		a.fp = new(FeePayer)
+		return rlp.DecodeBytes(a.data.Extend[0], a.fp)
+
+	}
+
+	return nil
 }
 
 // ChainID returns which chain id this action was signed for (if at all)
@@ -307,8 +351,18 @@ func (a *Action) Hash() common.Hash {
 	if hash := a.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := RlpHash(a)
+	v := RlpHash(a.IgnoreExtend())
 	a.hash.Store(v)
+	return v
+}
+
+// ExtendHash hashes the RLP encoding of action.
+func (a *Action) ExtendHash() common.Hash {
+	if hash := a.extendHash.Load(); hash != nil {
+		return hash.(common.Hash)
+	}
+	v := RlpHash(a)
+	a.extendHash.Store(v)
 	return v
 }
 
@@ -322,7 +376,7 @@ func (a *Action) WithSignature(signer Signer, sig []byte, index []uint64) error 
 	return nil
 }
 
-// WithSignature returns a new transaction with the given signature.
+// WithParentIndex returns a new transaction with the given signature.
 func (a *Action) WithParentIndex(parentIndex uint64) {
 	a.data.Sign.ParentIndex = parentIndex
 }

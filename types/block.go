@@ -292,7 +292,7 @@ func Number(b1, b2 *Block) bool { return b1.Head.Number.Cmp(b2.Head.Number) < 0 
 func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {
 	var txHashs []common.Hash
 	for i := 0; i < len(txs); i++ {
-		txHashs = append(txHashs, txs[i].Hash())
+		txHashs = append(txHashs, txs[i].ExtensHash())
 	}
 	return common.MerkleRoot(txHashs)
 }

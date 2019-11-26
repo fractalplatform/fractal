@@ -99,8 +99,8 @@ func TestActionEncodeAndDecode(t *testing.T) {
 	if err := rlp.Decode(bytes.NewReader(actionBytes), &actAction); err != nil {
 		t.Fatal(err)
 	}
-
 	assert.Equal(t, testAction, actAction)
+
 }
 
 func TestAction_Check(t *testing.T) {
