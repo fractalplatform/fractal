@@ -217,11 +217,13 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 		info.Load(c.stateDB, n)
 		c.candidates.info[n] = info
 	}
+
 	if c.parent != nil {
-		if c.parent.Difficulty == 0 {
-			c.parent.Difficulty = c.toDifficult(1)
+		if c.parent.Difficulty == 0 { // genesis
+			c.minerIndex = 0
+		} else {
+			c.minerIndex = c.toOffset(c.parent.Difficulty)
 		}
-		c.minerIndex = c.toOffset(c.parent.Difficulty)
 	}
 	return c
 }
@@ -243,13 +245,13 @@ func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
 	}
 	c.parent = parent
 	c.isInit = true
+
 	if c.parent != nil {
-		pd := c.parent.Difficulty
-		if c.parent.Difficulty == 0 {
-			c.parent.Difficulty = c.toDifficult(1)
+		if c.parent.Difficulty == 0 { // genesis
+			c.minerIndex = 0
+		} else {
+			c.minerIndex = c.toOffset(c.parent.Difficulty)
 		}
-		fmt.Println("c.parent.Difficulty", c.parent.Number, c.parent.Difficulty, pd)
-		c.minerIndex = c.toOffset(parent.Difficulty)
 	}
 }
 

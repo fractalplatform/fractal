@@ -320,6 +320,9 @@ func gasCall(gt params.GasTable, evm *EVM, contract *Contract, stack *Stack, mem
 		gas            = gt.Calls
 		transfersValue = stack.Back(2).Sign() != 0
 	)
+	if p := PrecompiledContracts[stack.Back(1)]; p != nil {
+		return gas, nil
+	}
 	if transfersValue {
 		gas += gt.CallValueTransferGas
 	}
