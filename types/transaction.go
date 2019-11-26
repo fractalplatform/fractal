@@ -66,8 +66,21 @@ func NewTransaction(assetID uint64, price *big.Int, actions ...*Action) *Transac
 // GasAssetID returns transaction gas asset id.
 func (tx *Transaction) GasAssetID() uint64 { return tx.gasAssetID }
 
-// GasPrice returns transaction gas price.
-func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.gasPrice) }
+func (tx *Transaction) PayerExist() bool {
+	return tx.gasPrice.Cmp(big.NewInt(0)) == 0
+}
+
+// GasPrice returns transaction Higher gas price .
+func (tx *Transaction) GasPrice() *big.Int {
+	gasPrice := new(big.Int)
+	if tx.gasPrice.Cmp(big.NewInt(0)) == 0 {
+		if price := tx.actions[0].PayerGasPrice(); price == nil || price.Cmp(big.NewInt(0)) == 0 {
+			return nil
+		}
+		return gasPrice.Set(tx.actions[0].PayerGasPrice())
+	}
+	return gasPrice.Set(tx.gasPrice)
+}
 
 // Cost returns all actions gasprice * gaslimit.
 func (tx *Transaction) Cost() *big.Int {

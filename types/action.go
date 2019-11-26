@@ -180,6 +180,27 @@ func (a *Action) GetSignParent() uint64 {
 	return a.data.Sign.ParentIndex
 }
 
+func (a *Action) PayerGasPrice() *big.Int {
+	if a.fp != nil {
+		return a.fp.GasPrice
+	}
+	return nil
+}
+
+func (a *Action) Payer() common.Name {
+	if a.fp != nil {
+		return a.fp.Payer
+	}
+	return common.Name("")
+}
+
+func (a *Action) PayerSignature() *Signature {
+	if a.fp != nil {
+		return a.fp.Sign
+	}
+	return nil
+}
+
 // Check the validity of all fields
 func (a *Action) Check(fid uint64, conf *params.ChainConfig) error {
 	//check To

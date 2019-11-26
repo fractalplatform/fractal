@@ -28,6 +28,7 @@ var (
 	// one present in the local chain.
 	ErrNonceTooLow = errors.New("nonce too low")
 
+	ErrPayerUnderpriced = errors.New("transaction payer underpriced")
 	// ErrUnderpriced is returned if a transaction's gas price is below the minimum
 	// configured for the transaction pool.
 	ErrUnderpriced = errors.New("transaction underpriced")
