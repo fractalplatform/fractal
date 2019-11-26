@@ -24,6 +24,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
@@ -70,6 +71,34 @@ func SignActionWithMultiKey(a *Action, tx *Transaction, s Signer, parentIndex ui
 	}
 	a.WithParentIndex(parentIndex)
 	return nil
+}
+
+func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer *FeePayer, parentIndex uint64, keys []*KeyPair) error {
+	h := s.Hash(tx)
+	for _, key := range keys {
+		sig, err := crypto.Sign(h[:], key.priv)
+		if err != nil {
+			return err
+		}
+
+		err = feePayer.WithSignature(s, sig, key.index)
+		if err != nil {
+			return err
+		}
+	}
+	feePayer.WithParentIndex(parentIndex)
+
+	if value, err := rlp.EncodeToBytes(feePayer); err != nil {
+		return err
+	} else {
+		a.data.Extend = append(a.data.Extend, value)
+	}
+
+	return nil
+}
+
+func RecoverPayerMultiKey() {
+
 }
 
 func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
@@ -128,6 +157,27 @@ var big8 = big.NewInt(8)
 
 func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
 	if len(a.GetSign()) == 0 {
+		return nil, ErrSignEmpty
+	}
+	if a.ChainID().Cmp(s.chainID) != 0 {
+		return nil, ErrInvalidchainID
+	}
+	var pubKeys []common.PubKey
+	for _, sign := range a.data.Sign.SignData {
+		V := new(big.Int).Sub(sign.V, s.chainIDMul)
+		V.Sub(V, big8)
+		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V)
+		if err != nil {
+			return nil, err
+		}
+		pubKey := common.BytesToPubKey(data)
+		pubKeys = append(pubKeys, pubKey)
+	}
+	return pubKeys, nil
+}
+
+func (s Signer) PayerPubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if len(a.data.Extend) == 0 {
 		return nil, ErrSignEmpty
 	}
 	if a.ChainID().Cmp(s.chainID) != 0 {

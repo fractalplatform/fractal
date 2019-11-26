@@ -381,6 +381,19 @@ func (a *Action) WithParentIndex(parentIndex uint64) {
 	a.data.Sign.ParentIndex = parentIndex
 }
 
+func (f *FeePayer) WithSignature(signer Signer, sig []byte, index []uint64) error {
+	r, s, v, err := signer.SignatureValues(sig)
+	if err != nil {
+		return err
+	}
+	f.Sign.SignData = append(f.Sign.SignData, &SignData{R: r, S: s, V: v, Index: index})
+	return nil
+}
+
+func (f *FeePayer) WithParentIndex(parentIndex uint64) {
+	f.Sign.ParentIndex = parentIndex
+}
+
 // RPCAction represents a action that will serialize to the RPC representation of a action.
 type RPCAction struct {
 	Type       uint64        `json:"type"`
