@@ -298,6 +298,8 @@ func (a *Action) Gas() uint64 { return a.data.GasLimit }
 // Value returns action's Value.
 func (a *Action) Value() *big.Int { return new(big.Int).Set(a.data.Amount) }
 
+func (a *Action) Extend() []rlp.RawValue { return a.data.Extend }
+
 // IgnoreExtend returns ignore extend
 func (a *Action) IgnoreExtend() []interface{} {
 	return []interface{}{
@@ -393,6 +395,14 @@ func (f *FeePayer) WithSignature(signer Signer, sig []byte, index []uint64) erro
 
 func (f *FeePayer) WithParentIndex(parentIndex uint64) {
 	f.Sign.ParentIndex = parentIndex
+}
+
+func (f *FeePayer) GetSignParent() uint64 {
+	return f.Sign.ParentIndex
+}
+
+func (f *FeePayer) GetSignIndex(i uint64) []uint64 {
+	return f.Sign.SignData[i].Index
 }
 
 // RPCAction represents a action that will serialize to the RPC representation of a action.
