@@ -211,12 +211,17 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 	}
 	c.loadCandidates()
 	c.loadLackBlock()
-	for i, n := range c.candidates.listSort {
+	for _, n := range c.candidates.listSort {
 		info := &CandidateInfo{}
 		info.Load(c.stateDB, n)
 		c.candidates.info[n] = info
-		if c.parent != nil && n == c.parent.Coinbase {
-			c.minerIndex = uint64(i)
+	}
+
+	if c.parent != nil {
+		if c.parent.Difficulty == 0 { // genesis
+			c.minerIndex = 0
+		} else {
+			c.minerIndex = c.toOffset(c.parent.Difficulty)
 		}
 	}
 	return c
@@ -240,12 +245,11 @@ func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
 	c.parent = parent
 	c.isInit = true
 
-	for i, n := range c.candidates.listSort {
-		info := &CandidateInfo{}
-		info.Load(c.stateDB, n)
-		c.candidates.info[n] = info
-		if c.parent != nil && n == c.parent.Coinbase {
-			c.minerIndex = uint64(i)
+	if c.parent != nil {
+		if c.parent.Difficulty == 0 { // genesis
+			c.minerIndex = 0
+		} else {
+			c.minerIndex = c.toOffset(c.parent.Difficulty)
 		}
 	}
 }
@@ -377,21 +381,21 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 	now := time.Now().Unix()
 	i := c.nextMiner()
 	if i < 1 {
-		fmt.Println("i<1:", i)
+		fmt.Println("i-wrong:", i)
 		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
 	nextMiner := c.minerSlot(uint64(i))
 	if nextMiner == miner {
 		ontime := int64(c.timeSlot(uint64(i) - 1))
 		if ontime > now {
-			fmt.Println("i-1:", i, ontime, now)
+			fmt.Println("i-ready:", i, ontime, now)
 			return time.Duration(ontime-now) * time.Second
 		}
-		fmt.Println("i-x:", i, ontime, now)
+		fmt.Println("i-go:", i, ontime, now)
 		c.minerOffset = uint64(i)
 		return 0
 	}
-	fmt.Println("i-2:", i)
+	fmt.Println("i-wait:", i)
 	return time.Duration(int64(c.timeSlot(uint64(i)))-now) * time.Second
 }
 
