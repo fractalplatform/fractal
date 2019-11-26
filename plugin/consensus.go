@@ -138,7 +138,7 @@ func (candidates *Candidates) Less(i, j int) bool {
 	isless := info_i.WeightedSum().Cmp(info_j.WeightedSum())
 	if isless == 0 {
 		if info_i.RegisterNumber == info_j.RegisterNumber {
-			return strings.Compare(info_j.OwnerAccount, info_j.OwnerAccount) < 0
+			return strings.Compare(info_i.OwnerAccount, info_j.OwnerAccount) < 0
 		}
 		return info_i.RegisterNumber > info_j.RegisterNumber
 	}
