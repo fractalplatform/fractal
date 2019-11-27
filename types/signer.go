@@ -109,6 +109,7 @@ func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer 
 	} else {
 		a.data.Extend = append(a.data.Extend, value)
 	}
+	a.fp = feePayer
 
 	return nil
 }
@@ -189,18 +190,12 @@ func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
 }
 
 func (s Signer) PayerPubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
-	if len(a.data.Extend) == 0 {
+	if len(a.fp.Sign.SignData) == 0 {
 		return nil, ErrSignEmpty
 	}
-	fp := &FeePayer{}
-	if err := rlp.DecodeBytes(a.data.Extend[0], fp); err != nil {
-		return nil, err
-	}
-	if len(fp.Sign.SignData) == 0 {
-		return nil, ErrSignEmpty
-	}
+
 	var pubKeys []common.PubKey
-	for _, sign := range fp.Sign.SignData {
+	for _, sign := range a.fp.Sign.SignData {
 		V := new(big.Int).Sub(sign.V, s.chainIDMul)
 		V.Sub(V, big8)
 		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V)
