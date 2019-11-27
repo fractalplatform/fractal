@@ -85,7 +85,9 @@ func (info *CandidateInfo) copy() *CandidateInfo {
 }
 
 func (info *CandidateInfo) update(newinfo *CandidateInfo) {
-	info.SignAccount = newinfo.SignAccount
+	if len(newinfo.SignAccount) != 0 {
+		info.SignAccount = newinfo.SignAccount
+	}
 	info.RegisterNumber = newinfo.RegisterNumber
 	if newinfo.Balance.Sign() > 0 {
 		totalSum := info.WeightedSum()
@@ -122,6 +124,13 @@ func (info *CandidateInfo) Store(stateDB *state.StateDB) {
 func (info *CandidateInfo) Load(stateDB *state.StateDB, owner string) {
 	b, _ := stateDB.Get(ConsensusKey, CandidateInfoKey+owner)
 	rlp.DecodeBytes(b, info)
+}
+
+func (info *CandidateInfo) signer() string {
+	if len(info.SignAccount) == 0 {
+		return info.OwnerAccount
+	}
+	return info.SignAccount
 }
 
 type Candidates struct {
@@ -368,7 +377,19 @@ func (c *Consensus) searchMiner(miner string) int {
 	return -1
 }
 
+var pn = 0
+
+func xpanic(n int) {
+	pn++
+	if pn > n {
+		panic(pn)
+	}
+}
+
 func (c *Consensus) Show(miner string, nextMiner string) {
+
+	//xpanic(10)
+
 	fmt.Println("-----------------")
 	fmt.Println("parent:", c.parent.Number)
 	fmt.Println("parent:", c.parent.Time)
@@ -382,12 +403,12 @@ func (c *Consensus) Show(miner string, nextMiner string) {
 		info := c.candidates.info[n]
 		fmt.Print("\t")
 		align := "   "
-		if n == miner {
-			fmt.Print("*")
-			align = align[1:]
-		}
 		if n == nextMiner {
 			fmt.Print(">")
+			align = align[1:]
+		}
+		if n == miner {
+			fmt.Print("*")
 			align = align[1:]
 		}
 		fmt.Print(align)
@@ -506,7 +527,19 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 				return nil, err
 			}
 		}
-		success, newinfo, info = c.pushCandidate(action.Sender(), action.Sender(), action.Value())
+		var signAccount string
+		if len(action.Data()) > 0 {
+			if err := rlp.DecodeBytes(action.Data(), &signAccount); err != nil {
+				return nil, err
+			}
+		}
+		if len(signAccount) > 0 {
+			err := pm.AccountIsExist(signAccount)
+			if err != nil {
+				return nil, err
+			}
+		}
+		success, newinfo, info = c.pushCandidate(action.Sender(), signAccount, action.Value())
 	case UnregisterMiner:
 		if action.Value().Sign() > 0 {
 			return nil, errors.New("msg.value must be zero")
@@ -562,17 +595,9 @@ func (c *Consensus) Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (
 	if !exist {
 		return block, errors.New("illegal miner")
 	}
-	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
-	if err != nil {
-		fmt.Println("miner:", miner, "signer:", signerInfo.SignAccount, "err:", err)
-		return block, err
-	}
-	keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
-	if signerAccount.Address.Compare(keyAddress) != 0 {
-		return block, errors.New("illegal private key")
-	}
+	var err error
 	block.Head.Proof = crypto.VRF_Proof(priKey, c.parent.Hash().Bytes())
-	block.Head.Sign, err = pm.Sign(block.Header().SignHash, priKey)
+	block.Head.Sign, err = pm.AccountSign(signerInfo.signer(), priKey, pm, block.Header().SignHash)
 	return block, err
 }
 
@@ -627,21 +652,12 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	if !exist {
 		return errors.New("illegal miner")
 	}
-	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
+	ecpub, err := pm.AccountVerify(signerInfo.signer(), pm, header.Sign, header.SignHash)
 	if err != nil {
 		return err
-	}
-	b, err := pm.Recover(header.Sign, header.SignHash)
-	if err != nil {
-		return err
-	}
-	recPub, _ := crypto.UnmarshalPubkey(b)
-	recAddress := crypto.PubkeyToAddress(*recPub)
-	if signerAccount.Address.Compare(recAddress) != 0 {
-		return errors.New("illegal signature")
 	}
 
-	if !crypto.VRF_Verify(recPub, c.parent.Hash().Bytes(), header.Proof) {
+	if !crypto.VRF_Verify(ecpub, c.parent.Hash().Bytes(), header.Proof) {
 		return errors.New("VRF Verify error")
 	}
 	return nil
