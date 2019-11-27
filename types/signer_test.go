@@ -62,6 +62,49 @@ func TestSigningMultiKey(t *testing.T) {
 	}
 }
 
+func TestSigningPayerMultiKey(t *testing.T) {
+	keys := make([]*KeyPair, 0)
+	pubs := make([]common.PubKey, 0)
+	for i := 0; i < 4; i++ {
+		key, _ := crypto.GenerateKey()
+		exp := crypto.FromECDSAPub(&key.PublicKey)
+		keys = append(keys, &KeyPair{priv: key, index: []uint64{uint64(i)}})
+		pubs = append(pubs, common.BytesToPubKey(exp))
+	}
+	signer := NewSigner(big.NewInt(1))
+	fp := &FeePayer{
+		GasPrice: big.NewInt(0),
+		Payer:    testTx.GetActions()[0].Recipient(),
+		Sign:     &Signature{0, make([]*SignData, 0)},
+	}
+	if err := SignPayerActionWithMultiKey(testTx.GetActions()[0], testTx, signer, fp, 0, keys); err != nil {
+		t.Fatal(err)
+	}
+
+	pubkeys, err := RecoverPayerMultiKey(signer, testTx.GetActions()[0], testTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, pubkey := range pubkeys {
+		if pubkey.Compare(pubs[i]) != 0 {
+			t.Errorf("exected from and pubkey to be equal. Got %x want %x", pubkey, pubs[i])
+		}
+	}
+
+	//test cache
+	pubkeys, err = RecoverPayerMultiKey(signer, testTx.GetActions()[0], testTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i, pubkey := range pubkeys {
+		if pubkey.Compare(pubs[i]) != 0 {
+			t.Errorf("exected from and pubkey to be equal. Got %x want %x", pubkey, pubs[i])
+		}
+	}
+}
+
 func TestChainID(t *testing.T) {
 	key, _ := crypto.GenerateKey()
 

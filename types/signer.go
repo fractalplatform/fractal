@@ -192,7 +192,7 @@ func (s Signer) PayerPubKeys(a *Action, tx *Transaction) ([]common.PubKey, error
 	if len(a.data.Extend) == 0 {
 		return nil, ErrSignEmpty
 	}
-	var fp *FeePayer
+	fp := &FeePayer{}
 	if err := rlp.DecodeBytes(a.data.Extend[0], fp); err != nil {
 		return nil, err
 	}
