@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"sort"
 	"strings"
 	"time"
@@ -84,7 +85,9 @@ func (info *CandidateInfo) copy() *CandidateInfo {
 }
 
 func (info *CandidateInfo) update(newinfo *CandidateInfo) {
-	info.SignAccount = newinfo.SignAccount
+	if len(newinfo.SignAccount) != 0 {
+		info.SignAccount = newinfo.SignAccount
+	}
 	info.RegisterNumber = newinfo.RegisterNumber
 	if newinfo.Balance.Sign() > 0 {
 		totalSum := info.WeightedSum()
@@ -121,6 +124,13 @@ func (info *CandidateInfo) Store(stateDB *state.StateDB) {
 func (info *CandidateInfo) Load(stateDB *state.StateDB, owner string) {
 	b, _ := stateDB.Get(ConsensusKey, CandidateInfoKey+owner)
 	rlp.DecodeBytes(b, info)
+}
+
+func (info *CandidateInfo) signer() string {
+	if len(info.SignAccount) == 0 {
+		return info.OwnerAccount
+	}
+	return info.SignAccount
 }
 
 type Candidates struct {
@@ -199,6 +209,10 @@ type Consensus struct {
 	minerOffset   uint64
 	parent        *types.Header
 	stateDB       *state.StateDB
+
+	rnd      *rand.Rand // just optimize
+	rndCount int        // just optimize
+	rndNum   int        // just optimize
 }
 
 func NewConsensus(stateDB *state.StateDB) *Consensus {
@@ -248,12 +262,13 @@ func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
 }
 
 // return timestamp of parent+n
-func (c *Consensus) timeSlot(n uint64) uint64 {
-	ontime := genesisTime + (c.parent.Number+c.LackBlock+n)*blockDuration
+func (c *Consensus) timeSlot(epoch uint64) uint64 {
+	ontime := genesisTime + (c.parent.Number+c.LackBlock+epoch)*blockDuration
 	return ontime
 }
 
 // return miner of parent+n
+// n = rndIndex
 func (c *Consensus) minerSlot(n uint64) string {
 	numMiner := maxMiner
 	if numMiner > uint64(c.candidates.Len()) {
@@ -316,24 +331,37 @@ func (c *Consensus) pushCandidate(newCandidate string, signAccount string, lockA
 	return success, newinfo, replaced
 }
 
+func (c *Consensus) nIndex(n int) int {
+	if c.rnd == nil || c.rndCount > n {
+		c.rnd = c.pseudoRand()
+	}
+	for c.rndCount < n {
+		c.rndNum = c.rnd.Int()
+		c.rndCount++
+	}
+	return c.rndNum
+}
+
 // return next miner
-func (c *Consensus) nextMiner() int {
+func (c *Consensus) nextMiner() (int, int) {
 	now := uint64(time.Now().Unix())
 	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
 			for j := 0; j < c.candidates.Len(); j++ {
-				miner := c.minerSlot(uint64(i + j))
+				epoch := i + j
+				rndIndex := c.nIndex(epoch)
+				miner := c.minerSlot(uint64(rndIndex))
 				if c.candidates.info[miner].Skip {
 					continue
 				}
-				fmt.Println("nextMiner", "i", i, "j", j, "now", now, "next", nextTimeout)
-				return i + j
+				fmt.Println("nextMiner", "rnd_i", rndIndex, "i", i, "j", j, "now", now, "next", nextTimeout)
+				return epoch, rndIndex
 			}
-			return -1
+			return -1, -1
 		}
 	}
-	return -1
+	return -1, -1
 }
 
 // return distance between miner and parent.Coinbase
@@ -349,7 +377,19 @@ func (c *Consensus) searchMiner(miner string) int {
 	return -1
 }
 
-func (c *Consensus) Show(miner string) {
+var pn = 0
+
+func xpanic(n int) {
+	pn++
+	if pn > n {
+		panic(pn)
+	}
+}
+
+func (c *Consensus) Show(miner string, nextMiner string) {
+
+	//xpanic(10)
+
 	fmt.Println("-----------------")
 	fmt.Println("parent:", c.parent.Number)
 	fmt.Println("parent:", c.parent.Time)
@@ -361,35 +401,54 @@ func (c *Consensus) Show(miner string) {
 	fmt.Println("genesisTime", genesisTime, MinerAccount)
 	for i, n := range c.candidates.listSort {
 		info := c.candidates.info[n]
-		fmt.Println("\t", i, n, info.WeightedSum(), info)
+		fmt.Print("\t")
+		align := "   "
+		if n == nextMiner {
+			fmt.Print(">")
+			align = align[1:]
+		}
+		if n == miner {
+			fmt.Print("*")
+			align = align[1:]
+		}
+		fmt.Print(align)
+		fmt.Printf("%02d %s %v %v\n", i, n, info.WeightedSum(), info)
 	}
 }
 
+func (c *Consensus) pseudoRand() *rand.Rand {
+	c.initRequrie()
+	return rand.New(rand.NewSource(new(big.Int).SetBytes(c.parent.Proof).Int64()))
+}
+
+// 1. epoch: 表示出块slot
+// 2. rnd: 表示通过该epoch得出的miner序号
 func (c *Consensus) MineDelay(miner string) time.Duration {
 	// just beta
 	c.initRequrie()
 
-	c.Show(miner)
-
 	now := time.Now().Unix()
-	i := c.nextMiner()
-	if i < 1 {
-		fmt.Println("i<1:", i)
+	epoch, rndIndex := c.nextMiner()
+	if epoch < 1 {
+		fmt.Println("epoch-wrong:", epoch)
 		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
-	nextMiner := c.minerSlot(uint64(i))
+	nextMiner := c.minerSlot(uint64(rndIndex))
+
+	c.Show(miner, nextMiner)
+
 	if nextMiner == miner {
-		ontime := int64(c.timeSlot(uint64(i) - 1))
+		ontime := int64(c.timeSlot(uint64(epoch) - 1))
 		if ontime > now {
-			fmt.Println("i-1:", i, ontime, now)
+			fmt.Println("epoch-ready:", epoch, ontime, now)
 			return time.Duration(ontime-now) * time.Second
 		}
-		fmt.Println("i-x:", i, ontime, now)
-		c.minerOffset = uint64(i)
+		fmt.Println("epoch-go:", epoch, ontime, now)
+		c.minerOffset = uint64(epoch)
 		return 0
 	}
-	fmt.Println("i-2:", i)
-	return time.Duration(int64(c.timeSlot(uint64(i)))-now) * time.Second
+	fmt.Println("epoch-wait:", epoch)
+	return time.Duration(int64(c.timeSlot(uint64(epoch)))-now) * time.Second
 }
 
 func (c *Consensus) Prepare(header *types.Header) error {
@@ -415,8 +474,14 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	header.GasLimit = params.BlockGasLimit
 
 	miner := header.Coinbase
+	start := time.Now().Unix()
 	for i := uint64(1); i < minerIndex; i++ {
-		skipMiner := c.minerSlot(i)
+		rndIndex := c.nIndex(int(i))
+		if time.Now().Unix()-start > 2 {
+			start = time.Now().Unix()
+			return errors.New("too long to Prepare")
+		}
+		skipMiner := c.minerSlot(uint64(rndIndex))
 		if skipMiner == miner {
 			continue
 		}
@@ -429,9 +494,9 @@ func (c *Consensus) Prepare(header *types.Header) error {
 		}
 		info.Store(c.stateDB)
 	}
+
 	if minerIndex > 1 {
 		c.LackBlock += uint64(minerIndex) - 1
-		c.minerIndex += uint64(minerIndex) - 1
 		c.storeLackBlock()
 	}
 	info := c.candidates.info[miner]
@@ -439,6 +504,11 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	info.Store(c.stateDB)
 	c.candidates.sort()
 	c.storeCandidates()
+	/*
+		if priKey != nil {
+			header.Proof = crypto.VRF_Proof(priKey, c.parent.SignHash())
+		}
+	*/
 	return nil
 }
 
@@ -457,7 +527,19 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 				return nil, err
 			}
 		}
-		success, newinfo, info = c.pushCandidate(action.Sender(), action.Sender(), action.Value())
+		var signAccount string
+		if len(action.Data()) > 0 {
+			if err := rlp.DecodeBytes(action.Data(), &signAccount); err != nil {
+				return nil, err
+			}
+		}
+		if len(signAccount) > 0 {
+			err := pm.AccountIsExist(signAccount)
+			if err != nil {
+				return nil, err
+			}
+		}
+		success, newinfo, info = c.pushCandidate(action.Sender(), signAccount, action.Value())
 	case UnregisterMiner:
 		if action.Value().Sign() > 0 {
 			return nil, errors.New("msg.value must be zero")
@@ -513,16 +595,9 @@ func (c *Consensus) Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (
 	if !exist {
 		return block, errors.New("illegal miner")
 	}
-	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
-	if err != nil {
-		fmt.Println("miner:", miner, "signer:", signerInfo.SignAccount, "err:", err)
-		return block, err
-	}
-	keyAddress := crypto.PubkeyToAddress(priKey.PublicKey)
-	if signerAccount.Address.Compare(keyAddress) != 0 {
-		return block, errors.New("illegal private key")
-	}
-	block.Head.Sign, err = pm.Sign(block.Header().SignHash, priKey)
+	var err error
+	block.Head.Proof = crypto.VRF_Proof(priKey, c.parent.Hash().Bytes())
+	block.Head.Sign, err = pm.AccountSign(signerInfo.signer(), priKey, pm, block.Header().SignHash)
 	return block, err
 }
 
@@ -547,14 +622,15 @@ func (c *Consensus) Verify(header *types.Header) error {
 		}
 	*/
 	miner := header.Coinbase
-	minerIndex := c.toOffset(header.Difficulty)
-	if c.minerSlot(minerIndex) != miner {
+	minerEpoch := c.toOffset(header.Difficulty)
+	rndIndex := c.nIndex(int(minerEpoch))
+	if c.minerSlot(uint64(rndIndex)) != miner {
 		return errors.New("wrong miner")
 	}
 	// 4. verify block time
-	timeSlot := c.timeSlot(uint64(minerIndex))
+	timeSlot := c.timeSlot(uint64(minerEpoch))
 	if header.Time != timeSlot {
-		return fmt.Errorf("wrong block.Time, get %d want %d slot:%d", header.Time, timeSlot, minerIndex)
+		return fmt.Errorf("wrong block.Time, get %d want %d slot:%d", header.Time, timeSlot, minerEpoch)
 	}
 	now := time.Now().Unix()
 	maxTime := uint64(now) + blockDuration*5
@@ -576,19 +652,13 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	if !exist {
 		return errors.New("illegal miner")
 	}
-	signerAccount, err := pm.getAccount(signerInfo.SignAccount)
+	ecpub, err := pm.AccountVerify(signerInfo.signer(), pm, header.Sign, header.SignHash)
 	if err != nil {
 		return err
-	}
-	b, err := pm.Recover(header.Sign, header.SignHash)
-	if err != nil {
-		return err
-	}
-	recPub, _ := crypto.UnmarshalPubkey(b)
-	recAddress := crypto.PubkeyToAddress(*recPub)
-	if signerAccount.Address.Compare(recAddress) != 0 {
-		return errors.New("illegal signature")
 	}
 
+	if !crypto.VRF_Verify(ecpub, c.parent.Hash().Bytes(), header.Proof) {
+		return errors.New("VRF Verify error")
+	}
 	return nil
 }

@@ -17,6 +17,7 @@
 package plugin
 
 import (
+	"crypto/ecdsa"
 	"errors"
 	"math/big"
 	"regexp"
@@ -196,7 +197,7 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error {
 	for _, action := range tx.GetActions() {
-		err := am.AccountVerify(action.Sender(), signer, action.GetSign(), tx.SignHash)
+		_, err := am.AccountVerify(action.Sender(), signer, action.GetSign(), tx.SignHash)
 		if err != nil {
 			return err
 		}
@@ -204,22 +205,35 @@ func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error
 	return nil
 }
 
-func (am *AccountManager) AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) error {
+func (am *AccountManager) AccountSign(accountName string, priv *ecdsa.PrivateKey, signer ISigner, signHash func(chainID *big.Int) common.Hash) ([]byte, error) {
+	signerAccount, err := am.getAccount(accountName)
+	if err != nil {
+		return nil, err
+	}
+	keyAddress := crypto.PubkeyToAddress(priv.PublicKey)
+	if signerAccount.Address.Compare(keyAddress) != 0 {
+		return nil, ErrkeyNotSame
+	}
+	//block.Head.Proof = crypto.VRF_Proof(priKey, c.parent.Hash().Bytes())
+	return signer.Sign(signHash, priv)
+}
+
+func (am *AccountManager) AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) (*ecdsa.PublicKey, error) {
 	account, err := am.getAccount(accountName)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pub, err := signer.Recover(signature, signHash)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tempAddress := common.BytesToAddress(crypto.Keccak256(pub[1:])[12:])
 
 	if tempAddress.Compare(account.Address) != 0 {
-		return ErrkeyNotSame
+		return nil, ErrkeyNotSame
 	}
-	return nil
+	return crypto.UnmarshalPubkey(pub)
 }
 
 // GetNonce

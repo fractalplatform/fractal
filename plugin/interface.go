@@ -53,7 +53,8 @@ type IAccount interface {
 	CanTransfer(accountName string, assetID uint64, value *big.Int) error
 	TransferAsset(from, to string, assetID uint64, value *big.Int) error
 	RecoverTx(signer ISigner, tx *types.Transaction) error
-	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) error
+	AccountSign(accountName string, priv *ecdsa.PrivateKey, signer ISigner, signHash func(chainID *big.Int) common.Hash) ([]byte, error)
+	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) (*ecdsa.PublicKey, error)
 	ChangeAddress(accountName string, address common.Address) error
 	checkCreateAccount(accountName string, pubKey string, description string) error
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
