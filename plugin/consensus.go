@@ -200,6 +200,10 @@ type Consensus struct {
 	minerOffset   uint64
 	parent        *types.Header
 	stateDB       *state.StateDB
+
+	rnd      *rand.Rand // just optimize
+	rndCount int        // just optimize
+	rndNum   int        // just optimize
 }
 
 func NewConsensus(stateDB *state.StateDB) *Consensus {
@@ -212,17 +216,12 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 	}
 	c.loadCandidates()
 	c.loadLackBlock()
-	for _, n := range c.candidates.listSort {
+	for i, n := range c.candidates.listSort {
 		info := &CandidateInfo{}
 		info.Load(c.stateDB, n)
 		c.candidates.info[n] = info
-	}
-
-	if c.parent != nil {
-		if c.parent.Difficulty == 0 { // genesis
-			c.minerIndex = 0
-		} else {
-			c.minerIndex = c.toOffset(c.parent.Difficulty)
+		if c.parent != nil && n == c.parent.Coinbase {
+			c.minerIndex = uint64(i)
 		}
 	}
 	return c
@@ -246,11 +245,9 @@ func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
 	c.parent = parent
 	c.isInit = true
 
-	if c.parent != nil {
-		if c.parent.Difficulty == 0 { // genesis
-			c.minerIndex = 0
-		} else {
-			c.minerIndex = c.toOffset(c.parent.Difficulty)
+	for i, n := range c.candidates.listSort {
+		if c.parent != nil && n == c.parent.Coinbase {
+			c.minerIndex = uint64(i)
 		}
 	}
 }
@@ -326,11 +323,14 @@ func (c *Consensus) pushCandidate(newCandidate string, signAccount string, lockA
 }
 
 func (c *Consensus) nIndex(n int) int {
-	rnd := c.pseudoRand()
-	for i := 0; i < n; i++ {
-		rnd.Int()
+	if c.rnd == nil || c.rndCount > n {
+		c.rnd = c.pseudoRand()
 	}
-	return rnd.Int()
+	for c.rndCount < n {
+		c.rndNum = c.rnd.Int()
+		c.rndCount++
+	}
+	return c.rndNum
 }
 
 // return next miner
@@ -368,7 +368,7 @@ func (c *Consensus) searchMiner(miner string) int {
 	return -1
 }
 
-func (c *Consensus) Show(miner string) {
+func (c *Consensus) Show(miner string, nextMiner string) {
 	fmt.Println("-----------------")
 	fmt.Println("parent:", c.parent.Number)
 	fmt.Println("parent:", c.parent.Time)
@@ -380,7 +380,18 @@ func (c *Consensus) Show(miner string) {
 	fmt.Println("genesisTime", genesisTime, MinerAccount)
 	for i, n := range c.candidates.listSort {
 		info := c.candidates.info[n]
-		fmt.Println("\t", i, n, info.WeightedSum(), info)
+		fmt.Print("\t")
+		align := "   "
+		if n == miner {
+			fmt.Print("*")
+			align = align[1:]
+		}
+		if n == nextMiner {
+			fmt.Print(">")
+			align = align[1:]
+		}
+		fmt.Print(align)
+		fmt.Printf("%02d %s %v %v\n", i, n, info.WeightedSum(), info)
 	}
 }
 
@@ -395,8 +406,6 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 	// just beta
 	c.initRequrie()
 
-	c.Show(miner)
-
 	now := time.Now().Unix()
 	epoch, rndIndex := c.nextMiner()
 	if epoch < 1 {
@@ -404,6 +413,9 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
 	nextMiner := c.minerSlot(uint64(rndIndex))
+
+	c.Show(miner, nextMiner)
+
 	if nextMiner == miner {
 		ontime := int64(c.timeSlot(uint64(epoch) - 1))
 		if ontime > now {
@@ -446,8 +458,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 		rndIndex := c.nIndex(int(i))
 		if time.Now().Unix()-start > 2 {
 			start = time.Now().Unix()
-			fmt.Println("---Prepare", minerIndex, i, rndIndex)
-			return errors.New("too big")
+			return errors.New("too long to Prepare")
 		}
 		skipMiner := c.minerSlot(uint64(rndIndex))
 		if skipMiner == miner {
@@ -463,7 +474,6 @@ func (c *Consensus) Prepare(header *types.Header) error {
 		info.Store(c.stateDB)
 	}
 
-	fmt.Println("---Prepare end")
 	if minerIndex > 1 {
 		c.LackBlock += uint64(minerIndex) - 1
 		c.storeLackBlock()
