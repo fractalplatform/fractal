@@ -410,7 +410,6 @@ func (f *FeePayer) WithSignature(signer Signer, sig []byte, index []uint64) erro
 	if err != nil {
 		return err
 	}
-	fmt.Println("sign ", f.Sign.SignData)
 	f.Sign.SignData = append(f.Sign.SignData, &SignData{R: r, S: s, V: v, Index: index})
 	return nil
 }
