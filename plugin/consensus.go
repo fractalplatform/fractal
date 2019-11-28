@@ -334,6 +334,8 @@ func (c *Consensus) pushCandidate(newCandidate string, signAccount string, lockA
 func (c *Consensus) nIndex(n int) int {
 	if c.rnd == nil || c.rndCount > n {
 		c.rnd = c.pseudoRand()
+		c.rndCount = 0
+		c.rndNum = c.rnd.Int()
 	}
 	for c.rndCount < n {
 		c.rndNum = c.rnd.Int()
