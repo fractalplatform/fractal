@@ -208,7 +208,11 @@ func (worker *Worker) setExtra(extra []byte) {
 
 func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent *types.Header) (*types.Block, error) {
 	start := time.Now()
-	sealState := state.Copy()
+	// must not use state.Copy() !
+	sealState, err := worker.StateAt(parent.Root)
+	if err != nil {
+		return nil, err
+	}
 	header := &types.Header{Coinbase: worker.coinbase}
 	if err := pm.Prepare(header); err != nil {
 		return nil, err
