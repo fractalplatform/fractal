@@ -665,7 +665,7 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 
 		types.StoreAuthorCache(action, authorVersion)
 	}
-	if tx.GasPrice().Cmp(big.NewInt(0)) != 0 {
+	if tx.PayerExist() {
 		for _, action := range tx.GetActions() {
 			pubs, err := types.RecoverPayerMultiKey(signer, action, tx)
 			if err != nil {
@@ -676,18 +676,18 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 				return fmt.Errorf("exceed max sign length, want most %d, actual is %d", params.MaxSignLength, len(pubs))
 			}
 
-			var fp *types.FeePayer
-			if err = rlp.DecodeBytes(action.Extend()[0], fp); err != nil {
-				return err
+			sig := action.PayerSignature()
+			if sig == nil {
+				return fmt.Errorf("payer signature is nil")
 			}
-			parentIndex := fp.GetSignParent()
-			signSender, err := am.getParentAccount(fp.Payer, parentIndex)
+			parentIndex := sig.ParentIndex
+			signSender, err := am.getParentAccount(action.Payer(), parentIndex)
 			if err != nil {
 				return err
 			}
 			recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor)}
 			for i, pub := range pubs {
-				index := fp.GetSignIndex(uint64(i))
+				index := sig.SignData[uint64(i)].Index
 				if uint64(len(index)) > params.MaxSignDepth {
 					return fmt.Errorf("exceed max sign depth, want most %d, actual is %d", params.MaxSignDepth, len(index))
 				}

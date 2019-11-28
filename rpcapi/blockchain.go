@@ -306,7 +306,7 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	// and apply the message.
 	gp := new(common.GasPool).AddGas(math.MaxUint64)
 	action := types.NewAction(args.ActionType, args.From, args.To, 0, assetID, gas, value, args.Data, args.Remark)
-	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, assetID, s.b.ChainConfig(), s.b.Engine())
+	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, action.Sender(), assetID, s.b.ChainConfig(), s.b.Engine())
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}
