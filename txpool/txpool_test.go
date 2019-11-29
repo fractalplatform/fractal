@@ -51,7 +51,7 @@ func TestAddPayerTx(t *testing.T) {
 		fname      = common.Name("fromname")
 		tname      = common.Name("totestname")
 		fkey       = generateAccount(t, fname, manager)
-		_          = generateAccount(t, tname, manager)
+		tkey       = generateAccount(t, tname, manager)
 		asset      = asset.NewAsset(statedb)
 	)
 
@@ -64,9 +64,14 @@ func TestAddPayerTx(t *testing.T) {
 	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
+
+	if err := manager.AddAccountBalanceByName(tname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+		t.Fatal(err)
+	}
+
 	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
-	tx0 := transaction(0, fname, tname, 109000, fkey)
-	tx1 := transaction(0, fname, tname, 109000, fkey)
+	tx0 := pricedTransaction(0, fname, tname, 109000, big.NewInt(0), fkey)
+	tx1 := extendTransaction(0, tname, fname, tname, 109000, fkey, tkey)
 
 	params.DefaultChainconfig.SysTokenID = 0
 
@@ -81,8 +86,23 @@ func TestAddPayerTx(t *testing.T) {
 		t.Fatalf("Invalid nonce, want 0, got %d", nonce)
 	}
 
-	pool.addRemotesSync([]*types.Transaction{tx0, tx1})
+	errs := pool.addRemotesSync([]*types.Transaction{tx0, tx1})
 
+	t.Log(errs)
+	nonce, err = pool.State().GetNonce(fname)
+	if err != nil {
+		t.Fatal("Invalid getNonce ", err)
+	}
+
+	if nonce != 1 {
+		t.Fatalf("Invalid nonce, want 1, got %d", nonce)
+	}
+
+	result := pool.Get(tx1.Hash())
+
+	if !result.PayerExist() {
+		t.Fatal("add payer tx failed")
+	}
 }
 
 // This test simulates a scenario where a new block is imported during a

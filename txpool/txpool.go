@@ -651,9 +651,7 @@ func (tp *TxPool) local() map[common.Name][]*types.Transaction {
 func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	validateAction := func(tx *types.Transaction, action *types.Action) error {
 		from := action.Sender()
-		if tx.GasPrice() == nil {
-			return ErrPayerUnderpriced
-		}
+
 		// Drop non-local transactions under our own minimal accepted gas price
 		local = local || tp.locals.contains(from) // account may be local even if the transaction arrived from the network
 		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
