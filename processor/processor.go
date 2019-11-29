@@ -127,10 +127,12 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 
 		var gasPayer = action.Sender()
 		var gasPrice = tx.GasPrice()
-		if header.CurForkID() >= params.ForkID4 {
-			if tx.PayerExist() {
+		if tx.PayerExist() {
+			if header.CurForkID() >= params.ForkID4 {
 				gasPayer = action.Payer()
 				gasPrice = action.PayerGasPrice()
+			} else {
+				return nil, 0, errPayerNotSupport
 			}
 		}
 
