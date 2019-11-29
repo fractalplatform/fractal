@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -126,10 +127,13 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 
 		var gasPayer = action.Sender()
 		var gasPrice = tx.GasPrice()
-		if tx.PayerExist() {
-			gasPayer = action.Payer()
-			gasPrice = action.PayerGasPrice()
+		if header.CurForkID() >= params.ForkID4 {
+			if tx.PayerExist() {
+				gasPayer = action.Payer()
+				gasPrice = action.PayerGasPrice()
+			}
 		}
+
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
 			EngineContext: p.engine,
