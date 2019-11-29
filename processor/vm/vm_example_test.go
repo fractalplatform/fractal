@@ -85,7 +85,7 @@ func createContract(abifile string, binfile string, contractName string, runtime
 }
 
 func createAccount(pm plugin.IPM, name string) error {
-	if _, err := pm.CreateAccount(string(name), common.HexToPubKey("12345"), ""); err != nil {
+	if _, err := pm.CreateAccount(string(name), common.HexToPubKey("12345").Hex(), ""); err != nil {
 		fmt.Printf("create account %s err %s", name, err)
 		return fmt.Errorf("create account %s err %s", name, err)
 	}
@@ -303,7 +303,7 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	if err := createAccount(pm, "fractal.asset"); err != nil {
+	if err := createAccount(pm, "fractalasset"); err != nil {
 		return
 	}
 
@@ -359,8 +359,8 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	pm.AddBalanceByID(venContractName, 0, big.NewInt(1))
-	pm.AddBalanceByID(venSaleContractName, 0, big.NewInt(1))
+	pm.TransferAsset(senderName, venContractName, 0, big.NewInt(1))
+	pm.TransferAsset(senderName, venSaleContractName, 0, big.NewInt(1))
 
 	setVenOwnerInput, err := input(VenAbifile, "setOwner", common.BytesToAddress([]byte("vensalevontract")))
 	if err != nil {
@@ -415,4 +415,71 @@ func TestVEN(t *testing.T) {
 
 	num := new(big.Int).SetBytes(ret)
 	assert.Equal(t, num, new(big.Int).Mul(big.NewInt(3500000000), big.NewInt(100000000000)))
+}
+
+func TestPreCompiledContract(t *testing.T) {
+	state, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+	pm := plugin.NewPM(state)
+
+	senderName := string("jacobwolf12345")
+	senderPubkey := common.HexToPubKey("12345")
+
+	if err := createAccount(pm, "jacobwolf12345"); err != nil {
+		return
+	}
+
+	if err := createAccount(pm, "denverfolk12345"); err != nil {
+		return
+	}
+
+	if err := createAccount(pm, "fractalasset"); err != nil {
+		return
+	}
+
+	if _, err := pm.IssueAsset(senderName, "bitcoin", "btc", big.NewInt(1000000000000000000), 10, senderName, senderName, big.NewInt(2000000000000000000), "", pm); err != nil {
+		fmt.Println("issue asset error", err)
+		return
+	}
+
+	runtimeConfig := runtime.Config{
+		Origin:      senderName,
+		FromPubkey:  senderPubkey,
+		State:       state,
+		PM:          pm,
+		AssetID:     0,
+		GasLimit:    10000000000,
+		GasPrice:    big.NewInt(0),
+		Value:       big.NewInt(0),
+		BlockNumber: new(big.Int).SetUint64(0),
+	}
+
+	ShaBinfile := "./runtime/contract/Sha256/Sha.bin"
+	ShaAbifile := "./runtime/contract/Sha256/Sha.abi"
+	shaContractName := string("shacontract12345")
+
+	if err := createAccount(pm, "shacontract12345"); err != nil {
+		return
+	}
+
+	err := createContract(ShaAbifile, ShaBinfile, shaContractName, runtimeConfig)
+	if err != nil {
+		fmt.Println("create venSaleContractAddress error")
+		return
+	}
+
+	pm.TransferAsset(senderName, shaContractName, 0, big.NewInt(1))
+
+	shaInput, err := input(ShaAbifile, "sha", "teststring")
+	if err != nil {
+		fmt.Println("initializeVenSaleInput error ", err)
+		return
+	}
+
+	action := types.NewAction(types.CallContract, runtimeConfig.Origin, shaContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, shaInput, nil)
+
+	_, _, err = runtime.Call(action, &runtimeConfig)
+	if err != nil {
+		fmt.Println("call set ven owner error ", err)
+		return
+	}
 }

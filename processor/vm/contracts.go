@@ -38,15 +38,15 @@ type PrecompiledContract interface {
 }
 
 // PrecompiledContracts contains the default set of pre-compiled
-var PrecompiledContracts = map[*big.Int]PrecompiledContract{
-	big.NewInt(1): &ecrecover{},
-	big.NewInt(2): &sha256hash{},
-	big.NewInt(3): &ripemd160hash{},
-	big.NewInt(4): &dataCopy{},
-	big.NewInt(5): &bigModExp{},
-	big.NewInt(6): &bn256Add{},
-	big.NewInt(7): &bn256ScalarMul{},
-	big.NewInt(8): &bn256Pairing{},
+var PrecompiledContracts = map[string]PrecompiledContract{
+	"1": &ecrecover{},
+	"2": &sha256hash{},
+	"3": &ripemd160hash{},
+	"4": &dataCopy{},
+	"5": &bigModExp{},
+	"6": &bn256Add{},
+	"7": &bn256ScalarMul{},
+	"8": &bn256Pairing{},
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
