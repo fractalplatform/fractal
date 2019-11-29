@@ -668,8 +668,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		var balance *big.Int
-
-		if tx.PayerExist() {
+		if tx.PayerExist() && tp.chain.CurrentBlock().CurForkID() >= params.ForkID4 {
 			// Transactor should have enough funds to cover the gas costs
 			balance, err = tp.curAccountManager.GetAccountBalanceByID(action.Payer(), tx.GasAssetID(), 0)
 			if err != nil {
