@@ -269,11 +269,8 @@ func (c *Consensus) timeSlot(epoch uint64) uint64 {
 
 // return miner of parent+n
 // n = rndIndex
-func (c *Consensus) minerSlot(n, max uint64) string {
-	numMiner := max
-	if numMiner < maxMiner {
-		numMiner = maxMiner
-	}
+func (c *Consensus) minerSlot(n, epoch uint64) string {
+	numMiner := maxMiner + epoch - 1
 	if numMiner > uint64(c.candidates.Len()) {
 		numMiner = uint64(c.candidates.Len())
 	}
@@ -433,7 +430,7 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 		fmt.Println("epoch-wrong:", epoch)
 		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
-	nextMiner := c.minerSlot(uint64(rndIndex), uint64(epoch)*2)
+	nextMiner := c.minerSlot(uint64(rndIndex), uint64(epoch))
 
 	c.Show(miner, nextMiner)
 
@@ -481,7 +478,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 			start = time.Now().Unix()
 			return errors.New("too long to Prepare")
 		}
-		skipMiner := c.minerSlot(uint64(rndIndex), i*2)
+		skipMiner := c.minerSlot(uint64(rndIndex), i)
 		info := c.candidates.info[skipMiner]
 		info.DecWeight()
 		info.Store(c.stateDB)
@@ -616,7 +613,7 @@ func (c *Consensus) Verify(header *types.Header) error {
 	miner := header.Coinbase
 	minerEpoch := c.toOffset(header.Difficulty)
 	rndIndex := c.nIndex(int(minerEpoch))
-	if c.minerSlot(uint64(rndIndex), minerEpoch*2) != miner {
+	if c.minerSlot(uint64(rndIndex), minerEpoch) != miner {
 		return errors.New("wrong miner")
 	}
 	// 4. verify block time
