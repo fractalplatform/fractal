@@ -75,7 +75,7 @@ type CandidateInfo struct {
 	RegisterNumber uint64
 	Weight         uint64
 	Balance        *big.Int
-	Skip           bool
+	//	Skip           bool
 }
 
 func (info *CandidateInfo) copy() *CandidateInfo {
@@ -269,8 +269,8 @@ func (c *Consensus) timeSlot(epoch uint64) uint64 {
 
 // return miner of parent+n
 // n = rndIndex
-func (c *Consensus) minerSlot(n uint64) string {
-	numMiner := maxMiner
+func (c *Consensus) minerSlot(n, epoch uint64) string {
+	numMiner := maxMiner + epoch - 1
 	if numMiner > uint64(c.candidates.Len()) {
 		numMiner = uint64(c.candidates.Len())
 	}
@@ -350,22 +350,16 @@ func (c *Consensus) nextMiner() (int, int) {
 	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
-			for j := 0; j < c.candidates.Len(); j++ {
-				epoch := i + j
-				rndIndex := c.nIndex(epoch)
-				miner := c.minerSlot(uint64(rndIndex))
-				if c.candidates.info[miner].Skip {
-					continue
-				}
-				fmt.Println("nextMiner", "rnd_i", rndIndex, "i", i, "j", j, "now", now, "next", nextTimeout)
-				return epoch, rndIndex
-			}
-			return -1, -1
+			epoch := i
+			rndIndex := c.nIndex(epoch)
+			fmt.Println("nextMiner", "rnd_i", rndIndex, "epoch", i, "now", now, "next", nextTimeout)
+			return epoch, rndIndex
 		}
 	}
 	return -1, -1
 }
 
+/*
 // return distance between miner and parent.Coinbase
 func (c *Consensus) searchMiner(miner string) int {
 	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
@@ -378,6 +372,7 @@ func (c *Consensus) searchMiner(miner string) int {
 	}
 	return -1
 }
+*/
 
 var pn = 0
 
@@ -435,7 +430,7 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 		fmt.Println("epoch-wrong:", epoch)
 		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
 	}
-	nextMiner := c.minerSlot(uint64(rndIndex))
+	nextMiner := c.minerSlot(uint64(rndIndex), uint64(epoch))
 
 	c.Show(miner, nextMiner)
 
@@ -483,17 +478,9 @@ func (c *Consensus) Prepare(header *types.Header) error {
 			start = time.Now().Unix()
 			return errors.New("too long to Prepare")
 		}
-		skipMiner := c.minerSlot(uint64(rndIndex))
-		if skipMiner == miner {
-			continue
-		}
+		skipMiner := c.minerSlot(uint64(rndIndex), i)
 		info := c.candidates.info[skipMiner]
-		if !info.Skip {
-			info.Skip = true // skip and dec weight
-			info.DecWeight()
-		} else {
-			info.Skip = false // skip and reset skip
-		}
+		info.DecWeight()
 		info.Store(c.stateDB)
 	}
 
@@ -626,7 +613,7 @@ func (c *Consensus) Verify(header *types.Header) error {
 	miner := header.Coinbase
 	minerEpoch := c.toOffset(header.Difficulty)
 	rndIndex := c.nIndex(int(minerEpoch))
-	if c.minerSlot(uint64(rndIndex)) != miner {
+	if c.minerSlot(uint64(rndIndex), minerEpoch) != miner {
 		return errors.New("wrong miner")
 	}
 	// 4. verify block time
