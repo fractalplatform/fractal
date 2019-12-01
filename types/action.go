@@ -180,6 +180,10 @@ func (a *Action) GetSignParent() uint64 {
 	return a.data.Sign.ParentIndex
 }
 
+func (a *Action) PayerIsExist() bool {
+	return a.fp != nil
+}
+
 func (a *Action) PayerGasPrice() *big.Int {
 	if a.fp != nil {
 		return a.fp.GasPrice

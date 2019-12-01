@@ -667,14 +667,18 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrNonceTooLow
 		}
 
+		// wait fork successed, remove it
+		if action.PayerIsExist() && tp.chain.CurrentBlock().CurForkID() < params.ForkID4 {
+			return fmt.Errorf("This type of transaction: %v is not currently supported", tx.Hash().Hex())
+		}
+
 		var balance *big.Int
-		if tx.PayerExist() && tp.chain.CurrentBlock().CurForkID() >= params.ForkID4 {
+		if tx.PayerExist() {
 			// Transactor should have enough funds to cover the gas costs
 			balance, err = tp.curAccountManager.GetAccountBalanceByID(action.Payer(), tx.GasAssetID(), 0)
 			if err != nil {
 				return err
 			}
-
 		} else {
 			// Transactor should have enough funds to cover the gas costs
 			balance, err = tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
