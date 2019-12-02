@@ -680,6 +680,9 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 				return err
 			}
 		} else {
+			if action.PayerIsExist() {
+				return ErrPayerTx
+			}
 			// Transactor should have enough funds to cover the gas costs
 			balance, err = tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
 			if err != nil {

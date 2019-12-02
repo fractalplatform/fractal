@@ -24,6 +24,7 @@ var (
 	// ErrInvalidSender is returned if the transaction contains an invalid signature.
 	ErrInvalidSender = errors.New("invalid sender")
 
+	ErrPayerTx = errors.New("payer is exist")
 	// ErrNonceTooLow is returned if the nonce of a transaction is lower than the
 	// one present in the local chain.
 	ErrNonceTooLow = errors.New("nonce too low")
