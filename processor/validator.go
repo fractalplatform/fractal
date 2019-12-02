@@ -133,9 +133,16 @@ func (v *BlockValidator) ValidateBody(block *types.Block) error {
 		return err
 	}
 
-	// Header validity is known at this point, check the uncles and transactions
-	if hash := types.DeriveTxsMerkleRoot(block.Txs); hash != block.TxHash() {
-		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, block.TxHash())
+	if block.CurForkID() >= params.ForkID4 {
+		// Header validity is known at this point, check the uncles and transactions
+		if hash := types.DeriveExtensTxsMerkleRoot(block.Txs); hash != block.TxHash() {
+			return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, block.TxHash())
+		}
+	} else {
+		// Header validity is known at this point, check the uncles and transactions
+		if hash := types.DeriveTxsMerkleRoot(block.Txs); hash != block.TxHash() {
+			return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, block.TxHash())
+		}
 	}
 	return nil
 }
