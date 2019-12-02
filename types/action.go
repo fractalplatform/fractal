@@ -205,6 +205,10 @@ func (a *Action) PayerSignature() *Signature {
 	return nil
 }
 
+func (a *Action) GetFeePayerSign() []*SignData {
+	return a.fp.Sign.SignData
+}
+
 // Check the validity of all fields
 func (a *Action) Check(fid uint64, conf *params.ChainConfig) error {
 	//check To
