@@ -198,7 +198,7 @@ func (s Signer) PayerPubKeys(a *Action, tx *Transaction) ([]common.PubKey, error
 	for _, sign := range a.fp.Sign.SignData {
 		V := new(big.Int).Sub(sign.V, s.chainIDMul)
 		V.Sub(V, big8)
-		data, err := recoverPlain(s.Hash(tx), sign.R, sign.S, V)
+		data, err := recoverPlain(s.FeePayerHash(tx), sign.R, sign.S, V)
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +264,8 @@ func (s Signer) FeePayerHash(tx *Transaction) common.Hash {
 			a.data.Payload,
 			a.data.AssetID,
 			a.data.Remark,
-			a.fp,
+			a.fp.Payer,
+			a.fp.GasPrice,
 			s.chainID, uint(0), uint(0),
 		})
 		actionHashs[i] = hash
