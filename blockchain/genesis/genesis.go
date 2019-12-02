@@ -327,7 +327,7 @@ func (g *Genesis) RegisterMiner() ([]*types.Action, error) {
 func DefaultGenesis() *Genesis {
 	return &Genesis{
 		Config:        params.DefaultChainconfig,
-		Timestamp:     1575000000,
+		Timestamp:     1575273800,
 		GasLimit:      params.BlockGasLimit,
 		Difficulty:    params.GenesisDifficulty,
 		AllocAccounts: DefaultGenesisAccounts(),

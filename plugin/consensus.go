@@ -52,6 +52,7 @@ const (
 	ConsensusKey     = "consensus"
 	CandidateKey     = "candidates"
 	LackBlock        = "lackblock"
+	Epoch            = "Epoch"
 	CandidateInfoKey = "info_"
 	// account
 	MinerAssetID = uint64(0)
@@ -75,6 +76,7 @@ type CandidateInfo struct {
 	RegisterNumber uint64
 	Weight         uint64
 	Balance        *big.Int
+	Epoch          uint64
 	//	Skip           bool
 }
 
@@ -207,8 +209,11 @@ type Consensus struct {
 	candidates    *Candidates
 	minerIndex    uint64
 	minerOffset   uint64
-	parent        *types.Header
-	stateDB       *state.StateDB
+	blockEpoch    uint64 // 轮数
+	epochNum      uint64 // 该轮已出块数
+
+	parent  *types.Header
+	stateDB *state.StateDB
 
 	rnd      *rand.Rand // just optimize
 	rndCount int        // just optimize
@@ -225,6 +230,7 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 	}
 	c.loadCandidates()
 	c.loadLackBlock()
+	c.loadEpoch()
 	for i, n := range c.candidates.listSort {
 		info := &CandidateInfo{}
 		info.Load(c.stateDB, n)
@@ -287,6 +293,19 @@ func (c *Consensus) loadLackBlock() {
 	rlp.DecodeBytes(b, &c.LackBlock)
 }
 
+func (c *Consensus) storeEpoch() {
+	epoch := (c.blockEpoch << 8) + (c.epochNum & 0xff)
+	b, _ := rlp.EncodeToBytes(epoch)
+	c.stateDB.Put(ConsensusKey, Epoch, b)
+}
+func (c *Consensus) loadEpoch() {
+	var epoch uint64
+	b, _ := c.stateDB.Get(ConsensusKey, Epoch)
+	rlp.DecodeBytes(b, &epoch)
+	c.blockEpoch = epoch >> 8
+	c.epochNum = epoch & 0xff
+}
+
 func (c *Consensus) storeCandidates() {
 	b, _ := rlp.EncodeToBytes(c.candidates.listSort)
 	c.stateDB.Put(ConsensusKey, CandidateKey, b)
@@ -316,6 +335,7 @@ func (c *Consensus) pushCandidate(newCandidate string, signAccount string, lockA
 		SignAccount:  signAccount,
 		Weight:       90,
 		Balance:      lockAmount,
+		Epoch:        0,
 	}
 	if c.parent != nil {
 		newinfo.RegisterNumber = c.parent.Number + 1
@@ -344,16 +364,27 @@ func (c *Consensus) nIndex(n int) int {
 	return c.rndNum
 }
 
+func (c *Consensus) epochToIndex(epoch int) (int, int) {
+	rndIndex := c.nIndex(epoch)
+	for j := 0; j < c.candidates.Len(); j++ {
+		minerIndex := rndIndex + j
+		miner := c.minerSlot(uint64(minerIndex), uint64(epoch))
+		info := c.candidates.info[miner]
+		fmt.Println("len", c.candidates.Len(), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", info.Epoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
+		if info.Epoch <= c.blockEpoch {
+			return epoch, minerIndex
+		}
+	}
+	return -1, -1
+}
+
 // return next miner
 func (c *Consensus) nextMiner() (int, int) {
 	now := uint64(time.Now().Unix())
 	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
-			epoch := i
-			rndIndex := c.nIndex(epoch)
-			fmt.Println("nextMiner", "rnd_i", rndIndex, "epoch", i, "now", now, "next", nextTimeout)
-			return epoch, rndIndex
+			return c.epochToIndex(i)
 		}
 	}
 	return -1, -1
@@ -428,7 +459,7 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 	epoch, rndIndex := c.nextMiner()
 	if epoch < 1 {
 		fmt.Println("epoch-wrong:", epoch)
-		return time.Duration(int64(c.timeSlot(1))-now) * time.Second
+		return time.Duration(blockDuration) * time.Second
 	}
 	nextMiner := c.minerSlot(uint64(rndIndex), uint64(epoch))
 
@@ -473,7 +504,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	miner := header.Coinbase
 	start := time.Now().Unix()
 	for i := uint64(1); i < minerIndex; i++ {
-		rndIndex := c.nIndex(int(i))
+		_, rndIndex := c.epochToIndex(int(i))
 		if time.Now().Unix()-start > 2 {
 			start = time.Now().Unix()
 			return errors.New("too long to Prepare")
@@ -490,7 +521,18 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	}
 	info := c.candidates.info[miner]
 	info.IncWeight()
+	info.Epoch = c.blockEpoch + 1
 	info.Store(c.stateDB)
+	c.epochNum++
+	halfMiner := maxMiner / 2
+	if halfMiner > uint64(c.candidates.Len()) {
+		halfMiner = uint64(c.candidates.Len())
+	}
+	if c.epochNum >= halfMiner {
+		c.blockEpoch++
+		c.epochNum = 0
+	}
+	c.storeEpoch()
 	c.candidates.sort()
 	c.storeCandidates()
 	/*
@@ -612,8 +654,8 @@ func (c *Consensus) Verify(header *types.Header) error {
 	*/
 	miner := header.Coinbase
 	minerEpoch := c.toOffset(header.Difficulty)
-	rndIndex := c.nIndex(int(minerEpoch))
-	if c.minerSlot(uint64(rndIndex), minerEpoch) != miner {
+	epoch, rndIndex := c.epochToIndex(int(minerEpoch))
+	if c.minerSlot(uint64(rndIndex), uint64(epoch)) != miner {
 		return errors.New("wrong miner")
 	}
 	// 4. verify block time
