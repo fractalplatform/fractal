@@ -206,7 +206,10 @@ func (a *Action) PayerSignature() *Signature {
 }
 
 func (a *Action) GetFeePayerSign() []*SignData {
-	return a.fp.Sign.SignData
+	if a.fp != nil {
+		return a.fp.Sign.SignData
+	}
+	return nil
 }
 
 // Check the validity of all fields
