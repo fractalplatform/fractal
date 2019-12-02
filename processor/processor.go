@@ -18,6 +18,7 @@ package processor
 
 import (
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
@@ -125,6 +126,9 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			return nil, 0, ErrNonceTooLow
 		}
 
+		if action.PayerIsExist() && tx.GasPrice().Cmp(big.NewInt(0)) != 0 {
+			return nil, 0, errPayerNotSupport
+		}
 		var gasPayer = action.Sender()
 		var gasPrice = tx.GasPrice()
 		if tx.PayerExist() {
