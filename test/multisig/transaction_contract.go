@@ -36,10 +36,10 @@ var (
 	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 	from          = common.Name("fractal.founder")
 	to            = common.Name("fractal.account")
-	aca           = common.Name("accounta")
-	acb           = common.Name("accountb")
-	acc           = common.Name("accountc")
-	acd           = common.Name("accountd")
+	aca           = common.Name("fcoinaccounta")
+	acb           = common.Name("fcoinaccountb")
+	acc           = common.Name("fcoinaccountc")
+	acd           = common.Name("fcoinaccountd")
 
 	a_author_0_priv *ecdsa.PrivateKey
 	a_author_2_priv *ecdsa.PrivateKey
@@ -97,10 +97,10 @@ func generateAccount() {
 	balance, _ := testcommon.GetAccountBalanceByID(from, assetID)
 	balance.Div(balance, big.NewInt(10))
 
-	aca = common.Name(fmt.Sprintf("accounta%d", nonce))
-	acb = common.Name(fmt.Sprintf("accountb%d", nonce))
-	acc = common.Name(fmt.Sprintf("accountc%d", nonce))
-	acd = common.Name(fmt.Sprintf("accountd%d", nonce))
+	aca = common.Name(fmt.Sprintf("fcoinaccounta%d", nonce))
+	acb = common.Name(fmt.Sprintf("fcoinaccountb%d", nonce))
+	acc = common.Name(fmt.Sprintf("fcoinaccountc%d", nonce))
+	acd = common.Name(fmt.Sprintf("fcoinaccountd%d", nonce))
 
 	key := types.MakeKeyPair(privateKey, []uint64{0})
 	acct := &accountmanager.CreateAccountAction{
