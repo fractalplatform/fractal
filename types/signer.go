@@ -90,7 +90,8 @@ func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey
 }
 
 func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer *FeePayer, parentIndex uint64, keys []*KeyPair) error {
-	h := s.Hash(tx)
+	a.fp = feePayer
+	h := s.FeePayerHash(tx)
 	for _, key := range keys {
 		sig, err := crypto.Sign(h[:], key.priv)
 		if err != nil {
@@ -109,7 +110,6 @@ func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer 
 	} else {
 		a.data.Extend = append(a.data.Extend, value)
 	}
-	a.fp = feePayer
 
 	return nil
 }
@@ -239,6 +239,32 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 			a.data.Payload,
 			a.data.AssetID,
 			a.data.Remark,
+			s.chainID, uint(0), uint(0),
+		})
+		actionHashs[i] = hash
+	}
+
+	return RlpHash([]interface{}{
+		common.MerkleRoot(actionHashs),
+		tx.gasAssetID,
+		tx.gasPrice,
+	})
+}
+
+func (s Signer) FeePayerHash(tx *Transaction) common.Hash {
+	actionHashs := make([]common.Hash, len(tx.GetActions()))
+	for i, a := range tx.GetActions() {
+		hash := RlpHash([]interface{}{
+			a.data.From,
+			a.data.AType,
+			a.data.Nonce,
+			a.data.To,
+			a.data.GasLimit,
+			a.data.Amount,
+			a.data.Payload,
+			a.data.AssetID,
+			a.data.Remark,
+			a.fp,
 			s.chainID, uint(0), uint(0),
 		})
 		actionHashs[i] = hash
