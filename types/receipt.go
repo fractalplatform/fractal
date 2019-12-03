@@ -181,8 +181,6 @@ type RPCReceiptWithPayer struct {
 	TotalGasUsed      uint64                      `json:"totalGasUsed"`
 	Bloom             Bloom                       `json:"logsBloom"`
 	Logs              []*RPCLog                   `json:"logs"`
-	Payer             common.Name                 `json:"payer"`
-	PayerGasPrice     *big.Int                    `json:"payerGasPrice"`
 }
 
 // NewRPCReceipt returns a Receipt that will serialize to the RPC.
