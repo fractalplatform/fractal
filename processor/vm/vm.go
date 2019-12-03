@@ -587,7 +587,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 		}
 	} else if b {
 		if evm.ForkID >= params.ForkID4 {
-			return nil, gas, err
+			return nil, gas, ErrContractCodeCollision
 		} else {
 			return nil, 0, ErrContractCodeCollision
 		}
