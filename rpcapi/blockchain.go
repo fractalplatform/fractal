@@ -126,6 +126,23 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
 }
 
+func (s *PublicBlockChainAPI) GetTransactionReceiptWithPayer(ctx context.Context, hash common.Hash) (*types.RPCReceiptWithPayer, error) {
+	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
+	if tx == nil {
+		return nil, nil
+	}
+
+	receipts, err := s.b.GetReceipts(ctx, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	if len(receipts) <= int(index) {
+		return nil, nil
+	}
+	receipt := receipts[index]
+	return receipt.NewRPCReceiptWithPayer(blockHash, blockNumber, index, tx), nil
+}
+
 func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
 	r := s.b.GetBlockDetailLog(ctx, blockNr)
 	if r == nil {
