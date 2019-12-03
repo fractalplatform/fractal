@@ -580,9 +580,17 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	snapshot := evm.StateDB.Snapshot()
 
 	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
-		return nil, 0, err
+		if evm.ForkID >= params.ForkID4 {
+			return nil, gas, err
+		} else {
+			return nil, 0, err
+		}
 	} else if b {
-		return nil, 0, ErrContractCodeCollision
+		if evm.ForkID >= params.ForkID4 {
+			return nil, gas, err
+		} else {
+			return nil, 0, ErrContractCodeCollision
+		}
 	}
 
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
