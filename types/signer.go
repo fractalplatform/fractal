@@ -24,6 +24,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
@@ -88,6 +89,47 @@ func RecoverMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey
 	return pubKeys, nil
 }
 
+func SignPayerActionWithMultiKey(a *Action, tx *Transaction, s Signer, feePayer *FeePayer, parentIndex uint64, keys []*KeyPair) error {
+	a.fp = feePayer
+	h := s.FeePayerHash(tx)
+	for _, key := range keys {
+		sig, err := crypto.Sign(h[:], key.priv)
+		if err != nil {
+			return err
+		}
+
+		err = feePayer.WithSignature(s, sig, key.index)
+		if err != nil {
+			return err
+		}
+	}
+	feePayer.WithParentIndex(parentIndex)
+
+	if value, err := rlp.EncodeToBytes(feePayer); err != nil {
+		return err
+	} else {
+		a.data.Extend = append(a.data.Extend, value)
+	}
+
+	return nil
+}
+
+func RecoverPayerMultiKey(signer Signer, a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if sc := a.payerPubkeys.Load(); sc != nil {
+		sigCache := sc.(sigCache)
+		if sigCache.signer.Equal(signer) {
+			return sigCache.pubKeys, nil
+		}
+	}
+
+	pubKeys, err := signer.PayerPubKeys(a, tx)
+	if err != nil {
+		return []common.PubKey{}, err
+	}
+	a.payerPubkeys.Store(sigCache{signer: signer, pubKeys: pubKeys})
+	return pubKeys, nil
+}
+
 func StoreAuthorCache(a *Action, authorVersion map[common.Name]common.Hash) {
 	a.author.Store(authorVersion)
 }
@@ -147,6 +189,25 @@ func (s Signer) PubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
 	return pubKeys, nil
 }
 
+func (s Signer) PayerPubKeys(a *Action, tx *Transaction) ([]common.PubKey, error) {
+	if len(a.fp.Sign.SignData) == 0 {
+		return nil, ErrSignEmpty
+	}
+
+	var pubKeys []common.PubKey
+	for _, sign := range a.fp.Sign.SignData {
+		V := new(big.Int).Sub(sign.V, s.chainIDMul)
+		V.Sub(V, big8)
+		data, err := recoverPlain(s.FeePayerHash(tx), sign.R, sign.S, V)
+		if err != nil {
+			return nil, err
+		}
+		pubKey := common.BytesToPubKey(data)
+		pubKeys = append(pubKeys, pubKey)
+	}
+	return pubKeys, nil
+}
+
 // SignatureValues returns a new transaction with the given signature. This signature
 // needs to be in the [R || S || V] format where V is 0 or 1.
 func (s Signer) SignatureValues(sig []byte) (R, S, V *big.Int, err error) {
@@ -178,6 +239,33 @@ func (s Signer) Hash(tx *Transaction) common.Hash {
 			a.data.Payload,
 			a.data.AssetID,
 			a.data.Remark,
+			s.chainID, uint(0), uint(0),
+		})
+		actionHashs[i] = hash
+	}
+
+	return RlpHash([]interface{}{
+		common.MerkleRoot(actionHashs),
+		tx.gasAssetID,
+		tx.gasPrice,
+	})
+}
+
+func (s Signer) FeePayerHash(tx *Transaction) common.Hash {
+	actionHashs := make([]common.Hash, len(tx.GetActions()))
+	for i, a := range tx.GetActions() {
+		hash := RlpHash([]interface{}{
+			a.data.From,
+			a.data.AType,
+			a.data.Nonce,
+			a.data.To,
+			a.data.GasLimit,
+			a.data.Amount,
+			a.data.Payload,
+			a.data.AssetID,
+			a.data.Remark,
+			a.fp.Payer,
+			a.fp.GasPrice,
 			s.chainID, uint(0), uint(0),
 		})
 		actionHashs[i] = hash

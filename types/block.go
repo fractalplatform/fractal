@@ -26,6 +26,7 @@ import (
 	"sync/atomic"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -93,17 +94,22 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
 	}
 
 	b := &Block{Head: header}
-	b.Head.TxsRoot = DeriveTxsMerkleRoot(txs)
+
+	if header.ForkID.Cur >= params.ForkID4 {
+		b.Head.TxsRoot = DeriveExtensTxsMerkleRoot(txs)
+	} else {
+		b.Head.TxsRoot = DeriveTxsMerkleRoot(txs)
+	}
+
 	b.Head.ReceiptsRoot = DeriveReceiptsMerkleRoot(receipts)
 
 	b.Txs = make([]*Transaction, len(txs))
 	copy(b.Txs, txs)
 	b.Head.Bloom = CreateBloom(receipts)
-
 	return b
 }
 
-// NewBlockWithHeader creates a block with the given header data. The
+// NewBlockWithHeader create s a block with the given header data. The
 // header data is copied, changes to header and to the field values
 // will not affect the block.
 func NewBlockWithHeader(header *Header) *Block {
@@ -287,6 +293,15 @@ func (bs blockSorter) Less(i, j int) bool { return bs.by(bs.blocks[i], bs.blocks
 
 // Number represents block sort by number.
 func Number(b1, b2 *Block) bool { return b1.Head.Number.Cmp(b2.Head.Number) < 0 }
+
+// DeriveExtensTxsMerkleRoot returns Extens txs merkle tree root hash.
+func DeriveExtensTxsMerkleRoot(txs []*Transaction) common.Hash {
+	var txHashs []common.Hash
+	for i := 0; i < len(txs); i++ {
+		txHashs = append(txHashs, txs[i].ExtensHash())
+	}
+	return common.MerkleRoot(txHashs)
+}
 
 // DeriveTxsMerkleRoot returns txs merkle tree root hash.
 func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {

@@ -651,6 +651,7 @@ func (tp *TxPool) local() map[common.Name][]*types.Transaction {
 func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 	validateAction := func(tx *types.Transaction, action *types.Action) error {
 		from := action.Sender()
+
 		// Drop non-local transactions under our own minimal accepted gas price
 		local = local || tp.locals.contains(from) // account may be local even if the transaction arrived from the network
 		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
@@ -666,10 +667,27 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 			return ErrNonceTooLow
 		}
 
-		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
-		if err != nil {
-			return err
+		// wait fork successed, remove it
+		if action.PayerIsExist() && tp.chain.CurrentBlock().CurForkID() < params.ForkID4 {
+			return fmt.Errorf("This type of transaction: %v is not currently supported", tx.Hash().Hex())
+		}
+
+		var balance *big.Int
+		if tx.PayerExist() {
+			// Transactor should have enough funds to cover the gas costs
+			balance, err = tp.curAccountManager.GetAccountBalanceByID(action.Payer(), tx.GasAssetID(), 0)
+			if err != nil {
+				return err
+			}
+		} else {
+			if action.PayerIsExist() {
+				return ErrPayerTx
+			}
+			// Transactor should have enough funds to cover the gas costs
+			balance, err = tp.curAccountManager.GetAccountBalanceByID(from, tx.GasAssetID(), 0)
+			if err != nil {
+				return err
+			}
 		}
 
 		gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
@@ -685,7 +703,9 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 		value := action.Value()
 		if tp.config.GasAssetID == action.AssetID() {
-			value.Add(value, gascost)
+			if !tx.PayerExist() {
+				value.Add(value, gascost)
+			}
 		}
 
 		if balance.Cmp(value) < 0 {
@@ -751,7 +771,6 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	}
 
 	// If the transaction is replacing an already pending one, do directly
-	// todo Change action
 	from := tx.GetActions()[0].Sender()
 	if list := tp.pending[from]; list != nil && list.Overlaps(tx) {
 		// Nonce already pending, check if required price bump is met
@@ -764,6 +783,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 			tp.all.Remove(old.Hash())
 			tp.priced.Removed(1)
 		}
+
 		tp.all.Add(tx)
 		tp.priced.Put(tx)
 		tp.journalTx(from, tx)
@@ -913,7 +933,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 	// Cache senders in transactions before obtaining lock (pool.signer is immutable)
 	for index, tx := range txs {
 		// If the transaction is already known, discard it
-		if tp.all.Get(tx.Hash()) != nil {
+		if storgeTx := tp.all.Get(tx.Hash()); storgeTx != nil && tx.GasPrice().Cmp(storgeTx.GasPrice()) == 0 {
 			log.Trace("Discarding already known transaction", "hash", tx.Hash())
 			errs[index] = errors.New("already known transaction")
 			continue

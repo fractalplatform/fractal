@@ -45,8 +45,9 @@ type Transaction struct {
 	gasAssetID uint64
 	gasPrice   *big.Int
 	// caches
-	hash atomic.Value
-	size atomic.Value
+	hash       atomic.Value
+	extendHash atomic.Value
+	size       atomic.Value
 }
 
 // NewTransaction initialize a transaction.
@@ -65,8 +66,21 @@ func NewTransaction(assetID uint64, price *big.Int, actions ...*Action) *Transac
 // GasAssetID returns transaction gas asset id.
 func (tx *Transaction) GasAssetID() uint64 { return tx.gasAssetID }
 
-// GasPrice returns transaction gas price.
-func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.gasPrice) }
+func (tx *Transaction) PayerExist() bool {
+	return tx.gasPrice.Cmp(big.NewInt(0)) == 0 && tx.actions[0].fp != nil
+}
+
+// GasPrice returns transaction Higher gas price .
+func (tx *Transaction) GasPrice() *big.Int {
+	gasPrice := new(big.Int)
+	if tx.gasPrice.Cmp(big.NewInt(0)) == 0 {
+		if price := tx.actions[0].PayerGasPrice(); price == nil {
+			return big.NewInt(0)
+		}
+		return gasPrice.Set(tx.actions[0].PayerGasPrice())
+	}
+	return gasPrice.Set(tx.gasPrice)
+}
 
 // Cost returns all actions gasprice * gaslimit.
 func (tx *Transaction) Cost() *big.Int {
@@ -111,8 +125,23 @@ func (tx *Transaction) Hash() common.Hash {
 	if hash := tx.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := RlpHash(tx)
+	var acts [][]interface{}
+	for _, a := range tx.actions {
+		acts = append(acts, a.IgnoreExtend())
+	}
+	v := RlpHash([]interface{}{tx.gasAssetID, tx.gasPrice, acts})
 	tx.hash.Store(v)
+	return v
+}
+
+// ExtensHash hashes the RLP encoding of tx.
+func (tx *Transaction) ExtensHash() common.Hash {
+	if hash := tx.extendHash.Load(); hash != nil {
+		return hash.(common.Hash)
+	}
+
+	v := RlpHash(tx)
+	tx.extendHash.Store(v)
 	return v
 }
 

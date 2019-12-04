@@ -101,6 +101,9 @@ func IntrinsicGas(accountDB *accountmanager.AccountManager, action *types.Action
 		gas += (uint64(len(action.GetSign()) - 1)) * gasTable.SignGas
 	}
 
+	payerSignLen := len(action.GetFeePayerSign())
+	gas += uint64(payerSignLen) * gasTable.SignGas
+
 	if action.Value().Sign() != 0 {
 		gas += receiptGasFunc(action)
 	}

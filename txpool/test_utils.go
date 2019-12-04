@@ -84,6 +84,32 @@ func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa
 	return pricedTransaction(nonce, from, to, gaslimit, big.NewInt(1), key)
 }
 
+func extendTransaction(nonce uint64, payer, from, to common.Name, gasLimit uint64, key, payerKey *ecdsa.PrivateKey) *types.Transaction {
+
+	fp := &types.FeePayer{
+		GasPrice: big.NewInt(100),
+		Payer:    payer,
+		Sign:     &types.Signature{0, make([]*types.SignData, 0)},
+	}
+
+	action := types.NewAction(types.Transfer, from, to, nonce, 0, gasLimit, big.NewInt(100), nil, nil)
+	tx := types.NewTransaction(0, big.NewInt(0), action)
+	signer := types.MakeSigner(params.DefaultChainconfig.ChainID)
+	keyPair := types.MakeKeyPair(key, []uint64{0})
+	err := types.SignActionWithMultiKey(action, tx, signer, 0, []*types.KeyPair{keyPair})
+	if err != nil {
+		panic(err)
+	}
+
+	payerKeyPair := types.MakeKeyPair(payerKey, []uint64{0})
+	err = types.SignPayerActionWithMultiKey(action, tx, signer, fp, 0, []*types.KeyPair{payerKeyPair})
+	if err != nil {
+		panic(err)
+	}
+
+	return tx
+}
+
 func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
 	tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
 	keyPair := types.MakeKeyPair(key, []uint64{0})
