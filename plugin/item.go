@@ -23,29 +23,29 @@ type ItemManager struct {
 }
 
 type ItemType struct {
-	ID          uint64 // 不可修改
-	Name        string // 保证不重复
-	Owner       string // 允许修改
-	Creator     string // 不可修改
-	CreateTime  uint64 // 不可修改
-	Description string // 不可修改
-	Total       uint64 // 已发行总数
+	ID          uint64
+	Name        string
+	Owner       string
+	Creator     string
+	CreateTime  uint64
+	Description string
+	Total       uint64
 }
 
 type ItemInfo struct {
-	TypeID      uint64       // 不可修改
-	ID          uint64       // 保证不重复
-	Name        string       // 不可修改
-	CreateTime  uint64       // 不可修改
-	Total       uint64       // 增发时修改
-	Description string       // 不可修改
-	UpperLimit  uint64       // 上限，不可修改
-	Attributes  []*Attribute // 发行时确定好，后续禁止修改
+	TypeID      uint64
+	ID          uint64
+	Name        string
+	CreateTime  uint64
+	Total       uint64
+	Description string
+	UpperLimit  uint64
+	Attributes  []*Attribute
 }
 
 type Attribute struct {
-	Name        string // 不可修改
-	Description string // 不可修改
+	Name        string
+	Description string
 }
 
 type ItemTxParam struct {
@@ -87,9 +87,3 @@ func (im *ItemManager) GetItemAmount(account string, itemTypeID, itemInfoID uint
 func (im *ItemManager) GetItemAttribute(itemTypeID uint64, itemInfoID uint64, AttributeName string) (string, error) {
 	return "", nil
 }
-
-// em.sdb.Put("item", "accuntItemAmount"+类型id+道具id+账号名, 道具数量)
-// em.sdb.Put("item", "itemType"+类型id, ItemType obj)
-// em.sdb.Put("item", "itemInfo"+类型id+道具id, ItemInfo obj)
-// em.sdb.Put("item", "itemTyepName"+类型创建者+类型名, 类型id)
-// em.sdb.Put("item", "itemInfoName"+类型id+道具名, 道具id)
