@@ -211,6 +211,36 @@ func (tx *Transaction) NewRPCTransaction(blockHash common.Hash, blockNumber uint
 	return result
 }
 
+type RPCTransactionWithPayer struct {
+	BlockHash           common.Hash           `json:"blockHash"`
+	BlockNumber         uint64                `json:"blockNumber"`
+	Hash                common.Hash           `json:"txHash"`
+	TransactionIndex    uint64                `json:"transactionIndex"`
+	RPCActionsWithPayer []*RPCActionWithPayer `json:"actions"`
+	GasAssetID          uint64                `json:"gasAssetID"`
+	GasPrice            *big.Int              `json:"gasPrice"`
+	GasCost             *big.Int              `json:"gasCost"`
+}
+
+func (tx *Transaction) NewRPCTransactionWithPayer(blockHash common.Hash, blockNumber uint64, index uint64) *RPCTransactionWithPayer {
+	result := new(RPCTransactionWithPayer)
+	if blockHash != (common.Hash{}) {
+		result.BlockHash = blockHash
+		result.BlockNumber = blockNumber
+		result.TransactionIndex = index
+	}
+	result.Hash = tx.Hash()
+	ras := make([]*RPCActionWithPayer, len(tx.GetActions()))
+	for index, action := range tx.GetActions() {
+		ras[index] = action.NewRPCActionWithPayer(uint64(index))
+	}
+	result.RPCActionsWithPayer = ras
+	result.GasAssetID = tx.gasAssetID
+	result.GasPrice = tx.gasPrice
+	result.GasCost = tx.Cost()
+	return result
+}
+
 // TxByNonce sort by transaction first action nonce
 type TxByNonce []*Transaction
 

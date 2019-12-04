@@ -80,6 +80,21 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(chainID *big.Int, b *types.Block, i
 	return fields
 }
 
+func (s *PublicBlockChainAPI) GetBlockByNumberWithPayer(ctx context.Context, blockNr rpc.BlockNumber, fullTx bool) map[string]interface{} {
+	block := s.b.BlockByNumber(ctx, blockNr)
+	if block != nil {
+		response := s.rpcOutputBlockWithPayer(s.b.ChainConfig().ChainID, block, true, fullTx)
+		return response
+	}
+	return nil
+}
+
+func (s *PublicBlockChainAPI) rpcOutputBlockWithPayer(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool) map[string]interface{} {
+	fields := RPCMarshalBlockWithPayer(chainID, b, inclTx, fullTx)
+	fields["totalDifficulty"] = s.b.GetTd(b.Hash())
+	return fields
+}
+
 // GetTransactionByHash returns the transaction for the given hash
 func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) *types.RPCTransaction {
 	// Try to return an already finalized transaction
@@ -149,6 +164,16 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 		return nil
 	}
 	block := s.GetBlockByNumber(ctx, blockNr, true)
+	r.Block = block
+	return r
+}
+
+func (s *PublicBlockChainAPI) GetBlockAndResultByNumberWithPayer(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
+	r := s.b.GetBlockDetailLog(ctx, blockNr)
+	if r == nil {
+		return nil
+	}
+	block := s.GetBlockByNumberWithPayer(ctx, blockNr, true)
 	r.Block = block
 	return r
 }
