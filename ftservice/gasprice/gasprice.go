@@ -92,7 +92,7 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 		return lastPrice, nil
 	}
 
-	blockNum := head.Number.Uint64()
+	blockNum := head.Number
 	ch := make(chan getBlockPricesResult, gpo.checkBlocks)
 	sent := 0
 	exp := 0
@@ -118,6 +118,10 @@ func (gpo *Oracle) SuggestPrice(ctx context.Context) (*big.Int, error) {
 	price := lastPrice
 	if prices.Sign() > 0 {
 		price = new(big.Int).Div(prices, weights)
+	}
+
+	if price.Cmp(gpo.defaultPrice) < 0 {
+		price = gpo.defaultPrice
 	}
 
 	gpo.cacheLock.Lock()

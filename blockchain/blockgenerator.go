@@ -18,36 +18,33 @@ package blockchain
 
 import (
 	"fmt"
-	"math/big"
 
-	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
 
-// BlockGenerator creates blocks for testing.
-type BlockGenerator struct {
+// blockGenerator creates blocks for testing.
+type blockGenerator struct {
 	i       int
 	parent  *types.Block
 	header  *types.Header
-	statedb *state.StateDB
-	am      *accountmanager.AccountManager
+	stateDB *state.StateDB
+	manager pm.IPM
 
 	gasPool  *common.GasPool
 	txs      []*types.Transaction
 	receipts []*types.Receipt
 
 	config *params.ChainConfig
-	engine consensus.IEngine
 	*BlockChain
 }
 
 // SetCoinbase sets the coinbase of the generated block.
-func (bg *BlockGenerator) SetCoinbase(name common.Name) {
+func (bg *blockGenerator) SetCoinbase(name string) {
 	if bg.gasPool != nil {
 		if len(bg.txs) > 0 {
 			panic("coinbase must be set before adding transactions")
@@ -58,42 +55,20 @@ func (bg *BlockGenerator) SetCoinbase(name common.Name) {
 	bg.gasPool = new(common.GasPool).AddGas(bg.header.GasLimit)
 }
 
-// OffsetTime modifies the time instance of a block
-func (bg *BlockGenerator) OffsetTime(seconds int64) {
-	bg.header.Time.Add(bg.header.Time, new(big.Int).SetInt64(seconds))
-	if bg.header.Time.Cmp(bg.parent.Header().Time) <= 0 {
-		panic(fmt.Sprintf("header time %d less than parent header time %v ", bg.header.Time.Uint64(), bg.parent.Time().Uint64()))
-	}
-	bg.header.Difficulty = bg.engine.CalcDifficulty(bg, bg.header.Time.Uint64(), bg.parent.Header())
-}
-
-// AddTx adds a transaction to the generated block.
-func (bg *BlockGenerator) AddTx(tx *types.Transaction) {
-	bg.AddTxWithChain(tx)
-}
-
 // TxNonce retrun nonce
-func (bg *BlockGenerator) TxNonce(name common.Name) uint64 {
-	am, _ := accountmanager.NewAccountManager(bg.statedb)
-	a, err := am.GetAccountByName(name)
-	if err != nil {
-		panic(fmt.Sprintf("name: %v, GetTxNonce failed: %v", name, err))
-	}
-	if a == nil {
-		panic("Account Not exist")
-	}
-	return a.GetNonce()
+func (bg *blockGenerator) TxNonce(name string) uint64 {
+	return 0
 }
 
 // AddTxWithChain adds a transaction to the generated block.
-func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
+func (bg *blockGenerator) AddTxWithChain(tx *types.Transaction) {
 	if bg.gasPool == nil {
 		bg.SetCoinbase(bg.genesisBlock.Coinbase())
 	}
 
-	bg.statedb.Prepare(tx.Hash(), common.Hash{}, len(bg.txs))
+	bg.stateDB.Prepare(tx.Hash(), common.Hash{}, len(bg.txs))
 
-	receipt, _, err := bg.processor.ApplyTransaction(&bg.header.Coinbase, bg.gasPool, bg.statedb, bg.header, tx, &bg.header.GasUsed, vm.Config{})
+	receipt, _, err := bg.processor.ApplyTransaction(&bg.header.Coinbase, bg.gasPool, bg.stateDB, bg.header, tx, &bg.header.GasUsed, vm.Config{})
 	if err != nil {
 		panic(fmt.Sprintf(" apply transaction hash:%v ,err %v", tx.Hash().Hex(), err))
 	}
@@ -103,6 +78,6 @@ func (bg *BlockGenerator) AddTxWithChain(tx *types.Transaction) {
 }
 
 // CurrentHeader return current header
-func (bg *BlockGenerator) CurrentHeader() *types.Header {
+func (bg *blockGenerator) CurrentHeader() *types.Header {
 	return bg.parent.Head
 }

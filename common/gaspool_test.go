@@ -17,6 +17,7 @@
 package common
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -55,4 +56,5 @@ func TestSubGas(t *testing.T) {
 	if err := gaspool.SubGas(uint64(2)); err == nil || err != ErrGasLimitReached {
 		t.Fatalf("expect ErrGasLimitReached")
 	}
+	fmt.Println(gaspool)
 }

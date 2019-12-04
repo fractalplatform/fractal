@@ -17,6 +17,7 @@
 package blockchain
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -26,16 +27,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/common/prque"
 	"github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
+	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -49,11 +53,16 @@ const (
 	tdCacheLimit        = 1024
 	numberCacheLimit    = 2048
 	maxFutureBlocks     = 256
-	maxTimeFutureBlocks = 30
+	maxTimeFutureBlocks = 30 // 30's
 	badBlockLimit       = 10
 
 	//BlockChainVersion ensures that an incompatible database forces a resync from scratch.
 	BlockChainVersion = 0
+)
+
+var (
+	// ErrBlacklistedHash is returned if a block to import is on the blacklist.
+	ErrBlacklistedHash = errors.New("blacklisted hash")
 )
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -82,8 +91,6 @@ type BlockChain struct {
 	running       int32               // running must be called atomically
 	procInterrupt int32               // procInterrupt must be atomically called, interrupt signaler for block processing
 	wg            sync.WaitGroup      // chain processing wait group for shutting down
-	senderCacher  TxSenderCacher      // senderCacher is a concurrent tranaction sender recoverer sender cacher.
-	fcontroller   *ForkController     // fcontroller
 	processor     processor.Processor // block processor interface
 	validator     processor.Validator // block and state validator interface
 	station       *Station            // p2p station
@@ -101,7 +108,7 @@ type BlockChain struct {
 
 // NewBlockChain returns a fully initialised block chain using information　available in the database.
 func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chainConfig *params.ChainConfig,
-	badhashes []string, startNumber uint64, senderCacher TxSenderCacher) (*BlockChain, error) {
+	badhashes []string, startNumber uint64) (*BlockChain, error) {
 	bodyCache, _ := lru.New(bodyCacheLimit)
 	bodyRLPCache, _ := lru.New(bodyCacheLimit)
 	headerCache, _ := lru.New(headerCacheLimit)
@@ -121,7 +128,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		statePruning:     statePruning,
 		stateCacheClean:  false,
 		snapshotInterval: chainConfig.SnapshotInterval * uint64(time.Millisecond),
-		triesInMemory:    ((chainConfig.DposCfg.BlockFrequency * chainConfig.DposCfg.CandidateScheduleSize) * 2) + 2,
+		triesInMemory:    256,
 		triegc:           prque.New(nil),
 		vmConfig:         vmConfig,
 		db:               db,
@@ -136,16 +143,11 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		blockCache:       blockCache,
 		futureBlocks:     futureBlocks,
 		badBlocks:        badBlocks,
-		senderCacher:     senderCacher,
-		fcontroller: NewForkController(&ForkConfig{
-			ForkBlockNum:   chainConfig.ForkedCfg.ForkBlockNum,
-			Forkpercentage: chainConfig.ForkedCfg.Forkpercentage,
-		}, chainConfig),
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)
 	if bc.genesisBlock == nil {
-		return nil, ErrNoGenesis
+		return nil, genesis.ErrNoGenesis
 	}
 
 	if err := bc.loadLastBlock(); err != nil {
@@ -156,11 +158,11 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	for hash := range bc.badHashes {
 		if header := bc.GetHeaderByHash(hash); header != nil {
 			// get the canonical block corresponding to the offending header's number
-			headerByNumber := bc.GetHeaderByNumber(header.Number.Uint64())
+			headerByNumber := bc.GetHeaderByNumber(header.Number)
 			// make sure the headerByNumber (if present) is in our current canonical chain
 			if headerByNumber != nil && headerByNumber.Hash() == header.Hash() {
 				log.Error("Found bad hash, rewinding chain", "hash", hash)
-				if err := bc.SetLastSnapshot(bc.GetBlockByNumber(header.Number.Uint64() - 1)); err != nil {
+				if err := bc.SetLastSnapshot(bc.GetBlockByNumber(header.Number - 1)); err != nil {
 					log.Error("Chain rewind was failed", "err", err)
 					return nil, err
 				}
@@ -178,7 +180,7 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 		log.Info("Start chain with a specified block number", "start", bc.CurrentBlock().NumberU64(), "irreversible", bc.IrreversibleNumber())
 	}
 
-	bc.station = newStation(bc, 0)
+	bc.station = NewStation(bc, 0)
 	go bc.update()
 	return bc, nil
 }
@@ -280,11 +282,6 @@ func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 	return batch.Write()
 }
 
-// GasLimit returns the gas limit of the current HEAD block.
-func (bc *BlockChain) GasLimit() uint64 {
-	return bc.CurrentBlock().GasLimit()
-}
-
 // CurrentBlock retrieves the current head block of the canonical chain.
 func (bc *BlockChain) CurrentBlock() *types.Block {
 	return bc.currentBlock.Load().(*types.Block)
@@ -328,26 +325,6 @@ func (bc *BlockChain) State() (*state.StateDB, error) {
 	return bc.StateAt(bc.CurrentBlock().Root())
 }
 
-// GetForkID returns the last current fork ID.
-func (bc *BlockChain) GetForkID(statedb *state.StateDB) (uint64, uint64, error) {
-	return bc.fcontroller.currentForkID(statedb)
-}
-
-// CheckForkID Checks the validity of forkID
-func (bc *BlockChain) CheckForkID(header *types.Header) error {
-	parentHeader := bc.GetHeader(header.ParentHash, uint64(header.Number.Int64()-1))
-	state, err := bc.StateAt(parentHeader.Root)
-	if err != nil {
-		return err
-	}
-	return bc.fcontroller.checkForkID(header, state)
-}
-
-// FillForkID fills the current and next forkID
-func (bc *BlockChain) FillForkID(header *types.Header, statedb *state.StateDB) error {
-	return bc.fcontroller.fillForkID(header, statedb)
-}
-
 // StateAt returns a new mutable state based on a particular point in time.
 func (bc *BlockChain) StateAt(hash common.Hash) (*state.StateDB, error) {
 	return state.New(hash, bc.stateCache)
@@ -358,7 +335,7 @@ func (bc *BlockChain) insert(batch fdb.Batch, block *types.Block) {
 	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
 	rawdb.WriteHeadBlockHash(batch, block.Hash())
 
-	if strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0 {
+	if strings.Compare(block.Coinbase(), bc.chainConfig.SysName) == 0 {
 		log.Debug("state sys irreversible", "number", block.NumberU64())
 		rawdb.WriteIrreversibleNumber(batch, block.NumberU64())
 		bc.irreversibleNumber.Store(block.NumberU64())
@@ -626,7 +603,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 			}
 
 			// Find the next state trie we need to commit
-			chosen := bc.GetHeaderByNumber(current - bc.triesInMemory).Number.Uint64()
+			chosen := bc.GetHeaderByNumber(current - bc.triesInMemory).Number
 
 			for !bc.triegc.Empty() {
 				sizegc := bc.triegc.Size()
@@ -677,7 +654,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 
 	currentBlock := bc.CurrentBlock()
 	localTd := bc.GetTd(currentBlock.Hash(), currentBlock.NumberU64())
-	reorg := externTd.Cmp(localTd) > 0 || strings.Compare(block.Coinbase().String(), bc.chainConfig.SysName) == 0
+	reorg := externTd.Cmp(localTd) > 0 || strings.Compare(block.Coinbase(), bc.chainConfig.SysName) == 0
 	if !reorg && externTd.Cmp(localTd) == 0 {
 		// Split same-difficulty blocks by number, then at random
 		reorg = block.NumberU64() < currentBlock.NumberU64() || (block.NumberU64() == currentBlock.NumberU64() && mrand.Float64() < 0.5)
@@ -774,9 +751,8 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 		coalescedLogs []*types.Log
 	)
 
-	if bc.senderCacher != nil {
-		bc.senderCacher.RecoverFromBlocks(types.MakeSigner(bc.chainConfig.ChainID), chain)
-	}
+	statedb, _ := bc.State()
+	txpool.SenderCacher.RecoverFromBlocks(pm.NewPM(statedb), chain)
 
 	// Iterate over the blocks and insert when the verifier permits
 	for i, block := range chain {
@@ -800,7 +776,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks) (int, []*types.Log, error)
 			stats.ignored++
 			continue
 		case err == processor.ErrFutureBlock:
-			max := big.NewInt(time.Now().Unix() + maxTimeFutureBlocks)
+			max := big.NewInt(time.Now().Add(maxTimeFutureBlocks * time.Second).UnixNano())
 			if block.Time().Cmp(max) > 0 {
 				return i, coalescedLogs, fmt.Errorf("future block: %v > %v", block.Time(), max)
 			}
@@ -1026,6 +1002,7 @@ ReceiptHash: %v
 
 ##############################
 `, err, block.NumberU64(), block.Hash().Hex(), block.ParentHash().Hex(), block.Root().Hex(), block.ReceiptHash().Hex()))
+	panic("xx")
 }
 
 // GetBlockNumber retrieves the block number belonging to the given hash from the cache or database
@@ -1098,71 +1075,6 @@ func (bc *BlockChain) GetHeaderByHash(hash common.Hash) *types.Header {
 
 }
 
-// HasHeader checks if a block header is present in the database or not.
-func (bc *BlockChain) HasHeader(hash common.Hash, number uint64) bool {
-	if bc.numberCache.Contains(hash) || bc.headerCache.Contains(hash) {
-		return true
-	}
-	return rawdb.HasHeader(bc.db, hash, number)
-
-}
-
-// GetBlockHashesFromHash retrieves a number of block hashes starting at a given hash, fetching towards the genesis block.
-func (bc *BlockChain) GetBlockHashesFromHash(hash common.Hash, max uint64) []common.Hash {
-	header := bc.GetHeaderByHash(hash)
-	if header == nil {
-		return nil
-	}
-	chain := make([]common.Hash, 0, max)
-	for i := uint64(0); i < max; i++ {
-		next := header.ParentHash
-		if header = bc.GetHeader(next, header.Number.Uint64()-1); header == nil {
-			break
-		}
-		chain = append(chain, next)
-		if header.Number.Sign() == 0 {
-			break
-		}
-	}
-	return chain
-}
-
-// GetAncestor retrieves the Nth ancestor of a given block.
-func (bc *BlockChain) GetAncestor(hash common.Hash, number, ancestor uint64, maxNonCanonical *uint64) (common.Hash, uint64) {
-	bc.chainmu.Lock()
-	defer bc.chainmu.Unlock()
-
-	if ancestor > number {
-		return common.Hash{}, 0
-	}
-	if ancestor == 1 {
-		// in this case it is cheaper to just read the header
-		if header := bc.GetHeader(hash, number); header != nil {
-			return header.ParentHash, number - 1
-		}
-		return common.Hash{}, 0
-	}
-	for ancestor != 0 {
-		if rawdb.ReadCanonicalHash(bc.db, number) == hash {
-			number -= ancestor
-			return rawdb.ReadCanonicalHash(bc.db, number), number
-		}
-		if *maxNonCanonical == 0 {
-			return common.Hash{}, 0
-		}
-		*maxNonCanonical--
-		ancestor--
-		header := bc.GetHeader(hash, number)
-		if header == nil {
-			return common.Hash{}, 0
-		}
-		hash = header.ParentHash
-		number--
-	}
-	return hash, number
-
-}
-
 // GetHeaderByNumber retrieves a block header from the database by number.
 func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 	hash := rawdb.ReadCanonicalHash(bc.db, number)
@@ -1174,17 +1086,6 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 
 // Config retrieves the blockchain's chain configuration.
 func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
-
-// ForkUpdate update fork status.
-func (bc *BlockChain) ForkUpdate(block *types.Block, statedb *state.StateDB) error {
-	return bc.fcontroller.update(block, statedb, bc.GetHeaderByNumber)
-}
-
-// ForkStatus returns current fork status.
-func (bc *BlockChain) ForkStatus(statedb *state.StateDB) (*ForkConfig, ForkInfo, error) {
-	info, err := bc.fcontroller.getForkInfo(statedb)
-	return bc.fcontroller.cfg, info, err
-}
 
 // Export writes the active chain to the given writer.
 func (bc *BlockChain) Export(w io.Writer) error {

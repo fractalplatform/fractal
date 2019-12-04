@@ -91,7 +91,7 @@ const (
 	P2PNewBlockHashesMsg             // 11 NewBlockHash notify
 	P2PTxMsg                         // 12 TxMsg notify
 	P2PEndSize
-	ChainHeadEv         = 1023 + iota - P2PEndSize // 1024
+	ChainHeadEv         = 1023 + iota - P2PEndSize // 1024 when blockchain insert or miner mined new block
 	NewPeerNotify                                  // 1025 emit when remote peer incoming but needed to check chainID and genesis block
 	DelPeerNotify                                  // 1026 emit when remote peer disconnected
 	DisconectCtrl                                  // 1027 emit if needed to let remote peer disconnect

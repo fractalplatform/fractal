@@ -20,10 +20,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"math/rand"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/common/hexutil"
 )
 
 // HashLength of hashes  in bytes.
@@ -100,15 +99,6 @@ func (h *Hash) SetBytes(b []byte) {
 	}
 
 	copy(h[HashLength-len(b):], b)
-}
-
-// Generate implements testing/quick.Generator.
-func (h Hash) Generate(rand *rand.Rand, size int) reflect.Value {
-	m := rand.Intn(len(h))
-	for i := len(h) - 1; i > m; i-- {
-		h[i] = byte(rand.Uint32())
-	}
-	return reflect.ValueOf(h)
 }
 
 // UnprefixedHash allows marshaling a Hash without 0x prefix.

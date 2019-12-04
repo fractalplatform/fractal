@@ -20,20 +20,15 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/blockchain"
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/feemanager"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
@@ -117,7 +112,7 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookforwardNum uint64) *types.AccountTxs {
+func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookforwardNum uint64) *types.AccountTxs {
 	if lookforwardNum > 128 {
 		lookforwardNum = 128
 	}
@@ -151,15 +146,15 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(common.Na
 	}
 
 	accountTxs := &types.AccountTxs{
-		Txs:                     txhhpairs,
-		IrreversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
-		EndHeight:               uint64(lastnum),
+		Txs: txhhpairs,
+		// IrreversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
+		EndHeight: uint64(lastnum),
 	}
 
 	return accountTxs
 }
 
-func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(common.Name) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
+func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
 	var lastnum int64
 	if lookbackNum > blockNr {
 		lastnum = 0
@@ -233,70 +228,20 @@ func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.Blo
 	return stateDb, header, err
 }
 
-func (b *APIBackend) GetEVM(ctx context.Context, account *accountmanager.AccountManager, state *state.StateDB, from common.Name, to common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error) {
-	account.AddAccountBalanceByID(from, assetID, math.MaxBig256)
+func (b *APIBackend) GetEVM(ctx context.Context, manager pm.IPM, state *state.StateDB, from string, to string, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error) {
+	//account.AddAccountBalanceByID(from, assetID, math.MaxBig256)
 	vmError := func() error { return nil }
 
 	evmContext := &processor.EvmContext{
-		ChainContext:  b.ftservice.BlockChain(),
-		EngineContext: b.ftservice.Engine(),
+		ChainContext: b.ftservice.BlockChain(),
 	}
 
 	context := processor.NewEVMContext(from, to, assetID, gasPrice, header, evmContext, nil)
-	return vm.NewEVM(context, account, state, b.ChainConfig(), vmCfg), vmError, nil
+	return vm.NewEVM(context, manager, state, b.ChainConfig(), vmCfg), vmError, nil
 }
 
 func (b *APIBackend) SetGasPrice(gasPrice *big.Int) bool {
 	return b.ftservice.SetGasPrice(gasPrice)
-}
-
-func (b *APIBackend) ForkStatus(statedb *state.StateDB) (*blockchain.ForkConfig, blockchain.ForkInfo, error) {
-	return b.ftservice.BlockChain().ForkStatus(statedb)
-}
-
-func (b *APIBackend) GetAccountManager() (*accountmanager.AccountManager, error) {
-	sdb, err := b.ftservice.blockchain.State()
-	if err != nil {
-		return nil, err
-	}
-	return accountmanager.NewAccountManager(sdb)
-}
-
-//GetFeeManager get fee manager
-func (b *APIBackend) GetFeeManager() (*feemanager.FeeManager, error) {
-	sdb, err := b.ftservice.blockchain.State()
-	if err != nil {
-		return nil, err
-	}
-	acctm, err := accountmanager.NewAccountManager(sdb)
-	if err != nil {
-		return nil, err
-	}
-
-	fm := feemanager.NewFeeManager(sdb, acctm)
-	return fm, nil
-}
-
-//GetFeeManagerByTime get fee manager
-func (b *APIBackend) GetFeeManagerByTime(time uint64) (*feemanager.FeeManager, error) {
-	sdb, err := b.ftservice.blockchain.State()
-	if err != nil {
-		return nil, err
-	}
-
-	snapshotManager := snapshot.NewSnapshotManager(sdb)
-	state, err := snapshotManager.GetSnapshotState(time)
-	if err != nil {
-		return nil, err
-	}
-
-	acctm, err := accountmanager.NewAccountManager(state)
-	if err != nil {
-		return nil, err
-	}
-
-	fm := feemanager.NewFeeManager(state, acctm)
-	return fm, nil
 }
 
 // AddPeer add a P2P peer
@@ -334,6 +279,16 @@ func (b *APIBackend) RemoveTrustedPeer(url string) error {
 		b.ftservice.p2pServer.RemoveTrustedPeer(node)
 	}
 	return err
+}
+
+// SeedNodes returns all seed nodes.
+func (b *APIBackend) SeedNodes() []string {
+	nodes := b.ftservice.p2pServer.SeedNodes()
+	ns := make([]string, len(nodes))
+	for i, node := range nodes {
+		ns[i] = node.String()
+	}
+	return ns
 }
 
 // PeerCount returns the number of connected peers.
@@ -389,10 +344,6 @@ func (b *APIBackend) SelfNode() string {
 	return b.ftservice.p2pServer.Self().String()
 }
 
-func (b *APIBackend) Engine() consensus.IEngine {
-	return b.ftservice.engine
-}
-
 //SetStatePruning set state pruning
 func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
 	return b.ftservice.blockchain.StatePruning(enable)
@@ -400,5 +351,13 @@ func (b *APIBackend) SetStatePruning(enable bool) (bool, uint64) {
 
 // APIs returns apis
 func (b *APIBackend) APIs() []rpc.API {
-	return b.ftservice.miner.APIs(b.ftservice.blockchain)
+	return b.ftservice.miner.APIs()
+}
+
+func (b *APIBackend) GetPM() (pm.IPM, error) {
+	sdb, err := b.ftservice.blockchain.State()
+	if err != nil {
+		return nil, err
+	}
+	return pm.NewPM(sdb), nil
 }

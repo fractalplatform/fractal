@@ -25,7 +25,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/common/hexutil"
 )
 
 // AddressLength of addresses in bytes
@@ -55,7 +55,7 @@ func HexToAddress(s string) Address { return BytesToAddress(FromHex(s)) }
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 //  address or not.
 func IsHexAddress(s string) bool {
-	if hasHexPrefix(s) {
+	if has0xPrefix(s) {
 		s = s[2:]
 	}
 	return len(s) == 2*AddressLength && isHex(s)

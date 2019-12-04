@@ -23,15 +23,14 @@ import (
 	"testing"
 	"time"
 
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	memdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // testTxPoolConfig is a transaction pool configuration without stateful disk
@@ -80,40 +79,39 @@ func (bc *testBlockChain) Config() *params.ChainConfig {
 	return cfg
 }
 
-func transaction(nonce uint64, from, to common.Name, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
+func transaction(nonce uint64, from, to string, gaslimit uint64, key *ecdsa.PrivateKey) *types.Transaction {
 	return pricedTransaction(nonce, from, to, gaslimit, big.NewInt(1), key)
 }
 
-func pricedTransaction(nonce uint64, from, to common.Name, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
+func pricedTransaction(nonce uint64, from, to string, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
 	tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
-	keyPair := types.MakeKeyPair(key, []uint64{0})
-	if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
-		panic(err)
-	}
+	// keyPair := types.MakeKeyPair(key, []uint64{0})
+	// if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
+	// 	panic(err)
+	// }
 	return tx
 }
 
-func generateAccount(t *testing.T, name common.Name, managers ...*am.AccountManager) *ecdsa.PrivateKey {
+func generateAccount(t *testing.T, name string, managers ...pm.IPM) *ecdsa.PrivateKey {
 	key, err := crypto.GenerateKey()
 	if err != nil {
 		t.Fatal(err)
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if err := m.CreateAccount(common.Name("fractal.founder"), name, common.Name(""), 0, 0, common.BytesToPubKey(pubkeyBytes), ""); err != nil {
+		if _, err := m.CreateAccount("fractal.founder", common.BytesToPubKey(pubkeyBytes).String(), ""); err != nil {
 			t.Fatal(err)
 		}
 	}
 	return key
 }
 
-func setupTxPool(assetOwner common.Name) (*TxPool, *am.AccountManager) {
-
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
-	asset := asset.NewAsset(statedb)
-	asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, assetOwner, assetOwner, big.NewInt(1000000), common.Name(""), "")
+func setupTxPool(assetOwner string) (*TxPool, pm.IPM) {
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+	manager := pm.NewPM(statedb)
+	manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+		10, assetOwner, assetOwner, big.NewInt(1000000), string(""), manager)
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
-	manager, _ := am.NewAccountManager(statedb)
 	return New(testTxPoolConfig, params.DefaultChainconfig, blockchain), manager
 }
 
@@ -141,10 +139,7 @@ func validateTxPoolInternals(pool *TxPool) error {
 			}
 		}
 
-		nonce, err := pool.pendingAccountManager.GetNonce(name)
-		if err != nil {
-			return err
-		}
+		nonce, _ := pool.pendingPM.GetNonce(name)
 		if nonce != last+1 {
 			return fmt.Errorf("pending nonce mismatch: have %v, want %v", nonce, last+1)
 		}
@@ -181,42 +176,8 @@ func validateEvents(events chan *event.Event, count int) error {
 	return nil
 }
 
-type testChain struct {
-	*testBlockChain
-
-	name    common.Name
-	trigger *bool
-}
-
-// testChain.State() is used multiple times to reset the pending state.
-// when simulate is true it will create a state that indicates
-// that tx0 and tx1 are included in the chain.
-func (c *testChain) State() (*state.StateDB, error) {
-	// delay "state change" by one. The tx pool fetches the
-	// state multiple times and by delaying it a bit we simulate
-	// a state change between those fetches.
-	stdb := c.statedb
-	if *c.trigger {
-		c.statedb, _ = state.New(common.Hash{}, state.NewDatabase(memdb.NewMemDatabase()))
-		am, err := am.NewAccountManager(c.statedb)
-		if err != nil {
-			return nil, err
-		}
-
-		// simulate that the new head block included tx0 and tx1
-		if err := am.SetNonce(c.name, 2); err != nil {
-			return nil, err
-		}
-		if err := am.AddAccountBalanceByID(c.name, uint64(0), new(big.Int).SetUint64(params.Fractal)); err != nil {
-			return nil, err
-		}
-		*c.trigger = false
-	}
-	return stdb, nil
-}
-
-func newAction(nonce uint64, from, to common.Name, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
-	return types.NewAction(types.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
+func newAction(nonce uint64, from, to string, amount *big.Int, gasLimit uint64, data []byte) *types.Action {
+	return types.NewAction(pm.Transfer, from, to, nonce, uint64(0), gasLimit, amount, data, nil)
 }
 
 func newTx(gasPrice *big.Int, action ...*types.Action) *types.Transaction {

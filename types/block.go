@@ -29,44 +29,36 @@ import (
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
-// ForkID  represents a blockchain fork
-type ForkID struct {
-	Cur  uint64 `json:"cur"`
-	Next uint64 `json:"next"`
-}
-
 // Header represents a block header in the blockchain.
 type Header struct {
 	ParentHash           common.Hash
-	Coinbase             common.Name
+	Coinbase             string
 	ProposedIrreversible uint64
 	Root                 common.Hash
 	TxsRoot              common.Hash
 	ReceiptsRoot         common.Hash
 	Bloom                Bloom
-	Difficulty           *big.Int
-	Number               *big.Int
+	Number               uint64
 	GasLimit             uint64
 	GasUsed              uint64
-	Time                 *big.Int
+	Time                 uint64
+	Version              uint64
+	Difficulty           uint64
+	Proof                []byte
+	Sign                 []byte
 	Extra                []byte
-	ForkID               ForkID
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
 func (h *Header) Hash() common.Hash { return RlpHash(h) }
 
-// WithForkID store fork id
-func (h *Header) WithForkID(cur, next uint64) {
-	h.ForkID = ForkID{Cur: cur, Next: next}
+// SignHash return the hash that used to signature
+func (h *Header) SignHash(chainID *big.Int) common.Hash {
+	signHead := CopyHeader(h)
+	signHead.Sign = make([]byte, 0)
+	return RlpHash([]interface{}{signHead, chainID})
 }
-
-// CurForkID returns the header's current fork ID.
-func (h *Header) CurForkID() uint64 { return h.ForkID.Cur }
-
-// NextForkID returns the header's next fork ID.
-func (h *Header) NextForkID() uint64 { return h.ForkID.Next }
 
 // Block represents an entire block in the blockchain.
 type Block struct {
@@ -95,11 +87,10 @@ func NewBlock(header *Header, txs []*Transaction, receipts []*Receipt) *Block {
 	b := &Block{Head: header}
 	b.Head.TxsRoot = DeriveTxsMerkleRoot(txs)
 	b.Head.ReceiptsRoot = DeriveReceiptsMerkleRoot(receipts)
-
 	b.Txs = make([]*Transaction, len(txs))
+
 	copy(b.Txs, txs)
 	b.Head.Bloom = CreateBloom(receipts)
-
 	return b
 }
 
@@ -114,7 +105,7 @@ func NewBlockWithHeader(header *Header) *Block {
 func (b *Block) Transactions() []*Transaction { return b.Txs }
 
 // Number returns the block's Number.
-func (b *Block) Number() *big.Int { return new(big.Int).Set(b.Head.Number) }
+func (b *Block) Number() *big.Int { return big.NewInt(int64(b.Head.Number)) }
 
 // GasLimit returns the block's GasLimit.
 func (b *Block) GasLimit() uint64 { return b.Head.GasLimit }
@@ -123,16 +114,16 @@ func (b *Block) GasLimit() uint64 { return b.Head.GasLimit }
 func (b *Block) GasUsed() uint64 { return b.Head.GasUsed }
 
 // Difficulty returns the block's Difficulty.
-func (b *Block) Difficulty() *big.Int { return new(big.Int).Set(b.Head.Difficulty) }
+func (b *Block) Difficulty() *big.Int { return big.NewInt(int64(b.Head.Difficulty)) }
 
 // Time returns the block's Time.
-func (b *Block) Time() *big.Int { return new(big.Int).Set(b.Head.Time) }
+func (b *Block) Time() *big.Int { return big.NewInt(int64(b.Head.Time)) }
 
 // NumberU64 returns the block's NumberU64.
-func (b *Block) NumberU64() uint64 { return b.Head.Number.Uint64() }
+func (b *Block) NumberU64() uint64 { return b.Head.Number }
 
 // Coinbase returns the block's Coinbase.
-func (b *Block) Coinbase() common.Name { return b.Head.Coinbase }
+func (b *Block) Coinbase() string { return b.Head.Coinbase }
 
 // Root returns the block's Root.
 func (b *Block) Root() common.Hash { return b.Head.Root }
@@ -155,12 +146,6 @@ func (b *Block) Header() *Header { return CopyHeader(b.Head) }
 // Body returns the block's Body.
 func (b *Block) Body() *Body { return &Body{b.Txs} }
 
-// CurForkID returns the block's current fork ID.
-func (b *Block) CurForkID() uint64 { return b.Head.CurForkID() }
-
-// NextForkID returns the block's current fork ID.
-func (b *Block) NextForkID() uint64 { return b.Head.NextForkID() }
-
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previsouly cached value.
 func (b *Block) Size() common.StorageSize {
@@ -178,7 +163,7 @@ func (b *Block) EncodeRLP() ([]byte, error) {
 	return rlp.EncodeToBytes(b)
 }
 
-// EncodeRLP serializes b into RLP block format.
+// ExtEncodeRLP serializes b into RLP block format.
 func (b *Block) ExtEncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, extblock{
 		Header: b.Head,
@@ -240,18 +225,13 @@ func (b *Block) Check() error {
 // modifying a header variable.
 func CopyHeader(h *Header) *Header {
 	cpy := *h
-	if cpy.Time = new(big.Int); h.Time != nil {
-		cpy.Time.Set(h.Time)
-	}
-	if cpy.Difficulty = new(big.Int); h.Difficulty != nil {
-		cpy.Difficulty.Set(h.Difficulty)
-	}
-	if cpy.Number = new(big.Int); h.Number != nil {
-		cpy.Number.Set(h.Number)
-	}
 	if len(h.Extra) > 0 {
 		cpy.Extra = make([]byte, len(h.Extra))
 		copy(cpy.Extra, h.Extra)
+	}
+	if len(h.Sign) > 0 {
+		cpy.Sign = make([]byte, len(h.Sign))
+		copy(cpy.Sign, h.Sign)
 	}
 	return &cpy
 }
@@ -286,7 +266,7 @@ func (bs blockSorter) Swap(i, j int)      { bs.blocks[i], bs.blocks[j] = bs.bloc
 func (bs blockSorter) Less(i, j int) bool { return bs.by(bs.blocks[i], bs.blocks[j]) }
 
 // Number represents block sort by number.
-func Number(b1, b2 *Block) bool { return b1.Head.Number.Cmp(b2.Head.Number) < 0 }
+func Number(b1, b2 *Block) bool { return b1.Head.Number < b2.Head.Number }
 
 // DeriveTxsMerkleRoot returns txs merkle tree root hash.
 func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {

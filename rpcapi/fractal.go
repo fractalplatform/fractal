@@ -20,8 +20,8 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/common/hexutil"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )

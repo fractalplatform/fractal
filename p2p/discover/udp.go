@@ -25,8 +25,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/p2p/netutil"
 	"github.com/fractalplatform/fractal/utils/rlp"

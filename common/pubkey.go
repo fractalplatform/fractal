@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/fractalplatform/fractal/common/hexutil"
 )
 
 // PubKeyLength of PubKey in bytes
@@ -42,7 +42,7 @@ func BytesToPubKey(b []byte) PubKey {
 // IsHexPubKey verifies whether a string can represent a valid hex-encoded
 //  PubKey or not.
 func IsHexPubKey(s string) bool {
-	if hasHexPrefix(s) {
+	if has0xPrefix(s) {
 		s = s[2:]
 	}
 	return len(s) == 2*(PubKeyLength) && isHex(s)

@@ -17,11 +17,11 @@
 package main
 
 import (
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/ftservice/gasprice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/p2p"
@@ -59,7 +59,7 @@ func defaultNodeConfig() *node.Config {
 		IPCPath:          params.ClientIdentifier + ".ipc",
 		HTTPHost:         "localhost",
 		HTTPPort:         8545,
-		HTTPModules:      []string{"ft", "dpos", "fee", "account"},
+		HTTPModules:      []string{"ft", "account"},
 		HTTPVirtualHosts: []string{"localhost"},
 		HTTPCors:         []string{"*"},
 		WSHost:           "localhost",
@@ -75,7 +75,7 @@ func defaultP2pConfig() *p2p.Config {
 	cfg := &p2p.Config{
 		MaxPeers:   10,
 		Name:       "Fractal-P2P",
-		ListenAddr: ":2018",
+		ListenAddr: ":8500",
 	}
 	return cfg
 }

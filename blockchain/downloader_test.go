@@ -19,8 +19,9 @@ package blockchain
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/log"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 )
 
 type simuAdaptor struct{}
@@ -36,13 +37,13 @@ func TestDownloadTask(t *testing.T) {
 	printLog(log.LvlDebug)
 
 	router.AdaptorRegister(simuAdaptor{})
-	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	genesis := g.DefaultGenesis()
+
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
-	chain, _ = makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
+	chain, _ = makeNewChain(t, genesis, chain, 10, canonicalSeed)
+
 	dl := chain.station.downloader
 	status := &stationStatus{
 		station: router.NewRemoteStation("teststatus", nil),

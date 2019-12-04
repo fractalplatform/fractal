@@ -27,24 +27,6 @@ import (
 
 // Config are the configuration options for the Interpreter
 type Config struct {
-	// Debug enabled debugging Interpreter options
-	Debug bool
-	// EnableJit enabled the JIT VM
-	EnableJit bool
-	// ForceJit forces the JIT VM
-	ForceJit bool
-	// Tracer is the op code logger
-	Tracer Tracer
-	// NoRecursion disabled Interpreter call, callcode,
-	// delegate call and create.
-	NoRecursion bool
-	// Disable gas metering
-	DisableGasMetering bool
-	// Enable recording of SHA3/keccak preimages
-	EnablePreimageRecording bool
-	// JumpTable contains the EVM instruction table. This
-	// may be left uninitialised and will be set to the default
-	// table.
 	JumpTable       [256]operation
 	ContractLogFlag bool
 	//
@@ -146,33 +128,18 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 		pc   = uint64(0) // program counter
 		cost uint64
 		// copies used by tracer
-		pcCopy  uint64 // needed for the deferred Tracer
-		gasCopy uint64 // for Tracer to log gas remaining before execution
-		logged  bool   // deferred Tracer should ignore already logged steps
+		// pcCopy  uint64 // needed for the deferred Tracer
+		// gasCopy uint64 // for Tracer to log gas remaining before execution
+		// logged  bool   // deferred Tracer should ignore already logged steps
 	)
+
 	contract.Input = input
 
-	if in.cfg.Debug {
-		defer func() {
-			if err != nil {
-				if !logged {
-					in.cfg.Tracer.CaptureState(in.evm, pcCopy, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
-				} else {
-					in.cfg.Tracer.CaptureFault(in.evm, pcCopy, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
-				}
-			}
-		}()
-	}
 	// The Interpreter main run loop (contextual). This loop runs until either an
 	// explicit STOP, RETURN or SELFDESTRUCT is executed, an error occurred during
 	// the execution of one of the operations or until the done flag is set by the
 	// parent context.
 	for atomic.LoadInt32(&in.evm.abort) == 0 {
-		if in.cfg.Debug {
-			// Capture pre-execution values for tracing.
-			logged, pcCopy, gasCopy = false, pc, contract.Gas
-		}
-
 		// Get the operation from the jump table and validate the stack to ensure there are
 		// enough stack items available to perform the operation.
 		op = contract.GetOp(pc)
@@ -203,21 +170,14 @@ func (in *Interpreter) Run(contract *Contract, input []byte) (ret []byte, err er
 			}
 		}
 
-		if !in.cfg.DisableGasMetering {
-			// consume the gas and return an error if not enough gas is available.
-			// cost is explicitly set so that the capture state defer method cas get the proper cost
-			cost, err = operation.gasCost(in.gasTable, in.evm, contract, stack, mem, memorySize)
-			if err != nil || !contract.UseGas(cost) {
-				return nil, ErrOutOfGas
-			}
+		// consume the gas and return an error if not enough gas is available.
+		// cost is explicitly set so that the capture state defer method cas get the proper cost
+		cost, err = operation.gasCost(in.gasTable, in.evm, contract, stack, mem, memorySize)
+		if err != nil || !contract.UseGas(cost) {
+			return nil, ErrOutOfGas
 		}
 		if memorySize > 0 {
 			mem.Resize(memorySize)
-		}
-
-		if in.cfg.Debug {
-			in.cfg.Tracer.CaptureState(in.evm, pc, op, gasCopy, cost, mem, stack, contract, in.evm.depth, err)
-			logged = true
 		}
 
 		// execute the operation

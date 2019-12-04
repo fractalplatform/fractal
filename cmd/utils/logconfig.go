@@ -20,7 +20,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	colorable "github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 )
@@ -64,7 +64,7 @@ func (lc *LogConfig) Setup() error {
 	if lc.Logdir != "" {
 		rfh, err := log.RotatingFileHandler(
 			lc.Logdir,
-			1048576,
+			1024*1024,
 			log.JSONFormatOrderedEx(false, true),
 		)
 		if err != nil {

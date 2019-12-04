@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fractalplatform/fractal/blockchain"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +49,7 @@ func init() {
 // the zero'd block (i.e. genesis) or will fail hard if it can't succeed.
 func initGenesis() error {
 	// Make sure we have a valid genesis JSON
-	genesis := blockchain.DefaultGenesis()
+	genesis := g.DefaultGenesis()
 	if len(ftCfgInstance.GenesisFile) != 0 {
 		file, err := os.Open(ftCfgInstance.GenesisFile)
 		if err != nil {

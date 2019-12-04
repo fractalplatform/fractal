@@ -23,7 +23,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/p2p/netutil"
 )
@@ -89,6 +89,7 @@ type discoverTable interface {
 	Resolve(*enode.Node) *enode.Node
 	LookupRandom() []*enode.Node
 	ReadRandomNodes([]*enode.Node) int
+	SeedNodes() []*enode.Node
 }
 
 // the dial history remembers recent dials.

@@ -111,6 +111,11 @@ func (api *PrivateP2pAPI) RemoveTrustedPeer(url string) (bool, error) {
 	return true, nil
 }
 
+// SeedNodes returns all seed nodes.
+func (api *PrivateP2pAPI) SeedNodes() []string {
+	return api.b.SeedNodes()
+}
+
 // PeerCount return number of connected peers
 func (api *PrivateP2pAPI) PeerCount() int {
 	return api.b.PeerCount()

@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/syndtr/goleveldb/leveldb"

@@ -32,9 +32,9 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -45,7 +45,7 @@ func init() {
 
 // Used for testing
 func newEmpty() *Trie {
-	trie, _ := New(common.Hash{}, NewDatabase(mdb.NewMemDatabase()))
+	trie, _ := New(common.Hash{}, NewDatabase(rawdb.NewMemoryDatabase()))
 	return trie
 }
 
@@ -69,7 +69,7 @@ func TestNull(t *testing.T) {
 }
 
 func TestMissingRoot(t *testing.T) {
-	trie, err := New(common.HexToHash("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"), NewDatabase(mdb.NewMemDatabase()))
+	trie, err := New(common.HexToHash("0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33"), NewDatabase(rawdb.NewMemoryDatabase()))
 	if trie != nil {
 		t.Error("New returned non-nil trie for invalid root")
 	}
@@ -82,7 +82,7 @@ func TestMissingNodeDisk(t *testing.T)    { testMissingNode(t, false) }
 func TestMissingNodeMemonly(t *testing.T) { testMissingNode(t, true) }
 
 func testMissingNode(t *testing.T, memonly bool) {
-	diskdb := mdb.NewMemDatabase()
+	diskdb := rawdb.NewMemoryDatabase()
 	triedb := NewDatabase(diskdb)
 
 	trie, _ := New(common.Hash{}, triedb)
@@ -413,7 +413,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 }
 
 func runRandTest(rt randTest) bool {
-	triedb := NewDatabase(mdb.NewMemDatabase())
+	triedb := NewDatabase(rawdb.NewMemoryDatabase())
 
 	tr, _ := New(common.Hash{}, triedb)
 	values := make(map[string]string) // tracks content of the trie
@@ -597,7 +597,7 @@ func tempDB() (string, *Database) {
 	if err != nil {
 		panic(fmt.Sprintf("can't create temporary directory: %v", err))
 	}
-	diskdb, err := ldb.NewLDBDatabase(dir, 256, 0)
+	diskdb, err := rawdb.NewLevelDBDatabase(dir, 256, 0)
 	if err != nil {
 		panic(fmt.Sprintf("can't create temporary database: %v", err))
 	}

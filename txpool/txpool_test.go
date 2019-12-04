@@ -26,43 +26,43 @@ import (
 	"testing"
 	"time"
 
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/stretchr/testify/assert"
 )
+
+func TestConfigCheck(t *testing.T) {
+	cfg := new(Config)
+	cfg.Journal = DefaultTxPoolConfig.Journal
+	assert.Equal(t, cfg.check(), *DefaultTxPoolConfig)
+}
 
 // This test simulates a scenario where a new block is imported during a
 // state reset and tests whether the pending state is in sync with the
 // block head event that initiated the resetState().
 func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
-		manager, _ = am.NewAccountManager(statedb)
-		fname      = common.Name("fromname")
-		tname      = common.Name("totestname")
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		manager    = pm.NewPM(statedb)
+		fname      = "fromname"
+		tname      = "totestname"
 		fkey       = generateAccount(t, fname, manager)
 		_          = generateAccount(t, tname, manager)
-		asset      = asset.NewAsset(statedb)
-		trigger    = false
 	)
 
 	// issue asset
-	if _, err := asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
+	if _, err := manager.IssueAsset(fname, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+		10, "", fname, new(big.Int).SetUint64(params.Fractal), "", manager); err != nil {
 		t.Fatal(err)
 	}
 
-	// add balance
-	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
-		t.Fatal(err)
-	}
-
-	blockchain := &testChain{&testBlockChain{statedb, 1000000000, new(event.Feed)}, fname, &trigger}
+	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 
 	tx0 := transaction(0, fname, tname, 109000, fkey)
 	tx1 := transaction(1, fname, tname, 109000, fkey)
@@ -70,36 +70,28 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	nonce, err := pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce, _ := pool.State().GetNonce(fname)
+
 	if nonce != 0 {
 		t.Fatalf("Invalid nonce, want 0, got %d", nonce)
 	}
 
 	pool.addRemotesSync([]*types.Transaction{tx0, tx1})
 
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce, _ = pool.State().GetNonce(fname)
+
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
 
-	// trigger state change in the background
-	trigger = true
 	<-pool.requestReset(nil, nil)
 
-	_, err = pool.Pending()
+	_, err := pool.Pending()
 	if err != nil {
 		t.Fatalf("Could not fetch pending transactions: %v", err)
 	}
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce, _ = pool.State().GetNonce(fname)
+
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
@@ -108,34 +100,28 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 func TestInvalidTransactions(t *testing.T) {
 
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
+		fname   = "fromname"
+		tname   = "totestname"
 		assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
-	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	fkey := generateAccount(t, fname, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	tx := transaction(0, fname, tname, 100, fkey)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1))
+	pool.curPM.TransferAsset(fname, tname, assetID, big.NewInt(1))
+
 	if err := pool.addRemoteSync(tx); err != ErrInsufficientFundsForGas {
 		t.Fatal("expected: ", ErrInsufficientFundsForGas, "actual: ", err)
-	}
-
-	value := new(big.Int).Add(tx.Cost(), tx.GetActions()[0].Value())
-
-	if err := pool.curAccountManager.AddAccountBalanceByID(fname, assetID, value); err != nil {
-		t.Fatal(err)
 	}
 
 	if err := pool.addRemoteSync(tx); err != ErrIntrinsicGas {
 		t.Fatal("expected", ErrIntrinsicGas, "actual: ", err)
 	}
 
-	pool.curAccountManager.SetNonce(fname, 1)
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(0xffffffffffffff))
+	pool.curPM.SetNonce(fname, 1)
 	tx = transaction(0, fname, tname, 109000, fkey)
 	if err := pool.addRemoteSync(tx); err != ErrNonceTooLow {
 		t.Fatal("expected", ErrNonceTooLow, "actual: ", err)
@@ -154,9 +140,8 @@ func TestInvalidTransactions(t *testing.T) {
 
 func TestTransactionQueue(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -164,8 +149,6 @@ func TestTransactionQueue(t *testing.T) {
 	generateAccount(t, tname, manager)
 
 	tx := transaction(0, fname, tname, 100, fkey)
-
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1000))
 
 	<-pool.requestReset(nil, nil)
 
@@ -178,7 +161,7 @@ func TestTransactionQueue(t *testing.T) {
 
 	tx = transaction(1, fname, tname, 100, fkey)
 
-	pool.curAccountManager.SetNonce(fname, 2)
+	pool.curPM.SetNonce(fname, 2)
 	pool.enqueueTx(tx.Hash(), tx)
 	<-pool.requestPromoteExecutables(newAccountSet(pool.signer, fname))
 
@@ -193,13 +176,12 @@ func TestTransactionQueue(t *testing.T) {
 	pool, manager = setupTxPool(fname)
 	defer pool.Stop()
 	fkey = generateAccount(t, fname, manager)
-	tkey := generateAccount(t, tname, manager)
 
 	tx1 := transaction(0, fname, tname, 100, fkey)
 	tx2 := transaction(10, fname, tname, 100, fkey)
 	tx3 := transaction(11, fname, tname, 100, fkey)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(1000))
 	<-pool.requestReset(nil, nil)
 
 	pool.enqueueTx(tx1.Hash(), tx1)
@@ -218,22 +200,22 @@ func TestTransactionQueue(t *testing.T) {
 	// test change permissions
 
 	// add account author tpubkey
-	tpubkey := common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))
-	auther := common.NewAuthor(tpubkey, 1)
-	authorAction := &am.AuthorAction{ActionType: am.AddAuthor, Author: auther}
-	acctAuth := &am.AccountAuthorAction{AuthorActions: []*am.AuthorAction{authorAction}}
-	if err := pool.curAccountManager.UpdateAccountAuthor(fname, acctAuth); err != nil {
-		t.Fatal(err)
-	}
+	// tpubkey := common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey))
+	// auther := common.NewAuthor(tpubkey, 1)
+	// authorAction := &am.AuthorAction{ActionType: am.AddAuthor, Author: auther}
+	// acctAuth := &am.AccountAuthorAction{AuthorActions: []*am.AuthorAction{authorAction}}
+	// if err := pool.curPM.UpdateAccountAuthor(fname, acctAuth); err != nil {
+	// 	t.Fatal(err)
+	// }
 
-	// delete account author fpubkey
-	fpubkey := common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))
-	auther = common.NewAuthor(fpubkey, 1)
-	authorAction = &am.AuthorAction{ActionType: am.DeleteAuthor, Author: auther}
-	acctAuth = &am.AccountAuthorAction{AuthorActions: []*am.AuthorAction{authorAction}}
-	if err := pool.curAccountManager.UpdateAccountAuthor(fname, acctAuth); err != nil {
-		t.Fatal(err)
-	}
+	// // delete account author fpubkey
+	// fpubkey := common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey))
+	// auther = common.NewAuthor(fpubkey, 1)
+	// authorAction = &am.AuthorAction{ActionType: am.DeleteAuthor, Author: auther}
+	// acctAuth = &am.AccountAuthorAction{AuthorActions: []*am.AuthorAction{authorAction}}
+	// if err := pool.curPM.UpdateAccountAuthor(fname, acctAuth); err != nil {
+	// 	t.Fatal(err)
+	// }
 
 	<-pool.requestPromoteExecutables(newAccountSet(pool.signer, fname))
 	if len(pool.queue) != 0 {
@@ -249,9 +231,9 @@ func TestTransactionQueue(t *testing.T) {
 
 func TestTransactionChainFork(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 
 	pool, manager := setupTxPool(fname)
@@ -260,19 +242,18 @@ func TestTransactionChainFork(t *testing.T) {
 	tkey := generateAccount(t, tname, manager)
 
 	resetAsset := func() {
-		statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
-		newmanager, _ := am.NewAccountManager(statedb)
+		statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		newmanager := pm.NewPM(statedb)
 
-		if err := newmanager.CreateAccount(common.Name("fractal"), fname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
+		if _, err := newmanager.CreateAccount(fname, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(common.Name("fractal"), tname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
+		if _, err := newmanager.CreateAccount(tname, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
-		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""), "")
-		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
+		newmanager.IssueAsset(fname, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+			10, "", fname, new(big.Int).SetUint64(params.Fractal), "", newmanager)
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
 		<-pool.requestReset(nil, nil)
@@ -295,9 +276,9 @@ func TestTransactionChainFork(t *testing.T) {
 
 func TestTransactionDoubleNonce(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -305,19 +286,18 @@ func TestTransactionDoubleNonce(t *testing.T) {
 	tkey := generateAccount(t, tname, manager)
 
 	resetAsset := func() {
-		statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
-		newmanager, _ := am.NewAccountManager(statedb)
+		statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		newmanager := pm.NewPM(statedb)
 
-		if err := newmanager.CreateAccount(common.Name("fractal"), fname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
+		if _, err := newmanager.CreateAccount(fname, common.BytesToPubKey(crypto.FromECDSAPub(&fkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
-		if err := newmanager.CreateAccount(common.Name("fractal"), tname, common.Name(""), 0, 0, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
+		if _, err := newmanager.CreateAccount(tname, common.BytesToPubKey(crypto.FromECDSAPub(&tkey.PublicKey)), ""); err != nil {
 			t.Fatal(err)
 		}
-		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""), "")
-		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
+		newmanager.IssueAsset(fname, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+			10, "", fname, new(big.Int).SetUint64(params.Fractal), "", newmanager)
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
 		<-pool.requestReset(nil, nil)
@@ -373,16 +353,16 @@ func TestTransactionDoubleNonce(t *testing.T) {
 
 func TestTransactionMissingNonce(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(t, fname, manager)
 	generateAccount(t, tname, manager)
 
-	manager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
+	//manager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 	tx := transaction(1, fname, tname, 109000, fkey)
 
@@ -403,9 +383,9 @@ func TestTransactionMissingNonce(t *testing.T) {
 func TestTransactionNonceRecovery(t *testing.T) {
 
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
@@ -414,8 +394,8 @@ func TestTransactionNonceRecovery(t *testing.T) {
 
 	const n = 10
 
-	manager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
-	pool.curAccountManager.SetNonce(fname, n)
+	// manager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
+	pool.curPM.SetNonce(fname, n)
 
 	<-pool.requestReset(nil, nil)
 	tx := transaction(n, fname, tname, 109000, fkey)
@@ -423,9 +403,9 @@ func TestTransactionNonceRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 	// simulate some weird re-order of transactions and missing nonce(s)
-	pool.curAccountManager.SetNonce(fname, n-1)
+	pool.curPM.SetNonce(fname, n-1)
 	<-pool.requestReset(nil, nil)
-	if fn, _ := pool.pendingAccountManager.GetNonce(fname); fn != n-1 {
+	if fn, _ := pool.pendingPM.GetNonce(fname); fn != n-1 {
 		t.Fatalf("expected nonce to be %d, got %d", n-1, fn)
 	}
 }
@@ -434,16 +414,16 @@ func TestTransactionNonceRecovery(t *testing.T) {
 // are dropped.
 func TestTransactionDropping(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(t, fname, manager)
 	generateAccount(t, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(1000))
 
 	// Add some pending and some queued transactions
 	var (
@@ -482,7 +462,7 @@ func TestTransactionDropping(t *testing.T) {
 		t.Fatalf("total transaction mismatch: have %d, want %d", pool.all.Count(), 6)
 	}
 	// Reduce the balance of the account, and check that invalidated transactions are dropped
-	pool.curAccountManager.SubAccountBalanceByID(fname, assetID, big.NewInt(750))
+	//pool.curPM.SubAccountBalanceByID(fname, assetID, big.NewInt(750))
 	<-pool.requestReset(nil, nil)
 
 	if _, ok := pool.pending[fname].txs.items[tx0.GetActions()[0].Nonce()]; !ok {
@@ -532,11 +512,11 @@ func TestTransactionDropping(t *testing.T) {
 // postponed back into the future queue to prevent broadcasting them.
 func TestTransactionPostponing(t *testing.T) {
 	// Create the pool to test the postponing with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
 	generateAccount(t, tname, manager)
 
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
@@ -544,15 +524,15 @@ func TestTransactionPostponing(t *testing.T) {
 
 	// Create two test accounts to produce different gap profiles with
 	keys := make([]*ecdsa.PrivateKey, 2)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
+		fname := "fromname" + strconv.Itoa(i)
 		fkey := generateAccount(t, fname, manager)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(501000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(501000))
 	}
 	// Add a batch consecutive pending transactions for validation
 	txs := []*types.Transaction{}
@@ -593,9 +573,9 @@ func TestTransactionPostponing(t *testing.T) {
 		t.Fatalf("total transaction mismatch: have %d, want %d", pool.all.Count(), len(txs))
 	}
 	// Reduce the balance of the account, and check that transactions are reorganised
-	for _, name := range accs {
-		pool.curAccountManager.SubAccountBalanceByID(name, assetID, big.NewInt(1010))
-	}
+	//for _, name := range accs {
+	// pool.curPM.SubAccountBalanceByID(name, assetID, big.NewInt(1010))
+	//}
 
 	<-pool.requestReset(nil, nil)
 
@@ -650,16 +630,16 @@ func TestTransactionPostponing(t *testing.T) {
 // ones into the pending pool.
 func TestTransactionGapFilling(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
-	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	fkey := generateAccount(t, fname, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, testTxPoolConfig.AccountQueue+5)
@@ -710,16 +690,16 @@ func TestTransactionGapFilling(t *testing.T) {
 // some threshold, the higher transactions are dropped to prevent DOS attacks.
 func TestTransactionQueueAccountLimiting(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(t, fname, manager)
 	generateAccount(t, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	// Keep queuing up transactions and make sure all above a limit are dropped
 	for i := uint64(1); i <= testTxPoolConfig.AccountQueue+5; i++ {
@@ -758,16 +738,16 @@ func TestTransactionQueueGlobalLimitingNoLocals(t *testing.T) {
 
 func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 	// Create the pool to test the limit enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	config := testTxPoolConfig
 	config.NoLocals = nolocals
 	config.GlobalQueue = config.AccountQueue*3 - 1 // reduce the queue limits to shorten test time (-1 to make it non divisible)
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
 	generateAccount(t, tname, manager)
 
 	pool := New(config, params.DefaultChainconfig, blockchain)
@@ -775,21 +755,21 @@ func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 
 	// Create a number of test accounts and fund them (last one will be the local)
 	keys := make([]*ecdsa.PrivateKey, 5)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
+		fname := string("fromname" + strconv.Itoa(i))
 		fkey := generateAccount(t, fname, manager)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	}
 	local := keys[len(keys)-1]
 	localacc := accs[len(accs)-1]
 
 	// Generate and queue a batch of transactions
-	nonces := make(map[common.Name]uint64)
+	nonces := make(map[string]uint64)
 
 	txs := make([]*types.Transaction, 0, 3*config.GlobalQueue)
 	for len(txs) < cap(txs) {
@@ -859,7 +839,7 @@ func testTransactionQueueTimeLimiting(t *testing.T, nolocals bool) {
 	evictionInterval = time.Second
 
 	// Create the pool to test the non-expiration enforcement
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	config := testTxPoolConfig
@@ -870,20 +850,20 @@ func testTransactionQueueTimeLimiting(t *testing.T, nolocals bool) {
 	defer pool.Stop()
 
 	var (
-		localName  = common.Name("localname")
-		remoteName = common.Name("remotename")
+		localName  = string("localname")
+		remoteName = string("remotename")
 
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 
-	manager, _ := am.NewAccountManager(statedb)
-	local := generateAccount(t, localName, manager, pool.pendingAccountManager)
-	remote := generateAccount(t, remoteName, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	local := generateAccount(t, localName, manager, pool.pendingPM)
+	remote := generateAccount(t, remoteName, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curAccountManager.AddAccountBalanceByID(localName, assetID, big.NewInt(10000000000))
-	pool.curAccountManager.AddAccountBalanceByID(remoteName, assetID, big.NewInt(10000000000))
+	//	pool.curPM.AddAccountBalanceByID(localName, assetID, big.NewInt(10000000000))
+	//	pool.curPM.AddAccountBalanceByID(remoteName, assetID, big.NewInt(10000000000))
 
 	// Add the two transactions and ensure they both are queued up
 	if err := pool.AddLocal(pricedTransaction(1, localName, tname, 109000, big.NewInt(1), local)); err != nil {
@@ -928,16 +908,16 @@ func testTransactionQueueTimeLimiting(t *testing.T, nolocals bool) {
 // accepted.
 func TestTransactionPendingLimiting(t *testing.T) {
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
-	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	fkey := generateAccount(t, fname, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, testTxPoolConfig.AccountQueue+5)
@@ -974,7 +954,7 @@ func TestTransactionPendingLimiting(t *testing.T) {
 // Note, local transactions are never allowed to be dropped.
 func TestTransactionPoolRepricing(t *testing.T) {
 	// Create the pool to test the pricing enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
@@ -986,21 +966,21 @@ func TestTransactionPoolRepricing(t *testing.T) {
 	sub := event.Subscribe(nil, events, event.NewTxs, []*types.Transaction{})
 	defer sub.Unsubscribe()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Create a number of test accounts and fund them
 	keys := make([]*ecdsa.PrivateKey, 4)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 	}
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := []*types.Transaction{}
@@ -1104,27 +1084,27 @@ func TestTransactionPoolRepricing(t *testing.T) {
 // remove local transactions.
 func TestTransactionPoolRepricingKeepsLocals(t *testing.T) {
 	// Create the pool to test the pricing enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Create a number of test accounts and fund them
 	keys := make([]*ecdsa.PrivateKey, 3)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(1000*10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(1000*10000000))
 	}
 
 	// Create transaction (both pending and queued) with a linearly growing gasprice
@@ -1175,7 +1155,7 @@ func TestTransactionPoolRepricingKeepsLocals(t *testing.T) {
 // Note, local transactions are never allowed to be dropped.
 func TestTransactionPoolUnderpricing(t *testing.T) {
 	// Create the pool to test the pricing enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
@@ -1186,10 +1166,10 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 	pool := New(config, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
@@ -1198,14 +1178,14 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	keys := make([]*ecdsa.PrivateKey, 4)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 	}
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := []*types.Transaction{}
@@ -1289,7 +1269,7 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 // back and forth between queued/pending.
 func TestTransactionPoolStableUnderpricing(t *testing.T) {
 	// Create the pool to test the pricing enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	config := testTxPoolConfig
@@ -1299,10 +1279,10 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 	pool := New(config, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
@@ -1311,14 +1291,14 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 
 	// Create a number of test accounts and fund them
 	keys := make([]*ecdsa.PrivateKey, 2)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 	}
 
 	// Fill up the entire queue with the same transaction price points
@@ -1364,20 +1344,20 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 // price bump required.
 func TestTransactionReplacement(t *testing.T) {
 	// Create the pool to test the pricing enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	fname := common.Name("fromname")
-	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	fname := "fromname"
+	fkey := generateAccount(t, fname, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000000))
 
 	// Keep track of transaction events to ensure all executables get announced
 	events := make(chan *event.Event, 32)
@@ -1449,7 +1429,7 @@ func TestTransactionReplacement(t *testing.T) {
 func TestTransactionPendingGlobalLimiting(t *testing.T) {
 
 	// Create the pool to test the limit enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	config := testTxPoolConfig
@@ -1458,25 +1438,25 @@ func TestTransactionPendingGlobalLimiting(t *testing.T) {
 	pool := New(config, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Create a number of test accounts and fund them
 	keys := make([]*ecdsa.PrivateKey, 5)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	}
 	// Generate and queue a batch of transactions
-	nonces := make(map[common.Name]uint64)
+	nonces := make(map[string]uint64)
 
 	txs := []*types.Transaction{}
 	for i, key := range keys {
@@ -1503,7 +1483,7 @@ func TestTransactionPendingGlobalLimiting(t *testing.T) {
 // Tests that if transactions start being capped, transactions are also removed from 'all'
 func TestTransactionCapClearsFromAll(t *testing.T) {
 	// Create the pool to test the limit enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	config := testTxPoolConfig
@@ -1514,16 +1494,16 @@ func TestTransactionCapClearsFromAll(t *testing.T) {
 	pool := New(config, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	fname := common.Name("fromname")
-	fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	fname := "fromname"
+	fkey := generateAccount(t, fname, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Create a number of test accounts and fund them
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	txs := []*types.Transaction{}
 	for j := 0; j < int(config.GlobalSlots)*2; j++ {
@@ -1541,7 +1521,7 @@ func TestTransactionCapClearsFromAll(t *testing.T) {
 // the transactions are still kept.
 func TestTransactionPendingMinimumAllowance(t *testing.T) {
 	// Create the pool to test the limit enforcement with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
@@ -1550,25 +1530,25 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 	pool.config.GlobalSlots = 0
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Create a number of test accounts and fund them
 	keys := make([]*ecdsa.PrivateKey, 5)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
 
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 	}
 	// Generate and queue a batch of transactions
-	nonces := make(map[common.Name]uint64)
+	nonces := make(map[string]uint64)
 
 	txs := []*types.Transaction{}
 	for i, key := range keys {
@@ -1610,7 +1590,7 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 
 	event.Reset()
 	// Create the original pool to inject transaction into the journal
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 
 	config := testTxPoolConfig
@@ -1621,20 +1601,20 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	pool := New(config, params.DefaultChainconfig, blockchain)
 
 	var (
-		localName  = common.Name("localname")
-		remoteName = common.Name("remotename")
+		localName  = string("localname")
+		remoteName = string("remotename")
 
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 
-	manager, _ := am.NewAccountManager(statedb)
-	local := generateAccount(t, localName, manager, pool.pendingAccountManager)
-	remote := generateAccount(t, remoteName, manager, pool.pendingAccountManager)
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	local := generateAccount(t, localName, manager, pool.pendingPM)
+	remote := generateAccount(t, remoteName, manager, pool.pendingPM)
+	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curAccountManager.AddAccountBalanceByID(localName, assetID, big.NewInt(10000000000))
-	pool.curAccountManager.AddAccountBalanceByID(remoteName, assetID, big.NewInt(10000000000))
+	//	pool.curPM.AddAccountBalanceByID(localName, assetID, big.NewInt(10000000000))
+	//	pool.curPM.AddAccountBalanceByID(remoteName, assetID, big.NewInt(10000000000))
 
 	// Add three local and a remote transactions and ensure they are queued up
 	if err := pool.AddLocal(pricedTransaction(0, localName, tname, 1000000, big.NewInt(1), local)); err != nil {
@@ -1716,27 +1696,27 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 // pending status of individual transactions.
 func TestTransactionStatusCheck(t *testing.T) {
 	// Create the pool to test the status retrievals with
-	statedb, _ := state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
+	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	blockchain := &testBlockChain{statedb, 10000000, new(event.Feed)}
 	event.Reset()
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	manager, _ := am.NewAccountManager(statedb)
-	assetID := uint64(0)
-	tname := common.Name("totestname")
-	generateAccount(t, tname, manager, pool.pendingAccountManager)
+	manager := pm.NewPM(statedb)
+	//assetID := uint64(0)
+	tname := "totestname"
+	generateAccount(t, tname, manager, pool.pendingPM)
 
 	// Create the test accounts to check various transaction statuses with
 	keys := make([]*ecdsa.PrivateKey, 3)
-	accs := make([]common.Name, len(keys))
+	accs := make([]string, len(keys))
 	for i := 0; i < len(keys); i++ {
-		fname := common.Name("fromname" + strconv.Itoa(i))
-		fkey := generateAccount(t, fname, manager, pool.pendingAccountManager)
+		fname := string("fromname" + strconv.Itoa(i))
+		fkey := generateAccount(t, fname, manager, pool.pendingPM)
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+		//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 	}
 
 	// Generate and queue a batch of transactions, both pending and queued
@@ -1786,16 +1766,16 @@ func BenchmarkPendingDemotion10000(b *testing.B) { benchmarkPendingDemotion(b, 1
 func benchmarkPendingDemotion(b *testing.B, size int) {
 	// Add a batch of transactions to a pool one by one
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(nil, fname, manager)
 	generateAccount(nil, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	for i := 0; i < size; i++ {
 		tx := transaction(uint64(i), fname, tname, 1000000, fkey)
@@ -1818,16 +1798,16 @@ func benchmarkFuturePromotion(b *testing.B, size int) {
 
 	// Add a batch of transactions to a pool one by one
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(nil, fname, manager)
 	generateAccount(nil, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	for i := 0; i < size; i++ {
 		tx := transaction(uint64(1+i), fname, tname, 100000, fkey)
@@ -1848,16 +1828,16 @@ func BenchmarkPoolBatchInsert10000(b *testing.B) { benchmarkPoolBatchInsert(b, 1
 func benchmarkPoolBatchInsert(b *testing.B, size int) {
 	// Generate a batch of transactions to enqueue into the pool
 	var (
-		fname   = common.Name("fromname")
-		tname   = common.Name("totestname")
-		assetID = uint64(0)
+		fname = "fromname"
+		tname = "totestname"
+		//assetID = uint64(0)
 	)
 	pool, manager := setupTxPool(fname)
 	defer pool.Stop()
 	fkey := generateAccount(nil, fname, manager)
 	generateAccount(nil, tname, manager)
 
-	pool.curAccountManager.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
+	//	pool.curPM.AddAccountBalanceByID(fname, assetID, big.NewInt(10000000))
 
 	batches := make([][]*types.Transaction, b.N)
 	for i := 0; i < b.N; i++ {

@@ -25,8 +25,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/log"
 	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/utils/filelock"
@@ -349,7 +349,7 @@ func (n *Node) startHTTP(endpoint string, apis []rpc.API, modules []string, cors
 	if endpoint == "" {
 		return nil
 	}
-	listener, handler, err := rpc.StartHTTPEndpoint(endpoint, apis, modules, cors, vhosts)
+	listener, handler, err := rpc.StartHTTPEndpoint(endpoint, apis, modules, cors, vhosts, rpc.DefaultHTTPTimeouts)
 	if err != nil {
 		return err
 	}

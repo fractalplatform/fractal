@@ -18,11 +18,10 @@ package processor
 
 import (
 	"fmt"
-	"math/big"
 	"time"
 
-	"github.com/fractalplatform/fractal/consensus"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 )
@@ -34,15 +33,13 @@ var allowedFutureBlockTime = 15 * time.Second
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	bc     ChainContext         // Canonical block chain
-	engine consensus.IValidator // Consensus engine used for validating
+	bc ChainContext // Canonical block chain
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(blockchain ChainContext, engine consensus.IValidator) *BlockValidator {
+func NewBlockValidator(blockchain ChainContext) *BlockValidator {
 	validator := &BlockValidator{
-		engine: engine,
-		bc:     blockchain,
+		bc: blockchain,
 	}
 	return validator
 }
@@ -51,11 +48,11 @@ func NewBlockValidator(blockchain ChainContext, engine consensus.IValidator) *Bl
 // stock engine.
 func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	// Short circuit if the header is known, or it's parent not
-	if v.bc.HasBlockAndState(header.Hash(), header.Number.Uint64()) {
+	if v.bc.HasBlockAndState(header.Hash(), header.Number) {
 		return ErrKnownBlock
 	}
 
-	number := header.Number.Uint64()
+	number := header.Number
 	parent := v.bc.GetHeader(header.ParentHash, number-1)
 	if parent == nil {
 		return errParentBlock
@@ -66,19 +63,6 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 		return fmt.Errorf("extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
 	}
 
-	if header.Time.Cmp(big.NewInt(time.Now().Add(allowedFutureBlockTime).UnixNano())) > 0 {
-		return ErrFutureBlock
-	}
-
-	if header.Time.Cmp(parent.Time) <= 0 {
-		return errZeroBlockTime
-	}
-	// Verify the block's difficulty based in it's timestamp and parent's difficulty
-	expected := v.engine.CalcDifficulty(v.bc, header.Time.Uint64(), parent)
-
-	if expected.Cmp(header.Difficulty) != 0 {
-		return fmt.Errorf("invalid difficulty: have %v, want %v", header.Difficulty, expected)
-	}
 	// Verify that the gas limit is <= 2^63-1
 	cap := uint64(0x7fffffffffffffff)
 	if header.GasLimit > cap {
@@ -99,26 +83,29 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
 		return fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.GasLimit, limit)
 	}
-	// Verify that the block number is parent's +1
-	if diff := new(big.Int).Sub(header.Number, parent.Number); diff.Cmp(big.NewInt(1)) != 0 {
-		return ErrInvalidNumber
+
+	stateDB, err := v.bc.StateAt(parent.Root)
+	if err != nil {
+		return err
 	}
 
-	if !v.bc.HasBlockAndState(header.ParentHash, header.Number.Uint64()-1) {
-		if !v.bc.HasBlock(header.ParentHash, header.Number.Uint64()-1) {
+	manager := pm.NewPM(stateDB)
+	manager.Init(0, parent)
+
+	if err := manager.Verify(header); err != nil {
+		return err
+	}
+
+	if !v.bc.HasBlockAndState(header.ParentHash, header.Number-1) {
+		if !v.bc.HasBlock(header.ParentHash, header.Number-1) {
 			return ErrUnknownAncestor
 		}
 		return ErrPrunedAncestor
 	}
 
-	// Checks the validity of forkID
-	if err := v.bc.CheckForkID(header); err != nil {
-		return err
-	}
-
 	// Verify the engine specific seal securing the block
 	if seal {
-		if err := v.engine.VerifySeal(v.bc, header); err != nil {
+		if err := manager.VerifySeal(header, manager); err != nil {
 			return err
 		}
 	}

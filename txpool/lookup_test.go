@@ -21,10 +21,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLookup(t *testing.T) {
@@ -32,7 +31,7 @@ func TestLookup(t *testing.T) {
 	txsmap := make(map[common.Hash]*types.Transaction, 1024)
 	lk := newTxLookup()
 	for i := 0; i < len(txs); i++ {
-		tx := types.NewTransaction(uint64(i), big.NewInt(int64(i)), types.NewAction(types.CreateAccount, common.StrToName(fmt.Sprintf("from%d", i)), common.StrToName(fmt.Sprintf("to%d", i)), uint64(i), uint64(i), uint64(i), big.NewInt(int64(i)), []byte(fmt.Sprintf("from%d", i)), []byte(fmt.Sprintf("from%d", i))))
+		tx := types.NewTransaction(uint64(i), big.NewInt(int64(i)), types.NewAction(types.CreateAccount, fmt.Sprintf("from%d", i), fmt.Sprintf("to%d", i), uint64(i), uint64(i), uint64(i), big.NewInt(int64(i)), []byte(fmt.Sprintf("from%d", i)), []byte(fmt.Sprintf("from%d", i))))
 		lk.Add(tx)
 		txs[i] = tx
 		txsmap[tx.Hash()] = tx

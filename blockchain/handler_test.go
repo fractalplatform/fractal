@@ -18,6 +18,7 @@ package blockchain
 
 import (
 	"fmt"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"testing"
 )
 
@@ -38,14 +39,14 @@ func (simuAdaptor) SendOut(e *router.Event) error {
 	return nil
 }
 */
+
 func TestHandler(t *testing.T) {
-	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	genesis := g.DefaultGenesis()
+	blockCount := 10
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
-	makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
+	makeNewChain(t, genesis, chain, blockCount, canonicalSeed)
 
 	//router.AdaptorRegister(simuAdaptor{})
 	errCh := make(chan struct{})
@@ -59,7 +60,7 @@ func TestHandler(t *testing.T) {
 			Number: 0,
 		}, 1, 0, false,
 	}, errCh)
-	if err != nil || len(headers) != 1 || headers[0].Number.Uint64() != 0 || headers[0].Hash() != chain.GetHeaderByNumber(headers[0].Number.Uint64()).Hash() {
+	if err != nil || len(headers) != 1 || headers[0].Number != 0 || headers[0].Hash() != chain.GetHeaderByNumber(headers[0].Number).Hash() {
 		t.Fatal(fmt.Sprint("genesis block header not match", err, len(headers)))
 	}
 	//t.Fatal("genesis block header not match", err, len(headers))

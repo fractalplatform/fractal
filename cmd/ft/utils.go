@@ -30,7 +30,7 @@ import (
 	"unicode"
 
 	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/node"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"
@@ -99,6 +99,20 @@ var tomlSettings = toml.Config{
 		}
 		return fmt.Errorf("field '%s' is not defined in %s%s", field, rt.String(), link)
 	},
+}
+
+func clientCallRaw(endpoint string, method string, args ...interface{}) json.RawMessage {
+	client, err := dialRPC(ipcEndpoint)
+	if err != nil {
+		jww.ERROR.Println(err)
+		os.Exit(-1)
+	}
+	msg, err := client.CallRaw(method, args...)
+	if err != nil {
+		jww.ERROR.Println(err)
+		os.Exit(-1)
+	}
+	return msg
 }
 
 func clientCall(endpoint string, result interface{}, method string, args ...interface{}) {

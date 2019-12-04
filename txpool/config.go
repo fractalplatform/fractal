@@ -19,7 +19,7 @@ package txpool
 import (
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 )
 
 // Config  are the configuration parameters of the transaction pool.
@@ -48,7 +48,7 @@ type Config struct {
 var DefaultTxPoolConfig = &Config{
 	Journal:        "transactions.rlp",
 	Rejournal:      time.Hour,
-	PriceLimit:     1000000000,
+	PriceLimit:     100000000000,
 	PriceBump:      10,
 	AccountSlots:   128,
 	GlobalSlots:    4096,
@@ -66,7 +66,7 @@ func (config *Config) check() Config {
 	conf := *config
 	if conf.Rejournal < time.Second {
 		log.Warn("Sanitizing invalid txpool journal time", "provided", conf.Rejournal, "updated", time.Second)
-		conf.Rejournal = time.Second
+		conf.Rejournal = DefaultTxPoolConfig.Rejournal
 	}
 	if conf.PriceLimit < 1 {
 		log.Warn("Sanitizing invalid txpool price limit", "provided", conf.PriceLimit, "updated", DefaultTxPoolConfig.PriceLimit)
@@ -100,6 +100,11 @@ func (config *Config) check() Config {
 		log.Warn("Sanitizing invalid txpool resendtime", "provided", conf.ResendTime, "updated", DefaultTxPoolConfig.ResendTime)
 		conf.ResendTime = DefaultTxPoolConfig.ResendTime
 	}
+	if conf.MinBroadcast < 1 {
+		log.Warn("Minimum number of nodes for the transaction broadcast", "provided", conf.MinBroadcast, "updated", DefaultTxPoolConfig.MinBroadcast)
+		conf.MinBroadcast = DefaultTxPoolConfig.MinBroadcast
+	}
+
 	if conf.RatioBroadcast < 1 {
 		log.Warn("Sanitizing invalid txpool ratiobroadcast", "provided", conf.RatioBroadcast, "updated", DefaultTxPoolConfig.RatioBroadcast)
 		conf.RatioBroadcast = DefaultTxPoolConfig.RatioBroadcast

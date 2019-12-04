@@ -33,9 +33,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	"github.com/fractalplatform/fractal/p2p/netutil"
 )
@@ -139,6 +139,11 @@ func (tab *Table) seedRand() {
 // Self returns the local node.
 func (tab *Table) Self() *enode.Node {
 	return unwrapNode(tab.self)
+}
+
+// SeedNodes return all of the seed nodes
+func (tab *Table) SeedNodes() []*enode.Node {
+	return tab.db.QueryAllSeeds()
 }
 
 // ReadRandomNodes fills the given slice with random nodes from the table. The results

@@ -489,7 +489,7 @@ contract VENSale is Owned{
         if (requested > 0) {
             ven.mint(msg.sender, requested, true, blockTime());
             // transfer ETH to vault
-            ethVault.transfer(ethCost, msg.assetid);
+            ethVault.transfer(msg.assetid, ethCost);
 
             soldOut.official = requested.add(soldOut.official).toUINT120();
             onSold(msg.sender, requested, ethCost);        
@@ -498,7 +498,7 @@ contract VENSale is Owned{
         uint256 toReturn = msg.value.sub(ethCost);
         if(toReturn > 0) {
             // return over payed ETH
-            msg.sender.transfer(toReturn, msg.assetid);
+            msg.sender.transfer(msg.assetid, toReturn);
         }        
     }
 

@@ -27,12 +27,25 @@ import (
 	"unsafe"
 
 	mapset "github.com/deckarep/golang-set"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/types"
 )
+
+// ChainContext blockchain suport downloader interface.
+type ChainContext interface {
+	GetTd(common.Hash, uint64) *big.Int
+	CurrentBlock() *types.Block
+	Genesis() *types.Block
+	HasBlock(common.Hash, uint64) bool
+	IrreversibleNumber() uint64
+	InsertChain(chain types.Blocks) (int, error)
+	GetHeaderByNumber(number uint64) *types.Header
+	GetHeaderByHash(hash common.Hash) *types.Header
+	GetBody(hash common.Hash) *types.Body
+}
 
 var (
 	emptyHash = common.Hash{}
@@ -80,7 +93,7 @@ type Downloader struct {
 	statusCh        chan *router.Event
 	remotes         *simpleHeap //map[string]*stationStatus
 	remotesMutex    sync.RWMutex
-	blockchain      *BlockChain
+	blockchain      ChainContext
 	quit            chan struct{}
 	loopWG          sync.WaitGroup
 	downloadTrigger chan struct{}
@@ -91,7 +104,7 @@ type Downloader struct {
 }
 
 // NewDownloader create a new downloader
-func NewDownloader(chain *BlockChain) *Downloader {
+func NewDownloader(chain ChainContext) *Downloader {
 	dl := &Downloader{
 		statusCh:   make(chan *router.Event),
 		blockchain: chain,
@@ -152,7 +165,7 @@ func (dl *Downloader) broadcastStatus(blockhash *NewBlockHashesData) {
 func (dl *Downloader) syncstatus() {
 	defer dl.loopWG.Done()
 	sub1 := router.Subscribe(nil, dl.statusCh, router.P2PNewBlockHashesMsg, &NewBlockHashesData{})
-	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, NewMinedBlockEvent{})
+	sub2 := router.Subscribe(nil, dl.statusCh, router.NewMinedEv, &types.Block{})
 	dl.subs = append(dl.subs, sub1, sub2)
 	for {
 		select {
@@ -161,7 +174,7 @@ func (dl *Downloader) syncstatus() {
 		case e := <-dl.statusCh:
 			// NewMinedEv
 			if e.Typecode == router.NewMinedEv {
-				block := e.Data.(NewMinedBlockEvent).Block
+				block := e.Data.(*types.Block)
 				for dl.knownBlocks.Cardinality() >= maxKnownBlocks {
 					dl.knownBlocks.Pop()
 				}
@@ -345,23 +358,23 @@ func getBlocks(from router.Station, to router.Station, req []common.Hash, errch 
 	return bodies, nil
 }
 
-func (dl *Downloader) findAncestor(from router.Station, to router.Station, headNumber uint64, preAncestor uint64, errCh chan struct{}) (uint64, *Error) {
+func (dl *Downloader) findAncestor(from router.Station, to router.Station, headNumber uint64, preAncestor uint64, errCh chan struct{}) (uint64, common.Hash, *Error) {
 	if headNumber < 1 {
-		return 0, nil
+		return 0, dl.blockchain.Genesis().Hash(), nil
 	}
-	find := func(headNum, length uint64) (uint64, *Error) {
-		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNumber, length, 0, true}, errCh)
+	find := func(headNum, length uint64) (uint64, common.Hash, *Error) {
+		hashes, err := getBlockHashes(from, to, &getBlockHashByNumber{headNum, length, 0, true}, errCh)
 		if err != nil {
-			return 0, err
+			return 0, emptyHash, err
 		}
 
 		for i, hash := range hashes {
 			if dl.blockchain.HasBlock(hash, headNum-uint64(i)) {
 				log.Debug("downloader findAncestor", "hash", hash.Hex(), "number", headNum-uint64(i))
-				return headNum - uint64(i), nil
+				return headNum - uint64(i), hash, nil
 			}
 		}
-		return 0, &Error{errors.New("not find"), notFind}
+		return 0, emptyHash, &Error{errors.New("not find"), notFind}
 	}
 
 	irreversibleNumber := dl.blockchain.IrreversibleNumber()
@@ -374,12 +387,12 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 		searchLength = 32
 	}
 	for headNumber >= irreversibleNumber {
-		ancestor, err := find(headNumber, searchLength)
+		ancestor, hash, err := find(headNumber, searchLength)
 		if err == nil {
-			return ancestor, nil
+			return ancestor, hash, nil
 		}
 		if err != nil && err.eid != notFind {
-			return 0, err
+			return 0, hash, err
 		}
 		headNumber -= searchLength
 		searchLength = headNumber - irreversibleNumber + 1
@@ -387,7 +400,7 @@ func (dl *Downloader) findAncestor(from router.Station, to router.Station, headN
 			searchLength = 32
 		}
 	}
-	return 0, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
+	return 0, emptyHash, &Error{fmt.Errorf("can not find ancestor after irreversibleNumber:%d", irreversibleNumber), notFind}
 }
 
 func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64, startHash common.Hash, endNumber uint64, endHash common.Hash) (uint64, *Error) {
@@ -414,7 +427,8 @@ func (dl *Downloader) shortcutDownload(status *stationStatus, startNumber uint64
 }
 
 // return true means need call again
-func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
+func (dl *Downloader) multiplexDownload() bool {
+	status := dl.bestStation()
 	log.Debug("multiplexDownload start")
 	defer log.Debug("multiplexDownload end")
 	if status == nil {
@@ -436,6 +450,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	if headNumber < statusNumber && statusNumber < headNumber+6 {
 		_, err := dl.shortcutDownload(status, headNumber, head.Hash(), statusNumber, statusHash)
 		if err == nil { // download and insert completed
+			head = dl.blockchain.CurrentBlock()
 			dl.broadcastStatus(&NewBlockHashesData{
 				Hash:      head.Hash(),
 				Number:    head.NumberU64(),
@@ -460,17 +475,23 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	router.StationRegister(stationSearch)
 	defer router.StationUnregister(stationSearch)
 
-	ancestor, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
+	ancestor, ancestorHash, err := dl.findAncestor(stationSearch, status.station, headNumber, status.ancestor, status.errCh)
 	if err != nil {
 		log.Warn("ancestor err", "err", err, "errID:", err.eid)
+		router.AddErr(status.station, 1)
 		if err.eid == notFind {
 			log.Warn("Disconnect because ancestor not find:", "node:", adaptor.GetFnode(status.station))
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
+		} else if router.Err(status.station) > 50 {
+			log.Warn("Disconnect because too much error:", "node:", adaptor.GetFnode(status.station))
+			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 		}
+
 		return false
 	}
 	log.Debug("downloader ancestor:", "ancestor", ancestor)
 	downloadStart := ancestor
+	downloadStartHash := ancestorHash
 	downloadAmount := statusNumber - ancestor
 	if downloadAmount == 0 { // maybe the status of remote was changed
 		return false
@@ -487,7 +508,7 @@ func (dl *Downloader) multiplexDownload(status *stationStatus) bool {
 	for i := downloadStart; i <= downloadEnd; i += downloadSkip + 1 {
 		numbers = append(numbers, i)
 	}
-	hashes = append(hashes, dl.blockchain.GetHeaderByNumber(numbers[0]).Hash())
+	hashes = append(hashes, downloadStartHash)
 
 	if len(numbers[1:]) > 0 {
 		hash, err := getBlockHashes(stationSearch, status.station, &getBlockHashByNumber{
@@ -551,19 +572,16 @@ func (dl *Downloader) loopStart() {
 
 func (dl *Downloader) loop() {
 	defer dl.loopWG.Done()
-	download := func() {
-		//for status := dl.bestStation(); dl.download(status); {
-		for status := dl.bestStation(); dl.multiplexDownload(status); {
-		}
-	}
 	timer := time.NewTimer(10 * time.Second)
 	for {
 		select {
 		case <-dl.quit:
 			return
 		case <-dl.downloadTrigger:
-			download()
 			timer.Stop()
+			if dl.multiplexDownload() {
+				dl.loopStart()
+			}
 			timer.Reset(10 * time.Second)
 		case <-timer.C:
 			dl.loopStart()
@@ -711,18 +729,35 @@ func (task *downloadTask) Do() {
 		}, downloadAmount, 0, false,
 	}, task.worker.errCh)
 	if err != nil || len(headers) != int(downloadAmount) {
-		log.Debug(fmt.Sprint("err-2:", err, len(headers), downloadAmount))
+		log.Debug("download header failed",
+			"err", err,
+			"recvAmount", len(headers),
+			"taskAmount", downloadAmount,
+		)
 		return
 	}
-	if headers[0].Number.Uint64() != task.startNumber+1 || headers[0].ParentHash != task.startHash ||
-		headers[len(headers)-1].Number.Uint64() != task.endNumber || headers[len(headers)-1].Hash() != task.endHash {
-		log.Debug(fmt.Sprintf("e2-1 0d:%d\n0ed:%d\nsd:%d\nsed:%d", headers[0].Number.Uint64(), headers[len(headers)-1].Number.Uint64(), task.startNumber, task.endNumber))
-		log.Debug(fmt.Sprintf("e2-2 0:%x\n0e:%x\ns:%x\nse:%x", headers[0].Hash(), headers[len(headers)-1].Hash(), task.startHash, task.endHash))
+	if headers[0].Number != task.startNumber+1 || headers[0].ParentHash != task.startHash ||
+		headers[len(headers)-1].Number != task.endNumber || headers[len(headers)-1].Hash() != task.endHash {
+		log.Debug("download header don't match task",
+			"recv.Start.Number", headers[0].Number,
+			"recv.End.Number", headers[len(headers)-1].Number,
+			"recv.Start.ParentHash", headers[0].ParentHash,
+			"recv.End.Hash", headers[len(headers)-1].Hash(),
+			"task.Start.Number", task.startNumber,
+			"task.End.Number", task.endNumber,
+			"task.Start.Hash", task.startHash,
+			"task.End.Hash", task.endHash,
+		)
 		return
 	}
 	for i := 1; i < len(headers); i++ {
-		if headers[i].ParentHash != headers[i-1].Hash() || headers[i].Number.Uint64() != headers[i-1].Number.Uint64()+1 {
-			log.Debug(fmt.Sprintf("err-3: phash:%x n->phash:%x\npn+1:%d n:%d", headers[i-1].Hash(), headers[i].ParentHash, headers[i-1].Number.Uint64()+1, headers[i].Number.Uint64()))
+		if headers[i].ParentHash != headers[i-1].Hash() || headers[i].Number != headers[i-1].Number+1 {
+			log.Debug("download headers are discontinuous",
+				"parent.number", headers[i-1].Number,
+				"parent.hash", headers[i-1].Hash(),
+				"n.number", headers[i].Number,
+				"n.parentHash", headers[i].ParentHash,
+			)
 			return
 		}
 	}
@@ -736,7 +771,10 @@ func (task *downloadTask) Do() {
 
 	bodies, err = getBlocks(station, remote, reqHashes, task.worker.errCh)
 	if err != nil || len(bodies) != len(reqHashes) {
-		log.Debug(fmt.Sprint("err-4:", err, len(bodies), len(reqHashes)))
+		log.Debug("download blocks failed",
+			"err", err,
+			"recvAmount", len(bodies),
+			"taskAmount", len(reqHashes))
 		return
 	}
 

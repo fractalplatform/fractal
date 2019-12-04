@@ -58,65 +58,32 @@ type ChainContext interface {
 
 	// WriteBlockWithState writes the block and all associated state to the database.
 	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (bool, error)
-
-	// CheckForkID checks the validity of forkID
-	CheckForkID(header *types.Header) error
-
-	// FillForkID fills the current and next forkID
-	FillForkID(header *types.Header, statedb *state.StateDB) error
-
-	// ForkUpdate checks and records the fork information
-	ForkUpdate(block *types.Block, statedb *state.StateDB) error
-}
-
-type EngineContext interface {
-	Author(header *types.Header) (common.Name, error)
-
-	ProcessAction(fid uint64, number uint64, chainCfg *params.ChainConfig, state *state.StateDB, action *types.Action) ([]*types.InternalAction, error)
-
-	GetDelegatedByTime(state *state.StateDB, candidate string, timestamp uint64) (stake *big.Int, err error)
-
-	GetEpoch(state *state.StateDB, t uint64, curEpoch uint64) (epoch uint64, time uint64, err error)
-
-	GetActivedCandidateSize(state *state.StateDB, epoch uint64) (size uint64, err error)
-
-	GetActivedCandidate(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, isbad bool, err error)
-
-	GetVoterStake(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
 }
 
 type EvmContext struct {
 	ChainContext
-	EngineContext
 }
 
 // NewEVMContext creates a new context for use in the EVM.
-func NewEVMContext(sender common.Name, to common.Name, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *common.Name) vm.Context {
+func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *string) vm.Context {
 	// If we don't have an explicit author (i.e. not mining), extract from the header
-	var beneficiary common.Name
+	var beneficiary string
 	if author == nil {
-		beneficiary, _ = chain.Author(header) // Ignore error, we're past header validation
+		beneficiary = header.Coinbase // Ignore error, we're past header validation
 	} else {
 		beneficiary = *author
 	}
 	return vm.Context{
-		GetHash:                 GetHashFn(header, chain),
-		GetDelegatedByTime:      chain.GetDelegatedByTime,
-		GetEpoch:                chain.GetEpoch,
-		GetActivedCandidateSize: chain.GetActivedCandidateSize,
-		GetActivedCandidate:     chain.GetActivedCandidate,
-		GetVoterStake:           chain.GetVoterStake,
-		GetHeaderByNumber:       chain.GetHeaderByNumber,
-		Origin:                  sender,
-		Recipient:               to,
-		AssetID:                 assetID,
-		Coinbase:                beneficiary,
-		BlockNumber:             new(big.Int).Set(header.Number),
-		ForkID:                  header.CurForkID(),
-		Time:                    new(big.Int).Set(header.Time),
-		Difficulty:              new(big.Int).Set(header.Difficulty),
-		GasLimit:                header.GasLimit,
-		GasPrice:                new(big.Int).Set(gasPrice),
+		GetHash:           GetHashFn(header, chain),
+		GetHeaderByNumber: chain.GetHeaderByNumber,
+		Origin:            sender,
+		Recipient:         to,
+		AssetID:           assetID,
+		Coinbase:          beneficiary,
+		BlockNumber:       big.NewInt(int64(header.Number)),
+		Time:              big.NewInt(int64(header.Time)),
+		GasLimit:          header.GasLimit,
+		GasPrice:          new(big.Int).Set(gasPrice),
 	}
 }
 
@@ -128,7 +95,7 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 		// If there's no hash cache yet, make one
 		if cache == nil {
 			cache = map[uint64]common.Hash{
-				ref.Number.Uint64() - 1: ref.ParentHash,
+				ref.Number - 1: ref.ParentHash,
 			}
 		}
 		// Try to fulfill the request from the cache
@@ -136,9 +103,9 @@ func GetHashFn(ref *types.Header, chain ChainContext) func(n uint64) common.Hash
 			return hash
 		}
 		// Not cached, iterate the blocks and cache the hashes
-		for header := chain.GetHeader(ref.ParentHash, ref.Number.Uint64()-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number.Uint64()-1) {
-			cache[header.Number.Uint64()-1] = header.ParentHash
-			if n == header.Number.Uint64()-1 {
+		for header := chain.GetHeader(ref.ParentHash, ref.Number-1); header != nil; header = chain.GetHeader(header.ParentHash, header.Number-1) {
+			cache[header.Number-1] = header.ParentHash
+			if n == header.Number-1 {
 				return header.ParentHash
 			}
 		}

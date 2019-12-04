@@ -21,14 +21,13 @@ import (
 	"math/big"
 	"testing"
 
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/event"
 	"github.com/fractalplatform/fractal/params"
+	pm "github.com/fractalplatform/fractal/plugin"
+	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 const (
@@ -114,32 +113,29 @@ func TestBloom(t *testing.T) {
 
 func TestP2PTxMsg(t *testing.T) {
 	var (
-		statedb, _ = state.New(common.Hash{}, state.NewDatabase(mdb.NewMemDatabase()))
-		manager, _ = am.NewAccountManager(statedb)
-		fname      = common.Name("fromname")
-		tname      = common.Name("totestname")
-		fkey       = generateAccount(t, fname, manager)
-		_          = generateAccount(t, tname, manager)
-		asset      = asset.NewAsset(statedb)
-		trigger    = false
+		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+		pm         = pm.NewPM(statedb)
+		fname      = "fromname"
+		tname      = "totestname"
+		fkey       = generateAccount(t, fname, pm)
+		_          = generateAccount(t, tname, pm)
 	)
 	// issue asset
-	if _, err := asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
+	if _, err := pm.IssueAsset(fname, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+		10, "", fname, new(big.Int).SetUint64(params.Fractal), "", pm); err != nil {
 		t.Fatal(err)
 	}
+
 	// add balance
-	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+	if err := pm.TransferAsset(fname, tname, 0, new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
 	params.DefaultChainconfig.SysTokenID = 0
-	blockchain := &testChain{&testBlockChain{statedb, 1000000000, new(event.Feed)}, fname, &trigger}
+	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
 	defer pool.Stop()
 
-	nonce, err := pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce, _ := pool.State().GetNonce(fname)
 	if nonce != 0 {
 		t.Fatalf("Invalid nonce, want 0, got %d", nonce)
 	}
@@ -162,26 +158,18 @@ func TestP2PTxMsg(t *testing.T) {
 		}
 	}
 
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce, _ = pool.State().GetNonce(fname)
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}
 
-	// trigger state change in the background
-	trigger = true
 	pool.requestReset(nil, nil)
 
-	_, err = pool.Pending()
+	_, err := pool.Pending()
 	if err != nil {
 		t.Fatalf("Could not fetch pending transactions: %v", err)
 	}
-	nonce, err = pool.State().GetNonce(fname)
-	if err != nil {
-		t.Fatal("Invalid getNonce ", err)
-	}
+	nonce, _ = pool.State().GetNonce(fname)
 	if nonce != 2 {
 		t.Fatalf("Invalid nonce, want 2, got %d", nonce)
 	}

@@ -1,0 +1,1 @@
+[{"constant":false,"inputs":[{"name":"name","type":"string"}],"name":"sha","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"inputs":[],"payable":true,"stateMutability":"payable","type":"constructor"}]

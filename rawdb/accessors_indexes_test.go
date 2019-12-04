@@ -22,12 +22,11 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
 // Tests that positional lookup metadata can be stored and retrieved.
 func TestLookupStorage(t *testing.T) {
-	db := mdb.NewMemDatabase()
+	db := NewMemoryDatabase()
 
 	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action1"), []byte("test remark1"))
 	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action2"), []byte("test remark2"))

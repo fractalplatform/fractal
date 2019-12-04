@@ -24,11 +24,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/blockchain"
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/cmd/utils"
 	"github.com/fractalplatform/fractal/debug"
 	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/metrics"
 	"github.com/fractalplatform/fractal/metrics/influxdb"
 	"github.com/fractalplatform/fractal/node"
@@ -94,6 +94,7 @@ var RootCmd = &cobra.Command{
 }
 
 func makeNode() (*node.Node, error) {
+	genesis := g.DefaultGenesis()
 	// set miner config
 	SetupMetrics()
 	// Make sure we have a valid genesis JSON
@@ -105,13 +106,18 @@ func makeNode() (*node.Node, error) {
 		}
 		defer file.Close()
 
-		genesis := blockchain.DefaultGenesis()
 		if err := json.NewDecoder(file).Decode(genesis); err != nil {
 			return nil, fmt.Errorf("invalid genesis file: %v(%v)", ftCfgInstance.GenesisFile, err)
 		}
 		ftCfgInstance.FtServiceCfg.Genesis = genesis
-	}
 
+	}
+	block, _, err := genesis.ToBlock(nil)
+	if err != nil {
+		return nil, err
+	}
+	// p2p used to generate MagicNetID
+	ftCfgInstance.NodeCfg.P2PConfig.GenesisHash = block.Hash()
 	return node.New(ftCfgInstance.NodeCfg)
 }
 

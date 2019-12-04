@@ -21,16 +21,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	router "github.com/fractalplatform/fractal/event"
+	"github.com/fractalplatform/fractal/log"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
 	"github.com/fractalplatform/fractal/types"
 )
 
 type Station struct {
 	peerCh     chan *router.Event
-	blockchain *BlockChain
+	blockchain ChainContext
 	networkID  uint64
 	quit       chan struct{}
 	loopWG     sync.WaitGroup
@@ -42,7 +42,7 @@ func errResp(code errCode, format string, v ...interface{}) error {
 	return fmt.Errorf("%v - %v", code, fmt.Sprintf(format, v...))
 }
 
-func newStation(bc *BlockChain, networkID uint64) *Station {
+func NewStation(bc ChainContext, networkID uint64) *Station {
 	bs := &Station{
 		peerCh:     make(chan *router.Event),
 		blockchain: bc,
@@ -69,9 +69,9 @@ func newStation(bc *BlockChain, networkID uint64) *Station {
 
 func (bs *Station) chainStatus() *statusData {
 	genesis := bs.blockchain.Genesis()
-	head := bs.blockchain.CurrentHeader()
+	head := bs.blockchain.CurrentBlock().Header()
 	hash := head.Hash()
-	number := head.Number.Uint64()
+	number := head.Number
 	td := bs.blockchain.GetTd(hash, number)
 	return &statusData{
 		ProtocolVersion: uint32(1),
@@ -203,7 +203,7 @@ func (bs *Station) handleMsg(e *router.Event) error {
 				router.ReplyEvent(e, router.P2PBlockHeadersMsg, []*types.Header{})
 				return nil
 			}
-			query.Origin.Number = header.Number.Uint64()
+			query.Origin.Number = header.Number
 		}
 
 		// Gather headers until the fetch or network limits is reached

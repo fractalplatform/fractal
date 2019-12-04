@@ -103,3 +103,10 @@ func TestNoPrefixShortHexOddLength(t *testing.T) {
 		t.Errorf("Expected %x got %x", expected, result)
 	}
 }
+
+func BenchmarkCutCustomTrim(b *testing.B) {
+	value := HexToHash("0x01")
+	for i := 0; i < b.N; i++ {
+		TrimLeftZeroes(value[:])
+	}
+}

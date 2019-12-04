@@ -19,6 +19,7 @@ package txpool
 import (
 	"runtime"
 
+	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -32,9 +33,9 @@ var SenderCacher = newTxSenderCacher(runtime.NumCPU())
 // which is used to feed the same underlying input array to different threads but
 // ensure they process the early transactions fast.
 type txSenderCacherRequest struct {
-	signer types.Signer
-	txs    []*types.Transaction
-	inc    int
+	manager pm.IPM
+	txs     []*types.Transaction
+	inc     int
 }
 
 // txSenderCacher is a helper structure to concurrently ecrecover transaction
@@ -62,9 +63,7 @@ func newTxSenderCacher(threads int) *txSenderCacher {
 func (cacher *txSenderCacher) cache() {
 	for task := range cacher.tasks {
 		for i := 0; i < len(task.txs); i += task.inc {
-			for _, a := range task.txs[i].GetActions() {
-				types.RecoverMultiKey(task.signer, a, task.txs[i])
-			}
+			types.RecoverMultiKey(task.manager.Recover, task.txs[i])
 		}
 	}
 }
@@ -72,7 +71,7 @@ func (cacher *txSenderCacher) cache() {
 // recover recovers the senders from a batch of transactions and caches them
 // back into the same data structures. There is no validation being done, nor
 // any reaction to invalid signatures. That is up to calling code later.
-func (cacher *txSenderCacher) recover(signer types.Signer, txs []*types.Transaction) {
+func (cacher *txSenderCacher) recover(manager pm.IPM, txs []*types.Transaction) {
 	// If there's nothing to recover, abort
 	if len(txs) == 0 {
 		return
@@ -84,9 +83,9 @@ func (cacher *txSenderCacher) recover(signer types.Signer, txs []*types.Transact
 	}
 	for i := 0; i < tasks; i++ {
 		cacher.tasks <- &txSenderCacherRequest{
-			signer: signer,
-			txs:    txs[i:],
-			inc:    tasks,
+			manager: manager,
+			txs:     txs[i:],
+			inc:     tasks,
 		}
 	}
 }
@@ -94,7 +93,7 @@ func (cacher *txSenderCacher) recover(signer types.Signer, txs []*types.Transact
 // recoverFromBlocks recovers the senders from a batch of blocks and caches them
 // back into the same data structures. There is no validation being done, nor
 // any reaction to invalid signatures. That is up to calling code later.
-func (cacher *txSenderCacher) RecoverFromBlocks(signer types.Signer, blocks []*types.Block) {
+func (cacher *txSenderCacher) RecoverFromBlocks(manager pm.IPM, blocks []*types.Block) {
 	count := 0
 	for _, block := range blocks {
 		count += len(block.Txs)
@@ -103,5 +102,5 @@ func (cacher *txSenderCacher) RecoverFromBlocks(signer types.Signer, blocks []*t
 	for _, block := range blocks {
 		txs = append(txs, block.Txs...)
 	}
-	cacher.recover(signer, txs)
+	cacher.recover(manager, txs)
 }

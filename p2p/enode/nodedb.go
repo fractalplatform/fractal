@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
@@ -322,6 +322,30 @@ seek:
 		for i := range nodes {
 			if nodes[i].ID() == n.ID() {
 				continue seek // duplicate
+			}
+		}
+		nodes = append(nodes, n)
+	}
+	return nodes
+}
+
+// QueryAllSeeds retrieves all nodes to be used as potential seed nodes
+// for bootstrapping.
+func (db *DB) QueryAllSeeds() []*Node {
+	var (
+		nodes []*Node
+		it    = db.lvl.NewIterator(nil, nil)
+	)
+	defer it.Release()
+seek:
+	for it.Next() {
+		n := nextNode(it)
+		if n == nil {
+			break
+		}
+		for i := range nodes {
+			if nodes[i].ID() == n.ID() {
+				continue seek
 			}
 		}
 		nodes = append(nodes, n)

@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -143,11 +144,55 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	}
 
 	for _, action := range tx.actions {
-		if err := action.Check(conf); err != nil {
+		if err := action.Check(); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// SignHash hashes the action sign hash
+func (tx *Transaction) SignHash(chainID *big.Int) common.Hash {
+	actionHashs := make([]common.Hash, len(tx.GetActions()))
+	for i, a := range tx.GetActions() {
+		hash := RlpHash([]interface{}{
+			a.data.AType,
+			a.data.Nonce,
+			a.data.AssetID,
+			a.data.From,
+			a.data.To,
+			a.data.GasLimit,
+			a.data.Amount,
+			a.data.Payload,
+			a.data.Remark,
+			chainID, uint(0), uint(0),
+		})
+		actionHashs[i] = hash
+	}
+
+	return RlpHash([]interface{}{
+		common.MerkleRoot(actionHashs),
+		tx.gasAssetID,
+		tx.gasPrice,
+	})
+
+}
+
+// RecoverMultiKey recover and store cache.
+func RecoverMultiKey(recover func(signature []byte, signHash func(chainID *big.Int) common.Hash) ([]byte, error), tx *Transaction) {
+	for i, a := range tx.GetActions() {
+		if sc := a.senderPubkeys.Load(); sc != nil {
+			continue
+		}
+
+		pubKey, err := recover(a.GetSign(), tx.SignHash)
+		if err != nil {
+			// There should be no problem here.
+			log.Error("recover failed", "err", err, "hash", tx.Hash(), "action index", i)
+		}
+
+		a.senderPubkeys.Store(pubKey)
+	}
 }
 
 // RPCTransaction that will serialize to the RPC representation of a transaction.
@@ -236,8 +281,8 @@ func TxDifference(a, b []*Transaction) []*Transaction {
 // transactions in a profit-maximizing sorted order, while supporting removing
 // entire batches of transactions for non-executable accounts.
 type TransactionsByPriceAndNonce struct {
-	txs   map[common.Name][]*Transaction // Per account nonce-sorted list of transactions
-	heads TxByPrice                      // Next transaction for each unique account (price heap)
+	txs   map[string][]*Transaction // Per account nonce-sorted list of transactions
+	heads TxByPrice                 // Next transaction for each unique account (price heap)
 }
 
 // NewTransactionsByPriceAndNonce creates a transaction set that can retrieve
@@ -245,7 +290,7 @@ type TransactionsByPriceAndNonce struct {
 //
 // Note, the input map is reowned so the caller should not interact any more with
 // if after providing it to the constructor.
-func NewTransactionsByPriceAndNonce(txs map[common.Name][]*Transaction) *TransactionsByPriceAndNonce {
+func NewTransactionsByPriceAndNonce(txs map[string][]*Transaction) *TransactionsByPriceAndNonce {
 	// Initialize a price based heap with the head transactions
 	heads := make(TxByPrice, 0, len(txs))
 	for from, accTxs := range txs {

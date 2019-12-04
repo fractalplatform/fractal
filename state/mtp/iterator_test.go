@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/rawdb"
 	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
 )
 
@@ -311,6 +312,7 @@ func testIteratorContinueAfterError(t *testing.T, memonly bool) {
 	} else {
 		diskKeys = diskdb.Keys()
 	}
+
 	for i := 0; i < 20; i++ {
 		// Create trie that will load all nodes from DB.
 		tr, _ := New(tr.Hash(), triedb)
@@ -376,7 +378,7 @@ func TestIteratorContinueAfterSeekErrorMemonly(t *testing.T) {
 
 func testIteratorContinueAfterSeekError(t *testing.T, memonly bool) {
 	// Commit test trie to db, then remove the node containing "bars".
-	diskdb := mdb.NewMemDatabase()
+	diskdb := rawdb.NewMemoryDatabase()
 	triedb := NewDatabase(diskdb)
 
 	ctr, _ := New(common.Hash{}, triedb)

@@ -18,89 +18,93 @@ package blockchain
 
 import (
 	"testing"
-	"time"
+
+	g "github.com/fractalplatform/fractal/blockchain/genesis"
+	"github.com/fractalplatform/fractal/log"
+	"github.com/fractalplatform/fractal/processor/vm"
+)
+
+// So we can deterministically seed different blockchains
+var (
+	canonicalSeed = 1
+	forkSeed      = 2
 )
 
 func TestTheLastBlock(t *testing.T) {
-	// printLog(log.LvlDebug)
-	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	printLog(log.LvlDebug)
+
+	genesis := g.DefaultGenesis()
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	allCandidates, allHeaderTimes := genCanonicalCandidatesAndTimes(genesis)
-	_, blocks := makeNewChain(t, genesis, chain, allCandidates, allHeaderTimes)
+	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
 	// check chain block hash
 	checkBlocksInsert(t, chain, blocks)
 }
 
 func TestSystemForkChain(t *testing.T) {
-	var (
-		allCandidates, allCandidates1   []string
-		allHeaderTimes, allHeaderTimes1 []uint64
-	)
-	// printLog(log.LvlTrace)
-	genesis := DefaultGenesis()
+	printLog(log.LvlDebug)
 
-	allCandidates, allHeaderTimes = genCanonicalCandidatesAndTimes(genesis)
-
-	allCandidates1 = append(allCandidates1, allCandidates...)
-	//allCandidates1 = append(allCandidates1, "syscandidate0")
-	//allCandidates1 = append(allCandidates1, params.DefaultChainconfig.SysName)
-
-	allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes...)
-	//allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes[len(allHeaderTimes)-1]+1000*uint64(time.Millisecond)*3*7)
-	//allHeaderTimes1 = append(allHeaderTimes1, allHeaderTimes1[len(allHeaderTimes1)-1]+1000*uint64(time.Millisecond)*3)
-
-	testFork(t, allCandidates, allCandidates1, allHeaderTimes, allHeaderTimes1)
-}
-
-func genCanonicalCandidatesAndTimes(genesis *Genesis) ([]string, []uint64) {
-	var (
-		//dposEpochNum   uint64 = 1
-		allCandidates  []string
-		allHeaderTimes []uint64
-	)
-
-	// geaerate block's candidates and block header time
-	// system's candidates headertimes
-	sysCandidates, sysHeaderTimes := makeSystemCandidatesAndTime(genesis.Timestamp*uint64(time.Millisecond), genesis)
-	allCandidates = append(allCandidates, sysCandidates...)
-	allHeaderTimes = append(allHeaderTimes, sysHeaderTimes...)
-
-	// elected candidates headertimes
-	// candidates, headerTimes := makeCandidatesAndTime(sysHeaderTimes[len(sysHeaderTimes)-1], genesis, dposEpochNum)
-	// allCandidates = append(allCandidates, candidates[:12]...)
-	// allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
-
-	// // elected candidates headertimes
-	// candidates, headerTimes = makeCandidatesAndTime(headerTimes[len(headerTimes)-1], genesis, dposEpochNum)
-	// allCandidates = append(allCandidates, candidates[:12]...)
-	// allHeaderTimes = append(allHeaderTimes, headerTimes[:12]...)
-
-	return allCandidates, allHeaderTimes
-}
-
-func testFork(t *testing.T, candidates, forkCandidates []string, headerTimes, forkHeaderTimes []uint64) {
-	genesis := DefaultGenesis()
-	genesis.AllocAccounts = append(genesis.AllocAccounts, getDefaultGenesisAccounts()...)
+	genesis := g.DefaultGenesis()
 	chain := newCanonical(t, genesis)
 	defer chain.Stop()
 
-	chain, _ = makeNewChain(t, genesis, chain, candidates, headerTimes)
+	chain, _ = makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
 	// generate fork blocks
-	blocks := generateForkBlocks(t, DefaultGenesis(), forkCandidates, forkHeaderTimes)
+	forkChain := newCanonical(t, genesis)
+	defer forkChain.Stop()
 
-	_, err := chain.InsertChain(blocks)
+	_, forkBlocks := makeNewChain(t, genesis, forkChain, 11, forkSeed)
+	_, err := chain.InsertChain(forkBlocks)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// check chain block hash
-	checkBlocksInsert(t, chain, blocks)
+	checkBlocksInsert(t, chain, forkBlocks)
 
 	// check if is complete block chain
 	checkCompleteChain(t, chain)
+}
+
+func TestBadBlockHashes(t *testing.T) {
+	genesis := g.DefaultGenesis()
+	chain := newCanonical(t, genesis)
+	defer chain.Stop()
+
+	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
+
+	chain.badHashes[blocks[2].Header().Hash()] = true
+
+	_, err := chain.InsertChain(blocks)
+	if err != ErrBlacklistedHash {
+		t.Errorf("error mismatch: have: %v, want: %v", err, ErrBlacklistedHash)
+	}
+
+	// test NewBlockChain()badblock err
+	delete(chain.badHashes, blocks[2].Header().Hash())
+
+	_, err = chain.InsertChain(blocks)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	newChain, err := NewBlockChain(chain.db, false, vm.Config{}, chain.chainConfig,
+		[]string{blocks[2].Header().Hash().String()}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer newChain.Stop()
+
+	// if db have bad block then block will be reset, newChain.CurrentBlock().Hash() must equal chain or newchain genesis block hash.
+	if newChain.CurrentBlock().Hash() != chain.GetBlockByNumber(0).Hash() ||
+		newChain.CurrentBlock().Hash() != newChain.GetBlockByNumber(0).Hash() {
+		t.Fatalf("cur hash %x , genesis hash %v", newChain.CurrentBlock().Hash(),
+			newChain.Genesis().Hash())
+	}
+
+	t.Log(newChain.CurrentBlock().Hash().String())
+	t.Log(newChain.Genesis().Hash().String())
 }
