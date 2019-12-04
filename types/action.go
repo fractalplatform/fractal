@@ -473,6 +473,50 @@ func (a *Action) NewRPCAction(index uint64) *RPCAction {
 	}
 }
 
+type RPCActionWithPayer struct {
+	Type          uint64        `json:"type"`
+	Nonce         uint64        `json:"nonce"`
+	From          common.Name   `json:"from"`
+	To            common.Name   `json:"to"`
+	AssetID       uint64        `json:"assetID"`
+	GasLimit      uint64        `json:"gas"`
+	Amount        *big.Int      `json:"value"`
+	Remark        hexutil.Bytes `json:"remark"`
+	Payload       hexutil.Bytes `json:"payload"`
+	Hash          common.Hash   `json:"actionHash"`
+	ActionIdex    uint64        `json:"actionIndex"`
+	Payer         common.Name   `json:"payer"`
+	PayerGasPrice *big.Int      `json:"payerGasPrice"`
+}
+
+func (a *RPCActionWithPayer) SetHash(hash common.Hash) {
+	a.Hash = hash
+}
+
+func (a *Action) NewRPCActionWithPayer(index uint64) *RPCActionWithPayer {
+	var payer common.Name
+	var price *big.Int
+	if a.fp != nil {
+		payer = a.fp.Payer
+		price = a.fp.GasPrice
+	}
+	return &RPCActionWithPayer{
+		Type:          uint64(a.Type()),
+		Nonce:         a.Nonce(),
+		From:          a.Sender(),
+		To:            a.Recipient(),
+		AssetID:       a.AssetID(),
+		GasLimit:      a.Gas(),
+		Amount:        a.Value(),
+		Remark:        hexutil.Bytes(a.Remark()),
+		Payload:       hexutil.Bytes(a.Data()),
+		Hash:          a.Hash(),
+		ActionIdex:    index,
+		Payer:         payer,
+		PayerGasPrice: price,
+	}
+}
+
 // deriveChainID derives the chain id from the given v parameter
 func deriveChainID(v *big.Int) *big.Int {
 	v = new(big.Int).Sub(v, big.NewInt(35))
