@@ -33,6 +33,7 @@ type IPM interface {
 	//IContract
 	IFee
 	ISigner
+	IItem
 	ExecTx(arg interface{}) ([]byte, error)
 }
 
@@ -97,4 +98,14 @@ type IFee interface {
 type ISigner interface {
 	Sign(signHash func(chainID *big.Int) common.Hash, prv *ecdsa.PrivateKey) ([]byte, error)
 	Recover(signature []byte, signHash func(chainID *big.Int) common.Hash) ([]byte, error)
+}
+
+type IItem interface {
+	IssueItemType(creator, owner, name, description string, am IAccount) ([]byte, error)
+	UpdateItemTypeOwner(from, newOwner string, itemTypeID uint64, am IAccount) ([]byte, error)
+	IssueItem(creator string, itemTypeID uint64, name string, description string, upperLimit uint64, total uint64, attributes []*Attribute, am IAccount) ([]byte, error)
+	IncreaseItem(from string, itemTypeID, itemInfoID uint64, to string, amount uint64, am IAccount) ([]byte, error)
+	TransferItem(from, to string, ItemTx []*ItemTxParam) error
+	GetItemAmount(account string, itemTypeID, itemInfoID uint64) (uint64, error)
+	GetItemAttribute(itemTypeID uint64, itemInfoID uint64, AttributeName string) (string, error)
 }

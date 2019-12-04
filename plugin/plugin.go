@@ -41,6 +41,7 @@ type Manager struct {
 	IConsensus
 	IFee
 	ISigner
+	IItem
 }
 
 func (pm *Manager) BasicCheck(tx *types.Transaction) error {
@@ -129,6 +130,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	chainID := big.NewInt(1)
 	signer, _ := NewSigner(chainID)
 	fee, _ := NewFeeManager()
+	item, _ := NewItemManage(stateDB)
 	pm := &Manager{
 		contracts:       make(map[string]IContract),
 		contractsByType: make(map[types.ActionType]IContract),
@@ -137,6 +139,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IConsensus:      consensus,
 		ISigner:         signer,
 		IFee:            fee,
+		IItem:           item,
 		stateDB:         stateDB,
 	}
 	pm.contracts[acm.AccountName()] = acm
