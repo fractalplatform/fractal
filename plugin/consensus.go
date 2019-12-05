@@ -475,7 +475,7 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 		c.minerOffset = uint64(epoch)
 		return 0
 	}
-	fmt.Println("epoch-wait:", epoch)
+	fmt.Println("epoch-wait:", epoch, c.timeSlot(uint64(epoch)), now)
 	return time.Duration(int64(c.timeSlot(uint64(epoch)))-now) * time.Second
 }
 
