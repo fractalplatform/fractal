@@ -511,6 +511,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 		}
 		skipMiner := c.minerSlot(uint64(rndIndex), i)
 		info := c.candidates.info[skipMiner]
+		info.Epoch = c.blockEpoch + 1
 		info.DecWeight()
 		info.Store(c.stateDB)
 	}
