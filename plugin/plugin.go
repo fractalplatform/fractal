@@ -145,6 +145,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm
 	pm.contracts[consensus.AccountName()] = consensus
+	pm.contracts[item.AccountName()] = item
 	pm.contractsByType[Transfer] = acm
 	return pm
 }

@@ -25,6 +25,14 @@ const (
 	ConsensusEnd
 )
 
+const (
+	IssueItemType types.ActionType = 0x400 + iota
+	UpdateItemTypeOwner
+	IssueItem
+	IncreaseItem
+	TransferItem
+)
+
 type CreateAccountAction struct {
 	Name   string
 	Pubkey string
@@ -47,4 +55,47 @@ type IssueAssetAction struct {
 	UpperLimit  *big.Int
 	Contract    string
 	Description string
+}
+
+type IssueItemTypeAction struct {
+	Owner       string
+	Name        string
+	Description string
+}
+
+type UpdateItemTypeOwnerAction struct {
+	NewOwner   string
+	ItemTypeID uint64
+}
+
+type IssueItemAction struct {
+	ItemTypeID  uint64
+	Name        string
+	Description string
+	UpperLimit  uint64
+	Total       uint64
+	Attributes  []*Attribute
+}
+
+type IncreaseItemAction struct {
+	ItemTypeID uint64
+	ItemInfoID uint64
+	To         string
+	Amount     uint64
+}
+
+type TransferItemAction struct {
+	To     string
+	ItemTx []*ItemTxParam
+}
+
+type Attribute struct {
+	Name        string
+	Description string
+}
+
+type ItemTxParam struct {
+	ItemTypeID uint64
+	ItemInfoID uint64
+	Amount     uint64
 }
