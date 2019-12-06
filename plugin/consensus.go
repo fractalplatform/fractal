@@ -366,12 +366,16 @@ func (c *Consensus) nIndex(n int) int {
 
 func (c *Consensus) epochToIndex(epoch int) (int, int) {
 	rndIndex := c.nIndex(epoch)
+	change := make(map[string]uint64)
 	for j := 0; j < c.candidates.Len(); j++ {
 		minerIndex := rndIndex + j
 		miner := c.minerSlot(uint64(minerIndex), uint64(epoch))
-		info := c.candidates.info[miner]
-		fmt.Println("len", c.candidates.Len(), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", info.Epoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
-		if info.Epoch <= c.blockEpoch {
+		minerEpoch, exist := change[miner]
+		if !exist {
+			minerEpoch = c.candidates.info[miner].Epoch
+		}
+		fmt.Println("len", c.candidates.Len(), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", minerEpoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
+		if minerEpoch <= c.blockEpoch {
 			return epoch, minerIndex
 		}
 	}
