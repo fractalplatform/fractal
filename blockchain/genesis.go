@@ -50,7 +50,7 @@ type GenesisAccount struct {
 // GenesisCandidate is an candidate  in the state of the genesis block.
 type GenesisCandidate struct {
 	Name  string   `json:"name,omitempty"`
-	URL   string   `json:"url,omitempty"`
+	Info  string   `json:"info,omitempty"`
 	Stake *big.Int `json:"stake,omitempty"`
 }
 
@@ -202,6 +202,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		SubAssetNameMinLength:  1,
 		SubAssetNameMaxLength:  8,
 	})
+
 	am.SetAcctMangerName(common.StrToName(g.Config.AccountName))
 	at.SetAssetMangerName(common.StrToName(g.Config.AssetName))
 	fm.SetFeeManagerName(common.StrToName(g.Config.FeeName))
@@ -402,7 +403,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		if err := sys.SetCandidate(&dpos.CandidateInfo{
 			Epoch:         epoch,
 			Name:          candidate.Name,
-			URL:           candidate.URL,
+			Info:          candidate.Info,
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 			Number:        number.Uint64(),

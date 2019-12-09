@@ -86,20 +86,20 @@ func (s *stateDB) Undelegate(to string, amount *big.Int) (*types.Action, error) 
 	}
 	return action, accountDB.TransferAsset(common.StrToName(s.name), common.StrToName(to), s.assetid, amount)
 }
-func (s *stateDB) IncAsset2Acct(from string, to string, amount *big.Int) (*types.Action, error) {
+func (s *stateDB) IncAsset2Acct(from string, to string, amount *big.Int, forkID uint64) (*types.Action, error) {
 	action := types.NewAction(types.IncreaseAsset, common.StrToName(s.name), common.StrToName(to), 0, s.assetid, 0, amount, nil, nil)
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
 		return action, err
 	}
-	return action, accountDB.IncAsset2Acct(common.StrToName(from), common.StrToName(to), s.assetid, amount)
+	return action, accountDB.IncAsset2Acct(common.StrToName(from), common.StrToName(to), s.assetid, amount, forkID)
 }
-func (s *stateDB) IsValidSign(name string, pubkey []byte) bool {
+func (s *stateDB) IsValidSign(name string, pubkey []byte) error {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
 	if err != nil {
-		return false
+		return err
 	}
-	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey)) == nil
+	return accountDB.IsValidSign(common.StrToName(name), common.BytesToPubKey(pubkey))
 }
 func (s *stateDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, error) {
 	accountDB, err := accountmanager.NewAccountManager(s.state)
@@ -135,7 +135,7 @@ func Genesis(cfg *Config, state *state.StateDB, timestamp uint64, number uint64)
 	if err := sys.SetCandidate(&CandidateInfo{
 		Epoch:         epoch,
 		Name:          cfg.SystemName,
-		URL:           cfg.SystemURL,
+		Info:          cfg.SystemURL,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
 		Number:        number,
@@ -531,7 +531,7 @@ func (dpos *Dpos) finalize0(chain consensus.IChainReader, header *types.Header, 
 	counter := int64(0)
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(counter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
-	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
+	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward, header.CurForkID())
 
 	blk := types.NewBlock(header, txs, receipts)
 
@@ -689,7 +689,7 @@ func (dpos *Dpos) finalize1(chain consensus.IChainReader, header *types.Header, 
 	extraCounter := int64(0)
 	extraReward := new(big.Int).Mul(dpos.config.extraBlockReward(), big.NewInt(extraCounter))
 	reward := new(big.Int).Add(dpos.config.blockReward(), extraReward)
-	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward)
+	sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward, header.CurForkID())
 
 	blk := types.NewBlock(header, txs, receipts)
 	// first hard fork at a specific number
@@ -787,20 +787,6 @@ func (dpos *Dpos) CalcDifficulty(chain consensus.IChainReader, time uint64, pare
 func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *types.Header, timestamp uint64, candidate string, pubkeys [][]byte, state *state.StateDB, force bool, fid uint64) error {
 	if timestamp%dpos.BlockInterval() != 0 {
 		return errInvalidMintBlockTime
-	}
-
-	db := &stateDB{
-		name:  dpos.config.AccountName,
-		state: state,
-	}
-	has := false
-	for _, pubkey := range pubkeys {
-		if db.IsValidSign(candidate, pubkey) {
-			has = true
-		}
-	}
-	if !has {
-		return ErrIllegalCandidatePubKey
 	}
 
 	sys := NewSystem(state, dpos.config)
@@ -1014,6 +1000,16 @@ func (dpos *Dpos) IsValidateCandidate(chain consensus.IChainReader, parent *type
 
 	if strings.Compare(tname, candidate) != 0 {
 		return fmt.Errorf("%v %v, except %v %v(%v) index %v (%v epoch) ", errInvalidBlockCandidate, candidate, tname, pstate.ActivatedCandidateSchedule, pstate.UsingCandidateIndexSchedule, offset, pstate.Epoch)
+	}
+
+	has := false
+	for _, pubkey := range pubkeys {
+		if sys.CanMine(candidate, pubkey) == nil {
+			has = true
+		}
+	}
+	if !has {
+		return ErrIllegalCandidatePubKey
 	}
 	return nil
 }

@@ -1455,7 +1455,7 @@ func TestAccountManager_IncAsset2Acct(t *testing.T) {
 			sdb: tt.fields.sdb,
 			ast: tt.fields.ast,
 		}
-		if err := am.IncAsset2Acct(tt.args.fromName, tt.args.toName, tt.args.AssetID, tt.args.amount); (err != nil) != tt.wantErr {
+		if err := am.IncAsset2Acct(tt.args.fromName, tt.args.toName, tt.args.AssetID, tt.args.amount, 4); (err != nil) != tt.wantErr {
 			t.Errorf("%q. AccountManager.IncAsset2Acct() error = %v, wantErr %v", tt.name, err, tt.wantErr)
 		}
 	}
@@ -2224,5 +2224,91 @@ func Test_CheckAssetContract(t *testing.T) {
 		if assetContract != tt.wantErr {
 			t.Errorf("asset contract test failed")
 		}
+	}
+}
+
+func TestAccountManager_CreateAccountFork1(t *testing.T) {
+	type fields struct {
+		sdb *state.StateDB
+		ast *asset.Asset
+	}
+	pubkey := new(common.PubKey)
+	pubkey2 := new(common.PubKey)
+	pubkey.SetBytes([]byte("abcde123456789"))
+
+	pubkey3, _ := GeneragePubKey()
+	type args struct {
+		fromName    common.Name
+		accountName common.Name
+		founderName common.Name
+		pubkey      common.PubKey
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{"createAccount", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a111222332afork"), common.Name(""), pubkey3}, false},
+		{"createAccountSub", fields{sdb, ast}, args{common.Name("a111222332afork"), common.Name("a111222332afork.sub1"), common.Name(""), pubkey3}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789fork"), common.Name(""), *pubkey2}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789afork"), common.Name(""), *pubkey}, false},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a12345678-fork"), common.Name(""), *pubkey}, true},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789aeeefork"), common.Name(""), *pubkey}, true},
+		{"createAccountNameInvalid", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a12345678b"), common.Name(""), pubkey3}, true},
+		{"createinvalidAccount0", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("\ttesttestf1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount1", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("testtestf1.."), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount2", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.account"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount3", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.founder.1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount4", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.founder.12"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount5", fields{sdb, ast}, args{common.Name("a111222332afork"), common.Name("a111222332afork.founder1234"), common.Name(""), *pubkey}, true},
+	}
+	for _, tt := range tests {
+		am := &AccountManager{
+			sdb: tt.fields.sdb,
+			ast: tt.fields.ast,
+		}
+		if err := am.CreateAccount(tt.args.fromName, tt.args.accountName, tt.args.founderName, 0, 1, tt.args.pubkey, ""); (err != nil) != tt.wantErr {
+			t.Errorf("%q. AccountManager.CreateAccount() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}
+
+func TestAccountManager_AccountHaveCode(t *testing.T) {
+	type fields struct {
+		sdb *state.StateDB
+		ast *asset.Asset
+	}
+
+	field := &fields{sdb, ast}
+
+	pubkey, _ := GeneragePubKey()
+
+	am := &AccountManager{
+		sdb: field.sdb,
+		ast: field.ast,
+	}
+
+	err := am.CreateAccount(common.Name("fractal.founder"), common.Name("a111222332code"), common.Name(""), 0, 1, pubkey, "")
+	if err != nil {
+		t.Errorf("TestAccountManager_AccountHaveCode. AccountManager.CreateAccount() error = %v", err)
+	}
+
+	haveCode, err := am.AccountHaveCode(common.Name("a111222332code"))
+
+	if err != nil || haveCode == true {
+		t.Errorf("TestAccountManager_AccountHaveCode. account have code error = %v", err)
+	}
+
+	_, err = am.SetCode(common.Name("a111222332code"), []byte("abcde123456789"))
+
+	if err != nil {
+		t.Errorf("TestAccountManager_AccountHaveCode. set code error = %v", err)
+	}
+
+	haveCode, err = am.AccountHaveCode(common.Name("a111222332code"))
+
+	if err != nil || haveCode == false {
+		t.Errorf("TestAccountManager_AccountHaveCode. account not have code error = %v", err)
 	}
 }

@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
@@ -294,6 +295,11 @@ func (a *Asset) IssueAssetObject(ao *AssetObject) (uint64, error) {
 
 //IssueAsset issue asset
 func (a *Asset) IssueAsset(assetName string, number uint64, forkID uint64, symbol string, amount *big.Int, dec uint64, founder common.Name, owner common.Name, limit *big.Int, contract common.Name, description string) (uint64, error) {
+	if forkID >= params.ForkID4 {
+		if amount.Cmp(math.MaxBig256) > 0 {
+			return 0, ErrAmountOverMax256
+		}
+	}
 	_, err := a.GetAssetIDByName(assetName)
 	if err != nil && err != ErrAssetNotExist {
 		return 0, err
@@ -355,7 +361,7 @@ func (a *Asset) DestroyAsset(accountName common.Name, assetID uint64, amount *bi
 }
 
 //IncreaseAsset increase asset, upperlimit == 0 means no upper limit
-func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *big.Int) error {
+func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *big.Int, forkID uint64) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
@@ -371,6 +377,11 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *b
 	}
 	if asset == nil {
 		return ErrAssetNotExist
+	}
+	if forkID >= params.ForkID4 {
+		if (new(big.Int).Add(asset.GetAssetAmount(), amount)).Cmp(math.MaxBig256) > 0 {
+			return ErrAmountOverMax256
+		}
 	}
 	// if asset.GetAssetOwner() != accountName {
 	// 	return ErrOwnerMismatch
@@ -398,7 +409,7 @@ func (a *Asset) IncreaseAsset(accountName common.Name, assetID uint64, amount *b
 }
 
 //UpdateAsset change asset info
-func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName common.Name) error {
+func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName common.Name, curForkID uint64) error {
 	if accountName == "" {
 		return ErrAccountNameNull
 	}
@@ -412,8 +423,16 @@ func (a *Asset) UpdateAsset(accountName common.Name, assetID uint64, founderName
 	// if asset.GetAssetOwner() != accountName {
 	// 	return ErrOwnerMismatch
 	// }
-
-	asset.SetAssetFounder(founderName)
+	if curForkID >= params.ForkID4 {
+		if len(founderName.String()) == 0 {
+			assetOwner := asset.GetAssetOwner()
+			asset.SetAssetFounder(assetOwner)
+		} else {
+			asset.SetAssetFounder(founderName)
+		}
+	} else {
+		asset.SetAssetFounder(founderName)
+	}
 	return a.SetAssetObject(asset)
 }
 

@@ -101,6 +101,20 @@ var tomlSettings = toml.Config{
 	},
 }
 
+func clientCallRaw(endpoint string, method string, args ...interface{}) json.RawMessage {
+	client, err := dialRPC(ipcEndpoint)
+	if err != nil {
+		jww.ERROR.Println(err)
+		os.Exit(-1)
+	}
+	msg, err := client.CallRaw(method, args...)
+	if err != nil {
+		jww.ERROR.Println(err)
+		os.Exit(-1)
+	}
+	return msg
+}
+
 func clientCall(endpoint string, result interface{}, method string, args ...interface{}) {
 	client, err := dialRPC(ipcEndpoint)
 	if err != nil {

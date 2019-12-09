@@ -80,6 +80,21 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(chainID *big.Int, b *types.Block, i
 	return fields
 }
 
+func (s *PublicBlockChainAPI) GetBlockByNumberWithPayer(ctx context.Context, blockNr rpc.BlockNumber, fullTx bool) map[string]interface{} {
+	block := s.b.BlockByNumber(ctx, blockNr)
+	if block != nil {
+		response := s.rpcOutputBlockWithPayer(s.b.ChainConfig().ChainID, block, true, fullTx)
+		return response
+	}
+	return nil
+}
+
+func (s *PublicBlockChainAPI) rpcOutputBlockWithPayer(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool) map[string]interface{} {
+	fields := RPCMarshalBlockWithPayer(chainID, b, inclTx, fullTx)
+	fields["totalDifficulty"] = s.b.GetTd(b.Hash())
+	return fields
+}
+
 // GetTransactionByHash returns the transaction for the given hash
 func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) *types.RPCTransaction {
 	// Try to return an already finalized transaction
@@ -126,12 +141,39 @@ func (s *PublicBlockChainAPI) GetTransactionReceipt(ctx context.Context, hash co
 	return receipt.NewRPCReceipt(blockHash, blockNumber, index, tx), nil
 }
 
+func (s *PublicBlockChainAPI) GetTransactionReceiptWithPayer(ctx context.Context, hash common.Hash) (*types.RPCReceiptWithPayer, error) {
+	tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash)
+	if tx == nil {
+		return nil, nil
+	}
+
+	receipts, err := s.b.GetReceipts(ctx, blockHash)
+	if err != nil {
+		return nil, err
+	}
+	if len(receipts) <= int(index) {
+		return nil, nil
+	}
+	receipt := receipts[index]
+	return receipt.NewRPCReceiptWithPayer(blockHash, blockNumber, index, tx), nil
+}
+
 func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
 	r := s.b.GetBlockDetailLog(ctx, blockNr)
 	if r == nil {
 		return nil
 	}
 	block := s.GetBlockByNumber(ctx, blockNr, true)
+	r.Block = block
+	return r
+}
+
+func (s *PublicBlockChainAPI) GetBlockAndResultByNumberWithPayer(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult {
+	r := s.b.GetBlockDetailLog(ctx, blockNr)
+	if r == nil {
+		return nil
+	}
+	block := s.GetBlockByNumberWithPayer(ctx, blockNr, true)
 	r.Block = block
 	return r
 }
@@ -306,7 +348,7 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	// and apply the message.
 	gp := new(common.GasPool).AddGas(math.MaxUint64)
 	action := types.NewAction(args.ActionType, args.From, args.To, 0, assetID, gas, value, args.Data, args.Remark)
-	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, assetID, s.b.ChainConfig(), s.b.Engine())
+	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, action.Sender(), assetID, s.b.ChainConfig(), s.b.Engine())
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}

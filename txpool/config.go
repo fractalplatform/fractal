@@ -48,7 +48,7 @@ type Config struct {
 var DefaultTxPoolConfig = &Config{
 	Journal:        "transactions.rlp",
 	Rejournal:      time.Hour,
-	PriceLimit:     1000000000,
+	PriceLimit:     100000000000,
 	PriceBump:      10,
 	AccountSlots:   128,
 	GlobalSlots:    4096,

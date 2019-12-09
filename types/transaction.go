@@ -45,8 +45,9 @@ type Transaction struct {
 	gasAssetID uint64
 	gasPrice   *big.Int
 	// caches
-	hash atomic.Value
-	size atomic.Value
+	hash       atomic.Value
+	extendHash atomic.Value
+	size       atomic.Value
 }
 
 // NewTransaction initialize a transaction.
@@ -65,8 +66,21 @@ func NewTransaction(assetID uint64, price *big.Int, actions ...*Action) *Transac
 // GasAssetID returns transaction gas asset id.
 func (tx *Transaction) GasAssetID() uint64 { return tx.gasAssetID }
 
-// GasPrice returns transaction gas price.
-func (tx *Transaction) GasPrice() *big.Int { return new(big.Int).Set(tx.gasPrice) }
+func (tx *Transaction) PayerExist() bool {
+	return tx.gasPrice.Cmp(big.NewInt(0)) == 0 && tx.actions[0].fp != nil
+}
+
+// GasPrice returns transaction Higher gas price .
+func (tx *Transaction) GasPrice() *big.Int {
+	gasPrice := new(big.Int)
+	if tx.gasPrice.Cmp(big.NewInt(0)) == 0 {
+		if price := tx.actions[0].PayerGasPrice(); price == nil {
+			return big.NewInt(0)
+		}
+		return gasPrice.Set(tx.actions[0].PayerGasPrice())
+	}
+	return gasPrice.Set(tx.gasPrice)
+}
 
 // Cost returns all actions gasprice * gaslimit.
 func (tx *Transaction) Cost() *big.Int {
@@ -111,8 +125,23 @@ func (tx *Transaction) Hash() common.Hash {
 	if hash := tx.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := RlpHash(tx)
+	var acts [][]interface{}
+	for _, a := range tx.actions {
+		acts = append(acts, a.IgnoreExtend())
+	}
+	v := RlpHash([]interface{}{tx.gasAssetID, tx.gasPrice, acts})
 	tx.hash.Store(v)
+	return v
+}
+
+// ExtensHash hashes the RLP encoding of tx.
+func (tx *Transaction) ExtensHash() common.Hash {
+	if hash := tx.extendHash.Load(); hash != nil {
+		return hash.(common.Hash)
+	}
+
+	v := RlpHash(tx)
+	tx.extendHash.Store(v)
 	return v
 }
 
@@ -128,7 +157,7 @@ func (tx *Transaction) Size() common.StorageSize {
 }
 
 // Check the validity of all fields
-func (tx *Transaction) Check(conf *params.ChainConfig) error {
+func (tx *Transaction) Check(fid uint64, conf *params.ChainConfig) error {
 	if len(tx.actions) == 0 {
 		return ErrEmptyActions
 	}
@@ -143,7 +172,7 @@ func (tx *Transaction) Check(conf *params.ChainConfig) error {
 	}
 
 	for _, action := range tx.actions {
-		if err := action.Check(conf); err != nil {
+		if err := action.Check(fid, conf); err != nil {
 			return err
 		}
 	}
@@ -176,6 +205,36 @@ func (tx *Transaction) NewRPCTransaction(blockHash common.Hash, blockNumber uint
 		ras[index] = action.NewRPCAction(uint64(index))
 	}
 	result.RPCActions = ras
+	result.GasAssetID = tx.gasAssetID
+	result.GasPrice = tx.gasPrice
+	result.GasCost = tx.Cost()
+	return result
+}
+
+type RPCTransactionWithPayer struct {
+	BlockHash           common.Hash           `json:"blockHash"`
+	BlockNumber         uint64                `json:"blockNumber"`
+	Hash                common.Hash           `json:"txHash"`
+	TransactionIndex    uint64                `json:"transactionIndex"`
+	RPCActionsWithPayer []*RPCActionWithPayer `json:"actions"`
+	GasAssetID          uint64                `json:"gasAssetID"`
+	GasPrice            *big.Int              `json:"gasPrice"`
+	GasCost             *big.Int              `json:"gasCost"`
+}
+
+func (tx *Transaction) NewRPCTransactionWithPayer(blockHash common.Hash, blockNumber uint64, index uint64) *RPCTransactionWithPayer {
+	result := new(RPCTransactionWithPayer)
+	if blockHash != (common.Hash{}) {
+		result.BlockHash = blockHash
+		result.BlockNumber = blockNumber
+		result.TransactionIndex = index
+	}
+	result.Hash = tx.Hash()
+	ras := make([]*RPCActionWithPayer, len(tx.GetActions()))
+	for index, action := range tx.GetActions() {
+		ras[index] = action.NewRPCActionWithPayer(uint64(index))
+	}
+	result.RPCActionsWithPayer = ras
 	result.GasAssetID = tx.gasAssetID
 	result.GasPrice = tx.gasPrice
 	result.GasCost = tx.Cost()

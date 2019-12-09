@@ -44,6 +44,7 @@ type StateTransition struct {
 	gas         uint64
 	initialGas  uint64
 	gasPrice    *big.Int
+	gasPayer    common.Name
 	assetID     uint64
 	account     *accountmanager.AccountManager
 	evm         *vm.EVM
@@ -52,7 +53,7 @@ type StateTransition struct {
 
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM,
-	action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64,
+	action *types.Action, gp *common.GasPool, gasPrice *big.Int, gasPayer common.Name, assetID uint64,
 	config *params.ChainConfig, engine EngineContext) *StateTransition {
 	return &StateTransition{
 		engine:      engine,
@@ -61,6 +62,7 @@ func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM,
 		evm:         evm,
 		action:      action,
 		gasPrice:    gasPrice,
+		gasPayer:    gasPayer,
 		assetID:     assetID,
 		account:     accountDB,
 		chainConfig: config,
@@ -69,9 +71,9 @@ func NewStateTransition(accountDB *accountmanager.AccountManager, evm *vm.EVM,
 
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
 func ApplyMessage(accountDB *accountmanager.AccountManager, evm *vm.EVM,
-	action *types.Action, gp *common.GasPool, gasPrice *big.Int,
+	action *types.Action, gp *common.GasPool, gasPrice *big.Int, gasPayer common.Name,
 	assetID uint64, config *params.ChainConfig, engine EngineContext) ([]byte, uint64, bool, error, error) {
-	return NewStateTransition(accountDB, evm, action, gp, gasPrice,
+	return NewStateTransition(accountDB, evm, action, gp, gasPrice, gasPayer,
 		assetID, config, engine).TransitionDb()
 }
 
@@ -89,7 +91,7 @@ func (st *StateTransition) preCheck() error {
 
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
-	balance, err := st.account.GetAccountBalanceByID(st.from, st.assetID, 0)
+	balance, err := st.account.GetAccountBalanceByID(st.gasPayer, st.assetID, 0)
 	if err != nil {
 		return err
 	}
@@ -101,7 +103,7 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.action.Gas()
 	st.initialGas = st.action.Gas()
-	return st.account.TransferAsset(st.from, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
+	return st.account.TransferAsset(st.gasPayer, common.Name(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
 // TransitionDb will transition the state by applying the current message and
@@ -135,9 +137,46 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		ret, st.gas, vmerr = evm.Create(sender, st.action, st.gas)
 	case actionType == types.CallContract:
 		ret, st.gas, vmerr = evm.Call(sender, st.action, st.gas)
+	case actionType == types.Transfer:
+		var fromExtra common.Name
+		if evm.ForkID >= params.ForkID4 {
+			if asset, err := st.account.GetAssetInfoByID(st.action.AssetID()); err == nil {
+				assetContract := asset.GetContract()
+				if len(assetContract) != 0 && assetContract != sender.Name() && assetContract != st.action.Recipient() {
+					var cantransfer bool
+					st.gas, cantransfer = evm.CanTransferContractAsset(sender, st.gas, st.action.AssetID(), asset.GetContract())
+					if cantransfer {
+						fromExtra = asset.GetContract()
+					}
+				}
+			}
+		}
+		if len(fromExtra) == 0 {
+			internalLogs, err := st.account.Process(&types.AccountManagerContext{
+				Action:      st.action,
+				Number:      st.evm.Context.BlockNumber.Uint64(),
+				CurForkID:   st.evm.Context.ForkID,
+				ChainConfig: st.chainConfig,
+			})
+			vmerr = err
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		} else {
+			internalLogs, err := st.account.Process(&types.AccountManagerContext{
+				Action:           st.action,
+				Number:           st.evm.Context.BlockNumber.Uint64(),
+				CurForkID:        st.evm.Context.ForkID,
+				ChainConfig:      st.chainConfig,
+				FromAccountExtra: []common.Name{fromExtra},
+			})
+			vmerr = err
+			evm.InternalTxs = append(evm.InternalTxs, internalLogs...)
+		}
+
 	case actionType == types.RegCandidate:
 		fallthrough
 	case actionType == types.UpdateCandidate:
+		fallthrough
+	case actionType == types.UpdateCandidatePubKey:
 		fallthrough
 	case actionType == types.UnregCandidate:
 		fallthrough
@@ -188,29 +227,61 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	if err := st.distributeFee(); err != nil {
 		return ret, st.gasUsed(), true, err, vmerr
 	}
+
+	// action := types.NewAction(types.Transfer, st.from, common.Name(st.chainConfig.FeeName), 0, st.assetID, 0, big.NewInt(0).SetUint64(st.gasUsed()), nil, nil)
+	// internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "addfee", GasUsed: 0, GasLimit: 0, Depth: 0}
+	// evm.InternalTxs = append(evm.InternalTxs, internalAction)
+
 	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
 }
 
 func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 	switch st.action.Type() {
 	case types.Transfer:
-		assetInfo, _ := st.evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
-		assetName := common.Name(assetInfo.GetAssetName())
-		assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
+		if st.evm.ForkID >= params.ForkID4 {
+			if asset, err := st.account.GetAssetInfoByID(st.action.AssetID()); err == nil {
+				assetContract := asset.GetContract()
+				if len(assetContract) != 0 && assetContract != st.action.Sender() && assetContract != st.action.Recipient() {
+					st.distributeToContract(asset.GetContract(), intrinsicGas)
+				} else {
+					assetInfo, _ := st.evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
+					assetName := common.Name(assetInfo.GetAssetName())
+					assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
 
-		key := vm.DistributeKey{ObjectName: assetName,
-			ObjectType: params.AssetFeeType}
-		assetGas := int64(st.gasUsed() * assetFounderRatio / 100)
-		dGas := vm.DistributeGas{
-			Value:  assetGas,
-			TypeID: params.AssetFeeType}
-		st.evm.FounderGasMap[key] = dGas
+					key := vm.DistributeKey{ObjectName: assetName,
+						ObjectType: params.AssetFeeType}
+					assetGas := int64(st.gasUsed() * assetFounderRatio / 100)
+					dGas := vm.DistributeGas{
+						Value:  assetGas,
+						TypeID: params.AssetFeeType}
+					st.evm.FounderGasMap[key] = dGas
 
-		key = vm.DistributeKey{ObjectName: st.evm.Coinbase,
-			ObjectType: params.CoinbaseFeeType}
-		st.evm.FounderGasMap[key] = vm.DistributeGas{
-			Value:  int64(st.gasUsed()) - assetGas,
-			TypeID: params.CoinbaseFeeType}
+					key = vm.DistributeKey{ObjectName: st.evm.Coinbase,
+						ObjectType: params.CoinbaseFeeType}
+					st.evm.FounderGasMap[key] = vm.DistributeGas{
+						Value:  int64(st.gasUsed()) - assetGas,
+						TypeID: params.CoinbaseFeeType}
+				}
+			}
+		} else {
+			assetInfo, _ := st.evm.AccountDB.GetAssetInfoByID(st.action.AssetID())
+			assetName := common.Name(assetInfo.GetAssetName())
+			assetFounderRatio := st.chainConfig.ChargeCfg.AssetRatio
+
+			key := vm.DistributeKey{ObjectName: assetName,
+				ObjectType: params.AssetFeeType}
+			assetGas := int64(st.gasUsed() * assetFounderRatio / 100)
+			dGas := vm.DistributeGas{
+				Value:  assetGas,
+				TypeID: params.AssetFeeType}
+			st.evm.FounderGasMap[key] = dGas
+
+			key = vm.DistributeKey{ObjectName: st.evm.Coinbase,
+				ObjectType: params.CoinbaseFeeType}
+			st.evm.FounderGasMap[key] = vm.DistributeGas{
+				Value:  int64(st.gasUsed()) - assetGas,
+				TypeID: params.CoinbaseFeeType}
+		}
 
 	case types.CreateContract:
 		fallthrough
@@ -242,6 +313,8 @@ func (st *StateTransition) distributeGas(intrinsicGas uint64) {
 	case types.RegCandidate:
 		fallthrough
 	case types.UpdateCandidate:
+		fallthrough
+	case types.UpdateCandidatePubKey:
 		fallthrough
 	case types.UnregCandidate:
 		fallthrough
@@ -332,7 +405,7 @@ func (st *StateTransition) distributeFee() error {
 
 func (st *StateTransition) refundGas() {
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-	st.account.TransferAsset(common.Name(st.chainConfig.FeeName), st.from, st.assetID, remaining)
+	st.account.TransferAsset(common.Name(st.chainConfig.FeeName), st.gasPayer, st.assetID, remaining)
 	st.gp.AddGas(st.gas)
 }
 

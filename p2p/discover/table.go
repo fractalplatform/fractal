@@ -141,6 +141,11 @@ func (tab *Table) Self() *enode.Node {
 	return unwrapNode(tab.self)
 }
 
+// SeedNodes return all of the seed nodes
+func (tab *Table) SeedNodes() []*enode.Node {
+	return tab.db.QueryAllSeeds()
+}
+
 // ReadRandomNodes fills the given slice with random nodes from the table. The results
 // are guaranteed to be unique for a single invocation, no node will appear twice.
 func (tab *Table) ReadRandomNodes(buf []*enode.Node) (n int) {

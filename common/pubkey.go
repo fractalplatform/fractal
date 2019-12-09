@@ -42,7 +42,7 @@ func BytesToPubKey(b []byte) PubKey {
 // IsHexPubKey verifies whether a string can represent a valid hex-encoded
 //  PubKey or not.
 func IsHexPubKey(s string) bool {
-	if hasHexPrefix(s) {
+	if has0xPrefix(s) {
 		s = s[2:]
 	}
 	return len(s) == 2*(PubKeyLength) && isHex(s)
@@ -73,7 +73,8 @@ func (p PubKey) String() string {
 	return p.Hex()
 }
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the hex representation of p. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (p PubKey) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(p[:]).MarshalText()
 }
@@ -94,3 +95,6 @@ func (p *PubKey) UnmarshalJSON(input []byte) error {
 func (p PubKey) Compare(x PubKey) int {
 	return bytes.Compare(p.Bytes(), x.Bytes())
 }
+
+// EmptyPubKey empty
+var EmptyPubKey PubKey

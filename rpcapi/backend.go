@@ -81,6 +81,7 @@ type Backend interface {
 	RemovePeer(url string) error
 	AddTrustedPeer(url string) error
 	RemoveTrustedPeer(url string) error
+	SeedNodes() []string
 	PeerCount() int
 	Peers() []string
 	BadNodesCount() int

@@ -36,9 +36,10 @@ var (
 	privateKey, _ = crypto.HexToECDSA("289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032")
 	from          = common.Name("fractal.founder")
 	to            = common.Name("fractal.account")
-	aca           = common.Name("accounta")
-	acb           = common.Name("accountb")
-	acc           = common.Name("accountc")
+	aca           = common.Name("fcoinaccounta")
+	acb           = common.Name("fcoinaccountb")
+	acc           = common.Name("fcoinaccountc")
+	acd           = common.Name("fcoinaccountd")
 
 	a_author_0_priv *ecdsa.PrivateKey
 	a_author_2_priv *ecdsa.PrivateKey
@@ -48,17 +49,22 @@ var (
 	c_author_0_priv *ecdsa.PrivateKey
 	c_author_1_priv *ecdsa.PrivateKey
 	c_author_2_priv *ecdsa.PrivateKey
+	d_author_0_priv *ecdsa.PrivateKey
 
 	newPrivateKey_a *ecdsa.PrivateKey
 	newPrivateKey_b *ecdsa.PrivateKey
 	newPrivateKey_c *ecdsa.PrivateKey
-	pubKey_a        common.PubKey
-	pubKey_b        common.PubKey
-	pubKey_c        common.PubKey
+	newPrivateKey_d *ecdsa.PrivateKey
+
+	pubKey_a common.PubKey
+	pubKey_b common.PubKey
+	pubKey_c common.PubKey
+	pubKey_d common.PubKey
 
 	aNonce = uint64(0)
 	bNonce = uint64(0)
 	cNonce = uint64(0)
+	dNonce = uint64(0)
 
 	assetID  = uint64(0)
 	nonce    = uint64(0)
@@ -83,12 +89,18 @@ func generateAccount() {
 	c_author_0_priv = newPrivateKey_c
 	fmt.Println("priv_c ", hex.EncodeToString(crypto.FromECDSA(newPrivateKey_c)), " pubKey_c ", pubKey_c.String())
 
+	newPrivateKey_d, _ = crypto.GenerateKey()
+	pubKey_d = common.BytesToPubKey(crypto.FromECDSAPub(&newPrivateKey_d.PublicKey))
+	d_author_0_priv = newPrivateKey_d
+	fmt.Println("priv_d ", hex.EncodeToString(crypto.FromECDSA(newPrivateKey_d)), " pubKey_d ", pubKey_d.String())
+
 	balance, _ := testcommon.GetAccountBalanceByID(from, assetID)
 	balance.Div(balance, big.NewInt(10))
 
-	aca = common.Name(fmt.Sprintf("accounta%d", nonce))
-	acb = common.Name(fmt.Sprintf("accountb%d", nonce))
-	acc = common.Name(fmt.Sprintf("accountc%d", nonce))
+	aca = common.Name(fmt.Sprintf("fcoinaccounta%d", nonce))
+	acb = common.Name(fmt.Sprintf("fcoinaccountb%d", nonce))
+	acc = common.Name(fmt.Sprintf("fcoinaccountc%d", nonce))
+	acd = common.Name(fmt.Sprintf("fcoinaccountd%d", nonce))
 
 	key := types.MakeKeyPair(privateKey, []uint64{0})
 	acct := &accountmanager.CreateAccountAction{
@@ -97,7 +109,7 @@ func generateAccount() {
 		PublicKey:   pubKey_a,
 	}
 	b, _ := rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, from, to, nonce, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, from, to, nonce, assetID, balance, b, []*types.KeyPair{key}, nil, nil)
 
 	acct = &accountmanager.CreateAccountAction{
 		AccountName: acb,
@@ -105,7 +117,7 @@ func generateAccount() {
 		PublicKey:   pubKey_b,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, from, to, nonce+1, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, from, to, nonce+1, assetID, balance, b, []*types.KeyPair{key}, nil, nil)
 
 	acct = &accountmanager.CreateAccountAction{
 		AccountName: acc,
@@ -113,27 +125,39 @@ func generateAccount() {
 		PublicKey:   pubKey_c,
 	}
 	b, _ = rlp.EncodeToBytes(acct)
-	sendTransferTx(types.CreateAccount, from, to, nonce+2, assetID, balance, b, []*types.KeyPair{key})
+	sendTransferTx(types.CreateAccount, from, to, nonce+2, assetID, balance, b, []*types.KeyPair{key}, nil, nil)
+
+	acct = &accountmanager.CreateAccountAction{
+		AccountName: acd,
+		Founder:     acd,
+		PublicKey:   pubKey_d,
+	}
+	b, _ = rlp.EncodeToBytes(acct)
+	sendTransferTx(types.CreateAccount, from, to, nonce+3, assetID, balance, b, []*types.KeyPair{key}, nil, nil)
 
 	for {
 		time.Sleep(10 * time.Second)
 		aexist, _ := testcommon.CheckAccountIsExist(aca)
 		bexist, _ := testcommon.CheckAccountIsExist(acb)
 		cexist, _ := testcommon.CheckAccountIsExist(acc)
+		dexist, _ := testcommon.CheckAccountIsExist(acd)
 
 		acaAccount, _ := testcommon.GetAccountByName(aca)
 		acbAccount, _ := testcommon.GetAccountByName(acb)
 		accAccount, _ := testcommon.GetAccountByName(acc)
+		acdAccount, _ := testcommon.GetAccountByName(acd)
+
 		fmt.Println("acaAccount version hash", acaAccount.AuthorVersion.Hex())
 		fmt.Println("acbAccount version hash", acbAccount.AuthorVersion.Hex())
 		fmt.Println("accAccount version hash", accAccount.AuthorVersion.Hex())
+		fmt.Println("accAccount version hash", acdAccount.AuthorVersion.Hex())
 
-		if aexist && bexist && cexist {
+		if aexist && bexist && cexist && dexist {
 			break
 		}
 	}
 
-	fmt.Println("aca ", aca, " acb ", acb, " acc ", acc)
+	fmt.Println("aca ", aca, " acb ", acb, " acc ", acc, " acd ", acd)
 }
 
 func init() {
@@ -170,7 +194,8 @@ func addAuthorsForAca() {
 		return
 	}
 	key := types.MakeKeyPair(newPrivateKey_a, []uint64{0})
-	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
+
+	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key}, nil, nil)
 }
 
 func addAuthorsForAcb() {
@@ -192,7 +217,7 @@ func addAuthorsForAcb() {
 		return
 	}
 	key := types.MakeKeyPair(newPrivateKey_b, []uint64{0})
-	sendTransferTx(types.UpdateAccountAuthor, acb, to, bNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
+	sendTransferTx(types.UpdateAccountAuthor, acb, to, bNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key}, nil, nil)
 }
 
 func addAuthorsForAcc() {
@@ -216,7 +241,7 @@ func addAuthorsForAcc() {
 		return
 	}
 	key := types.MakeKeyPair(newPrivateKey_c, []uint64{0})
-	sendTransferTx(types.UpdateAccountAuthor, acc, to, cNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key})
+	sendTransferTx(types.UpdateAccountAuthor, acc, to, cNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key}, nil, nil)
 }
 
 func transferFromA2B() {
@@ -229,7 +254,7 @@ func transferFromA2B() {
 	key_1_2 := types.MakeKeyPair(b_author_2_priv, []uint64{1, 2})
 
 	aNonce++
-	sendTransferTx(types.Transfer, aca, to, aNonce, assetID, big.NewInt(1), nil, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2})
+	sendTransferTx(types.Transfer, aca, to, aNonce, assetID, big.NewInt(1), nil, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2}, nil, nil)
 }
 
 func modifyAUpdateAUthorThreshold() {
@@ -250,7 +275,28 @@ func modifyAUpdateAUthorThreshold() {
 	}
 
 	aNonce++
-	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2, key_0})
+	sendTransferTx(types.UpdateAccountAuthor, aca, to, aNonce, assetID, big.NewInt(0), input, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2, key_0}, nil, nil)
+}
+
+func transferFromA2BWithBAsPayer() {
+	key_1_0 := types.MakeKeyPair(b_author_0_priv, []uint64{1, 0})
+	key_1_1_0 := types.MakeKeyPair(c_author_0_priv, []uint64{1, 1, 0})
+	key_1_1_1 := types.MakeKeyPair(c_author_1_priv, []uint64{1, 1, 1})
+	key_1_1_2 := types.MakeKeyPair(c_author_2_priv, []uint64{1, 1, 2})
+	key_2 := types.MakeKeyPair(a_author_2_priv, []uint64{2})
+	key_3 := types.MakeKeyPair(a_author_3_priv, []uint64{3})
+	key_1_2 := types.MakeKeyPair(b_author_2_priv, []uint64{1, 2})
+
+	gasPrice, _ := testcommon.GasPrice()
+	fp := &types.FeePayer{
+		GasPrice: gasPrice,
+		Payer:    acd,
+		Sign:     &types.Signature{0, make([]*types.SignData, 0)},
+	}
+	payerKey := types.MakeKeyPair(newPrivateKey_d, []uint64{0})
+
+	aNonce++
+	sendTransferTx(types.Transfer, aca, to, aNonce, assetID, big.NewInt(1), nil, []*types.KeyPair{key_1_0, key_1_1_0, key_1_1_1, key_1_1_2, key_2, key_3, key_1_2}, fp, []*types.KeyPair{payerKey})
 }
 
 func main() {
@@ -276,17 +322,29 @@ func main() {
 
 	transferFromA2B()
 	modifyAUpdateAUthorThreshold()
+
+	transferFromA2BWithBAsPayer()
 }
 
-func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair) {
+func sendTransferTx(txType types.ActionType, from, to common.Name, nonce, assetID uint64, value *big.Int, input []byte, keys []*types.KeyPair, fp *types.FeePayer, payerKeys []*types.KeyPair) {
 	action := types.NewAction(txType, from, to, nonce, assetID, gasLimit, value, input, nil)
 	gasprice, _ := testcommon.GasPrice()
+	if fp != nil {
+		gasprice = big.NewInt(0)
+	}
 	tx := types.NewTransaction(0, gasprice, action)
 
 	signer := types.MakeSigner(big.NewInt(1))
 	err := types.SignActionWithMultiKey(action, tx, signer, 0, keys)
 	if err != nil {
 		jww.ERROR.Fatalln(err)
+	}
+
+	if fp != nil {
+		err = types.SignPayerActionWithMultiKey(action, tx, signer, fp, 0, payerKeys)
+		if err != nil {
+			jww.ERROR.Fatalln(err)
+		}
 	}
 
 	rawtx, err := rlp.EncodeToBytes(tx)

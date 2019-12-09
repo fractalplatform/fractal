@@ -17,6 +17,8 @@
 package types
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -64,6 +66,36 @@ func (a *ActionResult) NewRPCActionResult(aType ActionType) *RPCActionResult {
 		GasUsed:    a.GasUsed,
 		GasAllot:   a.GasAllot,
 		Error:      a.Error,
+	}
+}
+
+type RPCActionResultWithPayer struct {
+	ActionType    uint64             `json:"actionType"`
+	Status        uint64             `json:"status"`
+	Index         uint64             `json:"index"`
+	GasUsed       uint64             `json:"gasUsed"`
+	GasAllot      []*GasDistribution `json:"gasAllot"`
+	Error         string             `json:"error"`
+	Payer         common.Name        `json:"payer"`
+	PayerGasPrice *big.Int           `json:"payerGasPrice"`
+}
+
+// NewRPCActionResult returns a ActionResult that will serialize to the RPC.
+func (a *ActionResult) NewRPCActionResultWithPayer(action *Action, gasPrice *big.Int) *RPCActionResultWithPayer {
+	var payer = action.Sender()
+	var price = gasPrice
+	if action.fp != nil {
+		payer = action.fp.Payer
+	}
+	return &RPCActionResultWithPayer{
+		ActionType:    uint64(action.Type()),
+		Status:        a.Status,
+		Index:         a.Index,
+		GasUsed:       a.GasUsed,
+		GasAllot:      a.GasAllot,
+		Error:         a.Error,
+		Payer:         payer,
+		PayerGasPrice: price,
 	}
 }
 
@@ -125,6 +157,48 @@ func (r *Receipt) NewRPCReceipt(blockHash common.Hash, blockNumber uint64, index
 	var rpcActionResults []*RPCActionResult
 	for i, a := range tx.GetActions() {
 		rpcActionResults = append(rpcActionResults, r.ActionResults[i].NewRPCActionResult(a.Type()))
+	}
+	result.ActionResults = rpcActionResults
+
+	var rlogs []*RPCLog
+	for _, l := range r.Logs {
+		rlogs = append(rlogs, l.NewRPCLog())
+	}
+	result.Logs = rlogs
+
+	return result
+}
+
+// RPCReceipt that will serialize to the RPC representation of a Receipt.
+type RPCReceiptWithPayer struct {
+	BlockHash         common.Hash                 `json:"blockHash"`
+	BlockNumber       uint64                      `json:"blockNumber"`
+	Hash              common.Hash                 `json:"txHash"`
+	TransactionIndex  uint64                      `json:"transactionIndex"`
+	PostState         hexutil.Bytes               `json:"postState"`
+	ActionResults     []*RPCActionResultWithPayer `json:"actionResults"`
+	CumulativeGasUsed uint64                      `json:"cumulativeGasUsed"`
+	TotalGasUsed      uint64                      `json:"totalGasUsed"`
+	Bloom             Bloom                       `json:"logsBloom"`
+	Logs              []*RPCLog                   `json:"logs"`
+}
+
+// NewRPCReceipt returns a Receipt that will serialize to the RPC.
+func (r *Receipt) NewRPCReceiptWithPayer(blockHash common.Hash, blockNumber uint64, index uint64, tx *Transaction) *RPCReceiptWithPayer {
+	result := &RPCReceiptWithPayer{
+		BlockHash:         blockHash,
+		BlockNumber:       blockNumber,
+		Hash:              tx.Hash(),
+		TransactionIndex:  index,
+		PostState:         hexutil.Bytes(r.PostState),
+		CumulativeGasUsed: r.CumulativeGasUsed,
+		TotalGasUsed:      r.TotalGasUsed,
+		Bloom:             r.Bloom,
+	}
+
+	var rpcActionResults []*RPCActionResultWithPayer
+	for i, a := range tx.GetActions() {
+		rpcActionResults = append(rpcActionResults, r.ActionResults[i].NewRPCActionResultWithPayer(a, tx.GasPrice()))
 	}
 	result.ActionResults = rpcActionResults
 

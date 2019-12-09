@@ -136,6 +136,7 @@ func SetAccountNameConfig(config *Config) bool {
 	accountNameLength = config.AccountNameMaxLength
 	return true
 }
+
 func GetAccountNameRegExp() *regexp.Regexp {
 	return acctRegExp
 }
@@ -619,6 +620,7 @@ func (am *AccountManager) getParentAccount(accountName common.Name, parentIndex 
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) error {
+	authorVersion := make(map[common.Name]common.Hash)
 	for _, action := range tx.GetActions() {
 		pubs, err := types.RecoverMultiKey(signer, action, tx)
 		if err != nil {
@@ -646,7 +648,6 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 			}
 		}
 
-		authorVersion := make(map[common.Name]common.Hash)
 		for name, acctAuthor := range recoverRes.acctAuthors {
 			var count uint64
 			for _, weight := range acctAuthor.indexWeight {
@@ -663,6 +664,53 @@ func (am *AccountManager) RecoverTx(signer types.Signer, tx *types.Transaction) 
 		}
 
 		types.StoreAuthorCache(action, authorVersion)
+	}
+	if tx.PayerExist() {
+		for _, action := range tx.GetActions() {
+			pubs, err := types.RecoverPayerMultiKey(signer, action, tx)
+			if err != nil {
+				return err
+			}
+
+			if uint64(len(pubs)) > params.MaxSignLength {
+				return fmt.Errorf("exceed max sign length, want most %d, actual is %d", params.MaxSignLength, len(pubs))
+			}
+
+			sig := action.PayerSignature()
+			if sig == nil {
+				return fmt.Errorf("payer signature is nil")
+			}
+			parentIndex := sig.ParentIndex
+			signSender, err := am.getParentAccount(action.Payer(), parentIndex)
+			if err != nil {
+				return err
+			}
+			recoverRes := &recoverActionResult{make(map[common.Name]*accountAuthor)}
+			for i, pub := range pubs {
+				index := sig.SignData[uint64(i)].Index
+				if uint64(len(index)) > params.MaxSignDepth {
+					return fmt.Errorf("exceed max sign depth, want most %d, actual is %d", params.MaxSignDepth, len(index))
+				}
+
+				if err := am.ValidSign(signSender, pub, index, recoverRes); err != nil {
+					return err
+				}
+			}
+
+			for name, acctAuthor := range recoverRes.acctAuthors {
+				var count uint64
+				for _, weight := range acctAuthor.indexWeight {
+					count += weight
+				}
+				threshold := acctAuthor.threshold
+				if count < threshold {
+					return fmt.Errorf("account %s want threshold %d, but actual is %d", name, threshold, count)
+				}
+				authorVersion[name] = acctAuthor.version
+			}
+
+			types.StoreAuthorCache(action, authorVersion)
+		}
 	}
 	return nil
 }
@@ -1337,12 +1385,12 @@ func (am *AccountManager) IssueAsset(fromName common.Name, asset IssueAsset, num
 }
 
 //IncAsset2Acct increase asset and add amount to accout balance
-func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int) error {
+func (am *AccountManager) IncAsset2Acct(fromName common.Name, toName common.Name, assetID uint64, amount *big.Int, forkID uint64) error {
 	if err := am.ast.CheckOwner(fromName, assetID); err != nil {
 		return err
 	}
 
-	if err := am.ast.IncreaseAsset(fromName, assetID, amount); err != nil {
+	if err := am.ast.IncreaseAsset(fromName, assetID, amount, forkID); err != nil {
 		return err
 	}
 	return nil
@@ -1365,7 +1413,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 	var fromAccountExtra []common.Name
 	fromAccountExtra = append(fromAccountExtra, accountManagerContext.FromAccountExtra...)
 
-	if err := action.Check(accountManagerContext.ChainConfig); err != nil {
+	if err := action.Check(curForkID, accountManagerContext.ChainConfig); err != nil {
 		return nil, err
 	}
 
@@ -1458,7 +1506,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, ErrNegativeAmount
 		}
 
-		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetID, inc.Amount); err != nil {
+		if err := am.IncAsset2Acct(action.Sender(), inc.To, inc.AssetID, inc.Amount, curForkID); err != nil {
 			return nil, err
 		}
 
@@ -1508,7 +1556,7 @@ func (am *AccountManager) process(accountManagerContext *types.AccountManagerCon
 			return nil, err
 		}
 
-		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder); err != nil {
+		if err := am.ast.UpdateAsset(action.Sender(), asset.AssetID, asset.Founder, curForkID); err != nil {
 			return nil, err
 		}
 	case types.SetAssetOwner:

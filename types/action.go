@@ -80,6 +80,9 @@ const (
 	RefundCandidate
 	// VoteCandidate repesents voter vote candidate action.
 	VoteCandidate
+
+	// UpdateCandidatePubKey repesents update candidate action.
+	UpdateCandidatePubKey
 )
 
 const (
@@ -108,6 +111,12 @@ type SignData struct {
 	Index []uint64
 }
 
+type FeePayer struct {
+	GasPrice *big.Int
+	Payer    common.Name
+	Sign     *Signature
+}
+
 type actionData struct {
 	AType    ActionType
 	Nonce    uint64
@@ -118,16 +127,20 @@ type actionData struct {
 	Amount   *big.Int
 	Payload  []byte
 	Remark   []byte
+	Sign     *Signature
 
-	Sign *Signature
+	Extend []rlp.RawValue `rlp:"tail"`
 }
 
 // Action represents an entire action in the transaction.
 type Action struct {
 	data actionData
 	// cache
+	fp            *FeePayer
 	hash          atomic.Value
+	extendHash    atomic.Value
 	senderPubkeys atomic.Value
+	payerPubkeys  atomic.Value
 	author        atomic.Value
 }
 
@@ -147,6 +160,7 @@ func NewAction(actionType ActionType, from, to common.Name, nonce, assetID, gasL
 		Payload:  payload,
 		Remark:   remark,
 		Sign:     &Signature{0, make([]*SignData, 0)},
+		Extend:   make([]rlp.RawValue, 0),
 	}
 	if amount != nil {
 		data.Amount.Set(amount)
@@ -166,8 +180,40 @@ func (a *Action) GetSignParent() uint64 {
 	return a.data.Sign.ParentIndex
 }
 
+func (a *Action) PayerIsExist() bool {
+	return a.fp != nil
+}
+
+func (a *Action) PayerGasPrice() *big.Int {
+	if a.fp != nil {
+		return a.fp.GasPrice
+	}
+	return nil
+}
+
+func (a *Action) Payer() common.Name {
+	if a.fp != nil {
+		return a.fp.Payer
+	}
+	return common.Name("")
+}
+
+func (a *Action) PayerSignature() *Signature {
+	if a.fp != nil {
+		return a.fp.Sign
+	}
+	return nil
+}
+
+func (a *Action) GetFeePayerSign() []*SignData {
+	if a.fp != nil {
+		return a.fp.Sign.SignData
+	}
+	return nil
+}
+
 // Check the validity of all fields
-func (a *Action) Check(conf *params.ChainConfig) error {
+func (a *Action) Check(fid uint64, conf *params.ChainConfig) error {
 	//check To
 	switch a.Type() {
 	case CreateContract:
@@ -203,6 +249,11 @@ func (a *Action) Check(conf *params.ChainConfig) error {
 		}
 	case Transfer:
 		//dpos
+	case UpdateCandidatePubKey:
+		if fid < params.ForkID4 {
+			return fmt.Errorf("Receipt undefined")
+		}
+		fallthrough
 	case RegCandidate:
 		fallthrough
 	case UpdateCandidate:
@@ -279,14 +330,50 @@ func (a *Action) Gas() uint64 { return a.data.GasLimit }
 // Value returns action's Value.
 func (a *Action) Value() *big.Int { return new(big.Int).Set(a.data.Amount) }
 
+func (a *Action) Extend() []rlp.RawValue { return a.data.Extend }
+
+// IgnoreExtend returns ignore extend
+func (a *Action) IgnoreExtend() []interface{} {
+	return []interface{}{
+		a.data.AType,
+		a.data.Nonce,
+		a.data.AssetID,
+		a.data.From,
+		a.data.To,
+		a.data.GasLimit,
+		a.data.Amount,
+		a.data.Payload,
+		a.data.Remark,
+		a.data.Sign,
+	}
+}
+
 // EncodeRLP implements rlp.Encoder
 func (a *Action) EncodeRLP(w io.Writer) error {
+	if a.fp != nil {
+		value, err := rlp.EncodeToBytes(a.fp)
+		if err != nil {
+			return err
+		}
+		a.data.Extend = []rlp.RawValue{value}
+	}
+
 	return rlp.Encode(w, &a.data)
 }
 
 // DecodeRLP implements rlp.Decoder
 func (a *Action) DecodeRLP(s *rlp.Stream) error {
-	return s.Decode(&a.data)
+	if err := s.Decode(&a.data); err != nil {
+		return err
+	}
+
+	if len(a.data.Extend) != 0 {
+		a.fp = new(FeePayer)
+		return rlp.DecodeBytes(a.data.Extend[0], a.fp)
+
+	}
+
+	return nil
 }
 
 // ChainID returns which chain id this action was signed for (if at all)
@@ -299,8 +386,18 @@ func (a *Action) Hash() common.Hash {
 	if hash := a.hash.Load(); hash != nil {
 		return hash.(common.Hash)
 	}
-	v := RlpHash(a)
+	v := RlpHash(a.IgnoreExtend())
 	a.hash.Store(v)
+	return v
+}
+
+// ExtendHash hashes the RLP encoding of action.
+func (a *Action) ExtendHash() common.Hash {
+	if hash := a.extendHash.Load(); hash != nil {
+		return hash.(common.Hash)
+	}
+	v := RlpHash(a)
+	a.extendHash.Store(v)
 	return v
 }
 
@@ -314,9 +411,30 @@ func (a *Action) WithSignature(signer Signer, sig []byte, index []uint64) error 
 	return nil
 }
 
-// WithSignature returns a new transaction with the given signature.
+// WithParentIndex returns a new transaction with the given signature.
 func (a *Action) WithParentIndex(parentIndex uint64) {
 	a.data.Sign.ParentIndex = parentIndex
+}
+
+func (f *FeePayer) WithSignature(signer Signer, sig []byte, index []uint64) error {
+	r, s, v, err := signer.SignatureValues(sig)
+	if err != nil {
+		return err
+	}
+	f.Sign.SignData = append(f.Sign.SignData, &SignData{R: r, S: s, V: v, Index: index})
+	return nil
+}
+
+func (f *FeePayer) WithParentIndex(parentIndex uint64) {
+	f.Sign.ParentIndex = parentIndex
+}
+
+func (f *FeePayer) GetSignParent() uint64 {
+	return f.Sign.ParentIndex
+}
+
+func (f *FeePayer) GetSignIndex(i uint64) []uint64 {
+	return f.Sign.SignData[i].Index
 }
 
 // RPCAction represents a action that will serialize to the RPC representation of a action.
@@ -353,6 +471,57 @@ func (a *Action) NewRPCAction(index uint64) *RPCAction {
 		Hash:       a.Hash(),
 		ActionIdex: index,
 	}
+}
+
+type RPCActionWithPayer struct {
+	Type             uint64        `json:"type"`
+	Nonce            uint64        `json:"nonce"`
+	From             common.Name   `json:"from"`
+	To               common.Name   `json:"to"`
+	AssetID          uint64        `json:"assetID"`
+	GasLimit         uint64        `json:"gas"`
+	Amount           *big.Int      `json:"value"`
+	Remark           hexutil.Bytes `json:"remark"`
+	Payload          hexutil.Bytes `json:"payload"`
+	Hash             common.Hash   `json:"actionHash"`
+	ActionIdex       uint64        `json:"actionIndex"`
+	Payer            common.Name   `json:"payer"`
+	PayerGasPrice    *big.Int      `json:"payerGasPrice"`
+	ParentIndex      uint64        `json:"parentIndex"`
+	PayerParentIndex uint64        `json:"payerParentIndex"`
+}
+
+func (a *RPCActionWithPayer) SetHash(hash common.Hash) {
+	a.Hash = hash
+}
+
+func (a *Action) NewRPCActionWithPayer(index uint64) *RPCActionWithPayer {
+	var payer common.Name
+	var price *big.Int
+	if a.fp != nil {
+		payer = a.fp.Payer
+		price = a.fp.GasPrice
+	}
+	ap := &RPCActionWithPayer{
+		Type:          uint64(a.Type()),
+		Nonce:         a.Nonce(),
+		From:          a.Sender(),
+		To:            a.Recipient(),
+		AssetID:       a.AssetID(),
+		GasLimit:      a.Gas(),
+		Amount:        a.Value(),
+		Remark:        hexutil.Bytes(a.Remark()),
+		Payload:       hexutil.Bytes(a.Data()),
+		Hash:          a.Hash(),
+		ActionIdex:    index,
+		Payer:         payer,
+		PayerGasPrice: price,
+		ParentIndex:   a.GetSignParent(),
+	}
+	if a.fp != nil {
+		ap.PayerParentIndex = a.fp.GetSignParent()
+	}
+	return ap
 }
 
 // deriveChainID derives the chain id from the given v parameter

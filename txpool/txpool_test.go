@@ -44,6 +44,67 @@ func TestConfigCheck(t *testing.T) {
 	assert.Equal(t, cfg.check(), *DefaultTxPoolConfig)
 }
 
+// func TestAddPayerTx(t *testing.T) {
+// 	var (
+// 		statedb, _ = state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
+// 		manager, _ = am.NewAccountManager(statedb)
+// 		fname      = common.Name("fromname")
+// 		tname      = common.Name("totestname")
+// 		fkey       = generateAccount(t, fname, manager)
+// 		tkey       = generateAccount(t, tname, manager)
+// 		asset      = asset.NewAsset(statedb)
+// 	)
+
+// 	// issue asset
+// 	if _, err := asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	// add balance
+// 	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	if err := manager.AddAccountBalanceByName(tname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
+// 	tx0 := pricedTransaction(0, fname, tname, 109000, big.NewInt(0), fkey)
+// 	tx1 := extendTransaction(0, tname, fname, tname, 109000, fkey, tkey)
+
+// 	params.DefaultChainconfig.SysTokenID = 0
+
+// 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
+// 	defer pool.Stop()
+
+// 	nonce, err := pool.State().GetNonce(fname)
+// 	if err != nil {
+// 		t.Fatal("Invalid getNonce ", err)
+// 	}
+// 	if nonce != 0 {
+// 		t.Fatalf("Invalid nonce, want 0, got %d", nonce)
+// 	}
+
+// 	errs := pool.addRemotesSync([]*types.Transaction{tx0, tx1})
+
+// 	t.Log(errs)
+// 	nonce, err = pool.State().GetNonce(fname)
+// 	if err != nil {
+// 		t.Fatal("Invalid getNonce ", err)
+// 	}
+
+// 	if nonce != 1 {
+// 		t.Fatalf("Invalid nonce, want 1, got %d", nonce)
+// 	}
+
+// 	result := pool.Get(tx1.Hash())
+
+// 	if !result.PayerExist() {
+// 		t.Fatal("add payer tx failed")
+// 	}
+// }
+
 // This test simulates a scenario where a new block is imported during a
 // state reset and tests whether the pending state is in sync with the
 // block head event that initiated the resetState().

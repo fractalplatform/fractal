@@ -55,7 +55,7 @@ func HexToAddress(s string) Address { return BytesToAddress(FromHex(s)) }
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 //  address or not.
 func IsHexAddress(s string) bool {
-	if hasHexPrefix(s) {
+	if has0xPrefix(s) {
 		s = s[2:]
 	}
 	return len(s) == 2*AddressLength && isHex(s)
@@ -113,7 +113,8 @@ func (a *Address) SetBytes(b []byte) {
 	copy(a[AddressLength-len(b):], b)
 }
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the hex representation of a. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (a Address) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(a[:]).MarshalText()
 }
@@ -140,7 +141,8 @@ func (a *UnprefixedAddress) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedUnprefixedText("UnprefixedAddress", input, a[:])
 }
 
-// MarshalText encodes the address as hex.
+// MarshalText encodes the address as hex.Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (a UnprefixedAddress) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(a[:])), nil
 }

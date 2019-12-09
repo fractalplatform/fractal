@@ -55,7 +55,8 @@ var (
 
 	errParentBlock = errors.New("parent block not exist")
 
-	ErrActionInvalid = errors.New("action field invalid")
+	ErrActionInvalid   = errors.New("action field invalid")
+	errPayerNotSupport = errors.New("payer not support")
 )
 
 // GenesisMismatchError is raised when trying to overwrite an existing

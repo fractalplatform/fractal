@@ -78,3 +78,44 @@ func RPCMarshalBlock(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool)
 
 	return fields
 }
+
+func RPCMarshalBlockWithPayer(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool) map[string]interface{} {
+	head := b.Header() // copies the header once
+	fields := map[string]interface{}{
+		"number":               head.Number,
+		"hash":                 b.Hash(),
+		"proposedIrreversible": head.ProposedIrreversible,
+		"parentHash":           head.ParentHash,
+		"logsBloom":            head.Bloom,
+		"stateRoot":            head.Root,
+		"miner":                head.Coinbase,
+		"difficulty":           head.Difficulty,
+		"extraData":            hexutil.Bytes(head.Extra),
+		"size":                 b.Size(),
+		"gasLimit":             head.GasLimit,
+		"gasUsed":              head.GasUsed,
+		"timestamp":            head.Time,
+		"transactionsRoot":     head.TxsRoot,
+		"receiptsRoot":         head.ReceiptsRoot,
+		"forkID":               head.ForkID,
+	}
+
+	if inclTx {
+		formatTx := func(tx *types.Transaction, index uint64) interface{} {
+			return tx.Hash()
+		}
+		if fullTx {
+			formatTx = func(tx *types.Transaction, index uint64) interface{} {
+				return tx.NewRPCTransactionWithPayer(b.Hash(), b.NumberU64(), index)
+			}
+		}
+		txs := b.Transactions()
+		transactions := make([]interface{}, len(txs))
+		for i, tx := range txs {
+			transactions[i] = formatTx(tx, uint64(i))
+		}
+		fields["transactions"] = transactions
+	}
+
+	return fields
+}

@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/accountmanager"
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/consensus"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -100,7 +101,6 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 	if assetID != tx.GasAssetID() {
 		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.Config().SysTokenID)
 	}
-	gasPrice := tx.GasPrice()
 	//timer for vm exec overtime
 	var t *time.Timer
 	//
@@ -125,11 +125,26 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			return nil, 0, ErrNonceTooLow
 		}
 
+		var gasPayer = action.Sender()
+		var gasPrice = tx.GasPrice()
+		if tx.PayerExist() {
+			if header.CurForkID() >= params.ForkID4 {
+				gasPayer = action.Payer()
+				gasPrice = action.PayerGasPrice()
+			} else {
+				return nil, 0, errPayerNotSupport
+			}
+		} else {
+			if action.PayerIsExist() {
+				return nil, 0, errPayerNotSupport
+			}
+		}
+
 		evmcontext := &EvmContext{
 			ChainContext:  p.bc,
 			EngineContext: p.engine,
 		}
-		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
+		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, gasPrice, header, evmcontext, author)
 		vmenv := vm.NewEVM(context, accountDB, statedb, config, cfg)
 
 		//will abort the vm if overtime
@@ -139,7 +154,7 @@ func (p *StateProcessor) ApplyTransaction(author *common.Name, gp *common.GasPoo
 			})
 		}
 
-		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, assetID, config, p.engine)
+		_, gas, failed, err, vmerr := ApplyMessage(accountDB, vmenv, action, gp, gasPrice, gasPayer, assetID, config, p.engine)
 
 		if false == cfg.EndTime.IsZero() {
 			//close timer

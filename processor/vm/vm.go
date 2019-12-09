@@ -30,6 +30,8 @@ import (
 	"github.com/fractalplatform/fractal/types"
 )
 
+var contractAssetTransferable = common.Hex2Bytes("92ff0d31")
+
 type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
@@ -312,7 +314,21 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		}
 	}
 
-	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+	var fromExtra common.Name
+	if evm.ForkID >= params.ForkID4 {
+		if asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID()); err == nil {
+			assetContract := asset.GetContract()
+			if len(assetContract) != 0 && assetContract != caller.Name() && assetContract != action.Recipient() {
+				var cantransfer bool
+				gas, cantransfer = evm.CanTransferContractAsset(caller, gas, action.AssetID(), assetContract)
+				if cantransfer {
+					fromExtra = assetContract
+				}
+			}
+		}
+	}
+
+	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), fromExtra); err != nil {
 		return nil, gas, err
 	}
 
@@ -564,9 +580,17 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	snapshot := evm.StateDB.Snapshot()
 
 	if b, err := evm.AccountDB.AccountHaveCode(contractName); err != nil {
-		return nil, 0, err
+		if evm.ForkID >= params.ForkID4 {
+			return nil, gas, err
+		} else {
+			return nil, 0, err
+		}
 	} else if b {
-		return nil, 0, ErrContractCodeCollision
+		if evm.ForkID >= params.ForkID4 {
+			return nil, gas, ErrContractCodeCollision
+		} else {
+			return nil, 0, ErrContractCodeCollision
+		}
 	}
 
 	if err := evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
@@ -627,6 +651,57 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 
 	evm.distributeContractGas(gas-contract.Gas, contractName, contractName)
 	return ret, contract.Gas, err
+}
+
+func (evm *EVM) CanTransferContractAsset(caller ContractRef, gas uint64, assetID uint64, assetContract common.Name) (uint64, bool) {
+	// Fail if we're trying to execute above the call depth limit
+	if evm.depth > int(params.CallCreateDepth) {
+		return gas, false
+	}
+	var (
+		to       = AccountRef(assetContract)
+		snapshot = evm.StateDB.Snapshot()
+	)
+
+	// Initialise a new contract and set the code that is to be used by the EVM.
+	// The contract is a scoped environment for this execution context only.
+	contract := NewContract(caller, to, big.NewInt(0), gas, assetID)
+	acct, err := evm.AccountDB.GetAccountByName(assetContract)
+	if err != nil {
+		return 0, false
+	}
+	if acct == nil {
+		return 0, false
+	}
+	codeHash, err := acct.GetCodeHash()
+	if err != nil {
+		return 0, false
+	}
+	code, _ := acct.GetCode()
+	contract.SetCallCode(&assetContract, codeHash, code)
+
+	ret, err := run(evm, contract, contractAssetTransferable)
+	runGas := gas - contract.Gas
+
+	evm.distributeContractGas(runGas, assetContract, caller.Name())
+
+	// When an error was returned by the EVM or when setting the creation code
+	// above we revert to the snapshot and consume any gas remaining. Additionally
+	// when we're in homestead this also counts for code storage gas errors.
+	if err != nil {
+		evm.StateDB.RevertToSnapshot(snapshot)
+		if err != errExecutionReverted {
+			contract.UseGas(contract.Gas)
+		}
+	}
+	actualUsedGas := gas - contract.Gas
+	evm.distributeGasByScale(actualUsedGas, runGas)
+
+	if new(big.Int).SetBytes(ret).Cmp(big.NewInt(0)) > 0 && err == nil {
+		return contract.Gas, true
+	} else {
+		return contract.Gas, false
+	}
 }
 
 // ChainConfig returns the environment's chain configuration

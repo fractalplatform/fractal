@@ -23,6 +23,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
 )
 
@@ -54,12 +55,14 @@ type IDB interface {
 	GetTakeOver() (uint64, error)
 
 	Undelegate(string, *big.Int) (*types.Action, error)
-	IncAsset2Acct(string, string, *big.Int) (*types.Action, error)
+	IncAsset2Acct(string, string, *big.Int, uint64) (*types.Action, error)
 	GetBalanceByTime(name string, timestamp uint64) (*big.Int, error)
 	GetCandidateInfoByTime(epoch uint64, name string, timestamp uint64) (*CandidateInfo, error)
+
+	CanMine(name string, pub []byte) error
 }
 
-// CandidateType candiate status
+// CandidateType candidate status
 type CandidateType uint64
 
 const (
@@ -75,7 +78,8 @@ const (
 	Unkown
 )
 
-// MarshalText returns the hex representation of a.
+// MarshalText returns the hex representation of a. Implements encoding.TextMarshaler
+// is supported by most codec implementations (e.g. for yaml or toml).
 func (t CandidateType) MarshalText() ([]byte, error) {
 	return t.MarshalJSON()
 }
@@ -127,7 +131,7 @@ func (t *CandidateType) UnmarshalJSON(data []byte) error {
 type CandidateInfo struct {
 	Epoch         uint64        `json:"epoch"`
 	Name          string        `json:"name"`          // candidate name
-	URL           string        `json:"url"`           // candidate url
+	Info          string        `json:"info"`          // candidate url
 	Quantity      *big.Int      `json:"quantity"`      // candidate stake quantity
 	TotalQuantity *big.Int      `json:"totalQuantity"` // candidate total stake quantity
 	Number        uint64        `json:"number"`        // timestamp
@@ -136,19 +140,21 @@ type CandidateInfo struct {
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
 	NextKey       string        `json:"-"`
+	PubKey        common.PubKey `json:"pubkey" rlp:"-"`
 }
 
 func (candidateInfo *CandidateInfo) copy() *CandidateInfo {
 	return &CandidateInfo{
 		Epoch:         candidateInfo.Epoch,
 		Name:          candidateInfo.Name,
-		URL:           candidateInfo.URL,
+		Info:          candidateInfo.Info,
 		Quantity:      candidateInfo.Quantity,
 		TotalQuantity: candidateInfo.TotalQuantity,
 		Number:        candidateInfo.Number,
 		Counter:       candidateInfo.Counter,
 		ActualCounter: candidateInfo.ActualCounter,
 		Type:          candidateInfo.Type,
+		PubKey:        candidateInfo.PubKey,
 	}
 }
 
@@ -209,7 +215,7 @@ type CandidateInfoForBrowser struct {
 	ActualCounter    uint64 `json:"actualCounter"`
 	NowCounter       uint64 `json:"nowShouldCounter"`
 	NowActualCounter uint64 `json:"nowActualCounter"`
-	// URL              string `json:"url"`
+	// Info              string `json:"info"`
 	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
@@ -218,7 +224,7 @@ type VoterInfoFractal struct {
 	Holder        string `json:"holder"`
 	Quantity      string `json:"quantity"`
 	TotalQuantity string `json:"totalQuantity"`
-	URL           string `json:"url"`
+	Info          string `json:"info"`
 	State         uint64 `json:"state"`
 	Vote          uint64 `json:"vote"`
 	CanVote       bool   `json:"canVote"`
@@ -236,6 +242,18 @@ type Epochs struct {
 type Epoch struct {
 	Start uint64 `json:"start"`
 	Epoch uint64 `json:"epoch"`
+}
+
+// VoteEpochs array of epcho
+type VoteEpochs struct {
+	Data []*VoteEpoch `json:"data"`
+}
+
+// VoteEpoch timestamp & epoch number & dpos status
+type VoteEpoch struct {
+	Start uint64 `json:"start"`
+	Epoch uint64 `json:"epoch"`
+	Dpos  uint64 `json:"dpos"`
 }
 
 func (prods CandidateInfoArray) Len() int {

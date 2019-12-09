@@ -61,7 +61,7 @@ func (ldb *levelDB) Delegate(string, *big.Int) error {
 func (ldb *levelDB) Undelegate(string, *big.Int) (*types.Action, error) {
 	return nil, nil
 }
-func (ldb *levelDB) IncAsset2Acct(string, string, *big.Int) (*types.Action, error) {
+func (ldb *levelDB) IncAsset2Acct(string, string, *big.Int, uint64) (*types.Action, error) {
 	return nil, nil
 }
 func (ldb *levelDB) GetSnapshot(string, uint64) ([]byte, error) {
@@ -70,6 +70,11 @@ func (ldb *levelDB) GetSnapshot(string, uint64) ([]byte, error) {
 func (ldb *levelDB) GetBalanceByTime(name string, timestamp uint64) (*big.Int, error) {
 	return new(big.Int).Mul(big.NewInt(1000000000), DefaultConfig.decimals()), nil
 }
+
+func (ldb *levelDB) IsValidSign(name string, pubkey []byte) error {
+	return nil
+}
+
 func newTestLDB() (*levelDB, func()) {
 	dirname, err := ioutil.TempDir(os.TempDir(), "dpos_test_")
 	if err != nil {
@@ -119,7 +124,7 @@ func TestLDBCandidate(t *testing.T) {
 		candidateInfo := &CandidateInfo{
 			Epoch:         uint64(index),
 			Name:          candidate,
-			URL:           fmt.Sprintf("www.%v.com", candidate),
+			Info:          fmt.Sprintf("www.%v.com", candidate),
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 		}
@@ -281,7 +286,7 @@ func TestLDBVoter(t *testing.T) {
 		candidateInfo := &CandidateInfo{
 			Epoch:         0,
 			Name:          candidate,
-			URL:           fmt.Sprintf("www.%v.com", candidate),
+			Info:          fmt.Sprintf("www.%v.com", candidate),
 			Quantity:      big.NewInt(0),
 			TotalQuantity: big.NewInt(0),
 		}

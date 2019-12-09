@@ -14,6 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 
+# default target is 'all'
+all:
+
 SHELL:=/bin/bash
 REPO := $(shell pwd)
 GOFILES_NOVENDOR := $(shell GOFLAGS="-mod=vendor" go list -f "{{.Dir}}" ./...)
@@ -24,7 +27,7 @@ export GOFLAGS=-mod=vendor
 define build
 	@go build -ldflags " \
 	-X github.com/fractalplatform/fractal/cmd/utils.commit=$(shell cat commit_hash.txt) \
-	-X github.com/fractalplatform/fractal/cmd/utils.date=$(shell date '+%Y-%m-%d') \
+	-X github.com/fractalplatform/fractal/cmd/utils.date=$(shell date '+%Y-%m-%d-%H:%M:%S') \
 	-X 'github.com/fractalplatform/fractal/cmd/utils.goversion=$(shell go version)'" \
 	-o ${REPO}/build/bin/$(1) ./cmd/$(1)
 endef

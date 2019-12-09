@@ -22,7 +22,7 @@
         "gas": 30000000,
         "value": 10000000000000000000000,
         "payload": {
-            "URL": "www.dpos0001.com"
+            "Info": "www.dpos0001.com"
         },
         "succeed": true
     }]
@@ -51,7 +51,7 @@
         "gas": 30000000,
         "value": 10000000000000000000000,
         "payload": {
-            "URL": "www.dpos0002.com"
+            "Info": "www.dpos0002.com"
         },
         "succeed": true
     }]
@@ -80,7 +80,7 @@
         "gas": 30000000,
         "value": 10000000000000000000000,
         "payload": {
-            "URL": "www.dpos0003.com"
+            "Info": "www.dpos0003.com"
         },
         "succeed": true
     }]
@@ -109,7 +109,7 @@
         "gas": 30000000,
         "value": 10000000000000000000000,
         "payload": {
-            "URL": "www.dpos0004.com"
+            "Info": "www.dpos0004.com"
         },
         "succeed": true
     }]
@@ -138,7 +138,7 @@
         "gas": 30000000,
         "value": 10000000000000000000000,
         "payload": {
-            "URL": "www.dpos0005.com"
+            "Info": "www.dpos0005.com"
         },
         "succeed": true
     }]
@@ -167,7 +167,7 @@
         "gas": 30000000,
         "value": 3000000000000000000000000,
         "payload": {
-            "URL": "www.dpos0006.com"
+            "Info": "www.dpos0006.com"
         },
         "succeed": true,
         "childs": [{
@@ -178,7 +178,7 @@
             "gas": 30000000,
             "value": 1000000000000000000000000,
             "payload": {
-                "URL": "www.dpos0006.com"
+                "Info": "www.dpos0006.com"
             },
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true
@@ -219,7 +219,7 @@
         "gas": 30000000,
         "value": 4000000000000000000000000,
         "payload": {
-            "URL": "www.dpos0007.com"
+            "Info": "www.dpos0007.com"
         },
         "succeed": true,
         "childs": [{
@@ -230,7 +230,7 @@
             "gas": 30000000,
             "value": 1000000000000000000000000,
             "payload": {
-                "URL": "www.dpos0007.com"
+                "Info": "www.dpos0007.com"
             },
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true
@@ -271,7 +271,7 @@
         "gas": 30000000,
         "value": 3000000000000000000000000,
         "payload": {
-            "URL": "www.dpos0008.com"
+            "Info": "www.dpos0008.com"
         },
         "succeed": true,
         "childs": [{
@@ -282,7 +282,7 @@
             "gas": 30000000,
             "value": 1000000000000000000000000,
             "payload": {
-                "URL": "www.dpos0008.com"
+                "Info": "www.dpos0008.com"
             },
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true
@@ -326,7 +326,7 @@
         "gas": 30000000,
         "value": 4000000000000000000000000,
         "payload": {
-            "URL": "www.dpos0007.com"
+            "Info": "www.dpos0007.com"
         },
         "succeed": true,
         "childs": [{
@@ -337,7 +337,7 @@
             "gas": 30000000,
             "value": 1000000000000000000000000,
             "payload": {
-                "URL": "www.dpos0009.com"
+                "Info": "www.dpos0009.com"
             },
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true

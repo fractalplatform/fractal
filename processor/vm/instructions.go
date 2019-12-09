@@ -522,6 +522,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	evm.interpreter.intPool.put(time, assetId)
 	return nil, nil
 }
+
 func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	assetId := stack.pop()
 	slot := stack.peek()
@@ -1598,9 +1599,12 @@ func execWithdrawFee(evm *EVM, contract *Contract, withdrawTo common.Name, objec
 			return errEnc
 		}
 
-		action := types.NewAction(types.Transfer, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, 0, 0, big.NewInt(0), paload, nil)
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transfer", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
-		evm.InternalTxs = append(evm.InternalTxs, internalAction)
+		for _, assetInfo := range withdrawInfo.AssetInfo {
+			action := types.NewAction(types.Transfer, common.Name(evm.chainConfig.FeeName), withdrawInfo.Founder, 0, assetInfo.AssetID, 0, assetInfo.Amount, paload, nil)
+			internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transfer", GasUsed: 0, GasLimit: contract.Gas, Depth: uint64(evm.depth)}
+			evm.InternalTxs = append(evm.InternalTxs, internalAction)
+		}
+
 	}
 	return err
 }
@@ -1628,7 +1632,21 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		return nil, nil
 	}
 
-	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+	var fromExtra common.Name
+	if evm.ForkID >= params.ForkID4 {
+		if asset, err := evm.AccountDB.GetAssetInfoByID(action.AssetID()); err == nil {
+			assetContract := asset.GetContract()
+			if len(assetContract) != 0 && assetContract != action.Sender() && assetContract != action.Recipient() {
+				var cantransfer bool
+				contract.Gas, cantransfer = evm.CanTransferContractAsset(contract, contract.Gas, action.AssetID(), assetContract)
+				if cantransfer {
+					fromExtra = assetContract
+				}
+			}
+		}
+	}
+
+	err = evm.AccountDB.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value(), fromExtra)
 	//distribute gas
 	var assetName common.Name
 	assetFounder, _ := evm.AccountDB.GetAssetFounder(action.AssetID()) //get asset founder name
