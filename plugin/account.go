@@ -187,14 +187,11 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 		return err
 	}
 
-	snap := am.sdb.Snapshot()
-
 	if err = am.setAccount(fromAcct); err != nil {
 		return err
 	}
 
 	if err = am.setAccount(toAcct); err != nil {
-		am.sdb.RevertToSnapshot(snap)
 		return err
 	}
 
@@ -383,12 +380,9 @@ func (am *AccountManager) ChangePubKey(accountName string, pubKey string) error 
 	if err != nil {
 		return err
 	}
-
-	snap := am.sdb.Snapshot()
 	tempKey := common.HexToPubKey(pubKey)
 	account.Address = common.BytesToAddress(crypto.Keccak256(tempKey.Bytes()[1:])[12:])
 	if err = am.setAccount(account); err != nil {
-		am.sdb.RevertToSnapshot(snap)
 		return err
 	}
 	return nil

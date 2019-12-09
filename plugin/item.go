@@ -25,6 +25,8 @@ var (
 	itemInfoNamePrefix      = "itemInfoName"
 )
 
+const UINT64_MAX uint64 = ^uint64(0)
+
 type ItemManager struct {
 	sdb *state.StateDB
 }
@@ -49,17 +51,6 @@ type ItemInfo struct {
 	UpperLimit  uint64
 	Attributes  []*Attribute
 }
-
-// type Attribute struct {
-// 	Name        string
-// 	Description string
-// }
-
-// type ItemTxParam struct {
-// 	ItemTypeID uint64
-// 	ItemInfoID uint64
-// 	Amount     uint64
-// }
 
 // NewIM new a ItemManager
 func NewItemManage(sdb *state.StateDB) (*ItemManager, error) {
@@ -152,10 +143,8 @@ func (im *ItemManager) IssueItemType(creator, owner, name, description string, a
 		Description: description,
 		Total:       0,
 	}
-	snap := im.sdb.Snapshot()
 	err = im.setNewItemType(&itemobj)
 	if err != nil {
-		im.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 	return nil, nil
@@ -189,6 +178,9 @@ func (im *ItemManager) IssueItem(creator string, itemTypeID uint64, name string,
 	}
 	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrDescriptionTooLong
+	}
+	if upperLimit > UINT64_MAX || total > UINT64_MAX {
+		return nil, ErrAmountValueInvalid
 	}
 	if upperLimit != 0 {
 		if total > upperLimit {
@@ -231,7 +223,6 @@ func (im *ItemManager) IssueItem(creator string, itemTypeID uint64, name string,
 		UpperLimit:  upperLimit,
 		Attributes:  attributes,
 	}
-	snap := im.sdb.Snapshot()
 	itemType.Total += 1
 	err = im.setItemType(itemType)
 	if err != nil {
@@ -239,12 +230,10 @@ func (im *ItemManager) IssueItem(creator string, itemTypeID uint64, name string,
 	}
 	err = im.setNewItemInfo(&itemInfo)
 	if err != nil {
-		im.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 	err = im.setAccountItemAmount(creator, itemTypeID, itemInfo.ID, itemInfo.Total)
 	if err != nil {
-		im.sdb.RevertToSnapshot(snap)
 		return nil, err
 	}
 	return nil, nil
@@ -275,8 +264,10 @@ func (im *ItemManager) IncreaseItem(from string, itemTypeID, itemInfoID uint64, 
 		}
 	}
 
-	snap := im.sdb.Snapshot()
 	itemInfo.Total += amount
+	if itemInfo.Total > UINT64_MAX {
+		return nil, ErrAmountValueInvalid
+	}
 	err = im.setItemInfo(itemInfo)
 	if err != nil {
 		return nil, err
@@ -284,7 +275,6 @@ func (im *ItemManager) IncreaseItem(from string, itemTypeID, itemInfoID uint64, 
 	err = im.addAccountItemAmount(to, itemTypeID, itemInfoID, amount)
 	if err != nil {
 		return nil, err
-		im.sdb.RevertToSnapshot(snap)
 	}
 	return nil, nil
 }
@@ -312,10 +302,8 @@ func (im *ItemManager) transferItemSingle(from, to string, itemTypeID, itemInfoI
 
 // TransferItem transfer item
 func (im *ItemManager) TransferItem(from, to string, ItemTx []*ItemTxParam) error {
-	snap := im.sdb.Snapshot()
 	for _, tx := range ItemTx {
 		if err := im.transferItemSingle(from, to, tx.ItemTypeID, tx.ItemInfoID, tx.Amount); err != nil {
-			im.sdb.RevertToSnapshot(snap)
 			return err
 		}
 	}
