@@ -378,6 +378,7 @@ func (c *Consensus) epochToIndex(epoch int) (int, int) {
 		if minerEpoch <= c.blockEpoch {
 			return epoch, minerIndex
 		}
+		change[miner] = c.blockEpoch + 1
 	}
 	return -1, -1
 }
