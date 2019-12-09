@@ -474,19 +474,21 @@ func (a *Action) NewRPCAction(index uint64) *RPCAction {
 }
 
 type RPCActionWithPayer struct {
-	Type          uint64        `json:"type"`
-	Nonce         uint64        `json:"nonce"`
-	From          common.Name   `json:"from"`
-	To            common.Name   `json:"to"`
-	AssetID       uint64        `json:"assetID"`
-	GasLimit      uint64        `json:"gas"`
-	Amount        *big.Int      `json:"value"`
-	Remark        hexutil.Bytes `json:"remark"`
-	Payload       hexutil.Bytes `json:"payload"`
-	Hash          common.Hash   `json:"actionHash"`
-	ActionIdex    uint64        `json:"actionIndex"`
-	Payer         common.Name   `json:"payer"`
-	PayerGasPrice *big.Int      `json:"payerGasPrice"`
+	Type             uint64        `json:"type"`
+	Nonce            uint64        `json:"nonce"`
+	From             common.Name   `json:"from"`
+	To               common.Name   `json:"to"`
+	AssetID          uint64        `json:"assetID"`
+	GasLimit         uint64        `json:"gas"`
+	Amount           *big.Int      `json:"value"`
+	Remark           hexutil.Bytes `json:"remark"`
+	Payload          hexutil.Bytes `json:"payload"`
+	Hash             common.Hash   `json:"actionHash"`
+	ActionIdex       uint64        `json:"actionIndex"`
+	Payer            common.Name   `json:"payer"`
+	PayerGasPrice    *big.Int      `json:"payerGasPrice"`
+	ParentIndex      uint64        `json:"parentIndex"`
+	PayerParentIndex uint64        `json:"payerParentIndex"`
 }
 
 func (a *RPCActionWithPayer) SetHash(hash common.Hash) {
@@ -500,7 +502,7 @@ func (a *Action) NewRPCActionWithPayer(index uint64) *RPCActionWithPayer {
 		payer = a.fp.Payer
 		price = a.fp.GasPrice
 	}
-	return &RPCActionWithPayer{
+	ap := &RPCActionWithPayer{
 		Type:          uint64(a.Type()),
 		Nonce:         a.Nonce(),
 		From:          a.Sender(),
@@ -514,7 +516,12 @@ func (a *Action) NewRPCActionWithPayer(index uint64) *RPCActionWithPayer {
 		ActionIdex:    index,
 		Payer:         payer,
 		PayerGasPrice: price,
+		ParentIndex:   a.GetSignParent(),
 	}
+	if a.fp != nil {
+		ap.PayerParentIndex = a.fp.GetSignParent()
+	}
+	return ap
 }
 
 // deriveChainID derives the chain id from the given v parameter
