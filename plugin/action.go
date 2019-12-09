@@ -9,6 +9,7 @@ import (
 const (
 	// CreateAccount repesents the create account.
 	CreateAccount types.ActionType = 0x100 + iota
+	ChangePubKey
 )
 
 const (
@@ -37,6 +38,11 @@ type CreateAccountAction struct {
 	Name   string
 	Pubkey string
 	Desc   string
+}
+
+type ChangePubKeyAction struct {
+	Name   string
+	Pubkey string
 }
 
 type IncreaseAssetAction struct {

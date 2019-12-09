@@ -82,6 +82,13 @@ func (am *AccountManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 			return nil, err
 		}
 		return am.CreateAccount(param.Name, param.Pubkey, param.Desc)
+	case ChangePubKey:
+		param := &ChangePubKeyAction{}
+		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+			return nil, err
+		}
+		err := am.ChangePubKey(param.Name, param.Pubkey)
+		return nil, err
 	case Transfer:
 		err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
 		return nil, err
@@ -367,15 +374,19 @@ func (am *AccountManager) GetAccountByName(accountName string) (interface{}, err
 	return obj, nil
 }
 
-func (am *AccountManager) ChangeAddress(accountName string, address common.Address) error {
+func (am *AccountManager) ChangePubKey(accountName string, pubKey string) error {
+	if !common.IsHexPubKey(pubKey) {
+		return ErrPubKey
+	}
+
 	account, err := am.getAccount(accountName)
 	if err != nil {
 		return err
 	}
 
 	snap := am.sdb.Snapshot()
-
-	account.Address = address
+	tempKey := common.HexToPubKey(pubKey)
+	account.Address = common.BytesToAddress(crypto.Keccak256(tempKey.Bytes()[1:])[12:])
 	if err = am.setAccount(account); err != nil {
 		am.sdb.RevertToSnapshot(snap)
 		return err
