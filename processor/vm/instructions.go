@@ -841,6 +841,51 @@ func opCreate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	return nil, nil
 }
 
+func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	// Pop gas. The actual gas in in evm.callGasTemp.
+	evm.interpreter.intPool.put(stack.pop())
+	gas := evm.callGasTemp
+	// Pop other call parameters.
+	name, assetId, actype, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	value = math.U256(value)
+	accountName := string(name.Bytes())
+	assetID := assetId.Uint64()
+	// Get the arguments from the memory.
+	args := memory.Get(inOffset.Int64(), inSize.Int64())
+
+	if value.Sign() != 0 {
+		gas += evm.interpreter.gasTable.CallStipend
+	}
+
+	action := types.NewAction(types.ActionType(actype.Uint64()), contract.Name(), accountName, 0, assetID, gas, value, args, nil)
+
+	var ret []byte
+	var err error
+
+	ret, err = evm.PM.ExecTx(action, true)
+	if evm.vmConfig.ContractLogFlag {
+		errmsg := ""
+		if err != nil {
+			errmsg = err.Error()
+		}
+		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "callplugin", GasUsed: gas, GasLimit: gas, Depth: uint64(evm.depth), Error: errmsg}
+		evm.InternalTxs = append(evm.InternalTxs, internalAction)
+	}
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(1))
+	}
+	if err == nil || err == errExecutionReverted {
+		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
+	}
+
+	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
+
+	return ret, nil
+}
+
 func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	// Pop gas. The actual gas in in evm.callGasTemp.
 	evm.interpreter.intPool.put(stack.pop())

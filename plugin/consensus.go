@@ -380,7 +380,7 @@ func (c *Consensus) epochToIndex(epoch int) (int, int) {
 		}
 		change[miner] = c.blockEpoch + 1
 	}
-	return -1, -1
+	return epoch, rndIndex + c.candidates.Len()
 }
 
 // return next miner
@@ -698,4 +698,8 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 		return errors.New("VRF Verify error")
 	}
 	return nil
+}
+
+func (c *Consensus) Sol_Sprintf(_ interface{}, fmtstr string, name string, age *big.Int) (string, error) {
+	return fmt.Sprintf(fmtstr, name, age.Int64()), nil
 }

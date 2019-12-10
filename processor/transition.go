@@ -124,7 +124,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 	case actionType == types.CallContract:
 		ret, st.gas, vmerr = st.evm.Call(caller, st.action, st.gas)
 	default:
-		ret, vmerr = st.pm.ExecTx(st.action)
+		ret, vmerr = st.pm.ExecTx(st.action, false)
 	}
 
 	if vmerr != nil {

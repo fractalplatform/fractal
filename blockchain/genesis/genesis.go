@@ -142,7 +142,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	actions = append(actions, minerActions...)
 
 	for index, action := range actions {
-		_, err := mananger.ExecTx(action)
+		_, err := mananger.ExecTx(action, false)
 		if err != nil {
 			return nil, nil, fmt.Errorf("genesis index: %v,create %v,err %v", index, action.Type(), err)
 		}

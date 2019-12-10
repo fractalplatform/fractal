@@ -104,7 +104,7 @@ func (pm *Manager) selectContract(action *types.Action) IContract {
 	return pm.contractsByType[action.Type()]
 }
 
-func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
+func (pm *Manager) ExecTx(arg interface{}, fromSol bool) ([]byte, error) {
 	action, ok := arg.(*types.Action)
 	if !ok {
 		return nil, ErrWrongAction
@@ -112,7 +112,13 @@ func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
 
 	if contract := pm.selectContract(action); contract != nil {
 		snapshot := pm.stateDB.Snapshot()
-		ret, err := contract.CallTx(action, pm)
+		var ret []byte
+		var err error
+		if fromSol {
+			ret, err = PluginSolAPICall(contract, struct{}{}, action.Data())
+		} else {
+			ret, err = contract.CallTx(action, pm)
+		}
 		if err != nil {
 			pm.stateDB.RevertToSnapshot(snapshot)
 		}
@@ -138,6 +144,10 @@ func NewPM(stateDB *state.StateDB) IPM {
 		ISigner:         signer,
 		IFee:            fee,
 		stateDB:         stateDB,
+	}
+	err := PluginSolAPIRegister(consensus)
+	if err != nil {
+		panic(err)
 	}
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm

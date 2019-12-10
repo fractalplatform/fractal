@@ -33,7 +33,7 @@ type IPM interface {
 	//IContract
 	IFee
 	ISigner
-	ExecTx(arg interface{}) ([]byte, error)
+	ExecTx(arg interface{}, fromSol bool) ([]byte, error)
 }
 
 type IContract interface {
