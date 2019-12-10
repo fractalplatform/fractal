@@ -48,7 +48,7 @@ func (m *txSortedMap) Get(nonce uint64) *types.Transaction {
 // index. If a transaction already exists with the same nonce, it's overwritten.
 func (m *txSortedMap) Put(tx *types.Transaction) {
 	// todo change action
-	nonce := tx.GetActions()[0].Nonce()
+	nonce := tx.GetNonce()
 	if m.items[nonce] == nil {
 		heap.Push(m.index, nonce)
 	}

@@ -18,7 +18,6 @@ package main
 
 import (
 	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/types"
 	"github.com/spf13/cobra"
 )
 
@@ -77,7 +76,7 @@ var getTxsCmd = &cobra.Command{
 	Long:  `Returns the transaction for the given hash`,
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var result []*types.RPCTransaction
+		var result []interface{}
 		clientCall(ipcEndpoint, &result, "txpool_getTransactions", args)
 		printJSONList(result)
 	},

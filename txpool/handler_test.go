@@ -28,6 +28,7 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 const (
@@ -37,9 +38,11 @@ const (
 
 func TxsGen(num int) []*types.Transaction {
 	txs := make([]*types.Transaction, num)
-	action := types.NewAction(types.CallContract, "yanprogram", "lixiaopeng", 0, 0, 0, nil, nil, nil)
+
 	for i := 0; i < num; i++ {
-		txs[i] = types.NewTransaction(uint64(i), nil, action)
+		ctx, _ := envelope.NewContractTx(envelope.CreateContract, "sender", "receipt", uint64(i), 0, 0, 100000,
+			big.NewInt(100), big.NewInt(1000), []byte("payload"), []byte("remark"))
+		txs[i] = types.NewTransaction(ctx)
 	}
 	return txs
 }

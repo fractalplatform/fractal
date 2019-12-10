@@ -24,6 +24,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,11 +38,13 @@ func newTestBlockChain(price *big.Int) *testBlockChain {
 		if i%2 == 0 {
 			price = new(big.Int).Mul(price, big.NewInt(2))
 		}
-		block := &types.Block{Head: &types.Header{Number: big.NewInt(int64(i)), GasLimit: params.BlockGasLimit, GasUsed: uint64((i + 1) * 100000)}}
+		block := &types.Block{Head: &types.Header{Number: uint64(i), GasLimit: params.BlockGasLimit, GasUsed: uint64((i + 1) * 100000)}}
 		if i < 5 { // blocks[5] no transaction
-			action := types.NewAction(types.CreateContract, "gpotestname", "", 1,
-				10, 10, nil, nil, nil)
-			block.Txs = []*types.Transaction{types.NewTransaction(1, price, action)}
+
+			ctx, _ := envelope.NewContractTx(envelope.CreateContract, "gpotestname", "receipt", 0, 0, 0, 100000,
+				price, big.NewInt(1000), []byte("payload"), []byte("remark"))
+
+			block.Txs = []*types.Transaction{types.NewTransaction(ctx)}
 		}
 		blocks[i] = block
 	}

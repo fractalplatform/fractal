@@ -37,7 +37,7 @@ func newAccountSet(names ...string) *accountSet {
 
 // addTx adds the sender of tx into the set.
 func (as *accountSet) addTx(tx *types.Transaction) {
-	as.add(tx.GetActions()[0].Sender())
+	as.add(tx.Sender())
 }
 
 // contains checks if a given name is contained within the set.
@@ -49,7 +49,7 @@ func (as *accountSet) contains(name string) bool {
 // containsName checks if the sender of a given tx is within the set.
 func (as *accountSet) containsName(tx *types.Transaction) bool {
 	// todo every action
-	return as.contains(tx.GetActions()[0].Sender())
+	return as.contains(tx.Sender())
 }
 
 // add inserts a new name into the set to track.

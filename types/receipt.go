@@ -30,47 +30,20 @@ const (
 	ReceiptStatusSuccessful = uint64(1)
 )
 
-// ActionResult represents the results the transaction action.
 type GasDistribution struct {
 	Account string `json:"name"`
 	Gas     uint64 `json:"gas"`
-	TypeID  uint64 `json:"typeId"`
-}
-
-type ActionResult struct {
-	Status   uint64
-	Index    uint64
-	GasUsed  uint64
-	GasAllot []*GasDistribution
-	Error    string
-}
-
-// RPCActionResult that will serialize to the RPC representation of a ActionResult.
-type RPCActionResult struct {
-	ActionType uint64             `json:"actionType"`
-	Status     uint64             `json:"status"`
-	Index      uint64             `json:"index"`
-	GasUsed    uint64             `json:"gasUsed"`
-	GasAllot   []*GasDistribution `json:"gasAllot"`
-	Error      string             `json:"error"`
-}
-
-// NewRPCActionResult returns a ActionResult that will serialize to the RPC.
-func (a *ActionResult) NewRPCActionResult(aType ActionType) *RPCActionResult {
-	return &RPCActionResult{
-		ActionType: uint64(aType),
-		Status:     a.Status,
-		Index:      a.Index,
-		GasUsed:    a.GasUsed,
-		GasAllot:   a.GasAllot,
-		Error:      a.Error,
-	}
+	TypeID  uint64 `json:"typeID"`
 }
 
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	PostState         []byte
-	ActionResults     []*ActionResult
+	Status            uint64
+	Index             uint64
+	GasUsed           uint64
+	GasAllot          []*GasDistribution
+	Error             string
 	CumulativeGasUsed uint64
 	Bloom             Bloom
 	Logs              []*Log
@@ -92,17 +65,21 @@ func (r *Receipt) Size() common.StorageSize {
 
 // Hash hashes the RLP encoding of Receipt.
 func (r *Receipt) Hash() common.Hash {
-	return RlpHash(r)
+	return common.RlpHash(r)
 }
 
 // RPCReceipt that will serialize to the RPC representation of a Receipt.
 type RPCReceipt struct {
-	BlockHash         common.Hash        `json:"blockHash"`
 	BlockNumber       uint64             `json:"blockNumber"`
+	BlockHash         common.Hash        `json:"blockHash"`
 	Hash              common.Hash        `json:"txHash"`
 	TransactionIndex  uint64             `json:"transactionIndex"`
 	PostState         hexutil.Bytes      `json:"postState"`
-	ActionResults     []*RPCActionResult `json:"actionResults"`
+	TxType            uint64             `json:"Type"`
+	Status            uint64             `json:"status"`
+	GasUsed           uint64             `json:"gasUsed"`
+	GasAllot          []*GasDistribution `json:"gasAllot"`
+	Error             string             `json:"error"`
 	CumulativeGasUsed uint64             `json:"cumulativeGasUsed"`
 	TotalGasUsed      uint64             `json:"totalGasUsed"`
 	Bloom             Bloom              `json:"logsBloom"`
@@ -112,21 +89,20 @@ type RPCReceipt struct {
 // NewRPCReceipt returns a Receipt that will serialize to the RPC.
 func (r *Receipt) NewRPCReceipt(blockHash common.Hash, blockNumber uint64, index uint64, tx *Transaction) *RPCReceipt {
 	result := &RPCReceipt{
-		BlockHash:         blockHash,
 		BlockNumber:       blockNumber,
+		BlockHash:         blockHash,
 		Hash:              tx.Hash(),
 		TransactionIndex:  index,
 		PostState:         hexutil.Bytes(r.PostState),
+		TxType:            uint64(tx.Type()),
+		Status:            r.Status,
+		GasUsed:           r.GasUsed,
+		GasAllot:          r.GasAllot,
+		Error:             r.Error,
 		CumulativeGasUsed: r.CumulativeGasUsed,
 		TotalGasUsed:      r.TotalGasUsed,
 		Bloom:             r.Bloom,
 	}
-
-	var rpcActionResults []*RPCActionResult
-	for i, a := range tx.GetActions() {
-		rpcActionResults = append(rpcActionResults, r.ActionResults[i].NewRPCActionResult(a.Type()))
-	}
-	result.ActionResults = rpcActionResults
 
 	var rlogs []*RPCLog
 	for _, l := range r.Logs {
@@ -134,42 +110,6 @@ func (r *Receipt) NewRPCReceipt(blockHash common.Hash, blockNumber uint64, index
 	}
 	result.Logs = rlogs
 
-	return result
-}
-
-// ConsensusReceipt returns consensus encoding of a receipt.
-func (r *Receipt) ConsensusReceipt() *Receipt {
-	result := &Receipt{
-		CumulativeGasUsed: r.CumulativeGasUsed,
-		TotalGasUsed:      r.TotalGasUsed,
-		Bloom:             r.Bloom,
-	}
-
-	result.PostState = make([]byte, len(r.PostState))
-	copy(result.PostState, r.PostState)
-
-	var actionResults []*ActionResult
-	for _, a := range r.ActionResults {
-		actionResults = append(actionResults, &ActionResult{
-			Status:  a.Status,
-			Index:   a.Index,
-			GasUsed: a.GasUsed,
-			Error:   a.Error,
-		})
-	}
-	result.ActionResults = actionResults
-
-	var logs []*Log
-	for _, l := range r.Logs {
-		log := &Log{
-			Name:   l.Name,
-			Topics: l.Topics,
-		}
-		log.Data = make([]byte, len(l.Data))
-		copy(log.Data, l.Data)
-		logs = append(logs, log)
-	}
-	result.Logs = logs
 	return result
 }
 

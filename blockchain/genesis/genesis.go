@@ -31,6 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/fdb"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
@@ -123,28 +124,28 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	// create account and asset
 	mananger := pm.NewPM(statedb)
 	mananger.Init(g.Timestamp, nil)
-	actions, err := g.CreateAccount()
+	actTxs, err := g.CreateAccount()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	astActions, err := g.CreateAsset()
+	astTxs, err := g.CreateAsset()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	minerActions, err := g.RegisterMiner()
+	minerTxs, err := g.RegisterMiner()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	actions = append(actions, astActions...)
-	actions = append(actions, minerActions...)
+	actTxs = append(actTxs, astTxs...)
+	actTxs = append(actTxs, minerTxs...)
 
-	for index, action := range actions {
-		_, err := mananger.ExecTx(action)
+	for index, tx := range actTxs {
+		_, err := mananger.ExecTx(tx)
 		if err != nil {
-			return nil, nil, fmt.Errorf("genesis index: %v,create %v,err %v", index, action.Type(), err)
+			return nil, nil, fmt.Errorf("genesis index: %v,err %v", index, err)
 		}
 	}
 
@@ -179,19 +180,17 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		Root:       root,
 	}
 
-	tx := types.NewTransaction(g.Config.SysTokenID, big.NewInt(0), actions...)
-	receipt := types.NewReceipt(root[:], 0, 0)
-	receipt.TxHash = tx.Hash()
-	for index := range actions {
-		receipt.ActionResults = append(receipt.ActionResults, &types.ActionResult{
-			Status:  1,
-			Index:   uint64(index),
-			GasUsed: 0,
-		})
+	receipts := []*types.Receipt{}
+
+	for k, tx := range actTxs {
+		receipt := types.NewReceipt(root[:], 0, 0)
+		receipt.TxHash = tx.Hash()
+		receipt.Status = 1
+		receipt.Index = uint64(k)
+		receipts = append(receipts, receipt)
 	}
 
-	receipts := []*types.Receipt{receipt}
-	block := types.NewBlock(head, []*types.Transaction{tx}, receipts)
+	block := types.NewBlock(head, actTxs, receipts)
 	batch := db.NewBatch()
 
 	// write snapshot to db
@@ -238,8 +237,9 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 }
 
 // CreateAccount create account
-func (g *Genesis) CreateAccount() ([]*types.Action, error) {
-	actions := []*types.Action{}
+func (g *Genesis) CreateAccount() ([]*types.Transaction, error) {
+	var txs []*types.Transaction
+
 	act := &pm.CreateAccountAction{
 		Name:   g.Config.ChainName,
 		Pubkey: common.HexToPubKey("").String(),
@@ -249,90 +249,118 @@ func (g *Genesis) CreateAccount() ([]*types.Action, error) {
 	if err != nil {
 		return nil, err
 	}
-	actions = append(actions, types.NewAction(
+	env, err := envelope.NewPluginTx(
 		pm.CreateAccount,
 		g.Config.ChainName,
 		g.Config.AccountName,
 		0,
 		0,
 		0,
+		0,
+		big.NewInt(0),
 		big.NewInt(0),
 		payload,
-		[]byte(g.Remark),
-	))
+		[]byte(g.Remark))
+	if err != nil {
+		return nil, err
+	}
+
+	txs = append(txs, types.NewTransaction(env))
 
 	for _, act := range g.AllocAccounts {
 		payload, err := rlp.EncodeToBytes(act)
 		if err != nil {
 			return nil, err
 		}
-		actions = append(actions, types.NewAction(
+
+		env, err := envelope.NewPluginTx(
 			pm.CreateAccount,
 			g.Config.ChainName,
 			g.Config.AccountName,
 			0,
 			0,
 			0,
+			0,
+			big.NewInt(0),
 			big.NewInt(0),
 			payload,
-			nil,
-		))
+			nil)
+		if err != nil {
+			return nil, err
+		}
+
+		txs = append(txs, types.NewTransaction(env))
+
 	}
 
-	return actions, nil
+	return txs, nil
 }
 
 // CreateAsset create asset
-func (g *Genesis) CreateAsset() ([]*types.Action, error) {
-	actions := []*types.Action{}
+func (g *Genesis) CreateAsset() ([]*types.Transaction, error) {
+	var txs []*types.Transaction
 
 	for _, ast := range g.AllocAssets {
 		payload, err := rlp.EncodeToBytes(ast)
 		if err != nil {
 			return nil, err
 		}
-		actions = append(actions, types.NewAction(
+
+		env, err := envelope.NewPluginTx(
 			pm.IssueAsset,
 			g.Config.ChainName,
 			g.Config.AssetName,
 			0,
 			0,
 			0,
+			0,
+			big.NewInt(0),
 			big.NewInt(0),
 			payload,
 			nil,
-		))
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		txs = append(txs, types.NewTransaction(env))
 	}
 
-	return actions, nil
-
+	return txs, nil
 }
 
 // RegisterMiner register Miner
-func (g *Genesis) RegisterMiner() ([]*types.Action, error) {
-	return []*types.Action{types.NewAction(
+func (g *Genesis) RegisterMiner() ([]*types.Transaction, error) {
+
+	env, err := envelope.NewPluginTx(
 		pm.RegisterMiner,
 		g.Config.SysName,
 		g.Config.DposName,
 		1,             // nonce
 		0,             // assetID
+		0,             // gasAssetID
 		0,             // gasLimit
+		big.NewInt(0), // gasprice
 		big.NewInt(1), // amount
 		nil,
 		nil,
-	)}, nil
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*types.Transaction{types.NewTransaction(env)}, nil
 }
 
 // DefaultGenesis returns the ft net genesis block.
 func DefaultGenesis() *Genesis {
 	return &Genesis{
 		Config:        params.DefaultChainconfig,
-		Timestamp:     1575273800,
+		Timestamp:     1575967052,
 		GasLimit:      params.BlockGasLimit,
 		Difficulty:    params.GenesisDifficulty,
 		AllocAccounts: DefaultGenesisAccounts(),
-		// 	AllocCandidates: DefaultGenesisCandidates(),
-		AllocAssets: DefaultGenesisAssets(),
+		AllocAssets:   DefaultGenesisAssets(),
 	}
 }
 

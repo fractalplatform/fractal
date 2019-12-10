@@ -306,9 +306,7 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 			break
 		}
 
-		action := tx.GetActions()[0]
-
-		from := action.Sender()
+		from := tx.Sender()
 		// Start executing the transaction
 		work.currentState.Prepare(tx.Hash(), common.Hash{}, work.currentCnt)
 
@@ -324,12 +322,12 @@ func (worker *Worker) commitTransactions(work *Work, txs *types.TransactionsByPr
 
 		case p.ErrNonceTooLow:
 			// New head notification data race between the transaction pool and miner, shift
-			log.Trace("Skipping transaction with low nonce", "sender", from, "nonce", action.Nonce())
+			log.Trace("Skipping transaction with low nonce", "sender", from, "nonce", tx.GetNonce())
 			txs.Shift()
 
 		case p.ErrNonceTooHigh:
 			// Reorg notification data race between the transaction pool and miner, skip account =
-			log.Trace("Skipping account with hight nonce", "sender", from, "nonce", action.Nonce())
+			log.Trace("Skipping account with hight nonce", "sender", from, "nonce", tx.GetNonce())
 			txs.Pop()
 
 		case nil:

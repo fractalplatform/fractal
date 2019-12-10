@@ -27,6 +27,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 var (
@@ -36,7 +37,7 @@ var (
 type StateTransition struct {
 	from        string
 	gp          *common.GasPool
-	action      *types.Action
+	tx          *types.Transaction
 	gas         uint64
 	initialGas  uint64
 	gasPrice    *big.Int
@@ -48,13 +49,13 @@ type StateTransition struct {
 
 // NewStateTransition initialises and returns a new state transition object.
 func NewStateTransition(pm plugin.IPM, evm *vm.EVM,
-	action *types.Action, gp *common.GasPool, gasPrice *big.Int, assetID uint64,
+	tx *types.Transaction, gp *common.GasPool, gasPrice *big.Int, assetID uint64,
 	config *params.ChainConfig) *StateTransition {
 	return &StateTransition{
-		from:        action.Sender(),
+		from:        tx.Sender(),
 		gp:          gp,
 		evm:         evm,
-		action:      action,
+		tx:          tx,
 		gasPrice:    gasPrice,
 		assetID:     assetID,
 		pm:          pm,
@@ -64,9 +65,9 @@ func NewStateTransition(pm plugin.IPM, evm *vm.EVM,
 
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
 func ApplyMessage(pm plugin.IPM, evm *vm.EVM,
-	action *types.Action, gp *common.GasPool, gasPrice *big.Int,
+	tx *types.Transaction, gp *common.GasPool, gasPrice *big.Int,
 	assetID uint64, config *params.ChainConfig) ([]byte, uint64, bool, error, error) {
-	return NewStateTransition(pm, evm, action, gp, gasPrice,
+	return NewStateTransition(pm, evm, tx, gp, gasPrice,
 		assetID, config).TransitionDb()
 }
 
@@ -83,7 +84,7 @@ func (st *StateTransition) preCheck() error {
 }
 
 func (st *StateTransition) buyGas() error {
-	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.action.Gas()), st.gasPrice)
+	mgval := new(big.Int).Mul(new(big.Int).SetUint64(st.tx.GetGasLimit()), st.gasPrice)
 	balance, err := st.pm.GetBalance(st.from, st.assetID)
 	if err != nil {
 		return err
@@ -91,11 +92,11 @@ func (st *StateTransition) buyGas() error {
 	if balance.Cmp(mgval) < 0 {
 		return errInsufficientBalanceForGas
 	}
-	if err := st.gp.SubGas(st.action.Gas()); err != nil {
+	if err := st.gp.SubGas(st.tx.GetGasLimit()); err != nil {
 		return err
 	}
-	st.gas += st.action.Gas()
-	st.initialGas = st.action.Gas()
+	st.gas += st.tx.GetGasLimit()
+	st.initialGas = st.tx.GetGasLimit()
 	return st.pm.TransferAsset(st.from, string(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
@@ -108,7 +109,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return
 	}
 
-	intrinsicGas, err := txpool.IntrinsicGas(st.pm, st.action)
+	intrinsicGas, err := txpool.IntrinsicGas(st.pm, st.tx)
 	if err != nil {
 		return nil, 0, true, err, vmerr
 	}
@@ -116,15 +117,15 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		return nil, 0, true, err, vmerr
 	}
 
-	caller := vm.AccountRef(st.action.Sender())
-	actionType := st.action.Type()
+	caller := vm.AccountRef(st.tx.Sender())
+	actionType := st.tx.Type()
 	switch {
-	case actionType == types.CreateContract:
-		ret, st.gas, vmerr = st.evm.Create(caller, st.action, st.gas)
-	case actionType == types.CallContract:
-		ret, st.gas, vmerr = st.evm.Call(caller, st.action, st.gas)
+	case actionType == envelope.CreateContract:
+		ret, st.gas, vmerr = st.evm.Create(caller, st.tx.Envelope.(*envelope.ContractTx), st.gas)
+	case actionType == envelope.CallContract:
+		ret, st.gas, vmerr = st.evm.Call(caller, st.tx.Envelope.(*envelope.ContractTx), st.gas)
 	default:
-		ret, vmerr = st.pm.ExecTx(st.action)
+		ret, vmerr = st.pm.ExecTx(st.tx)
 	}
 
 	if vmerr != nil {

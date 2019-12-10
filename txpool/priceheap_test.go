@@ -22,21 +22,14 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/stretchr/testify/assert"
 )
 
 func getPriceTx(price *big.Int, nonce uint64) *types.Transaction {
-	return types.NewTransaction(0, price, types.NewAction(
-		types.Transfer,
-		"fromtest",
-		"tototest",
-		nonce,
-		uint64(3),
-		uint64(2000),
-		big.NewInt(1000),
-		[]byte("test action"),
-		[]byte("test remark"),
-	))
+	ctx, _ := envelope.NewContractTx(envelope.CreateContract, "sender", "receipt", nonce, 0, 0, 100000,
+		price, big.NewInt(1000), []byte("payload"), []byte("remark"))
+	return types.NewTransaction(ctx)
 }
 
 func TestPriceHeap(t *testing.T) {

@@ -22,37 +22,47 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/stretchr/testify/assert"
 )
 
-var (
-	testTx = NewTransaction(uint64(1), big.NewInt(1000), testAction)
-)
+func TestContractTransactionEncodeAndDecode(t *testing.T) {
+	ctx, err := envelope.NewContractTx(envelope.CreateContract, "sender", "receipt", 0, 0, 0, 100000,
+		big.NewInt(100), big.NewInt(1000), []byte("payload"), []byte("remark"))
+	assert.NoError(t, err)
 
-func TestTransactionEncodeAndDecode(t *testing.T) {
-	txbytes, err := rlp.EncodeToBytes(testTx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	checkTxEncodeAndDecode(t, ctx)
+}
 
-	newtx := &Transaction{}
+func TestPluginTransactionEncodeAndDecode(t *testing.T) {
+	ptx, err := envelope.NewPluginTx(10, "sender", "receipt", 0, 0, 0, 100000,
+		big.NewInt(100), big.NewInt(1000), []byte("payload"), []byte("remark"))
+	assert.NoError(t, err)
 
-	if err := rlp.Decode(bytes.NewReader(txbytes), &newtx); err != nil {
-		t.Fatal(err)
-	}
+	checkTxEncodeAndDecode(t, ptx)
+}
 
+func checkTxEncodeAndDecode(t *testing.T, env envelope.Envelope) {
+	tx := NewTransaction(env)
+	txbytes, err := rlp.EncodeToBytes(tx)
+	assert.NoError(t, err)
+
+	newtx := new(Transaction)
+	err = rlp.Decode(bytes.NewReader(txbytes), newtx)
+
+	assert.NoError(t, err)
 	newtxbytes, err := rlp.EncodeToBytes(newtx)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	assert.Equal(t, newtxbytes, txbytes)
 
 	newrpctx := newtx.NewRPCTransaction(common.Hash{}, 0, 0)
-	testrpctx := testTx.NewRPCTransaction(common.Hash{}, 0, 0)
-
-	testrpctxbytes, _ := json.Marshal(testrpctx)
-	newrpctxbytes, _ := json.Marshal(newrpctx)
+	testrpctx := tx.NewRPCTransaction(common.Hash{}, 0, 0)
+	testrpctxbytes, err := json.Marshal(testrpctx)
+	assert.NoError(t, err)
+	newrpctxbytes, err := json.Marshal(newrpctx)
+	assert.NoError(t, err)
 
 	assert.Equal(t, newrpctxbytes, testrpctxbytes)
 }

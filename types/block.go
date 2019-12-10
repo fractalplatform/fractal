@@ -51,13 +51,13 @@ type Header struct {
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its
 // RLP encoding.
-func (h *Header) Hash() common.Hash { return RlpHash(h) }
+func (h *Header) Hash() common.Hash { return common.RlpHash(h) }
 
 // SignHash return the hash that used to signature
 func (h *Header) SignHash(chainID *big.Int) common.Hash {
 	signHead := CopyHeader(h)
 	signHead.Sign = make([]byte, 0)
-	return RlpHash([]interface{}{signHead, chainID})
+	return common.RlpHash([]interface{}{signHead, chainID})
 }
 
 // Block represents an entire block in the blockchain.
@@ -211,16 +211,6 @@ func (b *Block) WithBody(transactions []*Transaction) *Block {
 	return block
 }
 
-// Check the validity of all fields
-func (b *Block) Check() error {
-	for _, tx := range b.Txs {
-		if len(tx.actions) == 0 {
-			return ErrEmptyActions
-		}
-	}
-	return nil
-}
-
 // CopyHeader creates a deep copy of a block header to prevent side effects from
 // modifying a header variable.
 func CopyHeader(h *Header) *Header {
@@ -279,22 +269,11 @@ func DeriveTxsMerkleRoot(txs []*Transaction) common.Hash {
 
 // DeriveReceiptsMerkleRoot returns receiptes merkle tree root hash.
 func DeriveReceiptsMerkleRoot(receipts []*Receipt) common.Hash {
-	var txHashs []common.Hash
+	var hashs []common.Hash
 	for i := 0; i < len(receipts); i++ {
-		txHashs = append(txHashs, receipts[i].ConsensusReceipt().Hash())
+		hashs = append(hashs, receipts[i].Hash())
 	}
-	return common.MerkleRoot(txHashs)
-}
-
-func RlpHash(x interface{}) (h common.Hash) {
-	hw := common.Get256()
-	defer common.Put256(hw)
-	err := rlp.Encode(hw, x)
-	if err != nil {
-		panic(fmt.Sprintf("rlp hash encode err: %v", err))
-	}
-	hw.Sum(h[:0])
-	return h
+	return common.MerkleRoot(hashs)
 }
 
 type BlockState struct {

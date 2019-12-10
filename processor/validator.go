@@ -116,10 +116,6 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 // ValidateBody verifies the the block header's transaction roots.
 // The headers are assumed to be already validated at this point.
 func (v *BlockValidator) ValidateBody(block *types.Block) error {
-	if err := block.Check(); err != nil {
-		return err
-	}
-
 	// Header validity is known at this point, check the uncles and transactions
 	if hash := types.DeriveTxsMerkleRoot(block.Txs); hash != block.TxHash() {
 		return fmt.Errorf("transaction root hash mismatch: have %x, want %x", hash, block.TxHash())

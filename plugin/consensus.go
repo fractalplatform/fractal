@@ -30,6 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -549,24 +550,24 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	return nil
 }
 
-func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
+func (c *Consensus) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 	// just beta
 	c.initRequrie()
 	var success bool
 	var info, newinfo *CandidateInfo
-	switch action.Type() {
+	switch tx.PayloadType() {
 	case RegisterMiner:
-		if action.Value().Sign() > 0 {
-			if action.AssetID() != MinerAssetID {
+		if tx.Value().Sign() > 0 {
+			if tx.GetAssetID() != MinerAssetID {
 				return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
 			}
-			if err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+			if err := pm.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value()); err != nil {
 				return nil, err
 			}
 		}
 		var signAccount string
-		if len(action.Data()) > 0 {
-			if err := rlp.DecodeBytes(action.Data(), &signAccount); err != nil {
+		if len(tx.GetPayload()) > 0 {
+			if err := rlp.DecodeBytes(tx.GetPayload(), &signAccount); err != nil {
 				return nil, err
 			}
 		}
@@ -576,14 +577,14 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 				return nil, err
 			}
 		}
-		success, newinfo, info = c.pushCandidate(action.Sender(), signAccount, action.Value())
+		success, newinfo, info = c.pushCandidate(tx.Sender(), signAccount, tx.Value())
 	case UnregisterMiner:
-		if action.Value().Sign() > 0 {
+		if tx.Value().Sign() > 0 {
 			return nil, errors.New("msg.value must be zero")
 		}
-		success, info = c.removeCandidate(action.Sender())
+		success, info = c.removeCandidate(tx.Sender())
 	default:
-		return nil, ErrWrongAction
+		return nil, ErrWrongTransaction
 	}
 	if !success {
 		return nil, errors.New("wrong candidate")
