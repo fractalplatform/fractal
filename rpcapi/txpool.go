@@ -56,11 +56,10 @@ func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
 		dump := make(map[string]interface{})
 		for _, tx := range txs {
 			if fullTx {
-				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+				dump[fmt.Sprintf("%d", tx.GetNonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
 			} else {
-				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
+				dump[fmt.Sprintf("%d", tx.GetNonce())] = tx.Hash()
 			}
-
 		}
 		content["pending"][account] = dump
 	}
@@ -69,9 +68,9 @@ func (s *PrivateTxPoolAPI) Content(fullTx bool) interface{} {
 		dump := make(map[string]interface{})
 		for _, tx := range txs {
 			if fullTx {
-				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+				dump[fmt.Sprintf("%d", tx.GetNonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
 			} else {
-				dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
+				dump[fmt.Sprintf("%d", tx.GetNonce())] = tx.Hash()
 			}
 		}
 		content["queued"][account] = dump
@@ -87,7 +86,7 @@ func (s *PrivateTxPoolAPI) PendingTransactions(fullTx bool) (interface{}, error)
 	}
 
 	var (
-		txs       []*types.RPCTransaction
+		txs       []interface{}
 		txsHashes []common.Hash
 	)
 
@@ -107,8 +106,8 @@ func (s *PrivateTxPoolAPI) PendingTransactions(fullTx bool) (interface{}, error)
 }
 
 // GetTransactions txpool returns the transaction by the given hash.
-func (s *PrivateTxPoolAPI) GetTransactions(hashes []common.Hash) []*types.RPCTransaction {
-	var txs []*types.RPCTransaction
+func (s *PrivateTxPoolAPI) GetTransactions(hashes []common.Hash) []interface{} {
+	var txs []interface{}
 	for _, hash := range hashes {
 		if tx := s.b.TxPool().Get(hash); tx != nil {
 			txs = append(txs, tx.NewRPCTransaction(common.Hash{}, 0, 0))
@@ -130,9 +129,9 @@ func (s *PrivateTxPoolAPI) GetTransactionsByAccount(name string, fullTx bool) in
 		if ok {
 			for _, tx := range txs {
 				if fullTx {
-					dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
+					dump[fmt.Sprintf("%d", tx.GetNonce())] = tx.NewRPCTransaction(common.Hash{}, 0, 0)
 				} else {
-					dump[fmt.Sprintf("%d", tx.GetActions()[0].Nonce())] = tx.Hash()
+					dump[fmt.Sprintf("%d", tx.GetNonce())] = tx.Hash()
 				}
 			}
 		}

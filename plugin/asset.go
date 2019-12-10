@@ -23,7 +23,7 @@ import (
 	"strconv"
 
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -71,22 +71,22 @@ func (asm *AssetManager) AccountName() string {
 	return "fractalasset"
 }
 
-func (asm *AssetManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
-	switch action.Type() {
+func (asm *AssetManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+	switch tx.PayloadType() {
 	case IssueAsset:
 		param := &IssueAssetAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return asm.IssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm)
+		return asm.IssueAsset(tx.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm)
 	case IncreaseAsset:
 		param := &IncreaseAssetAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return asm.IncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm)
+		return asm.IncreaseAsset(tx.Sender(), param.To, param.AssetID, param.Amount, pm)
 	}
-	return nil, ErrWrongAction
+	return nil, ErrWrongTransaction
 }
 
 // IssueAsset Issue system asset

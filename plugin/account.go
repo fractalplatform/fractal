@@ -28,6 +28,7 @@ import (
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -74,19 +75,19 @@ func (am *AccountManager) AccountName() string {
 	return "fractalaccount"
 }
 
-func (am *AccountManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
-	switch action.Type() {
+func (am *AccountManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+	switch tx.PayloadType() {
 	case CreateAccount:
 		param := &CreateAccountAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
 		return am.CreateAccount(param.Name, param.Pubkey, param.Desc)
 	case Transfer:
-		err := am.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+		err := am.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value())
 		return nil, err
 	}
-	return nil, ErrWrongAction
+	return nil, ErrWrongTransaction
 }
 
 // CreateAccount Parse Payload to create a account
@@ -196,13 +197,8 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 
 // RecoverTx Make sure the transaction is signed properly and validate account authorization.
 func (am *AccountManager) RecoverTx(signer ISigner, tx *types.Transaction) error {
-	for _, action := range tx.GetActions() {
-		_, err := am.AccountVerify(action.Sender(), signer, action.GetSign(), tx.SignHash)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	_, err := am.AccountVerify(tx.Sender(), signer, tx.GetSign(), tx.SignHash)
+	return err
 }
 
 func (am *AccountManager) AccountSign(accountName string, priv *ecdsa.PrivateKey, signer ISigner, signHash func(chainID *big.Int) common.Hash) ([]byte, error) {

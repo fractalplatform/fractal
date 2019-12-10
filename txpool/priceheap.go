@@ -27,7 +27,7 @@ func (h priceHeap) Swap(i, j int) { h[i], h[j] = h[j], h[i] }
 
 func (h priceHeap) Less(i, j int) bool {
 	// Sort primarily by price, returning the cheaper one
-	switch h[i].GasPrice().Cmp(h[j].GasPrice()) {
+	switch h[i].GetGasPrice().Cmp(h[j].GetGasPrice()) {
 	case -1:
 		return true
 	case 1:
@@ -35,7 +35,7 @@ func (h priceHeap) Less(i, j int) bool {
 	}
 	// If the prices match, stabilize via nonces (high nonce is worse)
 	// todo change action
-	return h[i].GetActions()[0].Nonce() > h[j].GetActions()[0].Nonce()
+	return h[i].GetNonce() > h[j].GetNonce()
 }
 
 func (h *priceHeap) Push(x interface{}) {

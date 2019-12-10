@@ -23,6 +23,7 @@ import (
 	"reflect"
 
 	"github.com/fractalplatform/fractal/common/hexutil"
+	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // HashLength of hashes  in bytes.
@@ -112,4 +113,15 @@ func (h *UnprefixedHash) UnmarshalText(input []byte) error {
 // MarshalText encodes the hash as hex.
 func (h UnprefixedHash) MarshalText() ([]byte, error) {
 	return []byte(hex.EncodeToString(h[:])), nil
+}
+
+func RlpHash(x interface{}) (h Hash) {
+	hw := Get256()
+	defer Put256(hw)
+	err := rlp.Encode(hw, x)
+	if err != nil {
+		panic(fmt.Sprintf("rlp hash encode err: %v", err))
+	}
+	hw.Sum(h[:0])
+	return h
 }

@@ -3,24 +3,23 @@ package plugin
 import (
 	"math/big"
 
-	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 const (
 	// CreateAccount repesents the create account.
-	CreateAccount types.ActionType = 0x100 + iota
+	CreateAccount envelope.PayloadType = 0x100 + iota
 )
 
 const (
-	// CreateAccount repesents the create account.
-	IssueAsset types.ActionType = 0x200 + iota
+	IssueAsset envelope.PayloadType = 0x200 + iota
 	IncreaseAsset
 	Transfer
 )
 
 const (
 	// RegisterMiner register msg.sender become a miner
-	RegisterMiner types.ActionType = 0x300 + iota
+	RegisterMiner envelope.PayloadType = 0x300 + iota
 	UnregisterMiner
 	ConsensusEnd
 )

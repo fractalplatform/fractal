@@ -44,6 +44,6 @@ func TestStrictTxListAdd(t *testing.T) {
 	assert.Equal(t, len(list.txs.items), len(txs))
 
 	for _, tx := range txs {
-		assert.Equal(t, list.txs.items[tx.GetActions()[0].Nonce()], tx)
+		assert.Equal(t, list.txs.items[tx.GetNonce()], tx)
 	}
 }

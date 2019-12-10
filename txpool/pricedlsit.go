@@ -80,7 +80,7 @@ func (l *txPricedList) Cap(threshold *big.Int, local *accountSet) []*types.Trans
 			continue
 		}
 		// Stop the discards if we've reached the threshold
-		if tx.GasPrice().Cmp(threshold) >= 0 {
+		if tx.GetGasPrice().Cmp(threshold) >= 0 {
 			save = append(save, tx)
 			break
 		}
@@ -120,7 +120,7 @@ func (l *txPricedList) Underpriced(tx *types.Transaction, local *accountSet) boo
 		return false
 	}
 	cheapest := []*types.Transaction(*l.items)[0]
-	return cheapest.GasPrice().Cmp(tx.GasPrice()) >= 0
+	return cheapest.GetGasPrice().Cmp(tx.GetGasPrice()) >= 0
 }
 
 // Discard finds a number of most underpriced transactions, removes them from the

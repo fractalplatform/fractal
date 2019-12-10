@@ -36,6 +36,7 @@ func TestTxJournal(t *testing.T) {
 	defer os.Remove(file.Name())
 
 	txsMap := make(map[string][]*types.Transaction)
+
 	tx := newTx(big.NewInt(200), types.NewAction(
 		types.Transfer,
 		"fromtest",

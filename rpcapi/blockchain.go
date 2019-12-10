@@ -33,6 +33,7 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // PublicBlockChainAPI provides an API to access the blockchain.
@@ -81,7 +82,7 @@ func (s *PublicBlockChainAPI) rpcOutputBlock(chainID *big.Int, b *types.Block, i
 }
 
 // GetTransactionByHash returns the transaction for the given hash
-func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) *types.RPCTransaction {
+func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) interface{} {
 	// Try to return an already finalized transaction
 	if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
 		return tx.NewRPCTransaction(blockHash, blockNumber, index)
@@ -95,8 +96,8 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 	return nil
 }
 
-func (s *PublicBlockChainAPI) GetTransactions(ctx context.Context, hashes []common.Hash) []*types.RPCTransaction {
-	var result []*types.RPCTransaction
+func (s *PublicBlockChainAPI) GetTransactions(ctx context.Context, hashes []common.Hash) []interface{} {
+	var result []interface{}
 	for i, hash := range hashes {
 		if i > 2048 {
 			break
@@ -217,15 +218,15 @@ func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]
 }
 
 type CallArgs struct {
-	ActionType types.ActionType `json:"actionType"`
-	From       string           `json:"from"`
-	To         string           `json:"to"`
-	AssetID    uint64           `json:"assetId"`
-	Gas        uint64           `json:"gas"`
-	GasPrice   *big.Int         `json:"gasPrice"`
-	Value      *big.Int         `json:"value"`
-	Data       hexutil.Bytes    `json:"data"`
-	Remark     hexutil.Bytes    `json:"remark"`
+	Type     envelope.Type `json:"txType"`
+	From     string        `json:"from"`
+	To       string        `json:"to"`
+	AssetID  uint64        `json:"assetId"`
+	Gas      uint64        `json:"gas"`
+	GasPrice *big.Int      `json:"gasPrice"`
+	Value    *big.Int      `json:"value"`
+	Data     hexutil.Bytes `json:"data"`
+	Remark   hexutil.Bytes `json:"remark"`
 }
 
 func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr rpc.BlockNumber, vmCfg vm.Config, timeout time.Duration) ([]byte, uint64, bool, error) {
@@ -267,8 +268,11 @@ func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr
 	// Setup the gas pool (also for unmetered requests)
 	// and apply the message.
 	gp := new(common.GasPool).AddGas(math.MaxUint64)
-	action := types.NewAction(args.ActionType, args.From, args.To, 0, assetID, gas, value, args.Data, args.Remark)
-	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, action, gp, gasPrice, assetID, s.b.ChainConfig())
+	action, err := envelope.NewContractTx(args.Type, args.From, args.To, 0, assetID, 0, gas, big.NewInt(0), value, args.Data, args.Remark)
+	if err != nil {
+		return nil, 0, false, err
+	}
+	res, gas, failed, err, _ := processor.ApplyMessage(account, evm, types.NewTransaction(action), gp, gasPrice, assetID, s.b.ChainConfig())
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}

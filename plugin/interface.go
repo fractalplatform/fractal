@@ -23,6 +23,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // IPM plugin manager interface.
@@ -30,15 +31,14 @@ type IPM interface {
 	IAccount
 	IAsset
 	IConsensus
-	//IContract
 	IFee
 	ISigner
-	ExecTx(arg interface{}, fromSol bool) ([]byte, error)
+	ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error)
 }
 
 type IContract interface {
 	AccountName() string
-	CallTx(action *types.Action, pm IPM) ([]byte, error)
+	CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error)
 }
 
 // IAccount account manager interface.

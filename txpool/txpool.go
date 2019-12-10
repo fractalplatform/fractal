@@ -209,7 +209,7 @@ func (tp *TxPool) scheduleReorgLoop() {
 		case tx := <-tp.queueTxEventCh:
 			// Queue up the event, but don't schedule a reorg. It's up to the caller to
 			// request one later if they want the events sent.
-			name := tx.GetActions()[0].Sender()
+			name := tx.Sender()
 			if _, ok := queuedEvents[name]; !ok {
 				queuedEvents[name] = newTxSortedMap()
 			}
@@ -409,7 +409,7 @@ func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyA
 	// Check for pending transactions for every account that sent new ones
 	promoted := tp.promoteExecutables(promoteNames)
 	for _, tx := range promoted {
-		name := tx.GetActions()[0].Sender()
+		name := tx.Sender()
 		if _, ok := events[name]; !ok {
 			events[name] = newTxSortedMap()
 		}
@@ -428,7 +428,7 @@ func (tp *TxPool) runReorg(done chan struct{}, reset *txpoolResetRequest, dirtyA
 	// Update all accounts to the latest known pending nonce
 	for name, list := range tp.pending {
 		txs := list.Flatten() // Heavy but will be cached and is needed by the miner anyway
-		tp.pendingPM.SetNonce(name, txs[len(txs)-1].GetActions()[0].Nonce()+1)
+		tp.pendingPM.SetNonce(name, txs[len(txs)-1].GetNonce()+1)
 	}
 
 	tp.mu.Unlock()
@@ -653,51 +653,46 @@ func (tp *TxPool) local() map[string][]*types.Transaction {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
-	validateAction := func(tx *types.Transaction, action *types.Action) error {
-		from := action.Sender()
+	validate := func(tx *types.Transaction) error {
+		from := tx.Sender()
 		// Drop non-local transactions under our own minimal accepted gas price
 		local = local || tp.locals.contains(from) // account may be local even if the transaction arrived from the network
-		if !local && tp.gasPrice.Cmp(tx.GasPrice()) > 0 {
+		if !local && tp.gasPrice.Cmp(tx.GetGasPrice()) > 0 {
 			return ErrUnderpriced
 		}
 
 		// todo change action nonce
-		if nonce, _ := tp.curPM.GetNonce(from); nonce > action.Nonce() {
+		if nonce, _ := tp.curPM.GetNonce(from); nonce > tx.GetNonce() {
 			return ErrNonceTooLow
 		}
 
 		// Transactor should have enough funds to cover the gas costs
-		balance, err := tp.curPM.GetBalance(from, tx.GasAssetID())
+		balance, err := tp.curPM.GetBalance(from, tx.GetGasAssetID())
 		if err != nil {
 			return err
 		}
 
-		gascost := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(action.Gas()))
+		gascost := new(big.Int).Mul(tx.GetGasPrice(), new(big.Int).SetUint64(tx.GetGasLimit()))
 		if balance.Cmp(gascost) < 0 {
 			return ErrInsufficientFundsForGas
 		}
 
 		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curPM.GetBalance(from, action.AssetID())
+		balance, err = tp.curPM.GetBalance(from, tp.chain.Config().SysTokenID)
 		if err != nil {
 			return err
 		}
 
-		value := action.Value()
-		if tp.config.GasAssetID == action.AssetID() {
-			value.Add(value, gascost)
-		}
-
-		if balance.Cmp(value) < 0 {
+		if balance.Cmp(gascost) < 0 {
 			return ErrInsufficientFundsForValue
 		}
 
-		intrGas, err := IntrinsicGas(tp.curPM, action)
+		intrGas, err := IntrinsicGas(tp.curPM, tx)
 		if err != nil {
 			return err
 		}
 
-		if action.Gas() < intrGas {
+		if tx.GetGasLimit() < intrGas {
 			return ErrIntrinsicGas
 		}
 		return nil
@@ -709,20 +704,12 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		return ErrInvalidSender
 	}
 
-	// Transaction action  value can't be negative.
-	var allgas uint64
-	for _, a := range tx.GetActions() {
-		if a.Value().Sign() < 0 {
-			return ErrNegativeValue
-		}
-		if err := validateAction(tx, a); err != nil {
-			return err
-		}
-		allgas += a.Gas()
+	if err := validate(tx); err != nil {
+		return err
 	}
 
 	// Ensure the transaction doesn't exceed the current block limit gas.
-	if tp.currentMaxGas < allgas {
+	if tp.currentMaxGas < tx.GetGasLimit() {
 		return ErrGasLimit
 	}
 	return nil
@@ -739,20 +726,20 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 	if uint64(tp.all.Count()) >= tp.config.GlobalSlots+tp.config.GlobalQueue {
 		// If the new transaction is underpriced, don't accept it
 		if !local && tp.priced.Underpriced(tx, tp.locals) {
-			log.Trace("Discarding underpriced transaction", "hash", hash, "price", tx.GasPrice())
+			log.Trace("Discarding underpriced transaction", "hash", hash, "price", tx.GetGasPrice())
 			return false, ErrUnderpriced
 		}
 		// New transaction is better than our worse ones, make room for it
 		drop := tp.priced.Discard(tp.all.Count()-int(tp.config.GlobalSlots+tp.config.GlobalQueue-1), tp.locals)
 		for _, tx := range drop {
-			log.Trace("Discarding freshly underpriced transaction", "hash", tx.Hash(), "price", tx.GasPrice())
+			log.Trace("Discarding freshly underpriced transaction", "hash", tx.Hash(), "price", tx.GetGasPrice())
 			tp.removeTx(tx.Hash(), false)
 		}
 	}
 
 	// If the transaction is replacing an already pending one, do directly
 	// todo Change action
-	from := tx.GetActions()[0].Sender()
+	from := tx.Sender()
 	if list := tp.pending[from]; list != nil && list.Overlaps(tx) {
 		// Nonce already pending, check if required price bump is met
 		inserted, old := list.Add(tx, tp.config.PriceBump)
@@ -791,7 +778,7 @@ func (tp *TxPool) add(tx *types.Transaction, local bool) (bool, error) {
 // Note, this method assumes the pool lock is held!
 func (tp *TxPool) enqueueTx(hash common.Hash, tx *types.Transaction) (bool, error) {
 	// Try to insert the transaction into the future queue
-	from := tx.GetActions()[0].Sender()
+	from := tx.Sender()
 	if tp.queue[from] == nil {
 		tp.queue[from] = newTxList(false)
 	}
@@ -856,7 +843,7 @@ func (tp *TxPool) promoteTx(name string, hash common.Hash, tx *types.Transaction
 	// Set the potentially new pending nonce and notify any subsystems of the new tx
 	tp.beats[name] = time.Now()
 	// todo action
-	tp.pendingPM.SetNonce(name, tx.GetActions()[0].Nonce()+1)
+	tp.pendingPM.SetNonce(name, tx.GetNonce()+1)
 	return true
 }
 
@@ -925,13 +912,11 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 			continue
 		}
 
-		for i, action := range tx.GetActions() {
-			if _, err := tp.curPM.Recover(action.GetSign(), tx.SignHash); err != nil {
-				log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
-				errs[index] = fmt.Errorf("action %v,recoverMultiKey reocver faild: %v", i, err)
-				continue
-			}
+		if _, err := tp.curPM.Recover(tx.GetSign(), tx.SignHash); err != nil {
+			log.Trace("RecoverMultiKey reocver faild ", "err", err, "hash", tx.Hash())
+			errs[index] = fmt.Errorf("recoverMultiKey reocver faild: %v", err)
 		}
+
 		indexs = append(indexs, index)
 		addedTxs = append(addedTxs, tx)
 	}
@@ -976,8 +961,8 @@ func (tp *TxPool) Status(hashes []common.Hash) []TxStatus {
 	status := make([]TxStatus, len(hashes))
 	for i, hash := range hashes {
 		if tx := tp.all.Get(hash); tx != nil {
-			from := tx.GetActions()[0].Sender()
-			nonce := tx.GetActions()[0].Nonce()
+			from := tx.Sender()
+			nonce := tx.GetNonce()
 			if tp.pending[from] != nil && tp.pending[from].txs.items[nonce] != nil {
 				status[i] = TxStatusPending
 			} else {
@@ -1002,7 +987,7 @@ func (tp *TxPool) removeTx(hash common.Hash, outofbound bool) {
 	if tx == nil {
 		return
 	}
-	from := tx.GetActions()[0].Sender()
+	from := tx.Sender()
 
 	// Remove it from the list of known transactions
 	tp.all.Remove(hash)
@@ -1022,7 +1007,7 @@ func (tp *TxPool) removeTx(hash common.Hash, outofbound bool) {
 				tp.enqueueTx(tx.Hash(), tx)
 			}
 
-			nonce := tx.GetActions()[0].Nonce()
+			nonce := tx.GetNonce()
 
 			if pn, _ := tp.pendingPM.GetNonce(from); pn > nonce {
 				tp.pendingPM.SetNonce(from, nonce)
@@ -1062,7 +1047,7 @@ func (tp *TxPool) promoteExecutables(accounts []string) []*types.Transaction {
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
 		balance, _ := tp.curPM.GetBalance(name, tp.config.GasAssetID)
-		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.curPM, tp.curPM.GetBalance)
+		drops, _ := list.Filter(balance, tp.currentMaxGas, tp.curPM)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			tp.all.Remove(hash)
@@ -1146,7 +1131,7 @@ func (tp *TxPool) truncatePending() {
 
 						// Update the account nonce to the dropped transaction
 						pn, _ := tp.pendingPM.GetNonce(offenders[i])
-						if nonce := tx.GetActions()[0].Nonce(); pn > nonce {
+						if nonce := tx.GetNonce(); pn > nonce {
 							tp.pendingPM.SetNonce(offenders[i], nonce)
 						}
 						log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
@@ -1172,7 +1157,7 @@ func (tp *TxPool) truncatePending() {
 
 					// Update the account nonce to the dropped transaction
 					pn, _ := tp.pendingPM.GetNonce(name)
-					if nonce := tx.GetActions()[0].Nonce(); pn > nonce {
+					if nonce := tx.GetNonce(); pn > nonce {
 						tp.pendingPM.SetNonce(name, nonce)
 					}
 					log.Trace("Removed fairness-exceeding pending transaction", "hash", hash)
@@ -1248,7 +1233,7 @@ func (tp *TxPool) demoteUnexecutables() {
 			log.Error("promoteExecutables current account manager get balance err ", "name", name, "assetID", tp.config.GasAssetID, "err", err)
 		}
 
-		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.curPM, tp.curPM.GetBalance)
+		drops, invalids := list.Filter(gasBalance, tp.currentMaxGas, tp.curPM)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending or no permissions transaction", "hash", hash)
