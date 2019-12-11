@@ -58,12 +58,13 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
-	chainCfg, dposCfg, _, err := blockchain.SetupGenesisBlock(chainDb, config.Genesis)
+	chainCfg, dposCfg, hash, err := blockchain.SetupGenesisBlock(chainDb, config.Genesis)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx.AppendBootNodes(chainCfg.BootNodes)
+	ctx.SetGenesisHash(hash)
 
 	ftservice := &FtService{
 		config:       config,
