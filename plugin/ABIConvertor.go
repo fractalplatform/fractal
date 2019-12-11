@@ -224,8 +224,8 @@ func PluginSolAPICall(o, p1 interface{}, data []byte) ([]byte, error) {
 	if !exist {
 		return nil, errors.New("method is not exist")
 	}
-
-	params, err := method.Inputs.UnpackValues(data[4:])
+	end := len(data[4:]) / 32
+	params, err := method.Inputs.UnpackValues(data[4 : end*32+4])
 	if err != nil {
 		return nil, err
 	}
