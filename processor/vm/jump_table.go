@@ -1094,14 +1094,16 @@ func NewFrontierInstructionSet() [256]operation {
 			valid:         true,
 			returns:       true,
 		},
-		CALLPLUGIN: {
-			execute:       opCallPlugin,
-			gasCost:       gasCallWithPay,
-			validateStack: makeStackFunc(9, 1),
-			memorySize:    memoryCallEx,
-			valid:         true,
-			returns:       true,
-		},
+		/*
+			CALLPLUGIN: {
+				execute:       opCallPlugin,
+				gasCost:       gasCallWithPay,
+				validateStack: makeStackFunc(9, 1),
+				memorySize:    memoryCallEx,
+				valid:         true,
+				returns:       true,
+			},
+		*/
 		CALLCODE: {
 			execute:       opCallCode,
 			gasCost:       gasCallCode,

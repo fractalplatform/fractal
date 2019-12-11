@@ -842,6 +842,55 @@ func opCreate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	return nil, nil
 }
 
+func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	// Pop gas. The actual gas in in evm.callGasTemp.
+	evm.interpreter.intPool.put(stack.pop())
+	gas := evm.callGasTemp
+	// Pop other call parameters.
+	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	value = math.U256(value)
+	accountName := string(name.Bytes())
+	// Get the arguments from the memory.
+	args := memory.Get(inOffset.Int64(), inSize.Int64())
+
+	if value.Sign() != 0 {
+		gas += evm.interpreter.gasTable.CallStipend
+	}
+
+	action, _ := envelope.NewPluginTx(envelope.PayloadType(0xff), contract.Name(), accountName, 0, evm.ChainConfig().SysTokenID, evm.ChainConfig().SysTokenID, gas, evm.GasPrice, value, args, nil)
+
+	var ret []byte
+	var err error
+
+	ret, err = evm.PM.ExecTx(types.NewTransaction(action), true)
+	if evm.vmConfig.ContractLogFlag {
+		errmsg := ""
+		if err != nil {
+			errmsg = err.Error()
+		}
+		internalAction := &types.InternalTx{
+			Type:     types.PluginCall,
+			GasUsed:  gas,
+			GasLimit: gas,
+			Depth:    uint64(evm.depth),
+			Error:    errmsg}
+		evm.InternalTxs = append(evm.InternalTxs, internalAction)
+	}
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(1))
+	}
+	if err == nil || err == errExecutionReverted {
+		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
+	}
+
+	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
+
+	return ret, nil
+}
+
 func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	// Pop gas. The actual gas in in evm.callGasTemp.
 	evm.interpreter.intPool.put(stack.pop())
@@ -893,6 +942,10 @@ func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 }
 
 func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	bypassPlugin := stack.Back(1).Bytes()
+	if evm.PM.IsPlugin(string(bypassPlugin)) {
+		return opCallPluginWeak(pc, evm, contract, memory, stack)
+	}
 	// Pop gas. The actual gas in in evm.callGasTemp.
 	evm.interpreter.intPool.put(stack.pop())
 	gas := evm.callGasTemp

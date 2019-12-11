@@ -34,6 +34,7 @@ type IPM interface {
 	IFee
 	ISigner
 	ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error)
+	IsPlugin(name string) bool
 }
 
 type IContract interface {

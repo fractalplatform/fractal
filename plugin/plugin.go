@@ -132,6 +132,11 @@ func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
 	return nil, ErrWrongContract
 }
 
+func (pm *Manager) IsPlugin(name string) bool {
+	_, exist := pm.contracts[name]
+	return exist
+}
+
 // NewPM create new plugin manager.
 func NewPM(stateDB *state.StateDB) IPM {
 	acm, _ := NewACM(stateDB)
