@@ -383,6 +383,11 @@ func DefaultGenesisAccounts() []*pm.CreateAccountAction {
 			Pubkey: common.HexToPubKey("").String(),
 		},
 		&pm.CreateAccountAction{
+			Name:   params.DefaultChainconfig.ItemName,
+			Desc:   "item manager account",
+			Pubkey: common.HexToPubKey("").String(),
+		},
+		&pm.CreateAccountAction{
 			Name:   params.DefaultChainconfig.DposName,
 			Desc:   "consensus account",
 			Pubkey: common.HexToPubKey("").String(),

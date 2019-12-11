@@ -31,6 +31,7 @@ type ChainConfig struct {
 	SysName          string   `json:"systemName"`  // system name
 	AccountName      string   `json:"accountName"` // account name
 	AssetName        string   `json:"assetName"`   // asset name
+	ItemName         string   `json:"itemName"`    // item name
 	DposName         string   `json:"dposName"`    // system name
 	FeeName          string   `json:"feeName"`     //fee name
 	SysToken         string   `json:"systemToken"` // system token
@@ -48,6 +49,7 @@ var DefaultChainconfig = &ChainConfig{
 	SysName:          "fractalfounder",
 	AccountName:      "fractalaccount",
 	AssetName:        "fractalasset",
+	ItemName:         "fractalitem",
 	DposName:         "fractaldpos",
 	FeeName:          "fractalfee",
 	SysToken:         "ftoken",
