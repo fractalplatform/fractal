@@ -22,29 +22,20 @@ contract ConsensusAPI is Plugin {
         uint256 Balance;
         uint256 Epoch;
     }
-    function GetMinerInfo(address miner) public returns(MinerInfo memory){
-        if (msg.sender == address(this))
-            Call();
-        else
-            return this.GetMinerInfo(miner);
+    function GetMinerInfo(address miner) external returns(MinerInfo memory){
+        Plugin.Call();
     }
 
     function UnregisterMiner() public {
-        if (msg.sender == address(this))
-            Call();
-        else
-            return this.UnregisterMiner();
+        Plugin.Call();
+    }
+    function RegisterMiner(address miner) external payable {
+        Plugin.Call();
     }
 
-    function RegisterMiner(address miner) public {
-        if (msg.sender == address(this))
-            Call();
-        else
-            return this.RegisterMiner(miner);
-    }
-    event InfoLog(MinerInfo);
+    event InfoLog(address);
     function testRead(address miner) public {
-        MinerInfo memory info = GetMinerInfo(miner);
-        emit InfoLog(info);
+        MinerInfo memory info = this.GetMinerInfo(miner);
+        emit InfoLog(info.OwnerAccount);
     }
 }
