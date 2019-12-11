@@ -7,41 +7,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/plugin/abi"
 )
-
-func TestABIEncode(t *testing.T) {
-	testcase := []interface{}{"hello", big.NewInt(1)}
-	for _, v := range testcase {
-		b, err := encodeElem(v)
-		fmt.Println("err:", err)
-		fmt.Println("hex:", len(b))
-		for i := 0; i < len(b); i += 32 {
-			fmt.Printf("%04d:%x\n", i, b[i:i+32])
-		}
-	}
-}
-
-func TestABIDecode(t *testing.T) {
-	testcase := [][]byte{
-		[]byte{
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x10,
-		},
-		[]byte{
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10,
-			'h', 'e', 'l', 'l', 'o', 'w', 'o', 'r', 'l', 'd', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		},
-	}
-	testobj := []interface{}{
-		new(big.Int),
-		new(string),
-	}
-	for i := range testobj {
-		err := decodeElem(testcase[i], testobj[i])
-		fmt.Println("err:", err)
-		fmt.Println("obj:", reflect.ValueOf(testobj[i]).Elem().Interface())
-	}
-}
 
 var big9 = big.NewInt(90)
 var testcase = []interface{}{
@@ -151,54 +119,6 @@ func ByteShow(str string, b []byte) {
 	}
 }
 
-func CallSimu(method string, args ...interface{}) ([]byte, error) {
-	api := apimap[method]
-	b, err := api.Inputs.Pack(args...)
-	if err != nil {
-		return nil, err
-	}
-	b = append(api.ID(), b...)
-	ByteShow("call "+method+" "+api.Sig(), b)
-	return SolAPICall(method, b)
-}
-
-func TestAPICallInt(t *testing.T) {
-	method := "mul"
-	err := SolAPIRegister(method, MulAPI)
-	fmt.Println("reg err:", err)
-	b, err := CallSimu(method, big.NewInt(9), big.NewInt(3))
-	fmt.Println("mul err:", err)
-	ByteShow("mul byte:", b)
-}
-
-func TestAPICallStr(t *testing.T) {
-	method := "stradd"
-	err := SolAPIRegister(method, StrAdd)
-	fmt.Println("reg err:", err)
-	b, err := CallSimu(method, "hello", "world")
-	fmt.Println("add err:", err)
-	ByteShow("add byte:", b)
-}
-
-func TestAPICallStruct(t *testing.T) {
-	method := "getinfo"
-	err := SolAPIRegister(method, GetInfoByName)
-	fmt.Println("reg err:", err)
-	b, err := CallSimu(method, "xiaoyu")
-	fmt.Println("add err:", err)
-	ByteShow("add byte:", b)
-}
-
-func TestAPICallStructIn(t *testing.T) {
-	return
-	method := "CheckInfo"
-	err := SolAPIRegister(method, CheckInfo)
-	fmt.Println("reg err:", err)
-	b, err := CallSimu(method, Info2{big.NewInt(4)})
-	fmt.Println("add err:", err)
-	ByteShow("add byte:", b)
-}
-
 type pluginSimu struct {
 	Name string
 	Age  *big.Int
@@ -221,6 +141,9 @@ func (p *pluginSimu) Sol_setAge(_ interface{}, age *big.Int) (*big.Int, error) {
 }
 func (p *pluginSimu) Sol_set(_ interface{}, name string, age *big.Int) (*pluginSimu, error) {
 	return p, nil
+}
+func (p *pluginSimu) Sol_Address(_ interface{}, name string, address common.Address) (common.Address, string, error) {
+	return common.StringToAddress(name), address.AccountName(), nil
 }
 
 func PluginCallSimu(o interface{}, name string, args ...interface{}) ([]byte, error) {
@@ -257,6 +180,17 @@ func TestPluginAPICallStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 	b, err := PluginCallSimu(&pluginSimu{"lixiaopeng", big.NewInt(27)}, "set", "liuxiaoyu", big.NewInt(40))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ByteShow("ret", b)
+}
+
+func TestPluginAPICallAddress(t *testing.T) {
+	if err := PluginSolAPIRegister(&pluginSimu{}); err != nil {
+		t.Fatal(err)
+	}
+	b, err := PluginCallSimu(&pluginSimu{}, "Address", "liuxiaoyu", common.StringToAddress("lixiaopeng"))
 	if err != nil {
 		t.Fatal(err)
 	}

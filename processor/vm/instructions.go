@@ -393,7 +393,8 @@ func opSha3(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 }
 
 func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.interpreter.intPool.get().SetBytes([]byte(contract.Name())))
+	address := common.StringToAddress(contract.Name()).Bytes()
+	stack.push(evm.interpreter.intPool.get().SetBytes(address))
 	return nil, nil
 }
 
@@ -520,7 +521,7 @@ func opSnapBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	assetId := stack.pop()
 	slot := stack.peek()
-	accountName := string(slot.Bytes())
+	accountName := common.BigToAddress(slot).AccountName()
 
 	balance, err := evm.PM.GetBalance(accountName, assetId.Uint64())
 	if err != nil {
@@ -533,7 +534,7 @@ func opBalanceex(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 
 func opBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	slot := stack.peek()
-	accountName := string(slot.Bytes())
+	accountName := common.BigToAddress(slot).AccountName()
 
 	balance, err := evm.PM.GetBalance(accountName, contract.AssetID)
 	if err != nil {
@@ -545,17 +546,20 @@ func opBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 }
 
 func opOrigin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.interpreter.intPool.get().SetBytes([]byte(evm.Origin)))
+	address := common.StringToAddress(evm.Origin).Bytes()
+	stack.push(evm.interpreter.intPool.get().SetBytes(address))
 	return nil, nil
 }
 
 func opRecipient(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.interpreter.intPool.get().SetBytes([]byte(evm.Recipient)))
+	address := common.StringToAddress(evm.Recipient).Bytes()
+	stack.push(evm.interpreter.intPool.get().SetBytes(address))
 	return nil, nil
 }
 
 func opCaller(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.interpreter.intPool.get().SetBytes([]byte(contract.Caller())))
+	address := common.StringToAddress(contract.Caller()).Bytes()
+	stack.push(evm.interpreter.intPool.get().SetBytes(address))
 	return nil, nil
 }
 
@@ -682,7 +686,8 @@ func opBlockhash(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 }
 
 func opCoinbase(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	stack.push(evm.interpreter.intPool.get().SetBytes([]byte(evm.Coinbase)))
+	address := common.StringToAddress(evm.Coinbase).Bytes()
+	stack.push(evm.interpreter.intPool.get().SetBytes(address))
 	return nil, nil
 }
 
@@ -849,7 +854,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	// Pop other call parameters.
 	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	value = math.U256(value)
-	accountName := strings.TrimRight(string(name.Bytes()), "\x00")
+	accountName := common.BigToAddress(name).AccountName()
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 
@@ -898,7 +903,7 @@ func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	// Pop other call parameters.
 	name, assetId, actype, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	value = math.U256(value)
-	accountName := string(name.Bytes())
+	accountName := common.BigToAddress(name).AccountName()
 	assetID := assetId.Uint64()
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
@@ -952,7 +957,8 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	// Pop other call parameters.
 	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	value = math.U256(value)
-	accountName := string(name.Bytes())
+
+	accountName := common.BigToAddress(name).AccountName()
 
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
@@ -1007,7 +1013,7 @@ func opCallWithPay(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	// Pop other call parameters.
 	name, assetId, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	value = math.U256(value)
-	accountName := string(name.Bytes())
+	accountName := common.BigToAddress(name).AccountName()
 	assetID := assetId.Uint64()
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
@@ -1064,7 +1070,8 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	//addr, assetId,value, inOffset, inSize, retOffset, retSize := stack.pop(),stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	//toName, _ := common.BigToName(name)
-	accountName := string(name.Bytes())
+
+	accountName := common.BigToAddress(name).AccountName()
 
 	value = math.U256(value)
 	// Get arguments from the memory.
@@ -1110,7 +1117,8 @@ func opDelegateCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, st
 	gas := evm.callGasTemp
 	// Pop other call parameters.
 	name, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
-	accountName := string(name.Bytes())
+
+	accountName := common.BigToAddress(name).AccountName()
 
 	// Get arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
@@ -1227,7 +1235,8 @@ func opAddAsset(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	assetID := assetId.Uint64()
 	//toName, _ := common.BigToName(to)
 	value = math.U256(value)
-	accountName := string(to.Bytes())
+
+	accountName := common.BigToAddress(to).AccountName()
 
 	err := execAddAsset(evm, contract, assetID, accountName, value)
 
@@ -1559,7 +1568,7 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	evm.interpreter.intPool.put(stack.pop())
 	name, assetId, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 
-	accountName := string(name.Bytes())
+	accountName := common.BigToAddress(name).AccountName()
 	assetID := assetId.Uint64()
 	value = math.U256(value)
 
@@ -1605,7 +1614,7 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	// Pop other call parameters.
 	name, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 
-	accountName := string(name.Bytes())
+	accountName := common.BigToAddress(name).AccountName()
 
 	// Get arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())

@@ -723,8 +723,11 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	return nil
 }
 
-func (c *Consensus) Sol_Sprintf(_ *ContextSol, fmtstr string, name string, age *big.Int) (string, error) {
-	return fmt.Sprintf(fmtstr, name, age.Int64()), nil
+func (c *Consensus) Sol_GetMinerInfo(context *ContextSol, miner string) (*CandidateInfo, error) {
+	if info, exist := c.candidates.info[miner]; exist {
+		return info, nil
+	}
+	return nil, errors.New("miner is not exist")
 }
 
 func (c *Consensus) Sol_RegisterMiner(context *ContextSol, signer string) error {
