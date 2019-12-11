@@ -155,15 +155,15 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IFee:            fee,
 		stateDB:         stateDB,
 	}
-	/*
-	err := PluginSolAPIRegister(consensus)
-	if err != nil {
-		panic(err)
-	}
-	*/
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm
 	pm.contracts[consensus.AccountName()] = consensus
 	pm.contractsByType[Transfer] = acm
 	return pm
+}
+
+func init() {
+	PluginSolAPIRegister(&Consensus{})
+	PluginSolAPIRegister(&AccountManager{})
+	PluginSolAPIRegister(&AssetManager{})
 }
