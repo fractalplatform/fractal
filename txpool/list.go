@@ -50,7 +50,7 @@ func newTxList(strict bool) *txList {
 // already contained within the list.
 func (l *txList) Overlaps(tx *types.Transaction) bool {
 	// todo change action
-	return l.txs.Get(tx.GetActions()[0].Nonce()) != nil
+	return l.txs.Get(tx.GetNonce()) != nil
 }
 
 // Add tries to insert a new transaction into the list, returning whether the
@@ -58,13 +58,13 @@ func (l *txList) Overlaps(tx *types.Transaction) bool {
 func (l *txList) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transaction) {
 	// If there's an older better transaction, abort
 	// todo change action nonce
-	old := l.txs.Get(tx.GetActions()[0].Nonce())
+	old := l.txs.Get(tx.GetNonce())
 	if old != nil {
-		threshold := new(big.Int).Div(new(big.Int).Mul(old.GasPrice(), big.NewInt(100+int64(priceBump))), big.NewInt(100))
+		threshold := new(big.Int).Div(new(big.Int).Mul(old.GetGasPrice(), big.NewInt(100+int64(priceBump))), big.NewInt(100))
 		// Have to ensure that the new gas price is higher than the old gas
 		// price as well as checking the percentage threshold to ensure that
 		// this is accurate for low (Wei-level) gas price replacements
-		if old.GasPrice().Cmp(tx.GasPrice()) >= 0 || threshold.Cmp(tx.GasPrice()) > 0 {
+		if old.GetGasPrice().Cmp(tx.GetGasPrice()) >= 0 || threshold.Cmp(tx.GetGasPrice()) > 0 {
 			return false, nil
 		}
 	}
@@ -77,7 +77,7 @@ func (l *txList) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Tran
 	}
 
 	// todo change action
-	if gas := tx.GetActions()[0].Gas(); l.gascap < gas {
+	if gas := tx.GetGasLimit(); l.gascap < gas {
 		l.gascap = gas
 	}
 	return true, old
@@ -94,8 +94,7 @@ func (l *txList) Forward(threshold uint64) []*types.Transaction {
 // than the provided thresholds. Every removed transaction is returned for any
 // post-removal maintenance. Strict-mode invalidated transactions are also
 // returned.
-func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, manager pm.IPM,
-	getBalance func(name string, assetID uint64) (*big.Int, error)) ([]*types.Transaction, []*types.Transaction) {
+func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, manager pm.IPM) ([]*types.Transaction, []*types.Transaction) {
 	// If all transactions are below the threshold, short circuit
 	if l.gascostcap.Cmp(costLimit) > 0 {
 		l.gascostcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
@@ -106,20 +105,13 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, manager pm.IPM,
 
 	// Filter out all the transactions above the account's funds
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
-		act := tx.GetActions()[0]
-		balance, err := getBalance(act.Sender(), act.AssetID())
-		if err != nil {
-			log.Warn("txpool filter get balance failed", "err", err)
-			return true
-		}
-
-		if _, err := manager.Recover(tx.GetActions()[0].GetSign(), tx.SignHash); err != nil {
+		act := tx
+		if _, err := manager.Recover(tx.GetSign(), tx.SignHash); err != nil {
 			log.Warn("txpool filter recover transaction failed", "err", err)
 			return true
 		}
 
-		// todo change action
-		return act.Value().Cmp(balance) > 0 || tx.Cost().Cmp(costLimit) > 0 || act.Gas() > gasLimit
+		return tx.Cost().Cmp(costLimit) > 0 || act.GetGasLimit() > gasLimit
 	})
 
 	// If the list was strict, filter anything above the lowest nonce
@@ -128,12 +120,12 @@ func (l *txList) Filter(costLimit *big.Int, gasLimit uint64, manager pm.IPM,
 	if l.strict && len(removed) > 0 {
 		lowest := uint64(math.MaxUint64)
 		for _, tx := range removed {
-			if nonce := tx.GetActions()[0].Nonce(); lowest > nonce {
+			if nonce := tx.GetNonce(); lowest > nonce {
 				lowest = nonce
 			}
 		}
 		// todo change action
-		invalids = l.txs.Filter(func(tx *types.Transaction) bool { return tx.GetActions()[0].Nonce() > lowest })
+		invalids = l.txs.Filter(func(tx *types.Transaction) bool { return tx.GetNonce() > lowest })
 	}
 	return removed, invalids
 }
@@ -150,14 +142,14 @@ func (l *txList) Cap(threshold int) []*types.Transaction {
 func (l *txList) Remove(tx *types.Transaction) (bool, []*types.Transaction) {
 	// Remove the transaction from the set
 	// todo change action
-	nonce := tx.GetActions()[0].Nonce()
+	nonce := tx.GetNonce()
 	if removed := l.txs.Remove(nonce); !removed {
 		return false, nil
 	}
 	// In strict mode, filter out non-executable transactions
 	if l.strict {
 		// todo change action
-		return true, l.txs.Filter(func(tx *types.Transaction) bool { return tx.GetActions()[0].Nonce() > nonce })
+		return true, l.txs.Filter(func(tx *types.Transaction) bool { return tx.GetNonce() > nonce })
 	}
 	return true, nil
 }

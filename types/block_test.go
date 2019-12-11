@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,6 +36,11 @@ var (
 		Time:       1426516743,
 		Extra:      []byte("test Header"),
 	}
+
+	ctx, _ = envelope.NewContractTx(envelope.CreateContract, "sender", "receipt", 0, 0, 0, 100000,
+		big.NewInt(100), big.NewInt(1000), []byte("payload"), []byte("remark"))
+	testTx = NewTransaction(ctx)
+
 	testBlock = &Block{
 		Head: testHeader,
 		Txs:  []*Transaction{testTx},
@@ -51,8 +57,8 @@ func TestBlockEncodeRLPAndDecodeRLP(t *testing.T) {
 	if err := newBlock.DecodeRLP(bytes); err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, testBlock.Transactions()[0].GasAssetID(), newBlock.Transactions()[0].GasAssetID())
-	assert.Equal(t, testBlock.Transactions()[0].GasPrice(), newBlock.Transactions()[0].GasPrice())
+	assert.Equal(t, testBlock.Transactions()[0].GetGasAssetID(), newBlock.Transactions()[0].GetGasAssetID())
+	assert.Equal(t, testBlock.Transactions()[0].GetGasPrice(), newBlock.Transactions()[0].GetGasPrice())
 	assert.Equal(t, testBlock.Hash(), newBlock.Hash())
 }
 

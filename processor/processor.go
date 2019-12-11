@@ -79,7 +79,6 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 
 	// Finalize the block, applying any consensus engine specific extras (e.g. block rewards)
 	manager.Finalize(header, block.Transactions(), receipts)
-
 	return receipts, allLogs, *usedGas, nil
 }
 
@@ -96,112 +95,87 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 	// todo for the moment，only system asset
 	// assetID := tx.GasAssetID()
 	assetID := p.bc.Config().SysTokenID
-	if assetID != tx.GasAssetID() {
+	if assetID != tx.GetGasAssetID() {
 		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.Config().SysTokenID)
 	}
-	gasPrice := tx.GasPrice()
+	gasPrice := tx.GetGasPrice()
 	//timer for vm exec overtime
 	var t *time.Timer
-	//
 	var totalGas uint64
-	var ios []*types.ActionResult
 	detailTx := &types.DetailTx{}
-	var detailActions []*types.DetailAction
-	for i, action := range tx.GetActions() {
-		// if needCheckSign(accountDB, action) {
-		// 	if err := plugin.RecoverTx(accountDB, types.NewSigner(config.ChainID), tx); err != nil {
-		// 		return nil, 0, err
-		// 	}
-		// }
 
-		nonce, err := pm.GetNonce(action.Sender())
-		if err != nil {
-			return nil, 0, err
-		}
-		if nonce < action.Nonce() {
-			return nil, 0, ErrNonceTooHigh
-		} else if nonce > action.Nonce() {
-			return nil, 0, ErrNonceTooLow
-		}
+	nonce, err := pm.GetNonce(tx.Sender())
+	if err != nil {
+		return nil, 0, err
+	}
+	if nonce < tx.GetNonce() {
+		return nil, 0, ErrNonceTooHigh
+	} else if nonce > tx.GetNonce() {
+		return nil, 0, ErrNonceTooLow
+	}
 
-		evmcontext := &EvmContext{
-			ChainContext: p.bc,
-		}
-		context := NewEVMContext(action.Sender(), action.Recipient(), assetID, tx.GasPrice(), header, evmcontext, author)
-		vmenv := vm.NewEVM(context, pm, statedb, config, cfg)
+	evmcontext := &EvmContext{
+		ChainContext: p.bc,
+	}
+	context := NewEVMContext(tx.Sender(), tx.Recipient(), assetID, tx.GetGasPrice(), header, evmcontext, author)
+	vmenv := vm.NewEVM(context, pm, statedb, config, cfg)
 
-		//will abort the vm if overtime
-		if false == cfg.EndTime.IsZero() {
-			t = time.AfterFunc(cfg.EndTime.Sub(time.Now()), func() {
-				vmenv.OverTimeAbort()
-			})
-		}
+	//will abort the vm if overtime
+	if false == cfg.EndTime.IsZero() {
+		t = time.AfterFunc(cfg.EndTime.Sub(time.Now()), func() {
+			vmenv.OverTimeAbort()
+		})
+	}
 
-		_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, action, gp, gasPrice, assetID, config)
+	_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, tx, gp, gasPrice, assetID, config)
 
-		if false == cfg.EndTime.IsZero() {
-			//close timer
-			t.Stop()
-		}
+	if false == cfg.EndTime.IsZero() {
+		//close timer
+		t.Stop()
+	}
 
-		if err != nil {
-			return nil, 0, err
-		}
+	if err != nil {
+		return nil, 0, err
+	}
 
-		*usedGas += gas
-		totalGas += gas
+	*usedGas += gas
+	totalGas += gas
 
-		var status uint64
-		if failed {
-			status = types.ReceiptStatusFailed
-		} else {
-			status = types.ReceiptStatusSuccessful
-		}
-		vmerrstr := ""
-		if vmerr != nil {
-			vmerrstr = vmerr.Error()
-			log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
-		}
-		var gasAllot []*types.GasDistribution
-		// todo
-		// for key, gas := range vmenv.FounderGasMap {
-		// 	gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
-		// }
+	var status uint64
+	if failed {
+		status = types.ReceiptStatusFailed
+	} else {
+		status = types.ReceiptStatusSuccessful
+	}
+	vmerrstr := ""
+	if vmerr != nil {
+		vmerrstr = vmerr.Error()
+		log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
+	}
+	var gasAllots []*types.GasDistribution
+	// todo
+	// for key, gas := range vmenv.FounderGasMap {
+	// 	gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
+	// }
 
-		ios = append(ios, &types.ActionResult{Status: status, Index: uint64(i), GasUsed: gas, GasAllot: gasAllot, Error: vmerrstr})
-
-		internalTxLog := make([]*types.InternalAction, 0, len(vmenv.InternalTxs))
-		for _, internalAction := range vmenv.InternalTxs {
-			internalAction.Action.Hash = action.Hash()
-			internalTxLog = append(internalTxLog, internalAction)
-		}
-		detailActions = append(detailActions, &types.DetailAction{InternalActions: internalTxLog})
+	internalTxs := make([]*types.InternalTx, 0, len(vmenv.InternalTxs))
+	for _, itx := range vmenv.InternalTxs {
+		internalTxs = append(internalTxs, itx)
 	}
 
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)
 	receipt.TxHash = tx.Hash()
-	receipt.ActionResults = ios
+	receipt.Status = status
+	receipt.GasUsed = gas
+	receipt.GasAllot = gasAllots
+	receipt.Error = vmerrstr
 	// Set the receipt logs and create a bloom for filtering
 	receipt.Logs = statedb.GetLogs(tx.Hash())
 	receipt.Bloom = types.CreateBloom([]*types.Receipt{receipt})
 
 	detailTx.TxHash = receipt.TxHash
-	detailTx.Actions = detailActions
+	detailTx.InternalTxs = internalTxs
 	receipt.SetInternalTxsLog(detailTx)
 	return receipt, totalGas, nil
-}
-
-func needCheckSign(manager pm.IPM, action *types.Action) bool {
-	// authorVersion := types.GetAuthorCache(action)
-	// if len(authorVersion) == 0 {
-	// 	return true
-	// }
-	// for name, version := range authorVersion {
-	// 	if tmpVersion, err := plugin.GetAuthorVersion(manager, name); err != nil || version != tmpVersion {
-	// 		return true
-	// 	}
-	// }
-	// return false
-	return true
 }

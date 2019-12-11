@@ -33,6 +33,7 @@ import (
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 var (
@@ -841,6 +842,56 @@ func opCreate(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	return nil, nil
 }
 
+func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
+	// Pop gas. The actual gas in in evm.callGasTemp.
+	evm.interpreter.intPool.put(stack.pop())
+	gas := evm.callGasTemp
+	// Pop other call parameters.
+	name, assetId, actype, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
+	value = math.U256(value)
+	accountName := string(name.Bytes())
+	assetID := assetId.Uint64()
+	// Get the arguments from the memory.
+	args := memory.Get(inOffset.Int64(), inSize.Int64())
+
+	if value.Sign() != 0 {
+		gas += evm.interpreter.gasTable.CallStipend
+	}
+
+	action, _ := envelope.NewPluginTx(envelope.PayloadType(actype.Uint64()), contract.Name(), accountName, 0, assetID, evm.ChainConfig().SysTokenID, gas, evm.GasPrice, value, args, nil)
+
+	var ret []byte
+	var err error
+
+	ret, err = evm.PM.ExecTx(types.NewTransaction(action), true)
+	if evm.vmConfig.ContractLogFlag {
+		errmsg := ""
+		if err != nil {
+			errmsg = err.Error()
+		}
+		internalAction := &types.InternalTx{
+			Type:     types.PluginCall,
+			GasUsed:  gas,
+			GasLimit: gas,
+			Depth:    uint64(evm.depth),
+			Error:    errmsg}
+		evm.InternalTxs = append(evm.InternalTxs, internalAction)
+	}
+
+	if err != nil {
+		stack.push(evm.interpreter.intPool.getZero())
+	} else {
+		stack.push(evm.interpreter.intPool.get().SetUint64(1))
+	}
+	if err == nil || err == errExecutionReverted {
+		memory.Set(retOffset.Uint64(), retSize.Uint64(), ret)
+	}
+
+	evm.interpreter.intPool.put(name, value, inOffset, inSize, retOffset, retSize)
+
+	return ret, nil
+}
+
 func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	// Pop gas. The actual gas in in evm.callGasTemp.
 	evm.interpreter.intPool.put(stack.pop())
@@ -862,7 +913,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 	if p := PrecompiledContracts[name.String()]; p != nil {
 		ret, err = RunPrecompiledContract(p, args, contract)
 	} else {
-		action := types.NewAction(types.CallContract, contract.Name(), accountName, 0, evm.AssetID, gas, value, args, nil)
+		action, _ := envelope.NewContractTx(envelope.CallContract, contract.Name(), accountName, 0, evm.AssetID, evm.ChainConfig().SysTokenID, gas, big.NewInt(0), value, args, nil)
 		var returnGas uint64
 		ret, returnGas, err = evm.Call(contract, action, gas)
 		contract.Gas += returnGas
@@ -872,7 +923,12 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 			if err != nil {
 				errmsg = err.Error()
 			}
-			internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "call", GasUsed: gas - returnGas, GasLimit: gas, Depth: uint64(evm.depth), Error: errmsg}
+			internalAction := &types.InternalTx{
+				Type:     types.Call,
+				GasUsed:  gas - returnGas,
+				GasLimit: gas,
+				Depth:    uint64(evm.depth),
+				Error:    errmsg}
 			evm.InternalTxs = append(evm.InternalTxs, internalAction)
 		}
 	}
@@ -912,7 +968,7 @@ func opCallWithPay(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 	if p := PrecompiledContracts[name.String()]; p != nil {
 		ret, err = RunPrecompiledContract(p, args, contract)
 	} else {
-		action := types.NewAction(types.CallContract, contract.Name(), accountName, 0, assetID, gas, value, args, nil)
+		action, _ := envelope.NewContractTx(envelope.CallContract, contract.Name(), accountName, 0, assetID, evm.ChainConfig().SysTokenID, gas, big.NewInt(0), value, args, nil)
 		var returnGas uint64
 		ret, returnGas, err = evm.Call(contract, action, gas)
 		contract.Gas += returnGas
@@ -922,7 +978,12 @@ func opCallWithPay(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 			if err != nil {
 				errmsg = err.Error()
 			}
-			internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "callwithpay", GasUsed: gas - returnGas, GasLimit: gas, Depth: uint64(evm.depth), Error: errmsg}
+			internalAction := &types.InternalTx{
+				Type:     types.CallWithPay,
+				GasUsed:  gas - returnGas,
+				GasLimit: gas,
+				Depth:    uint64(evm.depth),
+				Error:    errmsg}
 			evm.InternalTxs = append(evm.InternalTxs, internalAction)
 		}
 	}
@@ -959,8 +1020,8 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 	if value.Sign() != 0 {
 		gas += evm.interpreter.gasTable.CallStipend
 	}
-	// todo
-	action := types.NewAction(types.CallContract, contract.Name(), accountName, 0, evm.AssetID, gas, value, args, nil)
+
+	action, _ := envelope.NewContractTx(envelope.CallContract, contract.Name(), accountName, 0, evm.AssetID, evm.ChainConfig().SysTokenID, gas, big.NewInt(0), value, args, nil)
 
 	ret, returnGas, err := evm.CallCode(contract, action, gas)
 	if err != nil {
@@ -979,7 +1040,12 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 		if err != nil {
 			errmsg = err.Error()
 		}
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "callcode", GasUsed: gas - returnGas, GasLimit: gas, Depth: uint64(evm.depth), Error: errmsg}
+		internalAction := &types.InternalTx{
+			Type:     types.CallCode,
+			GasUsed:  gas - returnGas,
+			GasLimit: gas,
+			Depth:    uint64(evm.depth),
+			Error:    errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 	return ret, nil
@@ -1444,14 +1510,14 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 	assetID := assetId.Uint64()
 	value = math.U256(value)
 
-	action := types.NewAction(types.CallContract, contract.Name(), accountName, 0, assetID, 0, value, nil, nil)
+	action, _ := envelope.NewContractTx(envelope.CallContract, contract.Name(), accountName, 0, assetID, evm.ChainConfig().SysTokenID, 0, big.NewInt(0), value, nil, nil)
 
 	if !contract.UseGas(evm.CheckReceipt(action)) {
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, nil
 	}
 
-	err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value())
+	err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.GetAssetID(), action.Value())
 	assetName, err := evm.PM.GetAssetName(assetID)
 	if err == nil {
 		evm.distributeAssetGas(int64(evm.interpreter.gasTable.CallValueTransferGas-evm.interpreter.gasTable.CallStipend), assetName, contract.Name())
@@ -1468,7 +1534,12 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		if err != nil {
 			errmsg = err.Error()
 		}
-		internalAction := &types.InternalAction{Action: action.NewRPCAction(0), ActionType: "transferex", GasUsed: 0, GasLimit: 0, Depth: uint64(evm.depth), Error: errmsg}
+		internalAction := &types.InternalTx{
+			Type:     types.TransferEx,
+			GasUsed:  0,
+			GasLimit: 0,
+			Depth:    uint64(evm.depth),
+			Error:    errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 	return nil, nil
@@ -1503,7 +1574,12 @@ func opStaticCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		if err != nil {
 			errmsg = err.Error()
 		}
-		internalAction := &types.InternalAction{ActionType: "staticcall", GasUsed: gas - returnGas, GasLimit: gas, Depth: uint64(evm.depth), Error: errmsg}
+		internalAction := &types.InternalTx{
+			Type:     types.StaticCall,
+			GasUsed:  gas - returnGas,
+			GasLimit: gas,
+			Depth:    uint64(evm.depth),
+			Error:    errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 	return ret, nil

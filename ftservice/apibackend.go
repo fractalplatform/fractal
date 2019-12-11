@@ -132,15 +132,13 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(string) b
 		batchTxs := blockBody.Transactions
 
 		for _, tx := range batchTxs {
-			for _, act := range tx.GetActions() {
-				if filterFn(act.Sender()) || filterFn(act.Recipient()) {
-					hhpair := &types.TxHeightHashPair{
-						Hash:   tx.Hash(),
-						Height: uint64(ublocknum),
-					}
-					txhhpairs = append(txhhpairs, hhpair)
-					break
+			if filterFn(tx.Sender()) || filterFn(tx.Recipient()) {
+				hhpair := &types.TxHeightHashPair{
+					Hash:   tx.Hash(),
+					Height: uint64(ublocknum),
 				}
+				txhhpairs = append(txhhpairs, hhpair)
+				break
 			}
 		}
 	}
@@ -155,40 +153,39 @@ func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(string) b
 }
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
-	var lastnum int64
-	if lookbackNum > blockNr {
-		lastnum = 0
-	} else {
-		lastnum = int64(blockNr - lookbackNum)
-	}
+	//  var lastnum int64
+	// if lookbackNum > blockNr {
+	// 	lastnum = 0
+	// } else {
+	// 	lastnum = int64(blockNr - lookbackNum)
+	// }
 	txdetails := make([]*types.DetailTx, 0)
 
-	for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
-		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
-		if hash == (common.Hash{}) {
-			continue
-		}
+	// for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
+	// 	hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
+	// 	if hash == (common.Hash{}) {
+	// 		continue
+	// 	}
 
-		batchTxdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, uint64(ublocknum))
-		for _, txd := range batchTxdetails {
-			newIntxs := make([]*types.DetailAction, 0)
-			for _, intx := range txd.Actions {
-				newInactions := make([]*types.InternalAction, 0)
-				for _, inlog := range intx.InternalActions {
-					if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
-						newInactions = append(newInactions, inlog)
-					}
-				}
-				if len(newInactions) > 0 {
-					newIntxs = append(newIntxs, &types.DetailAction{InternalActions: newInactions})
-				}
-			}
+	// 	batchTxdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, uint64(ublocknum))
+	// 	for _, txd := range batchTxdetails {
+	// 		newIntxs := make([]*types.DetailTx, 0)
+	// 		for _, intx := range txd.InternalTxs {
+	// 			for _, inlog := range intx.InternalActions {
+	// 				if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
+	// 					newInactions = append(newInactions, inlog)
+	// 				}
+	// 			}
+	// 			if len(newInactions) > 0 {
+	// 				newIntxs = append(newIntxs, &types.DetailAction{InternalActions: newInactions})
+	// 			}
+	// 		}
 
-			if len(newIntxs) > 0 {
-				txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, Actions: newIntxs})
-			}
-		}
-	}
+	// 		if len(newIntxs) > 0 {
+	// 			txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, Actions: newIntxs})
+	// 		}
+	// 	}
+	// }
 
 	return txdetails
 }

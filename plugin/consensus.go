@@ -30,6 +30,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -366,16 +367,21 @@ func (c *Consensus) nIndex(n int) int {
 
 func (c *Consensus) epochToIndex(epoch int) (int, int) {
 	rndIndex := c.nIndex(epoch)
+	change := make(map[string]uint64)
 	for j := 0; j < c.candidates.Len(); j++ {
 		minerIndex := rndIndex + j
 		miner := c.minerSlot(uint64(minerIndex), uint64(epoch))
-		info := c.candidates.info[miner]
-		fmt.Println("len", c.candidates.Len(), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", info.Epoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
-		if info.Epoch <= c.blockEpoch {
+		minerEpoch, exist := change[miner]
+		if !exist {
+			minerEpoch = c.candidates.info[miner].Epoch
+		}
+		fmt.Println("len", c.candidates.Len(), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", minerEpoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
+		if minerEpoch <= c.blockEpoch {
 			return epoch, minerIndex
 		}
+		change[miner] = c.blockEpoch + 1
 	}
-	return -1, -1
+	return epoch, rndIndex + c.candidates.Len()
 }
 
 // return next miner
@@ -475,7 +481,7 @@ func (c *Consensus) MineDelay(miner string) time.Duration {
 		c.minerOffset = uint64(epoch)
 		return 0
 	}
-	fmt.Println("epoch-wait:", epoch)
+	fmt.Println("epoch-wait:", epoch, c.timeSlot(uint64(epoch)), now)
 	return time.Duration(int64(c.timeSlot(uint64(epoch)))-now) * time.Second
 }
 
@@ -511,6 +517,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 		}
 		skipMiner := c.minerSlot(uint64(rndIndex), i)
 		info := c.candidates.info[skipMiner]
+		info.Epoch = c.blockEpoch + 1
 		info.DecWeight()
 		info.Store(c.stateDB)
 	}
@@ -543,24 +550,24 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	return nil
 }
 
-func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
+func (c *Consensus) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 	// just beta
 	c.initRequrie()
 	var success bool
 	var info, newinfo *CandidateInfo
-	switch action.Type() {
+	switch tx.PayloadType() {
 	case RegisterMiner:
-		if action.Value().Sign() > 0 {
-			if action.AssetID() != MinerAssetID {
+		if tx.Value().Sign() > 0 {
+			if tx.GetAssetID() != MinerAssetID {
 				return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
 			}
-			if err := pm.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+			if err := pm.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value()); err != nil {
 				return nil, err
 			}
 		}
 		var signAccount string
-		if len(action.Data()) > 0 {
-			if err := rlp.DecodeBytes(action.Data(), &signAccount); err != nil {
+		if len(tx.GetPayload()) > 0 {
+			if err := rlp.DecodeBytes(tx.GetPayload(), &signAccount); err != nil {
 				return nil, err
 			}
 		}
@@ -570,14 +577,14 @@ func (c *Consensus) CallTx(action *types.Action, pm IPM) ([]byte, error) {
 				return nil, err
 			}
 		}
-		success, newinfo, info = c.pushCandidate(action.Sender(), signAccount, action.Value())
+		success, newinfo, info = c.pushCandidate(tx.Sender(), signAccount, tx.Value())
 	case UnregisterMiner:
-		if action.Value().Sign() > 0 {
+		if tx.Value().Sign() > 0 {
 			return nil, errors.New("msg.value must be zero")
 		}
-		success, info = c.removeCandidate(action.Sender())
+		success, info = c.removeCandidate(tx.Sender())
 	default:
-		return nil, ErrWrongAction
+		return nil, ErrWrongTransaction
 	}
 	if !success {
 		return nil, errors.New("wrong candidate")
@@ -692,4 +699,8 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 		return errors.New("VRF Verify error")
 	}
 	return nil
+}
+
+func (c *Consensus) Sol_Sprintf(_ interface{}, fmtstr string, name string, age *big.Int) (string, error) {
+	return fmt.Sprintf(fmtstr, name, age.Int64()), nil
 }

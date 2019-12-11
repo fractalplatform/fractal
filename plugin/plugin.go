@@ -23,97 +23,108 @@ import (
 
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
-	ErrWrongAction   = errors.New("action is invalid")
-	ErrWrongContract = errors.New("contract is invalid")
+	ErrWrongTransaction = errors.New("transaction is invalid")
+	ErrWrongContract    = errors.New("contract is invalid")
 )
 
 // Manager manage all plugins.
 type Manager struct {
 	stateDB         *state.StateDB
 	contracts       map[string]IContract
-	contractsByType map[types.ActionType]IContract
+	contractsByType map[envelope.PayloadType]IContract
 	IAccount
 	IAsset
 	IConsensus
 	IFee
-	ISigner
 	IItem
+	ISigner
 }
 
 func (pm *Manager) BasicCheck(tx *types.Transaction) error {
-	for _, action := range tx.GetActions() {
-		switch action.Type() {
-		case CreateAccount:
-			param := &CreateAccountAction{}
-			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
-				return err
-			}
-			// if action.Recipient() != chainCfg.AccountName {
-			// 	return fmt.Errorf("Receipt should is %v", chainCfg.AccountName)
-			// }
-			if action.Recipient() != "fractalaccount" {
-				return fmt.Errorf("Receipt should is fractalaccount")
-			}
-			if err := pm.checkCreateAccount(param.Name, param.Pubkey, param.Desc); err != nil {
-				return err
-			}
-		case IssueAsset:
-			param := &IssueAssetAction{}
-			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
-				return err
-			}
-			// if action.Recipient() != chainCfg.AssetName {
-			// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
-			// }
-			if action.Recipient() != "fractalasset" {
-				return fmt.Errorf("Receipt should is fractalasset")
-			}
-			if err := pm.checkIssueAsset(action.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount); err != nil {
-				return err
-			}
-		case IncreaseAsset:
-			param := &IncreaseAssetAction{}
-			if err := rlp.DecodeBytes(action.Data(), param); err != nil {
-				return err
-			}
-			// if action.Recipient() != chainCfg.AssetName {
-			// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
-			// }
-			if action.Recipient() != "fractalasset" {
-				return fmt.Errorf("Receipt should is fractalasset")
-			}
-			if err := pm.checkIncreaseAsset(action.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount); err != nil {
-				return err
-			}
-		default:
-			if action.Type() != Transfer && (action.Type() < RegisterMiner || action.Type() >= ConsensusEnd) {
-				return ErrWrongAction
-			}
+	ptx, ok := tx.Envelope.(*envelope.PluginTx)
+	if !ok {
+		return ErrWrongTransaction
+	}
+
+	switch ptx.PayloadType() {
+	case CreateAccount:
+		param := &CreateAccountAction{}
+		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
+			return err
+		}
+		// if action.Recipient() != chainCfg.AccountName {
+		// 	return fmt.Errorf("Receipt should is %v", chainCfg.AccountName)
+		// }
+		if ptx.Recipient() != "fractalaccount" {
+			return fmt.Errorf("Receipt should is fractalaccount")
+		}
+		if err := pm.checkCreateAccount(param.Name, param.Pubkey, param.Desc); err != nil {
+			return err
+		}
+	case IssueAsset:
+		param := &IssueAssetAction{}
+		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
+			return err
+		}
+		// if action.Recipient() != chainCfg.AssetName {
+		// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
+		// }
+		if ptx.Recipient() != "fractalasset" {
+			return fmt.Errorf("Receipt should is fractalasset")
+		}
+		if err := pm.checkIssueAsset(ptx.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount); err != nil {
+			return err
+		}
+	case IncreaseAsset:
+		param := &IncreaseAssetAction{}
+		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
+			return err
+		}
+		// if action.Recipient() != chainCfg.AssetName {
+		// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
+		// }
+		if ptx.Recipient() != "fractalasset" {
+			return fmt.Errorf("Receipt should is fractalasset")
+		}
+		if err := pm.checkIncreaseAsset(ptx.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount); err != nil {
+			return err
+		}
+	default:
+		if ptx.PayloadType() != Transfer && (ptx.PayloadType() < RegisterMiner || ptx.PayloadType() >= ConsensusEnd) {
+			return ErrWrongTransaction
 		}
 	}
 	return nil
 }
 
-func (pm *Manager) selectContract(action *types.Action) IContract {
-	if contract, exist := pm.contracts[action.Recipient()]; exist {
+func (pm *Manager) selectContract(tx *envelope.PluginTx) IContract {
+	if contract, exist := pm.contracts[tx.Recipient()]; exist {
 		return contract
 	}
-	return pm.contractsByType[action.Type()]
+
+	return pm.contractsByType[tx.PayloadType()]
 }
 
-func (pm *Manager) ExecTx(arg interface{}) ([]byte, error) {
-	action, ok := arg.(*types.Action)
+func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
+	ptx, ok := tx.Envelope.(*envelope.PluginTx)
 	if !ok {
-		return nil, ErrWrongAction
+		return nil, ErrWrongTransaction
 	}
 
-	if contract := pm.selectContract(action); contract != nil {
+	if contract := pm.selectContract(ptx); contract != nil {
 		snapshot := pm.stateDB.Snapshot()
-		ret, err := contract.CallTx(action, pm)
+		var ret []byte
+		var err error
+		if fromSol {
+			ret, err = PluginSolAPICall(contract, struct{}{}, ptx.Payload)
+		} else {
+			ret, err = contract.CallTx(ptx, pm)
+		}
 		if err != nil {
 			pm.stateDB.RevertToSnapshot(snapshot)
 		}
@@ -133,7 +144,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	item, _ := NewItemManage(stateDB)
 	pm := &Manager{
 		contracts:       make(map[string]IContract),
-		contractsByType: make(map[types.ActionType]IContract),
+		contractsByType: make(map[envelope.PayloadType]IContract),
 		IAccount:        acm,
 		IAsset:          asm,
 		IConsensus:      consensus,
@@ -142,6 +153,12 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IItem:           item,
 		stateDB:         stateDB,
 	}
+	/*
+		err := PluginSolAPIRegister(consensus)
+		if err != nil {
+			panic(err)
+		}
+	*/
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm
 	pm.contracts[consensus.AccountName()] = consensus

@@ -27,6 +27,7 @@ import (
 	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 type (
@@ -105,7 +106,7 @@ type EVM struct {
 
 	FounderGasMap map[types.DistributeKey]types.DistributeGas
 
-	InternalTxs []*types.InternalAction
+	InternalTxs []*types.InternalTx
 }
 
 // NewEVM retutrns a new EVM . The returned EVM is not thread safe and should
@@ -143,7 +144,7 @@ func (evm *EVM) OverTimeAbort() {
 	atomic.StoreInt32(&evm.abort, 2)
 }
 
-// Check vm is overtime abort
+// IsOverTime Check vm is overtime abort
 func (evm *EVM) IsOverTime() bool {
 	if atomic.LoadInt32(&evm.abort) == 2 {
 		return true
@@ -155,9 +156,9 @@ func (evm *EVM) GetCurrentGasTable() params.GasTable {
 	return evm.interpreter.GetGasTable()
 }
 
-func (evm *EVM) CheckReceipt(action *types.Action) uint64 {
+func (evm *EVM) CheckReceipt(action *envelope.ContractTx) uint64 {
 	gasTable := evm.GetCurrentGasTable()
-	if _, err := evm.PM.GetBalance(action.Recipient(), action.AssetID()); err != nil {
+	if _, err := evm.PM.GetBalance(action.Recipient(), action.GetAssetID()); err != nil {
 		return gasTable.CallValueTransferGas
 	} else {
 		return 0
@@ -222,14 +223,14 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName string, callerN
 // parameters. It also handles any necessary value transfer required and takes
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
-func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) Call(caller ContractRef, action *envelope.ContractTx, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
 
-	if err := evm.PM.CanTransfer(caller.Name(), action.AssetID(), action.Value()); err != nil {
+	if err := evm.PM.CanTransfer(caller.Name(), action.GetAssetID(), action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}
 
@@ -249,7 +250,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 		}
 	}
 
-	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.AssetID(), action.Value()); err != nil {
+	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.GetAssetID(), action.Value()); err != nil {
 		return nil, gas, err
 	}
 
@@ -258,7 +259,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	// Initialise a new contract and set the code that is to be used by the EVM.
 	// The contract is a scoped environment for this execution context only.
 
-	contract := NewContract(caller, toName, action.Value(), gas, action.AssetID())
+	contract := NewContract(caller, toName, action.Value(), gas, action.GetAssetID())
 
 	codeHash, err := evm.PM.GetCodeHash(toName)
 	if err != nil {
@@ -267,7 +268,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	code, _ := evm.PM.GetCode(toName)
 	contract.SetCallCode(codeHash, code)
 
-	ret, err = run(evm, contract, action.Data())
+	ret, err = run(evm, contract, action.GetPayload())
 	runGas := gas - contract.Gas
 
 	evm.distributeContractGas(runGas, contractName, caller.Name())
@@ -275,7 +276,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 	gasTable := evm.GetCurrentGasTable()
 	callValueGas := int64(gasTable.CallValueTransferGas - gasTable.CallStipend)
 	if action.Value().Sign() != 0 && callValueGas > 0 {
-		assetName, err := evm.PM.GetAssetName(action.AssetID())
+		assetName, err := evm.PM.GetAssetName(action.GetAssetID())
 		if err == nil {
 			evm.distributeAssetGas(callValueGas, assetName, caller.Name())
 		}
@@ -301,7 +302,7 @@ func (evm *EVM) Call(caller ContractRef, action *types.Action, gas uint64) (ret 
 //
 // CallCode differs from Call in the sense that it executes the given address'
 // code with the caller as context.
-func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) CallCode(caller ContractRef, action *envelope.ContractTx, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	// Fail if we're trying to execute above the call depth limit
 	if evm.depth > int(params.CallCreateDepth) {
 		return nil, gas, ErrDepth
@@ -329,7 +330,7 @@ func (evm *EVM) CallCode(caller ContractRef, action *types.Action, gas uint64) (
 	code, _ := evm.PM.GetCode(toName)
 	contract.SetCallCode(codeHash, code)
 
-	ret, err = run(evm, contract, action.Data())
+	ret, err = run(evm, contract, action.GetPayload())
 	runGas := gas - contract.Gas
 
 	contractName := toName
@@ -438,7 +439,7 @@ func (evm *EVM) StaticCall(caller ContractRef, name string, input []byte, gas ui
 }
 
 // Create creates a new contract using code as deployment code.
-func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+func (evm *EVM) Create(caller ContractRef, action *envelope.ContractTx, gas uint64) (ret []byte, leftOverGas uint64, err error) {
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
 	if evm.depth > int(params.CallCreateDepth) {
@@ -466,7 +467,7 @@ func (evm *EVM) Create(caller ContractRef, action *types.Action, gas uint64) (re
 	// E The contract is a scoped evmironment for this execution context
 	// only.
 	contract := NewContract(caller, contractName, action.Value(), gas, evm.AssetID)
-	contract.SetCallCode(crypto.Keccak256Hash(action.Data()), action.Data())
+	contract.SetCallCode(crypto.Keccak256Hash(action.GetPayload()), action.GetPayload())
 
 	ret, err = run(evm, contract, nil)
 

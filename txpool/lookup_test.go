@@ -23,6 +23,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +32,9 @@ func TestLookup(t *testing.T) {
 	txsmap := make(map[common.Hash]*types.Transaction, 1024)
 	lk := newTxLookup()
 	for i := 0; i < len(txs); i++ {
-		tx := types.NewTransaction(uint64(i), big.NewInt(int64(i)), types.NewAction(types.CreateAccount, fmt.Sprintf("from%d", i), fmt.Sprintf("to%d", i), uint64(i), uint64(i), uint64(i), big.NewInt(int64(i)), []byte(fmt.Sprintf("from%d", i)), []byte(fmt.Sprintf("from%d", i))))
+		ctx, _ := envelope.NewContractTx(envelope.CreateContract, fmt.Sprintf("from%d", i), fmt.Sprintf("to%d", i), uint64(i), 0, 0, 100000,
+			big.NewInt(100), big.NewInt(1000), []byte("payload"), []byte("remark"))
+		tx := types.NewTransaction(ctx)
 		lk.Add(tx)
 		txs[i] = tx
 		txsmap[tx.Hash()] = tx

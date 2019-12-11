@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -69,41 +69,41 @@ func (im *ItemManager) AccountName() string {
 	return "fractalitem"
 }
 
-func (im *ItemManager) CallTx(action *types.Action, pm IPM) ([]byte, error) {
-	switch action.Type() {
+func (im *ItemManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+	switch tx.PayloadType() {
 	case IssueItemType:
 		param := &IssueItemTypeAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IssueItemType(action.Sender(), param.Owner, param.Name, param.Description, pm)
+		return im.IssueItemType(tx.Sender(), param.Owner, param.Name, param.Description, pm)
 	case UpdateItemTypeOwner:
 		param := &UpdateItemTypeOwnerAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.UpdateItemTypeOwner(action.Sender(), param.NewOwner, param.ItemTypeID, pm)
+		return im.UpdateItemTypeOwner(tx.Sender(), param.NewOwner, param.ItemTypeID, pm)
 	case IssueItem:
 		param := &IssueItemAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IssueItem(action.Sender(), param.ItemTypeID, param.Name, param.Description, param.UpperLimit, param.Total, param.Attributes, pm)
+		return im.IssueItem(tx.Sender(), param.ItemTypeID, param.Name, param.Description, param.UpperLimit, param.Total, param.Attributes, pm)
 	case IncreaseItem:
 		param := &IncreaseItemAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IncreaseItem(action.Sender(), param.ItemTypeID, param.ItemInfoID, param.To, param.Amount, pm)
+		return im.IncreaseItem(tx.Sender(), param.ItemTypeID, param.ItemInfoID, param.To, param.Amount, pm)
 	case TransferItem:
 		param := &TransferItemAction{}
-		if err := rlp.DecodeBytes(action.Data(), param); err != nil {
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		err := im.TransferItem(action.Sender(), param.To, param.ItemTx)
+		err := im.TransferItem(tx.Sender(), param.To, param.ItemTx)
 		return nil, err
 	}
-	return nil, ErrWrongAction
+	return nil, ErrWrongTransaction
 }
 
 // IssueItemType issue itemType
