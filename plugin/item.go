@@ -560,8 +560,24 @@ func (im *ItemManager) GetItemTypeByID(itemTypeID uint64) (*ItemType, error) {
 	return im.getItemTypeByID(itemTypeID)
 }
 
+func (im *ItemManager) GetItemTypeByName(creator string, itemTypeName string) (*ItemType, error) {
+	id, err := im.getItemTypeIDByName(creator, itemTypeName)
+	if err != nil {
+		return nil, err
+	}
+	return im.getItemTypeByID(id)
+}
+
 func (im *ItemManager) GetItemInfoByID(itemTypeID, itemInfoID uint64) (*ItemInfo, error) {
 	return im.getItemInfoByID(itemTypeID, itemInfoID)
+}
+
+func (im *ItemManager) GetItemInfoByName(itemTypeID uint64, itemInfoName string) (*ItemInfo, error) {
+	id, err := im.getItemInfoIDByName(itemTypeID, itemInfoName)
+	if err != nil {
+		return nil, err
+	}
+	return im.getItemInfoByID(itemTypeID, id)
 }
 
 var (

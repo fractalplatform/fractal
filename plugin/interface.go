@@ -108,4 +108,8 @@ type IItem interface {
 	TransferItem(from, to string, ItemTx []*ItemTxParam) error
 	GetItemAmount(account string, itemTypeID, itemInfoID uint64) (uint64, error)
 	GetItemAttribute(itemTypeID uint64, itemInfoID uint64, AttributeName string) (string, error)
+	GetItemTypeByID(itemTypeID uint64) (*ItemType, error)                        // for api
+	GetItemTypeByName(creator string, itemTypeName string) (*ItemType, error)    // for api
+	GetItemInfoByID(itemTypeID, itemInfoID uint64) (*ItemInfo, error)            // for api
+	GetItemInfoByName(itemTypeID uint64, itemInfoName string) (*ItemInfo, error) // for api
 }
