@@ -849,7 +849,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	// Pop other call parameters.
 	name, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	value = math.U256(value)
-	accountName := string(name.Bytes())
+	accountName := strings.TrimRight(string(name.Bytes()), "\x00")
 	// Get the arguments from the memory.
 	args := memory.Get(inOffset.Int64(), inSize.Int64())
 

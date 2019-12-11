@@ -550,44 +550,27 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	return nil
 }
 
-func (c *Consensus) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
-	// just beta
-	c.initRequrie()
-	var success bool
-	var info, newinfo *CandidateInfo
-	switch tx.PayloadType() {
-	case RegisterMiner:
-		if tx.Value().Sign() > 0 {
-			if tx.GetAssetID() != MinerAssetID {
-				return nil, fmt.Errorf("assetID must be %d", MinerAssetID)
-			}
-			if err := pm.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value()); err != nil {
-				return nil, err
-			}
+func (c *Consensus) registerMiner(tx *envelope.PluginTx, pm IPM, signAccount string) error {
+	if tx.Value().Sign() > 0 {
+		if tx.GetAssetID() != MinerAssetID {
+			return fmt.Errorf("assetID must be %d", MinerAssetID)
 		}
-		var signAccount string
-		if len(tx.GetPayload()) > 0 {
-			if err := rlp.DecodeBytes(tx.GetPayload(), &signAccount); err != nil {
-				return nil, err
-			}
+		if err := pm.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value()); err != nil {
+			return err
 		}
-		if len(signAccount) > 0 {
-			err := pm.AccountIsExist(signAccount)
-			if err != nil {
-				return nil, err
-			}
-		}
-		success, newinfo, info = c.pushCandidate(tx.Sender(), signAccount, tx.Value())
-	case UnregisterMiner:
-		if tx.Value().Sign() > 0 {
-			return nil, errors.New("msg.value must be zero")
-		}
-		success, info = c.removeCandidate(tx.Sender())
-	default:
-		return nil, ErrWrongTransaction
 	}
+
+	if len(signAccount) > 0 {
+		err := pm.AccountIsExist(signAccount)
+		if err != nil {
+			return err
+		}
+	}
+
+	success, newinfo, info := c.pushCandidate(tx.Sender(), signAccount, tx.Value())
+
 	if !success {
-		return nil, errors.New("wrong candidate")
+		return errors.New("wrong candidate")
 	}
 	c.storeCandidates()
 	if newinfo != nil {
@@ -595,12 +578,51 @@ func (c *Consensus) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 	}
 	if info != nil {
 		if err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
-			return nil, err
+			return err
 		}
 		info.Balance = big.NewInt(0)
 		info.Store(c.stateDB)
 	}
-	return nil, nil
+	return nil
+}
+
+func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, pm IPM) error {
+	if tx.Value().Sign() > 0 {
+		return errors.New("msg.value must be zero")
+	}
+	success, info := c.removeCandidate(tx.Sender())
+	if !success {
+		return errors.New("wrong candidate")
+	}
+	c.storeCandidates()
+	if info != nil {
+		if err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+			return err
+		}
+		info.Balance = big.NewInt(0)
+		info.Store(c.stateDB)
+	}
+	return nil
+}
+
+func (c *Consensus) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+	// just beta
+	c.initRequrie()
+	switch tx.PayloadType() {
+	case RegisterMiner:
+		var signAccount string
+		if len(tx.GetPayload()) > 0 {
+			if err := rlp.DecodeBytes(tx.GetPayload(), &signAccount); err != nil {
+				return nil, err
+			}
+		}
+		return nil, c.registerMiner(tx, pm, signAccount)
+	case UnregisterMiner:
+		return nil, c.unregisterMiner(tx, pm)
+	default:
+		return nil, ErrWrongTransaction
+	}
+	//return nil, nil
 }
 
 // Finalize assembles the final block.
@@ -701,6 +723,13 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	return nil
 }
 
-func (c *Consensus) Sol_Sprintf(_ interface{}, fmtstr string, name string, age *big.Int) (string, error) {
+func (c *Consensus) Sol_Sprintf(_ *ContextSol, fmtstr string, name string, age *big.Int) (string, error) {
 	return fmt.Sprintf(fmtstr, name, age.Int64()), nil
+}
+
+func (c *Consensus) Sol_RegisterMiner(context *ContextSol, signer string) error {
+	return c.registerMiner(context.tx, context.pm, signer)
+}
+func (c *Consensus) Sol_UnregisterMiner(context *ContextSol) error {
+	return c.unregisterMiner(context.tx, context.pm)
 }

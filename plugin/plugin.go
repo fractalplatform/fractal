@@ -45,6 +45,11 @@ type Manager struct {
 	ISigner
 }
 
+type ContextSol struct {
+	pm IPM
+	tx *envelope.PluginTx
+}
+
 func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 	ptx, ok := tx.Envelope.(*envelope.PluginTx)
 	if !ok {
@@ -121,7 +126,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
 		var ret []byte
 		var err error
 		if fromSol {
-			ret, err = PluginSolAPICall(contract, struct{}{}, ptx.Payload)
+			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ptx}, ptx.Payload)
 		} else {
 			ret, err = contract.CallTx(ptx, pm)
 		}
