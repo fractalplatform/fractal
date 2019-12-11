@@ -19,6 +19,7 @@ package node
 import (
 	"reflect"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/p2p"
 	"github.com/fractalplatform/fractal/p2p/enode"
 	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
@@ -55,6 +56,10 @@ func (ctx *ServiceContext) OpenDatabase(name string, cache int, handles int) (fd
 // for emphemeral storage and the user's own input for absolute paths.
 func (ctx *ServiceContext) ResolvePath(path string) string {
 	return ctx.config.resolvePath(path)
+}
+
+func (ctx *ServiceContext) SetGenesisHash(genesisHash common.Hash) {
+	ctx.config.P2PConfig.GenesisHash = genesisHash
 }
 
 // AppendBootNodes the enode URLs of the P2P bootstrap nodes running on the network.
