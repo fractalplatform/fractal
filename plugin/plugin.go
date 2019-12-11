@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -102,10 +103,10 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 }
 
 func (pm *Manager) selectContract(tx *envelope.PluginTx) IContract {
-	if contract, exist := pm.contracts[tx.Recipient()]; exist {
+	contractName := strings.TrimRight(tx.Recipient(), "\x00")
+	if contract, exist := pm.contracts[contractName]; exist {
 		return contract
 	}
-
 	return pm.contractsByType[tx.PayloadType()]
 }
 
@@ -133,6 +134,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
 }
 
 func (pm *Manager) IsPlugin(name string) bool {
+	name = strings.TrimRight(name, "\x00")
 	_, exist := pm.contracts[name]
 	return exist
 }
