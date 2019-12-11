@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
@@ -723,15 +724,31 @@ func (c *Consensus) VerifySeal(header *types.Header, pm IPM) error {
 	return nil
 }
 
-func (c *Consensus) Sol_GetMinerInfo(context *ContextSol, miner string) (*CandidateInfo, error) {
-	if info, exist := c.candidates.info[miner]; exist {
-		return info, nil
+type SolMinerInfo struct {
+	OwnerAccount   common.Address
+	SignAccount    common.Address
+	RegisterNumber uint64
+	Weight         uint64
+	Balance        *big.Int
+	Epoch          uint64
+}
+
+func (c *Consensus) Sol_GetMinerInfo(context *ContextSol, miner common.Address) (*SolMinerInfo, error) {
+	if info, exist := c.candidates.info[miner.AccountName()]; exist {
+		return &SolMinerInfo{
+			OwnerAccount:   common.StringToAddress(info.OwnerAccount),
+			SignAccount:    common.StringToAddress(info.SignAccount),
+			RegisterNumber: info.RegisterNumber,
+			Weight:         info.Weight,
+			Balance:        info.Balance,
+			Epoch:          info.Epoch,
+		}, nil
 	}
 	return nil, errors.New("miner is not exist")
 }
 
-func (c *Consensus) Sol_RegisterMiner(context *ContextSol, signer string) error {
-	return c.registerMiner(context.tx, context.pm, signer)
+func (c *Consensus) Sol_RegisterMiner(context *ContextSol, signer common.Address) error {
+	return c.registerMiner(context.tx, context.pm, signer.AccountName())
 }
 func (c *Consensus) Sol_UnregisterMiner(context *ContextSol) error {
 	return c.unregisterMiner(context.tx, context.pm)
