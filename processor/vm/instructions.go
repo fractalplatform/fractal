@@ -615,7 +615,7 @@ func opReturnDataCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 
 func opExtCodeSize(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	slot := stack.peek()
-	accountName := string(slot.Bytes())
+	accountName := common.BigToAddress(slot).AccountName()
 
 	code, err := evm.PM.GetCode(accountName)
 	if err != nil {
@@ -947,8 +947,8 @@ func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 }
 
 func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	bypassPlugin := stack.Back(1).Bytes()
-	if evm.PM.IsPlugin(string(bypassPlugin)) {
+	bypassPlugin := common.BigToAddress(stack.Back(1)).AccountName()
+	if evm.PM.IsPlugin(bypassPlugin) {
 		return opCallPluginWeak(pc, evm, contract, memory, stack)
 	}
 	// Pop gas. The actual gas in in evm.callGasTemp.
