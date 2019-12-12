@@ -518,6 +518,14 @@ func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, 
 	return nil
 }
 
+func (am *AccountManager) Sol_GetBalance(context *ContextSol, accountName string, assetID uint64) (*big.Int, error) {
+	return am.GetBalance(context.tx.Sender(), assetID)
+}
+
+func (am *AccountManager) Sol_Transfer(context *ContextSol, assetID uint64, value *big.Int) error {
+	return am.TransferAsset(context.tx.Sender(), context.tx.Recipient(), assetID, value)
+}
+
 var (
 	ErrAccountNameLengthErr = errors.New("account name length err")
 	ErrAccountNameInvalid   = errors.New("account name invalid")
