@@ -32,24 +32,24 @@ type ItemManager struct {
 }
 
 type ItemType struct {
-	ID          uint64
-	Name        string
-	Owner       string
-	Creator     string
-	CreateTime  uint64
-	Description string
-	Total       uint64
+	ID          uint64 `json:"id"`
+	Name        string `json:"name"`
+	Owner       string `json:"owner"`
+	Creator     string `json:"creator"`
+	CreateTime  uint64 `json:"createTime"`
+	Description string `json:"description"`
+	Total       uint64 `json:"total"`
 }
 
 type ItemInfo struct {
-	TypeID      uint64
-	ID          uint64
-	Name        string
-	CreateTime  uint64
-	Total       uint64
-	Description string
-	UpperLimit  uint64
-	Attributes  []*Attribute
+	TypeID      uint64       `json:"typeID"`
+	ID          uint64       `json:"id"`
+	Name        string       `json:"name"`
+	CreateTime  uint64       `json:"createTime"`
+	Total       uint64       `json:"total"`
+	Description string       `json:"description"`
+	UpperLimit  uint64       `json:"upperLimit"`
+	Attributes  []*Attribute `json:"attributes"`
 }
 
 // NewIM new a ItemManager
@@ -580,6 +580,48 @@ func (im *ItemManager) GetItemInfoByName(itemTypeID uint64, itemInfoName string)
 	return im.getItemInfoByID(itemTypeID, id)
 }
 
+func (im *ItemManager) Sol_IssueItemType(context *ContextSol, owner, name, description string) error {
+	_, err := im.IssueItemType(context.tx.Sender(), owner, name, description, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_IssueItem(context *ContextSol, itemTypeID uint64, name string, description string, upperLimit uint64, total uint64, attName []string, attDes []string) error {
+	if len(attName) != len(attDes) {
+		return ErrParamErr
+	}
+	attributes := make([]*Attribute, len(attName))
+	for i := 0; i < len(attName); i++ {
+		temp := &Attribute{attName[i], attDes[i]}
+		attributes[i] = temp
+	}
+	_, err := im.IssueItem(context.tx.Sender(), itemTypeID, name, description, upperLimit, total, attributes, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, itemTypeID uint64, itemInfoID uint64, amount uint64) error {
+	_, err := im.IncreaseItem(context.tx.Sender(), itemTypeID, itemInfoID, context.tx.Recipient(), amount, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_TransferItem(context *ContextSol, itemTypeID []uint64, itemInfoID []uint64, amount []uint64) error {
+	if len(itemTypeID) != len(itemInfoID) {
+		return ErrParamErr
+	}
+	if len(itemTypeID) != len(amount) {
+		return ErrParamErr
+	}
+	ItemTx := make([]*ItemTxParam, len(itemTypeID))
+	for i := 0; i < len(itemTypeID); i++ {
+		temp := &ItemTxParam{itemTypeID[i], itemInfoID[i], amount[i]}
+		ItemTx[i] = temp
+	}
+	return im.TransferItem(context.tx.Sender(), context.tx.Recipient(), ItemTx)
+}
+
+func (im *ItemManager) Sol_GetItemAmount(context *ContextSol, itemTypeID, itemInfoID uint64) (uint64, error) {
+	return im.GetItemAmount(context.tx.Sender(), itemTypeID, itemInfoID)
+}
+
 var (
 	ErrItemCounterNotExist     = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
@@ -596,4 +638,5 @@ var (
 	ErrItemAttributeDesTooLong = errors.New("item attribute description exceed max length")
 	ErrItemUpperLimit          = errors.New("item amount over the issuance limit")
 	ErrAccountNoItem           = errors.New("account not have item")
+	ErrParamErr                = errors.New("param invalid")
 )

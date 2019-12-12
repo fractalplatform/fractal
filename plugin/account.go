@@ -341,16 +341,16 @@ func (am *AccountManager) GetAccountByName(accountName string) (interface{}, err
 	}
 
 	obj := struct {
-		Name        string
-		Address     common.Address
-		Nonce       uint64
-		Code        hexutil.Bytes
-		CodeHash    common.Hash
-		CodeSize    uint64
-		Balances    *AssetBalance
-		Suicide     bool
-		Destroy     bool
-		Description string
+		Name        string         `json:"name"`
+		Address     common.Address `json:"address"`
+		Nonce       uint64         `json:"nonce"`
+		Code        hexutil.Bytes  `json:"code"`
+		CodeHash    common.Hash    `json:"codeHash"`
+		CodeSize    uint64         `json:"codeSize"`
+		Balances    *AssetBalance  `json:"balance"`
+		Suicide     bool           `json:"suicide"`
+		Destroy     bool           `json:"destroy"`
+		Description string         `json:"description"`
 	}{
 		account.Name,
 		account.Address,
@@ -516,6 +516,14 @@ func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, 
 		return ErrPubKey
 	}
 	return nil
+}
+
+func (am *AccountManager) Sol_GetBalance(context *ContextSol, accountName string, assetID uint64) (*big.Int, error) {
+	return am.GetBalance(context.tx.Sender(), assetID)
+}
+
+func (am *AccountManager) Sol_Transfer(context *ContextSol, assetID uint64, value *big.Int) error {
+	return am.TransferAsset(context.tx.Sender(), context.tx.Recipient(), assetID, value)
 }
 
 var (
