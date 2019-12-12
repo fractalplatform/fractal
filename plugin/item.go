@@ -286,7 +286,7 @@ func (im *ItemManager) transferItemSingle(from, to string, itemTypeID, itemInfoI
 	}
 
 	if n < amount {
-		return ErrInsufficientBalance
+		return ErrInsufficientItemAmount
 	}
 
 	if err = im.subAccountItemAmount(from, itemTypeID, itemInfoID, amount); err != nil {
@@ -543,7 +543,7 @@ func (im *ItemManager) subAccountItemAmount(account string, itemTypeID, itemInfo
 		return err
 	}
 	if oldAmount < amount {
-		return ErrInsufficientBalance
+		return ErrInsufficientItemAmount
 	}
 
 	if err = im.setAccountItemAmount(account, itemTypeID, itemInfoID, oldAmount-amount); err != nil {
@@ -639,4 +639,5 @@ var (
 	ErrItemUpperLimit          = errors.New("item amount over the issuance limit")
 	ErrAccountNoItem           = errors.New("account not have item")
 	ErrParamErr                = errors.New("param invalid")
+	ErrInsufficientItemAmount  = errors.New("insufficient item amount")
 )
