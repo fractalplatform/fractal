@@ -22,6 +22,7 @@ func (c *Consensus) Sol_GetMinerInfo(context *ContextSol, miner common.Address) 
 2. 在solidty中定义类似的方法
 ```js
 contract ConsensusAPI is Plugin {
+    address constant consensus = address(bytes20("fractaldpos"));
     struct MinerInfo {
         address OwnerAccount;
         address SignAccount;
@@ -32,14 +33,14 @@ contract ConsensusAPI is Plugin {
     }
     
     function GetMinerInfo(address miner) external returns(MinerInfo memory){
-        Plugin.Call();
+        Plugin.Call(consensus);
     }
 }
 ```
 ```js
 contract Plugin {
-    function Call() internal {
-        address(bytes20("fractaldpos")).call(msg.data);
+    function Call(address plugin) internal {
+        plugin.call(msg.data);
         assembly {
             let rsize := returndatasize
             let roff := mload(0x40)

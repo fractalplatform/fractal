@@ -3,6 +3,7 @@ pragma experimental ABIEncoderV2;
 import "plugin.sol";
 
 contract ConsensusAPI is Plugin {
+    address constant consensus = address(bytes20("fractaldpos"));
     struct MinerInfo {
         address OwnerAccount;
         address SignAccount;
@@ -12,14 +13,14 @@ contract ConsensusAPI is Plugin {
         uint256 Epoch;
     }
     function GetMinerInfo(address miner) external returns(MinerInfo memory){
-        Plugin.Call();
+        Plugin.Call(consensus);
     }
 
     function UnregisterMiner() public {
-        Plugin.Call();
+        Plugin.Call(consensus);
     }
     function RegisterMiner(address miner) external payable {
-        Plugin.Call();
+        Plugin.Call(consensus);
     }
 
     event InfoLog(address);
