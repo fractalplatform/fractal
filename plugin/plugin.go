@@ -45,6 +45,11 @@ type Manager struct {
 	ISigner
 }
 
+type ContextSol struct {
+	pm IPM
+	tx *envelope.PluginTx
+}
+
 func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 	ptx, ok := tx.Envelope.(*envelope.PluginTx)
 	if !ok {
@@ -103,10 +108,10 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 }
 
 func (pm *Manager) selectContract(tx *envelope.PluginTx) IContract {
-	if contract, exist := pm.contracts[tx.Recipient()]; exist {
+	contractName := tx.Recipient()
+	if contract, exist := pm.contracts[contractName]; exist {
 		return contract
 	}
-
 	return pm.contractsByType[tx.PayloadType()]
 }
 
@@ -121,7 +126,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
 		var ret []byte
 		var err error
 		if fromSol {
-			ret, err = PluginSolAPICall(contract, struct{}{}, ptx.Payload)
+			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ptx}, ptx.Payload)
 		} else {
 			ret, err = contract.CallTx(ptx, pm)
 		}
@@ -131,6 +136,11 @@ func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
 		return ret, err
 	}
 	return nil, ErrWrongContract
+}
+
+func (pm *Manager) IsPlugin(name string) bool {
+	_, exist := pm.contracts[name]
+	return exist
 }
 
 // NewPM create new plugin manager.
@@ -153,16 +163,16 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IItem:           item,
 		stateDB:         stateDB,
 	}
-	/*
-		err := PluginSolAPIRegister(consensus)
-		if err != nil {
-			panic(err)
-		}
-	*/
 	pm.contracts[acm.AccountName()] = acm
 	pm.contracts[asm.AccountName()] = asm
 	pm.contracts[consensus.AccountName()] = consensus
 	pm.contracts[item.AccountName()] = item
 	pm.contractsByType[Transfer] = acm
 	return pm
+}
+
+func init() {
+	PluginSolAPIRegister(&Consensus{})
+	PluginSolAPIRegister(&AccountManager{})
+	PluginSolAPIRegister(&AssetManager{})
 }

@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/plugin/abi"
 )
 
@@ -33,20 +34,21 @@ import (
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 
 var mapstr = map[reflect.Type]string{
-	reflect.TypeOf("string"):  "string",
-	reflect.TypeOf(big.Int{}): "uint256",
-	reflect.TypeOf(true):      "bool",
-	reflect.TypeOf([]byte{}):  "bytes",
-	reflect.TypeOf(int(0)):    "int64",
-	reflect.TypeOf(uint(0)):   "uint64",
-	reflect.TypeOf(int8(0)):   "int8",
-	reflect.TypeOf(uint8(0)):  "uint8",
-	reflect.TypeOf(int16(0)):  "int16",
-	reflect.TypeOf(uint16(0)): "uint16",
-	reflect.TypeOf(int32(0)):  "int32",
-	reflect.TypeOf(uint32(0)): "uint32",
-	reflect.TypeOf(int64(0)):  "int64",
-	reflect.TypeOf(uint64(0)): "uint64",
+	reflect.TypeOf("string"):         "string",
+	reflect.TypeOf(big.Int{}):        "uint256",
+	reflect.TypeOf(common.Address{}): "address",
+	reflect.TypeOf(true):             "bool",
+	reflect.TypeOf([]byte{}):         "bytes",
+	reflect.TypeOf(int(0)):           "int64",
+	reflect.TypeOf(uint(0)):          "uint64",
+	reflect.TypeOf(int8(0)):          "int8",
+	reflect.TypeOf(uint8(0)):         "uint8",
+	reflect.TypeOf(int16(0)):         "int16",
+	reflect.TypeOf(uint16(0)):        "uint16",
+	reflect.TypeOf(int32(0)):         "int32",
+	reflect.TypeOf(uint32(0)):        "uint32",
+	reflect.TypeOf(int64(0)):         "int64",
+	reflect.TypeOf(uint64(0)):        "uint64",
 	//reflect.TypeOf(struct{}{}): "tuple",
 }
 
@@ -224,8 +226,8 @@ func PluginSolAPICall(o, p1 interface{}, data []byte) ([]byte, error) {
 	if !exist {
 		return nil, errors.New("method is not exist")
 	}
-
-	params, err := method.Inputs.UnpackValues(data[4:])
+	end := len(data[4:]) / 32
+	params, err := method.Inputs.UnpackValues(data[4 : end*32+4])
 	if err != nil {
 		return nil, err
 	}
@@ -301,49 +303,4 @@ func SolAPICall(name string, data []byte) ([]byte, error) {
 		outInter[i] = o.Interface()
 	}
 	return method.Outputs.Pack(outInter...)
-}
-
-// ------------------ discard
-func decodeElem(calldata []byte, out interface{}) error {
-	typ := reflect.TypeOf(out)
-	if typ.Kind() != reflect.Ptr {
-		return errors.New("only support Ptr")
-	}
-	switch v := out.(type) {
-	case *string:
-		strlen := new(big.Int).SetBytes(calldata[:32]).Uint64()
-		*v = string(calldata[32 : 32+strlen])
-	case *big.Int:
-		v.SetBytes(calldata[:32])
-	default:
-		return fmt.Errorf("Don't support %v", typ.Elem())
-	}
-	return nil
-}
-
-func encodeBigInt(n *big.Int) []byte {
-	ret := make([]byte, 32)
-	nb := n.Bytes()
-	copy(ret[32-len(nb):], nb)
-	return ret
-}
-
-func encodeElem(in interface{}) ([]byte, error) {
-	typ := reflect.TypeOf(in)
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-		in = reflect.ValueOf(in).Elem().Interface()
-	}
-	var ret []byte
-	switch v := in.(type) {
-	case string:
-		strlen := int64(len(v))
-		ret = encodeBigInt(big.NewInt(strlen))
-		ret = append(ret, []byte(v)...)
-	case big.Int:
-		ret = encodeBigInt(&v)
-	default:
-		return ret, fmt.Errorf("Don't support %v", typ)
-	}
-	return ret, nil
 }

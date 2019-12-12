@@ -52,6 +52,12 @@ func BigToAddress(b *big.Int) Address { return BytesToAddress(b.Bytes()) }
 // If s is larger than len(h), s will be cropped from the left.
 func HexToAddress(s string) Address { return BytesToAddress(FromHex(s)) }
 
+func StringToAddress(s string) Address {
+	var a Address
+	a.SetString(s)
+	return a
+}
+
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
 //  address or not.
 func IsHexAddress(s string) bool {
@@ -98,6 +104,10 @@ func (a Address) String() string {
 	return a.Hex()
 }
 
+func (a Address) AccountName() string {
+	return strings.TrimRight(string(a[:]), "\x00")
+}
+
 // Format implements fmt.Formatter, forcing the byte slice to be formatted as is,
 // without going through the stringer interface used for logging.
 func (a Address) Format(s fmt.State, c rune) {
@@ -111,6 +121,10 @@ func (a *Address) SetBytes(b []byte) {
 		b = b[len(b)-AddressLength:]
 	}
 	copy(a[AddressLength-len(b):], b)
+}
+
+func (a *Address) SetString(b string) {
+	copy(a[:], []byte(b))
 }
 
 // MarshalText returns the hex representation of a.

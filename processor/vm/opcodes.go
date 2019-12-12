@@ -230,7 +230,8 @@ const (
 	RECIPIENT              = 0xd4
 
 	CALLWITHPAY = 0xd5
-	CALLPLUGIN  = 0xd6
+
+//	CALLPLUGIN  = 0xd6
 )
 
 const (
