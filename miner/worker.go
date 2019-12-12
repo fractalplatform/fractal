@@ -131,6 +131,7 @@ func (worker *Worker) start(force bool) {
 func (worker *Worker) mintLoop() {
 	for {
 		header := worker.CurrentHeader()
+		fmt.Println("current Header:", header.Number, header.Coinbase, header.Root, header.ParentHash)
 		state, err := worker.StateAt(header.Root)
 		if err != nil {
 			log.Error("Can't find state", "err", err, "root", header.Root, "hash", header.Hash(), "number", header.Number)
@@ -172,6 +173,9 @@ func (worker *Worker) mintBlock(state *state.StateDB, pm plugin.IPM, header *typ
 			fmt.Println("VerifySeal:", err1)
 			err2 := verifyPM.Verify(block.Header())
 			fmt.Println("Verify:", err2)
+			if err1 != nil || err2 != nil {
+				panic("X")
+			}
 		}
 
 		log.Info("Mined new block", "candidate", block.Coinbase(), "number", block.Number(), "hash", block.Hash().String(), "time", block.Time().Int64(), "txs", len(block.Txs), "gas", block.GasUsed(), "elapsed", common.PrettyDuration(time.Since(bstart)))

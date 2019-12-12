@@ -366,33 +366,51 @@ func (c *Consensus) nIndex(n int) int {
 	return c.rndNum
 }
 
-func (c *Consensus) epochToIndex(epoch int) (int, int) {
+func (c *Consensus) epochToIndex(epoch int, skiplist map[string]int) (int, int) {
 	rndIndex := c.nIndex(epoch)
-	change := make(map[string]uint64)
+	if len(skiplist) == c.candidates.Len() {
+		//fmt.Println("too many skip list!")
+		return epoch, rndIndex
+	}
 	for j := 0; j < c.candidates.Len(); j++ {
 		minerIndex := rndIndex + j
-		miner := c.minerSlot(uint64(minerIndex), uint64(epoch))
-		minerEpoch, exist := change[miner]
-		if !exist {
-			minerEpoch = c.candidates.info[miner].Epoch
+		miner := c.minerSlot(uint64(minerIndex), uint64(j))
+		if _, exist := skiplist[miner]; exist {
+			skiplist[miner]++
+			continue
 		}
-		fmt.Println("len", c.candidates.Len(), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", minerEpoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
+		minerEpoch := c.candidates.info[miner].Epoch
+		fmt.Println("len", c.candidates.Len(), len(skiplist), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", minerEpoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
 		if minerEpoch <= c.blockEpoch {
 			return epoch, minerIndex
 		}
-		change[miner] = c.blockEpoch + 1
 	}
-	return epoch, rndIndex + c.candidates.Len()
+	return epoch, rndIndex
+}
+
+func (c *Consensus) epochToMiner(epoch int) string {
+	var miner string
+	skiplist := make(map[string]int)
+	for i := 1; i <= epoch; i++ {
+		epoch, rndIndex := c.epochToIndex(i, skiplist)
+		miner = c.minerSlot(uint64(rndIndex), uint64(epoch))
+		skiplist[miner]++
+	}
+	return miner
 }
 
 // return next miner
 func (c *Consensus) nextMiner() (int, int) {
+	skiplist := make(map[string]int)
 	now := uint64(time.Now().Unix())
 	for i := 1; i <= c.candidates.Len()+maxPauseBlock; i++ {
+		epoch, rndIndex := c.epochToIndex(i, skiplist)
 		nextTimeout := c.timeSlot(uint64(i))
 		if now < nextTimeout {
-			return c.epochToIndex(i)
+			return epoch, rndIndex
 		}
+		miner := c.minerSlot(uint64(rndIndex), uint64(epoch))
+		skiplist[miner]++
 	}
 	return -1, -1
 }
@@ -510,16 +528,23 @@ func (c *Consensus) Prepare(header *types.Header) error {
 
 	miner := header.Coinbase
 	start := time.Now().Unix()
+	punishes := make(map[string]int)
 	for i := uint64(1); i < minerIndex; i++ {
-		_, rndIndex := c.epochToIndex(int(i))
+		_, rndIndex := c.epochToIndex(int(i), punishes)
+		skipMiner := c.minerSlot(uint64(rndIndex), i)
+		punishes[skipMiner]++
 		if time.Now().Unix()-start > 2 {
 			start = time.Now().Unix()
 			return errors.New("too long to Prepare")
 		}
-		skipMiner := c.minerSlot(uint64(rndIndex), i)
+	}
+	for skipMiner, skipNum := range punishes {
 		info := c.candidates.info[skipMiner]
 		info.Epoch = c.blockEpoch + 1
-		info.DecWeight()
+		for info.Weight > 0 && skipNum > 0 {
+			info.DecWeight()
+			skipNum--
+		}
 		info.Store(c.stateDB)
 	}
 
@@ -684,8 +709,7 @@ func (c *Consensus) Verify(header *types.Header) error {
 	*/
 	miner := header.Coinbase
 	minerEpoch := c.toOffset(header.Difficulty)
-	epoch, rndIndex := c.epochToIndex(int(minerEpoch))
-	if c.minerSlot(uint64(rndIndex), uint64(epoch)) != miner {
+	if c.epochToMiner(int(minerEpoch)) != miner {
 		return errors.New("wrong miner")
 	}
 	// 4. verify block time
