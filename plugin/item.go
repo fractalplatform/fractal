@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types/envelope"
@@ -32,20 +31,20 @@ type ItemManager struct {
 }
 
 type ItemType struct {
-	ID          uint64 `json:"id"`
-	Name        string `json:"name"`
-	Owner       string `json:"owner"`
-	Creator     string `json:"creator"`
-	CreateTime  uint64 `json:"createTime"`
+	ID      uint64 `json:"id"`
+	Name    string `json:"name"`
+	Owner   string `json:"owner"`
+	Creator string `json:"creator"`
+	// CreateTime  uint64 `json:"createTime"`
 	Description string `json:"description"`
 	Total       uint64 `json:"total"`
 }
 
 type ItemInfo struct {
-	TypeID      uint64       `json:"typeID"`
-	ID          uint64       `json:"id"`
-	Name        string       `json:"name"`
-	CreateTime  uint64       `json:"createTime"`
+	TypeID uint64 `json:"typeID"`
+	ID     uint64 `json:"id"`
+	Name   string `json:"name"`
+	// CreateTime  uint64       `json:"createTime"`
 	Total       uint64       `json:"total"`
 	Description string       `json:"description"`
 	UpperLimit  uint64       `json:"upperLimit"`
@@ -135,11 +134,11 @@ func (im *ItemManager) IssueItemType(creator, owner, name, description string, a
 	}
 
 	itemobj := ItemType{
-		ID:          itemTypeID,
-		Name:        name,
-		Owner:       owner,
-		Creator:     creator,
-		CreateTime:  uint64(time.Now().Unix()),
+		ID:      itemTypeID,
+		Name:    name,
+		Owner:   owner,
+		Creator: creator,
+		// CreateTime:  uint64(time.Now().Unix()),
 		Description: description,
 		Total:       0,
 	}
@@ -214,10 +213,10 @@ func (im *ItemManager) IssueItem(creator string, itemTypeID uint64, name string,
 	}
 
 	itemInfo := ItemInfo{
-		TypeID:      itemTypeID,
-		ID:          itemType.Total + 1,
-		Name:        name,
-		CreateTime:  uint64(time.Now().Unix()),
+		TypeID: itemTypeID,
+		ID:     itemType.Total + 1,
+		Name:   name,
+		// CreateTime:  uint64(time.Now().Unix()),
 		Total:       total,
 		Description: description,
 		UpperLimit:  upperLimit,
