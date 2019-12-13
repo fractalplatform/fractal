@@ -21,8 +21,7 @@ func (c *Consensus) Sol_GetMinerInfo(context *ContextSol, miner common.Address) 
 ```
 2. 在solidty中定义类似的方法
 ```js
-contract ConsensusAPI is Plugin {
-    address constant consensus = address(bytes20("fractaldpos"));
+contract ConsensusAPI {
     struct MinerInfo {
         address OwnerAccount;
         address SignAccount;
@@ -31,32 +30,19 @@ contract ConsensusAPI is Plugin {
         uint256 Balance;
         uint256 Epoch;
     }
-    
-    function GetMinerInfo(address miner) external returns(MinerInfo memory){
-        Plugin.Call(consensus);
-    }
-}
-```
-```js
-contract Plugin {
-    function Call(address plugin) internal {
-        plugin.call(msg.data);
-        assembly {
-            let rsize := returndatasize
-            let roff := mload(0x40)
-            returndatacopy(roff, 0, rsize)
-            return(roff, rsize)
-        }
-    }
+    function GetMinerInfo(address miner) external returns(MinerInfo memory);
+    //function UnregisterMiner() public;
+    //function RegisterMiner(address miner) external payable;
 }
 ```
 3. 在solidity中调用
 ```js
-contract TESTAPI {
-    ConsensusAPI consensus; // 需要初始化为步骤2的合约地址
-    function read(address miner) returns(MinerInfo memory){
-        MinerInfo memory info =  consensus.GetMinerInfo();
-        ...
+contract TestRead {
+    ConsensusAPI constant consensus = ConsensusAPI(address(bytes20("fractaldpos")));
+    event InfoLog(address,uint256,uint256);
+    function testRead(address miner) public {
+        ConsensusAPI.MinerInfo memory info = consensus.GetMinerInfo(miner);
+        emit InfoLog(info.OwnerAccount, info.Weight, info.Balance);
     }
 }
 ```
@@ -71,9 +57,7 @@ contract TESTAPI {
     - 使用`common.StringToAddress(String)`来将账户名转换为地址
 
 #### 合约API约定:
-1. 实现合约虚要继承`Plugin`
-2. 需要定义和插件相同参数以及返回值的方法，且类型必须为`external`
-3. 同名方法内部调用`Plugin.Call()`即可
+1. 需要定义和插件相同参数以及返回值的方法，且类型必须为`external`
 
 #### 合约<=>插件 类型映射:
 - 整型: `uintX,intX` <=> `uintX,intX` X = [8,16,32,64]
