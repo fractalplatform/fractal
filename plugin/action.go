@@ -9,6 +9,7 @@ import (
 const (
 	// CreateAccount repesents the create account.
 	CreateAccount envelope.PayloadType = 0x100 + iota
+	ChangePubKey
 )
 
 const (
@@ -28,6 +29,10 @@ type CreateAccountAction struct {
 	Name   string
 	Pubkey string
 	Desc   string
+}
+
+type ChangePubKeyAction struct {
+	Pubkey string
 }
 
 type IncreaseAssetAction struct {
