@@ -522,8 +522,8 @@ func (am *AccountManager) Sol_GetBalance(context *ContextSol, assetID uint64) (*
 	return am.GetBalance(context.tx.Sender(), assetID)
 }
 
-func (am *AccountManager) Sol_Transfer(context *ContextSol, to string, assetID uint64, value *big.Int) error {
-	return am.TransferAsset(context.tx.Sender(), to, assetID, value)
+func (am *AccountManager) Sol_Transfer(context *ContextSol, to common.Address, assetID uint64, value *big.Int) error {
+	return am.TransferAsset(context.tx.Sender(), to.AccountName(), assetID, value)
 }
 
 var (
