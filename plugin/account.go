@@ -83,6 +83,13 @@ func (am *AccountManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) 
 			return nil, err
 		}
 		return am.CreateAccount(param.Name, param.Pubkey, param.Desc)
+	case ChangePubKey:
+		param := &ChangePubKeyAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		err := am.ChangePubKey(tx.Sender(), param.Pubkey)
+		return nil, err
 	case Transfer:
 		err := am.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value())
 		return nil, err
@@ -360,13 +367,17 @@ func (am *AccountManager) GetAccountByName(accountName string) (interface{}, err
 	return obj, nil
 }
 
-func (am *AccountManager) ChangeAddress(accountName string, address common.Address) error {
+func (am *AccountManager) ChangePubKey(accountName string, pubKey string) error {
+	if !common.IsHexPubKey(pubKey) {
+		return ErrPubKey
+	}
+
 	account, err := am.getAccount(accountName)
 	if err != nil {
 		return err
 	}
-
-	account.Address = address
+	tempKey := common.HexToPubKey(pubKey)
+	account.Address = common.BytesToAddress(crypto.Keccak256(tempKey.Bytes()[1:])[12:])
 	if err = am.setAccount(account); err != nil {
 		return err
 	}
@@ -511,8 +522,8 @@ func (am *AccountManager) Sol_GetBalance(context *ContextSol, accountName string
 	return am.GetBalance(context.tx.Sender(), assetID)
 }
 
-func (am *AccountManager) Sol_Transfer(context *ContextSol, assetID uint64, value *big.Int) error {
-	return am.TransferAsset(context.tx.Sender(), context.tx.Recipient(), assetID, value)
+func (am *AccountManager) Sol_Transfer(context *ContextSol, to string, assetID uint64, value *big.Int) error {
+	return am.TransferAsset(context.tx.Sender(), to, assetID, value)
 }
 
 var (
