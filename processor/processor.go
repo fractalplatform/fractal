@@ -153,10 +153,13 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 		log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 	}
 	var gasAllots []*types.GasDistribution
-	// todo
-	// for key, gas := range vmenv.FounderGasMap {
-	// 	gasAllot = append(gasAllot, &types.GasDistribution{Account: key.ObjectName.String(), Gas: uint64(gas.Value), TypeID: gas.TypeID})
-	// }
+
+	for key, gas := range vmenv.FounderGasMap {
+		gasAllots = append(gasAllots, &types.GasDistribution{
+			Account: key.ObjectName,
+			Gas:     uint64(gas.Value),
+			TypeID:  gas.TypeID})
+	}
 
 	internalTxs := make([]*types.InternalTx, 0, len(vmenv.InternalTxs))
 	for _, itx := range vmenv.InternalTxs {

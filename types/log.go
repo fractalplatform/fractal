@@ -30,10 +30,8 @@ type Log struct {
 	BlockNumber uint64        // block in which the transaction was included
 	BlockHash   common.Hash   // hash of the block in which the transaction was included
 	TxHash      common.Hash   // hash of the transaction
-	Index       uint          // index of the log in the receipt
-	ActionIndex uint          // index of the input and output in the transaction
 	TxIndex     uint          // index of the transaction in the block
-
+	Index       uint          // index of the log in the receipt
 }
 
 // RPCLog that will serialize to the RPC representation of a log.
@@ -44,9 +42,8 @@ type RPCLog struct {
 	BlockNumber uint64        `json:"blockNumber"`
 	BlockHash   common.Hash   `json:"blockHash"`
 	TxHash      common.Hash   `json:"transactionHash"`
-	Index       uint          `json:"logIndex"`
-	ActionIndex uint          `json:"actionIndex"`
 	TxIndex     uint          `json:"transactionIndex"`
+	Index       uint          `json:"logIndex"`
 }
 
 // NewRPCLog returns a log that will serialize to the RPC.
@@ -58,7 +55,6 @@ func (l *Log) NewRPCLog() *RPCLog {
 		BlockNumber: l.BlockNumber,
 		TxHash:      l.TxHash,
 		TxIndex:     l.TxIndex,
-		ActionIndex: l.ActionIndex,
 		BlockHash:   l.BlockHash,
 		Index:       l.Index,
 	}

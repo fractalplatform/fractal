@@ -65,7 +65,34 @@ func (r *Receipt) Size() common.StorageSize {
 
 // Hash hashes the RLP encoding of Receipt.
 func (r *Receipt) Hash() common.Hash {
-	return common.RlpHash(r)
+	result := &Receipt{
+		CumulativeGasUsed: r.CumulativeGasUsed,
+		TotalGasUsed:      r.TotalGasUsed,
+		Bloom:             r.Bloom,
+		Status:            r.Status,
+		Index:             r.Index,
+		GasUsed:           r.GasUsed,
+		Error:             r.Error,
+		TxHash:            r.TxHash,
+		GasAllot:          r.GasAllot,
+	}
+
+	result.PostState = make([]byte, len(r.PostState))
+	copy(result.PostState, r.PostState)
+
+	var logs []*Log
+	for _, l := range r.Logs {
+		log := &Log{
+			Name:   l.Name,
+			Topics: l.Topics,
+		}
+		log.Data = make([]byte, len(l.Data))
+		copy(log.Data, l.Data)
+		logs = append(logs, log)
+	}
+	result.Logs = logs
+
+	return common.RlpHash(result)
 }
 
 // RPCReceipt that will serialize to the RPC representation of a Receipt.
