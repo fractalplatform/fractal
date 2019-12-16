@@ -603,7 +603,7 @@ func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, itemTypeID uint64, 
 	return err
 }
 
-func (im *ItemManager) Sol_TransferItem(context *ContextSol, itemTypeID []uint64, itemInfoID []uint64, amount []uint64) error {
+func (im *ItemManager) Sol_TransferItem(context *ContextSol, to string, itemTypeID []uint64, itemInfoID []uint64, amount []uint64) error {
 	if len(itemTypeID) != len(itemInfoID) {
 		return ErrParamErr
 	}
@@ -615,7 +615,7 @@ func (im *ItemManager) Sol_TransferItem(context *ContextSol, itemTypeID []uint64
 		temp := &ItemTxParam{itemTypeID[i], itemInfoID[i], amount[i]}
 		ItemTx[i] = temp
 	}
-	return im.TransferItem(context.tx.Sender(), context.tx.Recipient(), ItemTx)
+	return im.TransferItem(context.tx.Sender(), to, ItemTx)
 }
 
 func (im *ItemManager) Sol_GetItemAmount(context *ContextSol, itemTypeID, itemInfoID uint64) (uint64, error) {

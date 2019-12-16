@@ -40,7 +40,6 @@ type CreateAccountAction struct {
 }
 
 type ChangePubKeyAction struct {
-	Name   string
 	Pubkey string
 }
 

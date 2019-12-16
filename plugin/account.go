@@ -88,7 +88,7 @@ func (am *AccountManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) 
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		err := am.ChangePubKey(param.Name, param.Pubkey)
+		err := am.ChangePubKey(tx.Sender(), param.Pubkey)
 		return nil, err
 	case Transfer:
 		err := am.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value())
@@ -522,8 +522,8 @@ func (am *AccountManager) Sol_GetBalance(context *ContextSol, assetID uint64) (*
 	return am.GetBalance(context.tx.Sender(), assetID)
 }
 
-func (am *AccountManager) Sol_Transfer(context *ContextSol, assetID uint64, value *big.Int) error {
-	return am.TransferAsset(context.tx.Sender(), context.tx.Recipient(), assetID, value)
+func (am *AccountManager) Sol_Transfer(context *ContextSol, to string, assetID uint64, value *big.Int) error {
+	return am.TransferAsset(context.tx.Sender(), to, assetID, value)
 }
 
 var (
