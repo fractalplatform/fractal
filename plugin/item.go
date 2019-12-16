@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -579,8 +580,8 @@ func (im *ItemManager) GetItemInfoByName(itemTypeID uint64, itemInfoName string)
 	return im.getItemInfoByID(itemTypeID, id)
 }
 
-func (im *ItemManager) Sol_IssueItemType(context *ContextSol, owner, name, description string) error {
-	_, err := im.IssueItemType(context.tx.Sender(), owner, name, description, context.pm)
+func (im *ItemManager) Sol_IssueItemType(context *ContextSol, owner common.Address, name, description string) error {
+	_, err := im.IssueItemType(context.tx.Sender(), owner.AccountName(), name, description, context.pm)
 	return err
 }
 

@@ -518,7 +518,7 @@ func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, 
 	return nil
 }
 
-func (am *AccountManager) Sol_GetBalance(context *ContextSol, accountName string, assetID uint64) (*big.Int, error) {
+func (am *AccountManager) Sol_GetBalance(context *ContextSol, assetID uint64) (*big.Int, error) {
 	return am.GetBalance(context.tx.Sender(), assetID)
 }
 
