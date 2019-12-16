@@ -616,7 +616,10 @@ func opReturnDataCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 func opExtCodeSize(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
 	slot := stack.peek()
 	accountName := common.BigToAddress(slot).AccountName()
-
+	if evm.PM.IsPlugin(accountName) {
+		slot.SetUint64(1)
+		return nil, nil
+	}
 	code, err := evm.PM.GetCode(accountName)
 	if err != nil {
 		slot.SetUint64(0)
@@ -654,7 +657,7 @@ func opExtCodeCopy(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 		codeOffset = stack.pop()
 		length     = stack.pop()
 	)
-	accountName := string(addr.Bytes())
+	accountName := common.BigToAddress(addr).AccountName()
 	code, err := evm.PM.GetCode(accountName)
 	if err != nil {
 		memory.Set(memOffset.Uint64(), length.Uint64(), nil)
