@@ -21,7 +21,7 @@ func (c *Consensus) Sol_GetMinerInfo(context *ContextSol, miner common.Address) 
 ```
 2. 在solidty中定义类似的方法
 ```js
-contract ConsensusAPI {
+interface ConsensusAPI {
     struct MinerInfo {
         address OwnerAccount;
         address SignAccount;

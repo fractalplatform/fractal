@@ -1,7 +1,7 @@
 pragma solidity >=0.4.0;
 pragma experimental ABIEncoderV2;
 
-contract ConsensusAPI {
+interface ConsensusAPI {
     struct MinerInfo {
         address OwnerAccount;
         address SignAccount;
@@ -11,15 +11,15 @@ contract ConsensusAPI {
         uint256 Epoch;
     }
     function GetMinerInfo(address miner) external returns(MinerInfo memory);
-    function UnregisterMiner() public;
+    function UnregisterMiner() external;
     function RegisterMiner(address miner) external payable;
 }
 
 contract TestRead {
     ConsensusAPI constant consensus = ConsensusAPI(address(bytes20("fractaldpos")));
     event InfoLog(address,uint256,uint256);
-    function testRead(address miner) public {
-        ConsensusAPI.MinerInfo memory info = consensus.GetMinerInfo(miner);
-        emit InfoLog(info.OwnerAccount, info.Weight, info.Balance);
+    function testRead(address miner) public payable{
+        consensus.RegisterMiner.value(msg.value)(miner);
+        //emit InfoLog(info.OwnerAccount, info.Weight, info.Balance);
     }
 }
