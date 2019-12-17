@@ -175,4 +175,5 @@ func init() {
 	PluginSolAPIRegister(&Consensus{})
 	PluginSolAPIRegister(&AccountManager{})
 	PluginSolAPIRegister(&AssetManager{})
+	PluginSolAPIRegister(&ItemManager{})
 }

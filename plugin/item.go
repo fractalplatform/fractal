@@ -370,7 +370,7 @@ func (im *ItemManager) getItemCounter() (uint64, error) {
 
 func (im *ItemManager) checkItemNameFormat(name string) error {
 	if uint64(len(name)) > itemNameMaxLength {
-		return ErrAssetNameLengthErr
+		return ErrItemNameLengthErr
 	}
 
 	if itemRegExp.MatchString(name) != true {
@@ -625,6 +625,7 @@ func (im *ItemManager) Sol_GetItemAmount(context *ContextSol, itemTypeID, itemIn
 var (
 	ErrItemCounterNotExist     = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
+	ErrItemNameLengthErr       = errors.New("item name length err")
 	ErrItemTypeNameNotExist    = errors.New("itemTypeName not exist")
 	ErrItemTypeNameIsExist     = errors.New("itemTypeName is exist")
 	ErrItemInfoNameNotExist    = errors.New("itemInfoName not exist")
