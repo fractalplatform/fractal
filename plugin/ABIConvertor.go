@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/plugin/abi"
+	"github.com/fractalplatform/fractal/utils/abi"
 )
 
 // [p1, p2, p3][p1, p2]

@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/plugin/abi"
+	"github.com/fractalplatform/fractal/utils/abi"
 )
 
 var big9 = big.NewInt(90)
