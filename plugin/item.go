@@ -598,8 +598,8 @@ func (im *ItemManager) Sol_IssueItem(context *ContextSol, itemTypeID uint64, nam
 	return err
 }
 
-func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, itemTypeID uint64, itemInfoID uint64, amount uint64) error {
-	_, err := im.IncreaseItem(context.tx.Sender(), itemTypeID, itemInfoID, context.tx.Recipient(), amount, context.pm)
+func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, itemTypeID uint64, itemInfoID uint64, to common.Address, amount uint64) error {
+	_, err := im.IncreaseItem(context.tx.Sender(), itemTypeID, itemInfoID, to.AccountName(), amount, context.pm)
 	return err
 }
 
