@@ -33,10 +33,10 @@ import (
 )
 
 var (
-	acctRegExp           = regexp.MustCompile(`^([a-z][a-z0-9]{6,31})$`)
+	acctRegExp           = regexp.MustCompile(`^([a-z][a-z0-9]{6,19})$`)
 	acctManagerName      = "sysAccount"
 	acctInfoPrefix       = "acctInfo"
-	accountNameMaxLength = uint64(32)
+	accountNameMaxLength = uint64(20)
 )
 
 const MaxDescriptionLength uint64 = 255
