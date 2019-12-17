@@ -66,7 +66,7 @@ func NewStateTransition(pm plugin.IPM, evm *vm.EVM,
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
 func ApplyMessage(pm plugin.IPM, evm *vm.EVM,
 	tx *types.Transaction, gp *common.GasPool, gasPrice *big.Int,
-	assetID uint64, config *params.ChainConfig) ([]byte, uint64, bool, error, error) {
+	assetID uint64, config *params.ChainConfig) ([]byte, uint64, []*types.GasDistribution, bool, error, error) {
 	return NewStateTransition(pm, evm, tx, gp, gasPrice,
 		assetID, config).TransitionDb()
 }
@@ -103,7 +103,7 @@ func (st *StateTransition) buyGas() error {
 // TransitionDb will transition the state by applying the current message and
 // returning the result including the the used gas. It returns an error if it
 // failed. An error indicates a consensus issue.
-func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bool,
+func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, gasAllot []*types.GasDistribution, failed bool,
 	err error, vmerr error) {
 	if err = st.preCheck(); err != nil {
 		return
@@ -111,10 +111,10 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 
 	intrinsicGas, err := txpool.IntrinsicGas(st.pm, st.tx)
 	if err != nil {
-		return nil, 0, true, err, vmerr
+		return nil, 0, nil, true, err, vmerr
 	}
 	if err := st.useGas(intrinsicGas); err != nil {
-		return nil, 0, true, err, vmerr
+		return nil, 0, nil, true, err, vmerr
 	}
 
 	caller := vm.AccountRef(st.tx.Sender())
@@ -134,31 +134,36 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, failed bo
 		// sufficient balance to make the transfer happen. The first
 		// balance transfer may never fail.
 		if vmerr == vm.ErrExecOverTime {
-			return nil, 0, false, vmerr, vmerr
+			return nil, 0, nil, false, vmerr, vmerr
 		}
 	}
 
 	nonce, err := st.pm.GetNonce(st.from)
 	if err != nil {
-		return nil, st.gasUsed(), true, err, vmerr
+		return nil, st.gasUsed(), nil, true, err, vmerr
 	}
 	err = st.pm.SetNonce(st.from, nonce+1)
 	if err != nil {
-		return nil, st.gasUsed(), true, err, vmerr
+		return nil, st.gasUsed(), nil, true, err, vmerr
 	}
 
 	st.refundGas()
 
-	key := types.DistributeKey{ObjectName: st.evm.Coinbase,
+	key := types.DistributeKey{
+		ObjectName: st.evm.Coinbase,
 		ObjectType: types.CoinbaseFeeType}
+
 	st.evm.FounderGasMap[key] = types.DistributeGas{
 		Value:  int64(intrinsicGas),
 		TypeID: types.CoinbaseFeeType}
+
 	// st.distributeGas(intrinsicGas)
-	if err := st.pm.DistributeGas(st.chainConfig.FeeName, st.evm.FounderGasMap, st.assetID, st.gasPrice, st.pm); err != nil {
-		return ret, st.gasUsed(), true, err, vmerr
+	gasAllot, err = st.pm.DistributeGas(st.chainConfig.FeeName, st.evm.FounderGasMap, st.assetID, st.gasPrice, st.pm)
+	if err != nil {
+		return ret, st.gasUsed(), nil, true, err, vmerr
 	}
-	return ret, st.gasUsed(), vmerr != nil, nil, vmerr
+
+	return ret, st.gasUsed(), gasAllot, vmerr != nil, nil, vmerr
 }
 
 func (st *StateTransition) refundGas() {
