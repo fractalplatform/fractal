@@ -89,6 +89,10 @@ type IConsensus interface {
 	//Difficult(header *types.Header) uint64
 	Verify(header *types.Header) error
 	VerifySeal(header *types.Header, pm IPM) error
+
+	// RPC
+	GetAllCandidates() []string
+	GetCandidateInfo(miner string) *CandidateInfo
 }
 
 type IFee interface {

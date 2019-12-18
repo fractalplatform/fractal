@@ -124,6 +124,12 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewAccountAPI(apiBackend),
 			Public:    true,
 		},
+		{
+			Namespace: "consensus",
+			Version:   "1.0",
+			Service:   NewConsensusAPI(apiBackend),
+			Public:    true,
+		},
 	}
 	return append(apis, apiBackend.APIs()...)
 }
