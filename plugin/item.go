@@ -188,6 +188,9 @@ func (im *ItemManager) IssueItem(creator string, itemTypeID uint64, name string,
 		}
 	}
 	for _, att := range attributes {
+		if len(att.Name) == 0 {
+			return nil, ErrItemAttributeNameIsNull
+		}
 		if uint64(len(att.Name)) > MaxDescriptionLength || uint64(len(att.Description)) > MaxDescriptionLength {
 			return nil, ErrItemAttributeDesTooLong
 		}
@@ -618,8 +621,8 @@ func (im *ItemManager) Sol_TransferItem(context *ContextSol, to common.Address, 
 	return im.TransferItem(context.tx.Sender(), to.AccountName(), ItemTx)
 }
 
-func (im *ItemManager) Sol_GetItemAmount(context *ContextSol, itemTypeID, itemInfoID uint64) (uint64, error) {
-	return im.GetItemAmount(context.tx.Sender(), itemTypeID, itemInfoID)
+func (im *ItemManager) Sol_GetItemAmount(context *ContextSol, account common.Address, itemTypeID, itemInfoID uint64) (uint64, error) {
+	return im.GetItemAmount(account.AccountName(), itemTypeID, itemInfoID)
 }
 
 var (
@@ -636,6 +639,7 @@ var (
 	ErrItemInfoIsExist         = errors.New("itemInfo is exist")
 	ErrItemObjectEmpty         = errors.New("item object is empty")
 	ErrItemOwnerMismatch       = errors.New("itemType owner mismatch")
+	ErrItemAttributeNameIsNull = errors.New("item attribute name is null")
 	ErrItemAttributeDesTooLong = errors.New("item attribute description exceed max length")
 	ErrItemUpperLimit          = errors.New("item amount over the issuance limit")
 	ErrAccountNoItem           = errors.New("account not have item")
