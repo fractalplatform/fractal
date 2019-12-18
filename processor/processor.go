@@ -18,6 +18,7 @@ package processor
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
@@ -127,7 +128,7 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 		})
 	}
 
-	_, gas, failed, err, vmerr := ApplyMessage(pm, vmenv, tx, gp, gasPrice, assetID, config)
+	_, gas, gasAllots, failed, err, vmerr := ApplyMessage(pm, vmenv, tx, gp, gasPrice, assetID, config)
 
 	if false == cfg.EndTime.IsZero() {
 		//close timer
@@ -152,19 +153,13 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 		vmerrstr = vmerr.Error()
 		log.Debug("processer apply transaction ", "hash", tx.Hash(), "err", vmerrstr)
 	}
-	var gasAllots []*types.GasDistribution
-
-	for key, gas := range vmenv.FounderGasMap {
-		gasAllots = append(gasAllots, &types.GasDistribution{
-			Account: key.ObjectName,
-			Gas:     uint64(gas.Value),
-			TypeID:  gas.TypeID})
-	}
 
 	internalTxs := make([]*types.InternalTx, 0, len(vmenv.InternalTxs))
 	for _, itx := range vmenv.InternalTxs {
 		internalTxs = append(internalTxs, itx)
 	}
+
+	sort.Sort(types.Distributes(gasAllots))
 
 	root := statedb.ReceiptRoot()
 	receipt := types.NewReceipt(root[:], *usedGas, totalGas)

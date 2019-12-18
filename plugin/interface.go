@@ -93,7 +93,7 @@ type IConsensus interface {
 }
 
 type IFee interface {
-	DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) error
+	DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) ([]*types.GasDistribution, error)
 }
 
 type ISigner interface {

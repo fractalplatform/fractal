@@ -50,6 +50,7 @@ type GasTable struct {
 	GetAssetID      uint64
 	CryptoCalc      uint64
 	CryptoByte      uint64
+	PluginCall      uint64
 	DeductGas       uint64
 	WithdrawFee     uint64
 	GetEpoch        uint64
@@ -99,6 +100,7 @@ var (
 		GetAssetID:      200,
 		CryptoCalc:      20000,
 		CryptoByte:      1000,
+		PluginCall:      200000,
 		DeductGas:       200,
 		GetEpoch:        200,
 		GetCandidateNum: 200,
