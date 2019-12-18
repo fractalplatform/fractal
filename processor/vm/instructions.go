@@ -854,8 +854,8 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	// Pop gas. The actual gas in in evm.callGasTemp.
 	evm.interpreter.intPool.put(stack.pop())
 	gas := evm.callGasTemp
-	pluginGas := evm.interpreter.gasTable.PluginCall
-	if !contract.UseGas(pluginGas) {
+	gasUsed := evm.interpreter.gasTable.PluginCall
+	if gas < gasUsed {
 		stack.push(evm.interpreter.intPool.getZero())
 		return nil, ErrOutOfGas
 	}
@@ -876,6 +876,9 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	var err error
 
 	ret, err = evm.PM.ExecTx(types.NewTransaction(action), true)
+	returnGas := gas - gasUsed
+	contract.Gas += returnGas
+
 	if evm.vmConfig.ContractLogFlag {
 		errmsg := ""
 		if err != nil {
@@ -883,7 +886,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 		}
 		internalAction := &types.InternalTx{
 			Type:     types.PluginCall,
-			GasUsed:  pluginGas,
+			GasUsed:  gasUsed,
 			GasLimit: gas,
 			Depth:    uint64(evm.depth),
 			Error:    errmsg}
