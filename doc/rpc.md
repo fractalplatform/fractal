@@ -1745,7 +1745,6 @@ None
 
 - `Array` - list of candidiates.
 
-
 ##### Example
 
 ```js
@@ -1774,7 +1773,7 @@ Returns candidates information by a specific epoch
 
 - `Object` - candidate's info.
   - OwnerAccount - `String` candidate's account name
-  -	SignAccount - `String` signer's account name
+  - SignAccount - `String` signer's account name
   - RegisterNumber - `Number` registration block number
   - Weight - `Number` candidate's weight
   - Balance - `Number` locked balance of candidate
