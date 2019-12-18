@@ -37,14 +37,14 @@ func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]
 	for key, gas := range gasMap {
 		if key.ObjectType == types.CoinbaseFeeType {
 			coinbase = key.ObjectName
-
-			gasAllots = append(gasAllots, &types.GasDistribution{
-				Account: key.ObjectName,
-				Gas:     uint64(gas.Value),
-				TypeID:  gas.TypeID})
 		}
 		totalGas += gas.Value
 	}
+
+	gasAllots = append(gasAllots, &types.GasDistribution{
+		Account: coinbase,
+		Gas:     uint64(totalGas),
+		TypeID:  types.CoinbaseFeeType})
 
 	gasBalance := new(big.Int).Mul(new(big.Int).SetInt64(totalGas), gasPrice)
 	if err := am.TransferAsset(from, coinbase, assetID, gasBalance); err != nil {
