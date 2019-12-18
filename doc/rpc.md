@@ -7,18 +7,11 @@
 
     - [account_accountIsExist](#account_accountIsExist)
     - [account_getAccountByName](#account_getAccountByName)
-    - [account_getAccountExByName](#account_getAccountExByName)
-    - [account_getAccountByID](#account_getAccountByID)
-    - [account_getAccountExByID](#account_getAccountExByID)
     - [account_getCode](#account_getCode)
     - [account_getNonce](#account_getNonce)
     - [account_getAssetInfoByName](#account_getAssetInfoByName)
     - [account_getAssetInfoByID](#account_getAssetInfoByID)
     - [account_getAccountBalanceByID](#account_getAccountBalanceByID)
-    - [account_getAccountBalanceByTime](#account_getAccountBalanceByTime)
-    - [account_getAssetAmountByTime](#account_getAssetAmountByTime)
-    - [account_getSnapshotLast](#account_getSnapshotLast)
-    - [account_getSnapshotTime](#account_getSnapshotTime)
 
   - **ft**
 
@@ -76,7 +69,7 @@ Returns whether the account exists.
 
 // Request
 
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_accountIsExist","params":["fractal.admin"],"id":1}' http://localhost:8545
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_accountIsExist","params":["fractalaccount"],"id":1}' http://localhost:8545
 
 // Result
 
@@ -102,22 +95,13 @@ Get account information by name.
 
 - `Object` - A account object,or `account not exist` if not found.
   - `accountName` - `String` name of the account.
-  - `founder` - `String` founder of the account.
-  - `accountID` - id of the account.
-  - `number` - `Quantity` block number where this account was created.
   - `nonce` - `Quantity` integer of the number of transactions send from this account.
   - `code` - `String` the contract code from the given account.
   - `codeHash` - `String` hash of the contract code,or `0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470` if not found.
   - `codeSize` - `Quantity` size of the contract.
-  - `threshold` - `Quantity` threshold for account transfer transaction permissions.
-  - `updateAuthorThreshold` - `Quantity` threshold for account update author transaction permissions.
-  - `authorVersion` - `Quantity` current account author version.
-  - `balances` - `Array` all asset balances under the account.
+  - `balance` - `Array` all asset balances under the account.
     - `assetID` - `Quantity` id of asset.
     - `balance` - `Quantity` balance of asset.
-  - `authors` - `Array` all authors under the account.
-    - `owner` - `String` public key of owner.
-    - `weight` - `String` weight of owner.
   - `suicide` - `Boolean` `true` when account contract suicide, otherwise `false`.
   - `destroy` - `Boolean` `true` when account destroy, otherwise `false`.
   - `description` - `String` description of the account.
@@ -128,7 +112,7 @@ Get account information by name.
 
 // Request
 
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getAccountByName","params":["fractal.admin"],"id":1}' http://localhost:8545
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getAccountByName","params":["fractalaccount"],"id":1}' http://localhost:8545
 
 // Result
 
@@ -136,225 +120,21 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
     "jsonrpc": "2.0",
     "id": 1,
     "result": {
-        "accountName": "fractal.admin",
-        "founder": "fractal.admin",
-        "accountID": 4098,
-        "number": 0,
+        "name": "fractalaccount",
+        "address": "0x3f17f1962b36e491b30a40b2405849e597ba5fb5",
         "nonce": 0,
-        "code": "",
+        "code": "0x",
         "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
         "codeSize": 0,
-        "threshold": 1,
-        "updateAuthorThreshold": 1,
-        "authorVersion": "0xcef3cd8eb9a2c3253a5a21abd3991f19b9deb8eda8ac38ed0951a74d5318c652",
-        "balances": [
-            {
-                "assetID": 0,
-                "balance": 1e+29
-            }
-        ],
-        "authors": [
-            {
-                "owner": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
-                "weight": 1
-            }
-        ],
+        "balance": {
+            "assetID": 0,
+            "balance": 0
+        },
         "suicide": false,
         "destroy": false,
-        "description": ""
+        "description": "account manager account"
     }
 }
-```
-
----
-
-#### account_getAccountExByName
-
-Get account information by name,but returns assets with a balance of zero.
-
-##### Parameters
-
-See [account_getAccountByName](#account_getAccountByName) parameters
-
-##### Response
-
-See [account_getAccountByName](#account_getAccountByName) response
-
-##### Example
-
-Does return assets with a balance of zero.
-
-```js
-
-// Request
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0", "method":"account_getAccountExByName","params":["qqqqqqqqqqq1"],"id": 1}' http://localhost:8545
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": {
-        "accountName": "qqqqqqqqqqq1",
-        "founder": "testtransfer",
-        "accountID": 4851,
-        "number": 2240000,
-        "nonce": 1,
-        "code": "",
-        "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-        "codeSize": 0,
-        "threshold": 1,
-        "updateAuthorThreshold": 1,
-        "authorVersion": "0x3474dc77996a79b35fb54369417fc67fd5cd166149e215aeb55d11d8439717ea",
-        "balances": [
-            {
-                "assetID": 0,
-                "balance": 99976000000000
-            },
-             {
-                "assetID": 1,
-                "balance": 0 // balance of 0
-            }
-        ],
-        "authors": [
-            {
-                "owner": "0x04ec2b0a4d34661ab1466a451f9f57d49a6f8befe86d70f333229e16ee1760bb6b1c7401cd1d5a50f2b73794fc89dbfab4468fd767bd69382ef603255f0fb4f429",
-                "weight": 1
-            }
-        ],
-        "suicide": false,
-        "destroy": false,
-        "description": ""
-    }
-}
-
-```
-
----
-
-#### account_getAccountByID
-
-Get account information by ID.
-
-##### Parameters
-
-- `Quantity` - ID of the account.
-
-##### Response
-
-See [account_getAccountByName](#account_getAccountByName) response.
-
-##### Example
-
-```js
-
-// Request
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0", "method":"account_getAccountExByID","params":[4851],"id": 1}' http://localhost:8545
-
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": {
-        "accountName": "qqqqqqqqqqq1",
-        "founder": "testtransfer",
-        "accountID": 4851,
-        "number": 2240000,
-        "nonce": 1,
-        "code": "",
-        "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-        "codeSize": 0,
-        "threshold": 1,
-        "updateAuthorThreshold": 1,
-        "authorVersion": "0x3474dc77996a79b35fb54369417fc67fd5cd166149e215aeb55d11d8439717ea",
-        "balances": [
-            {
-                "assetID": 0,
-                "balance": 99976000000000
-            }
-        ],
-        "authors": [
-            {
-                "owner": "0x04ec2b0a4d34661ab1466a451f9f57d49a6f8befe86d70f333229e16ee1760bb6b1c7401cd1d5a50f2b73794fc89dbfab4468fd767bd69382ef603255f0fb4f429",
-                "weight": 1
-            }
-        ],
-        "suicide": false,
-        "destroy": false,
-        "description": ""
-    }
-}
-
-```
-
----
-
-#### account_getAccountExByID
-
-Get account information by ID,but returns assets with a balance of zero.
-
-##### Parameters
-
-See [account_getAccountByID](#account_getAccountByID) parameters
-
-##### Response
-
-See [account_getAccountByName](#account_getAccountByName) response
-
-##### Example
-
-Does return assets with a balance of zero.
-
-```js
-
-// Request
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0", "method":"account_getAccountByID","params":[4851],"id": 1}' http://localhost:8545
-
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": {
-        "accountName": "qqqqqqqqqqq1",
-        "founder": "testtransfer",
-        "accountID": 4851,
-        "number": 2240000,
-        "nonce": 1,
-        "code": "",
-        "codeHash": "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-        "codeSize": 0,
-        "threshold": 1,
-        "updateAuthorThreshold": 1,
-        "authorVersion": "0x3474dc77996a79b35fb54369417fc67fd5cd166149e215aeb55d11d8439717ea",
-        "balances": [
-            {
-                "assetID": 0,
-                "balance": 99976000000000
-            },
-            {
-                "assetID": 1,
-                "balance": 0 // balance of 0
-            }
-        ],
-        "authors": [
-            {
-                "owner": "0x04ec2b0a4d34661ab1466a451f9f57d49a6f8befe86d70f333229e16ee1760bb6b1c7401cd1d5a50f2b73794fc89dbfab4468fd767bd69382ef603255f0fb4f429",
-                "weight": 1
-            }
-        ],
-        "suicide": false,
-        "destroy": false,
-        "description": ""
-    }
-}
-
 ```
 
 ---
@@ -434,8 +214,6 @@ Get asset information by asset name.
 
 - `Object` - A asset object,`asset not exist` if not found
   - `assetId` - `Quantity` id of the asset.
-  - `number` - `Quantity` block number where this asset was created.
-  - `stats` - `Quantity` number of holders。
   - `assetName` - `String` name of the asset.
   - `symbol` - `String` symbol of asset.
   - `amount` - `Quantity` total currency amount of asset.
@@ -444,7 +222,6 @@ Get asset information by asset name.
   - `owner` - `String` who owns all permissions to the asset.
   - `addIssue` - `Quantity` total amount of issuance.
   - `upperLimit` - `Quantity` maximum number of additional issues.
-  - `contract` - `String` agreement asset contract.
   - `description` - `String` description of the asset.
 
 ##### Example
@@ -461,17 +238,14 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
     "id": 1,
     "result": {
         "assetId": 0,
-        "number": 0,
-        "stats": 591,
         "assetName": "ftoken",
         "symbol": "ft",
         "amount": 10000000000000000000000000000,
         "decimals": 18,
-        "founder": "fractal.founder",
-        "owner": "fractal.founder",
+        "founder": "fractalfounder",
+        "owner": "fractalfounder",
         "addIssue": 10000000000000000000000000000,
         "upperLimit": 10000000000000000000000000000,
-        "contract": "",
         "description": ""
     }
 }
@@ -507,17 +281,14 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
     "id": 1,
     "result": {
         "assetId": 0,
-        "number": 0,
-        "stats": 591,
         "assetName": "ftoken",
         "symbol": "ft",
         "amount": 10000000000000000000000000000,
         "decimals": 18,
-        "founder": "fractal.founder",
-        "owner": "fractal.founder",
+        "founder": "fractalfounder",
+        "owner": "fractalfounder",
         "addIssue": 10000000000000000000000000000,
         "upperLimit": 10000000000000000000000000000,
-        "contract": "",
         "description": ""
     }
 }
@@ -534,7 +305,6 @@ Get account balance by account name and asset id.
 
 - `String` - Name of the asset.
 - `Quantity` - id of the asset.
-- `Quantity` - `0` calculate parent assets, or `1` calculate parent and child assets.
 
 ##### Response
 
@@ -546,148 +316,14 @@ Get account balance by account name and asset id.
 
 // Request
 
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getAccountBalanceByID","params":["qqqqqqqqqqq1", 0, 1],"id":1}' http://localhost:8545
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getAccountBalanceByID","params":["qqqqqqqqqqq1", 0],"id":1}' http://localhost:8545
 
 // Result
 
 {
     "jsonrpc": "2.0",
     "id": 1,
-    "result": 99976000000000
-}
-
-```
-
----
-
-#### account_getAccountBalanceByTime
-
-Get balance by account name and snapshot time.
-
-##### Parameters
-
-- `String` - name of the asset.
-- `Quantity` - id of the asset.
-- `Quantity` - `0` calculate parent assets, or `1` calculate parent and child assets.
-- `Quantity` - snapshot timestamp.
-
-##### Response
-
-- `Quantity` - account current balance.
-
-##### Example
-
-```js
-// Request
-
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getAccountBalanceByTime","params":["ftsystemio", 0, 0, 1546054908000000000],"id":1}' http://localhost:8545
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": 1566550800000000000
-}
-
-```
-
----
-
-#### account_getAssetAmountByTime
-
-Get the total currency amount of a asset.
-
-##### Parameters
-
-- `Quantity` - id of the asset.
-- `Quantity` - snapshot timestamp.
-
-##### Response
-
-- `Quantity` - account current currency amount.
-
-##### Example
-
-```js
-
-// Request
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getAssetAmountByTime","params":[1,1552977600000000000],"id":1}' http://localhost:8545
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": 59285719
-}
-
-```
-
----
-
-#### account_getSnapshotLast
-
-Get the last SnapshotLast.
-
-##### Parameters
-
-No args
-
-##### Response
-
-- `Quantity` - snapshot timestamp.
-
-##### Example
-
-```js
-
-// Request
-
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0", "method":"account_getSnapshotLast","params":[],"id": 1}' http://localhost:8545
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": 1566550800000000000
-}
-
-```
-
----
-
-#### account_getSnapshotTime
-
-Get previous or next snapshot timestamp by current timestamp.
-
-##### Parameters
-
-- `Quantity` - `0` returns the last snapshot timestamp,`1` returns the previous snapshot timestamp,or `2` returns the next snapshot timestamp.
-- `Quantity` - timestamp
-
-##### Response
-
-- `Quantity` - snapshot timestamp.
-
-##### Example
-
-```js
-
-// Request
-
-curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"account_getSnapshotTime","params":[1,1546054910000000000],"id":1}' http://localhost:8545
-
-// Result
-
-{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "result": 1566550800000000000
+    "result": 9997000000336529599999999999
 }
 
 ```
@@ -2109,7 +1745,6 @@ None
 
 - `Array` - list of candidiates.
 
-
 ##### Example
 
 ```js
@@ -2138,7 +1773,7 @@ Returns candidates information by a specific epoch
 
 - `Object` - candidate's info.
   - OwnerAccount - `String` candidate's account name
-  -	SignAccount - `String` signer's account name
+  - SignAccount - `String` signer's account name
   - RegisterNumber - `Number` registration block number
   - Weight - `Number` candidate's weight
   - Balance - `Number` locked balance of candidate
