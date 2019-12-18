@@ -903,6 +903,12 @@ func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 	// Pop gas. The actual gas in in evm.callGasTemp.
 	evm.interpreter.intPool.put(stack.pop())
 	gas := evm.callGasTemp
+	pluginGas := evm.interpreter.gasTable.PluginCall
+	if !contract.UseGas(pluginGas) {
+		stack.push(evm.interpreter.intPool.getZero())
+		return nil, ErrOutOfGas
+	}
+
 	// Pop other call parameters.
 	name, assetId, actype, value, inOffset, inSize, retOffset, retSize := stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop(), stack.pop()
 	value = math.U256(value)
@@ -928,7 +934,7 @@ func opCallPlugin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stac
 		}
 		internalAction := &types.InternalTx{
 			Type:     types.PluginCall,
-			GasUsed:  gas,
+			GasUsed:  pluginGas,
 			GasLimit: gas,
 			Depth:    uint64(evm.depth),
 			Error:    errmsg}
