@@ -36,6 +36,21 @@ type GasDistribution struct {
 	TypeID  uint64 `json:"typeID"`
 }
 
+type Distributes []*GasDistribution
+
+func (keys Distributes) Len() int {
+	return len(keys)
+}
+func (keys Distributes) Less(i, j int) bool {
+	if keys[i].Account == keys[j].Account {
+		return keys[i].TypeID < keys[j].TypeID
+	}
+	return keys[i].Account < keys[j].Account
+}
+func (keys Distributes) Swap(i, j int) {
+	keys[i], keys[j] = keys[j], keys[i]
+}
+
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	PostState         []byte

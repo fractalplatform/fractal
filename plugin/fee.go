@@ -29,15 +29,27 @@ func NewFeeManager() (IFee, error) {
 	return &FeeManager{}, nil
 }
 
-func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) error {
+func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]types.DistributeGas, assetID uint64, gasPrice *big.Int, am IAccount) ([]*types.GasDistribution, error) {
 	var coinbase string
 	var totalGas int64
+	var gasAllots []*types.GasDistribution
+
 	for key, gas := range gasMap {
 		if key.ObjectType == types.CoinbaseFeeType {
 			coinbase = key.ObjectName
+
+			gasAllots = append(gasAllots, &types.GasDistribution{
+				Account: key.ObjectName,
+				Gas:     uint64(gas.Value),
+				TypeID:  gas.TypeID})
 		}
 		totalGas += gas.Value
 	}
+
 	gasBalance := new(big.Int).Mul(new(big.Int).SetInt64(totalGas), gasPrice)
-	return am.TransferAsset(from, coinbase, assetID, gasBalance)
+	if err := am.TransferAsset(from, coinbase, assetID, gasBalance); err != nil {
+		return nil, err
+	}
+
+	return gasAllots, nil
 }

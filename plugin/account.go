@@ -518,8 +518,8 @@ func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, 
 	return nil
 }
 
-func (am *AccountManager) Sol_GetBalance(context *ContextSol, accountName string, assetID uint64) (*big.Int, error) {
-	return am.GetBalance(context.tx.Sender(), assetID)
+func (am *AccountManager) Sol_GetBalance(context *ContextSol, account common.Address, assetID uint64) (*big.Int, error) {
+	return am.GetBalance(account.AccountName(), assetID)
 }
 
 func (am *AccountManager) Sol_Transfer(context *ContextSol, to common.Address, assetID uint64, value *big.Int) error {
