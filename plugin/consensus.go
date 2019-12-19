@@ -777,3 +777,13 @@ func (c *Consensus) Sol_RegisterMiner(context *ContextSol, signer common.Address
 func (c *Consensus) Sol_UnregisterMiner(context *ContextSol) error {
 	return c.unregisterMiner(context.tx, context.pm)
 }
+
+/* rpc method*/
+
+func (c *Consensus) GetAllCandidates() []string {
+	return c.candidates.listSort[:]
+}
+
+func (c *Consensus) GetCandidateInfo(miner string) *CandidateInfo {
+	return c.candidates.info[miner]
+}

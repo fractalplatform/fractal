@@ -17,10 +17,12 @@
 package plugin
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
 
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/types/envelope"
@@ -45,9 +47,40 @@ type Manager struct {
 	ISigner
 }
 
+func init() {
+	PluginSolAPIRegister(&Consensus{})
+	PluginSolAPIRegister(&AccountManager{})
+	PluginSolAPIRegister(&AssetManager{})
+}
+
 type ContextSol struct {
 	pm IPM
 	tx *envelope.PluginTx
+}
+
+// NewPM create new plugin manager.
+func NewPM(stateDB *state.StateDB) IPM {
+	acm, _ := NewACM(stateDB)
+	asm, _ := NewASM(stateDB)
+	consensus := NewConsensus(stateDB)
+	chainID := big.NewInt(1)
+	signer, _ := NewSigner(chainID)
+	fee, _ := NewFeeManager()
+	pm := &Manager{
+		contracts:       make(map[string]IContract),
+		contractsByType: make(map[envelope.PayloadType]IContract),
+		IAccount:        acm,
+		IAsset:          asm,
+		IConsensus:      consensus,
+		ISigner:         signer,
+		IFee:            fee,
+		stateDB:         stateDB,
+	}
+	pm.contracts[acm.AccountName()] = acm
+	pm.contracts[asm.AccountName()] = asm
+	pm.contracts[consensus.AccountName()] = consensus
+	pm.contractsByType[Transfer] = acm
+	return pm
 }
 
 func (pm *Manager) BasicCheck(tx *types.Transaction) error {
@@ -143,37 +176,40 @@ func (pm *Manager) IsPlugin(name string) bool {
 	return exist
 }
 
-// NewPM create new plugin manager.
-func NewPM(stateDB *state.StateDB) IPM {
-	acm, _ := NewACM(stateDB)
-	asm, _ := NewASM(stateDB)
-	consensus := NewConsensus(stateDB)
-	chainID := big.NewInt(1)
-	signer, _ := NewSigner(chainID)
-	fee, _ := NewFeeManager()
-	item, _ := NewItemManage(stateDB)
-	pm := &Manager{
-		contracts:       make(map[string]IContract),
-		contractsByType: make(map[envelope.PayloadType]IContract),
-		IAccount:        acm,
-		IAsset:          asm,
-		IConsensus:      consensus,
-		ISigner:         signer,
-		IFee:            fee,
-		IItem:           item,
-		stateDB:         stateDB,
+func (pm *Manager) InitChain(pluginDoc json.RawMessage, chainConfig *params.ChainConfig) ([]*types.Transaction, error) {
+	if len(pluginDoc) == 0 {
+		pluginDoc = DefaultPluginDoc()
 	}
-	pm.contracts[acm.AccountName()] = acm
-	pm.contracts[asm.AccountName()] = asm
-	pm.contracts[consensus.AccountName()] = consensus
-	pm.contracts[item.AccountName()] = item
-	pm.contractsByType[Transfer] = acm
-	return pm
-}
 
-func init() {
-	PluginSolAPIRegister(&Consensus{})
-	PluginSolAPIRegister(&AccountManager{})
-	PluginSolAPIRegister(&AssetManager{})
-	PluginSolAPIRegister(&ItemManager{})
+	pd, err := PluginDocJsonUnMarshal(pluginDoc)
+	if err != nil {
+		return nil, fmt.Errorf("Init chain json unmarshal err: %v", err)
+	}
+
+	actTxs, err := pd.CreateAccount(chainConfig.ChainName, chainConfig.AccountName)
+	if err != nil {
+		return nil, err
+	}
+
+	astTxs, err := pd.CreateAsset(chainConfig.ChainName, chainConfig.AssetName)
+	if err != nil {
+		return nil, err
+	}
+
+	minerTxs, err := pd.RegisterMiner(chainConfig.SysName, chainConfig.DposName)
+	if err != nil {
+		return nil, err
+	}
+
+	actTxs = append(actTxs, astTxs...)
+	actTxs = append(actTxs, minerTxs...)
+
+	for index, action := range actTxs {
+		_, err := pm.ExecTx(action, false)
+		if err != nil {
+			return nil, fmt.Errorf("genesis index: %v,err %v", index, err)
+		}
+	}
+
+	return actTxs, nil
 }

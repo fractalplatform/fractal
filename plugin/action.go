@@ -57,7 +57,6 @@ type IssueAssetAction struct {
 	Founder     string
 	Decimals    uint64
 	UpperLimit  *big.Int
-	Contract    string
 	Description string
 }
 

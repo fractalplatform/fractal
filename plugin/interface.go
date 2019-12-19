@@ -18,10 +18,12 @@ package plugin
 
 import (
 	"crypto/ecdsa"
+	"encoding/json"
 	"math/big"
 	"time"
 
 	"github.com/fractalplatform/fractal/common"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/types/envelope"
 )
@@ -36,6 +38,7 @@ type IPM interface {
 	IItem
 	ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error)
 	IsPlugin(name string) bool
+	InitChain(json.RawMessage, *params.ChainConfig) ([]*types.Transaction, error)
 }
 
 type IContract interface {
@@ -90,6 +93,10 @@ type IConsensus interface {
 	//Difficult(header *types.Header) uint64
 	Verify(header *types.Header) error
 	VerifySeal(header *types.Header, pm IPM) error
+
+	// RPC
+	GetAllCandidates() []string
+	GetCandidateInfo(miner string) *CandidateInfo
 }
 
 type IFee interface {

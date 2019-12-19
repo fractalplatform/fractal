@@ -31,21 +31,18 @@ import (
 	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 // Genesis specifies the header fields, state of a genesis block.
 type Genesis struct {
-	Config        *params.ChainConfig       `json:"config,omitempty"`
-	Timestamp     uint64                    `json:"timestamp,omitempty"`
-	GasLimit      uint64                    `json:"gasLimit,omitempty" `
-	Difficulty    *big.Int                  `json:"difficulty,omitempty" `
-	AllocAccounts []*pm.CreateAccountAction `json:"allocAccounts,omitempty"`
-	AllocAssets   []*pm.IssueAssetAction    `json:"allocAssets,omitempty"`
-	Remark        string                    `json:"remark,omitempty"`
-	ForkID        uint64                    `json:"forkID,omitempty"`
+	Config     *params.ChainConfig `json:"config,omitempty"`
+	Timestamp  uint64              `json:"timestamp,omitempty"`
+	GasLimit   uint64              `json:"gasLimit,omitempty" `
+	Difficulty *big.Int            `json:"difficulty,omitempty" `
+	Remark     string              `json:"remark,omitempty"`
+	ForkID     uint64              `json:"forkID,omitempty"`
+	PluginDoc  json.RawMessage     `json:"pluginDoc,omitempty"`
 }
 
 // SetupGenesisBlock The returned chain configuration is never nil.
@@ -124,31 +121,10 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	// create account and asset
 	mananger := pm.NewPM(statedb)
 	mananger.Init(g.Timestamp, nil)
-	actTxs, err := g.CreateAccount()
+	actTxs, err := mananger.InitChain(g.PluginDoc, g.Config)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("plugin init chain err %v", err)
 	}
-
-	astTxs, err := g.CreateAsset()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	minerTxs, err := g.RegisterMiner()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	actTxs = append(actTxs, astTxs...)
-	actTxs = append(actTxs, minerTxs...)
-
-	for index, action := range actTxs {
-		_, err := mananger.ExecTx(action, false)
-		if err != nil {
-			return nil, nil, fmt.Errorf("genesis index: %v,err %v", index, err)
-		}
-	}
-
 	g.Config.SysTokenID, err = mananger.GetAssetID(g.Config.SysToken)
 	if err != nil {
 		return nil, nil, fmt.Errorf("genesis system asset err %v", err)
@@ -173,15 +149,14 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		Number:     number,
 		Time:       timestamp,
 		ParentHash: common.Hash{},
-		Extra:      aBytes,
 		GasLimit:   g.GasLimit,
 		GasUsed:    0,
 		Coinbase:   g.Config.ChainName,
 		Root:       root,
+		Extra:      aBytes,
 	}
 
 	receipts := []*types.Receipt{}
-
 	for k, tx := range actTxs {
 		receipt := types.NewReceipt(root[:], 0, 0)
 		receipt.TxHash = tx.Hash()
@@ -191,8 +166,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	}
 
 	block := types.NewBlock(head, actTxs, receipts)
-	batch := db.NewBatch()
 
+	batch := db.NewBatch()
 	// write snapshot to db
 	snapshotInfo := types.SnapshotInfo{
 		Root: root,
@@ -236,185 +211,12 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 	return block, nil
 }
 
-// CreateAccount create account
-func (g *Genesis) CreateAccount() ([]*types.Transaction, error) {
-	var txs []*types.Transaction
-
-	act := &pm.CreateAccountAction{
-		Name:   g.Config.ChainName,
-		Pubkey: common.HexToPubKey("").String(),
-	}
-
-	payload, err := rlp.EncodeToBytes(act)
-	if err != nil {
-		return nil, err
-	}
-	env, err := envelope.NewPluginTx(
-		pm.CreateAccount,
-		g.Config.ChainName,
-		g.Config.AccountName,
-		0,
-		0,
-		0,
-		0,
-		big.NewInt(0),
-		big.NewInt(0),
-		payload,
-		[]byte(g.Remark))
-	if err != nil {
-		return nil, err
-	}
-
-	txs = append(txs, types.NewTransaction(env))
-
-	for _, act := range g.AllocAccounts {
-		payload, err := rlp.EncodeToBytes(act)
-		if err != nil {
-			return nil, err
-		}
-
-		env, err := envelope.NewPluginTx(
-			pm.CreateAccount,
-			g.Config.ChainName,
-			g.Config.AccountName,
-			0,
-			0,
-			0,
-			0,
-			big.NewInt(0),
-			big.NewInt(0),
-			payload,
-			nil)
-		if err != nil {
-			return nil, err
-		}
-
-		txs = append(txs, types.NewTransaction(env))
-
-	}
-
-	return txs, nil
-}
-
-// CreateAsset create asset
-func (g *Genesis) CreateAsset() ([]*types.Transaction, error) {
-	var txs []*types.Transaction
-
-	for _, ast := range g.AllocAssets {
-		payload, err := rlp.EncodeToBytes(ast)
-		if err != nil {
-			return nil, err
-		}
-
-		env, err := envelope.NewPluginTx(
-			pm.IssueAsset,
-			g.Config.ChainName,
-			g.Config.AssetName,
-			0,
-			0,
-			0,
-			0,
-			big.NewInt(0),
-			big.NewInt(0),
-			payload,
-			nil,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		txs = append(txs, types.NewTransaction(env))
-	}
-
-	return txs, nil
-}
-
-// RegisterMiner register Miner
-func (g *Genesis) RegisterMiner() ([]*types.Transaction, error) {
-
-	env, err := envelope.NewPluginTx(
-		pm.RegisterMiner,
-		g.Config.SysName,
-		g.Config.DposName,
-		1,             // nonce
-		0,             // assetID
-		0,             // gasAssetID
-		0,             // gasLimit
-		big.NewInt(0), // gasprice
-		big.NewInt(1), // amount
-		nil,
-		nil,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return []*types.Transaction{types.NewTransaction(env)}, nil
-}
-
 // DefaultGenesis returns the ft net genesis block.
 func DefaultGenesis() *Genesis {
 	return &Genesis{
-		Config:        params.DefaultChainconfig,
-		Timestamp:     1575967052,
-		GasLimit:      params.BlockGasLimit,
-		Difficulty:    params.GenesisDifficulty,
-		AllocAccounts: DefaultGenesisAccounts(),
-		AllocAssets:   DefaultGenesisAssets(),
-	}
-}
-
-// DefaultGenesisAccounts returns the ft net genesis accounts.
-func DefaultGenesisAccounts() []*pm.CreateAccountAction {
-	return []*pm.CreateAccountAction{
-		&pm.CreateAccountAction{
-			Name:   params.DefaultChainconfig.SysName,
-			Desc:   "system account",
-			Pubkey: "047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
-		},
-		&pm.CreateAccountAction{
-			Name:   params.DefaultChainconfig.AccountName,
-			Desc:   "account manager account",
-			Pubkey: common.HexToPubKey("").String(),
-		},
-		&pm.CreateAccountAction{
-			Name:   params.DefaultChainconfig.AssetName,
-			Desc:   "asset manager account",
-			Pubkey: common.HexToPubKey("").String(),
-		},
-		&pm.CreateAccountAction{
-			Name:   params.DefaultChainconfig.ItemName,
-			Desc:   "item manager account",
-			Pubkey: common.HexToPubKey("").String(),
-		},
-		&pm.CreateAccountAction{
-			Name:   params.DefaultChainconfig.DposName,
-			Desc:   "consensus account",
-			Pubkey: common.HexToPubKey("").String(),
-		},
-		&pm.CreateAccountAction{
-			Name:   params.DefaultChainconfig.FeeName,
-			Desc:   "fee manager account",
-			Pubkey: common.HexToPubKey("").String(),
-		},
-	}
-}
-
-// DefaultGenesisAssets returns the ft net genesis assets.
-func DefaultGenesisAssets() []*pm.IssueAssetAction {
-	supply := new(big.Int)
-	supply.SetString("10000000000000000000000000000", 10)
-	return []*pm.IssueAssetAction{
-		&pm.IssueAssetAction{
-			AssetName:   params.DefaultChainconfig.SysToken,
-			Symbol:      "ft",
-			Amount:      supply,
-			Decimals:    18,
-			Owner:       params.DefaultChainconfig.SysName,
-			Founder:     params.DefaultChainconfig.SysName,
-			UpperLimit:  supply,
-			Contract:    "",
-			Description: "",
-		},
+		Config:     params.DefaultChainconfig,
+		Timestamp:  1575967052,
+		GasLimit:   params.BlockGasLimit,
+		Difficulty: params.GenesisDifficulty,
 	}
 }
