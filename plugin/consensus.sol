@@ -12,14 +12,21 @@ interface ConsensusAPI {
     }
     function GetMinerInfo(address miner) external returns(MinerInfo memory);
     function UnregisterMiner() external;
-    function RegisterMiner(address miner) external payable;
+    function RegisterMiner(address signer) external payable;
 }
 
-contract TestRead {
+contract TestConsensus {
     ConsensusAPI constant consensus = ConsensusAPI(address(bytes20("fractaldpos")));
-    event InfoLog(address,uint256,uint256);
-    function testRead(address miner) public payable{
-        consensus.RegisterMiner.value(msg.value)(miner);
-        //emit InfoLog(info.OwnerAccount, info.Weight, info.Balance);
+    function testReadInfo() public returns(ConsensusAPI.MinerInfo memory){
+        ConsensusAPI.MinerInfo memory info = consensus.GetMinerInfo(address(this));
+        return info;
+    }
+
+    function testRegister(uint256 amount) public payable {
+        consensus.RegisterMiner.value(amount)(msg.sender);
+    }
+
+    function testUnregister() public {
+        consensus.UnregisterMiner();
     }
 }

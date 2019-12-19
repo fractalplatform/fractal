@@ -20,6 +20,7 @@ Available Commands:
   init        初始化创世块
   miner       控制挖矿命令
   p2p         P2P 网络设置和查询
+  rpc         RPC调用
   txpool      查询txpool状态和设置txpool最小gas价格
   version     显示版本信息
 
