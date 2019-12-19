@@ -79,6 +79,6 @@ func (c *Custom) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 }
 ```
 ### 插件实现api
-参考plugin.md文档。  
+参考[plugin.md](plugin.md)文档。  
 
 注意：需在`plugin.go`中的`init`函数中注册。
