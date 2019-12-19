@@ -192,7 +192,6 @@ func DefaultAssets() []*IssueAssetAction {
 			Owner:       params.DefaultChainconfig.SysName,
 			Founder:     params.DefaultChainconfig.SysName,
 			UpperLimit:  supply,
-			Contract:    "",
 			Description: "",
 		},
 	}
