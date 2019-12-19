@@ -67,6 +67,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	chainID := big.NewInt(1)
 	signer, _ := NewSigner(chainID)
 	fee, _ := NewFeeManager()
+	item, _ := NewItemManage(stateDB)
 	pm := &Manager{
 		contracts:       make(map[string]IContract),
 		contractsByType: make(map[envelope.PayloadType]IContract),
@@ -81,6 +82,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	pm.contracts[asm.AccountName()] = asm
 	pm.contracts[consensus.AccountName()] = consensus
 	pm.contractsByType[Transfer] = acm
+	pm.contracts[item.AccountName()] = item
 	return pm
 }
 
