@@ -73,21 +73,27 @@ func init() {
 		for i := 0; i < typ.NumMethod(); i++ {
 			method := typ.Method(i)
 			rpcMethod := strings.ToLower(api.Namespace) + "_" + strings.ToLower(method.Name[:1]) + method.Name[1:]
-			rpcCmd.AddCommand(&cobra.Command{
-				Use:   rpcMethod,
-				Short: rpcMethod,
-				Long:  rpcMethod,
-				Run:   rpcCall(rpcMethod),
-			})
 			funcTyp := method.Type
+			shortStr := "call method: " + method.Name + "("
 			for i := 1; i < funcTyp.NumIn(); i++ {
 				typ := funcTyp.In(i)
 				if typ == contextTyp {
 					continue
 				}
-				//fmt.Println(rpcMethod, typ)
+				if len(paramsIn[rpcMethod]) > 0 {
+					shortStr += ", "
+				}
+				shortStr += typ.Name()
 				paramsIn[rpcMethod] = append(paramsIn[rpcMethod], typ)
 			}
+			shortStr += ")"
+
+			rpcCmd.AddCommand(&cobra.Command{
+				Use:   rpcMethod,
+				Short: shortStr,
+				Long:  shortStr,
+				Run:   rpcCall(rpcMethod),
+			})
 		}
 	}
 	rpcCmd.PersistentFlags().StringVarP(&ipcEndpoint, "ipcpath", "i", defaultIPCEndpoint(params.ClientIdentifier), "IPC Endpoint path")
