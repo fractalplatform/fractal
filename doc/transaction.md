@@ -1,17 +1,12 @@
 **账号**：
 
 - [创建账号](#创建账号)
-- [更新账号](#更新账号)
-- [更新权限](#更新权限)
+- [更新公钥](#更新公钥)
 
 **资产**：
 
 - [发行资产](#发行资产)
 - [增发资产](#增发资产)
-- [更改 owner](#更改owner)
-- [更新资产](#更新资产)
-- [销毁资产](#销毁资产)
-- [更新资产合约](#更新资产合约)
 
 **转账**：
 
@@ -39,100 +34,57 @@
 
 #### 创建账号
 
-action：
+pluginTX：
 
 ```
-AType:    actionType,  //必填项 CreateAccount 0x100
-  Nonce:    nonce,  //必填项
-  AssetID:  assetID, //必填项 转账资产ID
-  From:     from,  //必填项
-  To:       to,   //必填项，必为系统账号fractal.account
-  GasLimit: gasLimit,  //必填项
-  Amount:   new(big.Int), //转账时>0 不转账=0
-  Payload:  payload,  //必填项
-  Remark:   remark,   // 备注信息
+PType: PayloadType      //必填项 CreateAccount envelope.PayloadType = 0x100
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
 ```
 
 payload：
 
 ```
 type CreateAccountAction struct {
- AccountName common.Name   `json:"accountName,omitempty"`  //必填项 账户名首字符为小写字母开头，其余部分为小写字母和数字组合，主账户名长度12-16位，子账户名长度2-16位，子账户名全称为“主账户名.子账户名”
- Founder     common.Name   `json:"founder,omitempty"` //可填空 填空默认为账号本身
- PublicKey   common.PubKey `json:"publicKey,omitempty"` //账号公钥 填空为废账号
- Description string        `json:"description,omitempty"` //描述字段 限长 255
+	Name   string   //必填项 账户名首字符为小写字母开头，其余部分为小写字母和数字组合，账号长度为7-20位
+	Pubkey string   //必填项 账号公钥 填空为废账号
+	Desc   string   //描述字段 限长 255
 }
 ```
 
 功能：
 
-#### 更新账号
+#### 更新公钥
 
-action：
-
-```
-AType:    actionType, //必填项 UpdateAccount 0x101
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 更新账号本身
-  To:       to,   //必填项，必为系统账号fractal.account
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
+pluginTX：
 
 ```
-type UpdataAccountAction struct {
- Founder     common.Name   `json:"founder,omitempty"` //必填项 可为空 为空默认为账号本身
-}
-```
-
-功能：
-
-#### 更新权限
-
-action：
-
-```
-AType:    actionType, //必填项 UpdateAccountAuthor 0x103
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 更新账号本身
-  To:       to, //必填项，必为系统账号fractal.account
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
+PType: PayloadType      //必填项 ChangePubKey envelope.PayloadType = 0x101
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
 ```
 
 payload：
 
 ```
-type AccountAuthorAction struct {
- Threshold             uint64          `json:"threshold,omitempty"`
- UpdateAuthorThreshold uint64          `json:"updateAuthorThreshold,omitempty"`
- AuthorActions         []*AuthorAction `json:"authorActions,omitempty"`
-}
-```
-
-data structure desc:
-
-```
-type AuthorAction struct {
- ActionType AuthorActionType //必填项 0添加 1更新 2删除
- Author     *common.Author //必填项
-}
-
-type Author struct {
- Owner  `json:"owner"`         //用户名，地址或公钥
- Weight uint64 `json:"weight"` //必填项 权重
-}
-
-Owner interface {
- String() string
+type ChangePubKeyAction struct {
+	Pubkey string    //必填项 账号公钥
 }
 ```
 
@@ -142,33 +94,34 @@ Owner interface {
 
 #### 发行资产
 
-action：
+pluginTX：
 
 ```
-AType:    actionType, // 必填项 IssueAsset 0x201
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项
-  To:       to, //必填项，必为系统账号fractal.asset
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
+PType: PayloadType      //必填项 IssueAsset envelope.PayloadType = 0x200
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalasset
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
 ```
 
 payload：
 
 ```
-type IssueAsset struct {
- AssetName   string      `json:"assetName,omitempty"` //必填项 资产名由两部分组成，即“账户名:主资产名“　或　"账户名:主资产名.子资产名"。首字符必须为小写字母，其余部分为小写字母和数字组合，主资产名长度为2-16位，子资产名长度为1-8位。
- Symbol      string      `json:"symbol,omitempty"`//必填项 a-z0-9  2-16位 可重复
- Amount      *big.Int    `json:"amount"` //必填项 可为0
- Decimals    uint64      `json:"decimals"` //必填项 大于等于0
- Founder     common.Name `json:"founder,omitempty"` //必填项 可为空 为空默认为from
- Owner       common.Name `json:"owner,omitempty"` //必填项 不可为空 有效账号
- UpperLimit  *big.Int    `json:"upperLimit"` //必填项  0为不设上限
- Contract    common.Name `json:"contract"` //为空表示非协议资产。非空为协议资产账户
- Description string      `json:"detail"`   //资产描述字段 限长 255
+type IssueAssetAction struct {
+	AssetName   string      //必填项 资产名首字符为小写字母开头，其余部分为小写字母和数字组合，账号长度为2-32位
+	Symbol      string      //必填项 同资产名格式相同
+	Amount      *big.Int    //必填项 可为0
+	Owner       string      //必填项 不可为空 有效账号
+	Founder     string      //必填项 可为空 为空默认为from
+	Decimals    uint64      //必填项 大于等于0
+	UpperLimit  *big.Int    //必填项  0为不设上限
+	Description string      //资产描述字段 限长 255
 }
 ```
 
@@ -176,132 +129,29 @@ type IssueAsset struct {
 
 #### 增发资产
 
-action：
+pluginTX：
 
 ```
-AType:    actionType, //必填项 IncreaseAsset 0x200
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 资产owner
-  To:       to, //必填项，必为系统账号fractal.asset
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-type IncAsset struct {
- AssetId  uint64      `json:"assetId,omitempty"` //必填项 增发资产ID
- Amount   *big.Int    `json:"amount,omitempty"`  //增发数量 不可为0
- To common.Name `json:"acceptor,omitempty"` //接收资产账号
-}
-```
-
-功能：
-
-#### 更改 owner
-
-action：
-
-```
-AType:    actionType，//必填项 SetAssetOwner 0x203
-    Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 资产owner
-  To:       to, //必填项，必为系统账号fractal.asset
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
+PType: PayloadType      //必填项 IncreaseAsset envelope.PayloadType = 0x201
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalasset
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
 ```
 
 payload：
 
 ```
-type UpdateAssetOwner struct {
- AssetId    uint64      `json:"assetId"`  //必填项 更改owner资产ID
- Owner      common.Name `json:"owner,omitempty"`//必填项 有效账号 不可为空
-}
-```
-
-功能：
-
-#### 更新资产
-
-action：
-
-```
-AType:    actionType,//必填项 UpdateAsset 0x204
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 资产owner
-  To:       to, //必填项，必为系统账号fractal.asset
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-type UpdateAsset struct {
- AssetID    uint64      `json:"assetId"`  //必填项 更改owner资产ID
- Founder    common.Name `json:"founder,omitempty"` //必填项 有效账号
-}
-```
-
-功能：
-
-#### 销毁资产
-
-action：
-
-```
-AType:    actionType,//必填项 DestroyAsset 0x202
-  Nonce:    nonce,//必填项
-  AssetID:  assetID, //必填项 销毁资产ID
-  From:     from, //销毁资产账号
-  To:       to,//必填项，必为系统账号fractal.asset
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int),//必填项 销毁资产数量
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-nil //填充此字段不影响交易结果
-```
-
-功能：
-
-#### 更新资产合约
-
-action：
-
-```
-AType:    actionType,//必填项 UpdateAssetContract 0x206
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 资产owner
-  To:       to, //必填项，必为系统账号fractal.asset
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-type UpdateAssetContract struct {
-	AssetID  uint64      `json:"assetId,omitempty"` //资产ID
-	Contract common.Name `json:"contract"` //协议资产账户
+type IncreaseAssetAction struct {
+	AssetID uint64        //必填项 增发资产ID
+	Amount  *big.Int      //增发数量 不可为0
+	To      string        //接收资产账号
 }
 ```
 
@@ -311,18 +161,20 @@ type UpdateAssetContract struct {
 
 #### 转账
 
-action：
+pluginTX：
 
 ```
-AType:    actionType, //必填项 Transfer 0x205
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 转账资产ID
-  From:     from, //必填项
-  To:       to, //必填项
-  GasLimit: gasLimit,//必填项
-  Amount:   new(big.Int), //转账金额
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
+PType: PayloadType      //必填项 Transfer envelope.PayloadType = 0x202
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
 ```
 
 payload：
