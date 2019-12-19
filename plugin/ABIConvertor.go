@@ -238,6 +238,10 @@ func PluginSolAPICall(o, p1 interface{}, data []byte) ([]byte, error) {
 		callparams[i+2] = reflect.ValueOf(p)
 	}
 	out := method.method.Call(callparams)
+	callerr := out[len(out)-1].Interface().(error)
+	if callerr != nil {
+		return nil, callerr
+	}
 	outInter := make([]interface{}, len(out)-1)
 	for i, o := range out[:len(out)-1] {
 		outInter[i] = o.Interface()
@@ -249,7 +253,7 @@ func PluginSolAPICall(o, p1 interface{}, data []byte) ([]byte, error) {
 	if out[len(out)-1].IsNil() {
 		return retbytes, nil
 	}
-	return retbytes, out[len(out)-1].Interface().(error)
+	return retbytes, callerr
 }
 
 var apimap = make(map[string]*pluginMethod)
