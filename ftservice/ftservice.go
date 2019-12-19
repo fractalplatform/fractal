@@ -109,7 +109,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		ftservice.miner.Start(false)
 	}
 
-	ftservice.APIBackend = &APIBackend{ftservice: ftservice}
+	ftservice.APIBackend = NewAPIBackend(ftservice)
 
 	ftservice.SetGasPrice(ftservice.TxPool().GasPrice())
 	return ftservice, nil

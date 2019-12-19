@@ -5,7 +5,7 @@ import (
 )
 
 type ConsensusAPI struct {
-	Backend
+	b Backend
 }
 
 func NewConsensusAPI(b Backend) *ConsensusAPI {
@@ -13,7 +13,7 @@ func NewConsensusAPI(b Backend) *ConsensusAPI {
 }
 
 func (api *ConsensusAPI) GetAllCandidates() ([]string, error) {
-	pm, err := api.GetPM()
+	pm, err := api.b.GetPM()
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func (api *ConsensusAPI) GetAllCandidates() ([]string, error) {
 }
 
 func (api *ConsensusAPI) GetCandidateInfo(account string) (*plugin.CandidateInfo, error) {
-	pm, err := api.GetPM()
+	pm, err := api.b.GetPM()
 	if err != nil {
 		return nil, err
 	}

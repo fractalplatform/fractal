@@ -20,6 +20,7 @@ Available Commands:
   init        初始化创世块
   miner       控制挖矿命令
   p2p         P2P 网络设置和查询
+  rpc         RPC调用
   txpool      查询txpool状态和设置txpool最小gas价格
   version     显示版本信息
 
@@ -160,6 +161,83 @@ Use "ftfinder [command] --help" for more information about a command.
   - [content](#content)
   - [setgasprice](#setgasprice)
   - [status](#status)
+- **[rpc](#RPC)**
+  - [account_accountIsExist](#RPC)
+  - [account_getAccountBalanceByID](#RPC)
+  - [account_getAccountByName](#RPC)
+  - [account_getAssetInfoByID](#RPC)
+  - [account_getAssetInfoByName](#RPC)
+  - [account_getCode](#RPC)
+  - [account_getNonce](#RPC)
+  - [bc_setStatePruning](#RPC)
+  - [consensus_getAllCandidates](#RPC)
+  - [consensus_getCandidateInfo](#RPC)
+  - [debug_blockProfile](#RPC)
+  - [debug_cpuProfile](#RPC)
+  - [debug_freeOSMemory](#RPC)
+  - [debug_gcStats](#RPC)
+  - [debug_goTrace](#RPC)
+  - [debug_memStats](#RPC)
+  - [debug_mutexProfile](#RPC)
+  - [debug_setBlockProfileRate](#RPC)
+  - [debug_setGCPercent](#RPC)
+  - [debug_setMutexProfileFraction](#RPC)
+  - [debug_stacks](#RPC)
+  - [debug_startCPUProfile](#RPC)
+  - [debug_startGoTrace](#RPC)
+  - [debug_stopCPUProfile](#RPC)
+  - [debug_stopGoTrace](#RPC)
+  - [debug_writeBlockProfile](#RPC)
+  - [debug_writeMemProfile](#RPC)
+  - [debug_writeMutexProfile](#RPC)
+  - [ft_call](#RPC)
+  - [ft_estimateGas](#RPC)
+  - [ft_gasPrice](#RPC)
+  - [ft_getBadBlocks](#RPC)
+  - [ft_getBlockAndResultByNumber](#RPC)
+  - [ft_getBlockByHash](#RPC)
+  - [ft_getBlockByNumber](#RPC)
+  - [ft_getChainConfig](#RPC)
+  - [ft_getCurrentBlock](#RPC)
+  - [ft_getInternalTxByAccount](#RPC)
+  - [ft_getInternalTxByBloom](#RPC)
+  - [ft_getInternalTxByHash](#RPC)
+  - [ft_getTransactionByHash](#RPC)
+  - [ft_getTransactionReceipt](#RPC)
+  - [ft_getTransactions](#RPC)
+  - [ft_sendRawTransaction](#RPC)
+  - [item_getAccountItemAmount](#RPC)
+  - [item_getItemAttribute](#RPC)
+  - [item_getItemInfoByID](#RPC)
+  - [item_getItemInfoByName](#RPC)
+  - [item_getItemTypeByID](#RPC)
+  - [item_getItemTypeByName](#RPC)
+  - [miner_force](#RPC)
+  - [miner_mining](#RPC)
+  - [miner_setCoinbase](#RPC)
+  - [miner_setDelay](#RPC)
+  - [miner_setExtra](#RPC)
+  - [miner_start](#RPC)
+  - [miner_stop](#RPC)
+  - [p2p_addBadNode](#RPC)
+  - [p2p_addPeer](#RPC)
+  - [p2p_addTrustedPeer](#RPC)
+  - [p2p_badNodes](#RPC)
+  - [p2p_badNodesCount](#RPC)
+  - [p2p_peerCount](#RPC)
+  - [p2p_peerEvents](#RPC)
+  - [p2p_peers](#RPC)
+  - [p2p_removeBadNode](#RPC)
+  - [p2p_removePeer](#RPC)
+  - [p2p_removeTrustedPeer](#RPC)
+  - [p2p_seedNodes](#RPC)
+  - [p2p_selfNode](#RPC)
+  - [txpool_content](#RPC)
+  - [txpool_getTransactions](#RPC)
+  - [txpool_getTransactionsByAccount](#RPC)
+  - [txpool_pendingTransactions](#RPC)
+  - [txpool_setGasPrice](#RPC)
+  - [txpool_status](#RPC)
 
 ---
 
@@ -962,5 +1040,45 @@ Example:
 {
     "pending": 0
     "queued": 0
+}
+```
+
+#### RPC
+```
+调用RPC
+
+Usage:
+  ft rpc method  [flags]
+
+Flags:
+  -h, --help   显示帮助
+
+Global Flags:
+  -i, --ipcpath string   IPC 路径 (default "$HOME/.ft_ledger/ft.ipc")
+```
+
+Example:
+
+```
+# Request
+./build/bin/ft rpc ft_getCurrentBlock false
+# Result
+{
+  "extraData": "0x",
+  "gasLimit": 30000000,
+  "gasUsed": 0,
+  "hash": "0xc3f2e94cb8ab8a3be3bc4bc52e864ae4bdd8d2d630e53ba488c2d6702b399b0d",
+  "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+  "miner": "fractalfounder",
+  "number": 477,
+  "parentHash": "0x0370999a691446cd43459fe00d3648491d337587b5b73fc8ee94a50423aae5c7",
+  "proposedIrreversible": 0,
+  "receiptsRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+  "size": 534,
+  "stateRoot": "0x8d23a46925af49c7f02159c853171df17e53a3482883dfcecf6fe4d3775f614f",
+  "timestamp": 1576748153,
+  "totalDifficulty": 411999659,
+  "transactions": [],
+  "transactionsRoot": "0x0000000000000000000000000000000000000000000000000000000000000000"
 }
 ```

@@ -42,6 +42,11 @@ type APIBackend struct {
 	gpo       *gasprice.Oracle
 }
 
+// NewAPIBackend return new *APIBackend
+func NewAPIBackend(ftservice *FtService) *APIBackend {
+	return &APIBackend{ftservice: ftservice}
+}
+
 // ChainConfig returns the active chain configuration.
 func (b *APIBackend) ChainConfig() *params.ChainConfig {
 	return b.ftservice.chainConfig
