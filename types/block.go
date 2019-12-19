@@ -31,22 +31,20 @@ import (
 
 // Header represents a block header in the blockchain.
 type Header struct {
-	ParentHash           common.Hash
-	Coinbase             string
-	ProposedIrreversible uint64
-	Root                 common.Hash
-	TxsRoot              common.Hash
-	ReceiptsRoot         common.Hash
-	Bloom                Bloom
-	Number               uint64
-	GasLimit             uint64
-	GasUsed              uint64
-	Time                 uint64
-	Version              uint64
-	Difficulty           uint64
-	Proof                []byte
-	Sign                 []byte
-	Extra                []byte
+	ParentHash   common.Hash
+	Root         common.Hash
+	TxsRoot      common.Hash
+	ReceiptsRoot common.Hash
+	Bloom        Bloom
+	Coinbase     string
+	Number       uint64
+	GasLimit     uint64
+	GasUsed      uint64
+	Time         uint64
+	Difficulty   uint64
+	Proof        []byte
+	Sign         []byte
+	Extra        []byte
 }
 
 // Hash returns the block hash of the header, which is simply the keccak256 hash of its

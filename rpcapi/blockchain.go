@@ -19,21 +19,13 @@ package rpcapi
 import (
 	"context"
 	"fmt"
-	"math"
 	"math/big"
-	"time"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/common/hexutil"
-	"github.com/fractalplatform/fractal/log"
-	"github.com/fractalplatform/fractal/params"
-	pm "github.com/fractalplatform/fractal/plugin"
-	"github.com/fractalplatform/fractal/processor"
-	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // PublicBlockChainAPI provides an API to access the blockchain.
@@ -91,7 +83,6 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 	if tx := s.b.TxPool().Get(hash); tx != nil {
 		return tx.NewRPCTransaction(common.Hash{}, 0, 0)
 	}
-
 	// Transaction unknown, return as such
 	return nil
 }
@@ -137,57 +128,67 @@ func (s *PublicBlockChainAPI) GetBlockAndResultByNumber(ctx context.Context, blo
 	return r
 }
 
-// checkRangeInputArgs checks the input arguments of
-// GetTxsByAccount,GetTxsByBloom,GetInternalTxByAccount,GetInternalTxByBloom
-func (s *PublicBlockChainAPI) checkRangeInputArgs(blockNr, lookbackNum uint64) error {
-	currentNum := s.b.CurrentBlock().Number().Uint64()
-	if blockNr > currentNum {
-		return fmt.Errorf("blockNr range err")
+type GetRangeTxArgs struct {
+	BlockNumber rpc.BlockNumber
+	BackCount   uint64
+}
+
+func (a *GetRangeTxArgs) CheckArgs(s *PublicBlockChainAPI) error {
+	cur := s.b.CurrentBlock().Number().Uint64()
+	if a.BlockNumber == rpc.LatestBlockNumber {
+		a.BlockNumber = rpc.BlockNumber(cur)
 	}
+
+	if uint64(a.BlockNumber.Int64()) > cur {
+		return fmt.Errorf("Block Number %v bigger than current block %v", a.BlockNumber, cur)
+	}
+
+	if a.BackCount > uint64(a.BlockNumber.Int64())+1 {
+		a.BackCount = uint64(a.BlockNumber.Int64()) + 1
+	}
+
+	if a.BackCount > 128 {
+		a.BackCount = 128
+	}
+
 	return nil
 }
 
+type GetInternalTxByAccount struct {
+	Account string
+	*GetRangeTxArgs
+}
+
+type GetInternalTxByBloom struct {
+	Bloom hexutil.Bytes
+	*GetRangeTxArgs
+}
+
 // GetInternalTxByAccount return all logs of internal txs, sent from or received by a specific account
-// the range is indicate by blockNr and lookbackNum,
-// from blocks with number from blockNr-lookbackNum to blockNr
-func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, acctName string, blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+func (s *PublicBlockChainAPI) GetInternalTxByAccount(ctx context.Context, args *GetInternalTxByAccount) ([]*types.DetailTx, error) {
 	// check input arguments
-	ui64BlockNr := uint64(blockNr)
-	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+	if err := args.CheckArgs(s); err != nil {
 		return nil, err
 	}
 
-	if lookbackNum > 128 {
-		lookbackNum = 128
-	}
-
 	filterFn := func(name string) bool {
-		return name == acctName
+		return name == args.Account
 	}
-	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
+	return s.b.GetDetailTxByFilter(ctx, filterFn, args.GetRangeTxArgs), nil
 }
 
 // GetInternalTxByBloom return all logs of internal txs, filtered by a bloomByte
-// bloomByte is constructed by some quantities of account names
-// the range is indicate by blockNr and lookbackNum,
-// from blocks with number from blockNr-lookbackNum to blockNr
-func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, bloomByte hexutil.Bytes,
-	blockNr rpc.BlockNumber, lookbackNum uint64) ([]*types.DetailTx, error) {
+func (s *PublicBlockChainAPI) GetInternalTxByBloom(ctx context.Context, args *GetInternalTxByBloom) ([]*types.DetailTx, error) {
 	// check input arguments
-	ui64BlockNr := uint64(blockNr)
-	if err := s.checkRangeInputArgs(ui64BlockNr, lookbackNum); err != nil {
+	if err := args.CheckArgs(s); err != nil {
 		return nil, err
 	}
 
-	if lookbackNum > 128 {
-		lookbackNum = 128
-	}
-
-	bloom := types.BytesToBloom(bloomByte)
+	bloom := types.BytesToBloom(args.Bloom)
 	filterFn := func(name string) bool {
-		return bloom.TestBytes([]byte(name))
+		return types.BloomLookup(bloom, new(big.Int).SetBytes([]byte(name)))
 	}
-	return s.b.GetDetailTxByFilter(ctx, filterFn, ui64BlockNr, lookbackNum), nil
+	return s.b.GetDetailTxByFilter(ctx, filterFn, args.GetRangeTxArgs), nil
 }
 
 // GetInternalTxByHash return logs of internal txs include by a transcastion
@@ -199,7 +200,7 @@ func (s *PublicBlockChainAPI) GetInternalTxByHash(ctx context.Context, hash comm
 
 	detailTxs := rawdb.ReadDetailTxs(s.b.ChainDb(), blockHash, blockNumber)
 	if len(detailTxs) <= int(index) {
-		return nil, nil
+		return nil, fmt.Errorf("")
 	}
 
 	return detailTxs[index], nil
@@ -215,126 +216,6 @@ func (s *PublicBlockChainAPI) GetBadBlocks(ctx context.Context, fullTx bool) ([]
 		return badBlocks, nil
 	}
 	return nil, err
-}
-
-type CallArgs struct {
-	Type     envelope.Type `json:"txType"`
-	From     string        `json:"from"`
-	To       string        `json:"to"`
-	AssetID  uint64        `json:"assetId"`
-	Gas      uint64        `json:"gas"`
-	GasPrice *big.Int      `json:"gasPrice"`
-	Value    *big.Int      `json:"value"`
-	Data     hexutil.Bytes `json:"data"`
-	Remark   hexutil.Bytes `json:"remark"`
-}
-
-func (s *PublicBlockChainAPI) doCall(ctx context.Context, args CallArgs, blockNr rpc.BlockNumber, vmCfg vm.Config, timeout time.Duration) ([]byte, uint64, bool, error) {
-	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
-
-	state, header, err := s.b.StateAndHeaderByNumber(ctx, blockNr)
-	if state == nil || err != nil {
-		return nil, 0, false, err
-	}
-	account := pm.NewPM(state)
-
-	gasPrice := args.GasPrice
-	value := args.Value
-	assetID := uint64(args.AssetID)
-	gas := uint64(args.Gas)
-
-	var cancel context.CancelFunc
-	if timeout > 0 {
-		ctx, cancel = context.WithTimeout(ctx, timeout)
-	} else {
-		ctx, cancel = context.WithCancel(ctx)
-	}
-	// Make sure the context is cancelled when the call has completed
-	// this makes sure resources are cleaned up.
-	defer cancel()
-
-	// Get a new instance of the EVM.
-	evm, vmError, err := s.b.GetEVM(ctx, account, state, args.From, args.To, assetID, gasPrice, header, vmCfg)
-	if err != nil {
-		return nil, 0, false, err
-	}
-	// Wait for the context to be done and cancel the evm. Even if the
-	// EVM has finished, cancelling may be done (repeatedly)
-	go func() {
-		<-ctx.Done()
-		evm.Cancel()
-	}()
-
-	// Setup the gas pool (also for unmetered requests)
-	// and apply the message.
-	gp := new(common.GasPool).AddGas(math.MaxUint64)
-	action, err := envelope.NewContractTx(args.Type, args.From, args.To, 0, assetID, 0, gas, big.NewInt(0), value, args.Data, args.Remark)
-	if err != nil {
-		return nil, 0, false, err
-	}
-	res, gas, _, failed, err, _ := processor.ApplyMessage(account, evm, types.NewTransaction(action), gp, gasPrice, assetID, s.b.ChainConfig())
-	if err := vmError(); err != nil {
-		return nil, 0, false, err
-	}
-	return res, gas, failed, err
-}
-
-// Call executes the given transaction on the state for the given block number.
-// It doesn't make and changes in the state/blockchain and is useful to execute and retrieve values.
-func (s *PublicBlockChainAPI) Call(ctx context.Context, args CallArgs, blockNr rpc.BlockNumber) (hexutil.Bytes, error) {
-	result, _, _, err := s.doCall(ctx, args, blockNr, vm.Config{}, 5*time.Second)
-	return (hexutil.Bytes)(result), err
-}
-
-// EstimateGas returns an estimate of the amount of gas needed to execute the
-// given transaction against the current pending block.
-func (s *PublicBlockChainAPI) EstimateGas(ctx context.Context, args CallArgs) (uint64, error) {
-	// Binary search the gas requirement, as it may be higher than the amount used
-	var (
-		lo  uint64 = params.GasTableInstance.ActionGas - 1
-		hi  uint64
-		cap uint64
-	)
-	if uint64(args.Gas) >= params.GasTableInstance.ActionGas {
-		hi = uint64(args.Gas)
-	} else {
-		// Retrieve the current pending block to act as the gas ceiling
-		block := s.b.BlockByNumber(ctx, rpc.LatestBlockNumber)
-		hi = block.GasLimit()
-	}
-	cap = hi
-
-	// Create a helper to check if a gas allowance results in an executable transaction
-	executable := func(gas uint64) bool {
-		args.Gas = gas
-		_, _, failed, err := s.doCall(ctx, args, rpc.LatestBlockNumber, vm.Config{}, 0)
-		if err != nil || failed {
-			return false
-		}
-		return true
-	}
-	// Execute the binary search and hone in on an executable gas limit
-	for lo+1 < hi {
-		mid := (hi + lo) / 2
-		if !executable(mid) {
-			lo = mid
-		} else {
-			hi = mid
-		}
-	}
-	// Reject the transaction as invalid if it still fails at the highest allowance
-	if hi == cap {
-		if !executable(hi) {
-			return 0, fmt.Errorf("gas required exceeds allowance or always failing transaction")
-		}
-	}
-	return hi, nil
-}
-
-// GetChainConfig returns chain config.
-func (s *PublicBlockChainAPI) GetChainConfig(ctx context.Context) *params.ChainConfig {
-	g := s.b.BlockByNumber(ctx, 0)
-	return rawdb.ReadChainConfig(s.b.ChainDb(), g.Hash())
 }
 
 // PrivateBlockChainAPI provides an API to access the blockchain.

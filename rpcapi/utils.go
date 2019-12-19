@@ -40,21 +40,24 @@ func submitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 // transaction hashes.
 func RPCMarshalBlock(chainID *big.Int, b *types.Block, inclTx bool, fullTx bool) map[string]interface{} {
 	head := b.Header() // copies the header once
+
 	fields := map[string]interface{}{
-		"number":               head.Number,
-		"hash":                 b.Hash(),
-		"proposedIrreversible": head.ProposedIrreversible,
-		"parentHash":           head.ParentHash,
-		"logsBloom":            head.Bloom,
-		"stateRoot":            head.Root,
-		"miner":                head.Coinbase,
-		"extraData":            hexutil.Bytes(head.Extra),
-		"size":                 b.Size(),
-		"gasLimit":             head.GasLimit,
-		"gasUsed":              head.GasUsed,
-		"timestamp":            head.Time,
-		"transactionsRoot":     head.TxsRoot,
-		"receiptsRoot":         head.ReceiptsRoot,
+		"number":           head.Number,
+		"hash":             b.Hash(),
+		"parentHash":       head.ParentHash,
+		"stateRoot":        head.Root,
+		"transactionsRoot": head.TxsRoot,
+		"receiptsRoot":     head.ReceiptsRoot,
+		"logsBloom":        head.Bloom,
+		"miner":            head.Coinbase,
+		"size":             b.Size(),
+		"gasLimit":         head.GasLimit,
+		"gasUsed":          head.GasUsed,
+		"timestamp":        head.Time,
+		"difficulty":       head.Difficulty,
+		"proof":            hexutil.Bytes(head.Proof),
+		"sign":             hexutil.Bytes(head.Sign),
+		"extraData":        hexutil.Bytes(head.Extra),
 	}
 
 	if inclTx {
