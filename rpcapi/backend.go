@@ -128,7 +128,9 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Namespace: "item",
 			Version:   "1.0",
 			Service:   NewItemAPI(apiBackend),
-		}, {
+			Public:    true,
+		},
+		{
 			Namespace: "consensus",
 			Version:   "1.0",
 			Service:   NewConsensusAPI(apiBackend),
