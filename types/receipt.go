@@ -117,7 +117,7 @@ type RPCReceipt struct {
 	Hash              common.Hash        `json:"txHash"`
 	TransactionIndex  uint64             `json:"transactionIndex"`
 	PostState         hexutil.Bytes      `json:"postState"`
-	TxType            uint64             `json:"Type"`
+	TxType            uint64             `json:"type"`
 	Status            uint64             `json:"status"`
 	GasUsed           uint64             `json:"gasUsed"`
 	GasAllot          []*GasDistribution `json:"gasAllot"`
@@ -146,7 +146,7 @@ func (r *Receipt) NewRPCReceipt(blockHash common.Hash, blockNumber uint64, index
 		Bloom:             r.Bloom,
 	}
 
-	var rlogs []*RPCLog
+	rlogs := make([]*RPCLog, 0)
 	for _, l := range r.Logs {
 		rlogs = append(rlogs, l.NewRPCLog())
 	}

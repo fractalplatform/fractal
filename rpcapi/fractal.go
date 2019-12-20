@@ -121,6 +121,7 @@ func (s *PublicFractalAPI) doCall(ctx context.Context, args CallArgs, blockNr rp
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}
+
 	return res, gas, failed, err
 }
 
@@ -153,7 +154,7 @@ func (s *PublicFractalAPI) EstimateGas(ctx context.Context, args CallArgs) (uint
 	executable := func(gas uint64) bool {
 		args.Gas = gas
 		_, _, failed, err := s.doCall(ctx, args, rpc.LatestBlockNumber, vm.Config{}, 0)
-		if err != nil || failed {
+		if err != nil || !failed {
 			return false
 		}
 		return true
