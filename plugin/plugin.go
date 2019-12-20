@@ -76,6 +76,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IConsensus:      consensus,
 		ISigner:         signer,
 		IFee:            fee,
+		IItem:           item,
 		stateDB:         stateDB,
 	}
 	pm.contracts[acm.AccountName()] = acm
