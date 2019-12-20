@@ -1,4 +1,4 @@
-### consensus
+## consensus
 ```js
 pragma solidity >=0.4.0;
 pragma experimental ABIEncoderV2;
@@ -36,11 +36,14 @@ interface ConsensusAPI {
 
 #### UnregisterMiner
 说明: 注销生产者，并将抵押金额退回至生产者账户
+
 参数: 无
 
-示例: [consensus.sol]
+> 示例: [consensus.sol]
 
-### account
-### asset
+## account
+待补充
+## asset
+😳补充
 
 [consensus.sol]: ../plugin/consensus.sol

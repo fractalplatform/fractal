@@ -54,8 +54,7 @@ type Backend interface {
 	GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNumber) *types.BlockAndResult
 	GetTd(blockHash common.Hash) *big.Int
 	GetEVM(ctx context.Context, manager pm.IPM, state *state.StateDB, from, to string, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error)
-	GetDetailTxByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookbackNum uint64) []*types.DetailTx
-	GetTxsByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookbackNum uint64) *types.AccountTxs
+	GetDetailTxByFilter(ctx context.Context, filter func(string) bool, args *GetRangeTxArgs) []*types.DetailTx
 	GetBadBlocks(ctx context.Context) ([]*types.Block, error)
 	SetStatePruning(enable bool) (bool, uint64)
 

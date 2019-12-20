@@ -74,9 +74,7 @@ func (pd *PluginDoc) CreateAccount(chainName, accountName string) ([]*types.Tran
 		if err != nil {
 			return nil, err
 		}
-
 		txs = append(txs, types.NewTransaction(env))
-
 	}
 
 	return txs, nil

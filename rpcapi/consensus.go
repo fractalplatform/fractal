@@ -1,8 +1,6 @@
 package rpcapi
 
 import (
-	"errors"
-
 	"github.com/fractalplatform/fractal/plugin"
 )
 
@@ -27,8 +25,5 @@ func (api *ConsensusAPI) GetCandidateInfo(account string) (*plugin.CandidateInfo
 	if err != nil {
 		return nil, err
 	}
-	if info := pm.GetCandidateInfo(account); info != nil {
-		return info, nil
-	}
-	return nil, errors.New("candidate not exist")
+	return pm.GetCandidateInfo(account), nil
 }

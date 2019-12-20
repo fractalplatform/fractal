@@ -19,7 +19,7 @@ package types
 import "github.com/fractalplatform/fractal/common"
 
 type DetailTx struct {
-	TxHash      common.Hash   `json:"txhash"`
+	TxHash      common.Hash   `json:"txHash"`
 	InternalTxs []*InternalTx `json:"internalTxs"`
 }
 
@@ -36,6 +36,8 @@ const (
 
 type InternalTx struct {
 	Type     InternalTxType     `json:"type"`
+	From     string             `json:"from"`
+	To       string             `json:"to"`
 	Status   uint64             `json:"status"`
 	Index    uint64             `json:"index"`
 	GasUsed  uint64             `json:"gasUsed"`
@@ -54,10 +56,4 @@ type BlockAndResult struct {
 type TxHeightHashPair struct {
 	Hash   common.Hash `json:"hash"`
 	Height uint64      `json:"height"`
-}
-
-type AccountTxs struct {
-	Txs                     []*TxHeightHashPair `json:"txs"`
-	IrreversibleBlockHeight uint64              `json:"irreversibleBlockHeight"`
-	EndHeight               uint64              `json:"endHeight"`
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/rpc"
+	"github.com/fractalplatform/fractal/rpcapi"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
@@ -117,82 +118,21 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 	}
 }
 
-func (b *APIBackend) GetTxsByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookforwardNum uint64) *types.AccountTxs {
-	if lookforwardNum > 128 {
-		lookforwardNum = 128
-	}
-
-	lastnum := int64(blockNr + lookforwardNum)
-	txhhpairs := make([]*types.TxHeightHashPair, 0)
-	for ublocknum := int64(blockNr); ublocknum <= lastnum; ublocknum++ {
-		hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
-		if hash == (common.Hash{}) {
-			continue
-		}
-
-		blockBody := rawdb.ReadBody(b.ftservice.chainDb, hash, uint64(ublocknum))
-		if blockBody == nil {
-			continue
-		}
-		batchTxs := blockBody.Transactions
-
-		for _, tx := range batchTxs {
-			if filterFn(tx.Sender()) || filterFn(tx.Recipient()) {
-				hhpair := &types.TxHeightHashPair{
-					Hash:   tx.Hash(),
-					Height: uint64(ublocknum),
+func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(string) bool, args *rpcapi.GetRangeTxArgs) []*types.DetailTx {
+	var result []*types.DetailTx
+	for ; args.BackCount == 0; args.BackCount-- {
+		block := b.BlockByNumber(ctx, args.BlockNumber)
+		detailTxs := rawdb.ReadDetailTxs(b.ftservice.chainDb, block.Hash(), block.NumberU64())
+		for _, dTx := range detailTxs {
+			for _, iTx := range dTx.InternalTxs {
+				if filterFn(iTx.From) || filterFn(iTx.To) {
+					result = append(result, dTx)
 				}
-				txhhpairs = append(txhhpairs, hhpair)
-				break
 			}
 		}
+		args.BlockNumber--
 	}
-
-	accountTxs := &types.AccountTxs{
-		Txs: txhhpairs,
-		// IrreversibleBlockHeight: b.ftservice.engine.CalcBFTIrreversible(),
-		EndHeight: uint64(lastnum),
-	}
-
-	return accountTxs
-}
-
-func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(string) bool, blockNr, lookbackNum uint64) []*types.DetailTx {
-	//  var lastnum int64
-	// if lookbackNum > blockNr {
-	// 	lastnum = 0
-	// } else {
-	// 	lastnum = int64(blockNr - lookbackNum)
-	// }
-	txdetails := make([]*types.DetailTx, 0)
-
-	// for ublocknum := int64(blockNr); ublocknum >= lastnum; ublocknum-- {
-	// 	hash := rawdb.ReadCanonicalHash(b.ftservice.chainDb, uint64(ublocknum))
-	// 	if hash == (common.Hash{}) {
-	// 		continue
-	// 	}
-
-	// 	batchTxdetails := rawdb.ReadDetailTxs(b.ftservice.chainDb, hash, uint64(ublocknum))
-	// 	for _, txd := range batchTxdetails {
-	// 		newIntxs := make([]*types.DetailTx, 0)
-	// 		for _, intx := range txd.InternalTxs {
-	// 			for _, inlog := range intx.InternalActions {
-	// 				if filterFn(inlog.Action.From) || filterFn(inlog.Action.To) {
-	// 					newInactions = append(newInactions, inlog)
-	// 				}
-	// 			}
-	// 			if len(newInactions) > 0 {
-	// 				newIntxs = append(newIntxs, &types.DetailAction{InternalActions: newInactions})
-	// 			}
-	// 		}
-
-	// 		if len(newIntxs) > 0 {
-	// 			txdetails = append(txdetails, &types.DetailTx{TxHash: txd.TxHash, Actions: newIntxs})
-	// 		}
-	// 	}
-	// }
-
-	return txdetails
+	return result
 }
 
 func (b *APIBackend) GetBadBlocks(ctx context.Context) ([]*types.Block, error) {

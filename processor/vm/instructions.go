@@ -885,6 +885,8 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 			errmsg = err.Error()
 		}
 		internalAction := &types.InternalTx{
+			From:     action.Sender(),
+			To:       action.Recipient(),
 			Type:     types.PluginCall,
 			GasUsed:  gasUsed,
 			GasLimit: gas,
@@ -1001,6 +1003,8 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 				errmsg = err.Error()
 			}
 			internalAction := &types.InternalTx{
+				From:     action.Sender(),
+				To:       action.Recipient(),
 				Type:     types.Call,
 				GasUsed:  gas - returnGas,
 				GasLimit: gas,
@@ -1056,6 +1060,8 @@ func opCallWithPay(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 				errmsg = err.Error()
 			}
 			internalAction := &types.InternalTx{
+				From:     action.Sender(),
+				To:       action.Recipient(),
 				Type:     types.CallWithPay,
 				GasUsed:  gas - returnGas,
 				GasLimit: gas,
@@ -1119,6 +1125,8 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 			errmsg = err.Error()
 		}
 		internalAction := &types.InternalTx{
+			From:     action.Sender(),
+			To:       action.Recipient(),
 			Type:     types.CallCode,
 			GasUsed:  gas - returnGas,
 			GasLimit: gas,
@@ -1615,6 +1623,8 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 			errmsg = err.Error()
 		}
 		internalAction := &types.InternalTx{
+			From:     action.Sender(),
+			To:       action.Recipient(),
 			Type:     types.TransferEx,
 			GasUsed:  0,
 			GasLimit: 0,
