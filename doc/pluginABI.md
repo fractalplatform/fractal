@@ -42,8 +42,33 @@ interface ConsensusAPI {
 > 示例: [consensus.sol]
 
 ## account
-待补充
-## asset
-😳补充
+```js
+pragma solidity >=0.4.0;
+pragma experimental ABIEncoderV2;
+
+interface AccountAPI {
+    function GetBalance(address account, uint64 assetID) external returns(uint256);
+    function Transfer(address to, uint64 assetid, uint256 value) external;
+}
+```
+#### GetBalance
+说明: 获取账户余额
+
+参数: 
+- `address account`: 账户名
+
+返回:
+- `uint256`: 账户余额
+
+#### Transfer
+说明: 转账
+
+参数: 
+- `address to`: 账户名
+- `uint64 assetid`: 资产id
+- `uint256 value`: 转账金额
+
+返回:
+- 无
 
 [consensus.sol]: ../plugin/consensus.sol
