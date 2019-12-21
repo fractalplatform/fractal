@@ -59,12 +59,12 @@ func NewMiner(c context) *Miner {
 }
 
 // Start start worker
-func (miner *Miner) Start(force bool) bool {
+func (miner *Miner) Start() bool {
 	if !atomic.CompareAndSwapInt32(&miner.mining, Stopped, Starting) {
 		return false
 	}
 	log.Info("Starting mining operation")
-	miner.worker.start(force)
+	miner.worker.start()
 	atomic.StoreInt32(&miner.mining, Started)
 	return true
 }

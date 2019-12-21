@@ -82,7 +82,7 @@ type Worker struct {
 	quitWork chan struct{}
 	wgWork   sync.WaitGroup
 	quit     chan struct{}
-	force    bool
+	//force    bool
 }
 
 func newWorker(c context) *Worker {
@@ -114,9 +114,9 @@ out:
 	}
 }
 
-func (worker *Worker) start(force bool) {
+func (worker *Worker) start() {
 	worker.quit = make(chan struct{})
-	worker.force = force
+	//worker.force = force
 	worker.wg.Add(2)
 	go func() {
 		worker.update()

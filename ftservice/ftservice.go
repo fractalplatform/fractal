@@ -106,7 +106,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys[0])
 	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
 	if config.Miner.Start {
-		ftservice.miner.Start(false)
+		ftservice.miner.Start()
 	}
 
 	ftservice.APIBackend = NewAPIBackend(ftservice)
