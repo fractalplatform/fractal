@@ -24,6 +24,7 @@ import (
 
 	"github.com/fractalplatform/fractal/ftservice"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/rpc"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +35,26 @@ var rpcCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 }
 
-var paramsIn = make(map[string][]reflect.Type)
+type methodInfo struct {
+	isSubscribe bool
+	params      []reflect.Type
+}
+
+var paramsIn = make(map[string]*methodInfo)
 
 var rpcCall = func(method string) func(*cobra.Command, []string) {
 	return func(cmd *cobra.Command, args []string) {
 		params := make([]interface{}, len(args))
-		paramsTyp := paramsIn[method]
+		paramscopy := params[:]
+		minfo := paramsIn[method]
+		if minfo.isSubscribe {
+			params = append(params, nil)
+			pieces := strings.Split(method, "_")
+			method = pieces[0] + "_subscribe"
+			params[0] = pieces[1]
+			paramscopy = params[1:]
+		}
+		paramsTyp := minfo.params
 		for i, arg := range args {
 			if i < len(paramsTyp) {
 				b := reflect.New(paramsTyp[i]).Interface()
@@ -50,9 +65,9 @@ var rpcCall = func(method string) func(*cobra.Command, []string) {
 						continue
 					}
 				}
-				params[i] = b
+				paramscopy[i] = b
 			} else {
-				params[i] = arg
+				paramscopy[i] = arg
 			}
 		}
 
@@ -75,12 +90,20 @@ func init() {
 			rpcMethod := strings.ToLower(api.Namespace) + "_" + strings.ToLower(method.Name[:1]) + method.Name[1:]
 			funcTyp := method.Type
 			shortStr := "call method: " + method.Name + "("
+			info := &methodInfo{
+				isSubscribe: rpc.IsPubSub(funcTyp),
+				params:      make([]reflect.Type, 0, funcTyp.NumIn()-1),
+			}
+			if info.isSubscribe {
+				continue // client don't support websocket
+			}
+			paramsIn[rpcMethod] = info
 			for i := 1; i < funcTyp.NumIn(); i++ {
 				typ := funcTyp.In(i)
 				if typ == contextTyp {
 					continue
 				}
-				if len(paramsIn[rpcMethod]) > 0 {
+				if len(info.params) > 0 {
 					shortStr += ", "
 				}
 				if typ.Kind() == reflect.Slice && len(typ.Name()) == 0 {
@@ -88,7 +111,7 @@ func init() {
 				} else {
 					shortStr += typ.Name()
 				}
-				paramsIn[rpcMethod] = append(paramsIn[rpcMethod], typ)
+				info.params = append(info.params, typ)
 			}
 			shortStr += ")"
 

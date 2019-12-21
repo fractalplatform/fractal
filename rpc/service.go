@@ -275,6 +275,11 @@ func isPubSub(methodType reflect.Type) bool {
 		isErrorType(methodType.Out(1))
 }
 
+// IsPubSub return isPubSub
+func IsPubSub(methodType reflect.Type) bool {
+	return isPubSub(methodType)
+}
+
 // formatName converts to first character of name to lowercase.
 func formatName(name string) string {
 	ret := []rune(name)
