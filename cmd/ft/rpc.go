@@ -83,7 +83,11 @@ func init() {
 				if len(paramsIn[rpcMethod]) > 0 {
 					shortStr += ", "
 				}
-				shortStr += typ.Name()
+				if typ.Kind() == reflect.Slice && len(typ.Name()) == 0 {
+					shortStr += "[]" + typ.Elem().Name()
+				} else {
+					shortStr += typ.Name()
+				}
 				paramsIn[rpcMethod] = append(paramsIn[rpcMethod], typ)
 			}
 			shortStr += ")"
