@@ -1,50 +1,50 @@
-genesis: "./test/genesis.json"
-debug: 
+genesis: './test/genesis.json'
+debug:
   pprof: true
   pprofport: 6060
-  pprofaddr: "127.0.0.1"
+  pprofaddr: '127.0.0.1'
   memprofilerate: 524288
-  blockprofilerate: 0 
-  cpuprofile: "cpufile"
-  trace: "tracefile"
+  blockprofilerate: 0
+  cpuprofile: 'cpufile'
+  trace: 'tracefile'
 log:
-  dir: "./log"
+  dir: './log'
   printorigins: true
   level: 3
-  vmodule: "p2p=4"
-  backtraceat: "block.go:271"
+  vmodule: 'p2p=4'
+  backtraceat: 'block.go:271'
 node:
-  datadir: "./build/testdatadir"
-  ipcpath: "ft.ipc"
-  httphost: "localhost"
+  datadir: './build/testdatadir'
+  ipcpath: 'ft.ipc'
+  httphost: 'localhost'
   httpport: 8545
-  httpmodules: ["ft"]
-  httpcors: ["localhost"]
-  httpvirtualhosts: ["*"]
-  wshost: "localhost"
+  httpmodules: ['ft']
+  httpcors: ['localhost']
+  httpvirtualhosts: ['*']
+  wshost: 'localhost'
   wsport: 8546
-  wsmodules: ["ft"]
+  wsmodules: ['ft']
   wsorigins: []
   wsexposall: true
-  bootnodes: "./build/bootnodes.txt"
-  staticnodes: "./build/staticnodes.txt"
-  trustnodes: "./build/trustnodes.txt"
+  bootnodes: './build/bootnodes.txt'
+  staticnodes: './build/staticnodes.txt'
+  trustnodes: './build/trustnodes.txt'
   p2p:
     networkid: 1
-    name: "Fractal-P2P"
+    name: 'Fractal-P2P'
     maxpeers: 10
     maxpendpeers: 10
     dialratio: 10
     peerperiod: 10
     nodiscover: true
-    nodedb: "./build/nodedb"
-    listenaddr: ":8000"
+    nodedb: './build/nodedb'
+    listenaddr: ':8000'
     nodial: true
 ftservice:
   databasecache: 1024
   txpool:
     nolocals: true
-    journal: "transactions.rlp"
+    journal: 'transactions.rlp'
     rejournal: 1h
     pricelimit: 2
     pricebump: 20
@@ -58,18 +58,20 @@ ftservice:
     blocks: 30
   miner:
     start: true
-    name: "fractal.founder"
-    private: ["289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"]
-    extra: "system"
+    name: 'fractalfounder'
+    private:
+      ['289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032']
+    extra: 'system'
   metrics:
     metrics: true
     influxdb: true
-    influxdburl: "http://localhost:8086"
-    influxdbname: "metrics"
-    influxdbuser: "test"
-    influxdbpasswd: "test"
-    influxdbnamespace: "fractal"
+    influxdburl: 'http://localhost:8086'
+    influxdbname: 'metrics'
+    influxdbuser: 'test'
+    influxdbpasswd: 'test'
+    influxdbnamespace: 'fractal'
   contractlog: true
   statepruning: true
-  badhashes: ["0x3c16bd1054c086df3288eb2e8b101d5ef16b6a2c84456d7781c74a853807ddbe"]
+  badhashes:
+    ['0x3c16bd1054c086df3288eb2e8b101d5ef16b6a2c84456d7781c74a853807ddbe']
   startnumber: 0

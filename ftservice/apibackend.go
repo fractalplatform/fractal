@@ -120,13 +120,14 @@ func (b *APIBackend) GetBlockDetailLog(ctx context.Context, blockNr rpc.BlockNum
 
 func (b *APIBackend) GetDetailTxByFilter(ctx context.Context, filterFn func(string) bool, args *rpcapi.GetRangeTxArgs) []*types.DetailTx {
 	var result []*types.DetailTx
-	for ; args.BackCount == 0; args.BackCount-- {
+	for ; args.BackCount > 0; args.BackCount-- {
 		block := b.BlockByNumber(ctx, args.BlockNumber)
 		detailTxs := rawdb.ReadDetailTxs(b.ftservice.chainDb, block.Hash(), block.NumberU64())
 		for _, dTx := range detailTxs {
 			for _, iTx := range dTx.InternalTxs {
 				if filterFn(iTx.From) || filterFn(iTx.To) {
 					result = append(result, dTx)
+					continue
 				}
 			}
 		}

@@ -33,13 +33,15 @@ var allowedFutureBlockTime = 15 * time.Second
 //
 // BlockValidator implements Validator.
 type BlockValidator struct {
-	bc ChainContext // Canonical block chain
+	bc   ChainContext // Canonical block chain
+	fake bool         // for blockchain test
 }
 
 // NewBlockValidator returns a new block validator which is safe for re-use
-func NewBlockValidator(blockchain ChainContext) *BlockValidator {
+func NewBlockValidator(blockchain ChainContext, fake bool) *BlockValidator {
 	validator := &BlockValidator{
-		bc: blockchain,
+		bc:   blockchain,
+		fake: fake,
 	}
 	return validator
 }
@@ -92,8 +94,10 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 	manager := pm.NewPM(stateDB)
 	manager.Init(0, parent)
 
-	if err := manager.Verify(header); err != nil {
-		return err
+	if !v.fake {
+		if err := manager.Verify(header); err != nil {
+			return err
+		}
 	}
 
 	if !v.bc.HasBlockAndState(header.ParentHash, header.Number-1) {
@@ -105,8 +109,10 @@ func (v *BlockValidator) ValidateHeader(header *types.Header, seal bool) error {
 
 	// Verify the engine specific seal securing the block
 	if seal {
-		if err := manager.VerifySeal(header, manager); err != nil {
-			return err
+		if !v.fake {
+			if err := manager.VerifySeal(header, manager); err != nil {
+				return err
+			}
 		}
 	}
 

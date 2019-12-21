@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,20 +38,19 @@ func TestTxJournal(t *testing.T) {
 
 	txsMap := make(map[string][]*types.Transaction)
 
-	tx := newTx(big.NewInt(200), types.NewAction(
-		types.Transfer,
+	env, _ := envelope.NewContractTx(envelope.CreateContract,
 		"fromtest",
 		"tototest",
 		uint64(1),
 		uint64(3),
 		uint64(2000),
+		0,
+		big.NewInt(1000),
 		big.NewInt(1000),
 		[]byte("test action"),
 		[]byte("test remark"),
-	))
-	txsMap["test"] = []*types.Transaction{
-		tx,
-	}
+	)
+	tx := types.NewTransaction(env)
 	if err := txj.rotate(txsMap); err != nil {
 		t.Fatalf("Failed to rotate transaction journal: %v", err)
 	}

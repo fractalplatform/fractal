@@ -18,9 +18,6 @@ package processor
 
 import (
 	"errors"
-	"fmt"
-
-	"github.com/fractalplatform/fractal/common"
 )
 
 var (
@@ -57,13 +54,3 @@ var (
 
 	ErrActionInvalid = errors.New("action field invalid")
 )
-
-// GenesisMismatchError is raised when trying to overwrite an existing
-// genesis block with an incompatible one.
-type GenesisMismatchError struct {
-	Stored, New common.Hash
-}
-
-func (e *GenesisMismatchError) Error() string {
-	return fmt.Sprintf("database already contains an incompatible genesis block (have %x, new %x)", e.Stored[:8], e.New[:8])
-}

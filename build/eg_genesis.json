@@ -1,0 +1,58 @@
+{
+  "config": {
+    "bootnodes": [],
+    "chainId": 1,
+    "chainName": "fractal",
+    "chainUrl": "https://fractalproject.com",
+    "snapshotInterval": 3600000,
+    "systemName": "fractalfounder",
+    "accountName": "fractalaccount",
+    "assetName": "fractalasset",
+    "dposName": "fractaldpos",
+    "feeName": "fractalfee",
+    "systemToken": "ftoken"
+  },
+  "timestamp": 1560614400000,
+  "gasLimit": 30000000,
+  "difficulty": 1,
+  "allocAccounts": [
+    {
+      "name": "fractalfounder",
+      "founder": "fractalfounder",
+      "pubKey": "0x047df1225a37de8e8dde6c78b764c8da7096ee3a28d189548f51cbb0dfc362284022d518a2193efe6aee86d63aeec766455d9f6af06b037b4dee28f637dc83c057"
+    },
+    {
+      "name": "fractalaccount",
+      "founder": "fractalfounder",
+      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "fractalasset",
+      "founder": "fractalfounder",
+      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "fractaldpos",
+      "founder": "fractalfounder",
+      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "fractalfee",
+      "founder": "fractalfounder",
+      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "allocCandidates": [],
+  "allocAssets": [
+    {
+      "name": "ftoken",
+      "symbol": "ft",
+      "amount": 4904014844451659720000000000,
+      "decimals": 18,
+      "founder": "fractalfounder",
+      "owner": "fractalfounder",
+      "upperLimit": 4904014844451659720000000000
+    }
+  ],
+  "remark": "科技捍卫权利"
+}

@@ -61,7 +61,6 @@ func NewMiner(c context) *Miner {
 // Start start worker
 func (miner *Miner) Start(force bool) bool {
 	if !atomic.CompareAndSwapInt32(&miner.mining, Stopped, Starting) {
-		log.Error(minerOpErr[miner.mining])
 		return false
 	}
 	log.Info("Starting mining operation")
@@ -73,7 +72,6 @@ func (miner *Miner) Start(force bool) bool {
 // Stop stop worker
 func (miner *Miner) Stop() bool {
 	if !atomic.CompareAndSwapInt32(&miner.mining, Started, Stopping) {
-		log.Error(minerOpErr[miner.mining])
 		return false
 	}
 	log.Info("Stopping mining operation")

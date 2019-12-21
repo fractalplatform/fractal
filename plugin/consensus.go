@@ -56,8 +56,7 @@ const (
 	LackBlock        = "lackblock"
 	Epoch            = "Epoch"
 	CandidateInfoKey = "info_"
-	// account
-	MinerAssetID = uint64(0)
+	MinerAssetID     = uint64(0)
 )
 
 var (
@@ -79,7 +78,6 @@ type CandidateInfo struct {
 	Weight         uint64
 	Balance        *big.Int
 	Epoch          uint64
-	//	Skip           bool
 }
 
 func (info *CandidateInfo) copy() *CandidateInfo {
@@ -257,7 +255,7 @@ func (c *Consensus) initRequrie() {
 func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
 	if genesisTime == 0 {
 		genesisTime = _genesisTime
-		fmt.Println("genesisTime", genesisTime, MinerAccount)
+		// fmt.Println("genesisTime", genesisTime, MinerAccount)
 	}
 	c.parent = parent
 	c.isInit = true
@@ -380,7 +378,7 @@ func (c *Consensus) epochToIndex(epoch int, skiplist map[string]int) (int, int) 
 			continue
 		}
 		minerEpoch := c.candidates.info[miner].Epoch
-		fmt.Println("len", c.candidates.Len(), len(skiplist), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", minerEpoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
+		// fmt.Println("len", c.candidates.Len(), len(skiplist), "rnd_i", rndIndex, "epoch", epoch, "plus", j, "minerEpoch", minerEpoch, "blockEpoch", c.blockEpoch, "epochNum", c.epochNum)
 		if minerEpoch <= c.blockEpoch {
 			return epoch, minerIndex
 		}
@@ -440,18 +438,6 @@ func xpanic(n int) {
 }
 
 func (c *Consensus) Show(miner string, nextMiner string) {
-
-	//xpanic(10)
-
-	fmt.Println("-----------------")
-	fmt.Println("parent:", c.parent.Number)
-	fmt.Println("parent:", c.parent.Time)
-	fmt.Println("now:", time.Now().Unix())
-	fmt.Println("LackBlock:", c.LackBlock)
-	fmt.Println("candidates:", c.candidates.Len())
-	fmt.Println("minerIndex:", c.minerIndex)
-	fmt.Println("miner:", miner)
-	fmt.Println("genesisTime", genesisTime, MinerAccount)
 	for i, n := range c.candidates.listSort {
 		info := c.candidates.info[n]
 		fmt.Print("\t")
@@ -522,6 +508,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	*/
 	header.Difficulty = c.toDifficult(minerIndex)
 	header.Time = c.timeSlot(minerIndex) // this code must be here
+	// fmt.Println("--->", c.parent.Number, c.parent.Hash())
 	header.ParentHash = c.parent.Hash()
 	header.Number = c.parent.Number + 1
 	header.GasLimit = params.BlockGasLimit

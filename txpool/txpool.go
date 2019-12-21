@@ -701,6 +701,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 
 	// Make sure the transaction is signed properly
 	if err := tp.curPM.RecoverTx(tp.curPM, tx); err != nil {
+		log.Warn("txpool recover", "failed", err)
 		return ErrInvalidSender
 	}
 

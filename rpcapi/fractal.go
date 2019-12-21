@@ -154,11 +154,12 @@ func (s *PublicFractalAPI) EstimateGas(ctx context.Context, args CallArgs) (uint
 	executable := func(gas uint64) bool {
 		args.Gas = gas
 		_, _, failed, err := s.doCall(ctx, args, rpc.LatestBlockNumber, vm.Config{}, 0)
-		if err != nil || !failed {
+		if err != nil || failed {
 			return false
 		}
 		return true
 	}
+
 	// Execute the binary search and hone in on an executable gas limit
 	for lo+1 < hi {
 		mid := (hi + lo) / 2
@@ -168,6 +169,7 @@ func (s *PublicFractalAPI) EstimateGas(ctx context.Context, args CallArgs) (uint
 			hi = mid
 		}
 	}
+
 	// Reject the transaction as invalid if it still fails at the highest allowance
 	if hi == cap {
 		if !executable(hi) {
