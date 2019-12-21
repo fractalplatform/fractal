@@ -105,6 +105,7 @@ out:
 			select {
 			case worker.quitWork <- struct{}{}:
 			default:
+
 			}
 		case <-worker.quit:
 			break out
@@ -150,7 +151,6 @@ func (worker *Worker) mintLoop() {
 			}
 			continue
 		}
-		worker.quitWork = make(chan struct{})
 		worker.mintBlock(state, pm, header)
 	}
 }
@@ -273,7 +273,12 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 
 	// wait send
 	if worker.delayMs > 0 {
-		<-time.NewTimer(worker.delayMs).C
+		select {
+		case <-worker.quit:
+		case <-work.quit:
+			return nil, errors.New("worker quit")
+		case <-time.NewTimer(worker.delayMs).C:
+		}
 	}
 	event.SendEvent(&event.Event{Typecode: event.NewMinedEv, Data: block})
 	return block, nil
