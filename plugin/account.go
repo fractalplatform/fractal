@@ -341,16 +341,16 @@ func (am *AccountManager) GetAccountByName(accountName string) (interface{}, err
 	}
 
 	obj := struct {
-		Name        string
-		Address     common.Address
-		Nonce       uint64
-		Code        hexutil.Bytes
-		CodeHash    common.Hash
-		CodeSize    uint64
-		Balances    *AssetBalance
-		Suicide     bool
-		Destroy     bool
-		Description string
+		Name        string         `json:"name"`
+		Address     common.Address `json:"address"`
+		Nonce       uint64         `json:"nonce"`
+		Code        hexutil.Bytes  `json:"code"`
+		CodeHash    common.Hash    `json:"codeHash"`
+		CodeSize    uint64         `json:"codeSize"`
+		Balances    *AssetBalance  `json:"balance"`
+		Suicide     bool           `json:"suicide"`
+		Destroy     bool           `json:"destroy"`
+		Description string         `json:"description"`
 	}{
 		account.Name,
 		account.Address,
