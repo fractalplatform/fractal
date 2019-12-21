@@ -216,7 +216,7 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 	if err != nil {
 		return nil, err
 	}
-	header := &types.Header{Coinbase: worker.coinbase}
+	header := &types.Header{Coinbase: worker.coinbase, Extra: worker.extra}
 	if err := pm.Prepare(header); err != nil {
 		return nil, err
 	}
