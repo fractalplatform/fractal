@@ -129,10 +129,6 @@ func TestP2PTxMsg(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// add balance
-	if err := pm.TransferAsset(fname, tname, 0, new(big.Int).SetUint64(params.Fractal)); err != nil {
-		t.Fatal(err)
-	}
 	params.DefaultChainconfig.SysTokenID = 0
 	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 	pool := New(testTxPoolConfig, params.DefaultChainconfig, blockchain)
@@ -145,11 +141,11 @@ func TestP2PTxMsg(t *testing.T) {
 
 	txs := []*TransactionWithPath{
 		&TransactionWithPath{
-			Tx:    transaction(0, fname, tname, 109000, fkey),
+			Tx:    transaction(0, fname, tname, 1090000, fkey),
 			Bloom: &types.Bloom{},
 		},
 		&TransactionWithPath{
-			Tx:    transaction(1, fname, tname, 109000, fkey),
+			Tx:    transaction(1, fname, tname, 1090000, fkey),
 			Bloom: &types.Bloom{},
 		},
 	}

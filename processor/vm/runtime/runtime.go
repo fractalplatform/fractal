@@ -17,7 +17,6 @@
 package runtime
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 	"time"
@@ -28,7 +27,7 @@ import (
 	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // Config is a basic type specifying certain configuration flags for running
@@ -93,9 +92,8 @@ func setDefaults(cfg *Config) {
 	}
 }
 
-//create a new evm env
+//NewEnv create a new evm env
 func NewEnv(cfg *Config) *vm.EVM {
-	fmt.Println("in NewEnv ...")
 	context := vm.Context{
 		//CanTransfer: vm.CanTransfer,
 		//Transfer:    vm.Transfer,
@@ -136,7 +134,7 @@ func NewEnv(cfg *Config) *vm.EVM {
 }
 
 // Create executes the code using the EVM create method
-func Create(action *types.Action, cfg *Config) ([]byte, uint64, error) {
+func Create(action *envelope.ContractTx, cfg *Config) ([]byte, uint64, error) {
 	if cfg == nil {
 		cfg = new(Config)
 	}
@@ -161,7 +159,7 @@ func Create(action *types.Action, cfg *Config) ([]byte, uint64, error) {
 //
 // Call, unlike Execute, requires a config and also requires the State field to
 // be set.
-func Call(action *types.Action, cfg *Config) ([]byte, uint64, error) {
+func Call(action *envelope.ContractTx, cfg *Config) ([]byte, uint64, error) {
 	setDefaults(cfg)
 
 	vmenv := NewEnv(cfg)

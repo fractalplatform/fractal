@@ -44,14 +44,15 @@ func TestDefaultGenesisBlock(t *testing.T) {
 
 func TestSetupGenesis(t *testing.T) {
 	var (
-		customGHash = common.HexToHash("a38b5027bb6d7637ee9007e70e0d3e72156b5ee5d4db8269d6f33d81d2a0ad3e")
+		customGHash = common.HexToHash("70872c0d592eb6195bda19673831087c218fc69dc5fd34a9a2514d9b895c28f7")
 
 		customG = Genesis{
-			Config: params.DefaultChainconfig.Copy(),
+			Config:    params.DefaultChainconfig.Copy(),
+			Timestamp: 1575967052,
 		}
 		oldCustomG = customG
 
-		oldCustomGHash = common.HexToHash("9b994f2bd6aa177c97c715278c0b92417963d5724e4b314a2096f3b69f31815d")
+		oldCustomGHash = common.HexToHash("c0686c0649c21949302f5f4ca8b047dd13b8112335fee5e1a7a7a8c686d17889")
 	)
 	customG.Config.ChainID = big.NewInt(5)
 	oldCustomG.Config = customG.Config.Copy()

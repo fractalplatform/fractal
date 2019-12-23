@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/log"
@@ -113,6 +114,12 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		if _, err := enode.ParseV4(node); err != nil {
 			log.Warn("genesis bootnodes parse failed", "err", err, "node", node)
 		}
+	}
+
+	//check timestamp
+	str := strconv.FormatUint(g.Timestamp, 10)
+	if len(str) < 9 || len(str) > 10 {
+		return nil, nil, fmt.Errorf("genesis timestamp too late or too early")
 	}
 
 	timestamp := g.Timestamp

@@ -107,13 +107,18 @@ func generateAccount(t *testing.T, name string, managers ...pm.IPM) *ecdsa.Priva
 	return key
 }
 
-func setupTxPool(assetOwner string) (*TxPool, pm.IPM) {
+func setupTxPool() (*TxPool, pm.IPM) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	manager := pm.NewPM(statedb)
-	manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
-		10, assetOwner, assetOwner, big.NewInt(1000000), string(""), manager)
-	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
+	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 	return New(testTxPoolConfig, params.DefaultChainconfig, blockchain), manager
+}
+
+func issueAsset(t *testing.T, assetOwner string, manager pm.IPM) {
+	if _, err := manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+		10, "", assetOwner, new(big.Int).SetUint64(params.Fractal), "", manager); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // validateTxPoolInternals checks various consistency invariants within the pool.
