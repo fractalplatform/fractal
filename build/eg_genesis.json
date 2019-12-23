@@ -12,47 +12,49 @@
     "feeName": "fractalfee",
     "systemToken": "ftoken"
   },
-  "timestamp": 1560614400000,
+  "timestamp": 1560614400,
   "gasLimit": 30000000,
   "difficulty": 1,
-  "allocAccounts": [
-    {
-      "name": "fractalfounderaa",
-      "founder": "fractalfounder",
-      "pubKey": "0x047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd"
-    },
-    {
-      "name": "fractalaccount",
-      "founder": "fractalfounder",
-      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    },
-    {
-      "name": "fractalasset",
-      "founder": "fractalfounder",
-      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    },
-    {
-      "name": "fractaldpos",
-      "founder": "fractalfounder",
-      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    },
-    {
-      "name": "fractalfee",
-      "founder": "fractalfounder",
-      "pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-    }
-  ],
-  "allocCandidates": [],
-  "allocAssets": [
-    {
-      "name": "ftoken",
-      "symbol": "ft",
-      "amount": 4904014844451659720000000000,
-      "decimals": 18,
-      "founder": "fractalfounder",
-      "owner": "fractalfounder",
-      "upperLimit": 4904014844451659720000000000
-    }
-  ],
+  "pluginDoc": {
+    "accounts": [
+      {
+        "name": "fractalfounder",
+        "pubkey": "047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "desc": "system account"
+      },
+      {
+        "name": "fractalaccount",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "account manager account"
+      },
+      {
+        "name": "fractalasset",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "asset manager account"
+      },
+      {
+        "name": "fractaldpos",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "consensus account"
+      },
+      {
+        "name": "fractalfee",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "fee manager account"
+      }
+    ],
+    "assets": [
+      {
+        "assetName": "ftoken",
+        "symbol": "ft",
+        "amount": 10000000000000000000000000000,
+        "owner": "fractalfounder",
+        "founder": "fractalfounder",
+        "decimals": 18,
+        "upperLimit": 10000000000000000000000000000,
+        "description": ""
+      }
+    ]
+  },
   "remark": "科技捍卫权利"
 }
