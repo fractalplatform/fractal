@@ -1,72 +1,72 @@
 # Genesis json file
-genesis: "./build/genesis.json"
+genesis: './build/genesis.json'
 
-debug: 
+debug:
   # Enable the pprof HTTP server
   pprof: false
   # Pprof HTTP server listening port
   pprofport: 6060
   # Pprof HTTP server listening interface
-  pprofaddr: "127.0.0.1"
+  pprofaddr: '127.0.0.1'
   # Turn on memory profiling with the given rate(512 * 1024)
   memprofilerate: 524288
   # Turn on block profiling with the given rate
-  blockprofilerate: 0 
+  blockprofilerate: 0
   # Write CPU profile to the given file
-  cpuprofile: ""
+  cpuprofile: ''
   # Write execution trace to the given file
-  trace: ""
+  trace: ''
 # log configuration table
 log:
   # Writes log records to file chunks at the given path
-  dir: ""
+  dir: ''
   # Prepends log messages with call-site location (file and line number)
   printorigins: false
   # Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail
   level: 3
   # Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. ft/*=5,p2p=4)
-  vmodule: ""
+  vmodule: ''
   # Request a stack trace at a specific logging statement (e.g. \"block.go:271\")
-  backtraceat: ""
+  backtraceat: ''
 
 # node the fractal node configuration table
 node:
   # the node datadir
-  datadir: "./build/testdatadir"
+  datadir: './build/testdatadir'
   # RPC:ipc file name
-  ipcpath: "ft.ipc"
+  ipcpath: 'ft.ipc'
   # RPC:http host address
-  httphost: "localhost"
+  httphost: 'localhost'
   # RPC:http host port
   httpport: 8545
   # RPC:http api's offered over the HTTP-RPC interface
-  httpmodules: ["ft"]
+  httpmodules: ['ft']
   # RPC:Which to accept cross origin
-  httpcors: ["localhost"]
+  httpcors: ['localhost']
   # RPC:http virtual hostnames from which to accept requests
-  httpvirtualhosts: ["*"]
+  httpvirtualhosts: ['*']
   # RPC:websocket host address
-  wshost: "localhost"
+  wshost: 'localhost'
   # RPC:websocket host port
   wsport: 8546
   # RPC:ws api's offered over the WS-RPC interface
-  wsmodules: ["ft"]
+  wsmodules: ['ft']
   # RPC:ws origins from which to accept websockets requests
   wsorigins: []
   # RPC:ws exposes all API modules via the WebSocket RPC interface rather than just the public ones.
   wsexposall: false
   # Node list file. BootstrapNodes are used to establish connectivity with the rest of the network
-  bootnodes: "./build/bootnodes.txt"
+  bootnodes: './build/bootnodes.txt'
   # Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects
-  staticnodes: "./build/staticnodes.txt"
+  staticnodes: './build/staticnodes.txt'
   # Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit
-  trustnodes: "./build/trustnodes.txt"
+  trustnodes: './build/trustnodes.txt'
   # P2P configuration table
   p2p:
     # The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.
     networkid: 1
     # The name sets the p2p node name of this server
-    name: "Fractal-P2P"
+    name: 'Fractal-P2P'
     # Maximum number of network peers
     maxpeers: 10
     # Maximum number of pending connection attempts
@@ -76,9 +76,9 @@ node:
     # Disables the peer discovery mechanism (manual peer addition)
     nodiscover: true
     # The path to the database containing the previously seen live nodes in the network
-    nodedb: "./build/nodedb"
+    nodedb: './build/nodedb'
     # Network listening address
-    listenaddr: ":8000"
+    listenaddr: ':8000'
     # The server will not dial any peers.
     nodial: false
 
@@ -91,7 +91,7 @@ ftservice:
     # Disables price exemptions for locally submitted transactions
     nolocals: false
     # Disk journal for local transaction to survive node restarts
-    journal: "transactions.rlp"
+    journal: 'transactions.rlp'
     # Time interval to regenerate the local transaction journal
     rejournal: 1h
     # Minimum gas price limit to enforce for acceptance into the pool
@@ -122,26 +122,27 @@ ftservice:
     # Start miner generate block and process transaction
     start: false
     # Name for block mining rewards
-    name: "fractal.founder"
+    name: 'fractalfounder'
     # Hex of private key for block mining rewards
-    private: ["289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"]
+    private:
+      ['289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032']
     # Block extra data set by the miner
-    extra: "system"
+    extra: 'system'
   metrics:
     # flag that open statistical metrics
     metrics: false
     # flag that open influxdb thad store statistical metrics
     influxdb: false
     # URL that connect influxdb
-    influxdburl: "http://localhost:8086"
+    influxdburl: 'http://localhost:8086'
     # Influxdb database name
-    influxdbname: "metrics"
+    influxdbname: 'metrics'
     # Indluxdb user name
-    influxdbuser: "test"
+    influxdbuser: 'test'
     # Influxdb user passwd
-    influxdbpasswd: "test"
+    influxdbpasswd: 'test'
     # Influxdb namespace
-    influxdbnamespace: "fractal/"
+    influxdbnamespace: 'fractal/'
   # flag for db to store contrat internal transaction log
   contractlog: false
   # flag for enable/disable state pruning.

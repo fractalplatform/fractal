@@ -20,26 +20,26 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // Tests that positional lookup metadata can be stored and retrieved.
 func TestLookupStorage(t *testing.T) {
 	db := NewMemoryDatabase()
 
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action1"), []byte("test remark1"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action2"), []byte("test remark2"))
-	action3 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(3), uint64(2000), big.NewInt(1000), []byte("test action3"), []byte("test remark3"))
+	action1, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(0), uint64(3), 0, uint64(2000), big.NewInt(1), big.NewInt(1000), []byte("test action1"), []byte("test remark1"))
+	action2, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(1), uint64(3), 0, uint64(2000), big.NewInt(1), big.NewInt(1000), []byte("test action2"), []byte("test remark2"))
+	action3, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(2), uint64(3), 0, uint64(2000), big.NewInt(1), big.NewInt(1000), []byte("test action3"), []byte("test remark3"))
 
-	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
-	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
-	tx3 := types.NewTransaction(uint64(2), big.NewInt(2), action3)
+	tx1 := types.NewTransaction(action1)
+	tx2 := types.NewTransaction(action2)
+	tx3 := types.NewTransaction(action3)
 
 	txs := []*types.Transaction{tx1, tx2, tx3}
 
 	block := &types.Block{
-		Head: &types.Header{Number: big.NewInt(314), Coinbase: "coinbase"},
+		Head: &types.Header{Number: 314, Coinbase: "coinbase"},
 		Txs:  txs,
 	}
 

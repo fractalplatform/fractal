@@ -82,7 +82,7 @@ type Worker struct {
 	quitWork chan struct{}
 	wgWork   sync.WaitGroup
 	quit     chan struct{}
-	force    bool
+	//force    bool
 }
 
 func newWorker(c context) *Worker {
@@ -105,6 +105,7 @@ out:
 			select {
 			case worker.quitWork <- struct{}{}:
 			default:
+
 			}
 		case <-worker.quit:
 			break out
@@ -114,9 +115,9 @@ out:
 	}
 }
 
-func (worker *Worker) start(force bool) {
+func (worker *Worker) start() {
 	worker.quit = make(chan struct{})
-	worker.force = force
+	//worker.force = force
 	worker.wg.Add(2)
 	go func() {
 		worker.update()
@@ -150,7 +151,6 @@ func (worker *Worker) mintLoop() {
 			}
 			continue
 		}
-		worker.quitWork = make(chan struct{})
 		worker.mintBlock(state, pm, header)
 	}
 }
@@ -216,7 +216,7 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 	if err != nil {
 		return nil, err
 	}
-	header := &types.Header{Coinbase: worker.coinbase}
+	header := &types.Header{Coinbase: worker.coinbase, Extra: worker.extra}
 	if err := pm.Prepare(header); err != nil {
 		return nil, err
 	}
@@ -273,7 +273,12 @@ func (worker *Worker) commitNewWork(pm plugin.IPM, state *state.StateDB, parent 
 
 	// wait send
 	if worker.delayMs > 0 {
-		<-time.NewTimer(worker.delayMs).C
+		select {
+		case <-worker.quit:
+		case <-work.quit:
+			return nil, errors.New("worker quit")
+		case <-time.NewTimer(worker.delayMs).C:
+		}
 	}
 	event.SendEvent(&event.Event{Typecode: event.NewMinedEv, Data: block})
 	return block, nil

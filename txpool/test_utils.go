@@ -31,6 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // testTxPoolConfig is a transaction pool configuration without stateful disk
@@ -83,13 +84,12 @@ func transaction(nonce uint64, from, to string, gaslimit uint64, key *ecdsa.Priv
 	return pricedTransaction(nonce, from, to, gaslimit, big.NewInt(1), key)
 }
 
-func pricedTransaction(nonce uint64, from, to string, gaslimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
-	tx := types.NewTransaction(nil)
-	// tx := newTx(gasprice, newAction(nonce, from, to, big.NewInt(100), gaslimit, nil))
-	// // keyPair := types.MakeKeyPair(key, []uint64{0})
-	// // if err := types.SignActionWithMultiKey(tx.GetActions()[0], tx, types.NewSigner(params.DefaultChainconfig.ChainID), 0, []*types.KeyPair{keyPair}); err != nil {
-	// // 	panic(err)
-	// // }
+func pricedTransaction(nonce uint64, from, to string, gasLimit uint64, gasprice *big.Int, key *ecdsa.PrivateKey) *types.Transaction {
+	env, _ := envelope.NewContractTx(envelope.CreateContract, from, to, nonce, 0, 0, gasLimit, gasprice, big.NewInt(100), []byte("test"), nil)
+	tx := types.NewTransaction(env)
+	signer, _ := pm.NewSigner(big.NewInt(1))
+	d, _ := signer.Sign(tx.SignHash, key)
+	env.Signature = d
 	return tx
 }
 
@@ -100,20 +100,25 @@ func generateAccount(t *testing.T, name string, managers ...pm.IPM) *ecdsa.Priva
 	}
 	pubkeyBytes := crypto.FromECDSAPub(&key.PublicKey)
 	for _, m := range managers {
-		if _, err := m.CreateAccount("fractal.founder", common.BytesToPubKey(pubkeyBytes).String(), ""); err != nil {
+		if _, err := m.CreateAccount(name, common.BytesToPubKey(pubkeyBytes).String(), ""); err != nil {
 			t.Fatal(err)
 		}
 	}
 	return key
 }
 
-func setupTxPool(assetOwner string) (*TxPool, pm.IPM) {
+func setupTxPool() (*TxPool, pm.IPM) {
 	statedb, _ := state.New(common.Hash{}, state.NewDatabase(rawdb.NewMemoryDatabase()))
 	manager := pm.NewPM(statedb)
-	manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
-		10, assetOwner, assetOwner, big.NewInt(1000000), string(""), manager)
-	blockchain := &testBlockChain{statedb, 1000000, new(event.Feed)}
+	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
 	return New(testTxPoolConfig, params.DefaultChainconfig, blockchain), manager
+}
+
+func issueAsset(t *testing.T, assetOwner string, manager pm.IPM) {
+	if _, err := manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+		10, "", assetOwner, new(big.Int).SetUint64(params.Fractal), "", manager); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // validateTxPoolInternals checks various consistency invariants within the pool.

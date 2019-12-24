@@ -211,7 +211,7 @@ func (pm *Manager) InitChain(pluginDoc json.RawMessage, chainConfig *params.Chai
 	for index, action := range actTxs {
 		_, err := pm.ExecTx(action, false)
 		if err != nil {
-			return nil, fmt.Errorf("genesis index: %v,err %v", index, err)
+			return nil, fmt.Errorf("genesis index: %v, err: %v", index, err)
 		}
 	}
 

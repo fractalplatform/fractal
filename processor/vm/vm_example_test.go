@@ -31,6 +31,7 @@ import (
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/abi"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"github.com/stretchr/testify/assert"
@@ -75,7 +76,8 @@ func createContract(abifile string, binfile string, contractName string, runtime
 	}
 
 	createCode := append(code, createInput...)
-	action := types.NewAction(types.CreateContract, runtimeConfig.Origin, contractName, 0, 1, runtimeConfig.GasLimit, runtimeConfig.Value, createCode, nil)
+
+	action, _ := envelope.NewContractTx(envelope.CreateContract, runtimeConfig.Origin, contractName, 0, 1, 0, runtimeConfig.GasLimit, big.NewInt(0), runtimeConfig.Value, createCode, nil)
 	_, _, err = runtime.Create(action, &runtimeConfig)
 	if err != nil {
 		fmt.Println("create error ", err)
@@ -92,7 +94,7 @@ func createAccount(pm plugin.IPM, name string) error {
 	return nil
 }
 
-func issueAssetAction(ownerName, toName string) *types.Action {
+func issueAssetAction(ownerName, toName string) *types.Transaction {
 	asset := plugin.IssueAssetAction{
 		AssetName:  "bitcoin",
 		Symbol:     "btc",
@@ -108,8 +110,8 @@ func issueAssetAction(ownerName, toName string) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(plugin.IssueAsset, ownerName, string("fractal.asset"), 0, 0, 0, big.NewInt(0), b, nil)
-	return action
+	action, _ := envelope.NewPluginTx(plugin.IssueAsset, ownerName, string("fractal.asset"), 0, 0, 0, 0, big.NewInt(0), big.NewInt(0), b, nil)
+	return types.NewTransaction(action)
 }
 
 // func TestAsset(t *testing.T) {
@@ -368,7 +370,7 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	action := types.NewAction(types.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, setVenOwnerInput, nil)
+	action, _ := envelope.NewContractTx(envelope.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, 0, runtimeConfig.GasLimit, big.NewInt(0), runtimeConfig.Value, setVenOwnerInput, nil)
 
 	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
@@ -381,7 +383,7 @@ func TestVEN(t *testing.T) {
 		fmt.Println("initializeVenSaleInput error ", err)
 		return
 	}
-	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, initializeVenSaleInput, nil)
+	action, _ = envelope.NewContractTx(envelope.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, 0, runtimeConfig.GasLimit, big.NewInt(0), runtimeConfig.Value, initializeVenSaleInput, nil)
 	runtimeConfig.Time = big.NewInt(1504180700)
 
 	_, _, err = runtime.Call(action, &runtimeConfig)
@@ -391,7 +393,7 @@ func TestVEN(t *testing.T) {
 	}
 
 	runtimeConfig.Value = big.NewInt(100000000000000000)
-	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, nil, nil)
+	action, _ = envelope.NewContractTx(envelope.CallContract, runtimeConfig.Origin, venSaleContractName, 0, runtimeConfig.AssetID, 0, runtimeConfig.GasLimit, big.NewInt(0), runtimeConfig.Value, nil, nil)
 
 	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {
@@ -405,7 +407,7 @@ func TestVEN(t *testing.T) {
 		fmt.Println("getBalanceInput error ", err)
 		return
 	}
-	action = types.NewAction(types.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, getBalanceInput, nil)
+	action, _ = envelope.NewContractTx(envelope.CallContract, runtimeConfig.Origin, venContractName, 0, runtimeConfig.AssetID, 0, runtimeConfig.GasLimit, big.NewInt(0), runtimeConfig.Value, getBalanceInput, nil)
 
 	ret, _, err := runtime.Call(action, &runtimeConfig)
 	if err != nil {
@@ -475,7 +477,7 @@ func TestPreCompiledContract(t *testing.T) {
 		return
 	}
 
-	action := types.NewAction(types.CallContract, runtimeConfig.Origin, shaContractName, 0, runtimeConfig.AssetID, runtimeConfig.GasLimit, runtimeConfig.Value, shaInput, nil)
+	action, _ := envelope.NewContractTx(envelope.CallContract, runtimeConfig.Origin, shaContractName, 0, runtimeConfig.AssetID, 0, runtimeConfig.GasLimit, big.NewInt(0), runtimeConfig.Value, shaInput, nil)
 
 	_, _, err = runtime.Call(action, &runtimeConfig)
 	if err != nil {

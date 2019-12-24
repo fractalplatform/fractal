@@ -88,6 +88,13 @@ func GasPrice() (*big.Int, error) {
 	return gp, err
 }
 
+// GetNonce get nonce by name and block number.
+func GetNonce(accountName string) (uint64, error) {
+	nonce := new(uint64)
+	err := ClientCall("account_getNonce", nonce, accountName)
+	return *nonce, err
+}
+
 // defaultDataDir is the default data directory to use for the databases and other
 // persistence requirements.
 func defaultDataDir() string {

@@ -27,12 +27,7 @@ type API struct {
 
 // Start start mining
 func (api *API) Start() bool {
-	return api.miner.Start(false)
-}
-
-// Force force mint
-func (api *API) Force() bool {
-	return api.miner.Start(true)
+	return api.miner.Start()
 }
 
 // Stop stop mining

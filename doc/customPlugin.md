@@ -82,3 +82,24 @@ func (c *Custom) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 参考[plugin.md](plugin.md)文档。  
 
 注意：需在`plugin.go`中的`init`函数中注册。
+
+### 插件注册RPC
+1. 在`backend.go`的`GetAPIs`函数中注册
+```go
+func GetAPIs(apiBackend Backend) []rpc.API {
+	apis := []rpc.API{
+		...
+		...
+		{
+			Namespace: "customPlugin",
+			Version:   "1.0",
+			Service:   NewCustomPluginAPI(apiBackend),
+			Public:    true,
+		},
+	}
+	...
+	...
+}
+```
+2. 在`rpcapi`新建`custom.go`文件
+在`custom.go`文件中实现RPC接口即可

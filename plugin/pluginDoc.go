@@ -12,8 +12,8 @@ import (
 )
 
 type PluginDoc struct {
-	Accounts []*CreateAccountAction
-	Assets   []*IssueAssetAction
+	Accounts []*CreateAccountAction `json:"accounts"`
+	Assets   []*IssueAssetAction    `json:"assets"`
 }
 
 func PluginDocJsonUnMarshal(raw json.RawMessage) (pd *PluginDoc, err error) {

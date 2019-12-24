@@ -17,6 +17,7 @@
 package types
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/fractalplatform/fractal/common"

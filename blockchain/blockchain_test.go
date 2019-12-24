@@ -21,7 +21,6 @@ import (
 
 	g "github.com/fractalplatform/fractal/blockchain/genesis"
 	"github.com/fractalplatform/fractal/log"
-	"github.com/fractalplatform/fractal/processor/vm"
 )
 
 // So we can deterministically seed different blockchains
@@ -39,72 +38,76 @@ func TestTheLastBlock(t *testing.T) {
 
 	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
+	// for i, k := range blocks {
+	// 	fmt.Println("---->", i, k.Hash().Hex(), k.ParentHash().Hex())
+	// }
+
 	// check chain block hash
 	checkBlocksInsert(t, chain, blocks)
 }
 
-func TestSystemForkChain(t *testing.T) {
-	printLog(log.LvlDebug)
+// func TestSystemForkChain(t *testing.T) {
+// 	printLog(log.LvlDebug)
 
-	genesis := g.DefaultGenesis()
-	chain := newCanonical(t, genesis)
-	defer chain.Stop()
+// 	genesis := g.DefaultGenesis()
+// 	chain := newCanonical(t, genesis)
+// 	defer chain.Stop()
 
-	chain, _ = makeNewChain(t, genesis, chain, 10, canonicalSeed)
+// 	chain, _ = makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
-	// generate fork blocks
-	forkChain := newCanonical(t, genesis)
-	defer forkChain.Stop()
+// 	// generate fork blocks
+// 	forkChain := newCanonical(t, genesis)
+// 	defer forkChain.Stop()
 
-	_, forkBlocks := makeNewChain(t, genesis, forkChain, 11, forkSeed)
-	_, err := chain.InsertChain(forkBlocks)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	_, forkBlocks := makeNewChain(t, genesis, forkChain, 11, forkSeed)
+// 	_, err := chain.InsertChain(forkBlocks)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	// check chain block hash
-	checkBlocksInsert(t, chain, forkBlocks)
+// 	// check chain block hash
+// 	checkBlocksInsert(t, chain, forkBlocks)
 
-	// check if is complete block chain
-	checkCompleteChain(t, chain)
-}
+// 	// check if is complete block chain
+// 	checkCompleteChain(t, chain)
+// }
 
-func TestBadBlockHashes(t *testing.T) {
-	genesis := g.DefaultGenesis()
-	chain := newCanonical(t, genesis)
-	defer chain.Stop()
+// func TestBadBlockHashes(t *testing.T) {
+// 	genesis := g.DefaultGenesis()
+// 	chain := newCanonical(t, genesis)
+// 	defer chain.Stop()
 
-	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
+// 	_, blocks := makeNewChain(t, genesis, chain, 10, canonicalSeed)
 
-	chain.badHashes[blocks[2].Header().Hash()] = true
+// 	chain.badHashes[blocks[2].Header().Hash()] = true
 
-	_, err := chain.InsertChain(blocks)
-	if err != ErrBlacklistedHash {
-		t.Errorf("error mismatch: have: %v, want: %v", err, ErrBlacklistedHash)
-	}
+// 	_, err := chain.InsertChain(blocks)
+// 	if err != ErrBlacklistedHash {
+// 		t.Errorf("error mismatch: have: %v, want: %v", err, ErrBlacklistedHash)
+// 	}
 
-	// test NewBlockChain()badblock err
-	delete(chain.badHashes, blocks[2].Header().Hash())
+// 	// test NewBlockChain()badblock err
+// 	delete(chain.badHashes, blocks[2].Header().Hash())
 
-	_, err = chain.InsertChain(blocks)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	_, err = chain.InsertChain(blocks)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	newChain, err := NewBlockChain(chain.db, false, vm.Config{}, chain.chainConfig,
-		[]string{blocks[2].Header().Hash().String()}, 0)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer newChain.Stop()
+// 	newChain, err := NewBlockChain(chain.db, false, vm.Config{}, chain.chainConfig,
+// 		[]string{blocks[2].Header().Hash().String()}, 0)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	defer newChain.Stop()
 
-	// if db have bad block then block will be reset, newChain.CurrentBlock().Hash() must equal chain or newchain genesis block hash.
-	if newChain.CurrentBlock().Hash() != chain.GetBlockByNumber(0).Hash() ||
-		newChain.CurrentBlock().Hash() != newChain.GetBlockByNumber(0).Hash() {
-		t.Fatalf("cur hash %x , genesis hash %v", newChain.CurrentBlock().Hash(),
-			newChain.Genesis().Hash())
-	}
+// 	// if db have bad block then block will be reset, newChain.CurrentBlock().Hash() must equal chain or newchain genesis block hash.
+// 	if newChain.CurrentBlock().Hash() != chain.GetBlockByNumber(0).Hash() ||
+// 		newChain.CurrentBlock().Hash() != newChain.GetBlockByNumber(0).Hash() {
+// 		t.Fatalf("cur hash %x , genesis hash %v", newChain.CurrentBlock().Hash(),
+// 			newChain.Genesis().Hash())
+// 	}
 
-	t.Log(newChain.CurrentBlock().Hash().String())
-	t.Log(newChain.Genesis().Hash().String())
-}
+// 	t.Log(newChain.CurrentBlock().Hash().String())
+// 	t.Log(newChain.Genesis().Hash().String())
+// }

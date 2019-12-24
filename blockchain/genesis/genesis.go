@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/log"
@@ -115,6 +116,12 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		}
 	}
 
+	//check timestamp
+	str := strconv.FormatUint(g.Timestamp, 10)
+	if len(str) < 9 || len(str) > 10 {
+		return nil, nil, fmt.Errorf("genesis timestamp too late or too early")
+	}
+
 	timestamp := g.Timestamp
 	g.Config.ReferenceTime = timestamp
 
@@ -125,10 +132,12 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	if err != nil {
 		return nil, nil, fmt.Errorf("plugin init chain err %v", err)
 	}
-	g.Config.SysTokenID, err = mananger.GetAssetID(g.Config.SysToken)
+	sysAsset, err := mananger.GetAssetInfoByName(g.Config.SysToken)
 	if err != nil {
-		return nil, nil, fmt.Errorf("genesis system asset err %v", err)
+		return nil, nil, fmt.Errorf("genesis get system asset err %v", err)
 	}
+	g.Config.SysTokenID = sysAsset.AssetID
+	g.Config.SysTokenDecimals = sysAsset.Decimals
 
 	// snapshot
 	currentTime := timestamp

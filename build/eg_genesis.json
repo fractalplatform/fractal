@@ -1,0 +1,60 @@
+{
+  "config": {
+    "bootnodes": [],
+    "chainId": 1,
+    "chainName": "fractal",
+    "chainUrl": "https://fractalproject.com",
+    "snapshotInterval": 3600000,
+    "systemName": "fractalfounder",
+    "accountName": "fractalaccount",
+    "assetName": "fractalasset",
+    "dposName": "fractaldpos",
+    "feeName": "fractalfee",
+    "systemToken": "ftoken"
+  },
+  "timestamp": 1560614400,
+  "gasLimit": 30000000,
+  "difficulty": 1,
+  "pluginDoc": {
+    "accounts": [
+      {
+        "name": "fractalfounder",
+        "pubkey": "047db227d7094ce215c3a0f57e1bcc732551fe351f94249471934567e0f5dc1bf795962b8cccb87a2eb56b29fbe37d614e2f4c3c45b789ae4f1f51f4cb21972ffd",
+        "desc": "system account"
+      },
+      {
+        "name": "fractalaccount",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "account manager account"
+      },
+      {
+        "name": "fractalasset",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "asset manager account"
+      },
+      {
+        "name": "fractaldpos",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "consensus account"
+      },
+      {
+        "name": "fractalfee",
+        "pubkey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "desc": "fee manager account"
+      }
+    ],
+    "assets": [
+      {
+        "assetName": "ftoken",
+        "symbol": "ft",
+        "amount": 10000000000000000000000000000,
+        "owner": "fractalfounder",
+        "founder": "fractalfounder",
+        "decimals": 18,
+        "upperLimit": 10000000000000000000000000000,
+        "description": ""
+      }
+    ]
+  },
+  "remark": "科技捍卫权利"
+}

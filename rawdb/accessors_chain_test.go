@@ -23,6 +23,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/types"
+	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 	"golang.org/x/crypto/sha3"
 )
@@ -33,7 +34,7 @@ func TestHeaderStorage(t *testing.T) {
 
 	// Create a test header to move around the database and make sure it's really new
 	header := &types.Header{
-		Number:   big.NewInt(42),
+		Number:   42,
 		Extra:    []byte("test header"),
 		Coinbase: "coinbase",
 	}
@@ -68,11 +69,11 @@ func TestHeaderStorage(t *testing.T) {
 // Tests block body storage and retrieval operations.
 func TestBodyStorage(t *testing.T) {
 	db := NewMemoryDatabase()
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action1, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(0), uint64(1), 0, uint64(2000), big.NewInt(1), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action2, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(1), uint64(1), 0, uint64(2000), big.NewInt(1), big.NewInt(1000), []byte("test action"), []byte("test remark"))
 
-	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
-	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
+	tx1 := types.NewTransaction(action1)
+	tx2 := types.NewTransaction(action2)
 	txs := []*types.Transaction{tx1, tx2}
 	body := &types.Body{
 		Transactions: txs,
@@ -129,15 +130,15 @@ func TestBlockStorage(t *testing.T) {
 		Extra:        []byte("test block"),
 		TxsRoot:      common.BytesToHash([]byte("test txhash")),
 		ReceiptsRoot: common.BytesToHash([]byte("test rcpthash")),
-		Number:       big.NewInt(1),
+		Number:       1,
 		Coinbase:     "coinbase",
 	}
 
-	action1 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
-	action2 := types.NewAction(types.Transfer, common.Name("fromtest"), common.Name("tototest"), uint64(3), uint64(1), uint64(2000), big.NewInt(1000), []byte("test action"), []byte("test remark"))
+	action1, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(0), uint64(1), uint64(2000), 0, big.NewInt(1000), big.NewInt(1), []byte("test action"), []byte("test remark"))
+	action2, _ := envelope.NewContractTx(envelope.CreateContract, "fromtest", "tototest", uint64(1), uint64(1), uint64(2000), 0, big.NewInt(1000), big.NewInt(1), []byte("test action"), []byte("test remark"))
 
-	tx1 := types.NewTransaction(uint64(1), big.NewInt(1), action1)
-	tx2 := types.NewTransaction(uint64(2), big.NewInt(2), action2)
+	tx1 := types.NewTransaction(action1)
+	tx2 := types.NewTransaction(action2)
 
 	txs := []*types.Transaction{tx1, tx2}
 	block := &types.Block{
@@ -252,23 +253,24 @@ func TestBlockReceiptStorage(t *testing.T) {
 	db := NewMemoryDatabase()
 
 	receipt1 := &types.Receipt{
-		ActionResults:     []*types.ActionResult{&types.ActionResult{Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)}},
+		Status:            types.ReceiptStatusFailed,
+		Index:             uint64(0),
 		CumulativeGasUsed: 1,
 		Logs: []*types.Log{
-			{Name: common.StrToName("a11111111")},
-			{Name: common.StrToName("a11111111")},
+			{Name: "a11111111"},
+			{Name: "a11111111"},
 		},
 		TxHash:       common.BytesToHash([]byte{0x11, 0x11}),
 		TotalGasUsed: 111111,
 	}
 
 	receipt2 := &types.Receipt{
-		ActionResults:     []*types.ActionResult{&types.ActionResult{Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100)}},
+		Status: types.ReceiptStatusFailed, Index: uint64(0), GasUsed: uint64(100),
 		PostState:         common.Hash{2}.Bytes(),
 		CumulativeGasUsed: 2,
 		Logs: []*types.Log{
-			{Name: common.StrToName("a22222222")},
-			{Name: common.StrToName("a22222222")},
+			{Name: "a22222222"},
+			{Name: "a22222222"},
 		},
 		TxHash:       common.BytesToHash([]byte{0x22, 0x22}),
 		TotalGasUsed: 222222,
