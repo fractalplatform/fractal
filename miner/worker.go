@@ -132,7 +132,7 @@ func (worker *Worker) start() {
 func (worker *Worker) mintLoop() {
 	for {
 		header := worker.CurrentHeader()
-		fmt.Println("current Header:", header.Number, header.Coinbase, header.Root, header.ParentHash)
+		fmt.Printf("current Header: %d %s %x %x %s\n", header.Number, header.Coinbase, header.Root, header.ParentHash, string(header.Extra))
 		state, err := worker.StateAt(header.Root)
 		if err != nil {
 			log.Error("Can't find state", "err", err, "root", header.Root, "hash", header.Hash(), "number", header.Number)
