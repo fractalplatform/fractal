@@ -432,7 +432,6 @@ func (dl *Downloader) multiplexDownload() bool {
 	log.Debug("multiplexDownload start")
 	defer log.Debug("multiplexDownload end")
 	if status == nil {
-		log.Debug("status == nil")
 		return false
 	}
 	latestStatus := status.getStatus()
@@ -464,7 +463,6 @@ func (dl *Downloader) multiplexDownload() bool {
 			router.SendTo(nil, nil, router.OneMinuteLimited, status.station) // disconnect and put into blacklist
 			return true
 		}
-		// download failed, continue download from other peers.
 	}
 	if headNumber > statusNumber {
 		headNumber = statusNumber
@@ -661,7 +659,7 @@ func (dl *Downloader) assignDownloadTask(hashes []common.Hash, numbers []uint64)
 			return start, nil
 		}
 		if index, err := dl.blockchain.InsertChain(blocks); err != nil {
-			return blocks[index].NumberU64() - 1, &Error{err, other}
+			return blocks[index].NumberU64() - 1, &Error{err, insertError}
 		}
 	}
 	return numbers[len(numbers)-1], nil
@@ -680,14 +678,11 @@ type downloadTask struct {
 }
 
 func (task *downloadTask) Do() {
-	var err *Error
 	var headers []*types.Header
 	var bodies []*types.Body
 
 	latestStatus := task.worker.getStatus()
 	defer func() {
-		task.err = err
-		task.result <- task
 		diff := latestStatus.Number - task.endNumber
 		if latestStatus.Number < task.endNumber {
 			diff = task.endNumber - latestStatus.Number
@@ -696,6 +691,7 @@ func (task *downloadTask) Do() {
 			task.errorTotal++
 			router.AddErr(task.worker.station, 1)
 		}
+		task.result <- task
 	}()
 	if latestStatus.Number < task.endNumber {
 		return
@@ -723,14 +719,14 @@ func (task *downloadTask) Do() {
 		}
 	*/
 	downloadAmount := task.endNumber - task.startNumber
-	headers, err = getHeaders(station, remote, &getBlockHeadersData{
+	headers, task.err = getHeaders(station, remote, &getBlockHeadersData{
 		hashOrNumber{
 			Number: task.startNumber + 1,
 		}, downloadAmount, 0, false,
 	}, task.worker.errCh)
-	if err != nil || len(headers) != int(downloadAmount) {
+	if task.err != nil || len(headers) != int(downloadAmount) {
 		log.Debug("download header failed",
-			"err", err,
+			"err", task.err,
 			"recvAmount", len(headers),
 			"taskAmount", downloadAmount,
 		)
@@ -748,6 +744,7 @@ func (task *downloadTask) Do() {
 			"task.Start.Hash", task.startHash,
 			"task.End.Hash", task.endHash,
 		)
+		task.err = &Error{errors.New("download header don't match task"), other}
 		return
 	}
 	for i := 1; i < len(headers); i++ {
@@ -758,6 +755,7 @@ func (task *downloadTask) Do() {
 				"n.number", headers[i].Number,
 				"n.parentHash", headers[i].ParentHash,
 			)
+			task.err = &Error{errors.New("download headers are discontinuous"), other}
 			return
 		}
 	}
@@ -769,10 +767,10 @@ func (task *downloadTask) Do() {
 		}
 	}
 
-	bodies, err = getBlocks(station, remote, reqHashes, task.worker.errCh)
-	if err != nil || len(bodies) != len(reqHashes) {
+	bodies, task.err = getBlocks(station, remote, reqHashes, task.worker.errCh)
+	if task.err != nil || len(bodies) != len(reqHashes) {
 		log.Debug("download blocks failed",
-			"err", err,
+			"err", task.err,
 			"recvAmount", len(bodies),
 			"taskAmount", len(reqHashes))
 		return
