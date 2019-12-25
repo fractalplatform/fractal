@@ -395,6 +395,10 @@ func (im *ItemManager) IssueItem(from string, worldID uint64, itemTypeID uint64,
 }
 
 func (im *ItemManager) DestroyItem(from string, worldID uint64, itemTypeID uint64, itemID uint64, am IAccount) ([]byte, error) {
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
 	itemobj, err := im.getItemByID(worldID, itemTypeID, itemID)
 	if err != nil {
 		return nil, err
@@ -408,6 +412,11 @@ func (im *ItemManager) DestroyItem(from string, worldID uint64, itemTypeID uint6
 
 	itemobj.Destroy = true
 	err = im.setItem(itemobj)
+	if err != nil {
+		return nil, err
+	}
+	itemTypeobj.Total -= 1
+	err = im.setItemType(itemTypeobj)
 	if err != nil {
 		return nil, err
 	}
