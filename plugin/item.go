@@ -526,7 +526,7 @@ func (im *ItemManager) transferItemSingle(from, to string, worldID, itemTypeID, 
 		if err = im.subItemsAmount(from, worldID, itemTypeID, amount); err != nil {
 			return err
 		}
-		if err = im.addItemsAmount(from, worldID, itemTypeID, amount); err != nil {
+		if err = im.addItemsAmount(to, worldID, itemTypeID, amount); err != nil {
 			return err
 		}
 	} else {
