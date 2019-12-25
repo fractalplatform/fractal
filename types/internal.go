@@ -38,6 +38,7 @@ type InternalTx struct {
 	Type     InternalTxType     `json:"type"`
 	From     string             `json:"from"`
 	To       string             `json:"to"`
+	Data     []byte             `json:"data"`
 	Status   uint64             `json:"status"`
 	Index    uint64             `json:"index"`
 	GasUsed  uint64             `json:"gasUsed"`
