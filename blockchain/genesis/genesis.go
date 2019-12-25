@@ -29,7 +29,6 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/fdb"
@@ -138,15 +137,6 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	}
 	g.Config.SysTokenID = sysAsset.AssetID
 	g.Config.SysTokenDecimals = sysAsset.Decimals
-
-	// snapshot
-	currentTime := timestamp
-	currentTimeFormat := (currentTime / g.Config.SnapshotInterval) * g.Config.SnapshotInterval
-	snapshotManager := snapshot.NewSnapshotManager(statedb)
-	err = snapshotManager.SetSnapshot(currentTimeFormat, snapshot.BlockInfo{Number: number, BlockHash: common.Hash{}, Timestamp: 0})
-	if err != nil {
-		return nil, nil, fmt.Errorf("genesis snapshot err %v", err)
-	}
 
 	root := statedb.IntermediateRoot()
 	aBytes, err := json.Marshal(g)

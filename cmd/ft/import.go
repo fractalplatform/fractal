@@ -59,7 +59,6 @@ func init() {
 	RootCmd.AddCommand(importCommand)
 	importCommand.Flags().StringVarP(&ftCfgInstance.NodeCfg.DataDir, "datadir", "d", ftCfgInstance.NodeCfg.DataDir, "Data directory for the databases ")
 	importCommand.Flags().StringVarP(&ftCfgInstance.GenesisFile, "genesis", "g", "", "genesis json file")
-
 }
 
 func importChain(args []string) error {
@@ -108,6 +107,8 @@ func importChain(args []string) error {
 			}
 		}
 	}
+
+	defer ftsrv.BlockChain().Stop()
 
 	log.Info("Import done in ", "time", time.Since(start))
 
