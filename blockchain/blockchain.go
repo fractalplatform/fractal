@@ -37,7 +37,6 @@ import (
 	"github.com/fractalplatform/fractal/processor"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/snapshot"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/txpool"
 	"github.com/fractalplatform/fractal/types"
@@ -531,9 +530,8 @@ func (bc *BlockChain) writeSnapshotToDB(db rawdb.DatabaseWriter, root common.Has
 }
 
 type WriteStateToDB struct {
-	Root        common.Hash
-	Number      uint64
-	WriteDbFlag bool
+	Root   common.Hash
+	Number uint64
 }
 
 // WriteBlockWithState writes the block and all associated state to the database.
@@ -563,22 +561,6 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 		return false, err
 	}
 
-	var writeStateFlag bool
-	snapshotManager := snapshot.NewSnapshotManager(state)
-	blockNumber, blockHash, err := snapshotManager.GetCurrentSnapshotHash()
-	if err == nil {
-		if blockNumber == block.NumberU64() && blockHash == block.ParentHash() {
-			writeStateFlag = true
-		} else {
-			writeStateFlag = false
-		}
-	}
-
-	if writeStateFlag {
-		log.Debug("Snapshot", "root", root.String(), "number", block.NumberU64(), "time", block.Time().Uint64()/bc.snapshotInterval*bc.snapshotInterval)
-		bc.writeSnapshotToDB(batch, root, block)
-	}
-
 	triedb := bc.stateCache.TrieDB()
 	if !bc.statePruning {
 		log.Debug("Tiredb commit db", "root", root.String(), "number", block.NumberU64())
@@ -587,8 +569,7 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 		}
 	} else {
 		writeStateToDB := WriteStateToDB{
-			Root:        root,
-			WriteDbFlag: writeStateFlag,
+			Root: root,
 		}
 		triedb.Reference(root, common.Hash{})
 		bc.triegc.Push(writeStateToDB, -int64(block.NumberU64()))
@@ -626,13 +607,6 @@ func (bc *BlockChain) WriteBlockWithState(block *types.Block, receipts []*types.
 				if uint64(-number) > chosen {
 					bc.triegc.Push(stateRoot, number)
 					break
-				}
-
-				if stateRoot.(WriteStateToDB).WriteDbFlag {
-					log.Debug("Snapshot block tiredb commit db", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number)
-					if err := triedb.Commit(stateRoot.(WriteStateToDB).Root, true); err != nil {
-						log.Crit("Snapshot block tiredb commit db failed", "root", stateRoot.(WriteStateToDB).Root.String(), "number", -number, "err", err)
-					}
 				}
 
 				log.Debug("state store irreversible ", "number", uint64(-number))

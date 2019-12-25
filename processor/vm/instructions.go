@@ -887,6 +887,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 		internalAction := &types.InternalTx{
 			From:     action.Sender(),
 			To:       action.Recipient(),
+			Data:     action.Payload,
 			Type:     types.PluginCall,
 			GasUsed:  gasUsed,
 			GasLimit: gas,
