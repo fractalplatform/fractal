@@ -110,15 +110,30 @@ type ISigner interface {
 }
 
 type IItem interface {
-	IssueItemType(creator, owner, name, description string, am IAccount) ([]byte, error)
-	UpdateItemTypeOwner(from, newOwner string, itemTypeID uint64, am IAccount) ([]byte, error)
-	IssueItem(creator string, itemTypeID uint64, name string, description string, upperLimit uint64, total uint64, attributes []*Attribute, am IAccount) ([]byte, error)
-	IncreaseItem(from string, itemTypeID, itemInfoID uint64, to string, amount uint64, am IAccount) ([]byte, error)
-	TransferItem(from, to string, ItemTx []*ItemTxParam) error
-	GetItemAmount(account string, itemTypeID, itemInfoID uint64) (uint64, error)
-	GetItemAttribute(itemTypeID uint64, itemInfoID uint64, AttributeName string) (string, error)
-	GetItemTypeByID(itemTypeID uint64) (*ItemType, error)                        // for api
-	GetItemTypeByName(creator string, itemTypeName string) (*ItemType, error)    // for api
-	GetItemInfoByID(itemTypeID, itemInfoID uint64) (*ItemInfo, error)            // for api
-	GetItemInfoByName(itemTypeID uint64, itemInfoName string) (*ItemInfo, error) // for api
+	IssueWorld(creator, owner, name, description string, am IAccount) ([]byte, error)
+	UpdateWorldOwner(from, newOwner string, worldID uint64, am IAccount) ([]byte, error)
+	IssueItemType(creator string, worldID uint64, name string, merge bool, upperLimit uint64, description string, attributes []*Attribute, am IAccount) ([]byte, error)
+	IssueItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error)
+	DestroyItem(from string, worldID uint64, itemTypeID uint64, itemID uint64, am IAccount) ([]byte, error)
+	IncreaseItems(from string, worldID uint64, itemTypeID uint64, to string, amount uint64, am IAccount) ([]byte, error)
+	DestroyItems(from string, worldID uint64, itemTypeID uint64, amount uint64, am IAccount) ([]byte, error)
+	TransferItem(from, to string, ItemTx []*ItemTxParam, am IAccount) error
+	AddItemTypeAttributes(from string, worldID, itemTypeID uint64, attributes []*Attribute) ([]byte, error)
+	DelItemTypeAttributes(from string, worldID, itemTypeID uint64, attrName []string) ([]byte, error)
+	ModifyItemTypeAttributes(from string, worldID, itemTypeID uint64, attributes []*Attribute) ([]byte, error)
+	AddItemAttributes(from string, worldID, itemTypeID, itemID uint64, attributes []*Attribute) ([]byte, error)
+	DelItemAttributes(from string, worldID, itemTypeID, itemID uint64, attrName []string) ([]byte, error)
+	ModifyItemAttributes(from string, worldID, itemTypeID, itemID uint64, attributes []*Attribute) ([]byte, error)
+	// for rpc
+	GetWorldByID(worldID uint64) (*World, error)
+	GetWorldByName(worldName string) (*World, error)
+	GetItemTypeByID(worldID, itemTypeID uint64) (*ItemType, error)
+	GetItemTypeByName(worldID uint64, itemTypeName string) (*ItemType, error)
+	GetItemByID(worldID, itemTypeID, itemID uint64) (*Item, error)
+	GetItemByOwner(worldID, itemTypeID uint64, owner string) (*Item, error)
+	GetItemsByOwner(worldID, itemTypeID uint64, account string) (*Items, error)
+	GetItemTypeAttributeByID(worldID, itemTypeID, attrID uint64) (*Attribute, error)
+	GetItemTypeAttributeByName(worldID, itemTypeID uint64, attrName string) (*Attribute, error)
+	GetItemAttributeByID(worldID, itemTypeID, itemID, attrID uint64) (*Attribute, error)
+	GetItemAttributeByName(worldID, itemTypeID, itemID uint64, attrName string) (*Attribute, error)
 }

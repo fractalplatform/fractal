@@ -26,11 +26,22 @@ const (
 )
 
 const (
-	IssueItemType envelope.PayloadType = 0x400 + iota
-	UpdateItemTypeOwner
+	IssueWorld envelope.PayloadType = 0x400 + iota
+	UpdateWorldOwner
+	IssueItemType
 	IssueItem
-	IncreaseItem
+	// IncreaseItem
+	DestroyItem
+	// IssueItems
+	IncreaseItems
+	DestroyItems
 	TransferItem
+	AddItemTypeAttributes
+	DelItemTypeAttributes
+	ModifyItemTypeAttributes
+	AddItemAttributes
+	DelItemAttributes
+	ModifyItemAttributes
 )
 
 type CreateAccountAction struct {
@@ -60,31 +71,51 @@ type IssueAssetAction struct {
 	Description string
 }
 
-type IssueItemTypeAction struct {
+type IssueWorldAction struct {
 	Owner       string
 	Name        string
 	Description string
 }
 
-type UpdateItemTypeOwnerAction struct {
-	NewOwner   string
-	ItemTypeID uint64
+type UpdateWorldOwnerAction struct {
+	NewOwner string
+	WorldID  uint64
 }
 
-type IssueItemAction struct {
-	ItemTypeID  uint64
+type IssueItemTypeAction struct {
+	WorldID     uint64
 	Name        string
-	Description string
+	Merge       bool
 	UpperLimit  uint64
-	Total       uint64
+	Description string
 	Attributes  []*Attribute
 }
 
-type IncreaseItemAction struct {
+type IssueItemAction struct {
+	WorldID     uint64
+	ItemTypeID  uint64
+	Owner       string
+	Description string
+	Attributes  []*Attribute
+}
+
+type DestroyItemAction struct {
+	WorldID    uint64
 	ItemTypeID uint64
-	ItemInfoID uint64
-	To         string
-	Amount     uint64
+	ItemID     uint64
+}
+
+type IncreaseItemsAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	Owner      string
+	Count      uint64
+}
+
+type DestroyItemsAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	Count      uint64
 }
 
 type TransferItemAction struct {
@@ -92,13 +123,62 @@ type TransferItemAction struct {
 	ItemTx []*ItemTxParam
 }
 
+type AddItemTypeAttributesAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	Attributes []*Attribute
+}
+
+type DelItemTypeAttributesAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	AttrName   []string
+}
+
+type ModifyItemTypeAttributesAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	Attributes []*Attribute
+}
+
+type AddItemAttributesAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	ItemID     uint64
+	Attributes []*Attribute
+}
+
+type DelItemAttributesAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	ItemID     uint64
+	AttrName   []string
+}
+
+type ModifyItemAttributesAction struct {
+	WorldID    uint64
+	ItemTypeID uint64
+	ItemID     uint64
+	Attributes []*Attribute
+}
+
+// type ModifyPermission int
+
+const (
+	CannotModify uint64 = 0
+	WorldOwner   uint64 = 1
+	ItemOwner    uint64 = 2
+)
+
 type Attribute struct {
+	Permission  uint64 `json:"modifyPermission"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
 
 type ItemTxParam struct {
+	WorldID    uint64
 	ItemTypeID uint64
-	ItemInfoID uint64
+	ItemID     uint64
 	Amount     uint64
 }

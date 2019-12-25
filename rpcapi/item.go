@@ -24,50 +24,90 @@ func NewItemAPI(b Backend) *ItemAPI {
 	return &ItemAPI{b}
 }
 
-func (api *ItemAPI) GetAccountItemAmount(account string, itemTypeID, itemInfoID uint64) (uint64, error) {
+func (api *ItemAPI) GetWorldByID(worldID uint64) (interface{}, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
 		return 0, err
 	}
-	return pm.GetItemAmount(account, itemTypeID, itemInfoID)
+	return pm.GetWorldByID(worldID)
 }
 
-func (api *ItemAPI) GetItemAttribute(itemTypeID uint64, itemInfoID uint64, AttributeName string) (string, error) {
+func (api *ItemAPI) GetWorldByName(worldName string) (interface{}, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return pm.GetItemAttribute(itemTypeID, itemInfoID, AttributeName)
+	return pm.GetWorldByName(worldName)
 }
 
-func (api *ItemAPI) GetItemTypeByID(itemTypeID uint64) (interface{}, error) {
+func (api *ItemAPI) GetItemTypeByID(worldID, itemTypeID uint64) (interface{}, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return pm.GetItemTypeByID(itemTypeID)
+	return pm.GetItemTypeByID(worldID, itemTypeID)
 }
 
-func (api *ItemAPI) GetItemTypeByName(creator string, itemTypeName string) (interface{}, error) {
+func (api *ItemAPI) GetItemTypeByName(worldID uint64, itemTypeName string) (interface{}, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return pm.GetItemTypeByName(creator, itemTypeName)
+	return pm.GetItemTypeByName(worldID, itemTypeName)
 }
 
-func (api *ItemAPI) GetItemInfoByID(itemTypeID uint64, itemInfoID uint64) (interface{}, error) {
+func (api *ItemAPI) GetItemByID(worldID, itemTypeID, itemID uint64) (interface{}, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return pm.GetItemInfoByID(itemTypeID, itemInfoID)
+	return pm.GetItemByID(worldID, itemTypeID, itemID)
 }
 
-func (api *ItemAPI) GetItemInfoByName(itemTypeID uint64, itemInfoName string) (interface{}, error) {
+func (api *ItemAPI) GetItemByOwner(worldID, itemTypeID uint64, owner string) (interface{}, error) {
 	pm, err := api.b.GetPM()
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return pm.GetItemInfoByName(itemTypeID, itemInfoName)
+	return pm.GetItemByOwner(worldID, itemTypeID, owner)
+}
+
+func (api *ItemAPI) GetAccountItems(worldID, itemTypeID uint64, account string) (interface{}, error) {
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetItemsByOwner(worldID, itemTypeID, account)
+}
+
+func (api *ItemAPI) GetItemTypeAttributeByID(worldID, itemTypeID, attrID uint64) (interface{}, error) {
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetItemTypeAttributeByID(worldID, itemTypeID, attrID)
+}
+
+func (api *ItemAPI) GetItemTypeAttributeByName(worldID, itemTypeID uint64, attrName string) (interface{}, error) {
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetItemTypeAttributeByName(worldID, itemTypeID, attrName)
+}
+
+func (api *ItemAPI) GetItemAttributeByID(worldID, itemTypeID, itemID, attrID uint64) (interface{}, error) {
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetItemAttributeByID(worldID, itemTypeID, itemID, attrID)
+}
+
+func (api *ItemAPI) GetItemAttributeByName(worldID, itemTypeID, itemID uint64, attrName string) (interface{}, error) {
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetItemAttributeByName(worldID, itemTypeID, itemID, attrName)
 }

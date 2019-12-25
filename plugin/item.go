@@ -2,27 +2,32 @@ package plugin
 
 import (
 	"errors"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
-	itemRegExp              = regexp.MustCompile(`^([a-zA-Z][a-zA-Z0-9]{1,31})$`)
-	itemNameMaxLength       = uint64(32)
-	itemManager             = "item"
-	counterPrefix           = "itemTypeCounter"
-	accountItemAmountPrefix = "accuntItemAmount"
-	itemTypePrefix          = "itemType"
-	itemInfoPrefix          = "itemInfo"
-	itemTypeNamePrefix      = "itemTyepName"
-	itemInfoNamePrefix      = "itemInfoName"
+	itemRegExp             = regexp.MustCompile(`^([a-z][a-z0-9]{1,31})$`)
+	worldNameRegExp        = regexp.MustCompile(`^([a-z][a-z0-9]{11})$`)
+	itemNameMaxLength      = uint64(32)
+	itemManager            = "item"
+	counterPrefix          = "worldCounter"
+	worldNamePrefix        = "worldName"
+	worldIDPrefix          = "worldID"
+	itemTypeNamePrefix     = "itemTypeName"
+	itemTypeIDPrefix       = "itemTypeID"
+	itemIDPrefix           = "itemID"
+	itemOwnerPrefix        = "itemOwner"
+	itemsPrefix            = "items"
+	itemTypeAttrIDPrefix   = "itemTypeAttrID"
+	itemTypeAttrNamePrefix = "itemTypeAttrName"
+	itemAttrIDPrefix       = "itemAttrID"
+	itemAttrNamePrefix     = "itemAttrName"
 )
 
 const UINT64_MAX uint64 = ^uint64(0)
@@ -31,25 +36,50 @@ type ItemManager struct {
 	sdb *state.StateDB
 }
 
-type ItemType struct {
-	ID      uint64 `json:"id"`
-	Name    string `json:"name"`
+// key = id
+type World struct {
+	ID      uint64 `json:"worldID"`
+	Name    string `json:"name"` // 全部小写
 	Owner   string `json:"owner"`
 	Creator string `json:"creator"`
 	// CreateTime  uint64 `json:"createTime"`
 	Description string `json:"description"`
-	Total       uint64 `json:"total"`
+	Total       uint64 `json:"total"` // world以发行的itemType数量
 }
 
-type ItemInfo struct {
-	TypeID uint64 `json:"typeID"`
-	ID     uint64 `json:"id"`
-	Name   string `json:"name"`
-	// CreateTime  uint64       `json:"createTime"`
-	Total       uint64       `json:"total"`
-	Description string       `json:"description"`
-	UpperLimit  uint64       `json:"upperLimit"`
-	Attributes  []*Attribute `json:"attributes"`
+// key = worldid + id
+type ItemType struct {
+	WorldID uint64 `json:"worldID"`
+	ID      uint64 `json:"itemTypeID"` // world内自增
+	Name    string `json:"name"`       // 全部小写
+	// CreateTime  uint64 `json:"createTime"`
+	Merge       bool   // 合并标识
+	UpperLimit  uint64 `json:"upperLimit"`
+	AddIssue    uint64 `json:"addIssue"`
+	Description string `json:"description"`
+	Total       uint64 `json:"total"` // itemType下已发行的item数量
+	// Attributes  []*Attribute `json:"attributes"` // 共同属性
+	AttrTotal uint64
+}
+
+// key = worldid + typeid + id
+type Item struct {
+	WorldID     uint64 `json:"worldID"`
+	TypeID      uint64 `json:"itemTypeID"`
+	ID          uint64 `json:"itemID"` // itemType内自增
+	Owner       string `json:"owner"`  // 道具所属账户
+	Description string `json:"description"`
+	Destroy     bool   `json:"destroy"` // 销毁标识
+	// Attributes  []*Attribute `json:"attributes"`
+	AttrTotal uint64
+}
+
+// key = world + typeid + account
+type Items struct {
+	WorldID uint64 `json:"worldID"`
+	TypeID  uint64 `json:"itemTypeID"`
+	Owner   string `json:"owner"` // 道具所属账户
+	Amount  uint64 `json:"total"` // 账户拥有的数量
 }
 
 // NewIM new a ItemManager
@@ -61,7 +91,7 @@ func NewItemManage(sdb *state.StateDB) (*ItemManager, error) {
 	itemManager := ItemManager{
 		sdb: sdb,
 	}
-	itemManager.initItemCounter()
+	itemManager.initWorldCounter()
 	return &itemManager, nil
 }
 
@@ -71,71 +101,123 @@ func (im *ItemManager) AccountName() string {
 
 func (im *ItemManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
+	case IssueWorld:
+		param := &IssueWorldAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.IssueWorld(tx.Sender(), param.Owner, param.Name, param.Description, pm)
+	case UpdateWorldOwner:
+		param := &UpdateWorldOwnerAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.UpdateWorldOwner(tx.Sender(), param.NewOwner, param.WorldID, pm)
 	case IssueItemType:
 		param := &IssueItemTypeAction{}
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IssueItemType(tx.Sender(), param.Owner, param.Name, param.Description, pm)
-	case UpdateItemTypeOwner:
-		param := &UpdateItemTypeOwnerAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.UpdateItemTypeOwner(tx.Sender(), param.NewOwner, param.ItemTypeID, pm)
+		return im.IssueItemType(tx.Sender(), param.WorldID, param.Name, param.Merge, param.UpperLimit, param.Description, param.Attributes, pm)
 	case IssueItem:
 		param := &IssueItemAction{}
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IssueItem(tx.Sender(), param.ItemTypeID, param.Name, param.Description, param.UpperLimit, param.Total, param.Attributes, pm)
-	case IncreaseItem:
-		param := &IncreaseItemAction{}
+		return im.IssueItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Description, param.Attributes, pm)
+	case DestroyItem:
+		param := &DestroyItemAction{}
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IncreaseItem(tx.Sender(), param.ItemTypeID, param.ItemInfoID, param.To, param.Amount, pm)
+		return im.DestroyItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, pm)
+	case IncreaseItems:
+		param := &IncreaseItemsAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.IncreaseItems(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Count, pm)
+	case DestroyItems:
+		param := &DestroyItemsAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.DestroyItems(tx.Sender(), param.WorldID, param.ItemTypeID, param.Count, pm)
 	case TransferItem:
 		param := &TransferItemAction{}
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		err := im.TransferItem(tx.Sender(), param.To, param.ItemTx)
+		err := im.TransferItem(tx.Sender(), param.To, param.ItemTx, pm)
 		return nil, err
+	case AddItemTypeAttributes:
+		param := &AddItemTypeAttributesAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.AddItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.Attributes)
+	case DelItemTypeAttributes:
+		param := &DelItemTypeAttributesAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.DelItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.AttrName)
+	case ModifyItemTypeAttributes:
+		param := &ModifyItemTypeAttributesAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.ModifyItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.Attributes)
+	case AddItemAttributes:
+		param := &AddItemAttributesAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.AddItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.Attributes)
+	case DelItemAttributes:
+		param := &DelItemAttributesAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.DelItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.AttrName)
+	case ModifyItemAttributes:
+		param := &ModifyItemAttributesAction{}
+		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+			return nil, err
+		}
+		return im.ModifyItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.Attributes)
 	}
+
 	return nil, ErrWrongTransaction
 }
 
 // IssueItemType issue itemType
-func (im *ItemManager) IssueItemType(creator, owner, name, description string, am IAccount) ([]byte, error) {
-	if err := im.checkItemNameFormat(name); err != nil {
+func (im *ItemManager) IssueWorld(creator, owner, name, description string, am IAccount) ([]byte, error) {
+	if err := im.checkWorldNameFormat(name); err != nil {
 		return nil, err
 	}
 	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrDescriptionTooLong
 	}
 
-	if _, err := am.getAccount(creator); err != nil {
-		return nil, err
-	}
 	if _, err := am.getAccount(owner); err != nil {
 		return nil, err
 	}
 
-	_, err := im.getItemTypeIDByName(creator, name)
+	_, err := im.getWorldIDByName(name)
 	if err == nil {
-		return nil, ErrItemTypeNameIsExist
-	} else if err != ErrItemTypeNameNotExist {
+		return nil, ErrWorldNameIsExist
+	} else if err != ErrWorldNameNotExist {
 		return nil, err
 	}
 
-	itemTypeID, err := im.getItemCounter()
+	worldID, err := im.getWorldCounter()
 	if err != nil {
 		return nil, err
 	}
 
-	itemobj := ItemType{
-		ID:      itemTypeID,
+	worldObj := World{
+		ID:      worldID,
 		Name:    name,
 		Owner:   owner,
 		Creator: creator,
@@ -143,117 +225,202 @@ func (im *ItemManager) IssueItemType(creator, owner, name, description string, a
 		Description: description,
 		Total:       0,
 	}
-	err = im.setNewItemType(&itemobj)
+	err = im.setNewWorld(&worldObj)
 	if err != nil {
 		return nil, err
 	}
 	return nil, nil
 }
 
-// UpdateItemTypeOwner update itemType owner
-func (im *ItemManager) UpdateItemTypeOwner(from, newOwner string, itemTypeID uint64, am IAccount) ([]byte, error) {
+func (im *ItemManager) UpdateWorldOwner(from, newOwner string, worldID uint64, am IAccount) ([]byte, error) {
 	if _, err := am.getAccount(newOwner); err != nil {
 		return nil, err
 	}
-	item, err := im.getItemTypeByID(itemTypeID)
+	world, err := im.getWorldByID(worldID)
 	if err != nil {
 		return nil, err
 	}
-	if from != item.Owner {
+	if from != world.Owner {
 		return nil, ErrItemOwnerMismatch
 	}
-	item.Owner = newOwner
+	world.Owner = newOwner
 
-	err = im.setItemType(item)
+	err = im.setWorld(world)
 	if err != nil {
 		return nil, err
 	}
 	return nil, nil
 }
 
-// IssueItem issue new item
-func (im *ItemManager) IssueItem(creator string, itemTypeID uint64, name string, description string, upperLimit uint64, total uint64, attributes []*Attribute, am IAccount) ([]byte, error) {
-	if err := im.checkItemNameFormat(name); err != nil {
+func (im *ItemManager) IssueItemType(creator string, worldID uint64, name string, merge bool, upperLimit uint64, description string, attributes []*Attribute, am IAccount) ([]byte, error) {
+	if err := im.checkNameFormat(name); err != nil {
 		return nil, err
 	}
 	if uint64(len(description)) > MaxDescriptionLength {
 		return nil, ErrDescriptionTooLong
 	}
-	if upperLimit > UINT64_MAX || total > UINT64_MAX {
+
+	if upperLimit > UINT64_MAX {
 		return nil, ErrAmountValueInvalid
-	}
-	if upperLimit != 0 {
-		if total > upperLimit {
-			return nil, ErrAmountValueInvalid
-		}
-	}
-	for _, att := range attributes {
-		if len(att.Name) == 0 {
-			return nil, ErrItemAttributeNameIsNull
-		}
-		if uint64(len(att.Name)) > MaxDescriptionLength || uint64(len(att.Description)) > MaxDescriptionLength {
-			return nil, ErrItemAttributeDesTooLong
-		}
 	}
 
 	if _, err := am.getAccount(creator); err != nil {
 		return nil, err
 	}
 
-	itemType, err := im.getItemTypeByID(itemTypeID)
+	for _, att := range attributes {
+		err := im.checkAttribute(att)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	worldobj, err := im.getWorldByID(worldID)
 	if err != nil {
 		return nil, err
 	}
 
-	if itemType.Owner != creator {
+	if creator != worldobj.Owner {
 		return nil, ErrItemOwnerMismatch
 	}
 
-	_, err = im.getItemInfoIDByName(itemTypeID, name)
+	_, err = im.getItemTypeIDByName(worldID, name)
 	if err == nil {
-		return nil, ErrItemInfoNameIsExist
-	} else if err != ErrItemInfoNameNotExist {
+		return nil, ErrItemTypeNameIsExist
+	} else if err != ErrItemTypeNameNotExist {
 		return nil, err
 	}
 
-	itemInfo := ItemInfo{
-		TypeID: itemTypeID,
-		ID:     itemType.Total + 1,
-		Name:   name,
+	itemTypeID := worldobj.Total + 1
+
+	itemTypeobj := ItemType{
+		WorldID:    worldID,
+		ID:         itemTypeID,
+		Name:       name,
+		Merge:      merge,
+		UpperLimit: upperLimit,
+		AddIssue:   0,
 		// CreateTime:  uint64(time.Now().Unix()),
-		Total:       total,
 		Description: description,
-		UpperLimit:  upperLimit,
-		Attributes:  attributes,
+		Total:       0,
+		AttrTotal:   uint64(len(attributes)),
 	}
-	itemType.Total += 1
-	err = im.setItemType(itemType)
+
+	worldobj.Total += 1
+	err = im.setWorld(worldobj)
 	if err != nil {
 		return nil, err
 	}
-	err = im.setNewItemInfo(&itemInfo)
+
+	err = im.setNewItemType(&itemTypeobj)
 	if err != nil {
 		return nil, err
 	}
-	err = im.setAccountItemAmount(creator, itemTypeID, itemInfo.ID, itemInfo.Total)
-	if err != nil {
-		return nil, err
+
+	for i := 0; i < len(attributes); i++ {
+		err = im.setNewItemTypeAttr(worldID, itemTypeID, uint64(i+1), attributes[i])
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return nil, nil
 }
 
-// IncreaseItem increase item
-func (im *ItemManager) IncreaseItem(from string, itemTypeID, itemInfoID uint64, to string, amount uint64, am IAccount) ([]byte, error) {
-	itemInfo, err := im.getItemInfoByID(itemTypeID, itemInfoID)
+func (im *ItemManager) IssueItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
 	if err != nil {
 		return nil, err
 	}
-	itemType, err := im.getItemTypeByID(itemTypeID)
+	if from != worldobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+
+	if _, err := am.getAccount(owner); err != nil {
+		return nil, err
+	}
+
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
+	if itemTypeobj.Merge != false {
+		return nil, ErrItemTypeMergeIsTrue
+	}
+
+	if itemTypeobj.UpperLimit > 0 {
+		if itemTypeobj.AddIssue+1 > itemTypeobj.UpperLimit {
+			return nil, ErrItemUpperLimit
+		}
+	}
+	itemTypeobj.Total += 1
+	if itemTypeobj.Total > UINT64_MAX {
+		return nil, ErrAmountValueInvalid
+	}
+
+	for _, att := range attributes {
+		err := im.checkAttribute(att)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	itemobj := Item{
+		WorldID:     worldID,
+		TypeID:      itemTypeID,
+		ID:          itemTypeobj.Total,
+		Owner:       owner,
+		Description: description,
+		Destroy:     false,
+		AttrTotal:   uint64(len(attributes)),
+	}
+
+	err = im.setItemType(itemTypeobj)
+	if err != nil {
+		return nil, err
+	}
+	err = im.setItem(&itemobj)
 	if err != nil {
 		return nil, err
 	}
 
-	if itemType.Creator != from {
+	for i := 0; i < len(attributes); i++ {
+		err = im.setNewItemAttr(worldID, itemTypeID, itemobj.ID, uint64(i+1), attributes[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}
+
+func (im *ItemManager) DestroyItem(from string, worldID uint64, itemTypeID uint64, itemID uint64, am IAccount) ([]byte, error) {
+	itemobj, err := im.getItemByID(worldID, itemTypeID, itemID)
+	if err != nil {
+		return nil, err
+	}
+	if from != itemobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+	if itemobj.Destroy == true {
+		return nil, ErrItemIsDestroyed
+	}
+
+	itemobj.Destroy = true
+	err = im.setItem(itemobj)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (im *ItemManager) IncreaseItems(from string, worldID uint64, itemTypeID uint64, to string, amount uint64, am IAccount) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+	if from != worldobj.Owner {
 		return nil, ErrItemOwnerMismatch
 	}
 
@@ -261,93 +428,318 @@ func (im *ItemManager) IncreaseItem(from string, itemTypeID, itemInfoID uint64, 
 		return nil, err
 	}
 
-	if itemInfo.UpperLimit > 0 {
-		if amount+itemInfo.Total > itemInfo.UpperLimit {
-			return nil, ErrItemUpperLimit
-		}
-	}
-
-	itemInfo.Total += amount
-	if itemInfo.Total > UINT64_MAX {
-		return nil, ErrAmountValueInvalid
-	}
-	err = im.setItemInfo(itemInfo)
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
 	if err != nil {
 		return nil, err
 	}
-	err = im.addAccountItemAmount(to, itemTypeID, itemInfoID, amount)
+	if itemTypeobj.Merge != true {
+		return nil, ErrItemTypeMergeIsFalse
+	}
+
+	if itemTypeobj.UpperLimit > 0 {
+		if itemTypeobj.AddIssue+amount > itemTypeobj.UpperLimit {
+			return nil, ErrItemUpperLimit
+		}
+	}
+	itemTypeobj.Total += amount
+	if itemTypeobj.Total > UINT64_MAX {
+		return nil, ErrAmountValueInvalid
+	}
+
+	itemsobj := Items{
+		WorldID: worldID,
+		TypeID:  itemTypeID,
+		Owner:   to,
+		Amount:  amount,
+	}
+
+	err = im.setItemType(itemTypeobj)
+	if err != nil {
+		return nil, err
+	}
+	err = im.setItems(&itemsobj)
 	if err != nil {
 		return nil, err
 	}
 	return nil, nil
 }
 
-func (im *ItemManager) transferItemSingle(from, to string, itemTypeID, itemInfoID, amount uint64) error {
-	n, err := im.getAccountItemAmount(from, itemTypeID, itemInfoID)
+func (im *ItemManager) DestroyItems(from string, worldID uint64, itemTypeID uint64, amount uint64, am IAccount) ([]byte, error) {
+	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, from)
+	if err != nil {
+		return nil, err
+	}
+	if from != itemsobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+
+	if itemsobj.Amount < amount {
+		return nil, ErrInsufficientItemAmount
+	}
+
+	itemsobj.Amount -= amount
+
+	if amount != uint64(0) {
+		err = im.setItems(itemsobj)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = im.delItemsByOwner(worldID, itemTypeID, from)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
+}
+
+func (im *ItemManager) transferItemSingle(from, to string, worldID, itemTypeID, itemID, amount uint64) error {
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
 	if err != nil {
 		return err
 	}
-
-	if n < amount {
-		return ErrInsufficientItemAmount
-	}
-
-	if err = im.subAccountItemAmount(from, itemTypeID, itemInfoID, amount); err != nil {
-		return err
-	}
-
-	if err = im.addAccountItemAmount(to, itemTypeID, itemInfoID, amount); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// TransferItem transfer item
-func (im *ItemManager) TransferItem(from, to string, ItemTx []*ItemTxParam) error {
-	for _, tx := range ItemTx {
-		if err := im.transferItemSingle(from, to, tx.ItemTypeID, tx.ItemInfoID, tx.Amount); err != nil {
+	if itemTypeobj.Merge == true {
+		if itemID != uint64(0) {
+			return ErrInvalidItemID
+		}
+		if err = im.subItemsAmount(from, worldID, itemTypeID, amount); err != nil {
+			return err
+		}
+		if err = im.addItemsAmount(from, worldID, itemTypeID, amount); err != nil {
+			return err
+		}
+	} else {
+		if amount != uint64(1) {
+			return ErrInvalidItemAmount
+		}
+		if err = im.txItem(from, to, worldID, itemTypeID, itemID); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// GetItemAmount get account item amount
-func (im *ItemManager) GetItemAmount(account string, itemTypeID, itemInfoID uint64) (uint64, error) {
-	return im.getAccountItemAmount(account, itemTypeID, itemInfoID)
-}
-
-// GetItemTypeOwner get itemType owner
-func (im *ItemManager) GetItemTypeOwner(itemTypeID uint64) (string, error) {
-	obj, err := im.getItemTypeByID(itemTypeID)
+func (im *ItemManager) txItem(from, to string, worldID, itemTypeID, itemID uint64) error {
+	itemobj, err := im.getItemByID(worldID, itemTypeID, itemID)
 	if err != nil {
-		return "", err
-	}
-	return obj.Owner, nil
-}
-
-// GetItemAttribute get item attribute
-func (im *ItemManager) GetItemAttribute(itemTypeID uint64, itemInfoID uint64, AttributeName string) (string, error) {
-	obj, err := im.getItemInfoByID(itemTypeID, itemInfoID)
-	if err != nil {
-		return "", err
+		return err
 	}
 
-	for _, att := range obj.Attributes {
-		if att.Name == AttributeName {
-			return att.Description, nil
+	if from != itemobj.Owner {
+		return ErrItemOwnerMismatch
+	}
+	if itemobj.Destroy == true {
+		return ErrItemIsDestroyed
+	}
+	err = im.delItem(itemobj)
+	if err != nil {
+		return err
+	}
+	itemobj.Owner = to
+	err = im.setItem(itemobj)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (im *ItemManager) TransferItem(from, to string, ItemTx []*ItemTxParam, am IAccount) error {
+	if _, err := am.getAccount(to); err != nil {
+		return err
+	}
+
+	for _, tx := range ItemTx {
+		if err := im.transferItemSingle(from, to, tx.WorldID, tx.ItemTypeID, tx.ItemID, tx.Amount); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (im *ItemManager) AddItemTypeAttributes(from string, worldID, itemTypeID uint64, attributes []*Attribute) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+	if from != worldobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, att := range attributes {
+		err := im.checkAttribute(att)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	return "", fmt.Errorf("%s attribute not found", AttributeName)
+	for i := 0; i < len(attributes); i++ {
+		_, err = im.getItemTypeAttrByName(worldID, itemTypeID, attributes[i].Name)
+		if err == nil {
+			return nil, ErrItemTypeAttrIsExist
+		} else if err != ErrItemTypeAttrNotExist {
+			return nil, err
+		}
+
+		err = im.setNewItemTypeAttr(worldID, itemTypeID, uint64(i+1)+itemTypeobj.AttrTotal, attributes[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	itemTypeobj.AttrTotal += uint64(len(attributes))
+	err = im.setItemType(itemTypeobj)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
-func (im *ItemManager) initItemCounter() {
-	_, err := im.getItemCounter()
-	if err == ErrItemCounterNotExist {
-		var itemTypeID uint64 = 1
-		b, err := rlp.EncodeToBytes(&itemTypeID)
+func (im *ItemManager) DelItemTypeAttributes(from string, worldID, itemTypeID uint64, attrName []string) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+	if from != worldobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+
+	_, err = im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(attrName); i++ {
+		err = im.delItemTypeAttrByName(worldID, itemTypeID, attrName[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
+func (im *ItemManager) ModifyItemTypeAttributes(from string, worldID, itemTypeID uint64, attributes []*Attribute) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, att := range attributes {
+		err := im.checkAttribute(att)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for i := 0; i < len(attributes); i++ {
+		err = im.modifyitemTypeAttr(worldobj.Owner, from, worldID, itemTypeID, attributes[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
+func (im *ItemManager) AddItemAttributes(from string, worldID, itemTypeID, itemID uint64, attributes []*Attribute) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+	if from != worldobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+
+	itemobj, err := im.getItemByID(worldID, itemTypeID, itemID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, att := range attributes {
+		err := im.checkAttribute(att)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for i := 0; i < len(attributes); i++ {
+		_, err = im.getItemAttrByName(worldID, itemTypeID, itemID, attributes[i].Name)
+		if err == nil {
+			return nil, ErrItemAttrIsExist
+		} else if err != ErrItemAttrNotExist {
+			return nil, err
+		}
+
+		err = im.setNewItemAttr(worldID, itemTypeID, itemID, uint64(i+1)+itemobj.AttrTotal, attributes[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	itemobj.AttrTotal += uint64(len(attributes))
+	err = im.setItem(itemobj)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
+func (im *ItemManager) DelItemAttributes(from string, worldID, itemTypeID, itemID uint64, attrName []string) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+	if from != worldobj.Owner {
+		return nil, ErrItemOwnerMismatch
+	}
+
+	_, err = im.getItemByID(worldID, itemTypeID, itemID)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(attrName); i++ {
+		err = im.delItemAttrByName(worldID, itemTypeID, itemID, attrName[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
+func (im *ItemManager) ModifyItemAttributes(from string, worldID, itemTypeID, itemID uint64, attributes []*Attribute) ([]byte, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, att := range attributes {
+		err := im.checkAttribute(att)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for i := 0; i < len(attributes); i++ {
+		err = im.modifyitemAttr(worldobj.Owner, from, worldID, itemID, itemTypeID, attributes[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
+func (im *ItemManager) initWorldCounter() {
+	_, err := im.getWorldCounter()
+	if err == ErrWorldCounterNotExist {
+		var worldID uint64 = 1
+		b, err := rlp.EncodeToBytes(&worldID)
 		if err != nil {
 			panic(err)
 		}
@@ -355,23 +747,104 @@ func (im *ItemManager) initItemCounter() {
 	}
 }
 
-func (im *ItemManager) getItemCounter() (uint64, error) {
+func (im *ItemManager) getWorldCounter() (uint64, error) {
 	b, err := im.sdb.Get(itemManager, counterPrefix)
 	if err != nil {
 		return 0, err
 	}
 	if len(b) == 0 {
-		return 0, ErrItemCounterNotExist
+		return 0, ErrWorldCounterNotExist
 	}
-	var itemCounter uint64
-	err = rlp.DecodeBytes(b, &itemCounter)
+	var worldCounter uint64
+	err = rlp.DecodeBytes(b, &worldCounter)
 	if err != nil {
 		return 0, err
 	}
-	return itemCounter, nil
+	return worldCounter, nil
 }
 
-func (im *ItemManager) checkItemNameFormat(name string) error {
+func (im *ItemManager) setNewWorld(worldobj *World) error {
+	if worldobj == nil {
+		return ErrWorldObjectEmpty
+	}
+	worldID := worldobj.ID
+
+	b, err := rlp.EncodeToBytes(worldobj)
+	if err != nil {
+		return err
+	}
+	id, err := rlp.EncodeToBytes(&worldID)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(worldIDPrefix, strconv.FormatUint(worldID, 10)), b)
+	im.sdb.Put(itemManager, dbKey(worldNamePrefix, worldobj.Name), id)
+
+	worldID += 1
+	nid, err := rlp.EncodeToBytes(&worldID)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, counterPrefix, nid)
+	return nil
+}
+
+func (im *ItemManager) setWorld(worldobj *World) error {
+	if worldobj == nil {
+		return ErrWorldObjectEmpty
+	}
+	b, err := rlp.EncodeToBytes(worldobj)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(worldIDPrefix, strconv.FormatUint(worldobj.ID, 10)), b)
+	return nil
+}
+
+func (im *ItemManager) getWorldByName(worldName string) (*World, error) {
+	worldID, err := im.getWorldIDByName(worldName)
+	if err != nil {
+		return nil, err
+	}
+	return im.getWorldByID(worldID)
+}
+
+func (im *ItemManager) getWorldByID(worldID uint64) (*World, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(worldIDPrefix, strconv.FormatUint(worldID, 10)))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, ErrWorldNotExist
+	}
+
+	var worldobj World
+	if err = rlp.DecodeBytes(b, &worldobj); err != nil {
+		return nil, err
+	}
+	return &worldobj, nil
+}
+
+func (im *ItemManager) getWorldIDByName(name string) (uint64, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(worldNamePrefix, name))
+	if len(b) == 0 {
+		return 0, ErrWorldNameNotExist
+	}
+	var WorldID uint64
+	if err = rlp.DecodeBytes(b, &WorldID); err != nil {
+		return 0, err
+	}
+	return WorldID, nil
+}
+
+func (im *ItemManager) checkWorldNameFormat(name string) error {
+	if worldNameRegExp.MatchString(name) != true {
+		return ErrItemNameinvalid
+	}
+	return nil
+}
+
+func (im *ItemManager) checkNameFormat(name string) error {
 	if uint64(len(name)) > itemNameMaxLength {
 		return ErrItemNameLengthErr
 	}
@@ -382,53 +855,35 @@ func (im *ItemManager) checkItemNameFormat(name string) error {
 	return nil
 }
 
-func (im *ItemManager) getItemTypeIDByName(creator, name string) (uint64, error) {
-	b, err := im.sdb.Get(itemManager, dbKey(itemTypeNamePrefix, creator, name))
-	if len(b) == 0 {
-		return 0, ErrItemTypeNameNotExist
+func (im *ItemManager) checkAttribute(attr *Attribute) error {
+	if err := im.checkNameFormat(attr.Name); err != nil {
+		return err
 	}
-	var itemTypeID uint64
-	if err = rlp.DecodeBytes(b, &itemTypeID); err != nil {
-		return 0, err
+	if uint64(len(attr.Description)) > MaxDescriptionLength {
+		return ErrItemAttributeDesTooLong
 	}
-	return itemTypeID, nil
+	if attr.Permission > ItemOwner {
+		return ErrInvalidPermission
+	}
+	return nil
 }
 
-func (im *ItemManager) getItemInfoIDByName(itemTypeID uint64, name string) (uint64, error) {
-	b, err := im.sdb.Get(itemManager, dbKey(itemInfoNamePrefix, strconv.FormatUint(itemTypeID, 10), name))
-	if len(b) == 0 {
-		return 0, ErrItemInfoNameNotExist
+func (im *ItemManager) setNewItemType(itemTypeobj *ItemType) error {
+	if itemTypeobj == nil {
+		return ErrItemTypeObjectEmpty
 	}
-	var itemInfoID uint64
-	if err = rlp.DecodeBytes(b, &itemInfoID); err != nil {
-		return 0, err
-	}
-	return itemInfoID, nil
-}
-
-func (im *ItemManager) setNewItemType(itemobj *ItemType) error {
-	if itemobj == nil {
-		return ErrItemObjectEmpty
-	}
-	itemTypeID := itemobj.ID
-
-	b, err := rlp.EncodeToBytes(itemobj)
+	id := itemTypeobj.ID
+	b, err := rlp.EncodeToBytes(itemTypeobj)
 	if err != nil {
 		return err
 	}
-	id, err := rlp.EncodeToBytes(&itemTypeID)
+	nid, err := rlp.EncodeToBytes(&id)
 	if err != nil {
 		return err
 	}
-	im.sdb.Put(itemManager, dbKey(itemTypePrefix, strconv.FormatUint(itemTypeID, 10)), b)
-	im.sdb.Put(itemManager, dbKey(itemTypeNamePrefix, itemobj.Creator, itemobj.Name), id)
 
-	itemTypeID += 1
-	nid, err := rlp.EncodeToBytes(&itemTypeID)
-	if err != nil {
-		return err
-	}
-	im.sdb.Put(itemManager, counterPrefix, nid)
+	im.sdb.Put(itemManager, dbKey(itemTypeIDPrefix, strconv.FormatUint(itemTypeobj.WorldID, 10), strconv.FormatUint(itemTypeobj.ID, 10)), b)
+	im.sdb.Put(itemManager, dbKey(itemTypeNamePrefix, strconv.FormatUint(itemTypeobj.WorldID, 10), itemTypeobj.Name), nid)
 	return nil
 }
 
@@ -440,43 +895,36 @@ func (im *ItemManager) setItemType(itemobj *ItemType) error {
 	if err != nil {
 		return err
 	}
-	im.sdb.Put(itemManager, dbKey(itemTypePrefix, strconv.FormatUint(itemobj.ID, 10)), b)
+	im.sdb.Put(itemManager, dbKey(itemTypeIDPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.ID, 10)), b)
 	return nil
 }
 
-func (im *ItemManager) setNewItemInfo(itemobj *ItemInfo) error {
-	if itemobj == nil {
-		return ErrItemObjectEmpty
-	}
-	id := itemobj.ID
-	b, err := rlp.EncodeToBytes(itemobj)
+func (im *ItemManager) getItemTypeByName(worldID uint64, name string) (*ItemType, error) {
+	itemTypeID, err := im.getItemTypeIDByName(worldID, name)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	nid, err := rlp.EncodeToBytes(&id)
-	if err != nil {
-		return err
-	}
-
-	im.sdb.Put(itemManager, dbKey(itemInfoPrefix, strconv.FormatUint(itemobj.TypeID, 10), strconv.FormatUint(id, 10)), b)
-	im.sdb.Put(itemManager, dbKey(itemInfoNamePrefix, strconv.FormatUint(itemobj.TypeID, 10), itemobj.Name), nid)
-	return nil
+	return im.getItemTypeByID(worldID, itemTypeID)
 }
 
-func (im *ItemManager) setItemInfo(itemobj *ItemInfo) error {
-	if itemobj == nil {
-		return ErrItemObjectEmpty
+func (im *ItemManager) getItemTypeIDByName(worldID uint64, name string) (uint64, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemTypeNamePrefix, strconv.FormatUint(worldID, 10), name))
+	if len(b) == 0 {
+		return 0, ErrItemTypeNameNotExist
 	}
-	b, err := rlp.EncodeToBytes(itemobj)
-	if err != nil {
-		return err
+	var itemTypeID uint64
+	if err = rlp.DecodeBytes(b, &itemTypeID); err != nil {
+		return 0, err
 	}
-	im.sdb.Put(itemManager, dbKey(itemInfoPrefix, strconv.FormatUint(itemobj.TypeID, 10), strconv.FormatUint(itemobj.ID, 10)), b)
-	return nil
+	return itemTypeID, nil
 }
 
-func (im *ItemManager) getItemTypeByID(itemTypeID uint64) (*ItemType, error) {
-	b, err := im.sdb.Get(itemManager, dbKey(itemTypePrefix, strconv.FormatUint(itemTypeID, 10)))
+func dbKey(s ...string) string {
+	return strings.Join(s, "_")
+}
+
+func (im *ItemManager) getItemTypeByID(worldID, itemTypeID uint64) (*ItemType, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemTypeIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10)))
 	if err != nil {
 		return nil, err
 	}
@@ -491,153 +939,406 @@ func (im *ItemManager) getItemTypeByID(itemTypeID uint64) (*ItemType, error) {
 	return &itemType, nil
 }
 
-func (im *ItemManager) getItemInfoByID(itemTypeID, itemInfoID uint64) (*ItemInfo, error) {
-	b, err := im.sdb.Get(itemManager, dbKey(itemInfoPrefix, strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemInfoID, 10)))
-	if err != nil {
-		return nil, err
-	}
-	if len(b) == 0 {
-		return nil, ErrItemInfoNotExist
-	}
-
-	var itemInfo ItemInfo
-	if err = rlp.DecodeBytes(b, &itemInfo); err != nil {
-		return nil, err
-	}
-	return &itemInfo, nil
-}
-
-func (im *ItemManager) setAccountItemAmount(account string, itemTypeID, itemInfoID, amount uint64) error {
-	b, err := rlp.EncodeToBytes(&amount)
+func (im *ItemManager) setNewItemTypeAttr(worldID, itemTypeID, attrID uint64, attrobj *Attribute) error {
+	b, err := rlp.EncodeToBytes(attrobj)
 	if err != nil {
 		return err
 	}
-	im.sdb.Put(itemManager, dbKey(accountItemAmountPrefix, strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemInfoID, 10), account), b)
+	id, err := rlp.EncodeToBytes(&attrID)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemTypeAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(attrID, 10)), b)
+	im.sdb.Put(itemManager, dbKey(itemTypeAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrobj.Name), id)
 	return nil
 }
 
-func (im *ItemManager) getAccountItemAmount(account string, itemTypeID, itemInfoID uint64) (uint64, error) {
-	b, err := im.sdb.Get(itemManager, dbKey(accountItemAmountPrefix, strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemInfoID, 10), account))
-	if len(b) == 0 {
-		return 0, ErrAccountNoItem
+func (im *ItemManager) setItemTypeAttr(worldID, itemTypeID, attrID uint64, attrobj *Attribute) error {
+	b, err := rlp.EncodeToBytes(attrobj)
+	if err != nil {
+		return err
 	}
-	var amount uint64
-	if err = rlp.DecodeBytes(b, &amount); err != nil {
+	im.sdb.Put(itemManager, dbKey(itemTypeAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(attrID, 10)), b)
+	return nil
+}
+
+func (im *ItemManager) getItemTypeAttrByName(worldID, itemTypeID uint64, attrName string) (*Attribute, error) {
+	attrID, err := im.getItemTypeAttrIDByName(worldID, itemTypeID, attrName)
+	if err != nil {
+		return nil, err
+	}
+	return im.getItemTypeAttrByID(worldID, itemTypeID, attrID)
+}
+
+func (im *ItemManager) getItemTypeAttrIDByName(worldID, itemTypeID uint64, attrName string) (uint64, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemTypeAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
+	if len(b) == 0 {
+		return 0, ErrItemTypeAttrNotExist
+	}
+	var attrID uint64
+	err = rlp.DecodeBytes(b, &attrID)
+	if err != nil {
 		return 0, err
 	}
-	return amount, nil
+	return attrID, nil
 }
 
-func (im *ItemManager) addAccountItemAmount(account string, itemTypeID, itemInfoID, amount uint64) error {
-	oldAmount, err := im.getAccountItemAmount(account, itemTypeID, itemInfoID)
-	if err != nil && err != ErrAccountNoItem {
+func (im *ItemManager) getItemTypeAttrByID(worldID, itemTypeID, attrID uint64) (*Attribute, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemTypeAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(attrID, 10)))
+	if len(b) == 0 {
+		return nil, ErrItemTypeAttrNotExist
+	}
+	var attrobj Attribute
+	if err = rlp.DecodeBytes(b, &attrobj); err != nil {
+		return nil, err
+	}
+	return &attrobj, nil
+}
+
+func (im *ItemManager) delItemTypeAttrByName(worldID, itemTypeID uint64, attrName string) error {
+	b, err := im.sdb.Get(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
+	if len(b) == 0 {
+		return ErrItemTypeAttrNotExist
+	}
+	var attrID uint64
+	err = rlp.DecodeBytes(b, &attrID)
+	if err != nil {
+		return err
+	}
+	im.sdb.Delete(itemManager, dbKey(itemTypeAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
+	im.sdb.Delete(itemManager, dbKey(itemTypeAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(attrID, 10)))
+	return nil
+}
+
+func (im *ItemManager) modifyitemTypeAttr(worldOwner, from string, worldID, itemTypeID uint64, attr *Attribute) error {
+	attrID, err := im.getItemTypeAttrIDByName(worldID, itemTypeID, attr.Name)
+	if err != nil {
 		return err
 	}
 
-	if err = im.setAccountItemAmount(account, itemTypeID, itemInfoID, amount+oldAmount); err != nil {
+	attrobj, err := im.getItemTypeAttrByID(worldID, itemTypeID, attrID)
+	if err != nil {
+		return err
+	}
+
+	if attrobj.Permission != WorldOwner {
+		return ErrNoPermission
+	}
+	if worldOwner != from {
+		return ErrNoPermission
+	}
+	attrobj.Permission = attr.Permission
+	attrobj.Description = attr.Description
+	im.setItemTypeAttr(worldID, itemTypeID, attrID, attrobj)
+
+	return nil
+}
+
+func (im *ItemManager) setItem(itemobj *Item) error {
+	if itemobj == nil {
+		return ErrItemObjectEmpty
+	}
+	b, err := rlp.EncodeToBytes(itemobj)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemIDPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), strconv.FormatUint(itemobj.ID, 10)), b)
+	im.sdb.Put(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner), b)
+	return nil
+}
+
+func (im *ItemManager) delItem(itemobj *Item) error {
+	if itemobj == nil {
+		return ErrItemObjectEmpty
+	}
+	im.sdb.Delete(itemManager, dbKey(itemIDPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), strconv.FormatUint(itemobj.ID, 10)))
+	im.sdb.Delete(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner))
+	return nil
+}
+
+func (im *ItemManager) getItemByID(worldID, itemTypeID, itemID uint64) (*Item, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10)))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, ErrItemNotExist
+	}
+
+	var item Item
+	if err = rlp.DecodeBytes(b, &item); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (im *ItemManager) getItemByOwner(worldID, itemTypeID uint64, owner string) (*Item, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), owner))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, ErrItemNotExist
+	}
+
+	var item Item
+	if err = rlp.DecodeBytes(b, &item); err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (im *ItemManager) setNewItemAttr(worldID, itemTypeID, itemID, attrID uint64, attrobj *Attribute) error {
+	b, err := rlp.EncodeToBytes(attrobj)
+	if err != nil {
+		return err
+	}
+	id, err := rlp.EncodeToBytes(&attrID)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), strconv.FormatUint(attrID, 10)), b)
+	im.sdb.Put(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), attrobj.Name), id)
+	return nil
+}
+
+func (im *ItemManager) setItemAttr(worldID, itemTypeID, itemID, attrID uint64, attrobj *Attribute) error {
+	b, err := rlp.EncodeToBytes(attrobj)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), strconv.FormatUint(attrID, 10)), b)
+	return nil
+}
+
+func (im *ItemManager) getItemAttrByName(worldID, itemTypeID, itemID uint64, attrName string) (*Attribute, error) {
+	attrID, err := im.getItemAttrIDByName(worldID, itemTypeID, itemID, attrName)
+	if err != nil {
+		return nil, err
+	}
+	return im.getItemAttrByID(worldID, itemTypeID, itemID, attrID)
+}
+
+func (im *ItemManager) getItemAttrIDByName(worldID, itemTypeID, itemID uint64, attrName string) (uint64, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), attrName))
+	if len(b) == 0 {
+		return 0, ErrItemAttrNotExist
+	}
+	var attrID uint64
+	err = rlp.DecodeBytes(b, &attrID)
+	if err != nil {
+		return 0, err
+	}
+	return attrID, nil
+}
+
+func (im *ItemManager) getItemAttrByID(worldID, itemTypeID, itemID, attrID uint64) (*Attribute, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), strconv.FormatUint(attrID, 10)))
+	if len(b) == 0 {
+		return nil, ErrItemAttrNotExist
+	}
+	var attrobj Attribute
+	if err = rlp.DecodeBytes(b, &attrobj); err != nil {
+		return nil, err
+	}
+	return &attrobj, nil
+}
+
+func (im *ItemManager) delItemAttrByName(worldID, itemTypeID, itemID uint64, attrName string) error {
+	b, err := im.sdb.Get(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
+	if len(b) == 0 {
+		return ErrItemTypeAttrNotExist
+	}
+	var attrID uint64
+	err = rlp.DecodeBytes(b, &attrID)
+	if err != nil {
+		return err
+	}
+	im.sdb.Delete(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(attrID, 10), attrName))
+	im.sdb.Delete(itemManager, dbKey(itemAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), strconv.FormatUint(attrID, 10)))
+	return nil
+}
+
+func (im *ItemManager) modifyitemAttr(worldOwner, from string, worldID, itemTypeID, itemID uint64, attr *Attribute) error {
+	attrID, err := im.getItemAttrIDByName(worldID, itemTypeID, itemID, attr.Name)
+	if err != nil {
+		return err
+	}
+
+	attrobj, err := im.getItemAttrByID(worldID, itemTypeID, attrID, itemID)
+	if err != nil {
+		return err
+	}
+	itemobj, err := im.getItemByID(worldID, itemTypeID, itemID)
+	if err != nil {
+		return err
+	}
+
+	switch attrobj.Permission {
+	case WorldOwner:
+		if worldOwner != from {
+			return ErrNoPermission
+		}
+	case ItemOwner:
+		if itemobj.Owner != from {
+			return ErrNoPermission
+		}
+	}
+
+	if attrobj.Permission != WorldOwner {
+		return ErrNoPermission
+	}
+	if worldOwner != from {
+		return ErrNoPermission
+	}
+	attrobj.Permission = attr.Permission
+	attrobj.Description = attr.Description
+	im.setItemAttr(worldID, itemTypeID, itemID, attrID, attrobj)
+
+	return nil
+}
+
+func (im *ItemManager) setItems(itemsobj *Items) error {
+	if itemsobj == nil {
+		return ErrItemsObjectEmpty
+	}
+	b, err := rlp.EncodeToBytes(itemsobj)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemsPrefix, strconv.FormatUint(itemsobj.WorldID, 10), strconv.FormatUint(itemsobj.TypeID, 10), itemsobj.Owner), b)
+	return nil
+}
+
+func (im *ItemManager) getItemsByOwner(worldID, itemTypeID uint64, owner string) (*Items, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemsPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), owner))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, ErrItemsNotExist
+	}
+
+	var items Items
+	if err = rlp.DecodeBytes(b, &items); err != nil {
+		return nil, err
+	}
+	return &items, nil
+}
+
+func (im *ItemManager) delItemsByOwner(worldID, itemTypeID uint64, owner string) error {
+	im.sdb.Delete(itemManager, dbKey(itemsPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), owner))
+	return nil
+}
+
+func (im *ItemManager) addItemsAmount(account string, worldID, itemTypeID, amount uint64) error {
+	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, account)
+	if err != nil && err != ErrItemsNotExist {
+		return err
+	}
+
+	if err == ErrItemsNotExist {
+		itemsobj = &Items{
+			WorldID: worldID,
+			TypeID:  itemTypeID,
+			Owner:   account,
+			Amount:  amount,
+		}
+	} else {
+		itemsobj.Amount += amount
+	}
+	err = im.setItems(itemsobj)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (im *ItemManager) subAccountItemAmount(account string, itemTypeID, itemInfoID, amount uint64) error {
-	oldAmount, err := im.getAccountItemAmount(account, itemTypeID, itemInfoID)
-	if err != nil && err != ErrAccountNoItem {
+func (im *ItemManager) subItemsAmount(account string, worldID, itemTypeID, amount uint64) error {
+	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, account)
+	if err != nil {
 		return err
 	}
-	if oldAmount < amount {
+	if itemsobj.Amount < amount {
 		return ErrInsufficientItemAmount
 	}
-
-	if err = im.setAccountItemAmount(account, itemTypeID, itemInfoID, oldAmount-amount); err != nil {
+	itemsobj.Amount -= amount
+	if itemsobj.Amount == 0 {
+		im.delItemsByOwner(worldID, itemTypeID, account)
+		return nil
+	}
+	err = im.setItems(itemsobj)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func dbKey(s ...string) string {
-	return strings.Join(s, "_")
+// for RPC
+func (im *ItemManager) GetWorldByID(worldID uint64) (*World, error) {
+	return im.getWorldByID(worldID)
 }
 
-func (im *ItemManager) GetItemTypeByID(itemTypeID uint64) (*ItemType, error) {
-	return im.getItemTypeByID(itemTypeID)
+func (im *ItemManager) GetWorldByName(worldName string) (*World, error) {
+	return im.getWorldByName(worldName)
 }
 
-func (im *ItemManager) GetItemTypeByName(creator string, itemTypeName string) (*ItemType, error) {
-	id, err := im.getItemTypeIDByName(creator, itemTypeName)
-	if err != nil {
-		return nil, err
-	}
-	return im.getItemTypeByID(id)
+func (im *ItemManager) GetItemTypeByID(worldID, itemTypeID uint64) (*ItemType, error) {
+	return im.getItemTypeByID(worldID, itemTypeID)
+}
+func (im *ItemManager) GetItemTypeByName(worldID uint64, itemTypeName string) (*ItemType, error) {
+	return im.getItemTypeByName(worldID, itemTypeName)
 }
 
-func (im *ItemManager) GetItemInfoByID(itemTypeID, itemInfoID uint64) (*ItemInfo, error) {
-	return im.getItemInfoByID(itemTypeID, itemInfoID)
+func (im *ItemManager) GetItemByID(worldID, itemTypeID, itemID uint64) (*Item, error) {
+	return im.getItemByID(worldID, itemTypeID, itemID)
 }
 
-func (im *ItemManager) GetItemInfoByName(itemTypeID uint64, itemInfoName string) (*ItemInfo, error) {
-	id, err := im.getItemInfoIDByName(itemTypeID, itemInfoName)
-	if err != nil {
-		return nil, err
-	}
-	return im.getItemInfoByID(itemTypeID, id)
+func (im *ItemManager) GetItemByOwner(worldID, itemTypeID uint64, owner string) (*Item, error) {
+	return im.getItemByOwner(worldID, itemTypeID, owner)
 }
 
-func (im *ItemManager) Sol_IssueItemType(context *ContextSol, owner common.Address, name, description string) error {
-	_, err := im.IssueItemType(context.tx.Sender(), owner.AccountName(), name, description, context.pm)
-	return err
+func (im *ItemManager) GetItemsByOwner(worldID, itemTypeID uint64, account string) (*Items, error) {
+	return im.getItemsByOwner(worldID, itemTypeID, account)
 }
 
-func (im *ItemManager) Sol_IssueItem(context *ContextSol, itemTypeID uint64, name string, description string, upperLimit uint64, total uint64, attName []string, attDes []string) error {
-	if len(attName) != len(attDes) {
-		return ErrParamErr
-	}
-	attributes := make([]*Attribute, len(attName))
-	for i := 0; i < len(attName); i++ {
-		temp := &Attribute{attName[i], attDes[i]}
-		attributes[i] = temp
-	}
-	_, err := im.IssueItem(context.tx.Sender(), itemTypeID, name, description, upperLimit, total, attributes, context.pm)
-	return err
+func (im *ItemManager) GetItemTypeAttributeByID(worldID, itemTypeID, attrID uint64) (*Attribute, error) {
+	return im.getItemTypeAttrByID(worldID, itemTypeID, attrID)
 }
 
-func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, itemTypeID uint64, itemInfoID uint64, to common.Address, amount uint64) error {
-	_, err := im.IncreaseItem(context.tx.Sender(), itemTypeID, itemInfoID, to.AccountName(), amount, context.pm)
-	return err
+func (im *ItemManager) GetItemTypeAttributeByName(worldID, itemTypeID uint64, attrName string) (*Attribute, error) {
+	return im.getItemTypeAttrByName(worldID, itemTypeID, attrName)
 }
 
-func (im *ItemManager) Sol_TransferItem(context *ContextSol, to common.Address, itemTypeID []uint64, itemInfoID []uint64, amount []uint64) error {
-	if len(itemTypeID) != len(itemInfoID) {
-		return ErrParamErr
-	}
-	if len(itemTypeID) != len(amount) {
-		return ErrParamErr
-	}
-	ItemTx := make([]*ItemTxParam, len(itemTypeID))
-	for i := 0; i < len(itemTypeID); i++ {
-		temp := &ItemTxParam{itemTypeID[i], itemInfoID[i], amount[i]}
-		ItemTx[i] = temp
-	}
-	return im.TransferItem(context.tx.Sender(), to.AccountName(), ItemTx)
+func (im *ItemManager) GetItemAttributeByID(worldID, itemTypeID, itemID, attrID uint64) (*Attribute, error) {
+	return im.getItemAttrByID(worldID, itemTypeID, itemID, attrID)
 }
-
-func (im *ItemManager) Sol_GetItemAmount(context *ContextSol, account common.Address, itemTypeID, itemInfoID uint64) (uint64, error) {
-	return im.GetItemAmount(account.AccountName(), itemTypeID, itemInfoID)
+func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64, attrName string) (*Attribute, error) {
+	return im.getItemAttrByName(worldID, itemTypeID, itemID, attrName)
 }
 
 var (
-	ErrItemCounterNotExist     = errors.New("item global counter not exist")
+	ErrWorldCounterNotExist    = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
 	ErrItemNameLengthErr       = errors.New("item name length err")
+	ErrWorldNameNotExist       = errors.New("WorldName not exist")
+	ErrWorldNameIsExist        = errors.New("WorldName is exist")
 	ErrItemTypeNameNotExist    = errors.New("itemTypeName not exist")
 	ErrItemTypeNameIsExist     = errors.New("itemTypeName is exist")
 	ErrItemInfoNameNotExist    = errors.New("itemInfoName not exist")
 	ErrItemInfoNameIsExist     = errors.New("itemInfoName is exist")
+	ErrWorldNotExist           = errors.New("world not exist")
+	ErrWorldIsExist            = errors.New("world is exist")
 	ErrItemTypeNotExist        = errors.New("itemType not exist")
 	ErrItemTypeIsExist         = errors.New("itemType is exist")
-	ErrItemInfoNotExist        = errors.New("itemInfo not exist")
-	ErrItemInfoIsExist         = errors.New("itemInfo is exist")
+	ErrItemNotExist            = errors.New("item not exist")
+	ErrItemIsExist             = errors.New("item is exist")
+	ErrItemsNotExist           = errors.New("items not exist")
+	ErrItemsIsExist            = errors.New("items is exist")
+	ErrWorldObjectEmpty        = errors.New("world object is empty")
+	ErrItemTypeObjectEmpty     = errors.New("itemType object is empty")
 	ErrItemObjectEmpty         = errors.New("item object is empty")
+	ErrItemsObjectEmpty        = errors.New("items object is empty")
 	ErrItemOwnerMismatch       = errors.New("itemType owner mismatch")
 	ErrItemAttributeNameIsNull = errors.New("item attribute name is null")
 	ErrItemAttributeDesTooLong = errors.New("item attribute description exceed max length")
@@ -645,4 +1346,15 @@ var (
 	ErrAccountNoItem           = errors.New("account not have item")
 	ErrParamErr                = errors.New("param invalid")
 	ErrInsufficientItemAmount  = errors.New("insufficient item amount")
+	ErrInvalidItemAmount       = errors.New("invalid item amount")
+	ErrInvalidItemID           = errors.New("invalid item id")
+	ErrItemTypeMergeIsFalse    = errors.New("itemType merge is false")
+	ErrItemTypeMergeIsTrue     = errors.New("itemType merge is true")
+	ErrItemIsDestroyed         = errors.New("item is destroyed")
+	ErrItemTypeAttrNotExist    = errors.New("itemType attribute not exist")
+	ErrItemTypeAttrIsExist     = errors.New("itemType attribute is exist")
+	ErrItemAttrNotExist        = errors.New("item attribute not exist")
+	ErrItemAttrIsExist         = errors.New("item attribute is exist")
+	ErrNoPermission            = errors.New("no permission to modify")
+	ErrInvalidPermission       = errors.New("invalid permission")
 )
