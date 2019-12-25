@@ -268,11 +268,9 @@ func (im *ItemManager) IssueItemType(creator string, worldID uint64, name string
 		return nil, err
 	}
 
-	for _, att := range attributes {
-		err := im.checkAttribute(att)
-		if err != nil {
-			return nil, err
-		}
+	err := im.checkAttribute(attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	worldobj, err := im.getWorldByID(worldID)
@@ -359,11 +357,9 @@ func (im *ItemManager) IssueItem(from string, worldID uint64, itemTypeID uint64,
 		return nil, ErrAmountValueInvalid
 	}
 
-	for _, att := range attributes {
-		err := im.checkAttribute(att)
-		if err != nil {
-			return nil, err
-		}
+	err = im.checkAttribute(attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	itemobj := Item{
@@ -591,11 +587,9 @@ func (im *ItemManager) AddItemTypeAttributes(from string, worldID, itemTypeID ui
 		return nil, err
 	}
 
-	for _, att := range attributes {
-		err := im.checkAttribute(att)
-		if err != nil {
-			return nil, err
-		}
+	err = im.checkAttribute(attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	for i := 0; i < len(attributes); i++ {
@@ -650,11 +644,9 @@ func (im *ItemManager) ModifyItemTypeAttributes(from string, worldID, itemTypeID
 		return nil, err
 	}
 
-	for _, att := range attributes {
-		err := im.checkAttribute(att)
-		if err != nil {
-			return nil, err
-		}
+	err = im.checkAttribute(attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	for i := 0; i < len(attributes); i++ {
@@ -680,11 +672,9 @@ func (im *ItemManager) AddItemAttributes(from string, worldID, itemTypeID, itemI
 		return nil, err
 	}
 
-	for _, att := range attributes {
-		err := im.checkAttribute(att)
-		if err != nil {
-			return nil, err
-		}
+	err = im.checkAttribute(attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	for i := 0; i < len(attributes); i++ {
@@ -739,11 +729,9 @@ func (im *ItemManager) ModifyItemAttributes(from string, worldID, itemTypeID, it
 		return nil, err
 	}
 
-	for _, att := range attributes {
-		err := im.checkAttribute(att)
-		if err != nil {
-			return nil, err
-		}
+	err = im.checkAttribute(attributes)
+	if err != nil {
+		return nil, err
 	}
 
 	for i := 0; i < len(attributes); i++ {
@@ -875,15 +863,22 @@ func (im *ItemManager) checkNameFormat(name string) error {
 	return nil
 }
 
-func (im *ItemManager) checkAttribute(attr *Attribute) error {
-	if err := im.checkNameFormat(attr.Name); err != nil {
-		return err
-	}
-	if uint64(len(attr.Description)) > MaxDescriptionLength {
-		return ErrItemAttributeDesTooLong
-	}
-	if attr.Permission > ItemOwner {
-		return ErrInvalidPermission
+func (im *ItemManager) checkAttribute(attributes []*Attribute) error {
+	dict := map[string]int{}
+	for i, attr := range attributes {
+		if err := im.checkNameFormat(attr.Name); err != nil {
+			return err
+		}
+		if uint64(len(attr.Description)) > MaxDescriptionLength {
+			return ErrItemAttributeDesTooLong
+		}
+		if attr.Permission > ItemOwner {
+			return ErrInvalidPermission
+		}
+		if _, ok := dict[attr.Name]; ok {
+			return ErrDuplicateAttr
+		}
+		dict[attr.Name] = i
 	}
 	return nil
 }
@@ -1377,4 +1372,5 @@ var (
 	ErrItemAttrIsExist         = errors.New("item attribute is exist")
 	ErrNoPermission            = errors.New("no permission to modify")
 	ErrInvalidPermission       = errors.New("invalid permission")
+	ErrDuplicateAttr           = errors.New("duplicate attribute name")
 )
