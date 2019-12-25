@@ -353,6 +353,7 @@ func (im *ItemManager) IssueItem(from string, worldID uint64, itemTypeID uint64,
 			return nil, ErrItemUpperLimit
 		}
 	}
+	itemTypeobj.AddIssue += 1
 	itemTypeobj.Total += 1
 	if itemTypeobj.Total > UINT64_MAX {
 		return nil, ErrAmountValueInvalid
