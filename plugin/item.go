@@ -365,7 +365,7 @@ func (im *ItemManager) IssueItem(from string, worldID uint64, itemTypeID uint64,
 	itemobj := Item{
 		WorldID:     worldID,
 		TypeID:      itemTypeID,
-		ID:          itemTypeobj.Total,
+		ID:          itemTypeobj.AddIssue,
 		Owner:       owner,
 		Description: description,
 		Destroy:     false,
