@@ -451,6 +451,7 @@ func (im *ItemManager) IncreaseItems(from string, worldID uint64, itemTypeID uin
 			return nil, ErrItemUpperLimit
 		}
 	}
+	itemTypeobj.AddIssue += amount
 	itemTypeobj.Total += amount
 	if itemTypeobj.Total > UINT64_MAX {
 		return nil, ErrAmountValueInvalid
@@ -475,6 +476,10 @@ func (im *ItemManager) IncreaseItems(from string, worldID uint64, itemTypeID uin
 }
 
 func (im *ItemManager) DestroyItems(from string, worldID uint64, itemTypeID uint64, amount uint64, am IAccount) ([]byte, error) {
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
 	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, from)
 	if err != nil {
 		return nil, err
@@ -489,7 +494,7 @@ func (im *ItemManager) DestroyItems(from string, worldID uint64, itemTypeID uint
 
 	itemsobj.Amount -= amount
 
-	if amount != uint64(0) {
+	if itemsobj.Amount != uint64(0) {
 		err = im.setItems(itemsobj)
 		if err != nil {
 			return nil, err
@@ -499,6 +504,11 @@ func (im *ItemManager) DestroyItems(from string, worldID uint64, itemTypeID uint
 		if err != nil {
 			return nil, err
 		}
+	}
+	itemTypeobj.Total -= amount
+	err = im.setItemType(itemTypeobj)
+	if err != nil {
+		return nil, err
 	}
 
 	return nil, nil
