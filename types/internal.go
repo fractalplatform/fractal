@@ -35,17 +35,18 @@ const (
 )
 
 type InternalTx struct {
-	Type     InternalTxType     `json:"type"`
-	From     string             `json:"from"`
-	To       string             `json:"to"`
-	Data     []byte             `json:"data"`
-	Status   uint64             `json:"status"`
-	Index    uint64             `json:"index"`
-	GasUsed  uint64             `json:"gasUsed"`
-	GasAllot []*GasDistribution `json:"gasAllot"`
-	GasLimit uint64             `json:"gasLimit"`
-	Depth    uint64             `json:"depth"`
-	Error    string             `json:"error"`
+	Type       InternalTxType     `json:"type"`
+	From       string             `json:"from"`
+	To         string             `json:"to"`
+	Data       []byte             `json:"data"`
+	RetrunData []byte             `json:"returndata"`
+	Status     uint64             `json:"status"`
+	Index      uint64             `json:"index"`
+	GasUsed    uint64             `json:"gasUsed"`
+	GasAllot   []*GasDistribution `json:"gasAllot"`
+	GasLimit   uint64             `json:"gasLimit"`
+	Depth      uint64             `json:"depth"`
+	Error      string             `json:"error"`
 }
 
 type BlockAndResult struct {
