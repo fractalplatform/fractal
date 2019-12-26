@@ -1263,7 +1263,7 @@ func (im *ItemManager) delItemAttrByName(worldID, itemTypeID, itemID uint64, att
 	if err != nil {
 		return err
 	}
-	im.sdb.Delete(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(attrID, 10), attrName))
+	im.sdb.Delete(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), attrName))
 	im.sdb.Delete(itemManager, dbKey(itemAttrIDPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), strconv.FormatUint(attrID, 10)))
 	return nil
 }
@@ -1284,6 +1284,8 @@ func (im *ItemManager) modifyitemAttr(worldOwner, from string, worldID, itemType
 	}
 
 	switch attrobj.Permission {
+	case CannotModify:
+		return ErrNoPermission
 	case WorldOwner:
 		if worldOwner != from {
 			return ErrNoPermission
