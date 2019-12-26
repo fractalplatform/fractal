@@ -388,6 +388,10 @@ func (im *ItemManager) IncreaseItem(from string, worldID uint64, itemTypeID uint
 	if err != nil {
 		return nil, err
 	}
+	err = im.setItemOwnerDB(&itemobj)
+	if err != nil {
+		return nil, err
+	}
 
 	for i := 0; i < len(attributes); i++ {
 		err = im.setNewItemAttr(worldID, itemTypeID, itemobj.ID, uint64(i+1), attributes[i])
@@ -560,8 +564,16 @@ func (im *ItemManager) txItem(from, to string, worldID, itemTypeID, itemID uint6
 	if err != nil {
 		return err
 	}
+	err = im.delItemOwnerDB(itemobj)
+	if err != nil {
+		return err
+	}
 	itemobj.Owner = to
 	err = im.setItem(itemobj)
+	if err != nil {
+		return err
+	}
+	err = im.setItemOwnerDB(itemobj)
 	if err != nil {
 		return err
 	}
@@ -569,6 +581,9 @@ func (im *ItemManager) txItem(from, to string, worldID, itemTypeID, itemID uint6
 }
 
 func (im *ItemManager) TransferItem(from, to string, ItemTx []*ItemTxParam, am IAccount) error {
+	if from == to {
+		return nil
+	}
 	if _, err := am.getAccount(to); err != nil {
 		return err
 	}
@@ -1050,6 +1065,9 @@ func (im *ItemManager) modifyitemTypeAttr(worldOwner, from string, worldID, item
 	if worldOwner != from {
 		return ErrNoPermission
 	}
+	if attr.Permission == ItemOwner {
+		return ErrInvalidPermission
+	}
 	attrobj.Permission = attr.Permission
 	attrobj.Description = attr.Description
 	err = im.setItemTypeAttr(worldID, itemTypeID, attrID, attrobj)
@@ -1069,6 +1087,68 @@ func (im *ItemManager) setItem(itemobj *Item) error {
 		return err
 	}
 	im.sdb.Put(itemManager, dbKey(itemIDPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), strconv.FormatUint(itemobj.ID, 10)), b)
+	// im.sdb.Put(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner), b)
+	return nil
+}
+
+func (im *ItemManager) setItemOwnerDB(itemobj *Item) error {
+	itemIDarr, err := im.getItemOwnerDB(itemobj)
+	if err != nil && err != ErrItemNotExist {
+		return err
+	}
+	if err == ErrItemNotExist {
+		temp := []uint64{itemobj.ID}
+		b, err := rlp.EncodeToBytes(temp)
+		if err != nil {
+			return err
+		}
+		im.sdb.Put(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner), b)
+		return nil
+	}
+	itemIDarr = append(itemIDarr, itemobj.ID)
+	b2, err := rlp.EncodeToBytes(itemIDarr)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner), b2)
+	return nil
+}
+
+func (im *ItemManager) getItemOwnerDB(itemobj *Item) ([]uint64, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner))
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, ErrItemNotExist
+	}
+	var itemIDarr []uint64
+	if err = rlp.DecodeBytes(b, &itemIDarr); err != nil {
+		return nil, err
+	}
+	return itemIDarr, nil
+}
+
+func (im *ItemManager) delItemOwnerDB(itemobj *Item) error {
+	itemIDarr, err := im.getItemOwnerDB(itemobj)
+	if err != nil {
+		return err
+	}
+	if len(itemIDarr) == 1 {
+		im.sdb.Delete(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner))
+		return nil
+	}
+	i := 0
+	for ; i < len(itemIDarr); i++ {
+		if itemIDarr[i] == itemobj.ID {
+			break
+		}
+	}
+	itemIDarr = append(itemIDarr[:i], itemIDarr[i+1:]...)
+	b, err := rlp.EncodeToBytes(itemIDarr)
+	if err != nil {
+		return err
+	}
 	im.sdb.Put(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner), b)
 	return nil
 }
@@ -1078,7 +1158,7 @@ func (im *ItemManager) delItem(itemobj *Item) error {
 		return ErrItemObjectEmpty
 	}
 	im.sdb.Delete(itemManager, dbKey(itemIDPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), strconv.FormatUint(itemobj.ID, 10)))
-	im.sdb.Delete(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner))
+	// im.sdb.Delete(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(itemobj.WorldID, 10), strconv.FormatUint(itemobj.TypeID, 10), itemobj.Owner))
 	return nil
 }
 
@@ -1098,7 +1178,7 @@ func (im *ItemManager) getItemByID(worldID, itemTypeID, itemID uint64) (*Item, e
 	return &item, nil
 }
 
-func (im *ItemManager) getItemByOwner(worldID, itemTypeID uint64, owner string) (*Item, error) {
+func (im *ItemManager) getItemByOwner(worldID, itemTypeID uint64, owner string) ([]*Item, error) {
 	b, err := im.sdb.Get(itemManager, dbKey(itemOwnerPrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), owner))
 	if err != nil {
 		return nil, err
@@ -1107,11 +1187,19 @@ func (im *ItemManager) getItemByOwner(worldID, itemTypeID uint64, owner string) 
 		return nil, ErrItemNotExist
 	}
 
-	var item Item
-	if err = rlp.DecodeBytes(b, &item); err != nil {
+	var itemIDarr []uint64
+	if err = rlp.DecodeBytes(b, &itemIDarr); err != nil {
 		return nil, err
 	}
-	return &item, nil
+	var item []*Item
+	for _, id := range itemIDarr {
+		temp, err := im.getItemByID(worldID, itemTypeID, id)
+		if err != nil {
+			return nil, err
+		}
+		item = append(item, temp)
+	}
+	return item, nil
 }
 
 func (im *ItemManager) setNewItemAttr(worldID, itemTypeID, itemID, attrID uint64, attrobj *Attribute) error {
@@ -1171,9 +1259,9 @@ func (im *ItemManager) getItemAttrByID(worldID, itemTypeID, itemID, attrID uint6
 }
 
 func (im *ItemManager) delItemAttrByName(worldID, itemTypeID, itemID uint64, attrName string) error {
-	b, err := im.sdb.Get(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
+	b, err := im.sdb.Get(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10), attrName))
 	if len(b) == 0 {
-		return ErrItemTypeAttrNotExist
+		return ErrItemAttrNotExist
 	}
 	var attrID uint64
 	err = rlp.DecodeBytes(b, &attrID)
@@ -1209,13 +1297,6 @@ func (im *ItemManager) modifyitemAttr(worldOwner, from string, worldID, itemType
 		if itemobj.Owner != from {
 			return ErrNoPermission
 		}
-	}
-
-	if attrobj.Permission != WorldOwner {
-		return ErrNoPermission
-	}
-	if worldOwner != from {
-		return ErrNoPermission
 	}
 	attrobj.Permission = attr.Permission
 	attrobj.Description = attr.Description
@@ -1324,7 +1405,7 @@ func (im *ItemManager) GetItemByID(worldID, itemTypeID, itemID uint64) (*Item, e
 	return im.getItemByID(worldID, itemTypeID, itemID)
 }
 
-func (im *ItemManager) GetItemByOwner(worldID, itemTypeID uint64, owner string) (*Item, error) {
+func (im *ItemManager) GetItemByOwner(worldID, itemTypeID uint64, owner string) ([]*Item, error) {
 	return im.getItemByOwner(worldID, itemTypeID, owner)
 }
 

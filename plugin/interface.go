@@ -130,7 +130,7 @@ type IItem interface {
 	GetItemTypeByID(worldID, itemTypeID uint64) (*ItemType, error)
 	GetItemTypeByName(worldID uint64, itemTypeName string) (*ItemType, error)
 	GetItemByID(worldID, itemTypeID, itemID uint64) (*Item, error)
-	GetItemByOwner(worldID, itemTypeID uint64, owner string) (*Item, error)
+	GetItemByOwner(worldID, itemTypeID uint64, owner string) ([]*Item, error)
 	GetItemsByOwner(worldID, itemTypeID uint64, account string) (*Items, error)
 	GetItemTypeAttributeByID(worldID, itemTypeID, attrID uint64) (*Attribute, error)
 	GetItemTypeAttributeByName(worldID, itemTypeID uint64, attrName string) (*Attribute, error)
