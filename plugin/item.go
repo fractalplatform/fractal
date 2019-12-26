@@ -37,50 +37,45 @@ type ItemManager struct {
 	sdb *state.StateDB
 }
 
-// key = id
 type World struct {
 	ID      uint64 `json:"worldID"`
-	Name    string `json:"name"` // 全部小写
+	Name    string `json:"name"`
 	Owner   string `json:"owner"`
 	Creator string `json:"creator"`
 	// CreateTime  uint64 `json:"createTime"`
 	Description string `json:"description"`
-	Total       uint64 `json:"total"` // world以发行的itemType数量
+	Total       uint64 `json:"total"`
 }
 
-// key = worldid + id
 type ItemType struct {
 	WorldID uint64 `json:"worldID"`
-	ID      uint64 `json:"itemTypeID"` // world内自增
-	Name    string `json:"name"`       // 全部小写
+	ID      uint64 `json:"itemTypeID"`
+	Name    string `json:"name"`
 	// CreateTime  uint64 `json:"createTime"`
-	Merge       bool   // 合并标识
+	Merge       bool   `json:"merge"`
 	UpperLimit  uint64 `json:"upperLimit"`
 	AddIssue    uint64 `json:"addIssue"`
 	Description string `json:"description"`
-	Total       uint64 `json:"total"` // itemType下已发行的item数量
-	// Attributes  []*Attribute `json:"attributes"` // 共同属性
-	AttrTotal uint64
+	Total       uint64 `json:"total"`
+	AttrTotal   uint64 `json:"attrTotal"`
 }
 
-// key = worldid + typeid + id
 type Item struct {
 	WorldID     uint64 `json:"worldID"`
 	TypeID      uint64 `json:"itemTypeID"`
-	ID          uint64 `json:"itemID"` // itemType内自增
-	Owner       string `json:"owner"`  // 道具所属账户
+	ID          uint64 `json:"itemID"`
+	Owner       string `json:"owner"`
 	Description string `json:"description"`
-	Destroy     bool   `json:"destroy"` // 销毁标识
+	Destroy     bool   `json:"destroy"`
 	// Attributes  []*Attribute `json:"attributes"`
-	AttrTotal uint64
+	AttrTotal uint64 `json:"attrTotal"`
 }
 
-// key = world + typeid + account
 type Items struct {
 	WorldID uint64 `json:"worldID"`
 	TypeID  uint64 `json:"itemTypeID"`
-	Owner   string `json:"owner"` // 道具所属账户
-	Amount  uint64 `json:"total"` // 账户拥有的数量
+	Owner   string `json:"owner"`
+	Amount  uint64 `json:"total"`
 }
 
 // NewIM new a ItemManager
