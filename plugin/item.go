@@ -1019,7 +1019,7 @@ func (im *ItemManager) getItemTypeAttrByID(worldID, itemTypeID, attrID uint64) (
 }
 
 func (im *ItemManager) delItemTypeAttrByName(worldID, itemTypeID uint64, attrName string) error {
-	b, err := im.sdb.Get(itemManager, dbKey(itemAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
+	b, err := im.sdb.Get(itemManager, dbKey(itemTypeAttrNamePrefix, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), attrName))
 	if len(b) == 0 {
 		return ErrItemTypeAttrNotExist
 	}
@@ -1372,6 +1372,92 @@ func (im *ItemManager) Sol_IssueItemType(context *ContextSol, worldID uint64, na
 		attr[i] = temp
 	}
 	_, err := im.IssueItemType(context.tx.Sender(), worldID, name, merge, upperLimit, des, attr, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, worldID uint64, itemTypeID uint64, owner string, description string, attrPermission []uint64, attrName []string, attrDes []string) error {
+	if len(attrPermission) != len(attrName) {
+		return ErrParamErr
+	}
+	if len(attrPermission) != len(attrDes) {
+		return ErrParamErr
+	}
+	attr := make([]*Attribute, len(attrPermission))
+	for i := 0; i < len(attrPermission); i++ {
+		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
+		attr[i] = temp
+	}
+	_, err := im.IncreaseItem(context.tx.Sender(), worldID, itemTypeID, owner, description, attr, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_DestroyItem(context *ContextSol, worldID uint64, itemTypeID uint64, itemID uint64) error {
+	_, err := im.DestroyItem(context.tx.Sender(), worldID, itemTypeID, itemID, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_IncreaseItems(context *ContextSol, worldID uint64, itemTypeID uint64, to common.Address, amount uint64) error {
+	_, err := im.IncreaseItems(context.tx.Sender(), worldID, itemTypeID, to.AccountName(), amount, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_DestroyItems(context *ContextSol, worldID uint64, itemTypeID uint64, amount uint64) error {
+	_, err := im.DestroyItems(context.tx.Sender(), worldID, itemTypeID, amount, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_TransferItem(context *ContextSol, to common.Address, worldID []uint64, itemTypeID []uint64, itemID []uint64, amount []uint64) error {
+	if len(worldID) != len(itemTypeID) {
+		return ErrParamErr
+	}
+	if len(worldID) != len(itemID) {
+		return ErrParamErr
+	}
+	if len(worldID) != len(amount) {
+		return ErrParamErr
+	}
+	itemTx := make([]*ItemTxParam, len(worldID))
+	for i := 0; i < len(worldID); i++ {
+		temp := &ItemTxParam{worldID[i], itemTypeID[i], itemID[i], amount[i]}
+		itemTx[i] = temp
+	}
+	return im.TransferItem(context.tx.Sender(), to.AccountName(), itemTx, context.pm)
+}
+
+func (im *ItemManager) Sol_AddItemTypeAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, attrPermission []uint64, attrName []string, attrDes []string) error {
+	if len(attrPermission) != len(attrName) {
+		return ErrParamErr
+	}
+	if len(attrPermission) != len(attrDes) {
+		return ErrParamErr
+	}
+	attr := make([]*Attribute, len(attrPermission))
+	for i := 0; i < len(attrPermission); i++ {
+		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
+		attr[i] = temp
+	}
+	_, err := im.AddItemTypeAttributes(context.tx.Sender(), worldID, itemTypeID, attr)
+	return err
+}
+
+func (im *ItemManager) Sol_DelItemTypeAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, attrName []string) error {
+	_, err := im.DelItemTypeAttributes(context.tx.Sender(), worldID, itemTypeID, attrName)
+	return err
+}
+
+func (im *ItemManager) Sol_ModifyItemTypeAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, attrPermission []uint64, attrName []string, attrDes []string) error {
+	if len(attrPermission) != len(attrName) {
+		return ErrParamErr
+	}
+	if len(attrPermission) != len(attrDes) {
+		return ErrParamErr
+	}
+	attr := make([]*Attribute, len(attrPermission))
+	for i := 0; i < len(attrPermission); i++ {
+		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
+		attr[i] = temp
+	}
+	_, err := im.ModifyItemTypeAttributes(context.tx.Sender(), worldID, itemTypeID, attr)
 	return err
 }
 
