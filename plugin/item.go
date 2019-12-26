@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -271,6 +272,13 @@ func (im *ItemManager) IssueItemType(creator string, worldID uint64, name string
 	err := im.checkAttribute(attributes)
 	if err != nil {
 		return nil, err
+	}
+	if merge == true {
+		for _, attr := range attributes {
+			if attr.Permission == ItemOwner {
+				return nil, ErrInvalidPermission
+			}
+		}
 	}
 
 	worldobj, err := im.getWorldByID(worldID)
@@ -1044,7 +1052,10 @@ func (im *ItemManager) modifyitemTypeAttr(worldOwner, from string, worldID, item
 	}
 	attrobj.Permission = attr.Permission
 	attrobj.Description = attr.Description
-	im.setItemTypeAttr(worldID, itemTypeID, attrID, attrobj)
+	err = im.setItemTypeAttr(worldID, itemTypeID, attrID, attrobj)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -1208,7 +1219,10 @@ func (im *ItemManager) modifyitemAttr(worldOwner, from string, worldID, itemType
 	}
 	attrobj.Permission = attr.Permission
 	attrobj.Description = attr.Description
-	im.setItemAttr(worldID, itemTypeID, itemID, attrID, attrobj)
+	err = im.setItemAttr(worldID, itemTypeID, itemID, attrID, attrobj)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -1334,6 +1348,32 @@ func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64
 }
 
 // for API
+
+func (im *ItemManager) Sol_IssueWorld(context *ContextSol, owner common.Address, name, description string) error {
+	_, err := im.IssueWorld(context.tx.Sender(), owner.AccountName(), name, description, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_UpdateWorldOwner(context *ContextSol, owner common.Address, worldID uint64) error {
+	_, err := im.UpdateWorldOwner(context.tx.Sender(), owner.AccountName(), worldID, context.pm)
+	return err
+}
+
+func (im *ItemManager) Sol_IssueItemType(context *ContextSol, worldID uint64, name string, merge bool, upperLimit uint64, des string, attrPermission []uint64, attrName []string, attrDes []string) error {
+	if len(attrPermission) != len(attrName) {
+		return ErrParamErr
+	}
+	if len(attrPermission) != len(attrDes) {
+		return ErrParamErr
+	}
+	attr := make([]*Attribute, len(attrPermission))
+	for i := 0; i < len(attrPermission); i++ {
+		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
+		attr[i] = temp
+	}
+	_, err := im.IssueItemType(context.tx.Sender(), worldID, name, merge, upperLimit, des, attr, context.pm)
+	return err
+}
 
 var (
 	ErrWorldCounterNotExist    = errors.New("item global counter not exist")
