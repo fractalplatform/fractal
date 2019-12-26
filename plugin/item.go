@@ -847,7 +847,7 @@ func (im *ItemManager) getWorldIDByName(name string) (uint64, error) {
 
 func (im *ItemManager) checkWorldNameFormat(name string) error {
 	if worldNameRegExp.MatchString(name) != true {
-		return ErrItemNameinvalid
+		return ErrWorldNameinvalid
 	}
 	return nil
 }
@@ -1335,6 +1335,7 @@ func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64
 var (
 	ErrWorldCounterNotExist    = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
+	ErrWorldNameinvalid        = errors.New("world name invalid")
 	ErrItemNameLengthErr       = errors.New("item name length err")
 	ErrWorldNameNotExist       = errors.New("WorldName not exist")
 	ErrWorldNameIsExist        = errors.New("WorldName is exist")
@@ -1354,15 +1355,15 @@ var (
 	ErrItemTypeObjectEmpty     = errors.New("itemType object is empty")
 	ErrItemObjectEmpty         = errors.New("item object is empty")
 	ErrItemsObjectEmpty        = errors.New("items object is empty")
-	ErrItemOwnerMismatch       = errors.New("itemType owner mismatch")
-	ErrItemAttributeNameIsNull = errors.New("item attribute name is null")
-	ErrItemAttributeDesTooLong = errors.New("item attribute description exceed max length")
-	ErrItemUpperLimit          = errors.New("item amount over the issuance limit")
+	ErrItemOwnerMismatch       = errors.New("owner mismatch")
+	ErrItemAttributeNameIsNull = errors.New("attribute name is null")
+	ErrItemAttributeDesTooLong = errors.New("attribute description exceed max length")
+	ErrItemUpperLimit          = errors.New("amount over the issuance limit")
 	ErrAccountNoItem           = errors.New("account not have item")
 	ErrParamErr                = errors.New("param invalid")
-	ErrInsufficientItemAmount  = errors.New("insufficient item amount")
-	ErrInvalidItemAmount       = errors.New("invalid item amount")
-	ErrInvalidItemID           = errors.New("invalid item id")
+	ErrInsufficientItemAmount  = errors.New("insufficient amount")
+	ErrInvalidItemAmount       = errors.New("invalid amount")
+	ErrInvalidItemID           = errors.New("invalid id")
 	ErrItemTypeMergeIsFalse    = errors.New("itemType merge is false")
 	ErrItemTypeMergeIsTrue     = errors.New("itemType merge is true")
 	ErrItemIsDestroyed         = errors.New("item is destroyed")
