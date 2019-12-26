@@ -885,14 +885,15 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 			errmsg = err.Error()
 		}
 		internalAction := &types.InternalTx{
-			From:     action.Sender(),
-			To:       action.Recipient(),
-			Data:     action.Payload,
-			Type:     types.PluginCall,
-			GasUsed:  gasUsed,
-			GasLimit: gas,
-			Depth:    uint64(evm.depth),
-			Error:    errmsg}
+			From:       action.Sender(),
+			To:         action.Recipient(),
+			Data:       action.Payload,
+			RetrunData: ret,
+			Type:       types.PluginCall,
+			GasUsed:    gasUsed,
+			GasLimit:   gas,
+			Depth:      uint64(evm.depth),
+			Error:      errmsg}
 		evm.InternalTxs = append(evm.InternalTxs, internalAction)
 	}
 

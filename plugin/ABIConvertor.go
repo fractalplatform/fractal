@@ -121,7 +121,7 @@ func goToArgument(typ reflect.Type) (abi.Argument, error) {
 	}
 	abityp, err := abi.NewType(typstr, components)
 	return abi.Argument{
-		Name: "_" + typ.Name(),
+		Name: "_" + typ.String(),
 		Type: abityp,
 	}, err
 }
@@ -253,57 +253,4 @@ func PluginSolAPICall(o, p1 interface{}, data []byte) ([]byte, error) {
 		return retbytes, nil
 	}
 	return retbytes, nil
-}
-
-var apimap = make(map[string]*pluginMethod)
-
-func SolAPIRegister(name string, api interface{}) error {
-	typ := reflect.TypeOf(api)
-	val := reflect.ValueOf(api)
-	input := make(abi.Arguments, 0, typ.NumIn())
-	output := make(abi.Arguments, 0, typ.NumOut())
-	for i := 0; i < typ.NumIn(); i++ {
-		in, err := goToArgument(typ.In(i))
-		if err != nil {
-			return err
-		}
-		input = append(input, in)
-	}
-	for i := 0; i < typ.NumOut(); i++ {
-		out, err := goToArgument(typ.Out(i))
-		if err != nil {
-			return err
-		}
-		output = append(output, out)
-	}
-	apimap[name] = &pluginMethod{
-		abi.Method{
-			Name:    name,
-			RawName: "raw_" + name,
-			Inputs:  input,
-			Outputs: output,
-		},
-		val,
-	}
-	return nil
-}
-
-func SolAPICall(name string, data []byte) ([]byte, error) {
-	method := apimap[name]
-	sigID := data[:4]
-	fmt.Printf("call sig: %x\n", sigID)
-	params, err := method.Inputs.UnpackValues(data[4:])
-	if err != nil {
-		return nil, err
-	}
-	callparams := make([]reflect.Value, len(params))
-	for i, p := range params {
-		callparams[i] = reflect.ValueOf(p)
-	}
-	out := method.method.Call(callparams)
-	outInter := make([]interface{}, len(out))
-	for i, o := range out {
-		outInter[i] = o.Interface()
-	}
-	return method.Outputs.Pack(outInter...)
 }
