@@ -1274,7 +1274,7 @@ func (im *ItemManager) modifyitemAttr(worldOwner, from string, worldID, itemType
 		return err
 	}
 
-	attrobj, err := im.getItemAttrByID(worldID, itemTypeID, attrID, itemID)
+	attrobj, err := im.getItemAttrByID(worldID, itemTypeID, itemID, attrID)
 	if err != nil {
 		return err
 	}
