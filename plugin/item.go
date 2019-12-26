@@ -1461,6 +1461,43 @@ func (im *ItemManager) Sol_ModifyItemTypeAttributes(context *ContextSol, worldID
 	return err
 }
 
+func (im *ItemManager) Sol_AddItemAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, itemID uint64, attrPermission []uint64, attrName []string, attrDes []string) error {
+	if len(attrPermission) != len(attrName) {
+		return ErrParamErr
+	}
+	if len(attrPermission) != len(attrDes) {
+		return ErrParamErr
+	}
+	attr := make([]*Attribute, len(attrPermission))
+	for i := 0; i < len(attrPermission); i++ {
+		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
+		attr[i] = temp
+	}
+	_, err := im.AddItemAttributes(context.tx.Sender(), worldID, itemTypeID, itemID, attr)
+	return err
+}
+
+func (im *ItemManager) Sol_DelItemAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, itemID uint64, attrName []string) error {
+	_, err := im.DelItemAttributes(context.tx.Sender(), worldID, itemTypeID, itemID, attrName)
+	return err
+}
+
+func (im *ItemManager) Sol_ModifyItemAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, itemID uint64, attrPermission []uint64, attrName []string, attrDes []string) error {
+	if len(attrPermission) != len(attrName) {
+		return ErrParamErr
+	}
+	if len(attrPermission) != len(attrDes) {
+		return ErrParamErr
+	}
+	attr := make([]*Attribute, len(attrPermission))
+	for i := 0; i < len(attrPermission); i++ {
+		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
+		attr[i] = temp
+	}
+	_, err := im.ModifyItemAttributes(context.tx.Sender(), worldID, itemTypeID, itemID, attr)
+	return err
+}
+
 var (
 	ErrWorldCounterNotExist    = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
