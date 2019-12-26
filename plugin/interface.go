@@ -113,7 +113,7 @@ type IItem interface {
 	IssueWorld(creator, owner, name, description string, am IAccount) ([]byte, error)
 	UpdateWorldOwner(from, newOwner string, worldID uint64, am IAccount) ([]byte, error)
 	IssueItemType(creator string, worldID uint64, name string, merge bool, upperLimit uint64, description string, attributes []*Attribute, am IAccount) ([]byte, error)
-	IssueItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error)
+	IncreaseItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error)
 	DestroyItem(from string, worldID uint64, itemTypeID uint64, itemID uint64, am IAccount) ([]byte, error)
 	IncreaseItems(from string, worldID uint64, itemTypeID uint64, to string, amount uint64, am IAccount) ([]byte, error)
 	DestroyItems(from string, worldID uint64, itemTypeID uint64, amount uint64, am IAccount) ([]byte, error)

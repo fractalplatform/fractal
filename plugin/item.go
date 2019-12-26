@@ -119,12 +119,12 @@ func (im *ItemManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
 			return nil, err
 		}
 		return im.IssueItemType(tx.Sender(), param.WorldID, param.Name, param.Merge, param.UpperLimit, param.Description, param.Attributes, pm)
-	case IssueItem:
-		param := &IssueItemAction{}
+	case IncreaseItem:
+		param := &IncreaseItemAction{}
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
 			return nil, err
 		}
-		return im.IssueItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Description, param.Attributes, pm)
+		return im.IncreaseItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Description, param.Attributes, pm)
 	case DestroyItem:
 		param := &DestroyItemAction{}
 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
@@ -325,7 +325,7 @@ func (im *ItemManager) IssueItemType(creator string, worldID uint64, name string
 	return nil, nil
 }
 
-func (im *ItemManager) IssueItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error) {
+func (im *ItemManager) IncreaseItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error) {
 	worldobj, err := im.getWorldByID(worldID)
 	if err != nil {
 		return nil, err
@@ -1290,6 +1290,7 @@ func (im *ItemManager) subItemsAmount(account string, worldID, itemTypeID, amoun
 }
 
 // for RPC
+
 func (im *ItemManager) GetWorldByID(worldID uint64) (*World, error) {
 	return im.getWorldByID(worldID)
 }
@@ -1331,6 +1332,8 @@ func (im *ItemManager) GetItemAttributeByID(worldID, itemTypeID, itemID, attrID 
 func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64, attrName string) (*Attribute, error) {
 	return im.getItemAttrByName(worldID, itemTypeID, itemID, attrName)
 }
+
+// for API
 
 var (
 	ErrWorldCounterNotExist    = errors.New("item global counter not exist")

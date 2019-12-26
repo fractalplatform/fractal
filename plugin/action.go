@@ -29,7 +29,7 @@ const (
 	IssueWorld envelope.PayloadType = 0x400 + iota
 	UpdateWorldOwner
 	IssueItemType
-	IssueItem
+	IncreaseItem
 	// IncreaseItem
 	DestroyItem
 	// IssueItems
@@ -91,7 +91,7 @@ type IssueItemTypeAction struct {
 	Attributes  []*Attribute
 }
 
-type IssueItemAction struct {
+type IncreaseItemAction struct {
 	WorldID     uint64
 	ItemTypeID  uint64
 	Owner       string
