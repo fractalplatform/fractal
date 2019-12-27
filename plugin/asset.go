@@ -71,7 +71,7 @@ func (asm *AssetManager) AccountName() string {
 	return "fractalasset"
 }
 
-func (asm *AssetManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+func (asm *AssetManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
 	case IssueAsset:
 		param := &IssueAssetAction{}

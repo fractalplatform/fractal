@@ -74,7 +74,7 @@ func (bc *testBlockChain) StateAt(common.Hash) (*state.StateDB, error) {
 	return bc.statedb, nil
 }
 
-func (bc *testBlockChain) Config() *params.ChainConfig {
+func (bc *testBlockChain) ChainConfig() *params.ChainConfig {
 	cfg := params.DefaultChainconfig
 	cfg.SysTokenID = 0
 	return cfg

@@ -95,7 +95,7 @@ func (im *ItemManager) AccountName() string {
 	return "fractalitem"
 }
 
-func (im *ItemManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+func (im *ItemManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
 	case IssueWorld:
 		param := &IssueWorldAction{}

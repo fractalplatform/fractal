@@ -24,7 +24,6 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/plugin"
-	pm "github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/processor/vm"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
@@ -45,7 +44,7 @@ func NewStateProcessor(bc ChainContext) *StateProcessor {
 
 // Process processes the state changes according to the rules by running
 // the transaction messages using the statedb and applying any rewards to both
-// the processor (coinbase) and any included uncles.
+// the processor (coinbase) .
 //
 // Process returns the receipts and logs accumulated during the process and
 // returns the amount of gas that was used in the process. If any of the
@@ -59,7 +58,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		gp       = new(common.GasPool).AddGas(block.GasLimit())
 	)
 
-	manager := pm.NewPM(statedb)
+	manager := plugin.NewPM(statedb)
 	manager.Init(0, p.bc.GetHeaderByHash(header.ParentHash))
 
 	// Prepare the block, applying any consensus engine specific extras (e.g. update last)
@@ -89,15 +88,15 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 // indicating the block was invalid.
 func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, uint64, error) {
 	bc := p.bc
-	config := bc.Config()
+	config := bc.ChainConfig()
 	pm := plugin.NewPM(statedb)
 	pm.Init(0, p.bc.GetHeaderByHash(header.ParentHash))
 
 	// todo for the moment，only system asset
 	// assetID := tx.GasAssetID()
-	assetID := p.bc.Config().SysTokenID
+	assetID := p.bc.ChainConfig().SysTokenID
 	if assetID != tx.GetGasAssetID() {
-		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.Config().SysTokenID)
+		return nil, 0, fmt.Errorf("only support system asset %d as tx fee", p.bc.ChainConfig().SysTokenID)
 	}
 	gasPrice := tx.GetGasPrice()
 	//timer for vm exec overtime
@@ -115,10 +114,7 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 		return nil, 0, ErrNonceTooLow
 	}
 
-	evmcontext := &EvmContext{
-		ChainContext: p.bc,
-	}
-	context := NewEVMContext(tx.Sender(), tx.Recipient(), assetID, tx.GetGasPrice(), header, evmcontext, author)
+	context := NewEVMContext(tx.Sender(), tx.Recipient(), assetID, tx.GetGasPrice(), header, p.bc, author)
 	vmenv := vm.NewEVM(context, pm, statedb, config, cfg)
 
 	//will abort the vm if overtime
@@ -128,7 +124,9 @@ func (p *StateProcessor) ApplyTransaction(author *string, gp *common.GasPool, st
 		})
 	}
 
-	_, gas, gasAllots, failed, err, vmerr := ApplyMessage(pm, vmenv, tx, gp, gasPrice, assetID, config)
+	pluginContext := plugin.NewContext(p.bc, header)
+
+	_, gas, gasAllots, failed, err, vmerr := ApplyMessage(pm, vmenv, pluginContext, tx, gp, gasPrice, assetID, config)
 
 	if false == cfg.EndTime.IsZero() {
 		//close timer

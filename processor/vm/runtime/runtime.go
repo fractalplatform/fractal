@@ -55,15 +55,6 @@ type Config struct {
 func setDefaults(cfg *Config) {
 	if cfg.ChainConfig == nil {
 		cfg.ChainConfig = params.DefaultChainconfig
-		//cfg.ChainConfig = &params.ChainConfig{
-		//	ChainID:        big.NewInt(1),
-		//	HomesteadBlock: new(big.Int),
-		//	DAOForkBlock:   new(big.Int),
-		//	DAOForkSupport: false,
-		//	EIP150Block:    new(big.Int),
-		//	EIP155Block:    new(big.Int),
-		//	EIP158Block:    new(big.Int),
-		//}
 	}
 
 	if cfg.Difficulty == nil {
@@ -98,27 +89,7 @@ func NewEnv(cfg *Config) *vm.EVM {
 		//CanTransfer: vm.CanTransfer,
 		//Transfer:    vm.Transfer,
 		GetHash: func(uint64) common.Hash { return common.Hash{} },
-		GetDelegatedByTime: func(*state.StateDB, string, uint64) (*big.Int, error) {
-			return big.NewInt(0), nil
-		},
 
-		//GetEpoch
-		GetEpoch: func(state *state.StateDB, t uint64, epoch uint64) (peoch uint64, time uint64, err error) {
-			return 2, 0, nil
-		},
-		//GetActivedCandidateSize
-		GetActivedCandidateSize: func(state *state.StateDB, epoch uint64) (size uint64, err error) {
-			return 3, nil
-		},
-		//GetActivedCandidate
-		GetActivedCandidate: func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, totalVote *big.Int, counter uint64, actualCounter uint64, replace uint64, isbad bool, err error) {
-			return "testname", big.NewInt(0), big.NewInt(3), 3, 3, 3, false, nil
-		},
-
-		//GetVoterStake
-		GetVoterStake: func(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error) {
-			return big.NewInt(9), nil
-		},
 		Origin:      cfg.Origin,
 		From:        cfg.Origin,
 		Coinbase:    cfg.Coinbase,

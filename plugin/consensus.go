@@ -618,7 +618,7 @@ func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, pm IPM) error {
 	return nil
 }
 
-func (c *Consensus) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+func (c *Consensus) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	// just beta
 	c.initRequrie()
 	switch tx.PayloadType() {

@@ -18,6 +18,7 @@ package processor
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
@@ -42,13 +43,14 @@ type StateTransition struct {
 	initialGas  uint64
 	gasPrice    *big.Int
 	assetID     uint64
+	pcontext    *plugin.Context
 	pm          plugin.IPM
 	evm         *vm.EVM
 	chainConfig *params.ChainConfig
 }
 
 // NewStateTransition initialises and returns a new state transition object.
-func NewStateTransition(pm plugin.IPM, evm *vm.EVM,
+func NewStateTransition(pm plugin.IPM, evm *vm.EVM, context *plugin.Context,
 	tx *types.Transaction, gp *common.GasPool, gasPrice *big.Int, assetID uint64,
 	config *params.ChainConfig) *StateTransition {
 	return &StateTransition{
@@ -58,16 +60,17 @@ func NewStateTransition(pm plugin.IPM, evm *vm.EVM,
 		tx:          tx,
 		gasPrice:    gasPrice,
 		assetID:     assetID,
+		pcontext:    context,
 		pm:          pm,
 		chainConfig: config,
 	}
 }
 
 // ApplyMessage computes the new state by applying the given message against the old state within the environment.
-func ApplyMessage(pm plugin.IPM, evm *vm.EVM,
+func ApplyMessage(pm plugin.IPM, evm *vm.EVM, pcontext *plugin.Context,
 	tx *types.Transaction, gp *common.GasPool, gasPrice *big.Int,
 	assetID uint64, config *params.ChainConfig) ([]byte, uint64, []*types.GasDistribution, bool, error, error) {
-	return NewStateTransition(pm, evm, tx, gp, gasPrice,
+	return NewStateTransition(pm, evm, pcontext, tx, gp, gasPrice,
 		assetID, config).TransitionDb()
 }
 
@@ -124,8 +127,10 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, gasAllot 
 		ret, st.gas, vmerr = st.evm.Create(caller, st.tx.Envelope.(*envelope.ContractTx), st.gas)
 	case actionType == envelope.CallContract:
 		ret, st.gas, vmerr = st.evm.Call(caller, st.tx.Envelope.(*envelope.ContractTx), st.gas)
+	case actionType == envelope.Plugin:
+		ret, vmerr = st.pm.ExecTx(st.tx, st.pcontext, false)
 	default:
-		ret, vmerr = st.pm.ExecTx(st.tx, false)
+		return nil, 0, nil, true, fmt.Errorf("Chain not support this transaction type: %v", actionType), vmerr
 	}
 
 	if vmerr != nil {

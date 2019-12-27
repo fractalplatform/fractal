@@ -16,7 +16,11 @@
 
 package types
 
-import "github.com/fractalplatform/fractal/common"
+import (
+	"math/big"
+
+	"github.com/fractalplatform/fractal/common"
+)
 
 type DetailTx struct {
 	TxHash      common.Hash   `json:"txHash"`
@@ -38,6 +42,7 @@ type InternalTx struct {
 	Type       InternalTxType     `json:"type"`
 	From       string             `json:"from"`
 	To         string             `json:"to"`
+	Amount     *big.Int           `json:"value"`
 	Data       []byte             `json:"data"`
 	RetrunData []byte             `json:"returndata"`
 	Status     uint64             `json:"status"`
