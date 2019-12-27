@@ -1606,6 +1606,110 @@ func (im *ItemManager) Sol_ModifyItemAttributes(context *ContextSol, worldID uin
 	return err
 }
 
+type SolWorldInfo struct {
+	ID          uint64
+	Name        string
+	Owner       common.Address
+	Creator     common.Address
+	Description string
+	Total       uint64
+}
+
+func (im *ItemManager) Sol_GetWorldInfo(context *ContextSol, worldID uint64) (*SolWorldInfo, error) {
+	worldobj, err := im.getWorldByID(worldID)
+	if err != nil {
+		return nil, err
+	}
+	solWorld := &SolWorldInfo{
+		ID:          worldobj.ID,
+		Name:        worldobj.Name,
+		Owner:       common.StringToAddress(worldobj.Owner),
+		Creator:     common.StringToAddress(worldobj.Creator),
+		Description: worldobj.Description,
+		Total:       worldobj.Total,
+	}
+	return solWorld, nil
+}
+
+type SolItemType struct {
+	WorldID     uint64
+	ID          uint64
+	Name        string
+	Merge       bool
+	UpperLimit  uint64
+	AddIssue    uint64
+	Description string
+	Total       uint64
+	AttrTotal   uint64
+}
+
+func (im *ItemManager) Sol_GetItemType(context *ContextSol, worldID uint64, itemTypeID uint64) (*SolItemType, error) {
+	obj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
+	solItemTypeobj := &SolItemType{
+		WorldID:     obj.WorldID,
+		ID:          obj.ID,
+		Name:        obj.Name,
+		Merge:       obj.Merge,
+		UpperLimit:  obj.UpperLimit,
+		AddIssue:    obj.AddIssue,
+		Description: obj.Description,
+		Total:       obj.Total,
+		AttrTotal:   obj.AttrTotal,
+	}
+	return solItemTypeobj, nil
+}
+
+type SolItem struct {
+	WorldID     uint64
+	TypeID      uint64
+	ID          uint64
+	Owner       common.Address
+	Description string
+	Destroy     bool
+	AttrTotal   uint64
+}
+
+func (im *ItemManager) Sol_GetItem(context *ContextSol, worldID uint64, itemTypeID uint64, itemID uint64) (*SolItem, error) {
+	obj, err := im.getItemByID(worldID, itemTypeID, itemID)
+	if err != nil {
+		return nil, err
+	}
+	sobj := &SolItem{
+		WorldID:     obj.WorldID,
+		TypeID:      obj.TypeID,
+		ID:          obj.ID,
+		Owner:       common.StringToAddress(obj.Owner),
+		Description: obj.Description,
+		Destroy:     obj.Destroy,
+		AttrTotal:   obj.AttrTotal,
+	}
+	return sobj, nil
+}
+
+type SolItems struct {
+	WorldID uint64
+	TypeID  uint64
+	Owner   common.Address
+	Amount  uint64
+}
+
+func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTypeID uint64, owner common.Address) (*SolItems, error) {
+	o, err := im.getItemsByOwner(worldID, itemTypeID, owner.String())
+	if err != nil {
+		return nil, err
+	}
+	so := &SolItems{
+		WorldID: o.WorldID,
+		TypeID:  o.TypeID,
+		Owner:   owner,
+		Amount:  o.Amount,
+	}
+	return so, nil
+}
+
 var (
 	ErrWorldCounterNotExist    = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
