@@ -460,18 +460,27 @@ func (im *ItemManager) IncreaseItems(from string, worldID uint64, itemTypeID uin
 		return nil, ErrAmountValueInvalid
 	}
 
-	itemsobj := Items{
-		WorldID: worldID,
-		TypeID:  itemTypeID,
-		Owner:   to,
-		Amount:  amount,
+	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, from)
+	if err != nil && err != ErrItemsNotExist {
+		return nil, err
+	}
+
+	if err == ErrItemsNotExist {
+		itemsobj = &Items{
+			WorldID: worldID,
+			TypeID:  itemTypeID,
+			Owner:   to,
+			Amount:  amount,
+		}
+	} else {
+		itemsobj.Amount += amount
 	}
 
 	err = im.setItemType(itemTypeobj)
 	if err != nil {
 		return nil, err
 	}
-	err = im.setItems(&itemsobj)
+	err = im.setItems(itemsobj)
 	if err != nil {
 		return nil, err
 	}
