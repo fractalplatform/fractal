@@ -2,14 +2,48 @@ pragma solidity >=0.4.0;
 pragma experimental ABIEncoderV2;
 
 interface ItemAPI {
-    struct MinerInfo {
-        address OwnerAccount;
-        address SignAccount;
-        uint256 RegisterNumber;
-        uint256 Weight;
-        uint256 Balance;
-        uint256 Epoch;
+    struct WorldInfo {
+        uint64 ID;
+        string Name;
+        address Owner;
+        address Creator;
+        string Description;
+        uint64 Total;
     }
+    function GetWorldInfo(uint64 worldID) external returns(WorldInfo memory);
+
+    struct ItemType {
+        uint64 WorldID;
+        uint64 ID;
+        string Name;
+        bool Merge;
+        uint64 UpperLimit;
+        uint64 AddIssue;
+        string Description;
+        uint64 Total;
+        uint64 AttrTotal;
+    }
+    function GetItemType(uint64 worldID, uint64 itemTypeID) external returns(ItemType memory);
+
+    struct Item {
+        uint64 WorldID;
+        uint64 TypeID;
+        uint64 ID;
+        address Owner;
+        string Description;
+        bool Destroy;
+        uint64 AttrTotal;
+    }
+    function GetItem(uint64 worldID, uint64 itemTypeID, uint64 itemID) external returns(Item memory);
+
+    struct Items {
+        uint64 WorldID;
+        uint64 TypeID;
+        address Owner;
+        uint64 Amount;
+    }
+    function GetItems(uint64 worldID, uint64 itemTypeID, address owner) external returns(Items memory);
+
     function IssueWorld(address owner, string name, string description) external;
     function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function IncreaseItem(uint64 worldID, uint64 itemTypeID, address owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
@@ -27,10 +61,25 @@ interface ItemAPI {
 
 contract TestConsensus {
     ItemAPI constant item = ItemAPI(address(bytes20("fractalitem")));
-    // function testReadInfo() public returns(ConsensusAPI.MinerInfo memory){
-    //     ConsensusAPI.MinerInfo memory info = consensus.GetMinerInfo(address(this));
-    //     return info;
-    // }
+    function testGetWorldInfo() public returns(ItemAPI.WorldInfo memory){
+        ItemAPI.WorldInfo memory info = item.GetWorldInfo(uint64(1));
+        return info;
+    }
+
+    function testGetItemType() public returns(ItemAPI.ItemType memory){
+        ItemAPI.ItemType memory info = item.GetItemType(uint64(1), uint64(1));
+        return info;
+    }
+
+    function testGetItem() public returns(ItemAPI.Item memory){
+        ItemAPI.Item memory info = item.GetItem(uint64(1), uint64(1), uint64(1));
+        return info;
+    }
+
+    function testGetItems() public returns(ItemAPI.Items memory){
+        ItemAPI.Items memory info = item.GetItems(uint64(1), uint64(1), address(this));
+        return info;
+    }
 
     function testIssueWorld(address owner, string name, string description) public {
         item.IssueWorld(owner, name, description);
