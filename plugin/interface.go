@@ -37,7 +37,7 @@ type IPM interface {
 	ISigner
 	ExecTx(tx *types.Transaction, ctx *Context, fromSol bool) ([]byte, error)
 	IsPlugin(name string) bool
-	InitChain(json.RawMessage, header *types.Header,*params.ChainConfig) ([]*types.Transaction, error)
+	InitChain(json.RawMessage, *types.Header, *params.ChainConfig) ([]*types.Transaction, error)
 }
 
 type IContract interface {

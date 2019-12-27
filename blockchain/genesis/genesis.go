@@ -135,7 +135,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	// create account and asset
 	mananger := pm.NewPM(statedb)
 	mananger.Init(g.Timestamp, nil)
-	actTxs, err := mananger.InitChain(g.PluginDoc, header, g.Config)
+
+	actTxs, err := mananger.InitChain(g.PluginDoc, head, g.Config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("plugin init chain err %v", err)
 	}
