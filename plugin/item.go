@@ -614,6 +614,14 @@ func (im *ItemManager) AddItemTypeAttributes(from string, worldID, itemTypeID ui
 		return nil, err
 	}
 
+	if itemTypeobj.Merge == true {
+		for _, attr := range attributes {
+			if attr.Permission == ItemOwner {
+				return nil, ErrInvalidPermission
+			}
+		}
+	}
+
 	err = im.checkAttribute(attributes)
 	if err != nil {
 		return nil, err
@@ -669,6 +677,19 @@ func (im *ItemManager) ModifyItemTypeAttributes(from string, worldID, itemTypeID
 	worldobj, err := im.getWorldByID(worldID)
 	if err != nil {
 		return nil, err
+	}
+
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return nil, err
+	}
+
+	if itemTypeobj.Merge == true {
+		for _, attr := range attributes {
+			if attr.Permission == ItemOwner {
+				return nil, ErrInvalidPermission
+			}
+		}
 	}
 
 	err = im.checkAttribute(attributes)
