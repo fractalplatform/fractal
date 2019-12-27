@@ -33,38 +33,26 @@ import (
 type (
 	// GetHashFunc returns the nth block hash in the blockchain and is used by the BLOCKHASH EVM op code.
 	GetHashFunc func(uint64) common.Hash
-	// GetDelegatedByTimeFunc returns the delegated balance
-	GetDelegatedByTimeFunc func(*state.StateDB, string, uint64) (stake *big.Int, err error)
-	//GetEpoch
-	GetEpochFunc func(state *state.StateDB, t uint64, curEpoch uint64) (epoch uint64, time uint64, err error)
-	//GetActivedCandidateSize
-	GetActivedCandidateSizeFunc func(state *state.StateDB, epoch uint64) (size uint64, err error)
-	//GetActivedCandidate
-	GetActivedCandidateFunc func(state *state.StateDB, epoch uint64, index uint64) (name string, stake *big.Int, votes *big.Int, counter uint64, actualCounter uint64, replace uint64, isbad bool, err error)
-	//GetVoterStake
-	GetVoterStakeFunc func(state *state.StateDB, epoch uint64, voter string, candidate string) (stake *big.Int, err error)
-	// GetHeaderByNumberFunc
-	GetHeaderByNumberFunc func(number uint64) *types.Header
+	// CurrentHeaderFunc retrieves the current header from the local chain.
+	CurrentHeaderFunc func() *types.Header
+	// GetHeaderByNumberFunc retrieves a block header from the database by number.
+	GetHeaderByNumberFunc func(uint64) *types.Header
+	// GetHeaderByHashFunc retrieves a block header from the database by its hash.
+	GetHeaderByHashFunc func(common.Hash) *types.Header
 )
 
 // Context provides the EVM with auxiliary information. Once provided
 // it shouldn't be modified.
 type Context struct {
-	GetHash            GetHashFunc
-	GetDelegatedByTime GetDelegatedByTimeFunc
-	//GetLatestEpoch          GetLatestEpochFunc
-	//GetPrevEpoch            GetPrevEpochFunc
-	GetEpoch                GetEpochFunc
-	GetActivedCandidateSize GetActivedCandidateSizeFunc
-	GetActivedCandidate     GetActivedCandidateFunc
-	GetVoterStake           GetVoterStakeFunc
-	GetHeaderByNumber       GetHeaderByNumberFunc
-
+	GetHash           GetHashFunc
+	CurrentHeader     CurrentHeaderFunc
+	GetHeaderByNumber GetHeaderByNumberFunc
+	GetHeaderByHash   GetHeaderByHashFunc
 	// Message information
 	Origin    string // Provides information for ORIGIN
 	Recipient string
 	From      string   // Provides information for ORIGIN
-	AssetID   uint64   // provides assetId
+	AssetID   uint64   // provides information for ASSETID
 	GasPrice  *big.Int // Provides information for GASPRICE
 
 	// Block information
@@ -229,7 +217,6 @@ func (evm *EVM) Call(caller ContractRef, action *envelope.ContractTx, gas uint64
 		return nil, gas, ErrDepth
 	}
 	// Fail if we're trying to transfer more than the available balance
-
 	if err := evm.PM.CanTransfer(caller.Name(), action.GetAssetID(), action.Value()); err != nil {
 		return nil, gas, ErrInsufficientBalance
 	}

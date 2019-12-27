@@ -172,14 +172,9 @@ func (b *APIBackend) StateAndHeaderByNumber(ctx context.Context, blockNr rpc.Blo
 }
 
 func (b *APIBackend) GetEVM(ctx context.Context, manager pm.IPM, state *state.StateDB, from string, to string, assetID uint64, gasPrice *big.Int, header *types.Header, vmCfg vm.Config) (*vm.EVM, func() error, error) {
-	//account.AddAccountBalanceByID(from, assetID, math.MaxBig256)
 	vmError := func() error { return nil }
 
-	evmContext := &processor.EvmContext{
-		ChainContext: b.ftservice.BlockChain(),
-	}
-
-	context := processor.NewEVMContext(from, to, assetID, gasPrice, header, evmContext, nil)
+	context := processor.NewEVMContext(from, to, assetID, gasPrice, header, b.ftservice.BlockChain(), nil)
 	return vm.NewEVM(context, manager, state, b.ChainConfig(), vmCfg), vmError, nil
 }
 

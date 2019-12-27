@@ -124,10 +124,19 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 	timestamp := g.Timestamp
 	g.Config.ReferenceTime = timestamp
 
+	head := &types.Header{
+		Number:     number,
+		Time:       timestamp,
+		ParentHash: common.Hash{},
+		GasLimit:   g.GasLimit,
+		GasUsed:    0,
+		Coinbase:   g.Config.ChainName,
+	}
 	// create account and asset
 	mananger := pm.NewPM(statedb)
 	mananger.Init(g.Timestamp, nil)
-	actTxs, err := mananger.InitChain(g.PluginDoc, g.Config)
+
+	actTxs, err := mananger.InitChain(g.PluginDoc, head, g.Config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("plugin init chain err %v", err)
 	}
@@ -144,16 +153,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		return nil, nil, fmt.Errorf("genesis json marshal json err %v", err)
 	}
 
-	head := &types.Header{
-		Number:     number,
-		Time:       timestamp,
-		ParentHash: common.Hash{},
-		GasLimit:   g.GasLimit,
-		GasUsed:    0,
-		Coinbase:   g.Config.ChainName,
-		Root:       root,
-		Extra:      aBytes,
-	}
+	head.Root = root
+	head.Extra = aBytes
 
 	receipts := []*types.Receipt{}
 	for k, tx := range actTxs {

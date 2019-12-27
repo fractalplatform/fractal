@@ -1058,8 +1058,8 @@ func (bc *BlockChain) GetHeaderByNumber(number uint64) *types.Header {
 	return bc.GetHeader(hash, number)
 }
 
-// Config retrieves the blockchain's chain configuration.
-func (bc *BlockChain) Config() *params.ChainConfig { return bc.chainConfig }
+// ChainConfig retrieves the chain configuration.
+func (bc *BlockChain) ChainConfig() *params.ChainConfig { return bc.chainConfig }
 
 // Export writes the active chain to the given writer.
 func (bc *BlockChain) Export(w io.Writer) error {

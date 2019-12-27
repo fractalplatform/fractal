@@ -117,7 +117,8 @@ func (s *PublicFractalAPI) doCall(ctx context.Context, args CallArgs, blockNr rp
 	if err != nil {
 		return nil, 0, false, err
 	}
-	res, gas, _, failed, err, _ := processor.ApplyMessage(account, evm, types.NewTransaction(action), gp, gasPrice, assetID, s.b.ChainConfig())
+
+	res, gas, _, failed, err, _ := processor.ApplyMessage(account, evm, nil, types.NewTransaction(action), gp, gasPrice, assetID, s.b.ChainConfig())
 	if err := vmError(); err != nil {
 		return nil, 0, false, err
 	}

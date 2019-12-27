@@ -32,6 +32,7 @@ import (
 	"github.com/fractalplatform/fractal/crypto/ecies"
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/params"
+	"github.com/fractalplatform/fractal/plugin"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/types/envelope"
 )
@@ -875,7 +876,16 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	var ret []byte
 	var err error
 
-	ret, err = evm.PM.ExecTx(types.NewTransaction(action), true)
+	ctx := &plugin.Context{
+		ChainContext: NewPContext(evm),
+		Coinbase:     evm.Context.Coinbase,
+		GasLimit:     evm.Context.GasLimit,
+		BlockNumber:  evm.Context.BlockNumber.Uint64(),
+		Time:         evm.Context.Time.Uint64(),
+		Difficulty:   evm.Context.Difficulty.Uint64(),
+	}
+
+	ret, err = evm.PM.ExecTx(types.NewTransaction(action), ctx, true)
 	returnGas := gas - gasUsed
 	contract.Gas += returnGas
 
@@ -887,6 +897,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 		internalAction := &types.InternalTx{
 			From:       action.Sender(),
 			To:         action.Recipient(),
+			Amount:     action.Value(),
 			Data:       action.Payload,
 			RetrunData: ret,
 			Type:       types.PluginCall,
@@ -1007,6 +1018,7 @@ func opCall(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 			internalAction := &types.InternalTx{
 				From:     action.Sender(),
 				To:       action.Recipient(),
+				Amount:   action.Value(),
 				Type:     types.Call,
 				GasUsed:  gas - returnGas,
 				GasLimit: gas,
@@ -1064,6 +1076,7 @@ func opCallWithPay(pc *uint64, evm *EVM, contract *Contract, memory *Memory, sta
 			internalAction := &types.InternalTx{
 				From:     action.Sender(),
 				To:       action.Recipient(),
+				Amount:   action.Value(),
 				Type:     types.CallWithPay,
 				GasUsed:  gas - returnGas,
 				GasLimit: gas,
@@ -1129,6 +1142,7 @@ func opCallCode(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack 
 		internalAction := &types.InternalTx{
 			From:     action.Sender(),
 			To:       action.Recipient(),
+			Amount:   action.Value(),
 			Type:     types.CallCode,
 			GasUsed:  gas - returnGas,
 			GasLimit: gas,
@@ -1627,6 +1641,7 @@ func opCallEx(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *S
 		internalAction := &types.InternalTx{
 			From:     action.Sender(),
 			To:       action.Recipient(),
+			Amount:   action.Value(),
 			Type:     types.TransferEx,
 			GasUsed:  0,
 			GasLimit: 0,

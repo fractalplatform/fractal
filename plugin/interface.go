@@ -36,18 +36,19 @@ type IPM interface {
 	IFee
 	ISigner
 	IItem
-	ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error)
+	ExecTx(tx *types.Transaction, ctx *Context, fromSol bool) ([]byte, error)
 	IsPlugin(name string) bool
-	InitChain(json.RawMessage, *params.ChainConfig) ([]*types.Transaction, error)
+	InitChain(json.RawMessage, *types.Header, *params.ChainConfig) ([]*types.Transaction, error)
 }
 
 type IContract interface {
 	AccountName() string
-	CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error)
+	CallTx(ptx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error)
 }
 
 // IAccount account manager interface.
 type IAccount interface {
+	// external funcs
 	GetNonce(accountName string) (uint64, error)
 	SetNonce(accountName string, nonce uint64) error
 	CreateAccount(accountName string, pubKey string, description string) ([]byte, error)
@@ -61,15 +62,19 @@ type IAccount interface {
 	AccountSign(accountName string, priv *ecdsa.PrivateKey, signer ISigner, signHash func(chainID *big.Int) common.Hash) ([]byte, error)
 	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) (*ecdsa.PublicKey, error)
 	ChangePubKey(accountName string, pubKey string) error
+
+	AccountIsExist(accountName string) error                  // for api
+	GetAccountByName(accountName string) (interface{}, error) //for api
+	// internal func
 	checkCreateAccount(accountName string, pubKey string, description string) error
 	getAccount(accountName string) (*Account, error)                          // for asset plugin
 	addBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
 	subBalanceByID(accountName string, assetID uint64, amount *big.Int) error // for asset plugin
-	AccountIsExist(accountName string) error                                  // for api
-	GetAccountByName(accountName string) (interface{}, error)                 //for api
+
 }
 
 type IAsset interface {
+	// external funcs
 	IssueAsset(accountName string, assetName string, symbol string,
 		amount *big.Int, decimals uint64, founder string, owner string,
 		limit *big.Int, description string, am IAccount) ([]byte, error)
@@ -77,11 +82,14 @@ type IAsset interface {
 	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
 	GetAssetID(assetName string) (uint64, error)
 	GetAssetName(assetID uint64) (string, error)
+
+	GetAssetInfoByName(assetName string) (*Asset, error) // for api
+	GetAssetInfoByID(assetID uint64) (*Asset, error)     // for api
+
+	// internal func
 	checkIssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 		decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) error
 	checkIncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) error
-	GetAssetInfoByName(assetName string) (*Asset, error) // for api
-	GetAssetInfoByID(assetID uint64) (*Asset, error)     // for api
 }
 
 type IConsensus interface {
@@ -124,6 +132,7 @@ type IItem interface {
 	AddItemAttributes(from string, worldID, itemTypeID, itemID uint64, attributes []*Attribute) ([]byte, error)
 	DelItemAttributes(from string, worldID, itemTypeID, itemID uint64, attrName []string) ([]byte, error)
 	ModifyItemAttributes(from string, worldID, itemTypeID, itemID uint64, attributes []*Attribute) ([]byte, error)
+
 	// for rpc
 	GetWorldByID(worldID uint64) (*World, error)
 	GetWorldByName(worldName string) (*World, error)

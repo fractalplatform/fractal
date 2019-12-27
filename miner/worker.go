@@ -56,7 +56,7 @@ type context interface {
 }
 
 type chainContext interface {
-	Config() *params.ChainConfig
+	ChainConfig() *params.ChainConfig
 	CurrentHeader() *types.Header
 	GetBlockByNumber(number uint64) *types.Block
 	StateAt(common.Hash) (*state.StateDB, error)
