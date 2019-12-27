@@ -460,7 +460,7 @@ func (im *ItemManager) IncreaseItems(from string, worldID uint64, itemTypeID uin
 		return nil, ErrAmountValueInvalid
 	}
 
-	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, from)
+	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, to)
 	if err != nil && err != ErrItemsNotExist {
 		return nil, err
 	}
