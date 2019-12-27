@@ -44,7 +44,7 @@ type InternalTx struct {
 	To         string             `json:"to"`
 	Amount     *big.Int           `json:"value"`
 	Data       []byte             `json:"data"`
-	RetrunData []byte             `json:"returndata"`
+	ReturnData []byte             `json:"returndata"`
 	Status     uint64             `json:"status"`
 	Index      uint64             `json:"index"`
 	GasUsed    uint64             `json:"gasUsed"`
