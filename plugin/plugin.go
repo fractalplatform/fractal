@@ -147,7 +147,7 @@ func (pm *Manager) selectContract(tx *envelope.PluginTx) IContract {
 	return pm.contractsByType[tx.PayloadType()]
 }
 
-func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
+func (pm *Manager) ExecTx(tx *types.Transaction, ctx *Context, fromSol bool) ([]byte, error) {
 	ptx, ok := tx.Envelope.(*envelope.PluginTx)
 	if !ok {
 		return nil, ErrWrongTransaction
@@ -160,7 +160,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, fromSol bool) ([]byte, error) {
 		if fromSol {
 			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ptx}, ptx.Payload)
 		} else {
-			ret, err = contract.CallTx(ptx, pm)
+			ret, err = contract.CallTx(ptx, ctx, pm)
 		}
 		if err != nil {
 			pm.stateDB.RevertToSnapshot(snapshot)
@@ -175,7 +175,7 @@ func (pm *Manager) IsPlugin(name string) bool {
 	return exist
 }
 
-func (pm *Manager) InitChain(pluginDoc json.RawMessage, chainConfig *params.ChainConfig) ([]*types.Transaction, error) {
+func (pm *Manager) InitChain(pluginDoc json.RawMessage, head *types.Header, chainConfig *params.ChainConfig) ([]*types.Transaction, error) {
 	if len(pluginDoc) == 0 {
 		pluginDoc = DefaultPluginDoc()
 	}
@@ -204,7 +204,7 @@ func (pm *Manager) InitChain(pluginDoc json.RawMessage, chainConfig *params.Chai
 	actTxs = append(actTxs, minerTxs...)
 
 	for index, action := range actTxs {
-		_, err := pm.ExecTx(action, false)
+		_, err := pm.ExecTx(action, NewContext(nil, head), false)
 		if err != nil {
 			return nil, fmt.Errorf("genesis index: %v, err: %v", index, err)
 		}

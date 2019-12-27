@@ -29,7 +29,7 @@ import (
 // ChainContext supports retrieving headers and consensus parameters from the
 // current blockchain to be used during transaction processing.
 type ChainContext interface {
-	Config() *params.ChainConfig
+	ChainConfig() *params.ChainConfig
 
 	// CurrentHeader retrieves the current header from the local chain.
 	CurrentHeader() *types.Header
@@ -60,12 +60,8 @@ type ChainContext interface {
 	WriteBlockWithState(block *types.Block, receipts []*types.Receipt, state *state.StateDB) (bool, error)
 }
 
-type EvmContext struct {
-	ChainContext
-}
-
 // NewEVMContext creates a new context for use in the EVM.
-func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, header *types.Header, chain *EvmContext, author *string) vm.Context {
+func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, header *types.Header, chain ChainContext, author *string) vm.Context {
 	// If we don't have an explicit author (i.e. not mining), extract from the header
 	var beneficiary string
 	if author == nil {
@@ -74,16 +70,15 @@ func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, 
 		beneficiary = *author
 	}
 	return vm.Context{
-		GetHash:           GetHashFn(header, chain),
-		GetHeaderByNumber: chain.GetHeaderByNumber,
-		Origin:            sender,
-		Recipient:         to,
-		AssetID:           assetID,
-		Coinbase:          beneficiary,
-		BlockNumber:       big.NewInt(int64(header.Number)),
-		Time:              big.NewInt(int64(header.Time)),
-		GasLimit:          header.GasLimit,
-		GasPrice:          new(big.Int).Set(gasPrice),
+		GetHash:     GetHashFn(header, chain),
+		Origin:      sender,
+		Recipient:   to,
+		AssetID:     assetID,
+		Coinbase:    beneficiary,
+		BlockNumber: big.NewInt(int64(header.Number)),
+		Time:        big.NewInt(int64(header.Time)),
+		GasLimit:    header.GasLimit,
+		GasPrice:    new(big.Int).Set(gasPrice),
 	}
 }
 

@@ -75,7 +75,7 @@ func (am *AccountManager) AccountName() string {
 	return "fractalaccount"
 }
 
-func (am *AccountManager) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
+func (am *AccountManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
 	case CreateAccount:
 		param := &CreateAccountAction{}

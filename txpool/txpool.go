@@ -64,7 +64,7 @@ type blockChain interface {
 	CurrentBlock() *types.Block
 	GetBlock(hash common.Hash, number uint64) *types.Block
 	StateAt(root common.Hash) (*state.StateDB, error)
-	Config() *params.ChainConfig
+	ChainConfig() *params.ChainConfig
 }
 type txpoolResetRequest struct {
 	oldHead, newHead *types.Header
@@ -678,7 +678,7 @@ func (tp *TxPool) validateTx(tx *types.Transaction, local bool) error {
 		}
 
 		// Transactor should have enough funds to cover the value costs
-		balance, err = tp.curPM.GetBalance(from, tp.chain.Config().SysTokenID)
+		balance, err = tp.curPM.GetBalance(from, tp.chain.ChainConfig().SysTokenID)
 		if err != nil {
 			return err
 		}
@@ -907,7 +907,7 @@ func (tp *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 			continue
 		}
 
-		if err := tx.Check(tp.chain.Config()); err != nil {
+		if err := tx.Check(tp.chain.ChainConfig()); err != nil {
 			log.Trace("add txs check ", "err", err, "hash", tx.Hash())
 			errs[index] = fmt.Errorf("transaction check err: %v", err)
 			continue
