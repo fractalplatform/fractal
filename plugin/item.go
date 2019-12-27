@@ -268,11 +268,9 @@ func (im *ItemManager) IssueItemType(creator string, worldID uint64, name string
 	if err != nil {
 		return nil, err
 	}
-	if merge == true {
-		for _, attr := range attributes {
-			if attr.Permission == ItemOwner {
-				return nil, ErrInvalidPermission
-			}
+	for _, attr := range attributes {
+		if attr.Permission == ItemOwner {
+			return nil, ErrInvalidPermission
 		}
 	}
 
@@ -614,11 +612,9 @@ func (im *ItemManager) AddItemTypeAttributes(from string, worldID, itemTypeID ui
 		return nil, err
 	}
 
-	if itemTypeobj.Merge == true {
-		for _, attr := range attributes {
-			if attr.Permission == ItemOwner {
-				return nil, ErrInvalidPermission
-			}
+	for _, attr := range attributes {
+		if attr.Permission == ItemOwner {
+			return nil, ErrInvalidPermission
 		}
 	}
 
@@ -679,16 +675,9 @@ func (im *ItemManager) ModifyItemTypeAttributes(from string, worldID, itemTypeID
 		return nil, err
 	}
 
-	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
-	if err != nil {
-		return nil, err
-	}
-
-	if itemTypeobj.Merge == true {
-		for _, attr := range attributes {
-			if attr.Permission == ItemOwner {
-				return nil, ErrInvalidPermission
-			}
+	for _, attr := range attributes {
+		if attr.Permission == ItemOwner {
+			return nil, ErrInvalidPermission
 		}
 	}
 
