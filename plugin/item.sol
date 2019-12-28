@@ -1,7 +1,7 @@
 pragma solidity >=0.4.0;
 pragma experimental ABIEncoderV2;
 
-interface ItemAPI {
+contract ItemAPI {
     struct WorldInfo {
         uint64 ID;
         string Name;
@@ -61,23 +61,23 @@ interface ItemAPI {
 
 contract TestConsensus {
     ItemAPI constant item = ItemAPI(address(bytes20("fractalitem")));
-    function testGetWorldInfo() public returns(ItemAPI.WorldInfo memory){
-        ItemAPI.WorldInfo memory info = item.GetWorldInfo(uint64(1));
+    function testGetWorldInfo(uint64 worldID) public returns(ItemAPI.WorldInfo memory){
+        ItemAPI.WorldInfo memory info = item.GetWorldInfo(worldID);
         return info;
     }
 
-    function testGetItemType() public returns(ItemAPI.ItemType memory){
-        ItemAPI.ItemType memory info = item.GetItemType(uint64(1), uint64(1));
+    function testGetItemType(uint64 worldID, uint64 itemTypeID) public returns(ItemAPI.ItemType memory){
+        ItemAPI.ItemType memory info = item.GetItemType(worldID, itemTypeID);
         return info;
     }
 
-    function testGetItem() public returns(ItemAPI.Item memory){
-        ItemAPI.Item memory info = item.GetItem(uint64(1), uint64(1), uint64(1));
+    function testGetItem(uint64 worldID, uint64 itemTypeID, uint64 itemID) public returns(ItemAPI.Item memory){
+        ItemAPI.Item memory info = item.GetItem(worldID, itemTypeID, itemID);
         return info;
     }
 
-    function testGetItems() public returns(ItemAPI.Items memory){
-        ItemAPI.Items memory info = item.GetItems(uint64(1), uint64(1), address(this));
+    function testGetItems(uint64 worldID, uint64 itemTypeID, address owner) public returns(ItemAPI.Items memory){
+        ItemAPI.Items memory info = item.GetItems(worldID, itemTypeID, owner);
         return info;
     }
 
