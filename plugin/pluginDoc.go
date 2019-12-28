@@ -8,7 +8,7 @@ import (
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/types/envelope"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/fractalplatform/fractal/utils/abi"
 )
 
 type PluginDoc struct {
@@ -23,15 +23,11 @@ func PluginDocJsonUnMarshal(raw json.RawMessage) (pd *PluginDoc, err error) {
 }
 
 // CreateAccount create account
-func (pd *PluginDoc) CreateAccount(chainName, accountName string) ([]*types.Transaction, error) {
+func (pd *PluginDoc) CreateAccount(pabi *abi.ABI, chainName, accountName string) ([]*types.Transaction, error) {
 	var txs []*types.Transaction
 
-	act := &CreateAccountAction{
-		Name:   chainName,
-		Pubkey: common.HexToPubKey("").String(),
-	}
-
-	payload, err := rlp.EncodeToBytes(act)
+	// see account.Sol_CreateAccount for params detail
+	payload, err := pabi.Pack("CreateAccount", common.StringToAddress(chainName), common.HexToPubKey("").String(), "")
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +50,7 @@ func (pd *PluginDoc) CreateAccount(chainName, accountName string) ([]*types.Tran
 	txs = append(txs, types.NewTransaction(env))
 
 	for _, act := range pd.Accounts {
-		payload, err := rlp.EncodeToBytes(act)
+		payload, err := pabi.Pack("CreateAccount", common.StringToAddress(act.Name), act.Pubkey, act.Desc)
 		if err != nil {
 			return nil, err
 		}
@@ -81,15 +77,16 @@ func (pd *PluginDoc) CreateAccount(chainName, accountName string) ([]*types.Tran
 }
 
 // CreateAsset create asset
-func (pd *PluginDoc) CreateAsset(chainName, assetName string) ([]*types.Transaction, error) {
+func (pd *PluginDoc) IssueAsset(pabi *abi.ABI, chainName, assetName string) ([]*types.Transaction, error) {
 	var txs []*types.Transaction
 
 	for _, ast := range pd.Assets {
-		payload, err := rlp.EncodeToBytes(ast)
+		// see asset.Sol_IssueAsset for params detail
+		payload, err := pabi.Pack("IssueAsset", ast.AssetName, ast.Symbol, ast.Amount, ast.Decimals,
+			common.StringToAddress(ast.Founder), common.StringToAddress(ast.Owner), ast.UpperLimit, ast.Description)
 		if err != nil {
 			return nil, err
 		}
-
 		env, err := envelope.NewPluginTx(
 			IssueAsset,
 			chainName,
@@ -114,7 +111,12 @@ func (pd *PluginDoc) CreateAsset(chainName, assetName string) ([]*types.Transact
 }
 
 // RegisterMiner register Miner
-func (pd *PluginDoc) RegisterMiner(sysName, dposName string) ([]*types.Transaction, error) {
+func (pd *PluginDoc) RegisterMiner(pabi *abi.ABI, sysName, dposName string) ([]*types.Transaction, error) {
+	// see consensus.Sol_RegisterMiner for params detail
+	payload, err := pabi.Pack("RegisterMiner", common.Address{})
+	if err != nil {
+		return nil, err
+	}
 	env, err := envelope.NewPluginTx(
 		RegisterMiner,
 		sysName,
@@ -125,7 +127,7 @@ func (pd *PluginDoc) RegisterMiner(sysName, dposName string) ([]*types.Transacti
 		0,             // gasLimit
 		big.NewInt(0), // gasprice
 		big.NewInt(1), // amount
-		nil,
+		payload,
 		nil,
 	)
 	if err != nil {
