@@ -518,6 +518,15 @@ func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, 
 	return nil
 }
 
+func (am *AccountManager) Sol_CreateAccount(context *ContextSol, name string, pubKey string, desc string) error {
+	_, err := am.CreateAccount(name, pubKey, desc)
+	return err
+}
+
+func (am *AccountManager) Sol_ChangePubKey(context *ContextSol, pubKey string) error {
+	return am.ChangePubKey(context.tx.Sender(), pubKey)
+}
+
 func (am *AccountManager) Sol_GetBalance(context *ContextSol, account common.Address, assetID uint64) (*big.Int, error) {
 	return am.GetBalance(account.AccountName(), assetID)
 }
