@@ -79,6 +79,7 @@ func NewEVMContext(sender string, to string, assetID uint64, gasPrice *big.Int, 
 		Time:        big.NewInt(int64(header.Time)),
 		GasLimit:    header.GasLimit,
 		GasPrice:    new(big.Int).Set(gasPrice),
+		Difficulty:  big.NewInt(int64(header.Difficulty)),
 	}
 }
 
