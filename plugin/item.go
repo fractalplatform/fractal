@@ -1686,7 +1686,7 @@ type SolItems struct {
 }
 
 func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTypeID uint64, owner common.Address) (*SolItems, error) {
-	o, err := im.getItemsByOwner(worldID, itemTypeID, owner.String())
+	o, err := im.getItemsByOwner(worldID, itemTypeID, owner.AccountName())
 	if err != nil {
 		return nil, err
 	}
