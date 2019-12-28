@@ -186,17 +186,22 @@ func (pm *Manager) InitChain(pluginDoc json.RawMessage, head *types.Header, chai
 		return nil, fmt.Errorf("Init chain json unmarshal err: %v", err)
 	}
 
-	actTxs, err := pd.CreateAccount(chainConfig.ChainName, chainConfig.AccountName)
+	var contract IContract
+	// pm.selectContract...
+	contract = pm.contracts[chainConfig.AccountName]
+	actTxs, err := pd.CreateAccount(getPluginABI(contract), chainConfig.ChainName, chainConfig.AccountName)
 	if err != nil {
 		return nil, err
 	}
 
-	astTxs, err := pd.CreateAsset(chainConfig.ChainName, chainConfig.AssetName)
+	contract = pm.contracts[chainConfig.AssetName]
+	astTxs, err := pd.IssueAsset(getPluginABI(contract), chainConfig.ChainName, chainConfig.AssetName)
 	if err != nil {
 		return nil, err
 	}
 
-	minerTxs, err := pd.RegisterMiner(chainConfig.SysName, chainConfig.DposName)
+	contract = pm.contracts[chainConfig.DposName]
+	minerTxs, err := pd.RegisterMiner(getPluginABI(contract), chainConfig.SysName, chainConfig.DposName)
 	if err != nil {
 		return nil, err
 	}
