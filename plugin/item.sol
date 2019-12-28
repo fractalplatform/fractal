@@ -105,6 +105,10 @@ contract TestConsensus {
         item.DestroyItems(worldID, itemTypeID, amount);
     }
 
+    function testTransferItem(address to, uint64[] worldID, uint64[] itemTypeID, uint64[] itemID, uint64[] amount) public {
+        item.TransferItem(to, worldID, itemTypeID, itemID, amount);
+    }
+
     function testAddItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
         item.AddItemTypeAttributes(worldID, itemTypeID, attrPermission, attrName, attrDes);
     }
