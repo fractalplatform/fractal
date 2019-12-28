@@ -45,6 +45,7 @@ contract ItemAPI {
     function GetItems(uint64 worldID, uint64 itemTypeID, address owner) external returns(Items memory);
 
     function IssueWorld(address owner, string name, string description) external;
+    function UpdateWorldOwner(address owner, uint64 worldID) external;
     function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function IncreaseItem(uint64 worldID, uint64 itemTypeID, address owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function DestroyItem(uint64 worldID, uint64 itemTypeID, uint64 itemID) external;
@@ -59,7 +60,7 @@ contract ItemAPI {
     function ModifyItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
 }
 
-contract TestConsensus {
+contract TestItem {
     ItemAPI constant item = ItemAPI(address(bytes20("fractalitem")));
     function testGetWorldInfo(uint64 worldID) public returns(ItemAPI.WorldInfo memory){
         ItemAPI.WorldInfo memory info = item.GetWorldInfo(worldID);
@@ -83,6 +84,10 @@ contract TestConsensus {
 
     function testIssueWorld(address owner, string name, string description) public {
         item.IssueWorld(owner, name, description);
+    }
+
+    function testUpdateWorldOwner(address owner, uint64 worldID) public {
+        item.UpdateWorldOwner(owner, worldID);
     }
 
     function testIssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
