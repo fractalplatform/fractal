@@ -157,6 +157,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, ctx *Context, fromSol bool) ([]
 		snapshot := pm.stateDB.Snapshot()
 		var ret []byte
 		var err error
+		fromSol = true // always use abi call plugin
 		if fromSol {
 			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ptx}, ptx.Payload)
 		} else {
