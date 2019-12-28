@@ -254,3 +254,15 @@ func PluginSolAPICall(o, p1 interface{}, data []byte) ([]byte, error) {
 	}
 	return retbytes, nil
 }
+
+func getPluginABI(pluginObj interface{}) *abi.ABI {
+	typ := reflect.TypeOf(pluginObj)
+	mplugin := pluginSolAPI[typ]
+	ret := &abi.ABI{
+		Methods: make(map[string]abi.Method, len(mplugin)),
+	}
+	for _, method := range mplugin {
+		ret.Methods[method.Name] = method.Method
+	}
+	return ret
+}
