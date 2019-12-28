@@ -34,12 +34,10 @@ func testInit() {
 	pm.CreateAccount("assetowner", pubkey, "just for test")
 	pm.CreateAccount("assetfounder", pubkey, "just for test")
 	pm.IssueAsset("assetowner", "ftoken", "ft", big.NewInt(1000), 10, "assetfounder", "assetowner", big.NewInt(10000), "issue for test", pm)
-	pm.CreateAccount("itemtype1", pubkey, "itemType1 creator")
-	pm.CreateAccount("itemtype2", pubkey, "itemType2 creator")
-	pm.CreateAccount("itemtype3", pubkey, "itemType3 creator")
-	pm.CreateAccount("itemtest1", pubkey, "item test account1")
-	pm.CreateAccount("itemtest2", pubkey, "item test account2")
-	pm.CreateAccount("itemtest3", pubkey, "item test account3")
+	pm.CreateAccount("type1item111", pubkey, "Type1 item1 owner")
+	pm.CreateAccount("type1item222", pubkey, "Type1 item2 owner")
+	pm.CreateAccount("type1items333", pubkey, "Type1 items3 owner")
+	pm.CreateAccount("type1items444", pubkey, "Type1 items4 owner")
 }
 
 func Test_CreateAccount(t *testing.T) {

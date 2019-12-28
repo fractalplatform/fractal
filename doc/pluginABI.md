@@ -71,4 +71,175 @@ interface AccountAPI {
 返回:
 - 无
 
+## item
+#### IssueWorld
+说明: 发行world
+
+参数: 
+- `address owner`: 账户名
+- `string name`: world名字
+- `string description`: 描述
+
+返回:
+- 无
+
+#### IssueItemType
+说明: 发行道具类型
+
+参数: 
+- `uint64 worldID`: worldID
+- `string name`: itemType名字
+- `bool merge`: 同质标识
+- `uint64 upperLimit`: 上限
+- `string description`: 描述
+- `uint64[] attrPermission`: 属性修改权限
+- `string[] attrName`: 属性名字
+- `string[] attrDes`: 属性描述
+
+返回:
+- 无
+
+#### IncreaseItem
+说明: 增发item
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `string name`: itemType名字
+- `address owner`: 账户名
+- `string description`: 描述
+- `uint64[] attrPermission`: 属性修改权限
+- `string[] attrName`: 属性名字
+- `string[] attrDes`: 属性描述
+
+返回:
+- 无
+
+#### DestroyItem
+说明: 销毁item
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64 itemID`: itemID
+
+返回:
+- 无
+
+#### IncreaseItems
+说明: 增发items
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `address to`: 账户名
+- `uint64 amount`: 数量
+
+返回:
+- 无
+
+#### DestroyItems
+说明: 销毁items
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64 amount`: 数量
+
+返回:
+- 无
+
+#### TransferItem
+说明: 交易
+
+参数: 
+- `address to`: 账户名
+- `uint64[] worldID`: worldID
+- `uint64[] itemTypeID`: itemTypeID
+- `uint64[] itemiD`: itemID，如果交易items，填0。交易item，填1
+- `uint64[] amount`: 数量，如果交易item，填1。
+
+返回:
+- 无
+
+#### AddItemTypeAttributes
+说明: 添加itemType属性
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64[] attrPermission`: 属性修改权限
+- `string[] attrName`: 属性名字
+- `string[] attrDes`: 属性描述
+
+返回:
+- 无
+
+#### DelItemTypeAttributes
+说明: 删除itemType属性
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `string[] attrName`: 属性名字
+
+返回:
+- 无
+
+#### ModifyItemTypeAttributes
+说明: 修改itemType属性
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64[] attrPermission`: 属性修改权限
+- `string[] attrName`: 属性名字
+- `string[] attrDes`: 属性描述
+
+返回:
+- 无
+
+#### AddItemAttributes
+说明: 添加item属性
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64 itemID`: itemID
+- `uint64[] attrPermission`: 属性修改权限
+- `string[] attrName`: 属性名字
+- `string[] attrDes`: 属性描述
+
+返回:
+- 无
+
+#### DelItemAttributes
+说明: 删除item属性
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64 itemID`: itemID
+- `string[] attrName`: 属性名字
+
+返回:
+- 无
+
+#### ModifyItemAttributes
+说明: 修改itemType属性
+
+参数: 
+- `uint64 worldID`: worldID
+- `uint64 itemTypeID`: itemTypeID
+- `uint64 itemID`: itemID
+- `uint64[] attrPermission`: 属性修改权限
+- `string[] attrName`: 属性名字
+- `string[] attrDes`: 属性描述
+
+返回:
+- 无
+
+> 示例: [item.sol]
+
 [consensus.sol]: ../plugin/consensus.sol
+[item.sol]: ../plugin/item.sol
