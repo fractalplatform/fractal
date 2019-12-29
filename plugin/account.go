@@ -527,12 +527,20 @@ func (am *AccountManager) Sol_ChangePubKey(context *ContextSol, pubKey string) e
 	return am.ChangePubKey(context.tx.Sender(), pubKey)
 }
 
-func (am *AccountManager) Sol_GetBalance(context *ContextSol, account common.Address, assetID uint64) (*big.Int, error) {
-	return am.GetBalance(account.AccountName(), assetID)
+func (am *AccountManager) Sol_GetBalance(context *ContextSol, account string, assetID uint64) (*big.Int, error) {
+	return am.GetBalance(account, assetID)
 }
 
-func (am *AccountManager) Sol_Transfer(context *ContextSol, to common.Address, assetID uint64, value *big.Int) error {
-	return am.TransferAsset(context.tx.Sender(), to.AccountName(), assetID, value)
+func (am *AccountManager) Sol_Transfer(context *ContextSol, to string, assetID uint64, value *big.Int) error {
+	return am.TransferAsset(context.tx.Sender(), to, assetID, value)
+}
+
+func (am *AccountManager) Sol_AddressToString(context *ContextSol, name common.Address) (string, error) {
+	return name.AccountName(), nil
+}
+
+func (am *AccountManager) Sol_StringToAddress(Context *ContextSol, name string) (common.Address, error) {
+	return common.StringToAddress(name), nil
 }
 
 var (

@@ -22,7 +22,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -412,8 +411,8 @@ func (asm *AssetManager) Sol_IssueAsset(context *ContextSol, name string, symbol
 	return err
 }
 
-func (asm *AssetManager) Sol_IncreaseAsset(context *ContextSol, to common.Address, assetID uint64, amount *big.Int) error {
-	_, err := asm.IncreaseAsset(context.tx.Sender(), to.AccountName(), assetID, amount, context.pm)
+func (asm *AssetManager) Sol_IncreaseAsset(context *ContextSol, to string, assetID uint64, amount *big.Int) error {
+	_, err := asm.IncreaseAsset(context.tx.Sender(), to, assetID, amount, context.pm)
 	return err
 }
 
