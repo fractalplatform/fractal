@@ -540,7 +540,7 @@ func (am *AccountManager) Sol_AddressToString(context *ContextSol, name common.A
 }
 
 func (am *AccountManager) Sol_StringToAddress(Context *ContextSol, name string) (common.Address, error) {
-	return common.StringToAddress(name), nil
+	return common.StringToAddress(name)
 }
 
 var (

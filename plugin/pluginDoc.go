@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
@@ -27,8 +28,9 @@ func (pd *PluginDoc) CreateAccount(pabi *abi.ABI, chainName, accountName string)
 	var txs []*types.Transaction
 
 	// see account.Sol_CreateAccount for params detail
-	payload, err := pabi.Pack("CreateAccount", common.StringToAddress(chainName), common.HexToPubKey("").String(), "")
+	payload, err := pabi.Pack("CreateAccount", chainName, common.HexToPubKey("").String(), "")
 	if err != nil {
+		fmt.Println("xxxx1")
 		return nil, err
 	}
 	env, err := envelope.NewPluginTx(
@@ -50,8 +52,9 @@ func (pd *PluginDoc) CreateAccount(pabi *abi.ABI, chainName, accountName string)
 	txs = append(txs, types.NewTransaction(env))
 
 	for _, act := range pd.Accounts {
-		payload, err := pabi.Pack("CreateAccount", common.StringToAddress(act.Name), act.Pubkey, act.Desc)
+		payload, err := pabi.Pack("CreateAccount", act.Name, act.Pubkey, act.Desc)
 		if err != nil {
+			fmt.Println("xxxx2")
 			return nil, err
 		}
 
@@ -83,7 +86,7 @@ func (pd *PluginDoc) IssueAsset(pabi *abi.ABI, chainName, assetName string) ([]*
 	for _, ast := range pd.Assets {
 		// see asset.Sol_IssueAsset for params detail
 		payload, err := pabi.Pack("IssueAsset", ast.AssetName, ast.Symbol, ast.Amount, ast.Decimals,
-			common.StringToAddress(ast.Founder), common.StringToAddress(ast.Owner), ast.UpperLimit, ast.Description)
+			ast.Founder, ast.Owner, ast.UpperLimit, ast.Description)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +116,7 @@ func (pd *PluginDoc) IssueAsset(pabi *abi.ABI, chainName, assetName string) ([]*
 // RegisterMiner register Miner
 func (pd *PluginDoc) RegisterMiner(pabi *abi.ABI, sysName, dposName string) ([]*types.Transaction, error) {
 	// see consensus.Sol_RegisterMiner for params detail
-	payload, err := pabi.Pack("RegisterMiner", common.Address{})
+	payload, err := pabi.Pack("RegisterMiner", "")
 	if err != nil {
 		return nil, err
 	}

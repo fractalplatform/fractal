@@ -1609,11 +1609,13 @@ func (im *ItemManager) Sol_GetWorldInfo(context *ContextSol, worldID uint64) (*S
 	if err != nil {
 		return nil, err
 	}
+	owner, _ := common.StringToAddress(worldobj.Owner)
+	creator, _ := common.StringToAddress(worldobj.Creator)
 	solWorld := &SolWorldInfo{
 		ID:          worldobj.ID,
 		Name:        worldobj.Name,
-		Owner:       common.StringToAddress(worldobj.Owner),
-		Creator:     common.StringToAddress(worldobj.Creator),
+		Owner:       owner,
+		Creator:     creator,
 		Description: worldobj.Description,
 		Total:       worldobj.Total,
 	}
@@ -1666,11 +1668,12 @@ func (im *ItemManager) Sol_GetItem(context *ContextSol, worldID uint64, itemType
 	if err != nil {
 		return nil, err
 	}
+	owner, _ := common.StringToAddress(obj.Owner)
 	sobj := &SolItem{
 		WorldID:     obj.WorldID,
 		TypeID:      obj.TypeID,
 		ID:          obj.ID,
-		Owner:       common.StringToAddress(obj.Owner),
+		Owner:       owner,
 		Description: obj.Description,
 		Destroy:     obj.Destroy,
 		AttrTotal:   obj.AttrTotal,
@@ -1690,10 +1693,11 @@ func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTyp
 	if err != nil {
 		return nil, err
 	}
+	ownerAddress, _ := common.StringToAddress(owner)
 	so := &SolItems{
 		WorldID: o.WorldID,
 		TypeID:  o.TypeID,
-		Owner:   common.StringToAddress(owner),
+		Owner:   ownerAddress,
 		Amount:  o.Amount,
 	}
 	return so, nil
