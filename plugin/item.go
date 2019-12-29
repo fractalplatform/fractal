@@ -1446,13 +1446,13 @@ func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64
 
 // for API
 
-func (im *ItemManager) Sol_IssueWorld(context *ContextSol, owner common.Address, name, description string) error {
-	_, err := im.IssueWorld(context.tx.Sender(), owner.AccountName(), name, description, context.pm)
+func (im *ItemManager) Sol_IssueWorld(context *ContextSol, owner, name, description string) error {
+	_, err := im.IssueWorld(context.tx.Sender(), owner, name, description, context.pm)
 	return err
 }
 
-func (im *ItemManager) Sol_UpdateWorldOwner(context *ContextSol, owner common.Address, worldID uint64) error {
-	_, err := im.UpdateWorldOwner(context.tx.Sender(), owner.AccountName(), worldID, context.pm)
+func (im *ItemManager) Sol_UpdateWorldOwner(context *ContextSol, owner string, worldID uint64) error {
+	_, err := im.UpdateWorldOwner(context.tx.Sender(), owner, worldID, context.pm)
 	return err
 }
 
@@ -1472,7 +1472,7 @@ func (im *ItemManager) Sol_IssueItemType(context *ContextSol, worldID uint64, na
 	return err
 }
 
-func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, worldID uint64, itemTypeID uint64, owner string, description string, attrPermission []uint64, attrName []string, attrDes []string) error {
+func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, worldID uint64, itemTypeID uint64, owner, description string, attrPermission []uint64, attrName []string, attrDes []string) error {
 	if len(attrPermission) != len(attrName) {
 		return ErrParamErr
 	}
@@ -1493,8 +1493,8 @@ func (im *ItemManager) Sol_DestroyItem(context *ContextSol, worldID uint64, item
 	return err
 }
 
-func (im *ItemManager) Sol_IncreaseItems(context *ContextSol, worldID uint64, itemTypeID uint64, to common.Address, amount uint64) error {
-	_, err := im.IncreaseItems(context.tx.Sender(), worldID, itemTypeID, to.AccountName(), amount, context.pm)
+func (im *ItemManager) Sol_IncreaseItems(context *ContextSol, worldID uint64, itemTypeID uint64, to string, amount uint64) error {
+	_, err := im.IncreaseItems(context.tx.Sender(), worldID, itemTypeID, to, amount, context.pm)
 	return err
 }
 
@@ -1503,7 +1503,7 @@ func (im *ItemManager) Sol_DestroyItems(context *ContextSol, worldID uint64, ite
 	return err
 }
 
-func (im *ItemManager) Sol_TransferItem(context *ContextSol, to common.Address, worldID []uint64, itemTypeID []uint64, itemID []uint64, amount []uint64) error {
+func (im *ItemManager) Sol_TransferItem(context *ContextSol, to string, worldID []uint64, itemTypeID []uint64, itemID []uint64, amount []uint64) error {
 	if len(worldID) != len(itemTypeID) {
 		return ErrParamErr
 	}
@@ -1518,7 +1518,7 @@ func (im *ItemManager) Sol_TransferItem(context *ContextSol, to common.Address, 
 		temp := &ItemTxParam{worldID[i], itemTypeID[i], itemID[i], amount[i]}
 		itemTx[i] = temp
 	}
-	return im.TransferItem(context.tx.Sender(), to.AccountName(), itemTx, context.pm)
+	return im.TransferItem(context.tx.Sender(), to, itemTx, context.pm)
 }
 
 func (im *ItemManager) Sol_AddItemTypeAttributes(context *ContextSol, worldID uint64, itemTypeID uint64, attrPermission []uint64, attrName []string, attrDes []string) error {
@@ -1685,15 +1685,15 @@ type SolItems struct {
 	Amount  uint64
 }
 
-func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTypeID uint64, owner common.Address) (*SolItems, error) {
-	o, err := im.getItemsByOwner(worldID, itemTypeID, owner.AccountName())
+func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTypeID uint64, owner string) (*SolItems, error) {
+	o, err := im.getItemsByOwner(worldID, itemTypeID, owner)
 	if err != nil {
 		return nil, err
 	}
 	so := &SolItems{
 		WorldID: o.WorldID,
 		TypeID:  o.TypeID,
-		Owner:   owner,
+		Owner:   common.StringToAddress(owner),
 		Amount:  o.Amount,
 	}
 	return so, nil

@@ -37,6 +37,20 @@
     - [consensus_getAllCandidates](#consensus_getAllCandidates)
     - [consensus_getCandidateInfo](#consensus_getCandidateInfo)
 
+  - **item**
+
+    - [item_getWorldByID](#item_getWorldByID)
+    - [item_getWorldByName](#item_getWorldByName)
+    - [item_getItemTypeByID](#item_getItemTypeByID)
+    - [item_getItemTypeByName](#item_getItemTypeByName)
+    - [item_getItemByID](#item_getItemByID)
+    - [item_getItemByOwner](#item_getItemByOwner)
+    - [item_getAccountItems](#item_getAccountItems)
+    - [item_getItemTypeAttributeByID](#item_getItemTypeAttributeByID)
+    - [item_getItemTypeAttributeByName](#item_getItemTypeAttributeByName)
+    - [item_getItemAttributeByID](#item_getItemAttributeByID)
+    - [item_getItemAttributeByName](#item_getItemAttributeByName)
+
 ---
 
 #### account_accountIsExist
