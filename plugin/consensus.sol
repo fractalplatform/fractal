@@ -3,8 +3,8 @@ pragma experimental ABIEncoderV2;
 
 contract ConsensusAPI {
     struct MinerInfo {
-        address OwnerAccount;
-        address SignAccount;
+        string OwnerAccount;
+        string SignAccount;
         uint256 RegisterNumber;
         uint256 Weight;
         uint256 Balance;
