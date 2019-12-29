@@ -394,8 +394,8 @@ func opSha3(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Sta
 }
 
 func opAddress(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	address := common.StringToAddress(contract.Name()).Bytes()
-	stack.push(evm.interpreter.intPool.get().SetBytes(address))
+	address, _ := common.StringToAddress(contract.Name())
+	stack.push(evm.interpreter.intPool.get().SetBytes(address.Bytes()))
 	return nil, nil
 }
 
@@ -547,20 +547,20 @@ func opBalance(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *
 }
 
 func opOrigin(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	address := common.StringToAddress(evm.Origin).Bytes()
-	stack.push(evm.interpreter.intPool.get().SetBytes(address))
+	address, _ := common.StringToAddress(evm.Origin)
+	stack.push(evm.interpreter.intPool.get().SetBytes(address.Bytes()))
 	return nil, nil
 }
 
 func opRecipient(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	address := common.StringToAddress(evm.Recipient).Bytes()
-	stack.push(evm.interpreter.intPool.get().SetBytes(address))
+	address, _ := common.StringToAddress(evm.Recipient)
+	stack.push(evm.interpreter.intPool.get().SetBytes(address.Bytes()))
 	return nil, nil
 }
 
 func opCaller(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	address := common.StringToAddress(contract.Caller()).Bytes()
-	stack.push(evm.interpreter.intPool.get().SetBytes(address))
+	address, _ := common.StringToAddress(contract.Caller())
+	stack.push(evm.interpreter.intPool.get().SetBytes(address.Bytes()))
 	return nil, nil
 }
 
@@ -690,8 +690,8 @@ func opBlockhash(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack
 }
 
 func opCoinbase(pc *uint64, evm *EVM, contract *Contract, memory *Memory, stack *Stack) ([]byte, error) {
-	address := common.StringToAddress(evm.Coinbase).Bytes()
-	stack.push(evm.interpreter.intPool.get().SetBytes(address))
+	address, _ := common.StringToAddress(evm.Coinbase)
+	stack.push(evm.interpreter.intPool.get().SetBytes(address.Bytes()))
 	return nil, nil
 }
 

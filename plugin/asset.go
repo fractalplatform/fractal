@@ -407,8 +407,8 @@ func (asm *AssetManager) checkIncreaseAsset(from, to string, assetID uint64, amo
 	return nil
 }
 
-func (asm *AssetManager) Sol_IssueAsset(context *ContextSol, name string, symbol string, amount *big.Int, decimals uint64, founder common.Address, owner common.Address, limit *big.Int, desc string) error {
-	_, err := asm.IssueAsset(context.tx.Sender(), name, symbol, amount, decimals, founder.AccountName(), owner.AccountName(), limit, desc, context.pm)
+func (asm *AssetManager) Sol_IssueAsset(context *ContextSol, name string, symbol string, amount *big.Int, decimals uint64, founder string, owner string, limit *big.Int, desc string) error {
+	_, err := asm.IssueAsset(context.tx.Sender(), name, symbol, amount, decimals, founder, owner, limit, desc, context.pm)
 	return err
 }
 

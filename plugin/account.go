@@ -518,8 +518,8 @@ func (am *AccountManager) checkCreateAccount(accountName string, pubKey string, 
 	return nil
 }
 
-func (am *AccountManager) Sol_CreateAccount(context *ContextSol, name common.Address, pubKey string, desc string) error {
-	_, err := am.CreateAccount(name.AccountName(), pubKey, desc)
+func (am *AccountManager) Sol_CreateAccount(context *ContextSol, name string, pubKey string, desc string) error {
+	_, err := am.CreateAccount(name, pubKey, desc)
 	return err
 }
 

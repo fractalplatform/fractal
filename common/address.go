@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/big"
 	"reflect"
@@ -52,10 +53,14 @@ func BigToAddress(b *big.Int) Address { return BytesToAddress(b.Bytes()) }
 // If s is larger than len(h), s will be cropped from the left.
 func HexToAddress(s string) Address { return BytesToAddress(FromHex(s)) }
 
-func StringToAddress(s string) Address {
+func StringToAddress(s string) (Address, error) {
 	var a Address
+	var err error
 	a.SetString(s)
-	return a
+	if len(a) > len(a) {
+		err = errors.New("string large than Address")
+	}
+	return a, err
 }
 
 // IsHexAddress verifies whether a string can represent a valid hex-encoded
