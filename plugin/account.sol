@@ -4,8 +4,8 @@ pragma experimental ABIEncoderV2;
 contract AccountAPI {
     function CreateAccount(string name, string pubKey, string desc) external;
     function ChangePubKey(string pubKey) external;
-    function GetBalance(address to,uint64 assetid) external returns(uint256);
-    function Transfer(address to, uint64 assetid, uint256 value) external;
+    function GetBalance(string to,uint64 assetid) external returns(uint256);
+    function Transfer(string to, uint64 assetid, uint256 value) external;
 }
 
 contract TestAccount {
@@ -19,11 +19,11 @@ contract TestAccount {
         account.ChangePubKey(pubKey);
     }
 
-    function testGetBalance(address toname,uint64 assetid) public {
+    function testGetBalance(string toname, uint64 assetid) public {
         account.GetBalance(toname,assetid);
     }
 
-    function testTransfer(address to, uint64 assetid, uint256 value) public {
+    function testTransfer(string to, uint64 assetid, uint256 value) public {
         account.Transfer(to, assetid, value);
     }
 }

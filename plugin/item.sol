@@ -42,16 +42,16 @@ contract ItemAPI {
         address Owner;
         uint64 Amount;
     }
-    function GetItems(uint64 worldID, uint64 itemTypeID, address owner) external returns(Items memory);
+    function GetItems(uint64 worldID, uint64 itemTypeID, string owner) external returns(Items memory);
 
-    function IssueWorld(address owner, string name, string description) external;
-    function UpdateWorldOwner(address owner, uint64 worldID) external;
+    function IssueWorld(string owner, string name, string description) external;
+    function UpdateWorldOwner(string owner, uint64 worldID) external;
     function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
-    function IncreaseItem(uint64 worldID, uint64 itemTypeID, address owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
+    function IncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function DestroyItem(uint64 worldID, uint64 itemTypeID, uint64 itemID) external;
-    function IncreaseItems(uint64 worldID, uint64 itemTypeID, address to, uint64 amount) external;
+    function IncreaseItems(uint64 worldID, uint64 itemTypeID, string to, uint64 amount) external;
     function DestroyItems(uint64 worldID, uint64 itemTypeID, uint64 amount) external;
-    function TransferItem(address to, uint64[] worldID, uint64[] itemTypeID, uint64[] itemID, uint64[] amount) external;
+    function TransferItem(string to, uint64[] worldID, uint64[] itemTypeID, uint64[] itemID, uint64[] amount) external;
     function AddItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function DelItemTypeAttributes(uint64 worldID, uint64 itemTypeID, string[] attrName) external;
     function ModifyItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
@@ -77,16 +77,16 @@ contract TestItem {
         return info;
     }
 
-    function testGetItems(uint64 worldID, uint64 itemTypeID, address owner) public returns(ItemAPI.Items memory){
+    function testGetItems(uint64 worldID, uint64 itemTypeID, string owner) public returns(ItemAPI.Items memory){
         ItemAPI.Items memory info = item.GetItems(worldID, itemTypeID, owner);
         return info;
     }
 
-    function testIssueWorld(address owner, string name, string description) public {
+    function testIssueWorld(string owner, string name, string description) public {
         item.IssueWorld(owner, name, description);
     }
 
-    function testUpdateWorldOwner(address owner, uint64 worldID) public {
+    function testUpdateWorldOwner(string owner, uint64 worldID) public {
         item.UpdateWorldOwner(owner, worldID);
     }
 
@@ -94,7 +94,7 @@ contract TestItem {
         item.IssueItemType(worldID, name, merge, upperLimit, description, attrPermission, attrName, attrDes);
     }
 
-    function testIncreaseItem(uint64 worldID, uint64 itemTypeID, address owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
+    function testIncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
         item.IncreaseItem(worldID, itemTypeID, owner, description, attrPermission, attrName, attrDes);
     }
 
@@ -102,7 +102,7 @@ contract TestItem {
         item.DestroyItem(worldID, itemTypeID, itemID);
     }
 
-    function testIncreaseItems(uint64 worldID, uint64 itemTypeID, address to, uint64 amount) public {
+    function testIncreaseItems(uint64 worldID, uint64 itemTypeID, string to, uint64 amount) public {
         item.IncreaseItems(worldID, itemTypeID, to, amount);
     }
 
@@ -110,7 +110,7 @@ contract TestItem {
         item.DestroyItems(worldID, itemTypeID, amount);
     }
 
-    function testTransferItem(address to, uint64[] worldID, uint64[] itemTypeID, uint64[] itemID, uint64[] amount) public {
+    function testTransferItem(string to, uint64[] worldID, uint64[] itemTypeID, uint64[] itemID, uint64[] amount) public {
         item.TransferItem(to, worldID, itemTypeID, itemID, amount);
     }
 
