@@ -352,11 +352,11 @@ func (im *ItemManager) IncreaseItem(from string, worldID uint64, itemTypeID uint
 			return nil, ErrItemUpperLimit
 		}
 	}
+	if UINT64_MAX-itemTypeobj.AddIssue < 1 {
+		return nil, ErrExceedMax
+	}
 	itemTypeobj.AddIssue += 1
 	itemTypeobj.Total += 1
-	if itemTypeobj.Total > UINT64_MAX {
-		return nil, ErrAmountValueInvalid
-	}
 
 	err = im.checkAttribute(attributes)
 	if err != nil {
@@ -452,11 +452,13 @@ func (im *ItemManager) IncreaseItems(from string, worldID uint64, itemTypeID uin
 			return nil, ErrItemUpperLimit
 		}
 	}
+
+	if UINT64_MAX-itemTypeobj.AddIssue < amount {
+		return nil, ErrExceedMax
+	}
+
 	itemTypeobj.AddIssue += amount
 	itemTypeobj.Total += amount
-	if itemTypeobj.Total > UINT64_MAX {
-		return nil, ErrAmountValueInvalid
-	}
 
 	itemsobj, err := im.getItemsByOwner(worldID, itemTypeID, to)
 	if err != nil && err != ErrItemsNotExist {
@@ -1741,4 +1743,5 @@ var (
 	ErrNoPermission            = errors.New("no permission to modify")
 	ErrInvalidPermission       = errors.New("invalid permission")
 	ErrDuplicateAttr           = errors.New("duplicate attribute name")
+	ErrExceedMax               = errors.New("exceed max value")
 )
