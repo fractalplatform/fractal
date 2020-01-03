@@ -17,6 +17,20 @@
 
 **道具**
 
+- [发行World](#发行World)
+- [更新World的Owner](#更新World的Owner)
+- [发行Item类型](#发行Item类型)
+- [增发item](#增发item)
+- [销毁item](#销毁item)
+- [增发items](#增发items)
+- [销毁items](#销毁items)
+- [交易item](#交易item)
+- [增加item类型的属性](#增加item类型的属性)
+- [删除item类型的属性](#删除item类型的属性)
+- [修改item类型的属性](#修改item类型的属性)
+- [增加item的属性](#增加item的属性)
+- [删除item的属性](#删除item的属性)
+- [修改item的属性](#修改item的属性)
 
 **dpos**：
 
@@ -79,12 +93,11 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type ChangePubKeyAction struct {
-	Pubkey string    //必填项 账号公钥
-}
+// 参数
+//  pubkey: 账户公钥
+function ChangePubKey(string pubKey)
 ```
 
 ## 模块：资产
@@ -109,19 +122,18 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type IssueAssetAction struct {
-	AssetName   string      //必填项 资产名首字符为小写字母开头，其余部分为小写字母和数字组合，账号长度为2-32位
-	Symbol      string      //必填项 同资产名格式相同
-	Amount      *big.Int    //必填项 可为0
-	Owner       string      //必填项 不可为空 有效账号
-	Founder     string      //必填项 可为空 为空默认为from
-	Decimals    uint64      //必填项 大于等于0
-	UpperLimit  *big.Int    //必填项  0为不设上限
-	Description string      //资产描述字段 限长 255
-}
+// 参数
+//  name: 资产名
+//  symbol: 资产名简称
+//  amount: 发行数量
+//  decimals: 精度
+//  founder: founder账户
+//  owner: owner账户
+//  limit: 上限
+//  desc: 描述
+function IssueAsset(string name ,string symbol ,uint256 amount, uint64 decimals, string founder, string owner, uint256 limit, string desc)
 ```
 
 功能：
@@ -144,14 +156,13 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type IncreaseAssetAction struct {
-	AssetID uint64        //必填项 增发资产ID
-	Amount  *big.Int      //增发数量 不可为0
-	To      string        //接收资产账号
-}
+// 参数
+//  to: 增发到账户
+//  assetID: 资产id
+//  amount: 增发数量
+function IncreaseAsset(string to, uint64 assetID, uint256 amount)
 ```
 
 ## 模块：转账
@@ -176,10 +187,443 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
+Payload ABI:
+```
+// 参数
+//  to: 账户公钥
+//  assetid: 资产id
+//  value: 金额
+function Transfer(string to, uint64 assetid, uint256 value)
+```
+
+## 模块：道具
+
+功能：
+
+#### 发行World
+
+pluginTX：
 
 ```
-nil //填充此字段不影响交易结果
+PType: PayloadType      //必填项 IssueWorld envelope.PayloadType = 0x400
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  owner: owner账户
+//  name: world名字
+//  description: 描述
+function IssueWorld(string owner, string name, string description)
+```
+
+功能：
+
+#### 更新World的Owner
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 UpdateWorldOwner envelope.PayloadType = 0x401
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  owner: owner账户
+//  worldID: ID
+function UpdateWorldOwner(string owner, uint64 worldID)
+```
+
+功能：
+
+#### 发行Item类型
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 IssueItemType envelope.PayloadType = 0x402
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  name: item类型名字
+//  merge: 同质标识
+//  upperLimit: 发行上限
+//  description: 描述
+//  attrPermission: 属性修改权限
+//  attrName: 属性名称
+//  attrDes: 属性描述
+function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes)
+```
+
+功能：
+
+#### 增发item
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 IncreaseItem envelope.PayloadType = 0x403
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  owner: owner账户
+//  description: 描述
+//  attrPermission: 属性修改权限
+//  attrName: 属性名称
+//  attrDes: 属性描述
+function IncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes)
+```
+
+功能：
+
+#### 销毁item
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 DestroyItem envelope.PayloadType = 0x404
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  itemID: item ID
+function DestroyItem(uint64 worldID, uint64 itemTypeID, uint64 itemID)
+```
+
+功能：
+
+#### 增发items
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 IncreaseItems envelope.PayloadType = 0x405
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  to: 增发到账户
+//  amount: 增发数量
+function IncreaseItems(uint64 worldID, uint64 itemTypeID, string to, uint64 amount)
+```
+
+功能：
+
+#### 销毁items
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 DestroyItems envelope.PayloadType = 0x406
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  amount: 增发数量
+function DestroyItems(uint64 worldID, uint64 itemTypeID, uint64 amount)
+```
+
+功能：
+
+#### 交易item
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 TransferItem envelope.PayloadType = 0x407
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  to: 交易到账户
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  itemID: item ID   如果交易同质道具，此处填0
+//  amount: 交易数量   如果交易非同质道具，此处填0
+function TransferItem(string to, uint64[] worldID, uint64[] itemTypeID, uint64[] itemID, uint64[] amount)
+```
+
+功能：
+
+#### 增加item类型的属性
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 AddItemTypeAttributes envelope.PayloadType = 0x408
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  attrPermission: 属性修改权限
+//  attrName: 属性名称
+//  attrDes: 属性描述
+function AddItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] attrPermission, string[] attrName, string[] attrDes)
+```
+
+功能：
+
+#### 删除item类型的属性
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 DelItemTypeAttributes envelope.PayloadType = 0x409
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  attrName: 属性名称
+function DelItemTypeAttributes(uint64 worldID, uint64 itemTypeID, string[] attrName)
+```
+
+功能：
+
+#### 修改item类型的属性
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 ModifyItemTypeAttributes envelope.PayloadType = 0x40a
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  attrPermission: 属性修改权限
+//  attrName: 属性名称
+//  attrDes: 属性描述
+function ModifyItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] attrPermission, string[] attrName, string[] attrDes)
+```
+
+功能：
+
+#### 增加item的属性
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 AddItemAttributes envelope.PayloadType = 0x40b
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  itemTypeID: item ID
+//  attrPermission: 属性修改权限
+//  attrName: 属性名称
+//  attrDes: 属性描述
+function AddItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes)
+```
+
+功能：
+
+#### 删除item的属性
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 DelItemAttributes envelope.PayloadType = 0x40c
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  itemID: item ID
+//  attrName: 属性名称
+function DelItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, string[] attrName)
+```
+
+功能：
+
+#### 修改item的属性
+
+pluginTX：
+
+```
+PType: PayloadType      //必填项 ModifyItemTypeAttributes envelope.PayloadType = 0x40d
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractalaccount
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
+
+Payload ABI:
+```
+// 参数
+//  worldID: world ID
+//  itemTypeID: item类型ID
+//  itemID: item ID
+//  attrPermission: 属性修改权限
+//  attrName: 属性名称
+//  attrDes: 属性描述
+function ModifyItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes)
 ```
 
 ## 模块：dpos
