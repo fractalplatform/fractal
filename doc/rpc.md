@@ -13,6 +13,20 @@
     - [account_getAssetInfoByID](#account_getAssetInfoByID)
     - [account_getAccountBalanceByID](#account_getAccountBalanceByID)
 
+  - **item**
+
+    - [item_getWorldByID](#item_getWorldByID)
+    - [item_getWorldByName](#item_getWorldByName)
+    - [item_getItemTypeByID](#item_getItemTypeByID)
+    - [item_getItemTypeByName](#item_getItemTypeByName)
+    - [item_getItemByID](#item_getItemByID)
+    - [item_getItemByOwner](#item_getItemByOwner)
+    - [item_getAccountItems](#item_getAccountItems)
+    - [item_getItemTypeAttributeByID](#item_getItemTypeAttributeByID)
+    - [item_getItemTypeAttributeByName](#item_getItemTypeAttributeByName)
+    - [item_getItemAttributeByID](#item_getItemAttributeByID)
+    - [item_getItemAttributeByName](#item_getItemAttributeByName)
+
   - **ft**
 
     - [ft_sendRawTransaction](#ft_sendRawTransaction)
@@ -36,20 +50,6 @@
 
     - [consensus_getAllCandidates](#consensus_getAllCandidates)
     - [consensus_getCandidateInfo](#consensus_getCandidateInfo)
-
-  - **item**
-
-    - [item_getWorldByID](#item_getWorldByID)
-    - [item_getWorldByName](#item_getWorldByName)
-    - [item_getItemTypeByID](#item_getItemTypeByID)
-    - [item_getItemTypeByName](#item_getItemTypeByName)
-    - [item_getItemByID](#item_getItemByID)
-    - [item_getItemByOwner](#item_getItemByOwner)
-    - [item_getAccountItems](#item_getAccountItems)
-    - [item_getItemTypeAttributeByID](#item_getItemTypeAttributeByID)
-    - [item_getItemTypeAttributeByName](#item_getItemTypeAttributeByName)
-    - [item_getItemAttributeByID](#item_getItemAttributeByID)
-    - [item_getItemAttributeByName](#item_getItemAttributeByName)
 
 ---
 
@@ -330,6 +330,496 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
 
 ```
 
+---
+
+#### item_getWorldByID
+
+Get world info by world id
+
+##### Parameters
+
+- `Quantity` - id of the world.
+
+##### Response
+
+- `Object` - A world object,`world not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `name` - `String` name of the world.
+  - `owner` - `String` who owns all permissions to the world.
+  - `creator` - `String` who creator the world.
+  - `description` - `String` description of the world.
+  - `total` - `Quantity` issue itemType total in the world
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getWorldByID","params":[1],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "worldID": 1,
+        "name": "menghuanxiyo",
+        "owner": "testtest1",
+        "creator": "testtest31",
+        "description": "梦幻西游",
+        "total": 2
+    }
+}
+
+```
+---
+
+#### item_getWorldByName
+
+Get world info by world name
+
+##### Parameters
+
+- `String` - name of the world.
+
+##### Response
+
+- `Object` - A world object,`world not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `name` - `String` name of the world.
+  - `owner` - `String` who owns all permissions to the world.
+  - `creator` - `String` who creator the world.
+  - `description` - `String` description of the world.
+  - `total` - `Quantity` issue itemType total in the world
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getWorldByName","params":["menghuanxiyo"],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "worldID": 1,
+        "name": "menghuanxiyo",
+        "owner": "testtest1",
+        "creator": "testtest31",
+        "description": "梦幻西游",
+        "total": 2
+    }
+}
+
+```
+---
+
+#### item_getItemTypeByID
+
+Get item type info by id
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+
+##### Response
+
+- `Object` - A itemType object,`itemType not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `itemTypeID` - `Quantity` id of the itemType.
+  - `name` - `String` name of the world.
+  - `merge` - `Bool` merge info.
+  - `upperLimit` - `Quantity` maximum number of additional issues.
+  - `addIssue` - `Quantity` total amount of issuance.
+  - `description` - `String` description of the itemType.
+  - `total` - `Quantity` issue item in the itemType.
+  - `attrTotal` - `Quantity` item attribute total.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemTypeByID","params":[1,2],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "worldID": 1,
+        "itemTypeID": 2,
+        "name": "molishouzhuo",
+        "merge": true,
+        "upperLimit": 0,
+        "addIssue": 100,
+        "description": "魔力手镯",
+        "total": 95,
+        "attrTotal": 2
+    }
+}
+
+```
+---
+
+#### item_getItemTypeByName
+
+Get item type info by name
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `String` - name of the item.
+
+##### Response
+
+- `Object` - A itemType object,`itemType not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `itemTypeID` - `Quantity` id of the itemType.
+  - `name` - `String` name of the world.
+  - `merge` - `Bool` merge info.
+  - `upperLimit` - `Quantity` maximum number of additional issues.
+  - `addIssue` - `Quantity` total amount of issuance.
+  - `description` - `String` description of the itemType.
+  - `total` - `Quantity` issue item in the itemType.
+  - `attrTotal` - `Quantity` item attribute total.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemTypeByName","params":[1,"molishouzhuo"],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "worldID": 1,
+        "itemTypeID": 2,
+        "name": "molishouzhuo",
+        "merge": true,
+        "upperLimit": 0,
+        "addIssue": 100,
+        "description": "魔力手镯",
+        "total": 95,
+        "attrTotal": 2
+    }
+}
+
+```
+---
+
+#### item_getItemByID
+
+Get item info by id
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `Quantity` - id of the item.
+
+##### Response
+
+- `Object` - A item object,`item not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `itemTypeID` - `Quantity` id of the itemType.
+  - `itemID` - `Quantity` id of the item.
+  - `owner` - `String` owner of the item.
+  - `description` - `String` description of the item.
+  - `attrTotal` - `Quantity` item attribute total.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemByID","params":[1,1,1],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "worldID": 1,
+        "itemTypeID": 1,
+        "itemID": 1,
+        "owner": "testtest3",
+        "description": "💫",
+        "destroy": false,
+        "attrTotal": 4
+    }
+}
+
+```
+---
+
+#### item_getItemByOwner
+
+Get item info by owner
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `String` - owner of the item.
+
+##### Response
+
+- `Object` - A item object,`item not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `itemTypeID` - `Quantity` id of the itemType.
+  - `itemID` - `Quantity` id of the item.
+  - `owner` - `String` owner of the item.
+  - `description` - `String` description of the item.
+  - `attrTotal` - `Quantity` item attribute total.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemByOwner","params":[1,1,"testtest1"],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": [
+        {
+            "worldID": 1,
+            "itemTypeID": 1,
+            "itemID": 2,
+            "owner": "testtest1",
+            "description": "💫☺",
+            "destroy": true,
+            "attrTotal": 3
+        }
+    ]
+}
+
+```
+---
+
+#### item_getAccountItems
+
+Get items info by owner
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `String` - owner of the items.
+
+##### Response
+
+- `Object` - A items object,`item not exist` if not found
+  - `worldID` - `Quantity` id of the world.
+  - `itemTypeID` - `Quantity` id of the itemType.
+  - `owner` - `String` owner of the items.
+  - `total` - `Quantity` items total.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getAccountItems","params":[1,1,"testtest1"],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "worldID": 1,
+        "itemTypeID": 2,
+        "owner": "testtest1",
+        "total": 70
+    }
+}
+
+```
+---
+
+#### item_getItemTypeAttributeByID
+
+Get items info by owner
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `Quantity` - id of the attribute.
+
+##### Response
+
+- `Object` - A attribute object,`attribute not exist` if not found
+  - `modifyPermission` - `Quantity` modify permission.
+  - `name` - `String` name of the attributes.
+  - `description` - `String` description of the attribute.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemTypeAttributeByID","params":[1,1,2],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "modifyPermission": 0,
+        "name": "gongjishanghai",
+        "description": "攻击伤害+50"
+    }
+}
+
+```
+---
+
+#### item_getItemTypeAttributeByName
+
+Get attribute info by name
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `String` - name of the attribute.
+
+##### Response
+
+- `Object` - A attribute object,`attribute not exist` if not found
+  - `modifyPermission` - `Quantity` modify permission.
+  - `name` - `String` name of the attributes.
+  - `description` - `String` description of the attribute.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemTypeAttributeByName","params":[1,1,"gongjishanghai"],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "modifyPermission": 0,
+        "name": "gongjishanghai",
+        "description": "攻击伤害+50"
+    }
+}
+
+```
+---
+
+#### item_getItemAttributeByID
+
+Get attribute info by name
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `Quantity` - id of the item.
+- `Quantity` - id of the attribute.
+
+##### Response
+
+- `Object` - A attribute object,`attribute not exist` if not found
+  - `modifyPermission` - `Quantity` modify permission.
+  - `name` - `String` name of the attributes.
+  - `description` - `String` description of the attribute.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemAttributeByID","params":[1,1,1,1],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "modifyPermission": 0,
+        "name": "gongjishanghai",
+        "description": "攻击伤害+50"
+    }
+}
+
+```
+---
+
+#### item_getItemAttributeByName
+
+Get attribute info by name
+
+##### Parameters
+
+- `Quantity` - id of the world.
+- `Quantity` - id of the itemType.
+- `Quantity` - id of the item.
+- `String` - name of the attribute.
+
+##### Response
+
+- `Object` - A attribute object,`attribute not exist` if not found
+  - `modifyPermission` - `Quantity` modify permission.
+  - `name` - `String` name of the attributes.
+  - `description` - `String` description of the attribute.
+
+##### Example
+
+```js
+
+// Request
+
+curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"item_getItemAttributeByName","params":[1,1,1,"item"],"id":1}' http://localhost:8545
+
+// Result
+
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+        "modifyPermission": 0,
+        "name": "gongjishanghai",
+        "description": "攻击伤害+50"
+    }
+}
+
+```
 ---
 
 #### ft_sendRawTransaction
