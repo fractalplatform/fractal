@@ -76,12 +76,11 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type ChangePubKeyAction struct {
-	Pubkey string    //必填项 账号公钥
-}
+// 参数
+//  pubkey: 账户公钥
+function ChangePubKey(string pubKey)
 ```
 
 ## 模块：资产
@@ -106,19 +105,18 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type IssueAssetAction struct {
-	AssetName   string      //必填项 资产名首字符为小写字母开头，其余部分为小写字母和数字组合，账号长度为2-32位
-	Symbol      string      //必填项 同资产名格式相同
-	Amount      *big.Int    //必填项 可为0
-	Owner       string      //必填项 不可为空 有效账号
-	Founder     string      //必填项 可为空 为空默认为from
-	Decimals    uint64      //必填项 大于等于0
-	UpperLimit  *big.Int    //必填项  0为不设上限
-	Description string      //资产描述字段 限长 255
-}
+// 参数
+//  name: 资产名
+//  symbol: 资产名简称
+//  amount: 发行数量
+//  decimals: 精度
+//  founder: founder账户
+//  owner: owner账户
+//  limit: 上限
+//  desc: 描述
+function IssueAsset(string name ,string symbol ,uint256 amount, uint64 decimals, string founder, string owner, uint256 limit, string desc)
 ```
 
 功能：
@@ -141,14 +139,13 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type IncreaseAssetAction struct {
-	AssetID uint64        //必填项 增发资产ID
-	Amount  *big.Int      //增发数量 不可为0
-	To      string        //接收资产账号
-}
+// 参数
+//  to: 增发到账户
+//  assetID: 资产id
+//  amount: 增发数量
+function IncreaseAsset(string to, uint64 assetID, uint256 amount)
 ```
 
 ## 模块：转账
@@ -173,10 +170,13 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-nil //填充此字段不影响交易结果
+// 参数
+//  to: 账户公钥
+//  assetid: 资产id
+//  value: 金额
+function Transfer(string to, uint64 assetid, uint256 value)
 ```
 
 ## 模块：dpos
