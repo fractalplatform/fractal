@@ -1,3 +1,6 @@
+
+> **所有交易的payload均由ABI进行编解码，ABI细节参考[这里][ethabi]**。
+
 **账号**：
 
 - [创建账号](#创建账号)
@@ -18,13 +21,7 @@
 **dpos**：
 
 - [注册候选者](#注册候选者)
-- [更新候选者](#更新候选者)
 - [注销候选者](#注销候选者)
-- [候选者取回抵押金](#候选者取回抵押金)
-- [投票](#投票)
-- [将候选者加入黑名单](#将候选者加入黑名单)
-- [退出系统接管](#退出系统接管)
-- [移除黑名单](#移除黑名单)
 
 **合约**：
 
@@ -53,14 +50,13 @@ Payload:  payload,      //必填项
 Remark:   remark,       // 备注信息
 ```
 
-payload：
-
+Payload ABI:
 ```
-type CreateAccountAction struct {
-	Name   string   //必填项 账户名首字符为小写字母开头，其余部分为小写字母和数字组合，账号长度为7-20位
-	Pubkey string   //必填项 账号公钥 填空为废账号
-	Desc   string   //描述字段 限长 255
-}
+// 参数
+//  name: 账户名
+//  pubkey: 账户公钥
+//  desc: 描述
+CreateAccount(string name, string pubKey, string desc)
 ```
 
 功能：
@@ -188,82 +184,43 @@ nil //填充此字段不影响交易结果
 
 ## 模块：dpos
 
-[fractal 共识介绍](#https://github.com/fractalplatform/fractal/wiki/fractal%E5%85%B1%E8%AF%86%E4%BB%8B%E7%BB%8D)
+pluginTX：
+```
+PType: PayloadType      //必填项 IssueAsset envelope.PayloadType = 0x200
+From:     from,         //必填项
+To:       to,           //必填项，必为系统账号fractaldpos
+Nonce:    nonce,        //必填项
+AssetID:  assetID,      //必填项 转账资产ID
+GasAssetID:  assetID,   //必填项 gas消耗的资产ID
+GasLimit: gasLimit,     //必填项
+GasPrice:   new(big.Int), //转账时>0 不转账=0
+Amount:   new(big.Int), //转账时>0 不转账=0
+Payload:  payload,      //必填项
+Remark:   remark,       // 备注信息
+```
 
 功能：
 
 #### 注册候选者
 
-action：
+- 抵押金额为`tx.Amount`
+- 重复发送该交易可以追加抵押金额, 更新签名账户
 
+Payload ABI：
 ```
-AType:    actionType, //必填项 RegCandidate 0x300
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 注册候选者
-  To:       to, //必填项 fractal.dpos
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 必须为50万FT(500000000000000000000000)
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-RegisterCandidate{
-  Url:   url,  //必填项 可为空
- }
-```
-
-功能：
-
-#### 更新候选者
-
-action：
-
-```
-AType:    actionType, //必填项 UpdateCandidate 0x301
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 注册候选者
-  To:       to, //必填项 fractal.dpos
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-UpdateCandidate{
-  Url:   url,  //必填项 可为空
- }
+// 参数
+//  signer: 负责区块签名的账户
+RegisterMiner(string signer);
+}
 ```
 
 功能：
 
 #### 注销候选者
 
-action：
-
+Payload ABI:
 ```
-AType:    actionType, //必填项 UnregCandidate 0x302
-  Nonce:    nonce, //必填项
-  AssetID:  assetID, //必填项 有效资产ID
-  From:     from, //必填项 注册候选者
-  To:       to, //必填项 fractal.dpos
-  GasLimit: gasLimit, //必填项
-  Amount:   new(big.Int), //必填项 0
-  Payload:  payload,
-  Remark:   remark,   // 备注信息
-```
-
-payload：
-
-```
-nil
+UnregisterMiner();
 ```
 
 功能：
@@ -444,3 +401,5 @@ bytes 合约方法名，方法参数
 ```
 
 [solidity 修改项](#https://github.com/fractalplatform/solidity/wiki/solidity%E4%BF%AE%E6%94%B9%E9%A1%B9)
+
+[ethabi]: https://solidity.readthedocs.io/en/v0.6.0/abi-spec.html
