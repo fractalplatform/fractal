@@ -61,6 +61,9 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		return nil, err
 	}
 
+	// set global chain config
+	params.SetGlobalChainConfig(chainCfg)
+
 	ctx.AppendBootNodes(chainCfg.BootNodes)
 
 	ftservice := &FtService{

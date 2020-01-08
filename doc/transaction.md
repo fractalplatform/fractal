@@ -1,5 +1,4 @@
-
-> **所有交易的payload均由ABI进行编解码，ABI细节参考[这里][ethabi]**。
+> **所有交易的 payload 均由 ABI 进行编解码，ABI 细节参考[这里][ethabi]**。
 
 **账号**：
 
@@ -17,20 +16,20 @@
 
 **道具**
 
-- [发行World](#发行World)
-- [更新World的Owner](#更新World的Owner)
-- [发行Item类型](#发行Item类型)
-- [增发item](#增发item)
-- [销毁item](#销毁item)
-- [增发items](#增发items)
-- [销毁items](#销毁items)
-- [交易item](#交易item)
-- [增加item类型的属性](#增加item类型的属性)
-- [删除item类型的属性](#删除item类型的属性)
-- [修改item类型的属性](#修改item类型的属性)
-- [增加item的属性](#增加item的属性)
-- [删除item的属性](#删除item的属性)
-- [修改item的属性](#修改item的属性)
+- [发行 World](#发行World)
+- [更新 World 的 Owner](#更新World的Owner)
+- [发行 Item 类型](#发行Item类型)
+- [增发 item](#增发item)
+- [销毁 item](#销毁item)
+- [增发 items](#增发items)
+- [销毁 items](#销毁items)
+- [交易 item](#交易item)
+- [增加 item 类型的属性](#增加item类型的属性)
+- [删除 item 类型的属性](#删除item类型的属性)
+- [修改 item 类型的属性](#修改item类型的属性)
+- [增加 item 的属性](#增加item的属性)
+- [删除 item 的属性](#删除item的属性)
+- [修改 item 的属性](#修改item的属性)
 
 **dpos**：
 
@@ -65,6 +64,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  name: 账户名
@@ -94,6 +94,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  pubkey: 账户公钥
@@ -123,6 +124,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  name: 资产名
@@ -157,6 +159,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  to: 增发到账户
@@ -188,6 +191,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  to: 账户公钥
@@ -200,7 +204,7 @@ function Transfer(string to, uint64 assetid, uint256 value)
 
 功能：
 
-#### 发行World
+#### 发行 World
 
 pluginTX：
 
@@ -219,6 +223,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  owner: owner账户
@@ -229,7 +234,7 @@ function IssueWorld(string owner, string name, string description)
 
 功能：
 
-#### 更新World的Owner
+#### 更新 World 的 Owner
 
 pluginTX：
 
@@ -248,6 +253,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  owner: owner账户
@@ -257,7 +263,7 @@ function UpdateWorldOwner(string owner, uint64 worldID)
 
 功能：
 
-#### 发行Item类型
+#### 发行 Item 类型
 
 pluginTX：
 
@@ -276,6 +282,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -291,7 +298,7 @@ function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimi
 
 功能：
 
-#### 增发item
+#### 增发 item
 
 pluginTX：
 
@@ -310,6 +317,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -324,7 +332,7 @@ function IncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string de
 
 功能：
 
-#### 销毁item
+#### 销毁 item
 
 pluginTX：
 
@@ -343,6 +351,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -353,7 +362,7 @@ function DestroyItem(uint64 worldID, uint64 itemTypeID, uint64 itemID)
 
 功能：
 
-#### 增发items
+#### 增发 items
 
 pluginTX：
 
@@ -372,6 +381,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -383,7 +393,7 @@ function IncreaseItems(uint64 worldID, uint64 itemTypeID, string to, uint64 amou
 
 功能：
 
-#### 销毁items
+#### 销毁 items
 
 pluginTX：
 
@@ -402,6 +412,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -412,7 +423,7 @@ function DestroyItems(uint64 worldID, uint64 itemTypeID, uint64 amount)
 
 功能：
 
-#### 交易item
+#### 交易 item
 
 pluginTX：
 
@@ -431,6 +442,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  to: 交易到账户
@@ -443,7 +455,7 @@ function TransferItem(string to, uint64[] worldID, uint64[] itemTypeID, uint64[]
 
 功能：
 
-#### 增加item类型的属性
+#### 增加 item 类型的属性
 
 pluginTX：
 
@@ -462,6 +474,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -474,7 +487,7 @@ function AddItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] attrP
 
 功能：
 
-#### 删除item类型的属性
+#### 删除 item 类型的属性
 
 pluginTX：
 
@@ -493,6 +506,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -503,7 +517,7 @@ function DelItemTypeAttributes(uint64 worldID, uint64 itemTypeID, string[] attrN
 
 功能：
 
-#### 修改item类型的属性
+#### 修改 item 类型的属性
 
 pluginTX：
 
@@ -522,6 +536,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -534,7 +549,7 @@ function ModifyItemTypeAttributes(uint64 worldID, uint64 itemTypeID, uint64[] at
 
 功能：
 
-#### 增加item的属性
+#### 增加 item 的属性
 
 pluginTX：
 
@@ -553,6 +568,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -566,7 +582,7 @@ function AddItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uin
 
 功能：
 
-#### 删除item的属性
+#### 删除 item 的属性
 
 pluginTX：
 
@@ -585,6 +601,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -596,7 +613,7 @@ function DelItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, str
 
 功能：
 
-#### 修改item的属性
+#### 修改 item 的属性
 
 pluginTX：
 
@@ -615,6 +632,7 @@ Remark:   remark,       // 备注信息
 ```
 
 Payload ABI:
+
 ```
 // 参数
 //  worldID: world ID
@@ -629,6 +647,7 @@ function ModifyItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, 
 ## 模块：dpos
 
 pluginTX：
+
 ```
 PType: PayloadType      //必填项 IssueAsset envelope.PayloadType = 0x200
 From:     from,         //必填项
@@ -651,6 +670,7 @@ Remark:   remark,       // 备注信息
 - 重复发送该交易可以追加抵押金额, 更新签名账户
 
 Payload ABI：
+
 ```
 // 参数
 //  signer: 负责区块签名的账户
@@ -663,6 +683,7 @@ RegisterMiner(string signer);
 #### 注销候选者
 
 Payload ABI:
+
 ```
 UnregisterMiner();
 ```

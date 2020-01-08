@@ -883,6 +883,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 		BlockNumber:  evm.Context.BlockNumber.Uint64(),
 		Time:         evm.Context.Time.Uint64(),
 		Difficulty:   evm.Context.Difficulty.Uint64(),
+		InternalTxs:  make([]*types.InternalTx, 0), // evm.InternalTxs?
 	}
 
 	ret, err = evm.PM.ExecTx(types.NewTransaction(action), ctx, true)
@@ -890,6 +891,7 @@ func opCallPluginWeak(pc *uint64, evm *EVM, contract *Contract, memory *Memory, 
 	contract.Gas += returnGas
 
 	if evm.vmConfig.ContractLogFlag {
+		evm.InternalTxs = append(evm.InternalTxs, ctx.InternalTxs...) // the order of the logs is chaotic
 		errmsg := ""
 		if err != nil {
 			errmsg = err.Error()

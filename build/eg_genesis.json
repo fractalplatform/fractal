@@ -4,7 +4,6 @@
     "chainId": 1,
     "chainName": "fractal",
     "chainUrl": "https://fractalproject.com",
-    "snapshotInterval": 3600000,
     "systemName": "fractalfounder",
     "accountName": "fractalaccount",
     "assetName": "fractalasset",
