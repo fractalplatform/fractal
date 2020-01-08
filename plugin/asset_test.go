@@ -3,6 +3,8 @@ package plugin
 import (
 	"math/big"
 	"testing"
+
+	"github.com/fractalplatform/fractal/params"
 )
 
 func Test_IssueAsset(t *testing.T) {
@@ -105,8 +107,8 @@ func Test_IncreaseAsset(t *testing.T) {
 		arg     args
 		err     error
 	}{
-		{"IncreaseAsset exceed upper limit", args{"assetowner", "assetowner", SystemAssetID, big.NewInt(10000)}, ErrUpperLimit},
-		{"IncreaseAsset", args{"assetowner", "assetowner", SystemAssetID, big.NewInt(1000)}, nil},
+		{"IncreaseAsset exceed upper limit", args{"assetowner", "assetowner", params.SysTokenID(), big.NewInt(10000)}, ErrUpperLimit},
+		{"IncreaseAsset", args{"assetowner", "assetowner", params.SysTokenID(), big.NewInt(1000)}, nil},
 	}
 
 	for _, item := range testItem {
@@ -134,8 +136,8 @@ func Test_DestroyAsset(t *testing.T) {
 		arg     args
 		err     error
 	}{
-		{"DestroyAsset with err amount", args{"assetowner", SystemAssetID, big.NewInt(10000)}, ErrDestroyLimit},
-		{"DestroyAsset", args{"assetowner", SystemAssetID, big.NewInt(1000)}, nil},
+		{"DestroyAsset with err amount", args{"assetowner", params.SysTokenID(), big.NewInt(10000)}, ErrDestroyLimit},
+		{"DestroyAsset", args{"assetowner", params.SysTokenID(), big.NewInt(1000)}, nil},
 	}
 
 	for _, item := range testItem {

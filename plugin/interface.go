@@ -41,7 +41,6 @@ type IPM interface {
 }
 
 type IContract interface {
-	AccountName() string
 	CallTx(ptx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error)
 }
 

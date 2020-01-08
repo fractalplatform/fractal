@@ -143,7 +143,8 @@ func (p *pluginSimu) Sol_set(_ interface{}, name string, age *big.Int) (*pluginS
 	return p, nil
 }
 func (p *pluginSimu) Sol_Address(_ interface{}, name string, address common.Address) (common.Address, string, error) {
-	return common.StringToAddress(name), address.AccountName(), nil
+	addr, err := common.StringToAddress(name)
+	return addr, address.AccountName(), err
 }
 
 func PluginCallSimu(o interface{}, name string, args ...interface{}) ([]byte, error) {
@@ -190,7 +191,13 @@ func TestPluginAPICallAddress(t *testing.T) {
 	if err := PluginSolAPIRegister(&pluginSimu{}); err != nil {
 		t.Fatal(err)
 	}
-	b, err := PluginCallSimu(&pluginSimu{}, "Address", "liuxiaoyu", common.StringToAddress("lixiaopeng"))
+
+	addr, err := common.StringToAddress("lixiaopeng")
+	if err != nil {
+		t.Fatal(err)
+
+	}
+	b, err := PluginCallSimu(&pluginSimu{}, "Address", "liuxiaoyu", addr)
 	if err != nil {
 		t.Fatal(err)
 	}

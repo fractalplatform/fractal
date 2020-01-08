@@ -22,6 +22,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
@@ -33,8 +34,6 @@ var (
 	assetManagerName   = "assetAccount"
 	assetObjectPrefix  = "assetDefinitionObject"
 )
-
-const SystemAssetID uint64 = 0
 
 var UINT256_MAX *big.Int = big.NewInt(0).Sub((big.NewInt(0).Exp(big.NewInt(2), big.NewInt(256), nil)), big.NewInt(1))
 
@@ -67,10 +66,6 @@ func NewASM(sdb *state.StateDB) (*AssetManager, error) {
 	return &asset, nil
 }
 
-func (asm *AssetManager) AccountName() string {
-	return "fractalasset"
-}
-
 func (asm *AssetManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
 	case IssueAsset:
@@ -93,7 +88,7 @@ func (asm *AssetManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]
 func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error) {
 
-	_, err := asm.getAssetObjectByID(SystemAssetID)
+	_, err := asm.getAssetObjectByID(params.SysTokenID())
 	if err == nil { // system asset has issued
 		return nil, ErrIssueAsset
 	}
@@ -118,7 +113,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	}
 
 	ao := Asset{
-		AssetID:     SystemAssetID,
+		AssetID:     params.SysTokenID(),
 		AssetName:   assetName,
 		Symbol:      symbol,
 		Amount:      amount,
@@ -135,7 +130,7 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 		return nil, err
 	}
 
-	if err = am.addBalanceByID(owner, SystemAssetID, amount); err != nil {
+	if err = am.addBalanceByID(owner, params.SysTokenID(), amount); err != nil {
 		return nil, err
 	}
 
@@ -152,7 +147,7 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 		return nil, ErrAmountValueInvalid
 	}
 
-	if assetID != SystemAssetID {
+	if assetID != params.SysTokenID() {
 		return nil, ErrAssetNotExist
 	}
 
@@ -197,7 +192,7 @@ func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount
 		return nil, ErrAmountValueInvalid
 	}
 
-	if assetID != SystemAssetID {
+	if assetID != params.SysTokenID() {
 		return nil, ErrAssetNotExist
 	}
 
@@ -229,7 +224,7 @@ func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
 		return 0, ErrAssetNotExist
 	}
 
-	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	obj, err := asm.getAssetObjectByID(params.SysTokenID())
 	if err != nil {
 		return 0, err
 	}
@@ -243,11 +238,11 @@ func (asm *AssetManager) GetAssetID(assetName string) (uint64, error) {
 
 // GetAssetName Get asset name
 func (asm *AssetManager) GetAssetName(assetID uint64) (string, error) {
-	if assetID != SystemAssetID {
+	if assetID != params.SysTokenID() {
 		return "", ErrAssetNotExist
 	}
 
-	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	obj, err := asm.getAssetObjectByID(params.SysTokenID())
 	if err != nil {
 		return "", err
 	}
@@ -259,7 +254,7 @@ func (asm *AssetManager) GetAssetInfoByName(assetName string) (*Asset, error) {
 		return nil, ErrAssetNotExist
 	}
 
-	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	obj, err := asm.getAssetObjectByID(params.SysTokenID())
 	if err != nil {
 		return nil, ErrAssetNotExist
 	}
@@ -271,11 +266,11 @@ func (asm *AssetManager) GetAssetInfoByName(assetName string) (*Asset, error) {
 }
 
 func (asm *AssetManager) GetAssetInfoByID(assetID uint64) (*Asset, error) {
-	if assetID != SystemAssetID {
+	if assetID != params.SysTokenID() {
 		return nil, ErrAssetNotExist
 	}
 
-	obj, err := asm.getAssetObjectByID(SystemAssetID)
+	obj, err := asm.getAssetObjectByID(params.SysTokenID())
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +395,7 @@ func (asm *AssetManager) checkIncreaseAsset(from, to string, assetID uint64, amo
 		return ErrAmountValueInvalid
 	}
 
-	if assetID != SystemAssetID {
+	if assetID != params.SysTokenID() {
 		return ErrAssetNotExist
 	}
 	return nil

@@ -69,11 +69,10 @@ var (
 type BlockChain struct {
 	chainConfig *params.ChainConfig // Chain & network configuration
 
-	statePruning     bool
-	stateCacheClean  bool
-	snapshotInterval uint64
-	triesInMemory    uint64
-	triegc           *prque.Prque
+	statePruning    bool
+	stateCacheClean bool
+	triesInMemory   uint64
+	triegc          *prque.Prque
 
 	vmConfig           vm.Config    // vm configuration
 	genesisBlock       *types.Block // genesis block
@@ -123,25 +122,24 @@ func NewBlockChain(db fdb.Database, statePruning bool, vmConfig vm.Config, chain
 	}
 
 	bc := &BlockChain{
-		chainConfig:      chainConfig,
-		statePruning:     statePruning,
-		stateCacheClean:  false,
-		snapshotInterval: chainConfig.SnapshotInterval * uint64(time.Millisecond),
-		triesInMemory:    256,
-		triegc:           prque.New(nil),
-		vmConfig:         vmConfig,
-		db:               db,
-		stateCache:       state.NewDatabase(db),
-		badHashes:        badhashesMap,
-		quit:             make(chan struct{}),
-		bodyCache:        bodyCache,
-		headerCache:      headerCache,
-		tdCache:          tdCache,
-		numberCache:      numberCache,
-		bodyRLPCache:     bodyRLPCache,
-		blockCache:       blockCache,
-		futureBlocks:     futureBlocks,
-		badBlocks:        badBlocks,
+		chainConfig:     chainConfig,
+		statePruning:    statePruning,
+		stateCacheClean: false,
+		triesInMemory:   256,
+		triegc:          prque.New(nil),
+		vmConfig:        vmConfig,
+		db:              db,
+		stateCache:      state.NewDatabase(db),
+		badHashes:       badhashesMap,
+		quit:            make(chan struct{}),
+		bodyCache:       bodyCache,
+		headerCache:     headerCache,
+		tdCache:         tdCache,
+		numberCache:     numberCache,
+		bodyRLPCache:    bodyRLPCache,
+		blockCache:      blockCache,
+		futureBlocks:    futureBlocks,
+		badBlocks:       badBlocks,
 	}
 
 	bc.genesisBlock = bc.GetBlockByNumber(0)

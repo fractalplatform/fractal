@@ -71,10 +71,6 @@ func NewACM(db *state.StateDB) (*AccountManager, error) {
 	return &AccountManager{db}, nil
 }
 
-func (am *AccountManager) AccountName() string {
-	return "fractalaccount"
-}
-
 func (am *AccountManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
 	case CreateAccount:
@@ -435,10 +431,6 @@ func (am *AccountManager) checkAccountName(accountName string) error {
 	}
 	return nil
 }
-
-// func (am *AccountManager) GetAccount(accountName string) (*Account, error) {
-// 	return am.getAccount(accountName)
-// }
 
 func (am *AccountManager) getAccount(accountName string) (*Account, error) {
 	b, err := am.sdb.Get(acctManagerName, acctInfoPrefix+accountName)

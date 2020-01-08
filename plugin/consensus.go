@@ -66,7 +66,6 @@ var (
 	maxWeight     = uint64(100)
 	minWeight     = 0
 	blockDuration = uint64(3)
-	MinerAccount  = "fractaldpos"
 	genesisTime   uint64
 	maxPauseBlock = 864000
 )
@@ -242,10 +241,6 @@ func NewConsensus(stateDB *state.StateDB) *Consensus {
 	return c
 }
 
-func (c *Consensus) AccountName() string {
-	return MinerAccount
-}
-
 func (c *Consensus) initRequrie() {
 	if !c.isInit {
 		panic("Consensus need Init() before call")
@@ -255,7 +250,7 @@ func (c *Consensus) initRequrie() {
 func (c *Consensus) Init(_genesisTime uint64, parent *types.Header) {
 	if genesisTime == 0 {
 		genesisTime = _genesisTime
-		// fmt.Println("genesisTime", genesisTime, MinerAccount)
+		// fmt.Println("genesisTime", genesisTime, params.DposName())
 	}
 	c.parent = parent
 	c.isInit = true
@@ -590,11 +585,11 @@ func (c *Consensus) registerMiner(tx *envelope.PluginTx, ctx *Context, pm IPM, s
 		newinfo.Store(c.stateDB)
 	}
 	if info != nil {
-		if err := pm.TransferAsset(c.AccountName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+		if err := pm.TransferAsset(params.DposName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return err
 		}
 		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
-			From:   c.AccountName(),
+			From:   params.DposName(),
 			To:     info.OwnerAccount,
 			Amount: info.Balance,
 			Type:   types.PluginCall,
@@ -615,11 +610,11 @@ func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, ctx *Context, pm IPM)
 	}
 	c.storeCandidates()
 	if info != nil {
-		if err := pm.TransferAsset(c.AccountName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+		if err := pm.TransferAsset(params.DposName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return err
 		}
 		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
-			From:   c.AccountName(),
+			From:   params.DposName(),
 			To:     info.OwnerAccount,
 			Amount: info.Balance,
 			Type:   types.PluginCall,

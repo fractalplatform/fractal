@@ -1218,7 +1218,6 @@ curl -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"
         "chainId": 1,
         "chainName": "fractal",
         "chainUrl": "https://fractalproject.com",
-        "snapshotInterval": 180000,
         "systemName": "fractalfounder",
         "accountName": "fractalaccount",
         "assetName": "fractalasset",

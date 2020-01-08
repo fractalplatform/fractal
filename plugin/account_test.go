@@ -8,6 +8,7 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/crypto"
+	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/rawdb"
 	"github.com/fractalplatform/fractal/state"
 )
@@ -201,7 +202,7 @@ func Test_GetBalance(t *testing.T) {
 		wantBalance *big.Int
 		err         error
 	}{
-		{"GetBalance", args{"assetowner", SystemAssetID}, big.NewInt(1000), nil},
+		{"GetBalance", args{"assetowner", params.SysTokenID()}, big.NewInt(1000), nil},
 	}
 
 	for _, item := range testItem {
@@ -226,8 +227,8 @@ func Test_CanTransfer(t *testing.T) {
 		arg     args
 		err     error
 	}{
-		{"CanTransfer", args{"assetowner", SystemAssetID, big.NewInt(1000)}, nil},
-		{"CanTransfer", args{"assetowner", SystemAssetID, big.NewInt(10000)}, ErrInsufficientBalance},
+		{"CanTransfer", args{"assetowner", params.SysTokenID(), big.NewInt(1000)}, nil},
+		{"CanTransfer", args{"assetowner", params.SysTokenID(), big.NewInt(10000)}, ErrInsufficientBalance},
 	}
 
 	for _, item := range testItem {
@@ -250,7 +251,7 @@ func Test_TransferAsset(t *testing.T) {
 		arg     args
 		err     error
 	}{
-		{"TransferAsset", args{"assetowner", "assetfounder", SystemAssetID, big.NewInt(1000)}, nil},
+		{"TransferAsset", args{"assetowner", "assetfounder", params.SysTokenID(), big.NewInt(1000)}, nil},
 	}
 
 	for _, item := range testItem {
