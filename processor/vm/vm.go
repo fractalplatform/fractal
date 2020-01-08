@@ -207,6 +207,15 @@ func (evm *EVM) distributeAssetGas(callValueGas int64, assetName string, callerN
 	}
 }
 
+func (evm *EVM) CallPlugin(tx *types.Transaction, ctx *plugin.Context, fromSol bool) ([]byte, error) {
+	ctx.InternalTxs = make([]*types.InternalTx, 0)
+	ret, err := evm.PM.ExecTx(tx, ctx, fromSol)
+	if evm.vmConfig.ContractLogFlag {
+		evm.InternalTxs = append(evm.InternalTxs, ctx.InternalTxs...)
+	}
+	return ret, err
+}
+
 // Call executes the contract associated with the addr with the given input as
 // parameters. It also handles any necessary value transfer required and takes
 // the necessary steps to create accounts and reverses the state in case of an

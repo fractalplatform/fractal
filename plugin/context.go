@@ -21,12 +21,12 @@ type ChainContext interface {
 
 type Context struct {
 	ChainContext
-
 	Coinbase    string // Provides information for COINBASE
 	GasLimit    uint64 // Provides information for GASLIMIT
 	BlockNumber uint64 // Provides information for NUMBER
 	Time        uint64 // Provides information for TIME
 	Difficulty  uint64 // Provides information for DIFFICULTY
+	InternalTxs []*types.InternalTx
 }
 
 func NewContext(chain ChainContext, header *types.Header) *Context {
