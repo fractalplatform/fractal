@@ -128,7 +128,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, gasAllot 
 	case actionType == envelope.CallContract:
 		ret, st.gas, vmerr = st.evm.Call(caller, st.tx.Envelope.(*envelope.ContractTx), st.gas)
 	case actionType == envelope.Plugin:
-		ret, vmerr = st.pm.ExecTx(st.tx, st.pcontext, false)
+		ret, vmerr = st.evm.CallPlugin(st.tx, st.pcontext, false)
 	default:
 		return nil, 0, nil, true, fmt.Errorf("Chain not support this transaction type: %v", actionType), vmerr
 	}

@@ -563,7 +563,7 @@ func (c *Consensus) Prepare(header *types.Header) error {
 	return nil
 }
 
-func (c *Consensus) registerMiner(tx *envelope.PluginTx, pm IPM, signAccount string) error {
+func (c *Consensus) registerMiner(tx *envelope.PluginTx, ctx *Context, pm IPM, signAccount string) error {
 	if tx.Value().Sign() > 0 {
 		if tx.GetAssetID() != MinerAssetID {
 			return fmt.Errorf("assetID must be %d", MinerAssetID)
@@ -590,16 +590,22 @@ func (c *Consensus) registerMiner(tx *envelope.PluginTx, pm IPM, signAccount str
 		newinfo.Store(c.stateDB)
 	}
 	if info != nil {
-		if err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+		if err := pm.TransferAsset(c.AccountName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return err
 		}
+		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
+			From:   c.AccountName(),
+			To:     info.OwnerAccount,
+			Amount: info.Balance,
+			Type:   types.PluginCall,
+			Depth:  ^uint64(0)})
 		info.Balance = big.NewInt(0)
 		info.Store(c.stateDB)
 	}
 	return nil
 }
 
-func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, pm IPM) error {
+func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, ctx *Context, pm IPM) error {
 	if tx.Value().Sign() > 0 {
 		return errors.New("msg.value must be zero")
 	}
@@ -609,9 +615,15 @@ func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, pm IPM) error {
 	}
 	c.storeCandidates()
 	if info != nil {
-		if err := pm.TransferAsset(MinerAccount, info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+		if err := pm.TransferAsset(c.AccountName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return err
 		}
+		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
+			From:   c.AccountName(),
+			To:     info.OwnerAccount,
+			Amount: info.Balance,
+			Type:   types.PluginCall,
+			Depth:  ^uint64(0)})
 		info.Balance = big.NewInt(0)
 		info.Store(c.stateDB)
 	}
@@ -629,9 +641,9 @@ func (c *Consensus) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte,
 				return nil, err
 			}
 		}
-		return nil, c.registerMiner(tx, pm, signAccount)
+		return nil, c.registerMiner(tx, ctx, pm, signAccount)
 	case UnregisterMiner:
-		return nil, c.unregisterMiner(tx, pm)
+		return nil, c.unregisterMiner(tx, ctx, pm)
 	default:
 		return nil, ErrWrongTransaction
 	}
@@ -749,10 +761,10 @@ func (c *Consensus) Sol_RegisterMiner(context *ContextSol, signer string) error 
 	if _, err := common.StringToAddress(signer); err != nil {
 		return err
 	}
-	return c.registerMiner(context.tx, context.pm, signer)
+	return c.registerMiner(context.tx, context.ctx, context.pm, signer)
 }
 func (c *Consensus) Sol_UnregisterMiner(context *ContextSol) error {
-	return c.unregisterMiner(context.tx, context.pm)
+	return c.unregisterMiner(context.tx, context.ctx, context.pm)
 }
 
 /* rpc method*/

@@ -53,8 +53,9 @@ func init() {
 }
 
 type ContextSol struct {
-	pm IPM
-	tx *envelope.PluginTx
+	pm  IPM
+	ctx *Context
+	tx  *envelope.PluginTx
 }
 
 // NewPM create new plugin manager.
@@ -159,7 +160,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, ctx *Context, fromSol bool) ([]
 		var err error
 		fromSol = true // always use abi call plugin
 		if fromSol {
-			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ptx}, ptx.Payload)
+			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ctx, ptx}, ptx.Payload)
 		} else {
 			ret, err = contract.CallTx(ptx, ctx, pm)
 		}
