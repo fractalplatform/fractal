@@ -82,7 +82,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	pm.contracts[params.AssetName()] = asm
 	pm.contracts[params.DposName()] = consensus
 	pm.contractsByType[Transfer] = acm
-	pm.contracts[item.AccountName()] = item
+	pm.contracts[params.ItemName()] = item
 	return pm
 }
 

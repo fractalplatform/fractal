@@ -53,6 +53,7 @@ var DefaultChainconfig = &ChainConfig{
 	SysName:     "fractalfounder",
 	AccountName: "fractalaccount",
 	AssetName:   "fractalasset",
+	ItemName:    "fractalitem",
 	DposName:    "fractaldpos",
 	FeeName:     "fractalfee",
 	SysToken:    "ftoken",
@@ -116,6 +117,14 @@ func (cfg *ChainConfig) GetAssetName() string {
 
 func AssetName() string {
 	return globalChainConfig.GetAssetName()
+}
+
+func (cfg *ChainConfig) GetItemName() string {
+	return cfg.ItemName
+}
+
+func ItemName() string {
+	return globalChainConfig.GetItemName()
 }
 
 func (cfg *ChainConfig) GetDposName() string {
