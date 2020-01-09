@@ -192,14 +192,12 @@ func (pm *Manager) InitChain(pluginDoc json.RawMessage, head *types.Header, chai
 	contract = pm.contracts[chainConfig.AssetName]
 	astTxs, err := pd.IssueAsset(getPluginABI(contract), chainConfig.ChainName, chainConfig.AssetName)
 	if err != nil {
-		fmt.Println("---exec genesis-2")
 		return nil, err
 	}
 
 	contract = pm.contracts[chainConfig.DposName]
 	minerTxs, err := pd.RegisterMiner(getPluginABI(contract), chainConfig.SysName, chainConfig.DposName)
 	if err != nil {
-		fmt.Println("---exec genesis-3")
 		return nil, err
 	}
 
