@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
@@ -65,8 +64,7 @@ func NewPM(stateDB *state.StateDB) IPM {
 	acm, _ := NewACM(stateDB)
 	asm, _ := NewASM(stateDB)
 	consensus := NewConsensus(stateDB)
-	chainID := big.NewInt(1)
-	signer, _ := NewSigner(chainID)
+	signer, _ := NewSigner(params.ChainID())
 	fee, _ := NewFeeManager()
 	item, _ := NewItemManage(stateDB)
 	pm := &Manager{
@@ -80,11 +78,11 @@ func NewPM(stateDB *state.StateDB) IPM {
 		IItem:           item,
 		stateDB:         stateDB,
 	}
-	pm.contracts[acm.AccountName()] = acm
-	pm.contracts[asm.AccountName()] = asm
-	pm.contracts[consensus.AccountName()] = consensus
+	pm.contracts[params.AccountName()] = acm
+	pm.contracts[params.AssetName()] = asm
+	pm.contracts[params.DposName()] = consensus
 	pm.contractsByType[Transfer] = acm
-	pm.contracts[item.AccountName()] = item
+	pm.contracts[params.ItemName()] = item
 	return pm
 }
 
@@ -100,9 +98,6 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
 			return err
 		}
-		// if action.Recipient() != chainCfg.AccountName {
-		// 	return fmt.Errorf("Receipt should is %v", chainCfg.AccountName)
-		// }
 		if ptx.Recipient() != "fractalaccount" {
 			return fmt.Errorf("Receipt should is fractalaccount")
 		}
@@ -114,9 +109,6 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
 			return err
 		}
-		// if action.Recipient() != chainCfg.AssetName {
-		// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
-		// }
 		if ptx.Recipient() != "fractalasset" {
 			return fmt.Errorf("Receipt should is fractalasset")
 		}
@@ -128,9 +120,6 @@ func (pm *Manager) BasicCheck(tx *types.Transaction) error {
 		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
 			return err
 		}
-		// if action.Recipient() != chainCfg.AssetName {
-		// 	return fmt.Errorf("Receipt should is %v", chainCfg.AssetName)
-		// }
 		if ptx.Recipient() != "fractalasset" {
 			return fmt.Errorf("Receipt should is fractalasset")
 		}

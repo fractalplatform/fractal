@@ -91,10 +91,6 @@ func NewItemManage(sdb *state.StateDB) (*ItemManager, error) {
 	return &itemManager, nil
 }
 
-func (im *ItemManager) AccountName() string {
-	return "fractalitem"
-}
-
 func (im *ItemManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
 	switch tx.PayloadType() {
 	case IssueWorld:
