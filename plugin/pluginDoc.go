@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/big"
 
 	"github.com/fractalplatform/fractal/common"
@@ -30,7 +29,6 @@ func (pd *PluginDoc) CreateAccount(pabi *abi.ABI, chainName, accountName string)
 	// see account.Sol_CreateAccount for params detail
 	payload, err := pabi.Pack("CreateAccount", chainName, common.HexToPubKey("").String(), "")
 	if err != nil {
-		fmt.Println("xxxx1")
 		return nil, err
 	}
 	env, err := envelope.NewPluginTx(
@@ -54,7 +52,6 @@ func (pd *PluginDoc) CreateAccount(pabi *abi.ABI, chainName, accountName string)
 	for _, act := range pd.Accounts {
 		payload, err := pabi.Pack("CreateAccount", act.Name, act.Pubkey, act.Desc)
 		if err != nil {
-			fmt.Println("xxxx2")
 			return nil, err
 		}
 
