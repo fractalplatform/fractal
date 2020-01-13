@@ -25,7 +25,6 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // IPM plugin manager interface.
@@ -42,7 +41,6 @@ type IPM interface {
 }
 
 type IContract interface {
-	CallTx(ptx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error)
 }
 
 // IAccount account manager interface.
@@ -56,7 +54,7 @@ type IAccount interface {
 	SetCode(accountName string, code []byte) error
 	GetBalance(accountName string, assetID uint64) (*big.Int, error)
 	CanTransfer(accountName string, assetID uint64, value *big.Int) error
-	TransferAsset(from, to string, assetID uint64, value *big.Int) error
+	TransferAsset(context *Context, from, to string, assetID uint64, value *big.Int) error
 	RecoverTx(signer ISigner, tx *types.Transaction) error
 	AccountSign(accountName string, priv *ecdsa.PrivateKey, signer ISigner, signHash func(chainID *big.Int) common.Hash) ([]byte, error)
 	AccountVerify(accountName string, signer ISigner, signature []byte, signHash func(chainID *big.Int) common.Hash) (*ecdsa.PublicKey, error)
@@ -74,11 +72,11 @@ type IAccount interface {
 
 type IAsset interface {
 	// external funcs
-	IssueAsset(accountName string, assetName string, symbol string,
+	IssueAsset(ctx *Context, accountName string, assetName string, symbol string,
 		amount *big.Int, decimals uint64, founder string, owner string,
 		limit *big.Int, description string, am IAccount) ([]byte, error)
-	IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
-	DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
+	IncreaseAsset(ctx *Context, from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
+	DestroyAsset(ctx *Context, accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error)
 	GetAssetID(assetName string) (uint64, error)
 	GetAssetName(assetID uint64) (string, error)
 
@@ -95,7 +93,6 @@ type IConsensus interface {
 	Init(genesisTime uint64, parent *types.Header)
 	MineDelay(miner string) time.Duration
 	Prepare(header *types.Header) error
-	//CallTx(action *types.Action, pm IPM) ([]byte, error)
 	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error)
 	Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error)
 	//Difficult(header *types.Header) uint64

@@ -65,18 +65,6 @@ type Custom struct {
 func (c *Custom) AccountName() string {
 	return "fractalcustom"
 }
-
-func (c *Custom) CallTx(tx *envelope.PluginTx, pm IPM) ([]byte, error) {
-	switch tx.PayloadType() {
-	case envelope.PayloadType:
-    	...
-		return nil, err
-	case envelope.PayloadType:
-		...
-		return nil, err
-	}
-	return nil, ErrWrongTransaction
-}
 ```
 ### 插件实现api
 参考[plugin.md](plugin.md)文档。  

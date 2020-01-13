@@ -563,7 +563,7 @@ func (c *Consensus) registerMiner(tx *envelope.PluginTx, ctx *Context, pm IPM, s
 		if tx.GetAssetID() != MinerAssetID {
 			return fmt.Errorf("assetID must be %d", MinerAssetID)
 		}
-		if err := pm.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value()); err != nil {
+		if err := pm.TransferAsset(ctx, tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value()); err != nil {
 			return err
 		}
 	}
@@ -585,15 +585,9 @@ func (c *Consensus) registerMiner(tx *envelope.PluginTx, ctx *Context, pm IPM, s
 		newinfo.Store(c.stateDB)
 	}
 	if info != nil {
-		if err := pm.TransferAsset(params.DposName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+		if err := pm.TransferAsset(ctx, params.DposName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return err
 		}
-		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
-			From:   params.DposName(),
-			To:     info.OwnerAccount,
-			Amount: info.Balance,
-			Type:   types.PluginCall,
-			Depth:  ^uint64(0)})
 		info.Balance = big.NewInt(0)
 		info.Store(c.stateDB)
 	}
@@ -610,39 +604,13 @@ func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, ctx *Context, pm IPM)
 	}
 	c.storeCandidates()
 	if info != nil {
-		if err := pm.TransferAsset(params.DposName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
+		if err := pm.TransferAsset(ctx, params.DposName(), info.OwnerAccount, MinerAssetID, info.Balance); err != nil {
 			return err
 		}
-		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
-			From:   params.DposName(),
-			To:     info.OwnerAccount,
-			Amount: info.Balance,
-			Type:   types.PluginCall,
-			Depth:  ^uint64(0)})
 		info.Balance = big.NewInt(0)
 		info.Store(c.stateDB)
 	}
 	return nil
-}
-
-func (c *Consensus) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	// just beta
-	c.initRequrie()
-	switch tx.PayloadType() {
-	case RegisterMiner:
-		var signAccount string
-		if len(tx.GetPayload()) > 0 {
-			if err := rlp.DecodeBytes(tx.GetPayload(), &signAccount); err != nil {
-				return nil, err
-			}
-		}
-		return nil, c.registerMiner(tx, ctx, pm, signAccount)
-	case UnregisterMiner:
-		return nil, c.unregisterMiner(tx, ctx, pm)
-	default:
-		return nil, ErrWrongTransaction
-	}
-	//return nil, nil
 }
 
 // Finalize assembles the final block.

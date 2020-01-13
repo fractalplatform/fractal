@@ -47,7 +47,7 @@ func (fm *FeeManager) DistributeGas(from string, gasMap map[types.DistributeKey]
 		TypeID:  types.CoinbaseFeeType})
 
 	gasBalance := new(big.Int).Mul(new(big.Int).SetInt64(totalGas), gasPrice)
-	if err := am.TransferAsset(from, coinbase, assetID, gasBalance); err != nil {
+	if err := am.TransferAsset(nil, from, coinbase, assetID, gasBalance); err != nil {
 		return nil, err
 	}
 

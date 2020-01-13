@@ -28,7 +28,6 @@ import (
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -69,28 +68,6 @@ func NewACM(db *state.StateDB) (*AccountManager, error) {
 		return nil, ErrNewAccountManagerErr
 	}
 	return &AccountManager{db}, nil
-}
-
-func (am *AccountManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	switch tx.PayloadType() {
-	case CreateAccount:
-		param := &CreateAccountAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return am.CreateAccount(param.Name, param.Pubkey, param.Desc)
-	case ChangePubKey:
-		param := &ChangePubKeyAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		err := am.ChangePubKey(tx.Sender(), param.Pubkey)
-		return nil, err
-	case Transfer:
-		err := am.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value())
-		return nil, err
-	}
-	return nil, ErrWrongTransaction
 }
 
 // CreateAccount Parse Payload to create a account
@@ -154,7 +131,7 @@ func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value 
 }
 
 // Transaction designated asset to other account
-func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID uint64, value *big.Int) error {
+func (am *AccountManager) TransferAsset(ctx *Context, fromAccount, toAccount string, assetID uint64, value *big.Int) error {
 	if value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	} else if value.Cmp(big.NewInt(0)) < 0 {
@@ -190,6 +167,16 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 
 	if err = am.setAccount(toAcct); err != nil {
 		return err
+	}
+	// if call from fee or test, ctx is nil
+	if ctx != nil {
+		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
+			From:    fromAccount,
+			To:      toAccount,
+			TokenID: assetID,
+			Amount:  value,
+			Type:    types.Transfer,
+			Depth:   ^uint64(0)})
 	}
 
 	return nil
@@ -524,7 +511,7 @@ func (am *AccountManager) Sol_GetBalance(context *ContextSol, account string, as
 }
 
 func (am *AccountManager) Sol_Transfer(context *ContextSol, to string, assetID uint64, value *big.Int) error {
-	return am.TransferAsset(context.tx.Sender(), to, assetID, value)
+	return am.TransferAsset(context.ctx, context.tx.Sender(), to, assetID, value)
 }
 
 func (am *AccountManager) Sol_AddressToString(context *ContextSol, name common.Address) (string, error) {

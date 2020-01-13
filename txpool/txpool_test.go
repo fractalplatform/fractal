@@ -115,7 +115,7 @@ func TestInvalidTransactions(t *testing.T) {
 		t.Fatal("expected: ", ErrInsufficientFundsForGas, "actual: ", err)
 	}
 
-	pool.curPM.TransferAsset(fname, tname, assetID, big.NewInt(1000))
+	pool.curPM.TransferAsset(nil, fname, tname, assetID, big.NewInt(1000))
 
 	if err := pool.addRemoteSync(tx); err != ErrIntrinsicGas {
 		t.Fatal("expected", ErrIntrinsicGas, "actual: ", err)
@@ -459,7 +459,7 @@ func TestTransactionDropping(t *testing.T) {
 		t.Fatalf("total transaction mismatch: have %d, want %d", pool.all.Count(), 6)
 	}
 	// Reduce the balance of the account, and check that invalidated transactions are dropped
-	pool.curPM.TransferAsset(fname, tname, 0, big.NewInt(750))
+	pool.curPM.TransferAsset(nil, fname, tname, 0, big.NewInt(750))
 
 	<-pool.requestReset(nil, nil)
 
@@ -538,7 +538,7 @@ func TestTransactionPostponing(t *testing.T) {
 		keys[i] = fkey
 		accs[i] = fname
 
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(5010000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(5010000))
 	}
 	// Add a batch consecutive pending transactions for validation
 	txs := []*types.Transaction{}
@@ -580,7 +580,7 @@ func TestTransactionPostponing(t *testing.T) {
 	}
 	// Reduce the balance of the account, and check that transactions are reorganised
 	for _, name := range accs {
-		pool.curPM.TransferAsset(name, tname, 0, big.NewInt(10100))
+		pool.curPM.TransferAsset(nil, name, tname, 0, big.NewInt(10100))
 	}
 
 	<-pool.requestReset(nil, nil)
@@ -778,7 +778,7 @@ func testTransactionQueueGlobalLimiting(t *testing.T, nolocals bool) {
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(10000000))
 
 	}
 	local := keys[len(keys)-1]
@@ -882,8 +882,8 @@ func testTransactionQueueTimeLimiting(t *testing.T, nolocals bool) {
 	remote := generateAccount(t, remoteName, manager, pool.pendingPM)
 	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curPM.TransferAsset(assetName, localName, 0, big.NewInt(10000000000))
-	pool.curPM.TransferAsset(assetName, remoteName, 0, big.NewInt(10000000000))
+	pool.curPM.TransferAsset(nil, assetName, localName, 0, big.NewInt(10000000000))
+	pool.curPM.TransferAsset(nil, assetName, remoteName, 0, big.NewInt(10000000000))
 
 	// Add the two transactions and ensure they both are queued up
 	if err := pool.AddLocal(pricedTransaction(1, localName, tname, 1090000, big.NewInt(1), local)); err != nil {
@@ -1009,7 +1009,7 @@ func TestTransactionPoolRepricing(t *testing.T) {
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(10000000))
 	}
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := []*types.Transaction{}
@@ -1139,7 +1139,7 @@ func TestTransactionPoolRepricingKeepsLocals(t *testing.T) {
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(1000*10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(1000*10000000))
 	}
 
 	// Create transaction (both pending and queued) with a linearly growing gasprice
@@ -1225,7 +1225,7 @@ func TestTransactionPoolUnderpricing(t *testing.T) {
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(10000000))
 	}
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := []*types.Transaction{}
@@ -1343,7 +1343,7 @@ func TestTransactionPoolStableUnderpricing(t *testing.T) {
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(10000000))
 	}
 
 	// Fill up the entire queue with the same transaction price points
@@ -1603,7 +1603,7 @@ func TestTransactionPendingMinimumAllowance(t *testing.T) {
 		keys[i] = fkey
 		accs[i] = fname
 
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(10000000))
 	}
 	// Generate and queue a batch of transactions
 	nonces := make(map[string]uint64)
@@ -1677,8 +1677,8 @@ func testTransactionJournaling(t *testing.T, nolocals bool) {
 	remote := generateAccount(t, remoteName, manager, pool.pendingPM)
 	generateAccount(t, tname, manager, pool.pendingPM)
 
-	pool.curPM.TransferAsset(assetName, localName, 0, big.NewInt(10000000000))
-	pool.curPM.TransferAsset(assetName, remoteName, 0, big.NewInt(10000000000))
+	pool.curPM.TransferAsset(nil, assetName, localName, 0, big.NewInt(10000000000))
+	pool.curPM.TransferAsset(nil, assetName, remoteName, 0, big.NewInt(10000000000))
 
 	// Add three local and a remote transactions and ensure they are queued up
 	if err := pool.AddLocal(pricedTransaction(0, localName, tname, 1000000, big.NewInt(1), local)); err != nil {
@@ -1787,7 +1787,7 @@ func TestTransactionStatusCheck(t *testing.T) {
 
 		keys[i] = fkey
 		accs[i] = fname
-		pool.curPM.TransferAsset(assetName, fname, 0, big.NewInt(10000000))
+		pool.curPM.TransferAsset(nil, assetName, fname, 0, big.NewInt(10000000))
 	}
 
 	// Generate and queue a batch of transactions, both pending and queued

@@ -90,51 +90,10 @@ func NewByzantiumInstructionSet() [256]operation {
 	// instructions that can be executed during the homestead phase.
 	instructionSet := NewHomesteadInstructionSet()
 
-	//multi-asset InstructionSet
-	instructionSet[GETEPCHO] = operation{
-		execute:       opGetEpoch,
-		gasCost:       gasGetEpoch,
-		validateStack: makeStackFunc(2, 2),
-		valid:         true,
-	}
-
-	instructionSet[GETCANDIDATENUM] = operation{
-		execute:       opGetCandidateNum,
-		gasCost:       gasGetCandidateNum,
-		validateStack: makeStackFunc(1, 1),
-		valid:         true,
-	}
-
-	instructionSet[GETCANDIDATE] = operation{
-		execute:       opGetCandidate,
-		gasCost:       gasGetCandidate,
-		validateStack: makeStackFunc(2, 7),
-		valid:         true,
-	}
-
-	instructionSet[GETVOTERSTAKE] = operation{
-		execute:       opGetVoterStake,
-		gasCost:       gasGetVoterStake,
-		validateStack: makeStackFunc(3, 1),
-		valid:         true,
-	}
 	instructionSet[RECIPIENT] = operation{
 		execute:       opRecipient,
 		gasCost:       constGasFunc(GasQuickStep),
 		validateStack: makeStackFunc(0, 1),
-		valid:         true,
-	}
-	instructionSet[GETACCOUNTTIME] = operation{
-		execute:       opGetAccountTime,
-		gasCost:       gasGetAccountTime,
-		validateStack: makeStackFunc(1, 1),
-		valid:         true,
-	}
-
-	instructionSet[SNAPSHOTTIME] = operation{
-		execute:       opGetSnapshotTime,
-		gasCost:       gasGetSnapshotTime,
-		validateStack: makeStackFunc(2, 1),
 		valid:         true,
 	}
 
@@ -153,20 +112,6 @@ func NewByzantiumInstructionSet() [256]operation {
 		writes:        true,
 	}
 
-	instructionSet[ASSETINFO] = operation{
-		execute:       opGetAssetInfo,
-		gasCost:       gasGetAssetInfo,
-		validateStack: makeStackFunc(4, 2),
-		valid:         true,
-	}
-
-	instructionSet[SNAPBALANCE] = operation{
-		execute:       opSnapBalance,
-		gasCost:       gasSnapBalance,
-		validateStack: makeStackFunc(4, 1),
-		valid:         true,
-	}
-
 	instructionSet[BALANCEEX] = operation{
 		execute:       opBalanceex,
 		gasCost:       gasBalanceex,
@@ -174,71 +119,6 @@ func NewByzantiumInstructionSet() [256]operation {
 		valid:         true,
 	}
 
-	instructionSet[ADDASSET] = operation{
-		execute:       opAddAsset,
-		gasCost:       gasAddAsset,
-		validateStack: makeStackFunc(3, 1),
-		valid:         true,
-		writes:        true,
-	}
-
-	instructionSet[ISSUEASSET] = operation{
-		execute:       opIssueAsset,
-		gasCost:       gasIssueAsset,
-		validateStack: makeStackFunc(2, 1),
-		memorySize:    memoryIssueAsset,
-		valid:         true,
-		writes:        true,
-	}
-
-	instructionSet[DESTROYASSET] = operation{
-		execute:       opDestroyAsset,
-		gasCost:       gasDestroyAsset,
-		validateStack: makeStackFunc(2, 1),
-		valid:         true,
-		writes:        true,
-	}
-
-	instructionSet[GETACCOUNTID] = operation{
-		execute:       opGetAccountID,
-		gasCost:       gasGetAccountID,
-		validateStack: makeStackFunc(2, 1),
-		memorySize:    memoryGetAccountID,
-		valid:         true,
-	}
-
-	instructionSet[GETASSETID] = operation{
-		execute:       opGetAssetID,
-		gasCost:       gasGetAssetID,
-		validateStack: makeStackFunc(2, 1),
-		memorySize:    memoryGetAssetID,
-		valid:         true,
-	}
-
-	instructionSet[SETASSETOWNER] = operation{
-		execute:       opSetAssetOwner,
-		gasCost:       gasSetAssetOwner,
-		validateStack: makeStackFunc(2, 1),
-		valid:         true,
-		writes:        true,
-	}
-
-	instructionSet[WITHDRAWFEE] = operation{
-		execute:       opWithdrawFee,
-		gasCost:       gasWithdrawFee,
-		validateStack: makeStackFunc(2, 1),
-		valid:         true,
-		writes:        true,
-	}
-
-	instructionSet[CALLEX] = operation{
-		execute:       opCallEx,
-		gasCost:       gasCallEx,
-		validateStack: makeStackFunc(8, 1),
-		memorySize:    memoryCallEx,
-		valid:         true,
-		returns:       true,
-	}
 	instructionSet[STATICCALL] = operation{
 		execute:       opStaticCall,
 		gasCost:       gasStaticCall,

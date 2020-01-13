@@ -24,7 +24,7 @@ import (
 
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types/envelope"
+	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -66,26 +66,8 @@ func NewASM(sdb *state.StateDB) (*AssetManager, error) {
 	return &asset, nil
 }
 
-func (asm *AssetManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	switch tx.PayloadType() {
-	case IssueAsset:
-		param := &IssueAssetAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return asm.IssueAsset(tx.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm)
-	case IncreaseAsset:
-		param := &IncreaseAssetAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return asm.IncreaseAsset(tx.Sender(), param.To, param.AssetID, param.Amount, pm)
-	}
-	return nil, ErrWrongTransaction
-}
-
 // IssueAsset Issue system asset
-func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol string, amount *big.Int,
+func (asm *AssetManager) IssueAsset(ctx *Context, accountName string, assetName string, symbol string, amount *big.Int,
 	decimals uint64, founder string, owner string, limit *big.Int, description string, am IAccount) ([]byte, error) {
 
 	_, err := asm.getAssetObjectByID(params.SysTokenID())
@@ -133,12 +115,20 @@ func (asm *AssetManager) IssueAsset(accountName string, assetName string, symbol
 	if err = am.addBalanceByID(owner, params.SysTokenID(), amount); err != nil {
 		return nil, err
 	}
-
+	if ctx != nil {
+		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
+			From:    founder,
+			To:      owner,
+			TokenID: ao.AssetID,
+			Amount:  amount,
+			Type:    types.IssueAsset,
+			Depth:   ^uint64(0)})
+	}
 	return nil, nil
 }
 
 // IncreaseAsset increase system asset
-func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
+func (asm *AssetManager) IncreaseAsset(ctx *Context, from, to string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
 	if from == "" || to == "" {
 		return nil, ErrParamIsNil
 	}
@@ -179,11 +169,22 @@ func (asm *AssetManager) IncreaseAsset(from, to string, assetID uint64, amount *
 		return nil, err
 	}
 
+	// if call from fee or test, ctx is nil
+	if ctx != nil {
+		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
+			From:    from,
+			To:      to,
+			TokenID: assetID,
+			Amount:  amount,
+			Type:    types.IncreaseAsset,
+			Depth:   ^uint64(0)})
+	}
+
 	return nil, nil
 }
 
 // DestroyAsset destroy system asset
-func (asm *AssetManager) DestroyAsset(accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
+func (asm *AssetManager) DestroyAsset(ctx *Context, accountName string, assetID uint64, amount *big.Int, am IAccount) ([]byte, error) {
 	if accountName == "" {
 		return nil, ErrParamIsNil
 	}
@@ -402,12 +403,12 @@ func (asm *AssetManager) checkIncreaseAsset(from, to string, assetID uint64, amo
 }
 
 func (asm *AssetManager) Sol_IssueAsset(context *ContextSol, name string, symbol string, amount *big.Int, decimals uint64, founder string, owner string, limit *big.Int, desc string) error {
-	_, err := asm.IssueAsset(context.tx.Sender(), name, symbol, amount, decimals, founder, owner, limit, desc, context.pm)
+	_, err := asm.IssueAsset(context.ctx, context.tx.Sender(), name, symbol, amount, decimals, founder, owner, limit, desc, context.pm)
 	return err
 }
 
 func (asm *AssetManager) Sol_IncreaseAsset(context *ContextSol, to string, assetID uint64, amount *big.Int) error {
-	_, err := asm.IncreaseAsset(context.tx.Sender(), to, assetID, amount, context.pm)
+	_, err := asm.IncreaseAsset(context.ctx, context.tx.Sender(), to, assetID, amount, context.pm)
 	return err
 }
 

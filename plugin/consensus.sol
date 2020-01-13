@@ -1,32 +1,50 @@
 pragma solidity >=0.4.0;
 pragma experimental ABIEncoderV2;
 
-contract ConsensusAPI {
+contract Plugin {
+    function Call() internal {
+        address(bytes20("fractaldpos")).call(msg.data);
+        assembly {
+            let rsize := returndatasize
+            let roff := mload(0x40)
+            returndatacopy(roff, 0, rsize)
+            return(roff, rsize)
+        }
+    }
+}
+
+contract ConsensusAPI is Plugin {
     struct MinerInfo {
-        string OwnerAccount;
-        string SignAccount;
+        address OwnerAccount;
+        address SignAccount;
         uint256 RegisterNumber;
         uint256 Weight;
         uint256 Balance;
         uint256 Epoch;
     }
-    function GetMinerInfo(string miner) external returns(MinerInfo memory);
-    function UnregisterMiner() external;
-    function RegisterMiner(string signer) external payable;
-}
-
-contract TestConsensus {
-    ConsensusAPI constant consensus = ConsensusAPI(address(bytes20("fractaldpos")));
-    function testReadInfo(string miner) public returns(ConsensusAPI.MinerInfo memory){
-        ConsensusAPI.MinerInfo memory info = consensus.GetMinerInfo(miner);
-        return info;
+    function GetMinerInfo(address miner) public returns(MinerInfo memory){
+        if (msg.sender == address(this))
+            Call();
+        else
+            return this.GetMinerInfo(miner);
     }
 
-    function testRegister(uint256 amount, string signer) public payable {
-        consensus.RegisterMiner.value(amount)(signer);
+    function UnregisterMiner() public {
+        if (msg.sender == address(this))
+            Call();
+        else
+            return this.UnregisterMiner();
     }
 
-    function testUnregister() public {
-        consensus.UnregisterMiner();
+    function RegisterMiner(address miner) public {
+        if (msg.sender == address(this))
+            Call();
+        else
+            return this.RegisterMiner(miner);
+    }
+    event InfoLog(MinerInfo);
+    function testRead(address miner) public {
+        MinerInfo memory info = GetMinerInfo(miner);
+        emit InfoLog(info);
     }
 }

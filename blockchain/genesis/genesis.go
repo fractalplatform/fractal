@@ -215,7 +215,7 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 func DefaultGenesis() *Genesis {
 	return &Genesis{
 		Config:     params.DefaultChainconfig,
-		Timestamp:  1575967052,
+		Timestamp:  1578908090,
 		GasLimit:   params.BlockGasLimit,
 		Difficulty: params.GenesisDifficulty,
 	}
