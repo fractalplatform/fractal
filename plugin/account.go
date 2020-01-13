@@ -28,7 +28,6 @@ import (
 	"github.com/fractalplatform/fractal/log"
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -69,28 +68,6 @@ func NewACM(db *state.StateDB) (*AccountManager, error) {
 		return nil, ErrNewAccountManagerErr
 	}
 	return &AccountManager{db}, nil
-}
-
-func (am *AccountManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	switch tx.PayloadType() {
-	case CreateAccount:
-		param := &CreateAccountAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return am.CreateAccount(param.Name, param.Pubkey, param.Desc)
-	case ChangePubKey:
-		param := &ChangePubKeyAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		err := am.ChangePubKey(tx.Sender(), param.Pubkey)
-		return nil, err
-	case Transfer:
-		err := am.TransferAsset(tx.Sender(), tx.Recipient(), tx.GetAssetID(), tx.Value())
-		return nil, err
-	}
-	return nil, ErrWrongTransaction
 }
 
 // CreateAccount Parse Payload to create a account

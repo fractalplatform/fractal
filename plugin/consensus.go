@@ -625,26 +625,6 @@ func (c *Consensus) unregisterMiner(tx *envelope.PluginTx, ctx *Context, pm IPM)
 	return nil
 }
 
-func (c *Consensus) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	// just beta
-	c.initRequrie()
-	switch tx.PayloadType() {
-	case RegisterMiner:
-		var signAccount string
-		if len(tx.GetPayload()) > 0 {
-			if err := rlp.DecodeBytes(tx.GetPayload(), &signAccount); err != nil {
-				return nil, err
-			}
-		}
-		return nil, c.registerMiner(tx, ctx, pm, signAccount)
-	case UnregisterMiner:
-		return nil, c.unregisterMiner(tx, ctx, pm)
-	default:
-		return nil, ErrWrongTransaction
-	}
-	//return nil, nil
-}
-
 // Finalize assembles the final block.
 func (c *Consensus) Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error) {
 	// just beta

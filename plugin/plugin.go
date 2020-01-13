@@ -25,7 +25,6 @@ import (
 	"github.com/fractalplatform/fractal/state"
 	"github.com/fractalplatform/fractal/types"
 	"github.com/fractalplatform/fractal/types/envelope"
-	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
 var (
@@ -81,54 +80,6 @@ func NewPM(stateDB *state.StateDB) IPM {
 	return pm
 }
 
-func (pm *Manager) BasicCheck(tx *types.Transaction) error {
-	ptx, ok := tx.Envelope.(*envelope.PluginTx)
-	if !ok {
-		return ErrWrongTransaction
-	}
-
-	switch ptx.PayloadType() {
-	case CreateAccount:
-		param := &CreateAccountAction{}
-		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
-			return err
-		}
-		if ptx.Recipient() != "fractalaccount" {
-			return fmt.Errorf("Receipt should is fractalaccount")
-		}
-		if err := pm.checkCreateAccount(param.Name, param.Pubkey, param.Desc); err != nil {
-			return err
-		}
-	case IssueAsset:
-		param := &IssueAssetAction{}
-		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
-			return err
-		}
-		if ptx.Recipient() != "fractalasset" {
-			return fmt.Errorf("Receipt should is fractalasset")
-		}
-		if err := pm.checkIssueAsset(ptx.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm.IAccount); err != nil {
-			return err
-		}
-	case IncreaseAsset:
-		param := &IncreaseAssetAction{}
-		if err := rlp.DecodeBytes(ptx.GetPayload(), param); err != nil {
-			return err
-		}
-		if ptx.Recipient() != "fractalasset" {
-			return fmt.Errorf("Receipt should is fractalasset")
-		}
-		if err := pm.checkIncreaseAsset(ptx.Sender(), param.To, param.AssetID, param.Amount, pm.IAccount); err != nil {
-			return err
-		}
-	default:
-		if ptx.PayloadType() != Transfer && (ptx.PayloadType() < RegisterMiner || ptx.PayloadType() >= ConsensusEnd) {
-			return ErrWrongTransaction
-		}
-	}
-	return nil
-}
-
 func (pm *Manager) selectContract(tx *envelope.PluginTx) IContract {
 	contractName := tx.Recipient()
 	if contract, exist := pm.contracts[contractName]; exist {
@@ -145,14 +96,7 @@ func (pm *Manager) ExecTx(tx *types.Transaction, ctx *Context, fromSol bool) ([]
 
 	if contract := pm.selectContract(ptx); contract != nil {
 		snapshot := pm.stateDB.Snapshot()
-		var ret []byte
-		var err error
-		fromSol = true // always use abi call plugin
-		if fromSol {
-			ret, err = PluginSolAPICall(contract, &ContextSol{pm, ctx, ptx}, ptx.Payload)
-		} else {
-			ret, err = contract.CallTx(ptx, ctx, pm)
-		}
+		ret, err := PluginSolAPICall(contract, &ContextSol{pm, ctx, ptx}, ptx.Payload)
 		if err != nil {
 			pm.stateDB.RevertToSnapshot(snapshot)
 		}

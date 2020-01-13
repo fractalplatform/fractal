@@ -24,7 +24,6 @@ import (
 
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -64,24 +63,6 @@ func NewASM(sdb *state.StateDB) (*AssetManager, error) {
 		sdb: sdb,
 	}
 	return &asset, nil
-}
-
-func (asm *AssetManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	switch tx.PayloadType() {
-	case IssueAsset:
-		param := &IssueAssetAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return asm.IssueAsset(tx.Sender(), param.AssetName, param.Symbol, param.Amount, param.Decimals, param.Founder, param.Owner, param.UpperLimit, param.Description, pm)
-	case IncreaseAsset:
-		param := &IncreaseAssetAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return asm.IncreaseAsset(tx.Sender(), param.To, param.AssetID, param.Amount, pm)
-	}
-	return nil, ErrWrongTransaction
 }
 
 // IssueAsset Issue system asset

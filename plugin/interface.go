@@ -25,7 +25,6 @@ import (
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/params"
 	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/types/envelope"
 )
 
 // IPM plugin manager interface.
@@ -41,7 +40,6 @@ type IPM interface {
 }
 
 type IContract interface {
-	CallTx(ptx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error)
 }
 
 // IAccount account manager interface.
@@ -94,7 +92,6 @@ type IConsensus interface {
 	Init(genesisTime uint64, parent *types.Header)
 	MineDelay(miner string) time.Duration
 	Prepare(header *types.Header) error
-	//CallTx(action *types.Action, pm IPM) ([]byte, error)
 	Finalize(header *types.Header, txs []*types.Transaction, receipts []*types.Receipt) (*types.Block, error)
 	Seal(block *types.Block, priKey *ecdsa.PrivateKey, pm IPM) (*types.Block, error)
 	//Difficult(header *types.Header) uint64
