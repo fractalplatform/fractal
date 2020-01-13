@@ -255,7 +255,7 @@ func Test_TransferAsset(t *testing.T) {
 	}
 
 	for _, item := range testItem {
-		err := pm.TransferAsset(item.arg.from, item.arg.to, item.arg.id, item.arg.value)
+		err := pm.TransferAsset(nil, item.arg.from, item.arg.to, item.arg.id, item.arg.value)
 		if err != item.err {
 			t.Errorf("%q. TransferAsset() error = %v, wantErr %v", item.testDes, err, item.err)
 		}

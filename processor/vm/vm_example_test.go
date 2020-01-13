@@ -361,8 +361,8 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	pm.TransferAsset(senderName, venContractName, 0, big.NewInt(1))
-	pm.TransferAsset(senderName, venSaleContractName, 0, big.NewInt(1))
+	pm.TransferAsset(nil, senderName, venContractName, 0, big.NewInt(1))
+	pm.TransferAsset(nil, senderName, venSaleContractName, 0, big.NewInt(1))
 
 	setVenOwnerInput, err := input(VenAbifile, "setOwner", common.BytesToAddress([]byte("vensalevontract")))
 	if err != nil {
@@ -469,7 +469,7 @@ func TestPreCompiledContract(t *testing.T) {
 		return
 	}
 
-	pm.TransferAsset(senderName, shaContractName, 0, big.NewInt(1))
+	pm.TransferAsset(nil, senderName, shaContractName, 0, big.NewInt(1))
 
 	shaInput, err := input(ShaAbifile, "sha", "teststring")
 	if err != nil {

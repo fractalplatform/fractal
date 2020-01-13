@@ -115,7 +115,7 @@ func setupTxPool() (*TxPool, pm.IPM) {
 }
 
 func issueAsset(t *testing.T, assetOwner string, manager pm.IPM) {
-	if _, err := manager.IssueAsset(assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
+	if _, err := manager.IssueAsset(nil, assetOwner, "ft", "zz", new(big.Int).SetUint64(params.Fractal),
 		10, "", assetOwner, new(big.Int).SetUint64(params.Fractal), "", manager); err != nil {
 		t.Fatal(err)
 	}

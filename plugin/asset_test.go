@@ -112,7 +112,7 @@ func Test_IncreaseAsset(t *testing.T) {
 	}
 
 	for _, item := range testItem {
-		_, err := pm.IncreaseAsset(item.arg.from, item.arg.to, item.arg.id, item.arg.value, pm)
+		_, err := pm.IncreaseAsset(nil, item.arg.from, item.arg.to, item.arg.id, item.arg.value, pm)
 		if err != item.err {
 			t.Errorf("%q. IncreaseAsset() error = %v, wantErr %v", item.testDes, err, item.err)
 		}

@@ -36,12 +36,16 @@ const (
 	TransferEx
 	StaticCall
 	PluginCall
+	Transfer
+	IssueAsset
+	IncreaseAsset
 )
 
 type InternalTx struct {
 	Type       InternalTxType     `json:"type"`
 	From       string             `json:"from"`
 	To         string             `json:"to"`
+	TokenID    uint64             `json:"tokenID"`
 	Amount     *big.Int           `json:"value"`
 	Data       []byte             `json:"data"`
 	ReturnData []byte             `json:"returndata"`

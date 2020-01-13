@@ -246,7 +246,21 @@ func (evm *EVM) Call(caller ContractRef, action *envelope.ContractTx, gas uint64
 		}
 	}
 
-	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), action.GetAssetID(), action.Value()); err != nil {
+	ctx := &plugin.Context{
+		ChainContext: NewPContext(evm),
+		Coinbase:     evm.Context.Coinbase,
+		GasLimit:     evm.Context.GasLimit,
+		BlockNumber:  evm.Context.BlockNumber.Uint64(),
+		Time:         evm.Context.Time.Uint64(),
+		Difficulty:   evm.Context.Difficulty.Uint64(),
+		InternalTxs:  make([]*types.InternalTx, 0), // evm.InternalTxs?
+	}
+
+	err = evm.PM.TransferAsset(ctx, action.Sender(), action.Recipient(), action.GetAssetID(), action.Value())
+	if evm.vmConfig.ContractLogFlag {
+		evm.InternalTxs = append(evm.InternalTxs, ctx.InternalTxs...)
+	}
+	if err != nil {
 		return nil, gas, err
 	}
 
@@ -454,7 +468,20 @@ func (evm *EVM) Create(caller ContractRef, action *envelope.ContractTx, gas uint
 		return nil, gas, ErrContractCodeCollision
 	}
 
-	if err := evm.PM.TransferAsset(action.Sender(), action.Recipient(), evm.AssetID, action.Value()); err != nil {
+	ctx := &plugin.Context{
+		ChainContext: NewPContext(evm),
+		Coinbase:     evm.Context.Coinbase,
+		GasLimit:     evm.Context.GasLimit,
+		BlockNumber:  evm.Context.BlockNumber.Uint64(),
+		Time:         evm.Context.Time.Uint64(),
+		Difficulty:   evm.Context.Difficulty.Uint64(),
+		InternalTxs:  make([]*types.InternalTx, 0), // evm.InternalTxs?
+	}
+	err = evm.PM.TransferAsset(ctx, action.Sender(), action.Recipient(), evm.AssetID, action.Value())
+	if evm.vmConfig.ContractLogFlag {
+		evm.InternalTxs = append(evm.InternalTxs, ctx.InternalTxs...)
+	}
+	if err != nil {
 		evm.StateDB.RevertToSnapshot(snapshot)
 		return nil, gas, err
 	}

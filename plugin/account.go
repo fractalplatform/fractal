@@ -131,7 +131,7 @@ func (am *AccountManager) CanTransfer(accountName string, assetID uint64, value 
 }
 
 // Transaction designated asset to other account
-func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID uint64, value *big.Int) error {
+func (am *AccountManager) TransferAsset(ctx *Context, fromAccount, toAccount string, assetID uint64, value *big.Int) error {
 	if value.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	} else if value.Cmp(big.NewInt(0)) < 0 {
@@ -167,6 +167,16 @@ func (am *AccountManager) TransferAsset(fromAccount, toAccount string, assetID u
 
 	if err = am.setAccount(toAcct); err != nil {
 		return err
+	}
+	// if call from fee or test, ctx is nil
+	if ctx != nil {
+		ctx.InternalTxs = append(ctx.InternalTxs, &types.InternalTx{
+			From:    fromAccount,
+			To:      toAccount,
+			TokenID: assetID,
+			Amount:  value,
+			Type:    types.Transfer,
+			Depth:   ^uint64(0)})
 	}
 
 	return nil
@@ -501,7 +511,7 @@ func (am *AccountManager) Sol_GetBalance(context *ContextSol, account string, as
 }
 
 func (am *AccountManager) Sol_Transfer(context *ContextSol, to string, assetID uint64, value *big.Int) error {
-	return am.TransferAsset(context.tx.Sender(), to, assetID, value)
+	return am.TransferAsset(context.ctx, context.tx.Sender(), to, assetID, value)
 }
 
 func (am *AccountManager) Sol_AddressToString(context *ContextSol, name common.Address) (string, error) {

@@ -100,7 +100,7 @@ func (st *StateTransition) buyGas() error {
 	}
 	st.gas += st.tx.GetGasLimit()
 	st.initialGas = st.tx.GetGasLimit()
-	return st.pm.TransferAsset(st.from, string(st.chainConfig.FeeName), st.assetID, mgval)
+	return st.pm.TransferAsset(nil, st.from, string(st.chainConfig.FeeName), st.assetID, mgval)
 }
 
 // TransitionDb will transition the state by applying the current message and
@@ -173,7 +173,7 @@ func (st *StateTransition) TransitionDb() (ret []byte, usedGas uint64, gasAllot 
 
 func (st *StateTransition) refundGas() {
 	remaining := new(big.Int).Mul(new(big.Int).SetUint64(st.gas), st.gasPrice)
-	st.pm.TransferAsset(string(st.chainConfig.FeeName), st.from, st.assetID, remaining)
+	st.pm.TransferAsset(nil, string(st.chainConfig.FeeName), st.from, st.assetID, remaining)
 	st.gp.AddGas(st.gas)
 }
 
