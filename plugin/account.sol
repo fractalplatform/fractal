@@ -4,8 +4,10 @@ pragma experimental ABIEncoderV2;
 contract AccountAPI {
     function CreateAccount(string name, string pubKey, string desc) external;
     function ChangePubKey(string pubKey) external;
-    function GetBalance(string to,uint64 assetid) external returns(uint256);
+    function GetBalance(string to, uint64 assetid) external returns(uint256);
     function Transfer(string to, uint64 assetid, uint256 value) external;
+    function AddressToString(address name) external(string);
+    function StringToAddress(string name) external(address);
 }
 
 contract TestAccount {
