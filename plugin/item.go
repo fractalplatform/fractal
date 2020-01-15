@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"encoding/binary"
 	"errors"
 	"regexp"
 	"strconv"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/fractalplatform/fractal/common"
 	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types/envelope"
 	"github.com/fractalplatform/fractal/utils/rlp"
 )
 
@@ -91,97 +91,97 @@ func NewItemManage(sdb *state.StateDB) (*ItemManager, error) {
 	return &itemManager, nil
 }
 
-func (im *ItemManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
-	switch tx.PayloadType() {
-	case IssueWorld:
-		param := &IssueWorldAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.IssueWorld(tx.Sender(), param.Owner, param.Name, param.Description, pm)
-	case UpdateWorldOwner:
-		param := &UpdateWorldOwnerAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.UpdateWorldOwner(tx.Sender(), param.NewOwner, param.WorldID, pm)
-	case IssueItemType:
-		param := &IssueItemTypeAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.IssueItemType(tx.Sender(), param.WorldID, param.Name, param.Merge, param.UpperLimit, param.Description, param.Attributes, pm)
-	case IncreaseItem:
-		param := &IncreaseItemAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.IncreaseItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Description, param.Attributes, pm)
-	case DestroyItem:
-		param := &DestroyItemAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.DestroyItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, pm)
-	case IncreaseItems:
-		param := &IncreaseItemsAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.IncreaseItems(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Count, pm)
-	case DestroyItems:
-		param := &DestroyItemsAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.DestroyItems(tx.Sender(), param.WorldID, param.ItemTypeID, param.Count, pm)
-	case TransferItem:
-		param := &TransferItemAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		err := im.TransferItem(tx.Sender(), param.To, param.ItemTx, pm)
-		return nil, err
-	case AddItemTypeAttributes:
-		param := &AddItemTypeAttributesAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.AddItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.Attributes)
-	case DelItemTypeAttributes:
-		param := &DelItemTypeAttributesAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.DelItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.AttrName)
-	case ModifyItemTypeAttributes:
-		param := &ModifyItemTypeAttributesAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.ModifyItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.Attributes)
-	case AddItemAttributes:
-		param := &AddItemAttributesAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.AddItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.Attributes)
-	case DelItemAttributes:
-		param := &DelItemAttributesAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.DelItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.AttrName)
-	case ModifyItemAttributes:
-		param := &ModifyItemAttributesAction{}
-		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
-			return nil, err
-		}
-		return im.ModifyItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.Attributes)
-	}
+// func (im *ItemManager) CallTx(tx *envelope.PluginTx, ctx *Context, pm IPM) ([]byte, error) {
+// 	switch tx.PayloadType() {
+// 	case IssueWorld:
+// 		param := &IssueWorldAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.IssueWorld(tx.Sender(), param.Owner, param.Name, param.Description, pm)
+// 	case UpdateWorldOwner:
+// 		param := &UpdateWorldOwnerAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.UpdateWorldOwner(tx.Sender(), param.NewOwner, param.WorldID, pm)
+// 	case IssueItemType:
+// 		param := &IssueItemTypeAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.IssueItemType(tx.Sender(), param.WorldID, param.Name, param.Merge, param.UpperLimit, param.Description, param.Attributes, pm)
+// 	case IncreaseItem:
+// 		param := &IncreaseItemAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.IncreaseItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Description, param.Attributes, pm)
+// 	case DestroyItem:
+// 		param := &DestroyItemAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.DestroyItem(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, pm)
+// 	case IncreaseItems:
+// 		param := &IncreaseItemsAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.IncreaseItems(tx.Sender(), param.WorldID, param.ItemTypeID, param.Owner, param.Count, pm)
+// 	case DestroyItems:
+// 		param := &DestroyItemsAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.DestroyItems(tx.Sender(), param.WorldID, param.ItemTypeID, param.Count, pm)
+// 	case TransferItem:
+// 		param := &TransferItemAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		err := im.TransferItem(tx.Sender(), param.To, param.ItemTx, pm)
+// 		return nil, err
+// 	case AddItemTypeAttributes:
+// 		param := &AddItemTypeAttributesAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.AddItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.Attributes)
+// 	case DelItemTypeAttributes:
+// 		param := &DelItemTypeAttributesAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.DelItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.AttrName)
+// 	case ModifyItemTypeAttributes:
+// 		param := &ModifyItemTypeAttributesAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.ModifyItemTypeAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.Attributes)
+// 	case AddItemAttributes:
+// 		param := &AddItemAttributesAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.AddItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.Attributes)
+// 	case DelItemAttributes:
+// 		param := &DelItemAttributesAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.DelItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.AttrName)
+// 	case ModifyItemAttributes:
+// 		param := &ModifyItemAttributesAction{}
+// 		if err := rlp.DecodeBytes(tx.GetPayload(), param); err != nil {
+// 			return nil, err
+// 		}
+// 		return im.ModifyItemAttributes(tx.Sender(), param.WorldID, param.ItemTypeID, param.ItemID, param.Attributes)
+// 	}
 
-	return nil, ErrWrongTransaction
-}
+// 	return nil, ErrWrongTransaction
+// }
 
 // IssueItemType issue itemType
 func (im *ItemManager) IssueWorld(creator, owner, name, description string, am IAccount) ([]byte, error) {
@@ -221,7 +221,9 @@ func (im *ItemManager) IssueWorld(creator, owner, name, description string, am I
 	if err != nil {
 		return nil, err
 	}
-	return nil, nil
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, worldObj.ID)
+	return b, nil
 }
 
 func (im *ItemManager) UpdateWorldOwner(from, newOwner string, worldID uint64, am IAccount) ([]byte, error) {
@@ -319,7 +321,9 @@ func (im *ItemManager) IssueItemType(creator string, worldID uint64, name string
 		}
 	}
 
-	return nil, nil
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, itemTypeobj.ID)
+	return b, nil
 }
 
 func (im *ItemManager) IncreaseItem(from string, worldID uint64, itemTypeID uint64, owner string, description string, attributes []*Attribute, am IAccount) ([]byte, error) {
@@ -389,7 +393,9 @@ func (im *ItemManager) IncreaseItem(from string, worldID uint64, itemTypeID uint
 		}
 	}
 
-	return nil, nil
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, itemobj.ID)
+	return b, nil
 }
 
 func (im *ItemManager) DestroyItem(from string, worldID uint64, itemTypeID uint64, itemID uint64, am IAccount) ([]byte, error) {
@@ -1444,9 +1450,13 @@ func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64
 
 // for API
 
-func (im *ItemManager) Sol_IssueWorld(context *ContextSol, owner, name, description string) error {
-	_, err := im.IssueWorld(context.tx.Sender(), owner, name, description, context.pm)
-	return err
+func (im *ItemManager) Sol_IssueWorld(context *ContextSol, owner, name, description string) (uint64, error) {
+	b, err := im.IssueWorld(context.tx.Sender(), owner, name, description, context.pm)
+	if err == nil {
+		id := uint64(binary.BigEndian.Uint64(b))
+		return id, nil
+	}
+	return 0, err
 }
 
 func (im *ItemManager) Sol_UpdateWorldOwner(context *ContextSol, owner string, worldID uint64) error {
@@ -1454,36 +1464,44 @@ func (im *ItemManager) Sol_UpdateWorldOwner(context *ContextSol, owner string, w
 	return err
 }
 
-func (im *ItemManager) Sol_IssueItemType(context *ContextSol, worldID uint64, name string, merge bool, upperLimit uint64, des string, attrPermission []uint64, attrName []string, attrDes []string) error {
+func (im *ItemManager) Sol_IssueItemType(context *ContextSol, worldID uint64, name string, merge bool, upperLimit uint64, des string, attrPermission []uint64, attrName []string, attrDes []string) (uint64, error) {
 	if len(attrPermission) != len(attrName) {
-		return ErrParamErr
+		return 0, ErrParamErr
 	}
 	if len(attrPermission) != len(attrDes) {
-		return ErrParamErr
+		return 0, ErrParamErr
 	}
 	attr := make([]*Attribute, len(attrPermission))
 	for i := 0; i < len(attrPermission); i++ {
 		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
 		attr[i] = temp
 	}
-	_, err := im.IssueItemType(context.tx.Sender(), worldID, name, merge, upperLimit, des, attr, context.pm)
-	return err
+	b, err := im.IssueItemType(context.tx.Sender(), worldID, name, merge, upperLimit, des, attr, context.pm)
+	if err == nil {
+		id := uint64(binary.BigEndian.Uint64(b))
+		return id, nil
+	}
+	return 0, err
 }
 
-func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, worldID uint64, itemTypeID uint64, owner, description string, attrPermission []uint64, attrName []string, attrDes []string) error {
+func (im *ItemManager) Sol_IncreaseItem(context *ContextSol, worldID uint64, itemTypeID uint64, owner, description string, attrPermission []uint64, attrName []string, attrDes []string) (uint64, error) {
 	if len(attrPermission) != len(attrName) {
-		return ErrParamErr
+		return 0, ErrParamErr
 	}
 	if len(attrPermission) != len(attrDes) {
-		return ErrParamErr
+		return 0, ErrParamErr
 	}
 	attr := make([]*Attribute, len(attrPermission))
 	for i := 0; i < len(attrPermission); i++ {
 		temp := &Attribute{attrPermission[i], attrName[i], attrDes[i]}
 		attr[i] = temp
 	}
-	_, err := im.IncreaseItem(context.tx.Sender(), worldID, itemTypeID, owner, description, attr, context.pm)
-	return err
+	b, err := im.IncreaseItem(context.tx.Sender(), worldID, itemTypeID, owner, description, attr, context.pm)
+	if err == nil {
+		id := uint64(binary.BigEndian.Uint64(b))
+		return id, nil
+	}
+	return 0, err
 }
 
 func (im *ItemManager) Sol_DestroyItem(context *ContextSol, worldID uint64, itemTypeID uint64, itemID uint64) error {
