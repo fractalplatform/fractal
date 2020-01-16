@@ -6,8 +6,9 @@ contract AccountAPI {
     function ChangePubKey(string pubKey) external;
     function GetBalance(string to, uint64 assetid) external returns(uint256);
     function Transfer(string to, uint64 assetid, uint256 value) external;
-    function AddressToString(address name) external(string);
-    function StringToAddress(string name) external(address);
+    function AddressToString(address name) external returns(string);
+    function StringToAddress(string name) external returns(address);
+    function ECVerify(address name, bytes32 dataHash, bytes sig) external returns(bool);
 }
 
 contract TestAccount {
