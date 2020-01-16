@@ -522,6 +522,11 @@ func (am *AccountManager) Sol_StringToAddress(Context *ContextSol, name string) 
 	return common.StringToAddress(name)
 }
 
+func (am *AccountManager) Sol_ECVerify(Context *ContextSol, name common.Address, hash [32]byte, sig []byte) (bool, error) {
+	_, err := am.AccountVerify(name.AccountName(), Context.pm, sig, func(_ *big.Int) common.Hash { return common.Hash(hash) })
+	return err == nil, err
+}
+
 var (
 	ErrAccountNameLengthErr = errors.New("account name length err")
 	ErrAccountNameInvalid   = errors.New("account name invalid")
