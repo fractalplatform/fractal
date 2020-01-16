@@ -44,10 +44,10 @@ contract ItemAPI {
     }
     function GetItems(uint64 worldID, uint64 itemTypeID, string owner) external returns(Items memory);
 
-    function IssueWorld(string owner, string name, string description) external;
+    function IssueWorld(string owner, string name, string description) external returns(uint64);
     function UpdateWorldOwner(string owner, uint64 worldID) external;
-    function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
-    function IncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
+    function IssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external returns(uint64);
+    function IncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) external returns(uint64);
     function DestroyItem(uint64 worldID, uint64 itemTypeID, uint64 itemID) external;
     function IncreaseItems(uint64 worldID, uint64 itemTypeID, string to, uint64 amount) external;
     function DestroyItems(uint64 worldID, uint64 itemTypeID, uint64 amount) external;
@@ -82,7 +82,7 @@ contract TestItem {
         return info;
     }
 
-    function testIssueWorld(string owner, string name, string description) public {
+    function testIssueWorld(string owner, string name, string description) public returns(uint64) {
         item.IssueWorld(owner, name, description);
     }
 
@@ -90,11 +90,11 @@ contract TestItem {
         item.UpdateWorldOwner(owner, worldID);
     }
 
-    function testIssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
+    function testIssueItemType(uint64 worldID, string name, bool merge, uint64 upperLimit, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public returns(uint64) {
         item.IssueItemType(worldID, name, merge, upperLimit, description, attrPermission, attrName, attrDes);
     }
 
-    function testIncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
+    function testIncreaseItem(uint64 worldID, uint64 itemTypeID, string owner, string description, uint64[] attrPermission, string[] attrName, string[] attrDes) public returns(uint64) {
         item.IncreaseItem(worldID, itemTypeID, owner, description, attrPermission, attrName, attrDes);
     }
 
