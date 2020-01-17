@@ -58,6 +58,8 @@ contract ItemAPI {
     function AddItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function DelItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, string[] attrName) external;
     function ModifyItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
+    function ItemAuthorize(string to, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) external;
+    function TransferItemFrom(string from, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) external;
 }
 
 contract TestItem {
@@ -136,5 +138,13 @@ contract TestItem {
 
     function testModifyItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes) public {
         item.ModifyItemAttributes(worldID, itemTypeID, itemID, attrPermission, attrName, attrDes);
+    }
+
+    function testItemAuthorize(string to, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) public {
+        item.ItemAuthorize(to, worldID, itemTypeID, itemID, amount);
+    }
+
+    function testTransferItemFrom(string from, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) public {
+        item.TransferItemFrom(from, worldID, itemTypeID, itemID, amount);
     }
 }

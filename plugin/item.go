@@ -29,6 +29,7 @@ var (
 	itemTypeAttrNamePrefix = "itemTypeAttrName"
 	itemAttrIDPrefix       = "itemAttrID"
 	itemAttrNamePrefix     = "itemAttrName"
+	itemAuthorizePrefix    = "itemAuthorize"
 )
 
 const UINT64_MAX uint64 = ^uint64(0)
@@ -600,6 +601,101 @@ func (im *ItemManager) TransferItem(from, to string, ItemTx []*ItemTxParam, am I
 		}
 	}
 	return nil
+}
+
+func (im *ItemManager) ItemAuthorize(from, to string, worldID, itemTypeID, itemID, amount uint64, am IAccount) error {
+	if from == to {
+		return ErrAuthorizationErr
+	}
+	if _, err := am.getAccount(to); err != nil {
+		return err
+	}
+
+	itemTypeobj, err := im.getItemTypeByID(worldID, itemTypeID)
+	if err != nil {
+		return err
+	}
+	if itemTypeobj.Merge == true {
+		if itemID != uint64(0) {
+			return ErrInvalidItemID
+		}
+	} else {
+		if amount != uint64(1) || amount != uint64(0) {
+			return ErrInvalidItemAmount
+		}
+	}
+
+	if amount == uint64(0) {
+		err = im.delAuthorize(from, to, worldID, itemTypeID, itemID)
+	} else {
+		err = im.addAuthorize(from, to, worldID, itemTypeID, itemID, amount)
+	}
+
+	return err
+}
+
+func (im *ItemManager) addAuthorize(from, to string, worldID, itemTypeID, itemID, amount uint64) error {
+	b, err := rlp.EncodeToBytes(amount)
+	if err != nil {
+		return err
+	}
+	im.sdb.Put(itemManager, dbKey(itemAuthorizePrefix, from, to, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10)), b)
+	return nil
+}
+
+func (im *ItemManager) getAuthorize(from, to string, worldID, itemTypeID, itemID uint64) (uint64, error) {
+	b, err := im.sdb.Get(itemManager, dbKey(itemAuthorizePrefix, from, to, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10)))
+	if err != nil {
+		return 0, err
+	}
+	if len(b) == 0 {
+		return 0, ErrNoAuthorization
+	}
+
+	var amount uint64
+	if err = rlp.DecodeBytes(b, &amount); err != nil {
+		return 0, err
+	}
+	return amount, nil
+}
+
+func (im *ItemManager) delAuthorize(from, to string, worldID, itemTypeID, itemID uint64) error {
+	_, err := im.getAuthorize(from, to, worldID, itemTypeID, itemID)
+	if err == nil {
+		im.sdb.Delete(itemManager, dbKey(itemAuthorizePrefix, from, to, strconv.FormatUint(worldID, 10), strconv.FormatUint(itemTypeID, 10), strconv.FormatUint(itemID, 10)))
+	}
+	return nil
+}
+
+func (im *ItemManager) TransferItemFrom(from, to string, worldID, itemTypeID, itemID, amount uint64, am IAccount) error {
+	if from == to {
+		return ErrAuthorizationErr
+	}
+	if _, err := am.getAccount(to); err != nil {
+		return err
+	}
+
+	m, err := im.getAuthorize(from, to, worldID, itemTypeID, itemID)
+	if err != nil {
+		return err
+	}
+
+	if m < amount {
+		return ErrNoAuthorizationAmount
+	}
+
+	err = im.transferItemSingle(from, to, worldID, itemTypeID, itemID, amount)
+	if err != nil {
+		return err
+	}
+
+	if m == amount {
+		err = im.delAuthorize(from, to, worldID, itemTypeID, itemID)
+	} else {
+		err = im.addAuthorize(from, to, worldID, itemTypeID, itemID, m-amount)
+	}
+
+	return err
 }
 
 func (im *ItemManager) AddItemTypeAttributes(from string, worldID, itemTypeID uint64, attributes []*Attribute) ([]byte, error) {
@@ -1719,6 +1815,14 @@ func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTyp
 	return so, nil
 }
 
+func (im *ItemManager) Sol_ItemAuthorize(context *ContextSol, to string, worldID uint64, itemTypeID uint64, itemID uint64, amount uint64) error {
+	return im.ItemAuthorize(context.tx.Sender(), to, worldID, itemTypeID, itemID, amount, context.pm)
+}
+
+func (im *ItemManager) Sol_TransferItemFrom(context *ContextSol, from string, worldID uint64, itemTypeID uint64, itemID uint64, amount uint64) error {
+	return im.TransferItemFrom(from, context.tx.Sender(), worldID, itemTypeID, itemID, amount, context.pm)
+}
+
 var (
 	ErrWorldCounterNotExist    = errors.New("item global counter not exist")
 	ErrItemNameinvalid         = errors.New("item name invalid")
@@ -1762,4 +1866,7 @@ var (
 	ErrInvalidPermission       = errors.New("invalid permission")
 	ErrDuplicateAttr           = errors.New("duplicate attribute name")
 	ErrExceedMax               = errors.New("exceed max value")
+	ErrNoAuthorization         = errors.New("no authorization")
+	ErrNoAuthorizationAmount   = errors.New("insufficient authorization amount")
+	ErrAuthorizationErr        = errors.New("from equals to")
 )
