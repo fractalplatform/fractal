@@ -603,7 +603,7 @@ func (im *ItemManager) TransferItem(from, to string, ItemTx []*ItemTxParam, am I
 	return nil
 }
 
-func (im *ItemManager) ItemAuthorize(from, to string, worldID, itemTypeID, itemID, amount uint64, am IAccount) error {
+func (im *ItemManager) ItemApprove(from, to string, worldID, itemTypeID, itemID, amount uint64, am IAccount) error {
 	if from == to {
 		return ErrAuthorizationErr
 	}
@@ -1815,8 +1815,8 @@ func (im *ItemManager) Sol_GetItems(context *ContextSol, worldID uint64, itemTyp
 	return so, nil
 }
 
-func (im *ItemManager) Sol_ItemAuthorize(context *ContextSol, to string, worldID uint64, itemTypeID uint64, itemID uint64, amount uint64) error {
-	return im.ItemAuthorize(context.tx.Sender(), to, worldID, itemTypeID, itemID, amount, context.pm)
+func (im *ItemManager) Sol_ItemApprove(context *ContextSol, to string, worldID uint64, itemTypeID uint64, itemID uint64, amount uint64) error {
+	return im.ItemApprove(context.tx.Sender(), to, worldID, itemTypeID, itemID, amount, context.pm)
 }
 
 func (im *ItemManager) Sol_TransferItemFrom(context *ContextSol, from string, worldID uint64, itemTypeID uint64, itemID uint64, amount uint64) error {

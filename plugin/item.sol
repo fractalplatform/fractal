@@ -58,7 +58,7 @@ contract ItemAPI {
     function AddItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
     function DelItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, string[] attrName) external;
     function ModifyItemAttributes(uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64[] attrPermission, string[] attrName, string[] attrDes) external;
-    function ItemAuthorize(string to, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) external;
+    function ItemApprove(string to, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) external;
     function TransferItemFrom(string from, uint64 worldID, uint64 itemTypeID, uint64 itemID, uint64 amount) external;
 }
 
