@@ -141,4 +141,5 @@ type IItem interface {
 	GetItemTypeAttributeByName(worldID, itemTypeID uint64, attrName string) (*Attribute, error)
 	GetItemAttributeByID(worldID, itemTypeID, itemID, attrID uint64) (*Attribute, error)
 	GetItemAttributeByName(worldID, itemTypeID, itemID uint64, attrName string) (*Attribute, error)
+	GetAuthorize(from, to string, worldID, itemTypeID, itemID uint64) (uint64, error)
 }

@@ -111,3 +111,11 @@ func (api *ItemAPI) GetItemAttributeByName(worldID, itemTypeID, itemID uint64, a
 	}
 	return pm.GetItemAttributeByName(worldID, itemTypeID, itemID, attrName)
 }
+
+func (api *ItemAPI) GetItemApprove(from, to string, worldID, itemTypeID, itemID uint64) (interface{}, error) {
+	pm, err := api.b.GetPM()
+	if err != nil {
+		return 0, err
+	}
+	return pm.GetAuthorize(from, to, worldID, itemTypeID, itemID)
+}

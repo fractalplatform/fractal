@@ -1544,6 +1544,10 @@ func (im *ItemManager) GetItemAttributeByName(worldID, itemTypeID, itemID uint64
 	return im.getItemAttrByName(worldID, itemTypeID, itemID, attrName)
 }
 
+func (im *ItemManager) GetAuthorize(from, to string, worldID, itemTypeID, itemID uint64) (uint64, error) {
+	return im.getAuthorize(from, to, worldID, itemTypeID, itemID)
+}
+
 // for API
 
 func (im *ItemManager) Sol_IssueWorld(context *ContextSol, owner, name, description string) (uint64, error) {
