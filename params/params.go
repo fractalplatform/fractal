@@ -32,8 +32,8 @@ const (
 	CallCreateDepth uint64 = 1024  // Maximum depth of call/create stack.
 	StackLimit      uint64 = 1024  // Maximum size of VM stack allowed.
 
-	MaxCodeSize uint64 = 24576     // Maximum bytecode to permit for a contract
-	MaxTxSize   uint64 = 32 * 1024 // Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
+	MaxCodeSize uint64 = 10 * 24576     // Maximum bytecode to permit for a contract
+	MaxTxSize   uint64 = 10 * 32 * 1024 // Heuristic limit, reject transactions over 32KB to prfeed DOS attacks
 
 	// Precompiled contract gas prices
 
