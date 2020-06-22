@@ -25,8 +25,8 @@ import (
 )
 
 func TestDistributeKeys(t *testing.T) {
-	key1 := DistributeKey{ObjectName: common.Name("ftoken"), ObjectType: 0}
-	key2 := DistributeKey{ObjectName: common.Name("ftoken"), ObjectType: 1}
+	key1 := DistributeKey{ObjectName: common.Name("oextoken"), ObjectType: 0}
+	key2 := DistributeKey{ObjectName: common.Name("oextoken"), ObjectType: 1}
 	key3 := DistributeKey{ObjectName: common.Name("contract"), ObjectType: 1}
 	key4 := DistributeKey{ObjectName: common.Name("miner"), ObjectType: 2}
 
@@ -42,8 +42,8 @@ func TestDistributeKeys(t *testing.T) {
 	}
 	sort.Sort(keys)
 
-	key4 = DistributeKey{ObjectName: common.Name("ftoken"), ObjectType: 0}
-	key3 = DistributeKey{ObjectName: common.Name("ftoken"), ObjectType: 1}
+	key4 = DistributeKey{ObjectName: common.Name("oextoken"), ObjectType: 0}
+	key3 = DistributeKey{ObjectName: common.Name("oextoken"), ObjectType: 1}
 	key2 = DistributeKey{ObjectName: common.Name("contract"), ObjectType: 1}
 	key1 = DistributeKey{ObjectName: common.Name("miner"), ObjectType: 2}
 

@@ -133,7 +133,7 @@ var DefaultChainconfig = &ChainConfig{
 	AssetName:        "oex.asset",
 	DposName:         "oex.dpos",
 	FeeName:          "oex.fee",
-	SysToken:         "ftoken",
+	SysToken:         "oextoken",
 }
 
 func (cfg *ChainConfig) Copy() *ChainConfig {

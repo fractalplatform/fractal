@@ -54,7 +54,7 @@
 		"assetName": "oex.asset",
 		"dposName": "oex.dpos",
 		"feeName": "oex.fee",
-		"systemToken": "ftoken"
+		"systemToken": "oextoken"
 	},
 	"timestamp": 1560614400000,
 	"gasLimit": 30000000,
@@ -82,7 +82,7 @@
 	}],
 	"allocCandidates": [],
 	"allocAssets": [{
-		"name": "ftoken",
+		"name": "oextoken",
 		"symbol": "ft",
 		"amount": 4904014844451659720000000000,
 		"decimals": 18,

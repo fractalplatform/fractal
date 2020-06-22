@@ -18,7 +18,7 @@ package params
 
 const (
 	// oex
-	oex = 1e18
+	Oex = 1e18
 )
 
 const (
