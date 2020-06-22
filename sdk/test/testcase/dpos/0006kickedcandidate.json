@@ -1,9 +1,9 @@
 [{
-    "comment": "fractal.founder create account candidate0006 & transfer 1000000 ft",
+    "comment": "oex.founder create account candidate0006 & transfer 1000000 oex",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "createaccount",
-    "from": "fractal.founder",
-    "to": "fractal.account",
+    "from": "oex.founder",
+    "to": "oex.account",
     "gas": 30000000,
     "value": 1000000000000000000000000,
     "payload": {
@@ -15,10 +15,10 @@
     "succeed": true
 },
 {
-    "comment": "candidate0006 regcandidate & transfer 10000 ft",
+    "comment": "candidate0006 regcandidate & transfer 10000 oex",
     "type": "regcandidate",
     "from": "candidate0006",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
@@ -28,11 +28,11 @@
     "succeed": true
 },
 {
-    "comment": "candidate0006 kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, wrong from",
+    "comment": "candidate0006 kickedcandidate [candidate0006,candidate0007] & transfer 0 oex, wrong from",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
     "from": "candidate0006",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -42,25 +42,25 @@
     "contain": "no permission"
 },
 {
-    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, wrong receipt",
+    "comment": "oex.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 oex, wrong receipt",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.founder",
-    "to": "fractal.account",
+    "from": "oex.founder",
+    "to": "oex.account",
     "gas": 30000000,
     "value": 0,
     "payload": {
         "Candidates": ["candidate0006", "candidate0007"]
     },
     "succeed": false,
-    "contain": "fractal.dpos"
+    "contain": "oex.dpos"
 },
 {
-    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 1000 ft, value zero",
+    "comment": "oex.founder kickedcandidate [candidate0006,candidate0007] & transfer 1000 oex, value zero",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.founder",
-    "to": "fractal.dpos",
+    "from": "oex.founder",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 1000000000000000000000,
     "payload": {
@@ -70,11 +70,11 @@
     "contain": "is zero"
 },
 {
-    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 ft",
+    "comment": "oex.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 oex",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.founder",
-    "to": "fractal.dpos",
+    "from": "oex.founder",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -83,10 +83,10 @@
     "succeed": true
 },
 {
-    "comment": "candidate0006 regcandidate & transfer 10000 ft, regcandidate after kickedcandidate",
+    "comment": "candidate0006 regcandidate & transfer 10000 oex, regcandidate after kickedcandidate",
     "type": "regcandidate",
     "from": "candidate0006",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
@@ -97,10 +97,10 @@
     "contain": "already exist"
 },
 {
-    "comment": "candidate0006 updatecandidate & transfer 0 ft, updatecandidate after kickedcandidate",
+    "comment": "candidate0006 updatecandidate & transfer 0 oex, updatecandidate after kickedcandidate",
     "type": "updatecandidate",
     "from": "candidate0006",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -111,10 +111,10 @@
     "contain": "not in normal"
 },
 {
-    "comment": "candidate0006 unregcandidate & transfer 0 ft, unregcandidte after kickedcandidate",
+    "comment": "candidate0006 unregcandidate & transfer 0 oex, unregcandidte after kickedcandidate",
     "type": "unregcandidate",
     "from": "candidate0006",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -125,17 +125,17 @@
     "comment": "candidate0006 refundcandidate, refundcandidate after kickedcandidate",
     "type": "refundcandidate",
     "from": "candidate0006",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
     "contain": "not in freeze"
 }, {
-    "comment": "fractal.founder votecandidate candidate0006 & transfer 2000 ft, votecandidate after kickedcandidate",
+    "comment": "oex.founder votecandidate candidate0006 & transfer 2000 oex, votecandidate after kickedcandidate",
     "type": "votecandidate",
-    "from": "fractal.founder",
-    "to": "fractal.dpos",
+    "from": "oex.founder",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -147,11 +147,11 @@
     "contain": "not in normal"
 },
 {
-    "comment": "fractal.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 ft, kickedcandidate after kickedcandidate",
+    "comment": "oex.founder kickedcandidate [candidate0006,candidate0007] & transfer 0 oex, kickedcandidate after kickedcandidate",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "kickedcandidate",
-    "from": "fractal.founder",
-    "to": "fractal.dpos",
+    "from": "oex.founder",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {

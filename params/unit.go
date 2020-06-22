@@ -17,8 +17,8 @@
 package params
 
 const (
-	// Fractal
-	Fractal = 1e18
+	// oex
+	oex = 1e18
 )
 
 const (

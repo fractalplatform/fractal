@@ -40,8 +40,8 @@ var nodeConfig = node.Config{
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "oexfinder",
-	Short: "oexfinder is a fractal node discoverer",
-	Long:  `oexfinder is a fractal node discoverer`,
+	Short: "oexfinder is a oex node discoverer",
+	Long:  `oexfinder is a oex node discoverer`,
 
 	// Uncomment the following line if your bare application
 	// has an action associated with it:

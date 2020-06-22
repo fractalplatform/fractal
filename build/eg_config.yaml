@@ -29,7 +29,7 @@ log:
   # Request a stack trace at a specific logging statement (e.g. \"block.go:271\")
   backtraceat: ""
 
-# node the fractal node configuration table
+# node the oex node configuration table
 node:
   # the node datadir
   datadir: "./build/testdatadir"
@@ -66,7 +66,7 @@ node:
     # The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.
     networkid: 1
     # The name sets the p2p node name of this server
-    name: "Fractal-P2P"
+    name: "oex-P2P"
     # Maximum number of network peers
     maxpeers: 10
     # Maximum number of pending connection attempts
@@ -82,7 +82,7 @@ node:
     # The server will not dial any peers.
     nodial: false
 
-# oexservice the fractal service configuration table
+# oexservice the oex service configuration table
 ftservice:
   # Megabytes of memory allocated to internal database caching
   databasecache: 1024
@@ -122,7 +122,7 @@ ftservice:
     # Start miner generate block and process transaction
     start: false
     # Name for block mining rewards
-    name: "fractal.founder"
+    name: "oex.founder"
     # Hex of private key for block mining rewards
     private: ["289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"]
     # Block extra data set by the miner
@@ -141,7 +141,7 @@ ftservice:
     # Influxdb user passwd
     influxdbpasswd: "test"
     # Influxdb namespace
-    influxdbnamespace: "fractal/"
+    influxdbnamespace: "oex/"
   # flag for db to store contrat internal transaction log
   contractlog: false
   # flag for enable/disable state pruning.

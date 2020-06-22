@@ -27,13 +27,13 @@ fi
 # Create fake Go workspace if it doesn't exist yet.
 workspace="$PWD/build/_workspace"
 root="$PWD"
-ftdir="$workspace/src/github.com/fractalplatform"
+ftdir="$workspace/src/github.com/oexplatform"
 bindir="$PWD/build/bin"
 mkdir -p $bindir
-if [ ! -L "$ftdir/fractal" ]; then
+if [ ! -L "$ftdir/oex" ]; then
     mkdir -p "$ftdir"
     cd "$ftdir"
-    ln -s ../../../../../. fractal
+    ln -s ../../../../../. oex
     cd "$root"
 fi
 

@@ -70,7 +70,7 @@ var RootCmd = &cobra.Command{
 			log.Error("debug setup faild", "err", err)
 		}
 
-		log.Info("fractal node", "version", utils.FullVersion())
+		log.Info("oex node", "version", utils.FullVersion())
 
 		node, err := makeNode()
 		if err != nil {

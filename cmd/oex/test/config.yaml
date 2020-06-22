@@ -31,7 +31,7 @@ node:
   trustnodes: "./build/trustnodes.txt"
   p2p:
     networkid: 1
-    name: "Fractal-P2P"
+    name: "oex-P2P"
     maxpeers: 10
     maxpendpeers: 10
     dialratio: 10
@@ -58,7 +58,7 @@ ftservice:
     blocks: 30
   miner:
     start: true
-    name: "fractal.founder"
+    name: "oex.founder"
     private: ["289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"]
     extra: "system"
   metrics:
@@ -68,7 +68,7 @@ ftservice:
     influxdbname: "metrics"
     influxdbuser: "test"
     influxdbpasswd: "test"
-    influxdbnamespace: "fractal"
+    influxdbnamespace: "oex"
   contractlog: true
   statepruning: true
   badhashes: ["0x3c16bd1054c086df3288eb2e8b101d5ef16b6a2c84456d7781c74a853807ddbe"]

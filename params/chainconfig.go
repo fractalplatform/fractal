@@ -84,8 +84,8 @@ type DposConfig struct {
 var DefaultChainconfig = &ChainConfig{
 	BootNodes: []string{},
 	ChainID:   big.NewInt(1),
-	ChainName: "fractal",
-	ChainURL:  "https://fractalproject.com",
+	ChainName: "oex",
+	ChainURL:  "https://oexproject.com",
 	AccountNameCfg: &NameConfig{
 		Level:         1,
 		AllLength:     31,
@@ -128,11 +128,11 @@ var DefaultChainconfig = &ChainConfig{
 		BlockReward:                   big.NewInt(5),
 	},
 	SnapshotInterval: 180000,
-	SysName:          "fractal.founder",
-	AccountName:      "fractal.account",
-	AssetName:        "fractal.asset",
-	DposName:         "fractal.dpos",
-	FeeName:          "fractal.fee",
+	SysName:          "oex.founder",
+	AccountName:      "oex.account",
+	AssetName:        "oex.asset",
+	DposName:         "oex.dpos",
+	FeeName:          "oex.fee",
 	SysToken:         "ftoken",
 }
 

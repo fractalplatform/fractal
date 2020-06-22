@@ -219,7 +219,7 @@ type CandidateInfoForBrowser struct {
 	// Status           uint64 `json:"status"` //0:die 1:activate 2:spare
 }
 
-type VoterInfoFractal struct {
+type VoterInfooex struct {
 	Candidate     string `json:"candidate"`
 	Holder        string `json:"holder"`
 	Quantity      string `json:"quantity"`

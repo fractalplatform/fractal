@@ -57,13 +57,13 @@ func getAccountManager() *accountmanager.AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("fractal.founder"), common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
-	am.CreateAccount(common.Name("fractal"), common.Name("fractal.fee"), common.Name(""), 0, 0, *pubkey, "")
+	am.CreateAccount(common.Name("oex.founder"), common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
+	am.CreateAccount(common.Name("oex"), common.Name("oex.fee"), common.Name(""), 0, 0, *pubkey, "")
 	return am
 }
 
 func getFeeManager() *FeeManager {
-	SetFeeManagerName(common.Name("fractal.fee"))
+	SetFeeManagerName(common.Name("oex.fee"))
 	return NewFeeManager(sdb, acctm)
 }
 

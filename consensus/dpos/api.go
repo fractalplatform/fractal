@@ -310,7 +310,7 @@ func (api *API) BrowserEpochRecord(reqEpochNumber uint64) (interface{}, error) {
 
 	if dataEpoch.Dpos {
 		for _, activatedCandidate := range dataEpoch.ActivatedCandidateSchedule {
-			if activatedCandidate == "fractal.founder" {
+			if activatedCandidate == "oex.founder" {
 				continue
 			}
 			candidateInfo := &CandidateInfoForBrowser{}
@@ -410,7 +410,7 @@ func (api *API) BrowserVote(reqEpochNumber uint64) (interface{}, error) {
 	// minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
 	candidateInfos.Data = make([]*CandidateInfoForBrowser, 0)
 	for _, c := range candidates {
-		if c.Name == "fractal.founder" {
+		if c.Name == "oex.founder" {
 			continue
 		}
 
@@ -492,7 +492,7 @@ func (api *API) BrowserAllEpoch2() (interface{}, error) {
 	return epochs, nil
 }
 
-// VoterInfo get epoch info for fractal api
+// VoterInfo get epoch info for oex api
 func (api *API) VoterInfo(reqEpochNumber uint64) (interface{}, error) {
 	var req, history uint64
 	bstart := time.Now()
@@ -530,9 +530,9 @@ func (api *API) VoterInfo(reqEpochNumber uint64) (interface{}, error) {
 	var declims uint64 = 1000000000000000000
 	var declimsBigInt = big.NewInt(0).SetUint64(declims)
 	minQuantity := big.NewInt(0).Mul(api.dpos.config.CandidateAvailableMinQuantity, big.NewInt(0).SetUint64(declims))
-	data := make([]*VoterInfoFractal, 0)
+	data := make([]*VoterInfooex, 0)
 	for _, c := range candidates {
-		if c.Name == "fractal.founder" {
+		if c.Name == "oex.founder" {
 			continue
 		}
 
@@ -544,7 +544,7 @@ func (api *API) VoterInfo(reqEpochNumber uint64) (interface{}, error) {
 			}
 		}
 
-		voter := &VoterInfoFractal{}
+		voter := &VoterInfooex{}
 		voter.Vote = 1
 		if balance.Cmp(minQuantity) < 0 {
 			voter.Vote = 0

@@ -36,7 +36,7 @@ import (
 var sdb = getStateDB()
 var accountManager = getAccountManager()
 var ast = getAsset()
-var sysName = "fractal.account"
+var sysName = "oex.account"
 var blockNumber = uint64(0)
 
 func getStateDB() *state.StateDB {
@@ -62,7 +62,7 @@ func getAccountManager() *AccountManager {
 	}
 	pubkey := new(common.PubKey)
 	pubkey.SetBytes([]byte("abcde123456789"))
-	am.CreateAccount(common.Name("fractal.founder"), common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
+	am.CreateAccount(common.Name("oex.founder"), common.Name("systestname"), common.Name(""), 0, 0, *pubkey, "")
 	return am
 }
 
@@ -91,7 +91,7 @@ func TestSDB(t *testing.T) {
 
 }
 func TestNN(t *testing.T) {
-	if err := accountManager.CreateAccount(common.Name("fractal.founder"), common.Name("a123asdf2"), common.Name(""), 0, 0, *new(common.PubKey), ""); err != nil {
+	if err := accountManager.CreateAccount(common.Name("oex.founder"), common.Name("a123asdf2"), common.Name(""), 0, 0, *new(common.PubKey), ""); err != nil {
 		t.Errorf("err create account\n")
 	}
 	_, err := accountManager.GetAccountBalanceByID(common.Name("a123asdf2"), 1, 0)
@@ -157,19 +157,19 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		wantErr bool
 	}{
 		//
-		{"createAccount", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a111222332a"), common.Name(""), pubkey3}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789aeee"), common.Name(""), *pubkey2}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789aeed"), common.Name(""), *pubkey}, false},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789aeeefgp"), common.Name(""), *pubkey}, true},
-		{"creategensisAccount", fields{sdb, ast}, args{common.Name("fractal"), common.Name("fractal.account"), common.Name(""), *pubkey}, false},
-		{"creategensisAccount1", fields{sdb, ast}, args{common.Name("fractal"), common.Name("fractal.asset"), common.Name(""), *pubkey}, false},
-		{"createinvalidAccount0", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("\ttesttestf1"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount1", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("testtestf1.."), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount2", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.account"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount3", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.founder.1"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount4", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.founder.12"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount5", fields{sdb, ast}, args{common.Name("fractal"), common.Name("fractal.founder1234"), common.Name(""), *pubkey}, true},
+		{"createAccount", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a111222332a"), common.Name(""), pubkey3}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a123456789aeee"), common.Name(""), *pubkey2}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a123456789aeed"), common.Name(""), *pubkey}, false},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a12345678-aeee"), common.Name(""), *pubkey}, true},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a123456789aeeefgp"), common.Name(""), *pubkey}, true},
+		{"creategensisAccount", fields{sdb, ast}, args{common.Name("oex"), common.Name("oex.account"), common.Name(""), *pubkey}, false},
+		{"creategensisAccount1", fields{sdb, ast}, args{common.Name("oex"), common.Name("oex.asset"), common.Name(""), *pubkey}, false},
+		{"createinvalidAccount0", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("\ttesttestf1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount1", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("testtestf1.."), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount2", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("oex.account"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount3", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("oex.founder.1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount4", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("oex.founder.12"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount5", fields{sdb, ast}, args{common.Name("oex"), common.Name("oex.founder1234"), common.Name(""), *pubkey}, true},
 	}
 	for _, tt := range tests {
 		am := &AccountManager{
@@ -184,7 +184,7 @@ func TestAccountManager_CreateAccount(t *testing.T) {
 		sdb: sdb,
 		ast: ast,
 	}
-	err := am1.CreateAccount(common.Name("fractal.founder"), common.Name("aaaadddd"), common.Name("a111222332a"), 0, 0, *pubkey, "")
+	err := am1.CreateAccount(common.Name("oex.founder"), common.Name("aaaadddd"), common.Name("a111222332a"), 0, 0, *pubkey, "")
 	if err != nil {
 		t.Errorf("create acct err:%v", err)
 	}
@@ -326,7 +326,7 @@ func TestAccountManager_SetAccount(t *testing.T) {
 		acct *Account
 	}
 	pubkey2 := new(common.PubKey)
-	accountManager.CreateAccount(common.Name("fractal.founder"), common.Name("a123456789"), common.Name(""), 0, 0, *pubkey2, "")
+	accountManager.CreateAccount(common.Name("oex.founder"), common.Name("a123456789"), common.Name(""), 0, 0, *pubkey2, "")
 	ac, _ := accountManager.GetAccountByName(common.Name("a123456789"))
 
 	tests := []struct {
@@ -1122,7 +1122,7 @@ func TestAccountManager_GetCode(t *testing.T) {
 	}
 	pubkey2 := new(common.PubKey)
 	acct, _ := accountManager.GetAccountByName(common.Name("a123456789aeee"))
-	accountManager.CreateAccount(common.Name("fractal.founder"), common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, 0, *pubkey2, "")
+	accountManager.CreateAccount(common.Name("oex.founder"), common.Name("a123456789aeed"), common.Name("a123456789aeed"), 0, 0, *pubkey2, "")
 	acct.SetCode([]byte("abcde123456789"))
 	accountManager.SetAccount(acct)
 	//t.Logf("EnoughAccountBalance asset id=%v : val=%v\n", 1, val)
@@ -2096,7 +2096,7 @@ func Test_IssueAssetForkID1(t *testing.T) {
 	pubkey.SetBytes([]byte("abcde123456789"))
 
 	//create account
-	err := am.CreateAccount(common.Name("fractal.founder"), newAccount, "", 0, 0, *pubkey, "")
+	err := am.CreateAccount(common.Name("oex.founder"), newAccount, "", 0, 0, *pubkey, "")
 
 	if err != nil {
 		t.Errorf("Test_IssueAssetForkID1 create account error = %v", err)
@@ -2182,13 +2182,13 @@ func Test_IssueAssetForkID1(t *testing.T) {
 }
 
 func Test_GetAccountNameLevel(t *testing.T) {
-	level, err := GetAccountNameLevel("fractal")
+	level, err := GetAccountNameLevel("oex")
 
 	if level != 1 || err != nil {
 		t.Errorf("account level 1 test failed, level:%v, err:%v", level, err)
 	}
 
-	level, err = GetAccountNameLevel("fractal.test")
+	level, err = GetAccountNameLevel("oex.test")
 
 	if level != 2 || err != nil {
 		t.Errorf("account level 1 test failed, level:%v, err:%v", level, err)
@@ -2208,8 +2208,8 @@ func Test_CheckAssetContract(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"assetContract", args{"fractal.contract", "fractal.contract", "fractal.test"}, true},
-		{"assetContract", args{"fractal.contract", "fractal.test1", "fractal.test"}, false},
+		{"assetContract", args{"oex.contract", "oex.contract", "oex.test"}, true},
+		{"assetContract", args{"oex.contract", "oex.test1", "oex.test"}, false},
 	}
 
 	am := &AccountManager{
@@ -2249,18 +2249,18 @@ func TestAccountManager_CreateAccountFork1(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"createAccount", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a111222332afork"), common.Name(""), pubkey3}, false},
+		{"createAccount", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a111222332afork"), common.Name(""), pubkey3}, false},
 		{"createAccountSub", fields{sdb, ast}, args{common.Name("a111222332afork"), common.Name("a111222332afork.sub1"), common.Name(""), pubkey3}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789fork"), common.Name(""), *pubkey2}, false},
-		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789afork"), common.Name(""), *pubkey}, false},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a12345678-fork"), common.Name(""), *pubkey}, true},
-		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a123456789aeeefork"), common.Name(""), *pubkey}, true},
-		{"createAccountNameInvalid", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("a12345678b"), common.Name(""), pubkey3}, true},
-		{"createinvalidAccount0", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("\ttesttestf1"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount1", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("testtestf1.."), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount2", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.account"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount3", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.founder.1"), common.Name(""), *pubkey}, true},
-		{"createinvalidAccount4", fields{sdb, ast}, args{common.Name("fractal.founder"), common.Name("fractal.founder.12"), common.Name(""), *pubkey}, true},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a123456789fork"), common.Name(""), *pubkey2}, false},
+		{"createAccountWithEmptyKey", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a123456789afork"), common.Name(""), *pubkey}, false},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a12345678-fork"), common.Name(""), *pubkey}, true},
+		{"createAccountWithInvalidName", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a123456789aeeefork"), common.Name(""), *pubkey}, true},
+		{"createAccountNameInvalid", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("a12345678b"), common.Name(""), pubkey3}, true},
+		{"createinvalidAccount0", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("\ttesttestf1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount1", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("testtestf1.."), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount2", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("oex.account"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount3", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("oex.founder.1"), common.Name(""), *pubkey}, true},
+		{"createinvalidAccount4", fields{sdb, ast}, args{common.Name("oex.founder"), common.Name("oex.founder.12"), common.Name(""), *pubkey}, true},
 		{"createinvalidAccount5", fields{sdb, ast}, args{common.Name("a111222332afork"), common.Name("a111222332afork.founder1234"), common.Name(""), *pubkey}, true},
 	}
 	for _, tt := range tests {
@@ -2289,7 +2289,7 @@ func TestAccountManager_AccountHaveCode(t *testing.T) {
 		ast: field.ast,
 	}
 
-	err := am.CreateAccount(common.Name("fractal.founder"), common.Name("a111222332code"), common.Name(""), 0, 1, pubkey, "")
+	err := am.CreateAccount(common.Name("oex.founder"), common.Name("a111222332code"), common.Name(""), 0, 1, pubkey, "")
 	if err != nil {
 		t.Errorf("TestAccountManager_AccountHaveCode. AccountManager.CreateAccount() error = %v", err)
 	}

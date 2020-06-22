@@ -1,8 +1,8 @@
 [{
-	"comment": "dpos0001 updatecandidate & transfer 0 ft",
+	"comment": "dpos0001 updatecandidate & transfer 0 oex",
 	"type": "updatecandidate",
 	"from": "dpos0001",
-	"to": "fractal.dpos",
+	"to": "oex.dpos",
 	"gas": 30000000,
 	"value": 0,
 	"payload": {

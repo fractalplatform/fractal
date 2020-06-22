@@ -1,9 +1,9 @@
 [{
-    "comment": "fractal.founder create account candidate0005 & transfer 1000000 ft",
+    "comment": "oex.founder create account candidate0005 & transfer 1000000 oex",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "createaccount",
-    "from": "fractal.founder",
-    "to": "fractal.account",
+    "from": "oex.founder",
+    "to": "oex.account",
     "gas": 30000000,
     "value": 1000000000000000000000000,
     "payload": {
@@ -18,7 +18,7 @@
     "comment": "candidate0005 refundcandidate, not exist",
     "type": "refundcandidate",
     "from": "candidate0005",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -26,10 +26,10 @@
     "contain": "not exist"
 },
 {
-    "comment": "candidate0005 regcandidate & transfer 10000 ft",
+    "comment": "candidate0005 regcandidate & transfer 10000 oex",
     "type": "regcandidate",
     "from": "candidate0005",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
@@ -41,18 +41,18 @@
     "comment": "candidate0005 refundcandidate, wrong receipt",
     "type": "refundcandidate",
     "from": "candidate0005",
-    "to": "fractal.account",
+    "to": "oex.account",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
-    "contain": "fractal.dpos"
+    "contain": "oex.dpos"
 },
 {
-    "comment": "candidate0005 refundcandidate & transfer 10000 ft, not zero",
+    "comment": "candidate0005 refundcandidate & transfer 10000 oex, not zero",
     "type": "unregcandidate",
     "from": "candidate0005",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 10000000000000000000000,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -63,7 +63,7 @@
     "comment": "candidate0005 refundcandidate, not unregcandidate",
     "type": "refundcandidate",
     "from": "candidate0005",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -71,10 +71,10 @@
     "contain": "not in freeze"
 },
 {
-    "comment": "candidate0005 unregcandidate & transfer 0 ft",
+    "comment": "candidate0005 unregcandidate & transfer 0 oex",
     "type": "unregcandidate",
     "from": "candidate0005",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
@@ -84,7 +84,7 @@
     "comment": "candidate0005 refundcandidate, freeze period",
     "type": "refundcandidate",
     "from": "candidate0005",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",

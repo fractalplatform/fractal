@@ -1,10 +1,10 @@
 [
     {
-        "comment": "fractal.founder create account dpos0001 & transfer 3000000 ft",
+        "comment": "oex.founder create account dpos0001 & transfer 3000000 oex",
         "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
         "type": "createaccount",
-        "from": "fractal.founder",
-        "to": "fractal.account",
+        "from": "oex.founder",
+        "to": "oex.account",
         "gas": 30000000,
         "value": 2000000000000000000000000,
         "payload": {
@@ -15,10 +15,10 @@
         },
         "succeed": true,
         "childs": [{
-            "comment": "dpos0001 regcandidate & transfer 20000 ft",
+            "comment": "dpos0001 regcandidate & transfer 20000 oex",
             "type": "regcandidate",
             "from": "dpos0001",
-            "to": "fractal.dpos",
+            "to": "oex.dpos",
             "gas": 30000000,
             "value": 20000000000000000000000,
             "payload": {
@@ -27,10 +27,10 @@
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true,
             "childs": [{
-                "comment": "dpos0001 updatecandidate & transfer 5000 ft",
+                "comment": "dpos0001 updatecandidate & transfer 5000 oex",
                 "type": "updatecandidate",
                 "from": "dpos0001",
-                "to": "fractal.dpos",
+                "to": "oex.dpos",
                 "gas": 30000000,
                 "value": 5000000000000000000000,
                 "payload": {
@@ -42,11 +42,11 @@
         }]
     },
     {
-        "comment": "fractal.founder create account dpos0002 & transfer 3000000 ft",
+        "comment": "oex.founder create account dpos0002 & transfer 3000000 oex",
         "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
         "type": "createaccount",
-        "from": "fractal.founder",
-        "to": "fractal.account",
+        "from": "oex.founder",
+        "to": "oex.account",
         "gas": 30000000,
         "value": 2000000000000000000000000,
         "payload": {
@@ -57,10 +57,10 @@
         },
         "succeed": true,
         "childs": [{
-            "comment": "dpos0002 regcandidate & transfer 20000 ft",
+            "comment": "dpos0002 regcandidate & transfer 20000 oex",
             "type": "regcandidate",
             "from": "dpos0002",
-            "to": "fractal.dpos",
+            "to": "oex.dpos",
             "gas": 30000000,
             "value": 20000000000000000000000,
             "payload": {
@@ -69,10 +69,10 @@
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true,
             "childs": [{
-                "comment": "dpos0002 updatecandidate & transfer 5000 ft",
+                "comment": "dpos0002 updatecandidate & transfer 5000 oex",
                 "type": "updatecandidate",
                 "from": "dpos0002",
-                "to": "fractal.dpos",
+                "to": "oex.dpos",
                 "gas": 30000000,
                 "value": 5000000000000000000000,
                 "payload": {
@@ -84,11 +84,11 @@
         }]
     },
     {
-        "comment": "fractal.founder create account dpos0003 & transfer 3000000 ft",
+        "comment": "oex.founder create account dpos0003 & transfer 3000000 oex",
         "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
         "type": "createaccount",
-        "from": "fractal.founder",
-        "to": "fractal.account",
+        "from": "oex.founder",
+        "to": "oex.account",
         "gas": 30000000,
         "value": 2000000000000000000000000,
         "payload": {
@@ -99,10 +99,10 @@
         },
         "succeed": true,
         "childs": [{
-            "comment": "dpos0003 regcandidate & transfer 20000 ft",
+            "comment": "dpos0003 regcandidate & transfer 20000 oex",
             "type": "regcandidate",
             "from": "dpos0003",
-            "to": "fractal.dpos",
+            "to": "oex.dpos",
             "gas": 30000000,
             "value": 20000000000000000000000,
             "payload": {
@@ -111,10 +111,10 @@
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true,
             "childs": [{
-                "comment": "dpos0003 updatecandidate & transfer 5000 ft",
+                "comment": "dpos0003 updatecandidate & transfer 5000 oex",
                 "type": "updatecandidate",
                 "from": "dpos0003",
-                "to": "fractal.dpos",
+                "to": "oex.dpos",
                 "gas": 30000000,
                 "value": 5000000000000000000000,
                 "payload": {
@@ -126,11 +126,11 @@
         }]
     },
     {
-        "comment": "fractal.founder create account dpos0004 & transfer 3000000 ft",
+        "comment": "oex.founder create account dpos0004 & transfer 3000000 oex",
         "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
         "type": "createaccount",
-        "from": "fractal.founder",
-        "to": "fractal.account",
+        "from": "oex.founder",
+        "to": "oex.account",
         "gas": 30000000,
         "value": 2000000000000000000000000,
         "payload": {
@@ -141,10 +141,10 @@
         },
         "succeed": true,
         "childs": [{
-            "comment": "dpos0004 regcandidate & transfer 20000 ft",
+            "comment": "dpos0004 regcandidate & transfer 20000 oex",
             "type": "regcandidate",
             "from": "dpos0004",
-            "to": "fractal.dpos",
+            "to": "oex.dpos",
             "gas": 30000000,
             "value": 20000000000000000000000,
             "payload": {
@@ -153,10 +153,10 @@
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true,
             "childs": [{
-                "comment": "dpos0004 updatecandidate & transfer 5000 ft",
+                "comment": "dpos0004 updatecandidate & transfer 5000 oex",
                 "type": "updatecandidate",
                 "from": "dpos0004",
-                "to": "fractal.dpos",
+                "to": "oex.dpos",
                 "gas": 30000000,
                 "value": 5000000000000000000000,
                 "payload": {
@@ -168,11 +168,11 @@
         }]
     },
     {
-        "comment": "fractal.founder create account dpos0005 & transfer 3000000 ft",
+        "comment": "oex.founder create account dpos0005 & transfer 3000000 oex",
         "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
         "type": "createaccount",
-        "from": "fractal.founder",
-        "to": "fractal.account",
+        "from": "oex.founder",
+        "to": "oex.account",
         "gas": 30000000,
         "value": 2000000000000000000000000,
         "payload": {
@@ -183,10 +183,10 @@
         },
         "succeed": true,
         "childs": [{
-            "comment": "dpos0005 regcandidate & transfer 20000 ft",
+            "comment": "dpos0005 regcandidate & transfer 20000 oex",
             "type": "regcandidate",
             "from": "dpos0005",
-            "to": "fractal.dpos",
+            "to": "oex.dpos",
             "gas": 30000000,
             "value": 20000000000000000000000,
             "payload": {
@@ -195,10 +195,10 @@
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true,
             "childs": [{
-                "comment": "dpos0005 updatecandidate & transfer 5000 ft",
+                "comment": "dpos0005 updatecandidate & transfer 5000 oex",
                 "type": "updatecandidate",
                 "from": "dpos0005",
-                "to": "fractal.dpos",
+                "to": "oex.dpos",
                 "gas": 30000000,
                 "value": 5000000000000000000000,
                 "payload": {
@@ -210,11 +210,11 @@
         }]
     },
     {
-        "comment": "fractal.founder create account dpos0006 & transfer 3000000 ft",
+        "comment": "oex.founder create account dpos0006 & transfer 3000000 oex",
         "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
         "type": "createaccount",
-        "from": "fractal.founder",
-        "to": "fractal.account",
+        "from": "oex.founder",
+        "to": "oex.account",
         "gas": 30000000,
         "value": 2000000000000000000000000,
         "payload": {
@@ -225,10 +225,10 @@
         },
         "succeed": true,
         "childs": [{
-            "comment": "dpos0006 regcandidate & transfer 20000 ft",
+            "comment": "dpos0006 regcandidate & transfer 20000 oex",
             "type": "regcandidate",
             "from": "dpos0006",
-            "to": "fractal.dpos",
+            "to": "oex.dpos",
             "gas": 30000000,
             "value": 20000000000000000000000,
             "payload": {
@@ -237,10 +237,10 @@
             "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
             "succeed": true,
             "childs": [{
-                "comment": "dpos0006 updatecandidate & transfer 5000 ft",
+                "comment": "dpos0006 updatecandidate & transfer 5000 oex",
                 "type": "updatecandidate",
                 "from": "dpos0006",
-                "to": "fractal.dpos",
+                "to": "oex.dpos",
                 "gas": 30000000,
                 "value": 5000000000000000000000,
                 "payload": {

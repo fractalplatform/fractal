@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	// ConfigFile the Fractal config file
+	// ConfigFile the oex config file
 	ConfigFile string
 )
 

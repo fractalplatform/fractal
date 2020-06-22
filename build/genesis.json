@@ -5,8 +5,8 @@
 			"fnode://6629defca0f82ede9cb30d40a2ec6e8c56f51080ad49e9099eb960bed63829ee259bdec6c357d2b43ebdb621b1a54da268d35088bd9db80245936a58c299e1e6@boot3.m.ft.im:30000"
 		],
 		"chainId": 1,
-		"chainName": "fractal",
-		"chainUrl": "https://fractalproject.com",
+		"chainName": "oex",
+		"chainUrl": "https://oexproject.com",
 		"accountParams": {
 			"level": 3,
 			"alllength":31,
@@ -49,35 +49,35 @@
 			"blockReward": 0
 		},
 		"snapshotInterval": 3600000,
-		"systemName": "fractal.founder",
-		"accountName": "fractal.account",
-		"assetName": "fractal.asset",
-		"dposName": "fractal.dpos",
-		"feeName": "fractal.fee",
+		"systemName": "oex.founder",
+		"accountName": "oex.account",
+		"assetName": "oex.asset",
+		"dposName": "oex.dpos",
+		"feeName": "oex.fee",
 		"systemToken": "ftoken"
 	},
 	"timestamp": 1560614400000,
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{
-		"name": "fractal.founder",
-		"founder": "fractal.founder",
+		"name": "oex.founder",
+		"founder": "oex.founder",
 		"pubKey": "0x047df1225a37de8e8dde6c78b764c8da7096ee3a28d189548f51cbb0dfc362284022d518a2193efe6aee86d63aeec766455d9f6af06b037b4dee28f637dc83c057"
 	}, {
-		"name": "fractal.account",
-		"founder": "fractal.founder",
+		"name": "oex.account",
+		"founder": "oex.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
-		"name": "fractal.asset",
-		"founder": "fractal.founder",
+		"name": "oex.asset",
+		"founder": "oex.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
-		"name": "fractal.dpos",
-		"founder": "fractal.founder",
+		"name": "oex.dpos",
+		"founder": "oex.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
-		"name": "fractal.fee",
-		"founder": "fractal.founder",
+		"name": "oex.fee",
+		"founder": "oex.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}],
 	"allocCandidates": [],
@@ -86,8 +86,8 @@
 		"symbol": "ft",
 		"amount": 4904014844451659720000000000,
 		"decimals": 18,
-		"founder": "fractal.founder",
-		"owner": "fractal.founder",
+		"founder": "oex.founder",
+		"owner": "oex.founder",
 		"upperLimit": 4904014844451659720000000000
 	}],
 	"remark":"科技捍卫权利"

@@ -117,7 +117,7 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 		}, {
 			Namespace: "oex",
 			Version:   "1.0",
-			Service:   NewPublicFractalAPI(apiBackend),
+			Service:   NewPublicoexAPI(apiBackend),
 			Public:    true,
 		}, {
 			Namespace: "oex",

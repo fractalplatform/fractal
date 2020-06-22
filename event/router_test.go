@@ -134,7 +134,7 @@ func TestSendEventToStation(t *testing.T) {
 	}
 
 	done.Add(3)
-	msg := "Hello Fractal!"
+	msg := "Hello oex!"
 	go recvAndCheck(station1, nil)
 	go recvAndCheck(station2, nil)
 	go recvAndCheck(station3, nil)

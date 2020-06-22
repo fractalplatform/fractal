@@ -1,9 +1,9 @@
 [{
-    "comment": "fractal.founder create account candidate0002 & transfer 1000000 ft",
+    "comment": "oex.founder create account candidate0002 & transfer 1000000 oex",
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "type": "createaccount",
-    "from": "fractal.founder",
-    "to": "fractal.account",
+    "from": "oex.founder",
+    "to": "oex.account",
     "gas": 30000000,
     "value": 1000000000000000000000000,
     "payload": {
@@ -15,10 +15,10 @@
     "succeed": true
 },
 {
-    "comment": "candidate0002 updatecandidate & transfer 0 ft, not exist",
+    "comment": "candidate0002 updatecandidate & transfer 0 oex, not exist",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -29,10 +29,10 @@
     "contain": "not exist"
 },
 {
-    "comment": "candidate0002 regcandidate & transfer 10000 ft",
+    "comment": "candidate0002 regcandidate & transfer 10000 oex",
     "type": "regcandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 10000000000000000000000,
     "payload": {
@@ -43,10 +43,10 @@
 },
 
 {
-    "comment": "candidate0002 updatecandidate & transfer 0 ft, wrong receipt",
+    "comment": "candidate0002 updatecandidate & transfer 0 oex, wrong receipt",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.account",
+    "to": "oex.account",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -54,13 +54,13 @@
     },
     "priv": "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032",
     "succeed": false,
-    "contain": "fractal.dpos"
+    "contain": "oex.dpos"
 },
 {
-    "comment": "candidate0002 updatecandidate & transfer 0 ft, wrong Info",
+    "comment": "candidate0002 updatecandidate & transfer 0 oex, wrong Info",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -70,10 +70,10 @@
     "succeed": false,
     "contain": "invalid Info"
 }, {
-    "comment": "candidate0002 updatecandidate & transfer 1001 ft, non divisibility",
+    "comment": "candidate0002 updatecandidate & transfer 1001 oex, non divisibility",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 1001000000000000000000,
     "payload": {
@@ -83,10 +83,10 @@
     "succeed": false,
     "contain": "non divisibility"
 }, {
-    "comment": "candidate0002 updatecandidate & transfer 1100000 ft, insufficient funds",
+    "comment": "candidate0002 updatecandidate & transfer 1100000 oex, insufficient funds",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 1100000000000000000000000,
     "payload": {
@@ -97,10 +97,10 @@
     "contain": "insufficient funds"
 },
 {
-    "comment": "candidate0002 updatecandidate & transfer 0 ft",
+    "comment": "candidate0002 updatecandidate & transfer 0 oex",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 0,
     "payload": {
@@ -110,10 +110,10 @@
     "succeed": true
 },
 {
-    "comment": "candidate0002 updatecandidate & transfer 1000 ft",
+    "comment": "candidate0002 updatecandidate & transfer 1000 oex",
     "type": "updatecandidate",
     "from": "candidate0002",
-    "to": "fractal.dpos",
+    "to": "oex.dpos",
     "gas": 30000000,
     "value": 1000000000000000000000,
     "payload": {

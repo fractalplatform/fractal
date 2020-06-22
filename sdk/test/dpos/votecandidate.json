@@ -1,8 +1,8 @@
 [{
-	"comment": "dpos0001 votecandidate dpos0001 & transfer 1000 ft",
+	"comment": "dpos0001 votecandidate dpos0001 & transfer 1000 oex",
 	"type": "votecandidate",
 	"from": "dpos0001",
-	"to": "fractal.dpos",
+	"to": "oex.dpos",
 	"gas": 30000000,
 	"value": 0,
 	"payload": {

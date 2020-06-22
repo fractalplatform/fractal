@@ -1,4 +1,4 @@
-# [fractal](https://github.com/oexplatform/oexchain) Changelog
+# [oex](https://github.com/oexplatform/oexchain) Changelog
 ## [1.0.0] - 2019-12-09
 ### Forked
 - [DPOS] allow contract asset transfer (#525)(#528)
@@ -23,7 +23,7 @@
 - [DOWNLOADER] blockchain/downloader: if there were two different blocks in same height, it may cause download error (#481)(#490)
 - [BLOCKCHAIN] blockchain: fixed bug that use nanosecond compared with second (#474)
 ### Changed
-- [RAWDB] modify fractal db interface (#487)
+- [RAWDB] modify oex db interface (#487)
 - [BLOCKCHAIN] modify the blockchain code (#489)
 ### Added
 - [GASPRICE] returns the recommended gas price (#486)
@@ -228,7 +228,7 @@
 ## [0.0.9] - 2019-05-06
 ### Added
 - [BLOCKCHAIN] add gensis block account
-- [FEE] the distributed gas will add to fractal.fee's balance
+- [FEE] the distributed gas will add to oex.fee's balance
 - [COMMON] add json unmarshal for author
 - [ASSET] check valid for modifing about contract asset
 ### Fixed

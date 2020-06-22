@@ -26,24 +26,24 @@ import (
 	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
-// PublicFractalAPI offers and API for the transaction pool. It only operates on data that is non confidential.
-type PublicFractalAPI struct {
+// PublicoexAPI offers and API for the transaction pool. It only operates on data that is non confidential.
+type PublicoexAPI struct {
 	b Backend
 }
 
-// NewPublicFractalAPI creates a new tx pool service that gives information about the transaction pool.
-func NewPublicFractalAPI(b Backend) *PublicFractalAPI {
-	return &PublicFractalAPI{b}
+// NewPublicoexAPI creates a new tx pool service that gives information about the transaction pool.
+func NewPublicoexAPI(b Backend) *PublicoexAPI {
+	return &PublicoexAPI{b}
 }
 
 // GasPrice returns a suggestion for a gas price.
-func (s *PublicFractalAPI) GasPrice(ctx context.Context) (*big.Int, error) {
+func (s *PublicoexAPI) GasPrice(ctx context.Context) (*big.Int, error) {
 	return s.b.SuggestPrice(ctx)
 }
 
 // SendRawTransaction will add the signed transaction to the transaction pool.
 // The sender is responsible for signing the transaction and using the correct nonce.
-func (s *PublicFractalAPI) SendRawTransaction(ctx context.Context, encodedTx hexutil.Bytes) (common.Hash, error) {
+func (s *PublicoexAPI) SendRawTransaction(ctx context.Context, encodedTx hexutil.Bytes) (common.Hash, error) {
 	tx := new(types.Transaction)
 	if err := rlp.DecodeBytes(encodedTx, tx); err != nil {
 		return common.Hash{}, err

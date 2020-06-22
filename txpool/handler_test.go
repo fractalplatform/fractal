@@ -123,11 +123,11 @@ func TestP2PTxMsg(t *testing.T) {
 		asset      = asset.NewAsset(statedb)
 	)
 	// issue asset
-	if _, err := asset.IssueAsset("oex", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
+	if _, err := asset.IssueAsset("oex", 0, 0, "zz", new(big.Int).SetUint64(params.oex), 10, common.Name(""), fname, new(big.Int).SetUint64(params.oex), common.Name(""), ""); err != nil {
 		t.Fatal(err)
 	}
 	// add balance
-	if err := manager.AddAccountBalanceByName(fname, "oex", new(big.Int).SetUint64(params.Fractal)); err != nil {
+	if err := manager.AddAccountBalanceByName(fname, "oex", new(big.Int).SetUint64(params.oex)); err != nil {
 		t.Fatal(err)
 	}
 	params.DefaultChainconfig.SysTokenID = 0

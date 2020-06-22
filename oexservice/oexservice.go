@@ -37,7 +37,7 @@ import (
 	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
-// FtService implements the fractal service.
+// FtService implements the oex service.
 type FtService struct {
 	config       *Config
 	chainConfig  *params.ChainConfig
@@ -135,7 +135,7 @@ func (fs *FtService) APIs() []rpc.API {
 
 // Start implements node.Service, starting all internal goroutines.
 func (fs *FtService) Start() error {
-	log.Info("start fractal service...")
+	log.Info("start oex service...")
 	return nil
 }
 

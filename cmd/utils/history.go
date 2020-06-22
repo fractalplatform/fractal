@@ -41,7 +41,7 @@ import "github.com/monax/relic"
 //
 // To cut a new release add a release to the front of this slice then run the
 // release tagging script: ./scripts/tag_release.sh
-var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/oexplatform/oexchain").
+var History relic.ImmutableHistory = relic.NewHistory("oex", "https://github.com/oexplatform/oexchain").
 	MustDeclareReleases(
 		"1.0.0 - 2019-12-09",
 		`### Forked
@@ -66,7 +66,7 @@ var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github
 - [DOWNLOADER] blockchain/downloader: if there were two different blocks in same height, it may cause download error (#481)(#490)
 - [BLOCKCHAIN] blockchain: fixed bug that use nanosecond compared with second (#474)
 ### Changed
-- [RAWDB] modify fractal db interface (#487)
+- [RAWDB] modify oex db interface (#487)
 - [BLOCKCHAIN] modify the blockchain code (#489)
 ### Added
 - [GASPRICE] returns the recommended gas price (#486)
@@ -250,7 +250,7 @@ var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github
 		"0.0.9 - 2019-05-06",
 		`### Added
 - [BLOCKCHAIN] add gensis block account
-- [FEE] the distributed gas will add to fractal.fee's balance
+- [FEE] the distributed gas will add to oex.fee's balance
 - [COMMON] add json unmarshal for author
 - [ASSET] check valid for modifing about contract asset
 ### Fixed

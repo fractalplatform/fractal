@@ -42,7 +42,7 @@ var DefaultConfig = &Config{
 	FreezeEpochSize:               3,
 	AccountName:                   "ftsystemdpos",
 	SystemName:                    "ftsystemio",
-	SystemURL:                     "www.fractalproject.com",
+	SystemURL:                     "www.oexproject.com",
 	ExtraBlockReward:              big.NewInt(1),
 	BlockReward:                   big.NewInt(5),
 	Decimals:                      18,

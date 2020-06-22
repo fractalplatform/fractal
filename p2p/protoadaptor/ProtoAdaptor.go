@@ -185,7 +185,7 @@ func checkDDOS(m map[int][]int64, e *router.Event) bool {
 func (adaptor *ProtoAdaptor) Protocols() []p2p.Protocol {
 	return []p2p.Protocol{
 		p2p.Protocol{
-			Name:    "FractalTest",
+			Name:    "oexTest",
 			Version: 1,
 			Length:  1,
 			Run:     adaptor.adaptorLoop,

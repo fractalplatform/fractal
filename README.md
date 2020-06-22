@@ -1,9 +1,9 @@
 # OEXChain
 
-[![Build Status](https://travis-ci.org/oexplatform/fractal.svg?branch=master)](https://travis-ci.org/oexplatform/fractal)
-[![GoDoc](https://godoc.org/github.com/oexplatform/fractal?status.svg)](https://godoc.org/github.com/oexplatform/fractal)
-[![Coverage Status](https://coveralls.io/repos/github/oexplatform/fractal/badge.svg?branch=master)](https://coveralls.io/github/oexplatform/fractal?branch=master)
-[![GitHub](https://img.shields.io/github/license/oexplatform/fractal.svg)](LICENSE)
+[![Build Status](https://travis-ci.org/oexplatform/oex.svg?branch=master)](https://travis-ci.org/oexplatform/oex)
+[![GoDoc](https://godoc.org/github.com/oexplatform/oex?status.svg)](https://godoc.org/github.com/oexplatform/oex)
+[![Coverage Status](https://coveralls.io/repos/github/oexplatform/oex/badge.svg?branch=master)](https://coveralls.io/github/oexplatform/oex?branch=master)
+[![GitHub](https://img.shields.io/github/license/oexplatform/oex.svg)](LICENSE)
 
 Welcome to the OEXChain source code repository!
 

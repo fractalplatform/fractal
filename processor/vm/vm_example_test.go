@@ -86,7 +86,7 @@ func createContract(abifile string, binfile string, contractName common.Name, ru
 }
 
 func createAccount(account *accountmanager.AccountManager, name string) error {
-	if err := account.CreateAccount(common.Name("fractal"), common.Name(name), "", 0, 2, common.HexToPubKey("12345"), ""); err != nil {
+	if err := account.CreateAccount(common.Name("oex"), common.Name(name), "", 0, 2, common.HexToPubKey("12345"), ""); err != nil {
 		fmt.Printf("create account %s err %s", name, err)
 		return fmt.Errorf("create account %s err %s", name, err)
 	}
@@ -109,7 +109,7 @@ func issueAssetAction(ownerName, toName common.Name) *types.Action {
 		panic(err)
 	}
 
-	action := types.NewAction(types.IssueAsset, ownerName, common.Name("fractal.asset"), 0, 0, 0, big.NewInt(0), b, nil)
+	action := types.NewAction(types.IssueAsset, ownerName, common.Name("oex.asset"), 0, 0, 0, big.NewInt(0), b, nil)
 	return action
 }
 
@@ -130,7 +130,7 @@ func TestAsset(t *testing.T) {
 		return
 	}
 
-	if err := createAccount(account, "fractal.asset"); err != nil {
+	if err := createAccount(account, "oex.asset"); err != nil {
 		return
 	}
 
@@ -323,7 +323,7 @@ func TestVEN(t *testing.T) {
 		return
 	}
 
-	if err := createAccount(account, "fractal.asset"); err != nil {
+	if err := createAccount(account, "oex.asset"); err != nil {
 		return
 	}
 

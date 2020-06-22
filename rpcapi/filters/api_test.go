@@ -26,7 +26,7 @@ import (
 
 func TestUnmarshalJSONNewFilterArgs(t *testing.T) {
 	var (
-		account0 = common.Name("fractal.founder")
+		account0 = common.Name("oex.founder")
 		account1 = common.Name("supportmytest")
 		topic0   = common.HexToHash("3ac225168df54212a25c1c01fd35bebfea408fdac2e31ddd6f80a4bbf9a5f1ca")
 		topic1   = common.HexToHash("9084a792d2f8b16a62b882fd56f7860c07bf5fa91dd8a2ae7e809e5180fef0b3")

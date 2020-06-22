@@ -43,7 +43,7 @@ var (
 	testAction2 = NewAction(
 		UpdateAccount,
 		common.Name("fromname"),
-		common.Name("fractal.account"),
+		common.Name("oex.account"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -55,7 +55,7 @@ var (
 	testAction3 = NewAction(
 		UpdateAccount,
 		common.Name("fromname"),
-		common.Name("fractal.account"),
+		common.Name("oex.account"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -79,7 +79,7 @@ var (
 	testAction5 = NewAction(
 		CreateAccount,
 		common.Name("fromname"),
-		common.Name("fractal.aaaaaa"),
+		common.Name("oex.aaaaaa"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -183,7 +183,7 @@ var (
 	testAction10 = NewAction(
 		IncreaseAsset,
 		common.Name("fromname"),
-		common.Name("fractal.asset"),
+		common.Name("oex.asset"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -195,7 +195,7 @@ var (
 	testAction11 = NewAction(
 		IssueAsset,
 		common.Name("fromname"),
-		common.Name("fractal.asset"),
+		common.Name("oex.asset"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -207,7 +207,7 @@ var (
 	testAction12 = NewAction(
 		DestroyAsset,
 		common.Name("fromname"),
-		common.Name("fractal.asset"),
+		common.Name("oex.asset"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -219,7 +219,7 @@ var (
 	testAction13 = NewAction(
 		SetAssetOwner,
 		common.Name("fromname"),
-		common.Name("fractal.asset"),
+		common.Name("oex.asset"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -230,7 +230,7 @@ var (
 	testAction14 = NewAction(
 		UpdateAsset,
 		common.Name("fromname"),
-		common.Name("fractal.asset"),
+		common.Name("oex.asset"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -278,7 +278,7 @@ var (
 	testAction20 = NewAction(
 		RegCandidate,
 		common.Name("fromname"),
-		common.Name("fractal.dpos"),
+		common.Name("oex.dpos"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -290,7 +290,7 @@ var (
 	testAction21 = NewAction(
 		UpdateCandidate,
 		common.Name("fromname"),
-		common.Name("fractal.dpos"),
+		common.Name("oex.dpos"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -302,7 +302,7 @@ var (
 	testAction22 = NewAction(
 		UnregCandidate,
 		common.Name("fromname"),
-		common.Name("fractal.dpos"),
+		common.Name("oex.dpos"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -314,7 +314,7 @@ var (
 	testAction23 = NewAction(
 		VoteCandidate,
 		common.Name("fromname"),
-		common.Name("fractal.dpos"),
+		common.Name("oex.dpos"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
@@ -325,7 +325,7 @@ var (
 	testAction24 = NewAction(
 		RefundCandidate,
 		common.Name("fromname"),
-		common.Name("fractal.dpos"),
+		common.Name("oex.dpos"),
 		uint64(1),
 		uint64(3),
 		uint64(2000),
