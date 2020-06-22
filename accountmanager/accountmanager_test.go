@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,14 +23,14 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/fractalplatform/fractal/asset"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/asset"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 var sdb = getStateDB()
@@ -2074,16 +2074,16 @@ func Test_IssueAssetForkID1(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, true},
+		{"normal", args{"oex", "oex", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, true},
 		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
 		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a123"), big.NewInt(999999), "", ""}, false},
 		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
-		{"symbolempty", args{"ft", "", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
-		{"amount==0", args{"ft", "z", big.NewInt(-1), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
-		{"ownerempty", args{"ft", "z", big.NewInt(2), 18, common.Name(""), common.Name(""), big.NewInt(999999), "", ""}, false},
-		{"shortsymbol", args{"ft", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
-		{"longsymbol", args{"ft", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
-		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"symbolempty", args{"oex", "", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"amount==0", args{"oex", "z", big.NewInt(-1), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"ownerempty", args{"oex", "z", big.NewInt(2), 18, common.Name(""), common.Name(""), big.NewInt(999999), "", ""}, false},
+		{"shortsymbol", args{"oex", "z", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"longsymbol", args{"oex", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
+		{"emptyname", args{"oex", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a0123456789abc"), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}, false},
 	}
 
 	am := &AccountManager{
@@ -2102,8 +2102,8 @@ func Test_IssueAssetForkID1(t *testing.T) {
 		t.Errorf("Test_IssueAssetForkID1 create account error = %v", err)
 	}
 
-	argBeforeFork := args{"main", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
-	argSubFork := args{"main.sub", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+	argBeforeFork := args{"main", "oex", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+	argSubFork := args{"main.sub", "oex", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
 
 	assetBefore := IssueAsset{
 		AssetName:   (argBeforeFork.assetName),
@@ -2159,7 +2159,7 @@ func Test_IssueAssetForkID1(t *testing.T) {
 		}
 	}
 
-	argAfterFork := args{"test", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
+	argAfterFork := args{"test", "oex", big.NewInt(2), 18, common.Name(""), common.Name("a0123456789abc"), big.NewInt(999999), "", ""}
 
 	assetAfter := IssueAsset{
 		AssetName:   (argAfterFork.assetName),

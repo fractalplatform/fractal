@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	router "github.com/fractalplatform/fractal/event"
-	"github.com/fractalplatform/fractal/p2p"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	router "github.com/oexplatform/oexchain/event"
+	"github.com/oexplatform/oexchain/p2p"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 type pack struct {

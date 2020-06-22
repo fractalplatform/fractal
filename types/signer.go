@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 var (

@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,12 +20,12 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 
-	"github.com/fractalplatform/fractal/common"
-	args "github.com/fractalplatform/fractal/consensus/dpos"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/common"
+	args "github.com/oexplatform/oexchain/consensus/dpos"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/types"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 var (

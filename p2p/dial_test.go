@@ -24,9 +24,9 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/p2p/enr"
-	"github.com/fractalplatform/fractal/p2p/netutil"
+	"github.com/oexplatform/oexchain/p2p/enode"
+	"github.com/oexplatform/oexchain/p2p/enr"
+	"github.com/oexplatform/oexchain/p2p/netutil"
 )
 
 func init() {

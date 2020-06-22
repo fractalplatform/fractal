@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/fractalplatform/fractal/p2p/enode"
+	"github.com/oexplatform/oexchain/p2p/enode"
 )
 
 type Backend interface {

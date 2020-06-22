@@ -11,14 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
 
-	"github.com/fractalplatform/fractal/accountmanager"
+	"github.com/oexplatform/oexchain/accountmanager"
 
-	"github.com/fractalplatform/fractal/consensus/dpos"
+	"github.com/oexplatform/oexchain/consensus/dpos"
 
-	"github.com/fractalplatform/fractal/sdk"
+	"github.com/oexplatform/oexchain/sdk"
 )
 
 func main() {

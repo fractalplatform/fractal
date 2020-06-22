@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,9 @@ package state
 import (
 	"sync"
 
-	"github.com/fractalplatform/fractal/common"
-	trie "github.com/fractalplatform/fractal/state/mtp"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/oexplatform/oexchain/common"
+	trie "github.com/oexplatform/oexchain/state/mtp"
+	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
 var MaxTrieCacheGen = uint16(120)

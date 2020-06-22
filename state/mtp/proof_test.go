@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-	mdb "github.com/fractalplatform/fractal/utils/fdb/memdb"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
+	mdb "github.com/oexplatform/oexchain/utils/fdb/memdb"
 )
 
 func init() {

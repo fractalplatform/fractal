@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -230,7 +230,7 @@ func TestClientSubscribeInvalidArg(t *testing.T) {
 }
 
 func TestClientSubscribe(t *testing.T) {
-	server := newTestServer("ft", new(NotificationTestService))
+	server := newTestServer("oex", new(NotificationTestService))
 	defer server.Stop()
 	client := dialInProc(server)
 	defer client.Close()
@@ -299,7 +299,7 @@ func TestClientSubscribeClose(t *testing.T) {
 		gotHangSubscriptionReq:  make(chan struct{}),
 		unblockHangSubscription: make(chan struct{}),
 	}
-	server := newTestServer("ft", service)
+	server := newTestServer("oex", service)
 	defer server.Stop()
 	client := dialInProc(server)
 	defer client.Close()
@@ -335,7 +335,7 @@ func TestClientSubscribeClose(t *testing.T) {
 // This test checks that Client doesn't lock up when a single subscriber
 // doesn't read subscription events.
 func TestClientNotificationStorm(t *testing.T) {
-	server := newTestServer("ft", new(NotificationTestService))
+	server := newTestServer("oex", new(NotificationTestService))
 	defer server.Stop()
 
 	doTest := func(count int, wantError bool) {

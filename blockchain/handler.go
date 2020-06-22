@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/common"
-	router "github.com/fractalplatform/fractal/event"
-	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/common"
+	router "github.com/oexplatform/oexchain/event"
+	adaptor "github.com/oexplatform/oexchain/p2p/protoadaptor"
+	"github.com/oexplatform/oexchain/types"
 )
 
 type station struct {

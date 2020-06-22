@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/ftservice"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/oexservice"
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +67,7 @@ func initGenesis() error {
 		return err
 	}
 
-	_, err = ftservice.New(stack.GetNodeConfig(), ftCfgInstance.FtServiceCfg)
+	_, err = oexservice.New(stack.GetNodeConfig(), ftCfgInstance.FtServiceCfg)
 	if err != nil {
 		return err
 	}

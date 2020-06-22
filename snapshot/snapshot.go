@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 var snapshotManagerName = "sysSnapshot"

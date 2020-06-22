@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,8 +20,8 @@ import (
 	"context"
 	"fmt"
 
-	router "github.com/fractalplatform/fractal/event"
-	"github.com/fractalplatform/fractal/rpc"
+	router "github.com/oexplatform/oexchain/event"
+	"github.com/oexplatform/oexchain/rpc"
 )
 
 // PrivateP2pAPI offers and API for p2p networking.

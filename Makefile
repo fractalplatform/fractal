@@ -1,5 +1,5 @@
-# Copyright 2018 The Fractal Team Authors
-# This file is part of the fractal project.
+# Copyright 2018 The OEX Team Authors
+# This file is part of the OEX project.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,9 +26,9 @@ export GOFLAGS=-mod=vendor
 
 define build
 	@go build -ldflags " \
-	-X github.com/fractalplatform/fractal/cmd/utils.commit=$(shell cat commit_hash.txt) \
-	-X github.com/fractalplatform/fractal/cmd/utils.date=$(shell date '+%Y-%m-%d-%H:%M:%S') \
-	-X 'github.com/fractalplatform/fractal/cmd/utils.goversion=$(shell go version)'" \
+	-X github.com/oexplatform/oexchain/cmd/utils.commit=$(shell cat commit_hash.txt) \
+	-X github.com/oexplatform/oexchain/cmd/utils.date=$(shell date '+%Y-%m-%d-%H:%M:%S') \
+	-X 'github.com/oexplatform/oexchain/cmd/utils.goversion=$(shell go version)'" \
 	-o ${REPO}/build/bin/$(1) ./cmd/$(1)
 endef
 
@@ -66,20 +66,20 @@ commit_hash:
 
 # build all targets 
 .PHONY: all
-all:check  build_ft build_ftfinder
+all:check  build_oex build_oexfinder
 
-# build ft
-.PHONY: build_ft
-build_ft: commit_hash check 
-	@echo "Building ft."
-	$(call build,ft)
+# build oex
+.PHONY: build_oex
+build_oex: commit_hash check
+	@echo "Building oex."
+	$(call build,oex)
 
 
-# build ftfinder
-.PHONY: build_ftfinder 
-build_ftfinder: commit_hash check 
-	@echo "Building ftfinder."
-	$(call build,ftfinder)
+# build oexfinder
+.PHONY: build_oexfinder
+build_oexfinder: commit_hash check
+	@echo "Building oexfinder."
+	$(call build,oexfinder)
 
 ### Test
 

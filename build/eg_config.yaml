@@ -24,7 +24,7 @@ log:
   printorigins: false
   # Logging verbosity: 0=silent, 1=error, 2=warn, 3=info, 4=debug, 5=detail
   level: 3
-  # Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. ft/*=5,p2p=4)
+  # Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. oex/*=5,p2p=4)
   vmodule: ""
   # Request a stack trace at a specific logging statement (e.g. \"block.go:271\")
   backtraceat: ""
@@ -34,13 +34,13 @@ node:
   # the node datadir
   datadir: "./build/testdatadir"
   # RPC:ipc file name
-  ipcpath: "ft.ipc"
+  ipcpath: "oex.ipc"
   # RPC:http host address
   httphost: "localhost"
   # RPC:http host port
   httpport: 8545
   # RPC:http api's offered over the HTTP-RPC interface
-  httpmodules: ["ft"]
+  httpmodules: ["oex"]
   # RPC:Which to accept cross origin
   httpcors: ["localhost"]
   # RPC:http virtual hostnames from which to accept requests
@@ -50,7 +50,7 @@ node:
   # RPC:websocket host port
   wsport: 8546
   # RPC:ws api's offered over the WS-RPC interface
-  wsmodules: ["ft"]
+  wsmodules: ["oex"]
   # RPC:ws origins from which to accept websockets requests
   wsorigins: []
   # RPC:ws exposes all API modules via the WebSocket RPC interface rather than just the public ones.
@@ -82,7 +82,7 @@ node:
     # The server will not dial any peers.
     nodial: false
 
-# ftservice the fractal service configuration table
+# oexservice the fractal service configuration table
 ftservice:
   # Megabytes of memory allocated to internal database caching
   databasecache: 1024

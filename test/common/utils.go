@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -27,19 +27,19 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/feemanager"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/asset"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/feemanager"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/types"
 	jww "github.com/spf13/jwalterweatherman"
 )
 
 var (
 	once           sync.Once
 	clientInstance *rpc.Client
-	defaultRPCPath = "ft.ipc"
+	defaultRPCPath = "oex.ipc"
 )
 
 // DefultURL default rpc url

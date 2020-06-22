@@ -35,9 +35,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/bitutil"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/crypto/ecies"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/crypto/ecies"
+	"github.com/oexplatform/oexchain/utils/rlp"
 	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
 )

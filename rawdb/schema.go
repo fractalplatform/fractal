@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ package rawdb
 import (
 	"encoding/binary"
 
-	"github.com/fractalplatform/fractal/common"
+	"github.com/oexplatform/oexchain/common"
 )
 
 // The fields below define the low level database schema prefixing.
@@ -47,7 +47,7 @@ var (
 	bloomBitsPrefix = []byte("B") // bloomBitsPrefix + bit (uint16 big endian) + section (uint64 big endian) + hash -> bloom bits
 
 	preimagePrefix = []byte("secure-key-") // preimagePrefix + hash -> preimage
-	configPrefix   = []byte("ft-config-")  // config prefix for the db
+	configPrefix   = []byte("oex-config-")  // config prefix for the db
 
 	// Chain index prefixes (use `i` + single byte to avoid mixing data types).
 	BloomBitsIndexPrefix = []byte("iB") // BloomBitsIndexPrefix is the data table of a chain indexer to track its progress

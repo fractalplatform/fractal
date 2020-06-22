@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,26 +22,26 @@ import (
 	"context"
 	"math/big"
 
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/debug"
-	"github.com/fractalplatform/fractal/feemanager"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi/filters"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/txpool"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/consensus"
+	"github.com/oexplatform/oexchain/debug"
+	"github.com/oexplatform/oexchain/feemanager"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/processor/vm"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/rpcapi/filters"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/txpool"
+	"github.com/oexplatform/oexchain/types"
+	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
 // Backend interface provides the common API services (that are provided by
 // both full and light clients) with access to necessary functions.
 type Backend interface {
-	// ftservice API
+	// oexservice API
 	ChainDb() fdb.Database
 	ChainConfig() *params.ChainConfig
 	SuggestPrice(ctx context.Context) (*big.Int, error)
@@ -110,17 +110,17 @@ func GetAPIs(apiBackend Backend) []rpc.API {
 			Service:   NewPrivateBlockChainAPI(apiBackend),
 		},
 		{
-			Namespace: "ft",
+			Namespace: "oex",
 			Version:   "1.0",
 			Service:   NewPublicBlockChainAPI(apiBackend),
 			Public:    true,
 		}, {
-			Namespace: "ft",
+			Namespace: "oex",
 			Version:   "1.0",
 			Service:   NewPublicFractalAPI(apiBackend),
 			Public:    true,
 		}, {
-			Namespace: "ft",
+			Namespace: "oex",
 			Version:   "1.0",
 			Service:   filters.NewPublicFilterAPI(apiBackend),
 			Public:    true,

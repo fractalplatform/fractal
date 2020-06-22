@@ -24,8 +24,8 @@ import (
 	"net"
 	"sync"
 
-	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/p2p/enr"
+	"github.com/oexplatform/oexchain/p2p/enode"
+	"github.com/oexplatform/oexchain/p2p/enr"
 )
 
 func newTestTable(t transport) (*Table, *enode.DB) {

@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
 package main
 
 import (
-	"runtime"
+	"os"
+	"testing"
 )
 
-func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	Execute()
+func TestMain(m *testing.M) {
+	os.Exit(m.Run())
 }

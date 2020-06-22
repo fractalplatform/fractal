@@ -40,7 +40,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 const SizeLimit = 300 // maximum encoded size of a node record in bytes

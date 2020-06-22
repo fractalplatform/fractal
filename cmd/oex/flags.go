@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -113,7 +113,7 @@ func addFlags(flags *flag.FlagSet) {
 		&ftCfgInstance.LogCfg.Vmodule,
 		"log_module",
 		ftCfgInstance.LogCfg.Vmodule,
-		"Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. ft/*=5,p2p=4)",
+		"Per-module verbosity: comma-separated list of <pattern>=<level> (e.g. oex/*=5,p2p=4)",
 	)
 	viper.BindPFlag("log.module", flags.Lookup("log_module"))
 
@@ -240,14 +240,14 @@ func addFlags(flags *flag.FlagSet) {
 	)
 	viper.BindPFlag("node.wsexposeall", flags.Lookup("ws_exposeall"))
 
-	// ftservice database options
+	// oexservice database options
 	flags.IntVar(
 		&ftCfgInstance.FtServiceCfg.DatabaseCache,
 		"database_cache",
 		ftCfgInstance.FtServiceCfg.DatabaseCache,
 		"Megabytes of memory allocated to internal database caching",
 	)
-	viper.BindPFlag("ftservice.databasecache", flags.Lookup("database_cache"))
+	viper.BindPFlag("oexservice.databasecache", flags.Lookup("database_cache"))
 
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.ContractLogFlag,
@@ -255,7 +255,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.ContractLogFlag,
 		"flag for db to store contrat internal transaction log.",
 	)
-	viper.BindPFlag("ftservice.contractlog", flags.Lookup("contractlog"))
+	viper.BindPFlag("oexservice.contractlog", flags.Lookup("contractlog"))
 
 	// state pruning
 	flags.BoolVar(
@@ -264,7 +264,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.StatePruning,
 		"flag for enable/disable state pruning.",
 	)
-	viper.BindPFlag("ftservice.statepruning", flags.Lookup("statepruning_enable"))
+	viper.BindPFlag("oexservice.statepruning", flags.Lookup("statepruning_enable"))
 
 	// start number
 	flags.Uint64Var(
@@ -273,7 +273,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.StartNumber,
 		"start chain with a specified block number.",
 	)
-	viper.BindPFlag("ftservice.startnumber", flags.Lookup("start_number"))
+	viper.BindPFlag("oexservice.startnumber", flags.Lookup("start_number"))
 
 	// add bad block hashs
 	flags.StringSliceVar(
@@ -282,7 +282,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.BadHashes,
 		"blockchain refuse bad block hashes",
 	)
-	viper.BindPFlag("ftservice.badhashes", flags.Lookup("bad_hashes"))
+	viper.BindPFlag("oexservice.badhashes", flags.Lookup("bad_hashes"))
 
 	// txpool
 	flags.BoolVar(
@@ -291,7 +291,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.NoLocals,
 		"Disables price exemptions for locally submitted transactions",
 	)
-	viper.BindPFlag("ftservice.txpool.nolocals", flags.Lookup("txpool_nolocals"))
+	viper.BindPFlag("oexservice.txpool.nolocals", flags.Lookup("txpool_nolocals"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.TxPool.Journal,
@@ -299,7 +299,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.Journal,
 		"Disk journal for local transaction to survive node restarts",
 	)
-	viper.BindPFlag("ftservice.txpool.journal", flags.Lookup("txpool_journal"))
+	viper.BindPFlag("oexservice.txpool.journal", flags.Lookup("txpool_journal"))
 
 	flags.DurationVar(
 		&ftCfgInstance.FtServiceCfg.TxPool.Rejournal,
@@ -307,7 +307,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.Rejournal,
 		"Time interval to regenerate the local transaction journal",
 	)
-	viper.BindPFlag("ftservice.txpool.rejournal", flags.Lookup("txpool_rejournal"))
+	viper.BindPFlag("oexservice.txpool.rejournal", flags.Lookup("txpool_rejournal"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.PriceBump,
@@ -315,7 +315,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.PriceBump,
 		"Price bump percentage to replace an already existing transaction",
 	)
-	viper.BindPFlag("ftservice.txpool.pricebump", flags.Lookup("txpool_pricebump"))
+	viper.BindPFlag("oexservice.txpool.pricebump", flags.Lookup("txpool_pricebump"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.PriceLimit,
@@ -323,7 +323,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.PriceLimit,
 		"Minimum gas price limit to enforce for acceptance into the pool",
 	)
-	viper.BindPFlag("ftservice.txpool.pricelimit", flags.Lookup("txpool_pricelimit"))
+	viper.BindPFlag("oexservice.txpool.pricelimit", flags.Lookup("txpool_pricelimit"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.AccountSlots,
@@ -331,7 +331,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.AccountSlots,
 		"Number of executable transaction slots guaranteed per account",
 	)
-	viper.BindPFlag("ftservice.txpool.accountslots", flags.Lookup("txpool_accountslots"))
+	viper.BindPFlag("oexservice.txpool.accountslots", flags.Lookup("txpool_accountslots"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.AccountQueue,
@@ -339,7 +339,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.AccountQueue,
 		"Maximum number of non-executable transaction slots permitted per account",
 	)
-	viper.BindPFlag("ftservice.txpool.accountqueue", flags.Lookup("txpool_accountqueue"))
+	viper.BindPFlag("oexservice.txpool.accountqueue", flags.Lookup("txpool_accountqueue"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.GlobalSlots,
@@ -347,7 +347,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.GlobalSlots,
 		"Maximum number of executable transaction slots for all accounts",
 	)
-	viper.BindPFlag("ftservice.txpool.globalslots", flags.Lookup("txpool_globalslots"))
+	viper.BindPFlag("oexservice.txpool.globalslots", flags.Lookup("txpool_globalslots"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.GlobalQueue,
@@ -355,7 +355,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.GlobalQueue,
 		"Minimum number of non-executable transaction slots for all accounts",
 	)
-	viper.BindPFlag("ftservice.txpool.globalqueue", flags.Lookup("txpool_globalqueue"))
+	viper.BindPFlag("oexservice.txpool.globalqueue", flags.Lookup("txpool_globalqueue"))
 
 	flags.DurationVar(
 		&ftCfgInstance.FtServiceCfg.TxPool.Lifetime,
@@ -363,7 +363,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.Lifetime,
 		"Maximum amount of time non-executable transaction are queued",
 	)
-	viper.BindPFlag("ftservice.txpool.lifetime", flags.Lookup("txpool_lifetime"))
+	viper.BindPFlag("oexservice.txpool.lifetime", flags.Lookup("txpool_lifetime"))
 
 	flags.DurationVar(
 		&ftCfgInstance.FtServiceCfg.TxPool.ResendTime,
@@ -371,7 +371,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.ResendTime,
 		"Maximum amount of time  executable transaction are resended",
 	)
-	viper.BindPFlag("ftservice.txpool.resendtime", flags.Lookup("txpool_resendtime"))
+	viper.BindPFlag("oexservice.txpool.resendtime", flags.Lookup("txpool_resendtime"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.MinBroadcast,
@@ -379,7 +379,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.MinBroadcast,
 		"Minimum number of nodes for the transaction broadcast",
 	)
-	viper.BindPFlag("ftservice.txpool.minbroadcast", flags.Lookup("txpool_minbroadcast"))
+	viper.BindPFlag("oexservice.txpool.minbroadcast", flags.Lookup("txpool_minbroadcast"))
 
 	flags.Uint64Var(
 		&ftCfgInstance.FtServiceCfg.TxPool.RatioBroadcast,
@@ -387,7 +387,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.TxPool.RatioBroadcast,
 		"Ratio of nodes for the transaction broadcast",
 	)
-	viper.BindPFlag("ftservice.txpool.ratiobroadcast", flags.Lookup("txpool_ratiobroadcast"))
+	viper.BindPFlag("oexservice.txpool.ratiobroadcast", flags.Lookup("txpool_ratiobroadcast"))
 
 	// miner
 	flags.BoolVar(
@@ -396,7 +396,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.Miner.Start,
 		"Start miner generate block and process transaction",
 	)
-	viper.BindPFlag("ftservice.miner.start", flags.Lookup("miner_start"))
+	viper.BindPFlag("oexservice.miner.start", flags.Lookup("miner_start"))
 
 	// miner
 	flags.Uint64Var(
@@ -405,7 +405,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.Miner.Delay,
 		"delay duration for miner (ms)",
 	)
-	viper.BindPFlag("ftservice.miner.delay", flags.Lookup("miner_delay"))
+	viper.BindPFlag("oexservice.miner.delay", flags.Lookup("miner_delay"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.Miner.Name,
@@ -413,7 +413,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.Miner.Name,
 		"Name for block mining rewards",
 	)
-	viper.BindPFlag("ftservice.miner.name", flags.Lookup("miner_name"))
+	viper.BindPFlag("oexservice.miner.name", flags.Lookup("miner_name"))
 
 	flags.StringSliceVar(
 		&ftCfgInstance.FtServiceCfg.Miner.PrivateKeys,
@@ -421,7 +421,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.Miner.PrivateKeys,
 		"Hex of private key for block mining rewards",
 	)
-	viper.BindPFlag("ftservice.miner.private", flags.Lookup("miner_private"))
+	viper.BindPFlag("oexservice.miner.private", flags.Lookup("miner_private"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.Miner.ExtraData,
@@ -429,7 +429,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.Miner.ExtraData,
 		"Block extra data set by the miner",
 	)
-	viper.BindPFlag("ftservice.miner.name", flags.Lookup("miner_extra"))
+	viper.BindPFlag("oexservice.miner.name", flags.Lookup("miner_extra"))
 
 	// gas price oracle
 	flags.IntVar(
@@ -438,7 +438,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.GasPrice.Blocks,
 		"Number of recent blocks to check for gas prices",
 	)
-	viper.BindPFlag("ftservice.gpo.blocks", flags.Lookup("gpo_blocks"))
+	viper.BindPFlag("oexservice.gpo.blocks", flags.Lookup("gpo_blocks"))
 
 	// metrics
 	flags.BoolVar(
@@ -447,7 +447,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.MetricsFlag,
 		"flag that open statistical metrics",
 	)
-	viper.BindPFlag("ftservice.metrics.start", flags.Lookup("metrics_start"))
+	viper.BindPFlag("oexservice.metrics.start", flags.Lookup("metrics_start"))
 
 	flags.BoolVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.InfluxDBFlag,
@@ -455,7 +455,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.InfluxDBFlag,
 		"flag that open influxdb thad store statistical metrics",
 	)
-	viper.BindPFlag("ftservice.metrics.influxdb", flags.Lookup("metrics_influxdb"))
+	viper.BindPFlag("oexservice.metrics.influxdb", flags.Lookup("metrics_influxdb"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.URL,
@@ -463,7 +463,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.URL,
 		"URL that connect influxdb",
 	)
-	viper.BindPFlag("ftservice.metrics.influxdbURL", flags.Lookup("metrics_influxdb_URL"))
+	viper.BindPFlag("oexservice.metrics.influxdbURL", flags.Lookup("metrics_influxdb_URL"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.DataBase,
@@ -471,7 +471,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.DataBase,
 		"Influxdb database name",
 	)
-	viper.BindPFlag("ftservice.metrics.influxdbname", flags.Lookup("metrics_influxdb_name"))
+	viper.BindPFlag("oexservice.metrics.influxdbname", flags.Lookup("metrics_influxdb_name"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.UserName,
@@ -479,7 +479,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.UserName,
 		"Indluxdb user name",
 	)
-	viper.BindPFlag("ftservice.metrics.influxdbuser", flags.Lookup("metrics_influxdb_user"))
+	viper.BindPFlag("oexservice.metrics.influxdbuser", flags.Lookup("metrics_influxdb_user"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.PassWd,
@@ -487,7 +487,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.PassWd,
 		"Influxdb user passwd",
 	)
-	viper.BindPFlag("ftservice.metrics.influxdbpasswd", flags.Lookup("metrics_influxdb_passwd"))
+	viper.BindPFlag("oexservice.metrics.influxdbpasswd", flags.Lookup("metrics_influxdb_passwd"))
 
 	flags.StringVar(
 		&ftCfgInstance.FtServiceCfg.MetricsConf.NameSpace,
@@ -495,7 +495,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.FtServiceCfg.MetricsConf.NameSpace,
 		"Influxdb namespace",
 	)
-	viper.BindPFlag("ftservice.metrics.influxdbnamepace", flags.Lookup("metrics_influxdb_namespace"))
+	viper.BindPFlag("oexservice.metrics.influxdbnamepace", flags.Lookup("metrics_influxdb_namespace"))
 
 	// p2p
 	flags.UintVar(
@@ -504,7 +504,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.NetworkID,
 		"The ID of the p2p network. Nodes have different ID cannot communicate, even if they have same chainID and block data.",
 	)
-	viper.BindPFlag("ftservice.p2p.networkid", flags.Lookup("p2p_id"))
+	viper.BindPFlag("oexservice.p2p.networkid", flags.Lookup("p2p_id"))
 
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.Name,
@@ -512,7 +512,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.Name,
 		"The name sets the p2p node name of this server",
 	)
-	viper.BindPFlag("ftservice.p2p.name", flags.Lookup("p2p_name"))
+	viper.BindPFlag("oexservice.p2p.name", flags.Lookup("p2p_name"))
 
 	flags.IntVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.MaxPeers,
@@ -520,7 +520,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.MaxPeers,
 		"Maximum number of network peers ",
 	)
-	viper.BindPFlag("ftservice.p2p.maxpeers", flags.Lookup("p2p_maxpeers"))
+	viper.BindPFlag("oexservice.p2p.maxpeers", flags.Lookup("p2p_maxpeers"))
 
 	flags.IntVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.MaxPendingPeers,
@@ -528,7 +528,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.MaxPendingPeers,
 		"Maximum number of pending connection attempts ",
 	)
-	viper.BindPFlag("ftservice.p2p.maxpendpeers", flags.Lookup("p2p_maxpendpeers"))
+	viper.BindPFlag("oexservice.p2p.maxpendpeers", flags.Lookup("p2p_maxpendpeers"))
 
 	flags.IntVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.DialRatio,
@@ -536,7 +536,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.DialRatio,
 		"DialRatio controls the ratio of inbound to dialed connections",
 	)
-	viper.BindPFlag("ftservice.p2p.dialratio", flags.Lookup("p2p_dialratio"))
+	viper.BindPFlag("oexservice.p2p.dialratio", flags.Lookup("p2p_dialratio"))
 
 	flags.IntVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.PeerPeriod,
@@ -544,7 +544,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.PeerPeriod,
 		"Disconnect the worst peer every 'p2p_peerperiod' ms(if peer count equal p2p_maxpeers), 0 means disable.",
 	)
-	viper.BindPFlag("ftservice.p2p.peerperiod", flags.Lookup("p2p_peerperiod"))
+	viper.BindPFlag("oexservice.p2p.peerperiod", flags.Lookup("p2p_peerperiod"))
 
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.ListenAddr,
@@ -552,7 +552,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.ListenAddr,
 		"Network listening address",
 	)
-	viper.BindPFlag("ftservice.p2p.listenaddr", flags.Lookup("p2p_listenaddr"))
+	viper.BindPFlag("oexservice.p2p.listenaddr", flags.Lookup("p2p_listenaddr"))
 
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.P2PNodeDatabase,
@@ -560,7 +560,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PNodeDatabase,
 		"The path to the database containing the previously seen live nodes in the network",
 	)
-	viper.BindPFlag("ftservice.p2p.nodedb", flags.Lookup("p2p_nodedb"))
+	viper.BindPFlag("oexservice.p2p.nodedb", flags.Lookup("p2p_nodedb"))
 
 	flags.BoolVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.NoDiscovery,
@@ -568,7 +568,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.NoDiscovery,
 		"Disables the peer discovery mechanism (manual peer addition)",
 	)
-	viper.BindPFlag("ftservice.p2p.nodiscovery", flags.Lookup("p2p_nodiscovery"))
+	viper.BindPFlag("oexservice.p2p.nodiscovery", flags.Lookup("p2p_nodiscovery"))
 
 	flags.BoolVar(
 		&ftCfgInstance.NodeCfg.P2PConfig.NoDial,
@@ -576,7 +576,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PConfig.NoDial,
 		"The server will not dial any peers.",
 	)
-	viper.BindPFlag("ftservice.p2p.nodial", flags.Lookup("p2p_nodial"))
+	viper.BindPFlag("oexservice.p2p.nodial", flags.Lookup("p2p_nodial"))
 
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.P2PBootNodes,
@@ -584,7 +584,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PBootNodes,
 		"Node list file. BootstrapNodes are used to establish connectivity with the rest of the network",
 	)
-	viper.BindPFlag("ftservice.p2p.bootnodes", flags.Lookup("p2p_bootnodes"))
+	viper.BindPFlag("oexservice.p2p.bootnodes", flags.Lookup("p2p_bootnodes"))
 
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.P2PStaticNodes,
@@ -592,7 +592,7 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PStaticNodes,
 		"Node list file. Static nodes are used as pre-configured connections which are always maintained and re-connected on disconnects",
 	)
-	viper.BindPFlag("ftservice.p2p.staticnodes", flags.Lookup("p2p_staticnodes"))
+	viper.BindPFlag("oexservice.p2p.staticnodes", flags.Lookup("p2p_staticnodes"))
 
 	flags.StringVar(
 		&ftCfgInstance.NodeCfg.P2PTrustNodes,
@@ -600,6 +600,6 @@ func addFlags(flags *flag.FlagSet) {
 		ftCfgInstance.NodeCfg.P2PStaticNodes,
 		"Node list file. Trusted nodes are usesd as pre-configured connections which are always allowed to connect, even above the peer limit",
 	)
-	viper.BindPFlag("ftservice.p2p.trustnodes", flags.Lookup("p2p_trustnodes"))
+	viper.BindPFlag("oexservice.p2p.trustnodes", flags.Lookup("p2p_trustnodes"))
 
 }

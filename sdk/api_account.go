@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,8 +19,8 @@ package sdk
 import (
 	"math/big"
 
-	"github.com/fractalplatform/fractal/asset"
-	"github.com/fractalplatform/fractal/rpcapi"
+	"github.com/oexplatform/oexchain/asset"
+	"github.com/oexplatform/oexchain/rpcapi"
 )
 
 // AccountIsExist account exist

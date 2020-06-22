@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ package sdk
 import (
 	"testing"
 
-	"github.com/fractalplatform/fractal/params"
+	"github.com/oexplatform/oexchain/params"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

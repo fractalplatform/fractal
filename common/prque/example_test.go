@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ package prque_test
 import (
 	"fmt"
 
-	"github.com/fractalplatform/fractal/common/prque"
+	"github.com/oexplatform/oexchain/common/prque"
 )
 
 // Insert some data into a priority queue and pop them out in prioritized order.

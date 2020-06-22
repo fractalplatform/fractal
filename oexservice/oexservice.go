@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,27 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package ftservice
+package oexservice
 
 import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/consensus/dpos"
-	"github.com/fractalplatform/fractal/consensus/miner"
-	"github.com/fractalplatform/fractal/ftservice/gasprice"
-	"github.com/fractalplatform/fractal/node"
-	"github.com/fractalplatform/fractal/p2p"
-	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/processor"
-	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/rpcapi"
-	"github.com/fractalplatform/fractal/txpool"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/consensus"
+	"github.com/oexplatform/oexchain/consensus/dpos"
+	"github.com/oexplatform/oexchain/consensus/miner"
+	"github.com/oexplatform/oexchain/oexservice/gasprice"
+	"github.com/oexplatform/oexchain/node"
+	"github.com/oexplatform/oexchain/p2p"
+	adaptor "github.com/oexplatform/oexchain/p2p/protoadaptor"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/processor"
+	"github.com/oexplatform/oexchain/processor/vm"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/rpcapi"
+	"github.com/oexplatform/oexchain/txpool"
+	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
 // FtService implements the fractal service.
@@ -51,7 +51,7 @@ type FtService struct {
 	APIBackend   *APIBackend
 }
 
-// New creates a new ftservice object (including the initialisation of the common ftservice object)
+// New creates a new oexservice object (including the initialisation of the common oexservice object)
 func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	chainDb, err := CreateDB(ctx, config, "chaindata")
 	if err != nil {
@@ -128,7 +128,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	return ftservice, nil
 }
 
-// APIs return the collection of RPC services the ftservice package offers.
+// APIs return the collection of RPC services the oexservice package offers.
 func (fs *FtService) APIs() []rpc.API {
 	return rpcapi.GetAPIs(fs.APIBackend)
 }
@@ -146,7 +146,7 @@ func (fs *FtService) Stop() error {
 	fs.txPool.Stop()
 	fs.chainDb.Close()
 	close(fs.shutdownChan)
-	log.Info("ftservice stopped")
+	log.Info("oexservice stopped")
 	return nil
 }
 

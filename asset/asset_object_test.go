@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/fractalplatform/fractal/common"
+	"github.com/oexplatform/oexchain/common"
 )
 
 func Test_newAssetObject(t *testing.T) {
@@ -42,18 +42,18 @@ func Test_newAssetObject(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"normal", args{"ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(999999), ""}, &AssetObject{0, 0, 0, "ft", "ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(2), big.NewInt(999999), common.Name(""), ""}, false},
+		{"normal", args{"oex", "oex", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(999999), ""}, &AssetObject{0, 0, 0, "oex", "oex", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(2), big.NewInt(999999), common.Name(""), ""}, false},
 		{"shortname", args{"z", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
 		{"longname", args{"ftt0123456789ftt12", "zz", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
 		{"emptyname", args{"", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
-		{"symbolempty", args{"ft", "", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
-		{"amount==0", args{"ft", "z", big.NewInt(-1), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
-		{"ownerempty", args{"ft", "z", big.NewInt(2), 18, common.Name(""), common.Name(""), big.NewInt(999999), ""}, nil, true},
-		{"shortsymbol", args{"ft", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
-		{"longsymbol", args{"ft", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
-		{"emptyname", args{"ft", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
-		{"limiterror", args{"ft", "ft", big.NewInt(101), 18, common.Name(""), common.Name("a123"), big.NewInt(100), ""}, nil, true},
-		{"descerror", args{"ft", "ft", big.NewInt(100), 18, common.Name(""), common.Name("a123"), big.NewInt(101),
+		{"symbolempty", args{"oex", "", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
+		{"amount==0", args{"oex", "z", big.NewInt(-1), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
+		{"ownerempty", args{"oex", "z", big.NewInt(2), 18, common.Name(""), common.Name(""), big.NewInt(999999), ""}, nil, true},
+		{"shortsymbol", args{"oex", "z", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
+		{"longsymbol", args{"oex", "ftt0123456789ftt1", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
+		{"emptyname", args{"oex", "#ip0123456789ft", big.NewInt(2), 18, common.Name("a123"), common.Name("a123"), big.NewInt(999999), ""}, nil, true},
+		{"limiterror", args{"oex", "oex", big.NewInt(101), 18, common.Name(""), common.Name("a123"), big.NewInt(100), ""}, nil, true},
+		{"descerror", args{"oex", "oex", big.NewInt(100), 18, common.Name(""), common.Name("a123"), big.NewInt(101),
 			"aaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaa" +
 				"bbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbb" +
 				"aaaaaaaaaabbbbbbbbbbaaaaaaaaaabbbbbbbbbbaaaaaaaaaa" +
@@ -91,10 +91,10 @@ func TestAssetObject_GetAssetID(t *testing.T) {
 		want   uint64
 	}{
 		// TODO: Add test cases.
-		{"normal", fields{1, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(0), big.NewInt(999999)}, 1},
-		{"max", fields{18446744073709551615, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(0), big.NewInt(999999)}, 18446744073709551615},
-		//{"min", fields{0, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 0},
-		//{">max", fields{18446744073709551616, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 0},
+		{"normal", fields{1, "oex", "ft0123456789ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(0), big.NewInt(999999)}, 1},
+		{"max", fields{18446744073709551615, "oex", "ft0123456789ft", big.NewInt(2), 18, common.Name(""), common.Name("a123"), big.NewInt(0), big.NewInt(999999)}, 18446744073709551615},
+		//{"min", fields{0, "oex", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 0},
+		//{">max", fields{18446744073709551616, "oex", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, 0},
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{
@@ -132,9 +132,9 @@ func TestAssetObject_SetAssetID(t *testing.T) {
 		args   args
 	}{
 		// TODO: Add test cases.
-		//{">max", fields{0, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, args{18446744073709551616}},
-		{"max", fields{0, "ft", "ft0123456789ftft", big.NewInt(2), 18, common.Name("a123")}, args{18446744073709551615}},
-		{"normal", fields{0, "ft", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, args{184467}},
+		//{">max", fields{0, "oex", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, args{18446744073709551616}},
+		{"max", fields{0, "oex", "ft0123456789ftft", big.NewInt(2), 18, common.Name("a123")}, args{18446744073709551615}},
+		{"normal", fields{0, "oex", "ft0123456789ft", big.NewInt(2), 18, common.Name("a123")}, args{184467}},
 	}
 	for _, tt := range tests {
 		ao := &AssetObject{

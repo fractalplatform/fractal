@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,29 +18,29 @@ package main
 
 import (
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/cmd/utils"
-	"github.com/fractalplatform/fractal/debug"
-	"github.com/fractalplatform/fractal/ftservice"
-	"github.com/fractalplatform/fractal/ftservice/gasprice"
-	"github.com/fractalplatform/fractal/metrics"
-	"github.com/fractalplatform/fractal/node"
-	"github.com/fractalplatform/fractal/p2p"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/txpool"
+	"github.com/oexplatform/oexchain/cmd/utils"
+	"github.com/oexplatform/oexchain/debug"
+	"github.com/oexplatform/oexchain/oexservice"
+	"github.com/oexplatform/oexchain/oexservice/gasprice"
+	"github.com/oexplatform/oexchain/metrics"
+	"github.com/oexplatform/oexchain/node"
+	"github.com/oexplatform/oexchain/p2p"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/txpool"
 )
 
 var (
-	//ft config instance
+	//oex config instance
 	ftCfgInstance = defaultFtConfig()
 	ipcEndpoint   string
 )
 
 type ftConfig struct {
-	GenesisFile  string            `mapstructure:"genesis"`
-	DebugCfg     *debug.Config     `mapstructure:"debug"`
-	LogCfg       *utils.LogConfig  `mapstructure:"log"`
-	NodeCfg      *node.Config      `mapstructure:"node"`
-	FtServiceCfg *ftservice.Config `mapstructure:"ftservice"`
+	GenesisFile  string             `mapstructure:"genesis"`
+	DebugCfg     *debug.Config      `mapstructure:"debug"`
+	LogCfg       *utils.LogConfig   `mapstructure:"log"`
+	NodeCfg      *node.Config       `mapstructure:"node"`
+	FtServiceCfg *oexservice.Config `mapstructure:"oexservice"`
 }
 
 func defaultFtConfig() *ftConfig {
@@ -59,12 +59,12 @@ func defaultNodeConfig() *node.Config {
 		IPCPath:          params.ClientIdentifier + ".ipc",
 		HTTPHost:         "localhost",
 		HTTPPort:         8545,
-		HTTPModules:      []string{"ft", "dpos", "fee", "account"},
+		HTTPModules:      []string{"oex", "dpos", "fee", "account"},
 		HTTPVirtualHosts: []string{"localhost"},
 		HTTPCors:         []string{"*"},
 		WSHost:           "localhost",
 		WSPort:           8546,
-		WSModules:        []string{"ft"},
+		WSModules:        []string{"oex"},
 		Logger:           log.New(),
 		P2PNodeDatabase:  "nodedb",
 		P2PConfig:        defaultP2pConfig(),
@@ -80,8 +80,8 @@ func defaultP2pConfig() *p2p.Config {
 	return cfg
 }
 
-func defaultFtServiceConfig() *ftservice.Config {
-	return &ftservice.Config{
+func defaultFtServiceConfig() *oexservice.Config {
+	return &oexservice.Config{
 		DatabaseHandles: makeDatabaseHandles(),
 		DatabaseCache:   768,
 		TxPool:          txpool.DefaultTxPoolConfig,
@@ -95,8 +95,8 @@ func defaultFtServiceConfig() *ftservice.Config {
 	}
 }
 
-func defaultMinerConfig() *ftservice.MinerConfig {
-	return &ftservice.MinerConfig{
+func defaultMinerConfig() *oexservice.MinerConfig {
+	return &oexservice.MinerConfig{
 		Name:        params.DefaultChainconfig.SysName,
 		PrivateKeys: []string{"289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"},
 		ExtraData:   "system",

@@ -21,7 +21,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 // Entry is implemented by known node record entry types.

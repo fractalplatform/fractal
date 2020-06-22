@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -420,9 +420,9 @@ func (c *Client) BatchCallContext(ctx context.Context, b []BatchElem) error {
 	return err
 }
 
-// FtSubscribe registers a subscripion under the "ft" namespace.
+// FtSubscribe registers a subscripion under the "oex" namespace.
 func (c *Client) FtSubscribe(ctx context.Context, channel interface{}, args ...interface{}) (*ClientSubscription, error) {
-	return c.Subscribe(ctx, "ft", channel, args...)
+	return c.Subscribe(ctx, "oex", channel, args...)
 }
 
 // Subscribe calls the "<namespace>_subscribe" method with the given arguments,

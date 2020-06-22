@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -14,33 +14,33 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-package ftservice
+package oexservice
 
 import (
 	"context"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/feemanager"
-	"github.com/fractalplatform/fractal/ftservice/gasprice"
-	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/processor"
-	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/snapshot"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/txpool"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/consensus"
+	"github.com/oexplatform/oexchain/feemanager"
+	"github.com/oexplatform/oexchain/oexservice/gasprice"
+	"github.com/oexplatform/oexchain/p2p/enode"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/processor"
+	"github.com/oexplatform/oexchain/processor/vm"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/snapshot"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/txpool"
+	"github.com/oexplatform/oexchain/types"
+	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
-// APIBackend implements ftservice api.Backend for full nodes
+// APIBackend implements oexservice api.Backend for full nodes
 type APIBackend struct {
 	ftservice *FtService
 	gpo       *gasprice.Oracle

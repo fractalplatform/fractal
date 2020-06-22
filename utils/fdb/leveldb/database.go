@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/metrics"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/oexplatform/oexchain/metrics"
+	"github.com/oexplatform/oexchain/utils/fdb"
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/syndtr/goleveldb/leveldb/filter"

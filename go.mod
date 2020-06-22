@@ -1,4 +1,4 @@
-module github.com/fractalplatform/fractal
+module github.com/oexplatform/oexchain
 
 go 1.11
 

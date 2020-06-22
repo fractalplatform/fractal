@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/rpc"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/consensus"
+	"github.com/oexplatform/oexchain/rpc"
 )
 
 // API exposes dpos related methods for the RPC interface.

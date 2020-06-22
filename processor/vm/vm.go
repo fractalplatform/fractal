@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,12 +22,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
 )
 
 var contractAssetTransferable = common.Hex2Bytes("92ff0d31")

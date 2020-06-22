@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,13 +25,13 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/cmd/utils"
-	"github.com/fractalplatform/fractal/debug"
-	"github.com/fractalplatform/fractal/ftservice"
-	"github.com/fractalplatform/fractal/metrics"
-	"github.com/fractalplatform/fractal/metrics/influxdb"
-	"github.com/fractalplatform/fractal/node"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/cmd/utils"
+	"github.com/oexplatform/oexchain/debug"
+	"github.com/oexplatform/oexchain/oexservice"
+	"github.com/oexplatform/oexchain/metrics"
+	"github.com/oexplatform/oexchain/metrics/influxdb"
+	"github.com/oexplatform/oexchain/node"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -43,9 +43,9 @@ var (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "ft",
-	Short: "ft is a Leading High-performance Ledger",
-	Long:  `ft is a Leading High-performance Ledger`,
+	Use:   "oex",
+	Short: "oex is a Leading High-performance Ledger",
+	Long:  `oex is a Leading High-performance Ledger`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	Run: func(cmd *cobra.Command, args []string) {
@@ -74,17 +74,17 @@ var RootCmd = &cobra.Command{
 
 		node, err := makeNode()
 		if err != nil {
-			log.Error("ft make node failed.", "err", err)
+			log.Error("oex make node failed.", "err", err)
 			return
 		}
 
 		if err := registerService(node); err != nil {
-			log.Error("ft register service failed.", "err", err)
+			log.Error("oex register service failed.", "err", err)
 			return
 		}
 
 		if err := startNode(node); err != nil {
-			log.Error("ft start node failed.", "err", err)
+			log.Error("oex start node failed.", "err", err)
 			return
 		}
 
@@ -163,7 +163,7 @@ func startNode(stack *node.Node) error {
 
 func registerService(stack *node.Node) error {
 	return stack.Register(func(ctx *node.ServiceContext) (node.Service, error) {
-		return ftservice.New(ctx, ftCfgInstance.FtServiceCfg)
+		return oexservice.New(ctx, ftCfgInstance.FtServiceCfg)
 	})
 }
 

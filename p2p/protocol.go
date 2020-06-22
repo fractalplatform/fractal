@@ -19,7 +19,7 @@ package p2p
 import (
 	"fmt"
 
-	"github.com/fractalplatform/fractal/p2p/enode"
+	"github.com/oexplatform/oexchain/p2p/enode"
 )
 
 // Protocol represents a P2P subprotocol implementation.

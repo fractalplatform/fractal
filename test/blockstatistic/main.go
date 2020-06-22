@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fractalplatform/fractal/params"
+	"github.com/oexplatform/oexchain/params"
 
-	"github.com/fractalplatform/fractal/sdk"
+	"github.com/oexplatform/oexchain/sdk"
 )
 
 type blockinfo struct {

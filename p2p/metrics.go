@@ -21,7 +21,7 @@ package p2p
 import (
 	"net"
 
-	"github.com/fractalplatform/fractal/metrics"
+	"github.com/oexplatform/oexchain/metrics"
 )
 
 var (

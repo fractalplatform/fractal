@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,25 +23,25 @@ import (
 	"syscall"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/cmd/utils"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/node"
-	"github.com/fractalplatform/fractal/p2p"
-	"github.com/fractalplatform/fractal/rpc"
+	"github.com/oexplatform/oexchain/cmd/utils"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/node"
+	"github.com/oexplatform/oexchain/p2p"
+	"github.com/oexplatform/oexchain/rpc"
 	"github.com/spf13/cobra"
 )
 
 var nodeConfig = node.Config{
 	P2PConfig:       &p2p.Config{},
-	IPCPath:         "ftfinder.ipc",
+	IPCPath:         "oexfinder.ipc",
 	P2PNodeDatabase: "nodedb",
 }
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "ftfinder",
-	Short: "ftfinder is a fractal node discoverer",
-	Long:  `ftfinder is a fractal node discoverer`,
+	Use:   "oexfinder",
+	Short: "oexfinder is a fractal node discoverer",
+	Long:  `oexfinder is a fractal node discoverer`,
 
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
@@ -61,7 +61,7 @@ var RootCmd = &cobra.Command{
 		err := srv.DiscoverOnly()
 		defer srv.Stop()
 		if err != nil {
-			log.Error("ftfinder start failed", "error", err)
+			log.Error("oexfinder start failed", "error", err)
 			return
 		}
 		rpcListener, rpcHandler, err := rpc.StartIPCEndpoint(nodeConfig.IPCEndpoint(), []rpc.API{

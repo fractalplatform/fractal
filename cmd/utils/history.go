@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ import "github.com/monax/relic"
 //
 // To cut a new release add a release to the front of this slice then run the
 // release tagging script: ./scripts/tag_release.sh
-var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/fractalplatform/fractal").
+var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github.com/oexplatform/oexchain").
 	MustDeclareReleases(
 		"1.0.0 - 2019-12-09",
 		`### Forked
@@ -56,7 +56,7 @@ var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github
 - [DOWNLOAD]add node into blacklist if it had too much errors(#519)(#523)
 ### Added
 - [CMD] add version cmd compile date info (#505)(#521)
-- [CMD] cmd/ft: add method 'seednodes' into sub-cmd 'p2p' (#497)
+- [CMD] cmd/oex: add method 'seednodes' into sub-cmd 'p2p' (#497)
 - [CMD] add txpool cmd gettxsbyaccount (#502)
 - [P2P] p2p,rpc: add rpc to query seed nodes from db(#496)
 - [TEST] add each code module unit test or note (#492)(#493)(#504)(#508)(#507)(#509)
@@ -81,7 +81,7 @@ var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github
 `,
 		"0.0.28 - 2019-09-04",
 		`### Fixed
-- [P2P] bootnode in genesis is ft finder.(#439)
+- [P2P] bootnode in genesis is oex finder.(#439)
 - [DPOS]dpos api epoch add url. (#437)
 - [INTERNALTX]modify internal tx log hash. (#441)
 - [FILTER]fix rpc output format. (#440)
@@ -134,7 +134,7 @@ var History relic.ImmutableHistory = relic.NewHistory("fractal", "https://github
 - [BLOCKCHAIN] modify blockchain start err 
 ### Changed
 - [TXPOOL] move TxPool reorg and events to background goroutine
-- [P2P] ftfinder: add cmd flag that can input genesis block hash
+- [P2P] oexfinder: add cmd flag that can input genesis block hash
 ### Added
 - [P2P] txpool.handler: add config of txs broadcast
 - [RPC] add some dpos rpc api for browser

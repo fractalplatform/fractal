@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,12 +22,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/event"
-	router "github.com/fractalplatform/fractal/event"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/event"
+	router "github.com/oexplatform/oexchain/event"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/types"
 )
 
 // Type determines the kind of filter and is used to put the filter in to

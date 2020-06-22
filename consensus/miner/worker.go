@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -28,17 +28,17 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/consensus/dpos"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/event"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/processor"
-	"github.com/fractalplatform/fractal/processor/vm"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/consensus"
+	"github.com/oexplatform/oexchain/consensus/dpos"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/event"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/processor"
+	"github.com/oexplatform/oexchain/processor/vm"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
 )
 
 const (

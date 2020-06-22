@@ -1,5 +1,5 @@
-# Copyright 2018 The Fractal Team Authors
-# This file is part of the fractal project.
+# Copyright 2018 The OEX Team Authors
+# This file is part of the OEX project.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,16 +16,16 @@
 
 # Make sure to check the documentation at http://goreleaser.com
 builds:
-- binary: ft
-  main: ./cmd/ft
+- binary: oex
+  main: ./cmd/oex
   goos:
      - windows
      - darwin
      - linux
   goarch:
      - amd64
-- binary: ftfinder
-  main: ./cmd/ftfinder
+- binary: oexfinder
+  main: ./cmd/oexfinder
   goos:
      - windows
      - darwin
@@ -36,8 +36,8 @@ builds:
     - CGO_ENABLED=0
   ldflags:
     - -s -w
-    - -X github.com/fractalplatform/fractal/utils.commit={{.Commit}}
-    - -X github.com/fractalplatform/fractal/utils.date={{.Date}}
+    - -X github.com/oexplatform/oexchain/utils.commit={{.Commit}}
+    - -X github.com/oexplatform/oexchain/utils.date={{.Date}}
 archive:
   replacements:
     darwin: Darwin

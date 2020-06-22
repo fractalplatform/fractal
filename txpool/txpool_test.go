@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,15 +26,15 @@ import (
 	"testing"
 	"time"
 
-	am "github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/asset"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/event"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	am "github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/asset"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/event"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -56,16 +56,16 @@ func TestConfigCheck(t *testing.T) {
 // 	)
 
 // 	// issue asset
-// 	if _, err := asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
+// 	if _, err := asset.IssueAsset("oex", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
 // 		t.Fatal(err)
 // 	}
 
 // 	// add balance
-// 	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+// 	if err := manager.AddAccountBalanceByName(fname, "oex", new(big.Int).SetUint64(params.Fractal)); err != nil {
 // 		t.Fatal(err)
 // 	}
 
-// 	if err := manager.AddAccountBalanceByName(tname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+// 	if err := manager.AddAccountBalanceByName(tname, "oex", new(big.Int).SetUint64(params.Fractal)); err != nil {
 // 		t.Fatal(err)
 // 	}
 
@@ -120,12 +120,12 @@ func TestStateChangeDuringTransactionPoolReset(t *testing.T) {
 	)
 
 	// issue asset
-	if _, err := asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
+	if _, err := asset.IssueAsset("oex", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, common.Name(""), fname, new(big.Int).SetUint64(params.Fractal), common.Name(""), ""); err != nil {
 		t.Fatal(err)
 	}
 
 	// add balance
-	if err := manager.AddAccountBalanceByName(fname, "ft", new(big.Int).SetUint64(params.Fractal)); err != nil {
+	if err := manager.AddAccountBalanceByName(fname, "oex", new(big.Int).SetUint64(params.Fractal)); err != nil {
 		t.Fatal(err)
 	}
 	blockchain := &testBlockChain{statedb, 1000000000, new(event.Feed)}
@@ -335,7 +335,7 @@ func TestTransactionChainFork(t *testing.T) {
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""), "")
+		asset.IssueAsset("oex", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""), "")
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}
@@ -380,7 +380,7 @@ func TestTransactionDoubleNonce(t *testing.T) {
 		}
 		asset := asset.NewAsset(statedb)
 
-		asset.IssueAsset("ft", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""), "")
+		asset.IssueAsset("oex", 0, 0, "zz", new(big.Int).SetUint64(params.Fractal), 10, fname, fname, big.NewInt(1000000), common.Name(""), "")
 		newmanager.AddAccountBalanceByID(fname, assetID, big.NewInt(100000000000000))
 
 		pool.chain = &testBlockChain{statedb, 1000000, new(event.Feed)}

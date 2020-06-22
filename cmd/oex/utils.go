@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -31,9 +31,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/fdlimit"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/node"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/rpc"
+	"github.com/oexplatform/oexchain/node"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/rpc"
 	"github.com/naoina/toml"
 	jww "github.com/spf13/jwalterweatherman"
 )
@@ -67,7 +67,7 @@ func homeDir() string {
 }
 
 // makeDatabaseHandles raises out the number of allowed file handles per process
-// for ft and returns half of the allowance to assign to the database.
+// for oex and returns half of the allowance to assign to the database.
 func makeDatabaseHandles() int {
 	limit, err := fdlimit.Current()
 	if err != nil {

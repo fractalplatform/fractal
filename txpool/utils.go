@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,9 +21,9 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/types"
 )
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.

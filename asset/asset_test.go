@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,9 +21,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/state"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/state"
 )
 
 var assetDB = getStateDB()
@@ -102,7 +102,7 @@ func TestAsset_GetAssetObjectByName(t *testing.T) {
 		assetName string
 	}
 
-	ao, _ := NewAssetObject("ft", 0, "zz", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
+	ao, _ := NewAssetObject("oex", 0, "zz", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
 	//ao.SetAssetID(0)
 	ast.addNewAssetObject(ao)
 	ao1, _ := NewAssetObject("ft2", 0, "zz2", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
@@ -122,7 +122,7 @@ func TestAsset_GetAssetObjectByName(t *testing.T) {
 		wantErr bool
 	}{
 		// TODO: Add test cases.
-		{"getall", fields{assetDB}, args{"ft"}, ao, false},
+		{"getall", fields{assetDB}, args{"oex"}, ao, false},
 		{"getall2", fields{assetDB}, args{"ft2"}, ao1, false},
 		{"getall3", fields{assetDB}, args{"ft0"}, ao2, false},
 		{"getall4", fields{assetDB}, args{"ftc"}, ao3, false},
@@ -196,7 +196,7 @@ func TestAsset_GetAssetIDByName(t *testing.T) {
 	}{
 		//
 		{"normal", fields{assetDB}, args{""}, 0, true},
-		{"normal", fields{assetDB}, args{"ft"}, 0, false},
+		{"normal", fields{assetDB}, args{"oex"}, 0, false},
 		{"wrong", fields{assetDB}, args{"ft2"}, 1, false},
 	}
 	for _, tt := range tests {
@@ -222,7 +222,7 @@ func TestAsset_GetAssetObjectByID(t *testing.T) {
 		id uint64
 	}
 
-	ao, _ := NewAssetObject("ft", 0, "zz", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
+	ao, _ := NewAssetObject("oex", 0, "zz", big.NewInt(1000), 10, common.Name(""), common.Name("a123456789aeee"), big.NewInt(9999999999), common.Name(""), "")
 	ao.SetAssetID(0)
 	ast.IssueAssetObject(ao)
 	tests := []struct {
@@ -409,7 +409,7 @@ func TestAsset_IssueAsset(t *testing.T) {
 		// TODO: Add test cases.
 		{"nilname", fields{assetDB}, args{"", "z", big.NewInt(1), 2, common.Name(""), common.Name("11")}, true},
 		{"nilsym", fields{assetDB}, args{"22", "", big.NewInt(2), 2, common.Name(""), common.Name("11")}, true},
-		{"exist", fields{assetDB}, args{"ft", "3", big.NewInt(2), 2, common.Name(""), common.Name("11")}, true},
+		{"exist", fields{assetDB}, args{"oex", "3", big.NewInt(2), 2, common.Name(""), common.Name("11")}, true},
 		{"normal", fields{assetDB}, args{"ft22", "23", big.NewInt(2), 2, common.Name(""), common.Name("a112345698")}, true},
 		// {"normal1", fields{assetDB}, args{"ft22.ft33", "23", big.NewInt(2), 2, common.Name(""), common.Name("112345698")}, false},
 		// {"normal2", fields{assetDB}, args{"ft22.ft44.ft55", "23", big.NewInt(2), 2, common.Name(""), common.Name("112345698")}, false},

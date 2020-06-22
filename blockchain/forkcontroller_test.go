@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,11 +20,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
 	"github.com/stretchr/testify/assert"
 )
 

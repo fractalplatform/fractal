@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -30,11 +30,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/blockchain"
-	"github.com/fractalplatform/fractal/ftservice"
-	"github.com/fractalplatform/fractal/types"
-	ldb "github.com/fractalplatform/fractal/utils/fdb/leveldb"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/blockchain"
+	"github.com/oexplatform/oexchain/oexservice"
+	"github.com/oexplatform/oexchain/types"
+	ldb "github.com/oexplatform/oexchain/utils/fdb/leveldb"
+	"github.com/oexplatform/oexchain/utils/rlp"
 	"github.com/spf13/cobra"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
@@ -73,7 +73,7 @@ func importChain(args []string) error {
 	}
 
 	ctx := stack.GetNodeConfig()
-	ftsrv, err := ftservice.New(ctx, ftCfgInstance.FtServiceCfg)
+	ftsrv, err := oexservice.New(ctx, ftCfgInstance.FtServiceCfg)
 	if err != nil {
 		return err
 	}

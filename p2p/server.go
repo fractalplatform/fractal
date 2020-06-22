@@ -28,12 +28,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/event"
-	"github.com/fractalplatform/fractal/p2p/discover"
-	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/p2p/netutil"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/event"
+	"github.com/oexplatform/oexchain/p2p/discover"
+	"github.com/oexplatform/oexchain/p2p/enode"
+	"github.com/oexplatform/oexchain/p2p/netutil"
 )
 
 const (
@@ -59,7 +59,7 @@ type Config struct {
 	// This field must be set to a valid secp256k1 private key.
 	PrivateKey *ecdsa.PrivateKey
 
-	// This field with NetworkID used to generate MagicNetID. Set by ftservice when construct.
+	// This field with NetworkID used to generate MagicNetID. Set by oexservice when construct.
 	GenesisHash common.Hash
 
 	// NetworkID is ID of network

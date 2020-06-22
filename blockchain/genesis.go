@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,19 +25,19 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	am "github.com/fractalplatform/fractal/accountmanager"
-	at "github.com/fractalplatform/fractal/asset"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/consensus/dpos"
-	fm "github.com/fractalplatform/fractal/feemanager"
-	"github.com/fractalplatform/fractal/p2p/enode"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/snapshot"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
-	"github.com/fractalplatform/fractal/utils/fdb"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	am "github.com/oexplatform/oexchain/accountmanager"
+	at "github.com/oexplatform/oexchain/asset"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/consensus/dpos"
+	fm "github.com/oexplatform/oexchain/feemanager"
+	"github.com/oexplatform/oexchain/p2p/enode"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/snapshot"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
+	"github.com/oexplatform/oexchain/utils/fdb"
+	"github.com/oexplatform/oexchain/utils/rlp"
 )
 
 // GenesisAccount is an account in the state of the genesis block.
@@ -550,7 +550,7 @@ func (g *Genesis) Commit(db fdb.Database) (*types.Block, error) {
 	return block, nil
 }
 
-// DefaultGenesis returns the ft net genesis block.
+// DefaultGenesis returns the oex net genesis block.
 func DefaultGenesis() *Genesis {
 	return &Genesis{
 		Config:          params.DefaultChainconfig,
@@ -563,7 +563,7 @@ func DefaultGenesis() *Genesis {
 	}
 }
 
-// DefaultGenesisAccounts returns the ft net genesis accounts.
+// DefaultGenesisAccounts returns the oex net genesis accounts.
 func DefaultGenesisAccounts() []*GenesisAccount {
 	return []*GenesisAccount{
 		&GenesisAccount{
@@ -594,19 +594,19 @@ func DefaultGenesisAccounts() []*GenesisAccount {
 	}
 }
 
-// DefaultGenesisCandidates returns the ft net genesis candidates.
+// DefaultGenesisCandidates returns the oex net genesis candidates.
 func DefaultGenesisCandidates() []*GenesisCandidate {
 	return []*GenesisCandidate{}
 }
 
-// DefaultGenesisAssets returns the ft net genesis assets.
+// DefaultGenesisAssets returns the oex net genesis assets.
 func DefaultGenesisAssets() []*GenesisAsset {
 	supply := new(big.Int)
 	supply.SetString("10000000000000000000000000000", 10)
 	return []*GenesisAsset{
 		&GenesisAsset{
 			Name:       params.DefaultChainconfig.SysToken,
-			Symbol:     "ft",
+			Symbol:     "oex",
 			Amount:     supply,
 			Decimals:   18,
 			Owner:      params.DefaultChainconfig.SysName,

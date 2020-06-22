@@ -15,15 +15,15 @@ log:
   backtraceat: "block.go:271"
 node:
   datadir: "./build/testdatadir"
-  ipcpath: "ft.ipc"
+  ipcpath: "oex.ipc"
   httphost: "localhost"
   httpport: 8545
-  httpmodules: ["ft"]
+  httpmodules: ["oex"]
   httpcors: ["localhost"]
   httpvirtualhosts: ["*"]
   wshost: "localhost"
   wsport: 8546
-  wsmodules: ["ft"]
+  wsmodules: ["oex"]
   wsorigins: []
   wsexposall: true
   bootnodes: "./build/bootnodes.txt"

@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,9 +25,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/p2p"
-	"github.com/fractalplatform/fractal/rpc"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/p2p"
+	"github.com/oexplatform/oexchain/rpc"
 )
 
 var (
@@ -45,7 +45,7 @@ func TestNodeLifeCycle(t *testing.T) {
 	var config = &Config{
 		DataDir:   dir,
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 
@@ -95,7 +95,7 @@ func TestNodeUsedDataDir(t *testing.T) {
 	var config = &Config{
 		DataDir:   dir,
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 
@@ -150,7 +150,7 @@ func TestServiceRegistry(t *testing.T) {
 	var config = &Config{
 		DataDir:   dir,
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 
@@ -272,7 +272,7 @@ func TestServiceLifeCycle(t *testing.T) {
 	var config = &Config{
 		DataDir:   dir,
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 
@@ -337,7 +337,7 @@ func TestServiceRestarts(t *testing.T) {
 	var config = &Config{
 		DataDir:   dir,
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 
@@ -391,7 +391,7 @@ func TestServiceConstructionAbortion(t *testing.T) {
 
 	var config = &Config{
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 	stack, err := New(config)
@@ -444,7 +444,7 @@ func TestServiceStartupAbortion(t *testing.T) {
 
 	var config = &Config{
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 
@@ -504,7 +504,7 @@ func TestServiceTerminationGuarantee(t *testing.T) {
 
 	var config = &Config{
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 	stack, err := New(config)
@@ -586,7 +586,7 @@ func TestServiceRetrieval(t *testing.T) {
 	// Create a simple stack and register two service types
 	var config = &Config{
 		Logger:    log.New(),
-		Name:      "ft",
+		Name:      "oex",
 		P2PConfig: &p2p.Config{PrivateKey: testNodeKey},
 	}
 	stack, err := New(config)

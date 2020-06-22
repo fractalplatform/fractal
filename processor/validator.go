@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/fractalplatform/fractal/consensus"
-	"github.com/fractalplatform/fractal/params"
-	"github.com/fractalplatform/fractal/state"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/consensus"
+	"github.com/oexplatform/oexchain/params"
+	"github.com/oexplatform/oexchain/state"
+	"github.com/oexplatform/oexchain/types"
 )
 
 var allowedFutureBlockTime = 15 * time.Second

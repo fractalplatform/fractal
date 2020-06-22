@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@ package node
 import (
 	"reflect"
 
-	"github.com/fractalplatform/fractal/p2p"
-	"github.com/fractalplatform/fractal/p2p/enode"
-	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
-	"github.com/fractalplatform/fractal/rawdb"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/utils/fdb"
+	"github.com/oexplatform/oexchain/p2p"
+	"github.com/oexplatform/oexchain/p2p/enode"
+	adaptor "github.com/oexplatform/oexchain/p2p/protoadaptor"
+	"github.com/oexplatform/oexchain/rawdb"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
 // ServiceContext is a collection of service independent options inherited from

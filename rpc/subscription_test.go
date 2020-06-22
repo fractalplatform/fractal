@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -109,7 +109,7 @@ func TestNotifications(t *testing.T) {
 	server := NewServer()
 	service := &NotificationTestService{}
 
-	if err := server.RegisterName("ft", service); err != nil {
+	if err := server.RegisterName("oex", service); err != nil {
 		t.Fatalf("unable to register test service %v", err)
 	}
 
@@ -227,7 +227,7 @@ func waitForMessages(t *testing.T, in *json.Decoder, successes chan<- jsonSucces
 // for multiple different namespaces.
 func TestSubscriptionMultipleNamespaces(t *testing.T) {
 	var (
-		namespaces             = []string{"ft", "shh", "bzz"}
+		namespaces             = []string{"oex", "shh", "bzz"}
 		server                 = NewServer()
 		service                = NotificationTestService{}
 		clientConn, serverConn = net.Pipe()

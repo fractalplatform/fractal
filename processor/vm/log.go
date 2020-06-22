@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/fractalplatform/fractal/common"
-	"github.com/fractalplatform/fractal/types"
+	"github.com/oexplatform/oexchain/common"
+	"github.com/oexplatform/oexchain/types"
 )
 
 type Storage map[common.Hash]common.Hash

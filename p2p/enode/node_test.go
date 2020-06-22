@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fractalplatform/fractal/p2p/enr"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/p2p/enr"
+	"github.com/oexplatform/oexchain/utils/rlp"
 	"github.com/stretchr/testify/assert"
 )
 

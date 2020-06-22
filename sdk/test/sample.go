@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/fractalplatform/fractal/consensus/dpos"
+	"github.com/oexplatform/oexchain/consensus/dpos"
 
-	"github.com/fractalplatform/fractal/accountmanager"
-	"github.com/fractalplatform/fractal/common"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/common"
 )
 
 func sampleCreateAccount() *TTX {

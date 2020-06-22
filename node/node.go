@@ -1,5 +1,5 @@
-// Copyright 2018 The Fractal Team Authors
-// This file is part of the fractal project.
+// Copyright 2018 The OEX Team Authors
+// This file is part of the OEX project.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,10 +26,10 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/log"
-	router "github.com/fractalplatform/fractal/event"
-	adaptor "github.com/fractalplatform/fractal/p2p/protoadaptor"
-	"github.com/fractalplatform/fractal/rpc"
-	"github.com/fractalplatform/fractal/utils/filelock"
+	router "github.com/oexplatform/oexchain/event"
+	adaptor "github.com/oexplatform/oexchain/p2p/protoadaptor"
+	"github.com/oexplatform/oexchain/rpc"
+	"github.com/oexplatform/oexchain/utils/filelock"
 )
 
 // Node is a container on which services can be registered.

@@ -23,9 +23,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/fractalplatform/fractal/crypto"
-	"github.com/fractalplatform/fractal/p2p/enr"
-	"github.com/fractalplatform/fractal/utils/rlp"
+	"github.com/oexplatform/oexchain/crypto"
+	"github.com/oexplatform/oexchain/p2p/enr"
+	"github.com/oexplatform/oexchain/utils/rlp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
