@@ -1,26 +1,26 @@
-# Fractal
+# OEX Chain
 
-[![Build Status](https://travis-ci.org/fractalplatform/fractal.svg?branch=master)](https://travis-ci.org/fractalplatform/fractal)
-[![GoDoc](https://godoc.org/github.com/fractalplatform/fractal?status.svg)](https://godoc.org/github.com/fractalplatform/fractal)
-[![Coverage Status](https://coveralls.io/repos/github/fractalplatform/fractal/badge.svg?branch=master)](https://coveralls.io/github/fractalplatform/fractal?branch=master)
-[![GitHub](https://img.shields.io/github/license/fractalplatform/fractal.svg)](LICENSE)
+[![Build Status](https://travis-ci.org/oexplatform/fractal.svg?branch=master)](https://travis-ci.org/oexplatform/fractal)
+[![GoDoc](https://godoc.org/github.com/oexplatform/fractal?status.svg)](https://godoc.org/github.com/oexplatform/fractal)
+[![Coverage Status](https://coveralls.io/repos/github/oexplatform/fractal/badge.svg?branch=master)](https://coveralls.io/github/oexplatform/fractal?branch=master)
+[![GitHub](https://img.shields.io/github/license/oexplatform/fractal.svg)](LICENSE)
 
-Welcome to the Fractal source code repository!
+Welcome to the OEX source code repository!
 
-## What is Fractal?
+## What is OEX chain?
 
-Fractal is a high-level blockchain framework that can implement the issuance, circulation, and dividends of tokens efficiently and reliably. Fractal can also steadily implement various community governance functions with voting as the core and foundation. These functions are the foundation for building the token economy of future.
+OEX chain is a high-level blockchain framework that can implement the issuance, circulation, and dividends of tokens efficiently and reliably. OEX chain can also steadily implement various community governance functions with voting as the core and foundation. These functions are the foundation for building the token economy of future.
 
-home page: https://fractalproject.com/
+home page: https://oex.com/
 
 ## Executables
 
-The fractal project comes with several wrappers/executables found in the `cmd` directory.
+The OEX chain project comes with several wrappers/executables found in the `cmd` directory.
 
 |    Command     | Description                                                                                                                                                                                                                                                                                                                                                                                               |
 | :------------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|    **`ft`**    | Our main fractal CLI client. It is the entry point into the fractal network (main-, test- or private net), It can be used by other processes as a gateway into the fractal network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. `ft -h` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options. |
-| **`ftfinder`** | ftfinder is a fractal node discoverer.`ftfinder -h` and the [Command Line Options](https://github.com/fractalplatform/fractal/wiki/Command-Line-Options) for command line options.                                                                                                                                                                                                                        |
+|    **`oex`**    | Our main OEX CLI client. It is the entry point into the OEX network (main-, test- or private net), It can be used by other processes as a gateway into the oex network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. `oex -h` and the [Command Line Options](https://github.com/oexplatform/oexchain/wiki/Command-Line-Options) for command line options. |
+| **`oexfinder`** | oexfinder is a OEX chain node discoverer.`oexfinder -h` and the [Command Line Options](https://github.com/oexplatform/oexchain/wiki/Command-Line-Options) for command line options.                                                                                                                                                                                                                        |
 
 ## Getting Started
 
@@ -28,13 +28,13 @@ The following instructions overview the process of getting the code, building it
 
 ### How to create first account
 
-You can use [fractal wallet](https://m.ft.im/download) to create first account.
+You can use [OEX wallet](https://m.oex.com/download) to create first account.
 
 ### Getting the code
 
 To download all of the code:
 
-`git clone https://github.com/fractalplatform/fractal`
+`git clone https://github.com/oexplatform/oexchain`
 
 ### Setting up a build/development environment
 
@@ -46,32 +46,32 @@ Currently supports the following operating systems:
 - Ubuntu 18.04
 - MacOS Darwin 10.12 and higher
 
-### Build Fractal
+### Build OEX chain
 
 `make all`
 
-more information see: [Installing Fractal](https://github.com/fractalplatform/fractal/wiki/Build-Fractal)
+more information see: [Installing OEX Chain](https://github.com/oexplatform/oexchain/wiki/Build-OEX)
 
 ### Running a node
 
-To run `./ft` , you can run your own FT instance.
+To run `./oex` , you can run your own OEX instance.
 
-`$ ft`
+`$ oex`
 
-Join the fractal main network see: [Main Network](https://github.com/fractalplatform/fractal/wiki/Main-Network)
+Join the OEX chain main network see: [Main Network](https://github.com/oexplatform/oexchain/wiki/Main-Network)
 
-Join the fractal test network see: [Test Network](https://github.com/fractalplatform/fractal/wiki/Test-Network)
+Join the OEX chain test network see: [Test Network](https://github.com/oexplatform/oexchain/wiki/Test-Network)
 
-Operating a private network see:[Private Network](https://github.com/fractalplatform/fractal/wiki/Private-Network)
+Operating a private network see:[Private Network](https://github.com/oexplatform/oexchain/wiki/Private-Network)
 
 ## Resources
 
-[Fractal Official Website](https://fractalproject.com/)
+[OEX Official Website](https://oex.com/)
 
-[Fractal Blog](https://fractalproject.com/blog.html)
+[OEX Blog](https://oex.com/blog.html)
 
-More Documentation see [the Fractal wiki](https://github.com/fractalplatform/fractal/wiki)
+More Documentation see [the OEX chain wiki](https://github.com/oexplatform/oexchain/wiki)
 
 ## License
 
-Fractal is distributed under the terms of the [GPLv3 License](./License).
+OEX chain is distributed under the terms of the [GPLv3 License](./License).
