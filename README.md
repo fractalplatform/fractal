@@ -7,15 +7,15 @@
 
 Welcome to the OEXChain source code repository!
 
-## What is OEX chain?
+## What is OEXChain?
 
-OEX chain is a high-level blockchain framework that can implement the issuance, circulation, and dividends of tokens efficiently and reliably. OEX chain can also steadily implement various community governance functions with voting as the core and foundation. These functions are the foundation for building the token economy of future.
+OEXChain is a high-level blockchain framework that can implement the issuance, circulation, and dividends of tokens efficiently and reliably. OEXChain can also steadily implement various community governance functions with voting as the core and foundation. These functions are the foundation for building the token economy of future.
 
 home page: http://oex.com/
 
 ## Executables
 
-The OEX chain project comes with several wrappers/executables found in the `cmd` directory.
+The OEXChain project comes with several wrappers/executables found in the `cmd` directory.
 
 |    Command     | Description                                                                                                                                                                                                                                                                                                                                                                                               |
 | :------------: | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
