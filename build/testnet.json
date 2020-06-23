@@ -1,9 +1,9 @@
 {
 	"config": {
-		"bootnodes": ["fnode://7f06dd5bf47453e153272ff32e45c110c050ae43481e0b684cb7aac240bfeb80c92592b3afc133fcdb37a16356cb5d0ded5ff973fbb0dc8d6dda9962da1ba861@boot.t.ft.im:30000","fnode://cb49ad1ea7fd8e351603404394eb568a0c163195be4faf5730d609bf939fefb2105dec9e54828ade3623a92614c9d8a14a98030d2d2b7edd63896b36c6a42a5f@boot.t.ft.im:30001"],
+		"bootnodes": ["fnode://7f06dd5bf47453e153272ff32e45c110c050ae43481e0b684cb7aac240bfeb80c92592b3afc133fcdb37a16356cb5d0ded5ff973fbb0dc8d6dda9962da1ba861@0.0.0.0:2018"],
 		"chainId": 100,
 		"chainName": "oex",
-		"chainUrl": "https://oexproject.com",
+		"chainUrl": "https://oex.com",
 		"accountParams": {
 			"level": 3,
 			"alllength":31,
@@ -46,45 +46,45 @@
 			"blockReward": 0
 		},
 		"snapshotInterval": 3600000,
-		"systemName": "oex.founder",
-		"accountName": "oex.account",
-		"assetName": "oex.asset",
-		"dposName": "oex.dpos",
-		"feeName": "oex.fee",
+		"systemName": "oexchain.founder",
+		"accountName": "oexchain.account",
+		"assetName": "oexchain.asset",
+		"dposName": "oexchain.dpos",
+		"feeName": "oexchain.fee",
 		"systemToken": "oextoken"
 	},
 	"timestamp": 1559620800000,
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{
-		"name": "oex.founder",
-		"founder": "oex.founder",
+		"name": "oexchain.founder",
+		"founder": "oexchain.founder",
 		"pubKey": "0x045f8f01767c4467921591bdf18f18e851fa34d17cefe9ea02b06859b6b9f13053f5250a1a7da28b7b702b5bec3706be4c32731ba784a3bf2258e698ec6d14d63d"
 	}, {
-		"name": "oex.account",
-		"founder": "oex.founder",
+		"name": "oexchain.account",
+		"founder": "oexchain.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
-		"name": "oex.asset",
-		"founder": "oex.founder",
+		"name": "oexchain.asset",
+		"founder": "oexchain.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
-		"name": "oex.dpos",
-		"founder": "oex.founder",
+		"name": "oexchain.dpos",
+		"founder": "oexchain.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}, {
-		"name": "oex.fee",
-		"founder": "oex.founder",
+		"name": "oexchain.fee",
+		"founder": "oexchain.founder",
 		"pubKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 	}],
 	"allocCandidates": [],
 	"allocAssets": [{
 		"name": "oextoken",
-		"symbol": "ft",
+		"symbol": "oex",
 		"amount": 10000000000000000000000000000,
 		"decimals": 18,
-		"founder": "oex.founder",
-		"owner": "oex.founder",
+		"founder": "oexchain.founder",
+		"owner": "oexchain.founder",
 		"upperLimit": 10000000000000000000000000000
 	}]
 }
