@@ -51,12 +51,27 @@ func (s *PublicBlockChainAPI) GetCurrentBlock(fullTx bool) map[string]interface{
 	return s.rpcOutputBlock(s.b.ChainConfig().ChainID, s.b.CurrentBlock(), true, fullTx)
 }
 
+// GetCurrentBlockWithPayer returns current block.
+func (s *PublicBlockChainAPI) GetCurrentBlockWithPayer(fullTx bool) map[string]interface{} {
+	return s.rpcOutputBlockWithPayer(s.b.ChainConfig().ChainID, s.b.CurrentBlock(), true, fullTx)
+}
+
 // GetBlockByHash returns the requested block. When fullTx is true all transactions in the block are returned in full
 // detail, otherwise only the transaction hash is returned.
 func (s *PublicBlockChainAPI) GetBlockByHash(ctx context.Context, blockHash common.Hash, fullTx bool) (map[string]interface{}, error) {
 	block, err := s.b.GetBlock(ctx, blockHash)
 	if block != nil {
 		return s.rpcOutputBlock(s.b.ChainConfig().ChainID, block, true, fullTx), nil
+	}
+	return nil, err
+}
+
+// GetBlockByHashWithPayer returns the requested block. When fullTx is true all transactions in the block are returned in full
+// detail, otherwise only the transaction hash is returned.
+func (s *PublicBlockChainAPI) GetBlockByHashWithPayer(ctx context.Context, blockHash common.Hash, fullTx bool) (map[string]interface{}, error) {
+	block, err := s.b.GetBlock(ctx, blockHash)
+	if block != nil {
+		return s.rpcOutputBlockWithPayer(s.b.ChainConfig().ChainID, block, true, fullTx), nil
 	}
 	return nil, err
 }
@@ -110,6 +125,21 @@ func (s *PublicBlockChainAPI) GetTransactionByHash(ctx context.Context, hash com
 	return nil
 }
 
+// GetTransactionByHashWithPayer returns the transaction for the given hash
+func (s *PublicBlockChainAPI) GetTransactionByHashWithPayer(ctx context.Context, hash common.Hash) *types.RPCTransactionWithPayer {
+	// Try to return an already finalized transaction
+	if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
+		return tx.NewRPCTransactionWithPayer(blockHash, blockNumber, index)
+	}
+	// No finalized transaction, try to retrieve it from the pool
+	if tx := s.b.TxPool().Get(hash); tx != nil {
+		return tx.NewRPCTransactionWithPayer(common.Hash{}, 0, 0)
+	}
+
+	// Transaction unknown, return as such
+	return nil
+}
+
 func (s *PublicBlockChainAPI) GetTransactions(ctx context.Context, hashes []common.Hash) []*types.RPCTransaction {
 	var result []*types.RPCTransaction
 	for i, hash := range hashes {
@@ -118,6 +148,19 @@ func (s *PublicBlockChainAPI) GetTransactions(ctx context.Context, hashes []comm
 		}
 		if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
 			result = append(result, tx.NewRPCTransaction(blockHash, blockNumber, index))
+		}
+	}
+	return result
+}
+
+func (s *PublicBlockChainAPI) GetTransactionsWithPayer(ctx context.Context, hashes []common.Hash) []*types.RPCTransactionWithPayer {
+	var result []*types.RPCTransactionWithPayer
+	for i, hash := range hashes {
+		if i > 2048 {
+			break
+		}
+		if tx, blockHash, blockNumber, index := rawdb.ReadTransaction(s.b.ChainDb(), hash); tx != nil {
+			result = append(result, tx.NewRPCTransactionWithPayer(blockHash, blockNumber, index))
 		}
 	}
 	return result
