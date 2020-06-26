@@ -174,7 +174,7 @@ func NewAccountManager(db *state.StateDB) (*AccountManager, error) {
 
 //initAccountCounter init account manage counter
 func (am *AccountManager) initAccountCounter() {
-	_, err := am.getAccountCounter()
+	_, err := am.GetAccountCounter()
 	if err == ErrCounterNotExist {
 		//var counterID uint64
 		//counterID = 0
@@ -187,8 +187,8 @@ func (am *AccountManager) initAccountCounter() {
 	}
 }
 
-//getAccountCounter get account counter cur value
-func (am *AccountManager) getAccountCounter() (uint64, error) {
+//GetAccountCounter get account counter cur value
+func (am *AccountManager) GetAccountCounter() (uint64, error) {
 	b, err := am.sdb.Get(acctManagerName, counterPrefix)
 	if err != nil {
 		return 0, err
@@ -358,7 +358,7 @@ func (am *AccountManager) CreateAccount(fromName common.Name, accountName common
 	}
 
 	//get accountCounter
-	accountCounter, err := am.getAccountCounter()
+	accountCounter, err := am.GetAccountCounter()
 	if err != nil {
 		return err
 	}

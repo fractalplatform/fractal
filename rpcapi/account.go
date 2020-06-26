@@ -75,6 +75,15 @@ func NewAccountAPI(b Backend) *AccountAPI {
 	return &AccountAPI{b}
 }
 
+//AccountNumber
+func (api *AccountAPI) GetAccountNumber() (uint64, error) {
+	acct, err := api.b.GetAccountManager()
+	if err != nil {
+		return 0, err
+	}
+	return acct.GetAccountCounter()
+}
+
 //AccountIsExist
 func (api *AccountAPI) AccountIsExist(acctName common.Name) (bool, error) {
 	acct, err := api.b.GetAccountManager()
