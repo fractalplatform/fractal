@@ -15,10 +15,10 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/oexplatform/oexchain/accountmanager"
-	"github.com/oexplatform/oexchain/consensus/dpos"
 	colorable "github.com/mattn/go-colorable"
 	isatty "github.com/mattn/go-isatty"
+	"github.com/oexplatform/oexchain/accountmanager"
+	"github.com/oexplatform/oexchain/consensus/dpos"
 
 	"github.com/oexplatform/oexchain/common"
 	"github.com/oexplatform/oexchain/crypto"

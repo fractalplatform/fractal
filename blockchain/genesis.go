@@ -101,6 +101,9 @@ func dposConfig(cfg *params.ChainConfig) *dpos.Config {
 		Decimals:                      cfg.SysTokenDecimals,
 		AssetID:                       cfg.SysTokenID,
 		ReferenceTime:                 cfg.ReferenceTime,
+		Pow:                           cfg.DposCfg.RewardPow,
+		HalfEpoch:                     cfg.DposCfg.HalfEpoch,
+		RewardEpoch:                   cfg.DposCfg.RewardEpoch,
 	}
 }
 
@@ -278,6 +281,23 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		))
 	}
 
+	am.SetAccountNameConfig(&am.Config{
+		AccountNameLevel:         g.Config.AccountNameCfg.Level,
+		AccountNameMaxLength:     g.Config.AccountNameCfg.AllLength,
+		MainAccountNameMinLength: g.Config.AccountNameCfg.MainMinLength,
+		MainAccountNameMaxLength: g.Config.AccountNameCfg.MainMaxLength,
+		SubAccountNameMinLength:  g.Config.AccountNameCfg.SubMinLength,
+		SubAccountNameMaxLength:  g.Config.AccountNameCfg.SubMaxLength,
+	})
+	at.SetAssetNameConfig(&at.Config{
+		AssetNameLevel:         g.Config.AssetNameCfg.Level,
+		AssetNameLength:        g.Config.AssetNameCfg.AllLength,
+		MainAssetNameMinLength: g.Config.AssetNameCfg.MainMinLength,
+		MainAssetNameMaxLength: g.Config.AssetNameCfg.MainMaxLength,
+		SubAssetNameMinLength:  g.Config.AssetNameCfg.SubMinLength,
+		SubAssetNameMaxLength:  g.Config.AssetNameCfg.SubMaxLength,
+	})
+
 	for index, action := range actActions {
 		internalLogs, err := accountManager.Process(&types.AccountManagerContext{
 			Action:      action,
@@ -355,22 +375,6 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 		}
 		internals = append(internals, &types.DetailAction{InternalActions: internalLogs})
 	}
-	am.SetAccountNameConfig(&am.Config{
-		AccountNameLevel:         g.Config.AccountNameCfg.Level,
-		AccountNameMaxLength:     g.Config.AccountNameCfg.AllLength,
-		MainAccountNameMinLength: g.Config.AccountNameCfg.MainMinLength,
-		MainAccountNameMaxLength: g.Config.AccountNameCfg.MainMaxLength,
-		SubAccountNameMinLength:  g.Config.AccountNameCfg.SubMinLength,
-		SubAccountNameMaxLength:  g.Config.AccountNameCfg.SubMaxLength,
-	})
-	at.SetAssetNameConfig(&at.Config{
-		AssetNameLevel:         g.Config.AssetNameCfg.Level,
-		AssetNameLength:        g.Config.AssetNameCfg.AllLength,
-		MainAssetNameMinLength: g.Config.AssetNameCfg.MainMinLength,
-		MainAssetNameMaxLength: g.Config.AssetNameCfg.MainMaxLength,
-		SubAssetNameMinLength:  g.Config.AssetNameCfg.SubMinLength,
-		SubAssetNameMaxLength:  g.Config.AssetNameCfg.SubMaxLength,
-	})
 	if ok, err := accountManager.AccountIsExist(common.StrToName(g.Config.SysName)); !ok {
 		return nil, nil, fmt.Errorf("system is not exist %v", err)
 	}
@@ -411,14 +415,8 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 		}
 	}
-	if fid := g.ForkID; fid >= params.ForkID2 {
-		if err := sys.UpdateElectedCandidates1(epoch, epoch, number.Uint64(), ""); err != nil {
-			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
-		}
-	} else {
-		if err := sys.UpdateElectedCandidates0(epoch, epoch, number.Uint64(), ""); err != nil {
-			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
-		}
+	if err := sys.UpdateElectedCandidates1(epoch, epoch, number.Uint64(), ""); err != nil {
+		return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 	}
 
 	// init  fork controller
@@ -611,7 +609,7 @@ func DefaultGenesisAssets() []*GenesisAsset {
 			Decimals:   18,
 			Owner:      params.DefaultChainconfig.SysName,
 			Founder:    params.DefaultChainconfig.SysName,
-			UpperLimit: supply,
+			UpperLimit: new(big.Int).SetBytes(supply.Bytes()),
 		},
 	}
 }

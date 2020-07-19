@@ -7,7 +7,7 @@
 		"accountParams": {
 			"level": 3,
 			"alllength":31,
-			"mainminlength": 7,
+			"mainminlength": 3,
 			"mainmaxlength": 16,
 			"subminlength":2,
 			"submaxlength":16
@@ -31,8 +31,8 @@
 		"dposParams": {
 			"maxURLLen": 512,
 			"unitStake": 1,
-			"candidateAvailableMinQuantity": 3000000,
-			"candidateMinQuantity": 500000,
+			"candidateAvailableMinQuantity": 200000,
+			"candidateMinQuantity": 100000,
 			"voterMinQuantity": 1,
 			"activatedMinCandidate": 28,
 			"activatedMinQuantity": 1350000000,
@@ -43,7 +43,10 @@
 			"epochInterval": 604800000,
 			"freezeEpochSize": 2,
 			"extraBlockReward": 0,
-			"blockReward": 0
+			"blockReward": 0,
+			"epochReward": 548000000000000000000,
+			"halfEpoch": 52,
+			"pow": [100,95,94,93,92,91,90,85,80,75,70,65,60,55,54,53,52,51,50,49,48,45,42,39,36,33,30,27]
 		},
 		"snapshotInterval": 3600000,
 		"systemName": "oexchain.founder",
@@ -53,13 +56,13 @@
 		"feeName": "oexchain.fee",
 		"systemToken": "oextoken"
 	},
-	"timestamp": 1559620800000,
+	"timestamp": 1594551600000,
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{
 		"name": "oexchain.founder",
 		"founder": "oexchain.founder",
-		"pubKey": "0x045f8f01767c4467921591bdf18f18e851fa34d17cefe9ea02b06859b6b9f13053f5250a1a7da28b7b702b5bec3706be4c32731ba784a3bf2258e698ec6d14d63d"
+		"pubKey": "0x04bf064c95cecbe5307c785fee61e86c17ba14cb065806871364eaaf5e6170d9d2ae6b8913bff9e564c953ff6fbd336fde4156885ddbb55a91d165b1670276b249"
 	}, {
 		"name": "oexchain.account",
 		"founder": "oexchain.founder",
@@ -81,10 +84,10 @@
 	"allocAssets": [{
 		"name": "oextoken",
 		"symbol": "oex",
-		"amount": 10000000000000000000000000000,
+		"amount": 700000000000000000000000000,
 		"decimals": 18,
 		"founder": "oexchain.founder",
 		"owner": "oexchain.founder",
-		"upperLimit": 10000000000000000000000000000
+		"upperLimit": 1000000000000000000000000000
 	}]
 }

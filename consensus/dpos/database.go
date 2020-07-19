@@ -137,6 +137,7 @@ type CandidateInfo struct {
 	Number        uint64        `json:"number"`        // timestamp
 	Counter       uint64        `json:"shouldCounter"`
 	ActualCounter uint64        `json:"actualCounter"`
+	Reward        *big.Int      `json:"reward"`
 	Type          CandidateType `json:"type"`
 	PrevKey       string        `json:"-"`
 	NextKey       string        `json:"-"`
@@ -153,6 +154,7 @@ func (candidateInfo *CandidateInfo) copy() *CandidateInfo {
 		Number:        candidateInfo.Number,
 		Counter:       candidateInfo.Counter,
 		ActualCounter: candidateInfo.ActualCounter,
+		Reward:        new(big.Int).SetBytes(candidateInfo.Reward.Bytes()),
 		Type:          candidateInfo.Type,
 		PubKey:        candidateInfo.PubKey,
 	}

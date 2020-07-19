@@ -18,8 +18,8 @@ package oexservice
 
 import (
 	"github.com/oexplatform/oexchain/blockchain"
-	"github.com/oexplatform/oexchain/oexservice/gasprice"
 	"github.com/oexplatform/oexchain/metrics"
+	"github.com/oexplatform/oexchain/oexservice/gasprice"
 	"github.com/oexplatform/oexchain/txpool"
 )
 

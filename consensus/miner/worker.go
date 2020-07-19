@@ -189,7 +189,7 @@ func (worker *Worker) mintBlock(timestamp int64, quit chan struct{}) {
 		}
 		theader := &types.Header{}
 		worker.FillForkID(theader, state)
-		if err := cdpos.IsValidateCandidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force, theader.CurForkID()); err != nil {
+		if err := cdpos.IsValidateCandidate(worker, header, uint64(timestamp), worker.coinbase, worker.pubKeys, state, worker.force); err != nil {
 			switch err {
 			case dpos.ErrSystemTakeOver:
 				fallthrough

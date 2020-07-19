@@ -79,6 +79,9 @@ type DposConfig struct {
 	FreezeEpochSize               uint64   `json:"freezeEpochSize"`
 	ExtraBlockReward              *big.Int `json:"extraBlockReward"`
 	BlockReward                   *big.Int `json:"blockReward"`
+	RewardEpoch                   *big.Int `json:"epochReward"`
+	HalfEpoch                     uint64   `json:"halfEpoch"`
+	RewardPow                     []uint64 `json:"pow"`
 }
 
 var DefaultChainconfig = &ChainConfig{
@@ -126,6 +129,9 @@ var DefaultChainconfig = &ChainConfig{
 		FreezeEpochSize:               3,
 		ExtraBlockReward:              big.NewInt(1),
 		BlockReward:                   big.NewInt(5),
+		RewardPow:                     []uint64{1, 1, 1},
+		HalfEpoch:                     10,
+		RewardEpoch:                   big.NewInt(10 * 3 * 6 * 10000),
 	},
 	SnapshotInterval: 180000,
 	SysName:          "oex.founder",
@@ -148,10 +154,6 @@ const (
 	ForkID0 = uint64(0)
 	//ForkID1 account first name > 12, asset name contain account name
 	ForkID1 = uint64(1)
-	//ForkID2 dpos
-	ForkID2 = uint64(2)
-	//ForkID3 dpos config candidateAvailableMinQuantity modified
-	ForkID3 = uint64(3)
 	//ForkID4 miner pubkey separate
 	ForkID4 = uint64(4)
 

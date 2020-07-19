@@ -26,7 +26,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/oexplatform/oexchain/common"
-	"github.com/oexplatform/oexchain/params"
 	"github.com/oexplatform/oexchain/state"
 	"github.com/oexplatform/oexchain/types"
 )
@@ -99,6 +98,7 @@ func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stak
 		Info:          url,
 		Quantity:      big.NewInt(0),
 		TotalQuantity: big.NewInt(0),
+		Reward:        big.NewInt(0),
 		Number:        number,
 	}
 	prod.Quantity = new(big.Int).Add(prod.Quantity, q)
@@ -109,10 +109,8 @@ func (sys *System) RegCandidate(epoch uint64, candidate string, url string, stak
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	if fid >= params.ForkID2 {
-		if err := sys.updateState(gstate, prod); err != nil {
-			return err
-		}
+	if err := sys.updateState(gstate, prod); err != nil {
+		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
 		return err
@@ -195,10 +193,8 @@ func (sys *System) UpdateCandidate(epoch uint64, candidate string, info string, 
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	if fid >= params.ForkID2 {
-		if err := sys.updateState(gstate, prod); err != nil {
-			return err
-		}
+	if err := sys.updateState(gstate, prod); err != nil {
+		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
 		return err
@@ -260,10 +256,8 @@ func (sys *System) UnregCandidate(epoch uint64, candidate string, number uint64,
 		return err
 	}
 	gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-	if fid >= params.ForkID2 {
-		if err := sys.updateState(gstate, prod); err != nil {
-			return err
-		}
+	if err := sys.updateState(gstate, prod); err != nil {
+		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
 		return err
@@ -426,10 +420,8 @@ func (sys *System) VoteCandidate(epoch uint64, voter string, candidate string, s
 	prod.TotalQuantity = new(big.Int).Add(prod.TotalQuantity, q)
 
 	gstate.TotalQuantity = new(big.Int).Add(gstate.TotalQuantity, q)
-	if fid >= params.ForkID2 {
-		if err := sys.updateState(gstate, prod); err != nil {
-			return err
-		}
+	if err := sys.updateState(gstate, prod); err != nil {
+		return err
 	}
 	if err := sys.SetState(gstate); err != nil {
 		return err
@@ -483,11 +475,9 @@ func (sys *System) KickedCandidate(epoch uint64, candidate string, number uint64
 			return err
 		}
 		gstate.TotalQuantity = new(big.Int).Sub(gstate.TotalQuantity, prod.TotalQuantity)
-		if fid >= params.ForkID2 {
-			prod.Type = Black
-			if err := sys.updateState(gstate, prod); err != nil {
-				return err
-			}
+		prod.Type = Black
+		if err := sys.updateState(gstate, prod); err != nil {
+			return err
 		}
 		if err := sys.SetState(gstate); err != nil {
 			return err
@@ -522,14 +512,12 @@ func (sys *System) ExitTakeOver(epoch uint64, number uint64, fid uint64) error {
 	if err != nil {
 		return err
 	}
-	if fid >= params.ForkID2 {
-		epoch, err := sys.GetTakeOver()
-		if err != nil {
-			return err
-		}
-		if gstate.Epoch == epoch {
-			return fmt.Errorf("take over must in diff epoch")
-		}
+	epoch, err = sys.GetTakeOver()
+	if err != nil {
+		return err
+	}
+	if gstate.Epoch == epoch {
+		return fmt.Errorf("take over must in diff epoch")
 	}
 	gstate.TakeOver = false
 	return sys.SetState(gstate)
@@ -851,6 +839,18 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 
 func (sys *System) usingCandiate(gstate *GlobalState, offset uint64) string {
 	size := uint64(len(gstate.UsingCandidateIndexSchedule))
+	if size == 0 {
+		for index := range gstate.ActivatedCandidateSchedule {
+			if uint64(index) >= sys.config.CandidateScheduleSize {
+				break
+			}
+			gstate.UsingCandidateIndexSchedule = append(gstate.UsingCandidateIndexSchedule, uint64(index))
+			size++
+		}
+		for index, offset := range gstate.BadCandidateIndexSchedule {
+			gstate.UsingCandidateIndexSchedule[int(offset)] = sys.config.CandidateScheduleSize + uint64(index)
+		}
+	}
 	if offset >= size {
 		return ""
 	}

@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/oexplatform/oexchain/metrics"
 	client "github.com/influxdata/influxdb1-client"
+	"github.com/oexplatform/oexchain/metrics"
 )
 
 type reporter struct {

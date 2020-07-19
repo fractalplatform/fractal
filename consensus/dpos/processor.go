@@ -92,10 +92,8 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 	}
 	switch action.Type() {
 	case types.RegCandidate:
-		if fid >= params.ForkID2 {
-			if val := new(big.Int).Mul(dpos.config.CandidateMinQuantity, dpos.config.unitStake()); action.Value().Cmp(val) != 0 {
-				return nil, fmt.Errorf("value must be %v", val)
-			}
+		if val := new(big.Int).Mul(dpos.config.CandidateMinQuantity, dpos.config.unitStake()); action.Value().Cmp(val) != 0 {
+			return nil, fmt.Errorf("value must be %v", val)
 		}
 		arg := &RegisterCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
@@ -105,10 +103,8 @@ func (dpos *Dpos) processAction(fid uint64, number uint64, chainCfg *params.Chai
 			return nil, err
 		}
 	case types.UpdateCandidate:
-		if fid >= params.ForkID2 {
-			if action.Value().Sign() == 1 {
-				return nil, fmt.Errorf("value must be zero")
-			}
+		if action.Value().Sign() != 0 {
+			return nil, fmt.Errorf("value must be zero")
 		}
 		arg := &UpdateCandidate{}
 		if err := rlp.DecodeBytes(action.Data(), &arg); err != nil {
