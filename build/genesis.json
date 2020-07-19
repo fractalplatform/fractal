@@ -59,7 +59,7 @@
 		"feeName": "oex.fee",
 		"systemToken": "oextoken"
 	},
-	"timestamp": 1594551600000,
+	"timestamp": 1594562400000,
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{

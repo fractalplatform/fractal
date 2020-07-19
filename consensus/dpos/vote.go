@@ -365,9 +365,6 @@ func (sys *System) VoteCandidate(epoch uint64, voter string, candidate string, s
 		return err
 	}
 	timestamp := sys.config.epochTimeStamp(epoch)
-	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
-		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
-	}
 	bquantity, err := sys.GetBalanceByTime(candidate, timestamp)
 	if err != nil {
 		return err
@@ -819,13 +816,6 @@ func (sys *System) getAvailableQuantity(epoch uint64, voter string) (*big.Int, e
 	}
 	if q == nil {
 		timestamp := sys.config.epochTimeStamp(epoch)
-		gstate, err := sys.GetState(epoch)
-		if err != nil {
-			return nil, err
-		}
-		if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
-			timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
-		}
 		bquantity, err := sys.GetBalanceByTime(voter, timestamp)
 		if err != nil {
 			return nil, err
