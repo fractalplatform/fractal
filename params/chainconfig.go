@@ -134,11 +134,11 @@ var DefaultChainconfig = &ChainConfig{
 		RewardEpoch:                   big.NewInt(10 * 3 * 6 * 10000),
 	},
 	SnapshotInterval: 180000,
-	SysName:          "oex.founder",
-	AccountName:      "oex.account",
-	AssetName:        "oex.asset",
-	DposName:         "oex.dpos",
-	FeeName:          "oex.fee",
+	SysName:          "oexchain.founder",
+	AccountName:      "oexchain.account",
+	AssetName:        "oexchain.asset",
+	DposName:         "oexchain.dpos",
+	FeeName:          "oexchain.fee",
 	SysToken:         "oextoken",
 }
 
