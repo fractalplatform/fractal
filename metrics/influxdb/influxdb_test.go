@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oexplatform/oexchain/metrics"
 	client "github.com/influxdata/influxdb1-client"
+	"github.com/oexplatform/oexchain/metrics"
 )
 
 const (

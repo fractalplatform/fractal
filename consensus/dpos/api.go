@@ -589,13 +589,6 @@ func (api *API) SnapShotStake(epoch uint64, name string) (interface{}, error) {
 		return nil, err
 	}
 	timestamp := sys.config.epochTimeStamp(epoch)
-	gstate, err := sys.GetState(epoch)
-	if err != nil {
-		return nil, err
-	}
-	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
-		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
-	}
 	return sys.GetBalanceByTime(name, timestamp)
 }
 
@@ -609,13 +602,6 @@ func (api *API) SnapShotTime(epoch uint64) (interface{}, error) {
 		return nil, err
 	}
 	timestamp := sys.config.epochTimeStamp(epoch)
-	gstate, err := sys.GetState(epoch)
-	if err != nil {
-		return nil, err
-	}
-	if sys.config.epoch(sys.config.ReferenceTime) == gstate.PreEpoch {
-		timestamp = sys.config.epochTimeStamp(gstate.PreEpoch)
-	}
 	res := map[string]interface{}{}
 	res["epoch"] = epoch
 	res["timestamp"] = timestamp

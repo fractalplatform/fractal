@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/oexplatform/oexchain/params"
-
 	"github.com/oexplatform/oexchain/sdk"
 )
 
@@ -89,12 +87,8 @@ func main() {
 	epochTimeStampFunc := func(epoch uint64) uint64 {
 		return (epoch-1)*epochInterval + chainCfg.ReferenceTime
 	}
-	offsetFunc := func(timestamp uint64, fid uint64) uint64 {
-		interval := blockInterval
-		if fid >= params.ForkID2 {
-			interval = 0
-		}
-		offset := uint64(timestamp-interval) % epochInterval % mepochInterval
+	offsetFunc := func(timestamp uint64) uint64 {
+		offset := timestamp % epochInterval % mepochInterval
 		offset /= blockInterval * chainCfg.DposCfg.BlockFrequency
 		return offset
 	}
@@ -132,8 +126,8 @@ func main() {
 				fmt.Printf("usingCandidateIndexSchedule %v\n", vcandidates["usingCandidateIndexSchedule"])
 				fmt.Println("==========================周期==========================")
 			}
-			offset := offsetFunc(uint64(timestamp), params.ForkID2)
-			if prevTime == blk.TimeStamp || offset != offsetFunc(uint64(prevTime), params.ForkID2) {
+			offset := offsetFunc(uint64(timestamp))
+			if prevTime == blk.TimeStamp || offset != offsetFunc(uint64(prevTime)) {
 				mepoch := (uint64(blk.TimeStamp) - epochTimeStampFunc(epochFunc(uint64(blk.TimeStamp)))) / mepochInterval / 10
 				fmt.Printf("\n%03d-%03d-%05d(%s):", mepoch, offset, height, miner)
 				lastminer = miner

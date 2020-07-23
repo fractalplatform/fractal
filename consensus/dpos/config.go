@@ -21,8 +21,6 @@ import (
 	"math/big"
 	"sync/atomic"
 	"time"
-
-	"github.com/oexplatform/oexchain/params"
 )
 
 // DefaultConfig configures
@@ -45,6 +43,9 @@ var DefaultConfig = &Config{
 	SystemURL:                     "www.oexproject.com",
 	ExtraBlockReward:              big.NewInt(1),
 	BlockReward:                   big.NewInt(5),
+	Pow:                           []uint64{1, 1, 1},
+	HalfEpoch:                     10,
+	RewardEpoch:                   big.NewInt(1000000000),
 	Decimals:                      18,
 	AssetID:                       1,
 	ReferenceTime:                 1555776000000 * uint64(time.Millisecond), // 2019-04-21 00:00:00
@@ -71,6 +72,9 @@ type Config struct {
 	SystemURL                     string   `json:"systemURL"`
 	ExtraBlockReward              *big.Int `json:"extraBlockReward"`
 	BlockReward                   *big.Int `json:"blockReward"`
+	HalfEpoch                     uint64   `json:"halfEpoch"`
+	RewardEpoch                   *big.Int `json:"rewardEpoch"`
+	Pow                           []uint64 `json:"pow"`
 	Decimals                      uint64   `json:"decimals"`
 	AssetID                       uint64   `json:"assetID"`
 	ReferenceTime                 uint64   `json:"referenceTime"`
@@ -81,6 +85,25 @@ type Config struct {
 	mepochInter atomic.Value
 	epochInter  atomic.Value
 	safeSize    atomic.Value
+	powSum      atomic.Value
+}
+
+func (cfg *Config) totalpows() uint64 {
+	if powsum := cfg.powSum.Load(); powsum != nil {
+		return powsum.(uint64)
+	}
+	powsum := uint64(0)
+	for i := 0; i < len(cfg.Pow); i++ {
+		powsum = powsum + cfg.Pow[i]
+	}
+	cfg.powSum.Store(powsum)
+	return powsum
+}
+
+func (cfg *Config) weightrward(offset uint64, reward *big.Int) *big.Int {
+	pow := cfg.Pow[offset]
+	weight := pow * 1000 / cfg.totalpows()
+	return new(big.Int).Div(new(big.Int).Mul(reward, big.NewInt(int64(weight))), big.NewInt(1000))
 }
 
 func (cfg *Config) decimals() *big.Int {
@@ -150,12 +173,8 @@ func (cfg *Config) nextslot(timestamp uint64) uint64 {
 	return cfg.slot(timestamp) + cfg.blockInterval()
 }
 
-func (cfg *Config) getoffset(timestamp uint64, fid uint64) uint64 {
-	offsetInterval := cfg.blockInterval()
-	if fid >= params.ForkID2 {
-		offsetInterval = 0
-	}
-	offset := uint64(timestamp-offsetInterval-cfg.ReferenceTime) % cfg.epochInterval() % cfg.mepochInterval()
+func (cfg *Config) getoffset(timestamp uint64) uint64 {
+	offset := (timestamp - cfg.ReferenceTime) % cfg.epochInterval() % cfg.mepochInterval()
 	offset /= cfg.blockInterval() * cfg.BlockFrequency
 	return offset
 }
@@ -188,6 +207,9 @@ func (cfg *Config) minBlockCnt() uint64 {
 func (cfg *Config) IsValid() error {
 	if minEpochInterval := 2 * cfg.minBlockCnt() * cfg.blockInterval(); cfg.epochInterval() < minEpochInterval {
 		return fmt.Errorf("epoch interval %v invalid (min epoch interval %v)", cfg.epochInterval(), minEpochInterval)
+	}
+	if uint64(len(cfg.Pow)) != cfg.BackupScheduleSize+cfg.CandidateScheduleSize {
+		return fmt.Errorf("pow not mismatch")
 	}
 	return nil
 }

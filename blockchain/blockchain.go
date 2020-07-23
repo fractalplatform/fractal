@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/log"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/oexplatform/oexchain/common"
 	"github.com/oexplatform/oexchain/common/prque"
 	"github.com/oexplatform/oexchain/event"
@@ -39,7 +40,6 @@ import (
 	"github.com/oexplatform/oexchain/types"
 	"github.com/oexplatform/oexchain/utils/fdb"
 	"github.com/oexplatform/oexchain/utils/rlp"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const (

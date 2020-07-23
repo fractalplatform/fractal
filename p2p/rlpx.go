@@ -35,10 +35,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/bitutil"
+	"github.com/golang/snappy"
 	"github.com/oexplatform/oexchain/crypto"
 	"github.com/oexplatform/oexchain/crypto/ecies"
 	"github.com/oexplatform/oexchain/utils/rlp"
-	"github.com/golang/snappy"
 	"golang.org/x/crypto/sha3"
 )
 
