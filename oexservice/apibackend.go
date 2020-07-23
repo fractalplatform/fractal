@@ -42,7 +42,7 @@ import (
 
 // APIBackend implements oexservice api.Backend for full nodes
 type APIBackend struct {
-	ftservice *FtService
+	ftservice *OEXService
 	gpo       *gasprice.Oracle
 }
 

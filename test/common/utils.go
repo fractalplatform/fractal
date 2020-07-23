@@ -102,14 +102,14 @@ func GetAssetInfoByName(assetName string) (*asset.AssetObject, error) {
 // GasPrice suggest gas price
 func GasPrice() (*big.Int, error) {
 	gp := big.NewInt(0)
-	err := ClientCall("ft_gasPrice", gp)
+	err := ClientCall("oex_gasPrice", gp)
 	return gp, err
 }
 
 //SendRawTx send raw transaction
 func SendRawTx(rawTx []byte) (common.Hash, error) {
 	hash := new(common.Hash)
-	err := ClientCall("ft_sendRawTransaction", hash, hexutil.Bytes(rawTx))
+	err := ClientCall("oex_sendRawTransaction", hash, hexutil.Bytes(rawTx))
 	return *hash, err
 }
 
@@ -146,7 +146,7 @@ func GetDposAccount(name common.Name) (map[string]interface{}, error) {
 
 func GetBlockAndResult(blockNr rpc.BlockNumber) (*types.BlockAndResult, error) {
 	result := &types.BlockAndResult{}
-	err := ClientCall("ft_getBlockAndResultByNumber", result, blockNr)
+	err := ClientCall("oex_getBlockAndResultByNumber", result, blockNr)
 	return result, err
 }
 

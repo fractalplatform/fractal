@@ -37,8 +37,8 @@ import (
 	"github.com/oexplatform/oexchain/utils/fdb"
 )
 
-// FtService implements the oex service.
-type FtService struct {
+// OEXService implements the oex service.
+type OEXService struct {
 	config       *Config
 	chainConfig  *params.ChainConfig
 	shutdownChan chan bool // Channel for shutting down the service
@@ -52,7 +52,7 @@ type FtService struct {
 }
 
 // New creates a new oexservice object (including the initialisation of the common oexservice object)
-func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
+func New(ctx *node.ServiceContext, config *Config) (*OEXService, error) {
 	chainDb, err := CreateDB(ctx, config, "chaindata")
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 
 	ctx.AppendBootNodes(chainCfg.BootNodes)
 
-	ftservice := &FtService{
+	oexService := &OEXService{
 		config:       config,
 		chainDb:      chainDb,
 		chainConfig:  chainCfg,
@@ -78,7 +78,7 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		ContractLogFlag: config.ContractLogFlag,
 	}
 
-	ftservice.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, ftservice.chainConfig, config.BadHashes, config.StartNumber, txpool.SenderCacher)
+	oexService.blockchain, err = blockchain.NewBlockChain(chainDb, config.StatePruning, vmconfig, oexService.chainConfig, config.BadHashes, config.StartNumber, txpool.SenderCacher)
 	if err != nil {
 		return nil, err
 	}
@@ -88,10 +88,10 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 		config.TxPool.Journal = ctx.ResolvePath(config.TxPool.Journal)
 	}
 
-	ftservice.txPool = txpool.New(*config.TxPool, ftservice.chainConfig, ftservice.blockchain)
+	oexService.txPool = txpool.New(*config.TxPool, oexService.chainConfig, oexService.blockchain)
 
-	engine := dpos.New(dposCfg, ftservice.blockchain)
-	ftservice.engine = engine
+	engine := dpos.New(dposCfg, oexService.blockchain)
+	oexService.engine = engine
 
 	type bc struct {
 		*blockchain.BlockChain
@@ -101,46 +101,46 @@ func New(ctx *node.ServiceContext, config *Config) (*FtService, error) {
 	}
 
 	bcc := &bc{
-		ftservice.blockchain,
-		ftservice.engine,
-		ftservice.txPool,
+		oexService.blockchain,
+		oexService.engine,
+		oexService.txPool,
 		nil,
 	}
 
-	validator := processor.NewBlockValidator(bcc, ftservice.engine)
-	txProcessor := processor.NewStateProcessor(bcc, ftservice.engine)
+	validator := processor.NewBlockValidator(bcc, oexService.engine)
+	txProcessor := processor.NewStateProcessor(bcc, oexService.engine)
 
-	ftservice.blockchain.SetValidator(validator)
-	ftservice.blockchain.SetProcessor(txProcessor)
+	oexService.blockchain.SetValidator(validator)
+	oexService.blockchain.SetProcessor(txProcessor)
 
 	bcc.Processor = txProcessor
-	ftservice.miner = miner.NewMiner(bcc)
-	ftservice.miner.SetDelayDuration(config.Miner.Delay)
-	ftservice.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
-	ftservice.miner.SetExtra([]byte(config.Miner.ExtraData))
+	oexService.miner = miner.NewMiner(bcc)
+	oexService.miner.SetDelayDuration(config.Miner.Delay)
+	oexService.miner.SetCoinbase(config.Miner.Name, config.Miner.PrivateKeys)
+	oexService.miner.SetExtra([]byte(config.Miner.ExtraData))
 	if config.Miner.Start {
-		ftservice.miner.Start(false)
+		oexService.miner.Start(false)
 	}
 
-	ftservice.APIBackend = &APIBackend{ftservice: ftservice}
+	oexService.APIBackend = &APIBackend{ftservice: oexService}
 
-	ftservice.SetGasPrice(ftservice.TxPool().GasPrice())
-	return ftservice, nil
+	oexService.SetGasPrice(oexService.TxPool().GasPrice())
+	return oexService, nil
 }
 
 // APIs return the collection of RPC services the oexservice package offers.
-func (fs *FtService) APIs() []rpc.API {
+func (fs *OEXService) APIs() []rpc.API {
 	return rpcapi.GetAPIs(fs.APIBackend)
 }
 
 // Start implements node.Service, starting all internal goroutines.
-func (fs *FtService) Start() error {
+func (fs *OEXService) Start() error {
 	log.Info("start oex service...")
 	return nil
 }
 
 // Stop implements node.Service, terminating all internal goroutine
-func (fs *FtService) Stop() error {
+func (fs *OEXService) Stop() error {
 	fs.miner.Stop()
 	fs.blockchain.Stop()
 	fs.txPool.Stop()
@@ -150,11 +150,11 @@ func (fs *FtService) Stop() error {
 	return nil
 }
 
-func (fs *FtService) GasPrice() *big.Int {
+func (fs *OEXService) GasPrice() *big.Int {
 	return fs.txPool.GasPrice()
 }
 
-func (fs *FtService) SetGasPrice(gasPrice *big.Int) bool {
+func (fs *OEXService) SetGasPrice(gasPrice *big.Int) bool {
 	fs.config.GasPrice.Default = new(big.Int).SetBytes(gasPrice.Bytes())
 	fs.APIBackend.gpo = gasprice.NewOracle(fs.APIBackend, fs.config.GasPrice)
 	fs.txPool.SetGasPrice(new(big.Int).SetBytes(gasPrice.Bytes()))
@@ -170,8 +170,8 @@ func CreateDB(ctx *node.ServiceContext, config *Config, name string) (fdb.Databa
 	return db, nil
 }
 
-func (s *FtService) BlockChain() *blockchain.BlockChain { return s.blockchain }
-func (s *FtService) TxPool() *txpool.TxPool             { return s.txPool }
-func (s *FtService) Engine() consensus.IEngine          { return s.engine }
-func (s *FtService) ChainDb() fdb.Database              { return s.chainDb }
-func (s *FtService) Protocols() []p2p.Protocol          { return nil }
+func (s *OEXService) BlockChain() *blockchain.BlockChain { return s.blockchain }
+func (s *OEXService) TxPool() *txpool.TxPool             { return s.txPool }
+func (s *OEXService) Engine() consensus.IEngine          { return s.engine }
+func (s *OEXService) ChainDb() fdb.Database              { return s.chainDb }
+func (s *OEXService) Protocols() []p2p.Protocol          { return nil }

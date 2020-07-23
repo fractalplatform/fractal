@@ -24,33 +24,33 @@ import (
 // GetCurrentBlock returns cureent block.
 func GetCurrentBlock(fullTx bool) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	err := ClientCall("ft_getCurrentBlock", &result, fullTx)
+	err := ClientCall("oex_getCurrentBlock", &result, fullTx)
 	return result, err
 }
 
 //GetBlockByNumber returns the requested block.
 func GetBlockByNumber(number uint64, fullTx bool) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	err := ClientCall("ft_getBlockByNumber", &result, number, fullTx)
+	err := ClientCall("oex_getBlockByNumber", &result, number, fullTx)
 	return result, err
 }
 
 // GetTransactionByHash returns the transaction for the given hash
 func GetTransactionByHash(hash common.Hash) (*types.RPCTransaction, error) {
 	result := &types.RPCTransaction{}
-	err := ClientCall("ft_getTransactionByHash", &result, hash)
+	err := ClientCall("oex_getTransactionByHash", &result, hash)
 	return result, err
 }
 
 // GetTransBatch returns the transactions for the given hashes
 func GetTransBatch(hashes []common.Hash) ([]*types.RPCTransaction, error) {
 	result := make([]*types.RPCTransaction, 0)
-	err := ClientCall("ft_getTransBatch", &result, hashes)
+	err := ClientCall("oex_getTransBatch", &result, hashes)
 	return result, err
 }
 
 func GetTxsByAccount(acctName common.Name, blockNr, lookforwardNum uint64) (*types.AccountTxs, error) {
 	result := &types.AccountTxs{}
-	err := ClientCall("ft_getTxsByAccount", &result, acctName, blockNr, lookforwardNum)
+	err := ClientCall("oex_getTxsByAccount", &result, acctName, blockNr, lookforwardNum)
 	return result, err
 }
