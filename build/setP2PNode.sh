@@ -1,5 +1,6 @@
 # 脚本用法：
 # ./setP2PNode 1 10 enode://xxxx : 表示给矿工1~矿工10设置p2p节点
+
 if [[ $# -lt 2 ]]; then
 	echo "command=>$0, no parameters"
 	exit 1
