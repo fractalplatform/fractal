@@ -6,15 +6,15 @@
 #start miner nodes
 #
 
-declare -a p2pNodes
+#declare -a p2pNodes
 
-index=0
-for line in `cat filename(p2pNodes.txt)`
-do
-	p2pNodes[$index]=line
-	let "index++"
-done
-echo ${p2pNodes[*]}
+#index=0
+#for line in `cat filename(p2pNodes.txt)`
+#do
+#	p2pNodes[$index]=line
+#	let "index++"
+#done
+#echo ${p2pNodes[*]}
 
 
 if [[ $# -eq 0 ]]; then
