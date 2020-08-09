@@ -361,7 +361,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 	if gstate.Dpos {
 		reward := sys.config.weightrward(offset, epochReward)
 		if _, err := sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward, header.CurForkID()); err == nil {
-			log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward, "offset", offset, "reward", reward, "height", header.Number)
+			//log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward, "offset", offset, "reward", reward, "height", header.Number)
 			candidates[offset].Reward = new(big.Int).Add(candidates[offset].Reward, reward)
 		}
 	}
