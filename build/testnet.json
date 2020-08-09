@@ -1,9 +1,9 @@
 {
 	"config": {
-		"bootnodes": ["fnode://7f06dd5bf47453e153272ff32e45c110c050ae43481e0b684cb7aac240bfeb80c92592b3afc133fcdb37a16356cb5d0ded5ff973fbb0dc8d6dda9962da1ba861@8.210.221.49:9090"],
+		"bootnodes": ["fnode://44b8a7cc0ef71657750fdd6108d0b6b9f5f9f2d6a72329ae13766355cd9a60d9d8ade3bfe440885d6fab1d21fd66c1e5243d4802855f2c79c0123ffef35a44fd@8.210.221.49:9090"],
 		"chainId": 100,
-		"chainName": "oexchain",
-		"chainUrl": "https://oexchain.io",
+		"chainName": "oex",
+		"chainUrl": "https://oex.com",
 		"accountParams": {
 			"level": 3,
 			"alllength":31,
@@ -56,7 +56,7 @@
 		"feeName": "oexchain.fee",
 		"systemToken": "oextoken"
 	},
-	"timestamp": 1594569600000,
+	"timestamp": 1594656000000,
 	"gasLimit": 30000000,
 	"difficulty": 1,
 	"allocAccounts": [{
