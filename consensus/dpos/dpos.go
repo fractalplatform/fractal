@@ -212,7 +212,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		half := math.Exp2(float64(halfCnt))
 		epochReward = new(big.Int).Div(epochReward, big.NewInt(int64(half)))
 	}
-	log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward)
+	//log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward)
 
 	gstate, err := sys.GetState(pepoch)
 	if err != nil {
