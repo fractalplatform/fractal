@@ -196,10 +196,10 @@ func (dpos *Dpos) Author(header *types.Header) (common.Name, error) {
 
 // Prepare initializes the consensus fields of a block header according to the rules of a particular engine. The changes are executed inline.
 func (dpos *Dpos) Prepare(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error {
-	return dpos.prepare1(chain, header, txs, receipts, state)
+	return dpos.prepare(chain, header, txs, receipts, state)
 }
 
-func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error {
+func (dpos *Dpos) prepare(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) error {
 	header.Extra = append(header.Extra, make([]byte, extraSeal)...)
 
 	sys := NewSystem(state, dpos.config)
@@ -212,14 +212,16 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		half := math.Exp2(float64(halfCnt))
 		epochReward = new(big.Int).Div(epochReward, big.NewInt(int64(half)))
 	}
-	//log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward)
+	if epoch != pepoch {
+		log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward)
+	}
 
 	gstate, err := sys.GetState(pepoch)
 	if err != nil {
 		return err
 	}
 	if header.Number.Uint64() == 1 || gstate.TakeOver {
-		sys.UpdateElectedCandidates1(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
+		sys.UpdateElectedCandidates(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
 		if candidate, err := sys.GetCandidate(epoch, header.Coinbase.String()); err != nil {
 			return err
 		} else if candidate != nil {
@@ -235,7 +237,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 	systemio := strings.Compare(header.Coinbase.String(), dpos.config.SystemName) == 0
 	takeover := (header.Time.Uint64()-parent.Time.Uint64() > 2*dpos.config.mepochInterval() || dpos.CalcProposedIrreversible(chain, parent, true) == 0) && systemio
 	if takeover {
-		sys.UpdateElectedCandidates1(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
+		sys.UpdateElectedCandidates(pepoch, epoch, header.Number.Uint64(), header.Coinbase.String())
 		gstate, err := sys.GetState(epoch)
 		if err != nil {
 			return err
@@ -258,10 +260,6 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 			}
 		}
 		return nil
-	}
-
-	if len(gstate.ActivatedCandidateSchedule) == 0 {
-		sys.UpdateElectedCandidates1(pepoch, pepoch, header.Number.Uint64(), header.Coinbase.String())
 	}
 
 	pstate, err := sys.GetState(gstate.PreEpoch)
@@ -337,7 +335,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 			}
 
 			candidates = map[uint64]*CandidateInfo{}
-			sys.UpdateElectedCandidates1(gstate.Epoch, tepoch, header.Number.Uint64(), header.Coinbase.String())
+			sys.UpdateElectedCandidates(gstate.Epoch, tepoch, header.Number.Uint64(), header.Coinbase.String())
 			gstate, _ = sys.GetState(tepoch)
 			pstate, _ = sys.GetState(gstate.PreEpoch)
 		}
@@ -358,7 +356,7 @@ func (dpos *Dpos) prepare1(chain consensus.IChainReader, header *types.Header, t
 		candidate.Counter++
 	}
 	offset := sys.config.getoffset(header.Time.Uint64())
-	if gstate.Dpos {
+	if pstate.Dpos {
 		reward := sys.config.weightrward(offset, epochReward)
 		if _, err := sys.IncAsset2Acct(dpos.config.SystemName, header.Coinbase.String(), reward, header.CurForkID()); err == nil {
 			//log.Info("block reward", "epoch", epoch, "half", halfCnt, "epoch reward", epochReward, "offset", offset, "reward", reward, "height", header.Number)
@@ -380,10 +378,10 @@ func (dpos *Dpos) Finalize(chain consensus.IChainReader, header *types.Header, t
 		header.Root = state.IntermediateRoot()
 		return types.NewBlock(header, txs, receipts), nil
 	}
-	return dpos.finalize1(chain, header, txs, receipts, state)
+	return dpos.finalize(chain, header, txs, receipts, state)
 }
 
-func (dpos *Dpos) finalize1(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error) {
+func (dpos *Dpos) finalize(chain consensus.IChainReader, header *types.Header, txs []*types.Transaction, receipts []*types.Receipt, state *state.StateDB) (*types.Block, error) {
 	parent := chain.GetHeaderByHash(header.ParentHash)
 	sys := NewSystem(state, dpos.config)
 

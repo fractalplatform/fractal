@@ -415,7 +415,7 @@ func (g *Genesis) ToBlock(db fdb.Database) (*types.Block, []*types.Receipt, erro
 			return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 		}
 	}
-	if err := sys.UpdateElectedCandidates1(epoch, epoch, number.Uint64(), ""); err != nil {
+	if err := sys.UpdateElectedCandidates(epoch, epoch, number.Uint64(), ""); err != nil {
 		return nil, nil, fmt.Errorf("genesis create candidate err %v", err)
 	}
 

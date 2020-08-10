@@ -521,125 +521,8 @@ func (sys *System) ExitTakeOver(epoch uint64, number uint64, fid uint64) error {
 	return sys.SetState(gstate)
 }
 
-// UpdateElectedCandidates0 update
-func (sys *System) UpdateElectedCandidates0(pepoch uint64, epoch uint64, number uint64, miner string) error {
-	if pepoch > epoch {
-		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
-	}
-	pstate, err := sys.GetState(pepoch)
-	if err != nil {
-		return err
-	}
-
-	// not is first & no changes
-	if pstate.Epoch != pstate.PreEpoch && pepoch == epoch {
-		return nil
-	}
-
-	candidateInfoArray, err := sys.GetCandidates(pepoch)
-	if err != nil {
-		return err
-	}
-	sort.Sort(candidateInfoArray)
-	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
-	activatedCandidateSchedule := []string{}
-	activatedTotalQuantity := big.NewInt(0)
-	totalQuantity := big.NewInt(0)
-	quantity := big.NewInt(0)
-	cnt := uint64(0)
-	ntotalQuantity := big.NewInt(0)
-	candidates := []*CandidateInfo{}
-	var sysCandidate *CandidateInfo
-	for _, candidateInfo := range candidateInfoArray {
-		if pepoch != epoch {
-			// clear vote quantity
-			tcandidateInfo := candidateInfo.copy()
-			tcandidateInfo.Epoch = epoch
-			tcandidateInfo.TotalQuantity = tcandidateInfo.Quantity
-			if !tcandidateInfo.invalid() {
-				ntotalQuantity = new(big.Int).Add(ntotalQuantity, tcandidateInfo.TotalQuantity)
-			}
-			if err := sys.SetCandidate(tcandidateInfo); err != nil {
-				return err
-			}
-		}
-
-		if !candidateInfo.invalid() {
-			if pstate.Dpos {
-				if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-					continue
-				}
-			} else if candidateInfo.Quantity.Sign() == 0 || strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-				if strings.Compare(candidateInfo.Name, sys.config.SystemName) == 0 {
-					sysCandidate = candidateInfo
-				} else {
-					candidates = append(candidates, candidateInfo)
-				}
-				continue
-			}
-			if uint64(len(activatedCandidateSchedule)) < n {
-				activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-				activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
-			}
-			totalQuantity = new(big.Int).Add(totalQuantity, candidateInfo.TotalQuantity)
-			quantity = new(big.Int).Add(quantity, candidateInfo.Quantity)
-			cnt++
-		}
-	}
-
-	if !pstate.Dpos && totalQuantity.Cmp(sys.config.ActivatedMinQuantity) >= 0 &&
-		cnt >= n && cnt >= sys.config.ActivatedMinCandidate {
-		pstate.Dpos = true
-	}
-
-	if !pstate.Dpos {
-		activatedTotalQuantity = big.NewInt(0)
-		activatedCandidateSchedule = []string{}
-		activatedCandidateSchedule = append(activatedCandidateSchedule, sysCandidate.Name)
-		activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, sysCandidate.TotalQuantity)
-		for index, candidateInfo := range candidates {
-			if uint64(index) >= n-1 {
-				break
-			}
-			activatedCandidateSchedule = append(activatedCandidateSchedule, candidateInfo.Name)
-			activatedTotalQuantity = new(big.Int).Add(activatedTotalQuantity, candidateInfo.TotalQuantity)
-		}
-		if init := len(activatedCandidateSchedule); init > 0 {
-			index := 0
-			for uint64(len(activatedCandidateSchedule)) < sys.config.CandidateScheduleSize {
-				activatedCandidateSchedule = append(activatedCandidateSchedule, activatedCandidateSchedule[index/init])
-				index++
-			}
-		}
-	}
-	pstate.ActivatedCandidateSchedule = activatedCandidateSchedule
-	pstate.ActivatedTotalQuantity = activatedTotalQuantity
-	pstate.Number = number
-	if err := sys.SetState(pstate); err != nil {
-		return err
-	}
-
-	if pepoch != epoch {
-		gstate := &GlobalState{
-			Epoch:                       epoch,
-			PreEpoch:                    pstate.Epoch,
-			ActivatedTotalQuantity:      big.NewInt(0),
-			TotalQuantity:               new(big.Int).SetBytes(ntotalQuantity.Bytes()),
-			UsingCandidateIndexSchedule: []uint64{},
-			BadCandidateIndexSchedule:   []uint64{},
-			TakeOver:                    pstate.TakeOver,
-			Dpos:                        pstate.Dpos,
-		}
-		if err := sys.SetLastestEpoch(epoch); err != nil {
-			return err
-		}
-		return sys.SetState(gstate)
-	}
-	return nil
-}
-
-// UpdateElectedCandidates1 update
-func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number uint64, miner string) error {
+// UpdateElectedCandidates update
+func (sys *System) UpdateElectedCandidates(pepoch uint64, epoch uint64, number uint64, miner string) error {
 	if pepoch > epoch {
 		panic(fmt.Errorf("UpdateElectedCandidates unreached"))
 	}
@@ -654,7 +537,7 @@ func (sys *System) UpdateElectedCandidates1(pepoch uint64, epoch uint64, number 
 
 	t := time.Now()
 	defer func() {
-		log.Debug("UpdateElectedCandidates1", "pepoch", pepoch, "epoch", epoch, "number", number, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
+		log.Debug("UpdateElectedCandidates", "pepoch", pepoch, "epoch", epoch, "number", number, "elapsed", common.PrettyDuration(time.Now().Sub(t)))
 	}()
 	n := sys.config.BackupScheduleSize + sys.config.CandidateScheduleSize
 	initActivatedCandidateSchedule := func(gstate *GlobalState, candidateInfoArray CandidateInfoArray) error {
@@ -961,7 +844,7 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 			return err
 		}
 		bts, _ := json.Marshal(tstate)
-		log.Info("dpos prestart", "before", string(bts), "prod", prod.Name)
+		//log.Info("dpos prestart", "before", string(bts), "prod", prod.Name)
 		if prod.invalid() {
 			tstate.TotalQuantity = new(big.Int).Sub(tstate.TotalQuantity, prod.TotalQuantity)
 			tstate.Number--
@@ -978,7 +861,7 @@ func (sys *System) updateState(gstate *GlobalState, prod *CandidateInfo) error {
 			}
 		}
 		bts, _ = json.Marshal(tstate)
-		log.Info("dpos prestart", "after", string(bts), "prod", prod.Name)
+		//log.Info("dpos prestart", "after", string(bts), "prod", prod.Name)
 		if err := insert(tstate, prod); err != nil {
 			return err
 		}
