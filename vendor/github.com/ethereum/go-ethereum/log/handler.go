@@ -8,11 +8,6 @@ import (
 	"reflect"
 	"sync"
 
-	"io/ioutil"
-	"path/filepath"
-	"regexp"
-	"strings"
-
 	"github.com/go-stack/stack"
 )
 
@@ -75,120 +70,6 @@ func FileHandler(path string, fmtr Format) (Handler, error) {
 	return closingHandler{f, StreamHandler(f, fmtr)}, nil
 }
 
-// countingWriter wraps a WriteCloser object in order to count the written bytes.
-type countingWriter struct {
-	sync.Mutex                // lock
-	w          io.WriteCloser // the wrapped object
-	count      uint           // number of bytes written
-}
-
-// Write increments the byte counter by the number of bytes written.
-// Implements the WriteCloser interface.
-func (w *countingWriter) Write(p []byte) (n int, err error) {
-	n, err = w.w.Write(p)
-	w.count += uint(n)
-	return n, err
-}
-
-// Close implements the WriteCloser interface.
-func (w *countingWriter) Close() error {
-	return w.w.Close()
-}
-
-// prepFile opens the log file at the given path, and cuts off the invalid part
-// from the end, because the previous execution could have been finished by interruption.
-// Assumes that every line ended by '\n' contains a valid log record.
-func prepFile(path string) (*countingWriter, error) {
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0600)
-	if err != nil {
-		return nil, err
-	}
-	_, err = f.Seek(-1, io.SeekEnd)
-	if err != nil {
-		return nil, err
-	}
-	buf := make([]byte, 1)
-	var cut int64
-	for {
-		if _, err := f.Read(buf); err != nil {
-			return nil, err
-		}
-		if buf[0] == '\n' {
-			break
-		}
-		if _, err = f.Seek(-2, io.SeekCurrent); err != nil {
-			return nil, err
-		}
-		cut++
-	}
-	fi, err := f.Stat()
-	if err != nil {
-		return nil, err
-	}
-	ns := fi.Size() - cut
-	if err = f.Truncate(ns); err != nil {
-		return nil, err
-	}
-	return &countingWriter{w: f, count: uint(ns)}, nil
-}
-
-// RotatingFileHandler returns a handler which writes log records to file chunks
-// at the given path. When a file's size reaches the limit, the handler creates
-// a new file named after the timestamp of the first log record it will contain.
-func RotatingFileHandler(path string, limit uint, formatter Format) (Handler, error) {
-	if err := os.MkdirAll(path, 0700); err != nil {
-		return nil, err
-	}
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return nil, err
-	}
-	re := regexp.MustCompile(`\.log$`)
-	last := len(files) - 1
-	for last >= 0 && (!files[last].Mode().IsRegular() || !re.MatchString(files[last].Name())) {
-		last--
-	}
-	var counter *countingWriter
-	if last >= 0 && files[last].Size() < int64(limit) {
-		// Open the last file, and continue to write into it until it's size reaches the limit.
-		if counter, err = prepFile(filepath.Join(path, files[last].Name())); err != nil {
-			return nil, err
-		}
-	}
-	if counter == nil {
-		counter = new(countingWriter)
-	}
-	h := FuncHandler(func(r *Record) error {
-		_, err := counter.Write(formatter.Format(r))
-		return err
-	})
-
-	return FuncHandler(func(r *Record) error {
-		// lazy evaluate, this needs no lock.
-		lazyEvaluateRecord(r)
-
-		counter.Lock()
-		defer counter.Unlock()
-		if counter.count > limit {
-			counter.Close()
-			counter.w = nil
-		}
-		if counter.w == nil {
-			f, err := os.OpenFile(
-				filepath.Join(path, fmt.Sprintf("%s.log", strings.Replace(r.Time.Format("060102150405.00"), ".", "", 1))),
-				os.O_CREATE|os.O_APPEND|os.O_WRONLY,
-				0600,
-			)
-			if err != nil {
-				return err
-			}
-			counter.w = f
-			counter.count = 0
-		}
-		return h.Log(r)
-	}), nil
-}
-
 // NetHandler opens a socket to the given address and writes records
 // over the connection.
 func NetHandler(network, addr string, fmtr Format) (Handler, error) {
@@ -236,7 +117,7 @@ func formatCall(format string, c stack.Call) string {
 }
 
 // CallerStackHandler returns a Handler that adds a stack trace to the context
-// with key "stack". The stack trace is formated as a space separated list of
+// with key "stack". The stack trace is formatted as a space separated list of
 // call sites inside matching []'s. The most recent call site is listed first.
 // Each call site is formatted according to format. See the documentation of
 // package github.com/go-stack/stack for the list of supported formats.
@@ -392,33 +273,31 @@ func BufferedHandler(bufSize int, h Handler) Handler {
 // it if you write your own Handler.
 func LazyHandler(h Handler) Handler {
 	return FuncHandler(func(r *Record) error {
-		lazyEvaluateRecord(r)
-		return h.Log(r)
-	})
-}
-
-func lazyEvaluateRecord(r *Record) {
-	// go through the values (odd indices) and reassign
-	// the values of any lazy fn to the result of its execution
-	hadErr := false
-	for i := 1; i < len(r.Ctx); i += 2 {
-		if lz, ok := r.Ctx[i].(Lazy); ok {
-			v, err := evaluateLazy(lz)
-			if err != nil {
-				hadErr = true
-				r.Ctx[i] = err
-			} else {
-				if cs, ok := v.(stack.CallStack); ok {
-					v = cs.TrimBelow(r.Call).TrimRuntime()
+		// go through the values (odd indices) and reassign
+		// the values of any lazy fn to the result of its execution
+		hadErr := false
+		for i := 1; i < len(r.Ctx); i += 2 {
+			lz, ok := r.Ctx[i].(Lazy)
+			if ok {
+				v, err := evaluateLazy(lz)
+				if err != nil {
+					hadErr = true
+					r.Ctx[i] = err
+				} else {
+					if cs, ok := v.(stack.CallStack); ok {
+						v = cs.TrimBelow(r.Call).TrimRuntime()
+					}
+					r.Ctx[i] = v
 				}
-				r.Ctx[i] = v
 			}
 		}
-	}
 
-	if hadErr {
-		r.Ctx = append(r.Ctx, errorKey, "bad lazy")
-	}
+		if hadErr {
+			r.Ctx = append(r.Ctx, errorKey, "bad lazy")
+		}
+
+		return h.Log(r)
+	})
 }
 
 func evaluateLazy(lz Lazy) (interface{}, error) {
